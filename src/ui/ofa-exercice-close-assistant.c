@@ -1452,7 +1452,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		cur_account = ofa_idbconnect_get_account( priv->connect );
 		cur_password = ofa_idbconnect_get_password( priv->connect );
 
-		cnx = ofa_idbprovider_new_connect( provider, priv->hub );
+		cnx = ofa_idbprovider_new_connect( provider );
 		ok = ofa_idbconnect_open_with_meta( cnx, cur_account, cur_password, priv->meta, period );
 
 		g_free( cur_password );

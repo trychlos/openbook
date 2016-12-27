@@ -44,7 +44,6 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIDBProvider *provider;
-	ofaHub         *hub;
 	gchar          *dossier_name;
 
 	/* runtime
@@ -63,8 +62,8 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType     register_type( void );
 static void      interface_base_init( ofaIDBDossierMetaInterface *klass );
 static void      interface_base_finalize( ofaIDBDossierMetaInterface *klass );
-static sIDBMeta *get_idbdossier_meta_data( const ofaIDBDossierMeta *meta );
-static void      on_meta_finalized( sIDBMeta *data, GObject *finalized_meta );
+static sIDBMeta *get_instance_data( const ofaIDBDossierMeta *self );
+static void      on_instance_finalized( sIDBMeta *sdata, GObject *finalized_meta );
 
 /**
  * ofa_idbdossier_meta_get_type:
@@ -202,13 +201,13 @@ ofa_idbdossier_meta_get_interface_version( GType type )
 ofaIDBProvider *
 ofa_idbdossier_meta_get_provider( const ofaIDBDossierMeta *meta )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 
-	data = get_idbdossier_meta_data( meta );
+	sdata = get_instance_data( meta );
 
-	return( g_object_ref( data->provider ));
+	return( g_object_ref( sdata->provider ));
 }
 
 /**
@@ -223,57 +222,15 @@ ofa_idbdossier_meta_get_provider( const ofaIDBDossierMeta *meta )
 void
 ofa_idbdossier_meta_set_provider( ofaIDBDossierMeta *meta, const ofaIDBProvider *instance )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 	g_return_if_fail( instance && OFA_IS_IDBPROVIDER( instance ));
 
-	data = get_idbdossier_meta_data( meta );
+	sdata = get_instance_data( meta );
 
-	g_clear_object( &data->provider );
-	data->provider = g_object_ref(( gpointer ) instance );
-}
-
-/**
- * ofa_idbdossier_meta_get_hub:
- * @meta: this #ofaIDBDossierMeta instance.
- *
- * Returns: the #ofaHub object of the application if it has been
- * previously set.
- *
- * The returned reference is owned by the @meta instance, and should not
- * be released by the caller.
- */
-ofaHub *
-ofa_idbdossier_meta_get_hub( const ofaIDBDossierMeta *meta )
-{
-	sIDBMeta *data;
-
-	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
-
-	data = get_idbdossier_meta_data( meta );
-
-	return( data->hub );
-}
-
-/**
- * ofa_idbdossier_meta_set_hub:
- * @meta: this #ofaIDBDossierMeta instance.
- * @hub: the #ofaHub object of the application.
- *
- * Set the @hub object.
- */
-void
-ofa_idbdossier_meta_set_hub( ofaIDBDossierMeta *meta, ofaHub *hub )
-{
-	sIDBMeta *data;
-
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	data = get_idbdossier_meta_data( meta );
-
-	data->hub = hub;
+	g_clear_object( &sdata->provider );
+	sdata->provider = g_object_ref(( gpointer ) instance );
 }
 
 /**
@@ -288,12 +245,13 @@ ofa_idbdossier_meta_set_hub( ofaIDBDossierMeta *meta, ofaHub *hub )
 const gchar *
 ofa_idbdossier_meta_get_dossier_name( const ofaIDBDossierMeta *meta )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 
-	data = get_idbdossier_meta_data( meta );
-	return(( const gchar * ) data->dossier_name );
+	sdata = get_instance_data( meta );
+
+	return(( const gchar * ) sdata->dossier_name );
 }
 
 /**
@@ -306,13 +264,14 @@ ofa_idbdossier_meta_get_dossier_name( const ofaIDBDossierMeta *meta )
 void
 ofa_idbdossier_meta_set_dossier_name( ofaIDBDossierMeta *meta, const gchar *dossier_name )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
-	data = get_idbdossier_meta_data( meta );
-	g_free( data->dossier_name );
-	data->dossier_name = g_strdup( dossier_name );
+	sdata = get_instance_data( meta );
+
+	g_free( sdata->dossier_name );
+	sdata->dossier_name = g_strdup( dossier_name );
 }
 
 /**
@@ -327,13 +286,13 @@ ofa_idbdossier_meta_set_dossier_name( ofaIDBDossierMeta *meta, const gchar *doss
 myISettings *
 ofa_idbdossier_meta_get_settings( const ofaIDBDossierMeta *meta )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 
-	data = get_idbdossier_meta_data( meta );
+	sdata = get_instance_data( meta );
 
-	return( data->settings );
+	return( sdata->settings );
 }
 
 /**
@@ -347,13 +306,13 @@ ofa_idbdossier_meta_get_settings( const ofaIDBDossierMeta *meta )
 gchar *
 ofa_idbdossier_meta_get_group_name( const ofaIDBDossierMeta *meta )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 
-	data = get_idbdossier_meta_data( meta );
+	sdata = get_instance_data( meta );
 
-	return( g_strdup( data->group_name ));
+	return( g_strdup( sdata->group_name ));
 }
 
 /**
@@ -366,7 +325,7 @@ void
 ofa_idbdossier_meta_set_from_settings( ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group_name )
 {
 	static const gchar *thisfn = "ofa_idbdossier_meta_set_from_settings";
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_debug( "%s: meta=%p, settings=%p, group_name=%s",
 			thisfn, ( void * ) meta, ( void * ) settings, group_name );
@@ -374,11 +333,13 @@ ofa_idbdossier_meta_set_from_settings( ofaIDBDossierMeta *meta, myISettings *set
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 	g_return_if_fail( settings && MY_IS_ISETTINGS( settings ));
 
-	data = get_idbdossier_meta_data( meta );
-	g_clear_object( &data->settings );
-	data->settings = g_object_ref( settings );
-	g_free( data->group_name );
-	data->group_name = g_strdup( group_name );
+	sdata = get_instance_data( meta );
+
+	g_clear_object( &sdata->settings );
+	sdata->settings = g_object_ref( settings );
+
+	g_free( sdata->group_name );
+	sdata->group_name = g_strdup( group_name );
 
 	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->set_from_settings ){
 		OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->set_from_settings( meta, settings, group_name );
@@ -400,7 +361,7 @@ void
 ofa_idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, const ofaIDBEditor *editor, myISettings *settings, const gchar *group_name )
 {
 	static const gchar *thisfn = "ofa_idbdossier_meta_set_from_editor";
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_debug( "%s: meta=%p, editor=%p, settings=%p, group_name=%s",
 			thisfn, ( void * ) meta, ( void * ) editor, ( void * ) settings, group_name );
@@ -409,11 +370,13 @@ ofa_idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, const ofaIDBEditor
 	g_return_if_fail( editor && OFA_IS_IDBEDITOR( editor ));
 	g_return_if_fail( settings && MY_IS_ISETTINGS( settings ));
 
-	data = get_idbdossier_meta_data( meta );
-	g_clear_object( &data->settings );
-	data->settings = g_object_ref( settings );
-	g_free( data->group_name );
-	data->group_name = g_strdup( group_name );
+	sdata = get_instance_data( meta );
+
+	g_clear_object( &sdata->settings );
+	sdata->settings = g_object_ref( settings );
+
+	g_free( sdata->group_name );
+	sdata->group_name = g_strdup( group_name );
 
 	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->set_from_editor ){
 		OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->set_from_editor( meta, editor, settings, group_name );
@@ -436,12 +399,13 @@ ofa_idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, const ofaIDBEditor
 void
 ofa_idbdossier_meta_remove_meta( ofaIDBDossierMeta *meta )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
-	data = get_idbdossier_meta_data( meta );
-	my_isettings_remove_group( data->settings, data->group_name );
+	sdata = get_instance_data( meta );
+
+	my_isettings_remove_group( sdata->settings, sdata->group_name );
 }
 
 /**
@@ -455,12 +419,13 @@ ofa_idbdossier_meta_remove_meta( ofaIDBDossierMeta *meta )
 GList *
 ofa_idbdossier_meta_get_periods( const ofaIDBDossierMeta *meta )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 
-	data = get_idbdossier_meta_data( meta );
-	return( g_list_copy_deep( data->periods, ( GCopyFunc ) g_object_ref, NULL ));
+	sdata = get_instance_data( meta );
+
+	return( g_list_copy_deep( sdata->periods, ( GCopyFunc ) g_object_ref, NULL ));
 }
 
 /**
@@ -474,20 +439,22 @@ ofa_idbdossier_meta_get_periods( const ofaIDBDossierMeta *meta )
 void
 ofa_idbdossier_meta_set_periods( ofaIDBDossierMeta *meta, GList *periods )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
+	ofaHub *hub;
 	GList *it;
 	ofaIDBExerciceMeta *exercice_meta;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
-	data = get_idbdossier_meta_data( meta );
+	sdata = get_instance_data( meta );
 
-	ofa_idbdossier_meta_free_periods( data->periods );
-	data->periods = g_list_copy_deep( periods, ( GCopyFunc ) g_object_ref, NULL );
+	hub = ofa_idbprovider_get_hub( sdata->provider );
+	ofa_idbdossier_meta_free_periods( sdata->periods );
+	sdata->periods = g_list_copy_deep( periods, ( GCopyFunc ) g_object_ref, NULL );
 
-	for( it=data->periods ; it ; it=it->next ){
+	for( it=sdata->periods ; it ; it=it->next ){
 		exercice_meta = OFA_IDBEXERCICE_META( it->data );
-		ofa_idbexercice_meta_set_hub( exercice_meta, data->hub );
+		ofa_idbexercice_meta_set_hub( exercice_meta, hub );
 	}
 }
 
@@ -502,13 +469,14 @@ ofa_idbdossier_meta_set_periods( ofaIDBDossierMeta *meta, GList *periods )
 void
 ofa_idbdossier_meta_add_period( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
-	data = get_idbdossier_meta_data( meta );
-	data->periods = g_list_prepend( data->periods, g_object_ref( period ));
+	sdata = get_instance_data( meta );
+
+	sdata->periods = g_list_prepend( sdata->periods, g_object_ref( period ));
 }
 
 /**
@@ -555,17 +523,18 @@ void
 ofa_idbdossier_meta_remove_period( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period )
 {
 	static const gchar *thisfn = "ofa_idbdossier_meta_remove_period";
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
-	data = get_idbdossier_meta_data( meta );
-	if( g_list_length( data->periods ) == 1 ){
+	sdata = get_instance_data( meta );
+
+	if( g_list_length( sdata->periods ) == 1 ){
 		ofa_idbdossier_meta_remove_meta( meta );
 
 	} else {
-		data->periods = g_list_remove( data->periods, period );
+		sdata->periods = g_list_remove( sdata->periods, period );
 		if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->remove_period ){
 			OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->remove_period( meta, period );
 		} else {
@@ -586,14 +555,15 @@ ofa_idbdossier_meta_remove_period( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *
 ofaIDBExerciceMeta *
 ofa_idbdossier_meta_get_current_period( const ofaIDBDossierMeta *meta )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 	GList *it;
 	ofaIDBExerciceMeta *period;
 
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 
-	data = get_idbdossier_meta_data( meta );
-	for( it=data->periods ; it ; it=it->next ){
+	sdata = get_instance_data( meta );
+
+	for( it=sdata->periods ; it ; it=it->next ){
 		period = ( ofaIDBExerciceMeta * ) it->data;
 		g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 		if( ofa_idbexercice_meta_get_current( period )){
@@ -617,7 +587,7 @@ ofaIDBExerciceMeta *
 ofa_idbdossier_meta_get_period( const ofaIDBDossierMeta *meta, const GDate *begin, const GDate *end )
 {
 	static const gchar *thisfn = "ofa_idbdossier_meta_get_period";
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 	GList *it;
 	ofaIDBExerciceMeta *period;
 
@@ -626,8 +596,9 @@ ofa_idbdossier_meta_get_period( const ofaIDBDossierMeta *meta, const GDate *begi
 
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 
-	data = get_idbdossier_meta_data( meta );
-	for( it=data->periods ; it ; it=it->next ){
+	sdata = get_instance_data( meta );
+
+	for( it=sdata->periods ; it ; it=it->next ){
 		period = ( ofaIDBExerciceMeta * ) it->data;
 		if( ofa_idbexercice_meta_is_suitable( period, begin, end )){
 			return( period );
@@ -674,18 +645,18 @@ void
 ofa_idbdossier_meta_dump( const ofaIDBDossierMeta *meta )
 {
 	static const gchar *thisfn = "ofa_idbdossier_meta_dump";
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
-	data = get_idbdossier_meta_data( meta );
+	sdata = get_instance_data( meta );
 
 	g_debug( "%s: meta=%p (%s)", thisfn, ( void * ) meta, G_OBJECT_TYPE_NAME( meta ));
-	g_debug( "%s:   provider=%p", thisfn, ( void * ) data->provider );
-	g_debug( "%s:   dossier_name=%s", thisfn, data->dossier_name );
-	g_debug( "%s:   settings=%p", thisfn, ( void * ) data->settings );
-	g_debug( "%s:   group_name=%s", thisfn, data->group_name );
-	g_debug( "%s:   periods=%p (length=%u)", thisfn, ( void * ) data->periods, g_list_length( data->periods ));
+	g_debug( "%s:   provider=%p", thisfn, ( void * ) sdata->provider );
+	g_debug( "%s:   dossier_name=%s", thisfn, sdata->dossier_name );
+	g_debug( "%s:   settings=%p", thisfn, ( void * ) sdata->settings );
+	g_debug( "%s:   group_name=%s", thisfn, sdata->group_name );
+	g_debug( "%s:   periods=%p (length=%u)", thisfn, ( void * ) sdata->periods, g_list_length( sdata->periods ));
 }
 
 /**
@@ -697,45 +668,45 @@ ofa_idbdossier_meta_dump( const ofaIDBDossierMeta *meta )
 void
 ofa_idbdossier_meta_dump_full( const ofaIDBDossierMeta *meta )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 	GList *it;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
 	ofa_idbdossier_meta_dump( meta );
-	data = get_idbdossier_meta_data( meta );
-	for( it=data->periods ; it ; it=it->next ){
+	sdata = get_instance_data( meta );
+	for( it=sdata->periods ; it ; it=it->next ){
 		ofa_idbexercice_meta_dump( OFA_IDBEXERCICE_META( it->data ));
 	}
 }
 
 static sIDBMeta *
-get_idbdossier_meta_data( const ofaIDBDossierMeta *meta )
+get_instance_data( const ofaIDBDossierMeta *self )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
-	data = ( sIDBMeta * ) g_object_get_data( G_OBJECT( meta ), IDBDOSSIER_META_DATA );
+	sdata = ( sIDBMeta * ) g_object_get_data( G_OBJECT( self ), IDBDOSSIER_META_DATA );
 
-	if( !data ){
-		data = g_new0( sIDBMeta, 1 );
-		g_object_set_data( G_OBJECT( meta ), IDBDOSSIER_META_DATA, data );
-		g_object_weak_ref( G_OBJECT( meta ), ( GWeakNotify ) on_meta_finalized, data );
+	if( !sdata ){
+		sdata = g_new0( sIDBMeta, 1 );
+		g_object_set_data( G_OBJECT( self ), IDBDOSSIER_META_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( self ), ( GWeakNotify ) on_instance_finalized, sdata );
 	}
 
-	return( data );
+	return( sdata );
 }
 
 static void
-on_meta_finalized( sIDBMeta *data, GObject *finalized_meta )
+on_instance_finalized( sIDBMeta *sdata, GObject *finalized_meta )
 {
-	static const gchar *thisfn = "ofa_idbdossier_meta_on_meta_finalized";
+	static const gchar *thisfn = "ofa_idbdossier_meta_on_instance_finalized";
 
-	g_debug( "%s: data=%p, finalized_meta=%p", thisfn, ( void * ) data, ( void * ) finalized_meta );
+	g_debug( "%s: sdata=%p, finalized_meta=%p", thisfn, ( void * ) sdata, ( void * ) finalized_meta );
 
-	g_clear_object( &data->provider );
-	g_free( data->dossier_name );
-	g_clear_object( &data->settings );
-	g_free( data->group_name );
-	ofa_idbdossier_meta_free_periods( data->periods );
-	g_free( data );
+	g_clear_object( &sdata->provider );
+	g_free( sdata->dossier_name );
+	g_clear_object( &sdata->settings );
+	g_free( sdata->group_name );
+	ofa_idbdossier_meta_free_periods( sdata->periods );
+	g_free( sdata );
 }

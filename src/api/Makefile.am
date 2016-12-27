@@ -46,6 +46,7 @@ api_include_HEADERS = \
 	ofa-icontext.h										\
 	ofa-idate-filter.h									\
 	ofa-idbconnect.h									\
+	ofa-idbdossier-editor.h								\
 	ofa-idbdossier-meta.h								\
 	ofa-idbdossier-meta-def.h							\
 	ofa-idbeditor.h										\
@@ -55,6 +56,7 @@ api_include_HEADERS = \
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
 	ofa-iexe-close.h									\
+	ofa-idbexercice-editor.h							\
 	ofa-iexportable.h									\
 	ofa-igetter.h										\
 	ofa-igetter-def.h									\

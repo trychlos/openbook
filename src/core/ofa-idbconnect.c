@@ -43,7 +43,6 @@
  */
 typedef struct {
 	ofaIDBProvider     *provider;
-	ofaHub             *hub;
 	gchar              *account;
 	gchar              *password;
 	ofaIDBDossierMeta  *dossier_meta;
@@ -68,8 +67,8 @@ static void         audit_query( const ofaIDBConnect *connect, const gchar *quer
 static gchar       *quote_query( const gchar *query );
 static void         error_query( const ofaIDBConnect *connect, const gchar *query );
 static gboolean     idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBExerciceMeta *period, const gchar *adm_account, const gchar *adm_password );
-static sIDBConnect *get_idbconnect_data( const ofaIDBConnect *connect );
-static void         on_connect_finalized( sIDBConnect *data, GObject *finalized_dbconnect );
+static sIDBConnect *get_instance_data( const ofaIDBConnect *connect );
+static void         on_instance_finalized( sIDBConnect *sdata, GObject *finalized_dbconnect );
 
 /**
  * ofa_idbconnect_get_type:
@@ -205,13 +204,13 @@ ofa_idbconnect_get_interface_version( GType type )
 ofaIDBProvider *
 ofa_idbconnect_get_provider( const ofaIDBConnect *connect )
 {
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
 
-	data = get_idbconnect_data( connect );
+	sdata = get_instance_data( connect );
 
-	return( g_object_ref( data->provider ));
+	return( g_object_ref( sdata->provider ));
 }
 
 /**
@@ -226,55 +225,14 @@ ofa_idbconnect_get_provider( const ofaIDBConnect *connect )
 void
 ofa_idbconnect_set_provider( ofaIDBConnect *connect, const ofaIDBProvider *provider )
 {
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 
 	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
 
-	data = get_idbconnect_data( connect );
+	sdata = get_instance_data( connect );
 
-	g_clear_object( &data->provider );
-	data->provider = g_object_ref(( gpointer ) provider );
-}
-
-/**
- * ofa_idbconnect_get_hub:
- * @connect: this #ofaIDBConnect instance.
- *
- * Returns: the #ofaHub object of the application as it has been set at
- * instantiation time.
- *
- * The returned object is owned by the @connect instance, and should not
- * be released by the caller.
- */
-ofaHub *
-ofa_idbconnect_get_hub( const ofaIDBConnect *connect )
-{
-	sIDBConnect *data;
-
-	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
-
-	data = get_idbconnect_data( connect );
-
-	return( data->hub );
-}
-
-/**
- * ofa_idbconnect_set_hub:
- * @connect: this #ofaIDBConnect instance.
- * @hub: the #ofaHub object of the application.
- *
- * Set the @hub object.
- */
-void
-ofa_idbconnect_set_hub( ofaIDBConnect *connect, ofaHub *hub )
-{
-	sIDBConnect *data;
-
-	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
-
-	data = get_idbconnect_data( connect );
-
-	data->hub = hub;
+	g_clear_object( &sdata->provider );
+	sdata->provider = g_object_ref(( gpointer ) provider );
 }
 
 /**
@@ -382,12 +340,13 @@ ofa_idbconnect_open_with_meta( ofaIDBConnect *connect, const gchar *account, con
 gchar *
 ofa_idbconnect_get_account( const ofaIDBConnect *connect )
 {
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
 
-	data = get_idbconnect_data( connect );
-	return( g_strdup( data->account ));
+	sdata = get_instance_data( connect );
+
+	return( g_strdup( sdata->account ));
 }
 
 /*
@@ -398,13 +357,14 @@ ofa_idbconnect_get_account( const ofaIDBConnect *connect )
 static void
 idbconnect_set_account( ofaIDBConnect *connect, const gchar *account )
 {
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 
 	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
 
-	data = get_idbconnect_data( connect );
-	g_free( data->account );
-	data->account = g_strdup( account );
+	sdata = get_instance_data( connect );
+
+	g_free( sdata->account );
+	sdata->account = g_strdup( account );
 }
 
 /**
@@ -417,12 +377,13 @@ idbconnect_set_account( ofaIDBConnect *connect, const gchar *account )
 gchar *
 ofa_idbconnect_get_password( const ofaIDBConnect *connect )
 {
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
 
-	data = get_idbconnect_data( connect );
-	return( g_strdup( data->password ));
+	sdata = get_instance_data( connect );
+
+	return( g_strdup( sdata->password ));
 }
 
 /*
@@ -433,13 +394,14 @@ ofa_idbconnect_get_password( const ofaIDBConnect *connect )
 static void
 idbconnect_set_password( ofaIDBConnect *connect, const gchar *password )
 {
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 
 	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
 
-	data = get_idbconnect_data( connect );
-	g_free( data->password );
-	data->password = g_strdup( password );
+	sdata = get_instance_data( connect );
+
+	g_free( sdata->password );
+	sdata->password = g_strdup( password );
 }
 
 /**
@@ -452,12 +414,13 @@ idbconnect_set_password( ofaIDBConnect *connect, const gchar *password )
 ofaIDBDossierMeta *
 ofa_idbconnect_get_dossier_meta( const ofaIDBConnect *connect )
 {
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
 
-	data = get_idbconnect_data( connect );
-	return( g_object_ref( data->dossier_meta ));
+	sdata = get_instance_data( connect );
+
+	return( g_object_ref( sdata->dossier_meta ));
 }
 
 /*
@@ -472,14 +435,15 @@ ofa_idbconnect_get_dossier_meta( const ofaIDBConnect *connect )
 static void
 idbconnect_set_meta( ofaIDBConnect *connect, const ofaIDBDossierMeta *meta )
 {
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 
 	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
 
-	data = get_idbconnect_data( connect );
-	g_clear_object( &data->dossier_meta );
+	sdata = get_instance_data( connect );
+
+	g_clear_object( &sdata->dossier_meta );
 	if( meta ){
-		data->dossier_meta = g_object_ref(( gpointer ) meta );
+		sdata->dossier_meta = g_object_ref(( gpointer ) meta );
 	}
 }
 
@@ -493,12 +457,13 @@ idbconnect_set_meta( ofaIDBConnect *connect, const ofaIDBDossierMeta *meta )
 ofaIDBExerciceMeta *
 ofa_idbconnect_get_exercice_meta( const ofaIDBConnect *connect )
 {
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
 
-	data = get_idbconnect_data( connect );
-	return( g_object_ref( data->exercice_meta ));
+	sdata = get_instance_data( connect );
+
+	return( g_object_ref( sdata->exercice_meta ));
 }
 
 /*
@@ -513,14 +478,15 @@ ofa_idbconnect_get_exercice_meta( const ofaIDBConnect *connect )
 static void
 idbconnect_set_period( ofaIDBConnect *connect, const ofaIDBExerciceMeta *period )
 {
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 
 	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
 
-	data = get_idbconnect_data( connect );
-	g_clear_object( &data->exercice_meta );
+	sdata = get_instance_data( connect );
+
+	g_clear_object( &sdata->exercice_meta );
 	if( period ){
-		data->exercice_meta = g_object_ref(( gpointer ) period );
+		sdata->exercice_meta = g_object_ref(( gpointer ) period );
 	}
 }
 
@@ -929,7 +895,7 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 							const gchar *adm_account, const gchar *adm_password )
 {
 	static const gchar *thisfn = "ofa_idbconnect_restore";
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 	ofaIDBExerciceMeta *target_period;
 	gboolean ok;
 
@@ -947,9 +913,9 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 		if( period ){
 			target_period = ( ofaIDBExerciceMeta * ) period;
 		} else {
-			data = get_idbconnect_data( connect );
-			g_return_val_if_fail( data->dossier_meta && OFA_IS_IDBDOSSIER_META( data->dossier_meta ), FALSE );
-			target_period = ofa_idbdossier_meta_get_current_period( data->dossier_meta );
+			sdata = get_instance_data( connect );
+			g_return_val_if_fail( sdata->dossier_meta && OFA_IS_IDBDOSSIER_META( sdata->dossier_meta ), FALSE );
+			target_period = ofa_idbdossier_meta_get_current_period( sdata->dossier_meta );
 		}
 
 		if( target_period ){
@@ -1030,10 +996,9 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 									const gchar *adm_account, const gchar *adm_password )
 {
 	static const gchar *thisfn = "ofa_idbconnect_create_dossier";
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 	gboolean ok;
 	GString *query;
-	ofaHub *hub;
 	ofaIDBProvider *provider;
 	ofaIDBExerciceMeta *period;
 	ofaIDBConnect *db_connection;
@@ -1046,7 +1011,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), FALSE );
 
 	ok = FALSE;
-	hub = ofa_idbconnect_get_hub( connect );
+	sdata = get_instance_data( connect );
 
 	/* create the minimal database and grant the user */
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier ){
@@ -1061,7 +1026,6 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	db_connection = NULL;
 	period = NULL;
 	provider = NULL;
-	data = get_idbconnect_data( connect );
 	query = g_string_new( "" );
 
 	/* define the dossier administrative account
@@ -1070,9 +1034,9 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 		ofa_idbdossier_meta_dump_full( meta );
 		period = ofa_idbdossier_meta_get_current_period( meta );
 		provider = ofa_idbdossier_meta_get_provider( meta );
-		db_connection = ofa_idbprovider_new_connect( provider, hub );
+		db_connection = ofa_idbprovider_new_connect( provider );
 		ok = ofa_idbconnect_open_with_meta(
-					db_connection, data->account, data->password, meta, period );
+					db_connection, sdata->account, sdata->password, meta, period );
 	}
 	if( ok ){
 		/* initialize the newly created database */
@@ -1125,10 +1089,9 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBExer
 										const gchar *adm_account, const gchar *adm_password )
 {
 	static const gchar *thisfn = "ofa_idbconnect_set_admin_credentials";
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 	gboolean ok;
 	GString *query;
-	ofaHub *hub;
 	ofaIDBConnect *period_connect;
 
 	g_debug( "%s: connect=%p, period=%p, adm_account=%s, adm_password=%s",
@@ -1140,7 +1103,7 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBExer
 	g_return_val_if_fail( my_strlen( adm_account ), FALSE );
 
 	ok = FALSE;
-	hub = ofa_idbconnect_get_hub( connect );
+	sdata = get_instance_data( connect );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user ){
 		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user( connect, period, adm_account, adm_password );
@@ -1154,13 +1117,12 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBExer
 	/* define the dossier administrative account
 	 * requires another superuser connection, on the period at this time */
 	period_connect = NULL;
-	data = get_idbconnect_data( connect );
 	query = g_string_new( "" );
 
 	if( ok ){
-		period_connect = ofa_idbprovider_new_connect( data->provider, hub );
+		period_connect = ofa_idbprovider_new_connect( sdata->provider );
 		ok = ofa_idbconnect_open_with_meta(
-					period_connect, data->account, data->password, data->dossier_meta, period );
+					period_connect, sdata->account, sdata->password, sdata->dossier_meta, period );
 	}
 	/* be sure the user has 'admin' role
 	 * Insert works if row did not exist yet while Update works
@@ -1289,33 +1251,33 @@ ofa_idbconnect_transaction_cancel( const ofaIDBConnect *connect, gboolean displa
 }
 
 static sIDBConnect *
-get_idbconnect_data( const ofaIDBConnect *connect )
+get_instance_data( const ofaIDBConnect *connect )
 {
-	sIDBConnect *data;
+	sIDBConnect *sdata;
 
-	data = ( sIDBConnect * ) g_object_get_data( G_OBJECT( connect ), IDBCONNECT_DATA );
+	sdata = ( sIDBConnect * ) g_object_get_data( G_OBJECT( connect ), IDBCONNECT_DATA );
 
-	if( !data ){
-		data = g_new0( sIDBConnect, 1 );
-		g_object_set_data( G_OBJECT( connect ), IDBCONNECT_DATA, data );
-		g_object_weak_ref( G_OBJECT( connect ), ( GWeakNotify ) on_connect_finalized, data );
+	if( !sdata ){
+		sdata = g_new0( sIDBConnect, 1 );
+		g_object_set_data( G_OBJECT( connect ), IDBCONNECT_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( connect ), ( GWeakNotify ) on_instance_finalized, sdata );
 	}
 
-	return( data );
+	return( sdata );
 }
 
 static void
-on_connect_finalized( sIDBConnect *data, GObject *finalized_connect )
+on_instance_finalized( sIDBConnect *sdata, GObject *finalized_connect )
 {
-	static const gchar *thisfn = "ofa_idbconnect_on_connect_finalized";
+	static const gchar *thisfn = "ofa_idbconnect_on_instance_finalized";
 
-	g_debug( "%s: data=%p, finalized_connect=%p",
-			thisfn, ( void * ) data, ( void * ) finalized_connect );
+	g_debug( "%s: sdata=%p, finalized_connect=%p",
+			thisfn, ( void * ) sdata, ( void * ) finalized_connect );
 
-	g_clear_object( &data->provider );
-	g_clear_object( &data->dossier_meta );
-	g_clear_object( &data->exercice_meta );
-	g_free( data->account );
-	g_free( data->password );
-	g_free( data );
+	g_clear_object( &sdata->provider );
+	g_clear_object( &sdata->dossier_meta );
+	g_clear_object( &sdata->exercice_meta );
+	g_free( sdata->account );
+	g_free( sdata->password );
+	g_free( sdata );
 }

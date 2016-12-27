@@ -96,6 +96,13 @@ typedef struct {
 #define HUB_DEFAULT_DECIMALS_RATE        3
 
 /**
+ * Rules when defining a new dossier and/or a new exercice:
+ */
+enum {
+	HUB_RULE_DOSSIER_NEW = 0,
+};
+
+/**
  * Signals defined here:
  */
 #define SIGNAL_HUB_NEW                  "hub-object-new"

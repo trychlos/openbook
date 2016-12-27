@@ -422,7 +422,7 @@ is_valid_composite( ofaDBMSRootBin *self )
 			ok = FALSE;
 			provider = ofa_idbdossier_meta_get_provider( priv->meta );
 			if( provider ){
-				connect = ofa_idbprovider_new_connect( provider, priv->hub );
+				connect = ofa_idbprovider_new_connect( provider );
 				ok = ofa_idbconnect_open_with_meta(
 							connect, priv->account, priv->password, priv->meta, NULL );
 				g_clear_object( &connect );

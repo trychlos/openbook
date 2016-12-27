@@ -119,16 +119,18 @@ gboolean
 ofa_mysql_cmdline_backup_run( ofaMySQLConnect *connect, const gchar *uri )
 {
 	gchar *template, *fname;
+	ofaIDBProvider *provider;
+	ofaHub *hub;
 	ofaIDBExerciceMeta *period;
 	gboolean ok;
-	ofaHub *hub;
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
 
 	ofa_mysql_connect_query( connect, "FLUSH TABLES WITH READ LOCK" );
 
-	hub = ofa_idbconnect_get_hub( OFA_IDBCONNECT( connect ));
+	provider = ofa_idbconnect_get_provider( OFA_IDBCONNECT( connect ));
+	hub = ofa_idbprovider_get_hub( provider );
 	template = ofa_mysql_user_prefs_get_backup_command( hub );
 	fname = g_filename_from_uri( uri, NULL, NULL );
 	period = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
@@ -186,6 +188,7 @@ ofa_mysql_cmdline_restore_run( ofaMySQLConnect *connect,
 	static const gchar *thisfn = "ofa_mysql_cmdline_restore";
 	gboolean ok;
 	gchar *fname, *template;
+	ofaIDBProvider *provider;
 	ofaHub *hub;
 
 	g_debug( "%s: connect=%p, period=%p, uri=%s",
@@ -201,7 +204,8 @@ ofa_mysql_cmdline_restore_run( ofaMySQLConnect *connect,
 			"/bin/sh \"mysql -u%U -p%P -e 'create database %B'\"", connect, period, NULL, NULL );
 
 	fname = g_filename_from_uri( uri, NULL, NULL );
-	hub = ofa_idbconnect_get_hub( OFA_IDBCONNECT( connect ));
+	provider = ofa_idbconnect_get_provider( OFA_IDBCONNECT( connect ));
+	hub = ofa_idbprovider_get_hub( provider );
 	template = ofa_mysql_user_prefs_get_restore_command( hub );
 
 	ok = do_execute_async(
@@ -482,13 +486,15 @@ do_execute_async( const gchar *template,
 	GPid child_pid;
 	gboolean ok;
 	guint source_id;
+	ofaIDBProvider *provider;
 	ofaHub *hub;
 	myISettings *settings;
 
 	cmdline = cmdline_build_from_connect( template, connect, period, fname, NULL );
 	g_debug( "%s: cmdline=%s", thisfn, cmdline );
 
-	hub = ofa_idbconnect_get_hub( OFA_IDBCONNECT( connect ));
+	provider = ofa_idbconnect_get_provider( OFA_IDBCONNECT( connect ));
+	hub = ofa_idbprovider_get_hub( provider );
 	settings = ofa_hub_get_user_settings( hub );
 
 	infos = g_new0( sExecuteInfos, 1 );

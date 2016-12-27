@@ -258,7 +258,7 @@ idialog_init( myIDialog *instance )
 	/* create the composite widget and attach it to the dialog */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "edit-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->edit_bin = ofa_dossier_edit_bin_new( priv->hub, priv->settings_prefix, DOSSIER_EDIT_NEW );
+	priv->edit_bin = ofa_dossier_edit_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->edit_bin ));
 	g_signal_connect( priv->edit_bin, "ofa-changed", G_CALLBACK( on_edit_bin_changed ), instance );
 
@@ -348,7 +348,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 #if 0
 		dossier_meta = ofa_dossier_edit_bin_get_dossier_meta( priv->edit_bin );
 		exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
-		connect = ofa_idbprovider_new_connect( provider, priv->hub );
+		connect = ofa_idbprovider_new_connect( provider );
 		if( !ofa_idbconnect_open_with_meta(
 				connect, priv->adm_account, priv->adm_password, priv->meta, period )){
 			*msgerr = g_strdup( _( "Unable to connect to newly created dossier" ));

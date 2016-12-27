@@ -36,7 +36,17 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
 
+/* some data attached to each IDBConnect instance
+ * we store here the data provided by the application
+ * which do not depend of a specific implementation
+ */
+typedef struct {
+	ofaHub *hub;
+}
+	sIDBProvider;
+
 #define IDBPROVIDER_LAST_VERSION        1
+#define IDBPROVIDER_DATA               "idbprovider-data"
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
@@ -44,6 +54,9 @@ static GType           register_type( void );
 static void            interface_base_init( ofaIDBProviderInterface *klass );
 static void            interface_base_finalize( ofaIDBProviderInterface *klass );
 static ofaIDBProvider *provider_get_by_name( GList *modules, const gchar *name );
+static void            provider_set_hub( ofaIDBProvider *self, ofaHub *hub );
+static sIDBProvider   *get_instance_data( const ofaIDBProvider *self );
+static void            on_instance_finalized( sIDBProvider *sdata, GObject *finalized_provider );
 
 /**
  * ofa_idbprovider_get_type:
@@ -160,6 +173,11 @@ ofa_idbprovider_get_by_name( ofaHub *hub, const gchar *provider_name )
 
 	ofa_extender_collection_free_types( modules );
 
+	if( module ){
+		g_return_val_if_fail( OFA_IS_IDBPROVIDER( module ), NULL );
+		provider_set_hub( OFA_IDBPROVIDER( module ), hub );
+	}
+
 	return( module );
 }
 
@@ -180,6 +198,16 @@ provider_get_by_name( GList *modules, const gchar *name )
 	}
 
 	return( NULL );
+}
+
+static void
+provider_set_hub( ofaIDBProvider *self, ofaHub *hub )
+{
+	sIDBProvider *sdata;
+
+	sdata = get_instance_data( self );
+
+	sdata->hub = hub;
 }
 
 /**
@@ -221,16 +249,33 @@ ofa_idbprovider_get_interface_version( GType type )
 }
 
 /**
+ * ofa_idbprovider_get_hub:
+ * @provider: this #ofaIDBProvider provider.
+ *
+ * Returns: the #ofaHub object of the application.
+ */
+ofaHub *
+ofa_idbprovider_get_hub( ofaIDBProvider *provider )
+{
+	sIDBProvider *sdata;
+
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
+
+	sdata = get_instance_data( provider );
+
+	return( sdata->hub );
+}
+
+/**
  * ofa_idbprovider_new_dossier_meta:
  * @provider: this #ofaIDBProvider provider.
- * @hub: the #ofaHub object of the application.
  * @dossier_name: the name of the dossier.
  *
  * Returns: a newly allocated #ofaIDBDossierMeta object, which should be
  * g_object_unref() by the caller.
  */
 ofaIDBDossierMeta *
-ofa_idbprovider_new_dossier_meta( ofaIDBProvider *provider, ofaHub *hub, const gchar *dossier_name )
+ofa_idbprovider_new_dossier_meta( ofaIDBProvider *provider, const gchar *dossier_name )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_dossier_meta";
 	ofaIDBDossierMeta *meta;
@@ -238,13 +283,11 @@ ofa_idbprovider_new_dossier_meta( ofaIDBProvider *provider, ofaHub *hub, const g
 	g_debug( "%s: provider=%p", thisfn, ( void * ) provider );
 
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( my_strlen( dossier_name ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_meta ){
 		meta = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_meta( provider );
 		ofa_idbdossier_meta_set_provider( meta, provider );
-		ofa_idbdossier_meta_set_hub( meta, hub );
 		ofa_idbdossier_meta_set_dossier_name( meta, dossier_name );
 		return( meta );
 	}
@@ -257,13 +300,12 @@ ofa_idbprovider_new_dossier_meta( ofaIDBProvider *provider, ofaHub *hub, const g
 /**
  * ofa_idbprovider_new_connect:
  * @provider: this #ofaIDBProvider provider.
- * @hub: the #ofaHub object of the application.
  *
  * Returns: a newly allocated #ofaIDBConnect object, which should be
  * g_object_unref() by the caller.
  */
 ofaIDBConnect *
-ofa_idbprovider_new_connect( ofaIDBProvider *provider, ofaHub *hub )
+ofa_idbprovider_new_connect( ofaIDBProvider *provider )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_connect";
 	ofaIDBConnect *connect;
@@ -271,12 +313,10 @@ ofa_idbprovider_new_connect( ofaIDBProvider *provider, ofaHub *hub )
 	g_debug( "%s: provider=%p", thisfn, ( void * ) provider );
 
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect ){
 		connect = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect( provider );
 		ofa_idbconnect_set_provider( connect, provider );
-		ofa_idbconnect_set_hub( connect, hub );
 		return( connect );
 	}
 
@@ -324,6 +364,41 @@ ofa_idbprovider_new_editor( ofaIDBProvider *provider, gboolean editable )
 	return( NULL );
 }
 
+/**
+ * ofa_idbprovider_new_dossier_editor:
+ * @provider: this #ofaIDBProvider provider.
+ * @rule: the usage of the editor.
+ *
+ * Returns: a composite GTK container widget intended to hold the
+ * informations needed to fully identify the DBMS server which manages
+ * a dossier.
+ *
+ * The returned container will be added to a GtkWindow and must be
+ * destroyable with this same window. In other words, the DBMS provider
+ * should not keep any reference on this container.
+ */
+ofaIDBDossierEditor *
+ofa_idbprovider_new_dossier_editor( ofaIDBProvider *provider, guint rule )
+{
+	static const gchar *thisfn = "ofa_idbprovider_new_dossier_editor";
+	ofaIDBDossierEditor *editor;
+
+	g_debug( "%s: provider=%p, rule=%u",
+			thisfn,( void * ) provider, rule );
+
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor ){
+		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor( provider, rule );
+		ofa_idbdossier_editor_set_provider( editor, provider );
+		return( editor );
+	}
+
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_dossier_editor()' method",
+			thisfn, G_OBJECT_TYPE_NAME( provider ));
+	return( NULL );
+}
+
 /*
  * ofa_idbprovider_get_canon_name:
  * @provider: this #ofaIDBProvider provider.
@@ -358,4 +433,31 @@ ofa_idbprovider_get_display_name( const ofaIDBProvider *provider )
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
 	return( MY_IS_IIDENT( provider ) ? my_iident_get_display_name( MY_IIDENT( provider ), NULL ) : NULL );
+}
+
+static sIDBProvider *
+get_instance_data( const ofaIDBProvider *self )
+{
+	sIDBProvider *sdata;
+
+	sdata = ( sIDBProvider * ) g_object_get_data( G_OBJECT( self ), IDBPROVIDER_DATA );
+
+	if( !sdata ){
+		sdata = g_new0( sIDBProvider, 1 );
+		g_object_set_data( G_OBJECT( self ), IDBPROVIDER_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( self ), ( GWeakNotify ) on_instance_finalized, sdata );
+	}
+
+	return( sdata );
+}
+
+static void
+on_instance_finalized( sIDBProvider *sdata, GObject *finalized_provider)
+{
+	static const gchar *thisfn = "ofa_idbprovider_on_instance_finalized";
+
+	g_debug( "%s: sdata=%p, finalized_provider=%p",
+			thisfn, ( void * ) sdata, ( void * ) finalized_provider );
+
+	g_free( sdata );
 }

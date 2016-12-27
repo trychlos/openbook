@@ -82,13 +82,6 @@ typedef struct {
 }
 	ofaDossierEditBinClass;
 
-/**
- * Rules for #ofaDossierEditBin:
- */
-enum {
-	DOSSIER_EDIT_NEW = 0,
-};
-
 GType              ofa_dossier_edit_bin_get_type( void ) G_GNUC_CONST;
 
 ofaDossierEditBin *ofa_dossier_edit_bin_new     ( ofaHub *hub,

@@ -37,7 +37,6 @@
 #include "api/ofa-igetter.h"
 
 #include "ui/ofa-application.h"
-#include "ui/ofa-dossier-edit-bin.h"
 #include "ui/ofa-dossier-meta-bin.h"
 #include "ui/ofa-dossier-store.h"
 

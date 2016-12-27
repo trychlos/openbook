@@ -54,6 +54,7 @@
 
 #include "my/my-isettings.h"
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbprovider-def.h"
 
@@ -161,6 +162,16 @@ guint                ofa_idbdossier_editor_get_interface_version     ( GType typ
 /*
  * Instance-wide
  */
+ofaIDBProvider      *ofa_idbdossier_editor_get_provider              ( ofaIDBDossierEditor *instance );
+
+void                 ofa_idbdossier_editor_set_provider              ( ofaIDBDossierEditor *instance,
+																			ofaIDBProvider *provider );
+
+ofaHub              *ofa_idbdossier_editor_get_hub                   ( ofaIDBDossierEditor *instance );
+
+void                 ofa_idbdossier_editor_set_hub                   ( ofaIDBDossierEditor *instance,
+																			ofaHub *hub );
+
 GtkSizeGroup        *ofa_idbdossier_editor_get_size_group            ( const ofaIDBDossierEditor *instance,
 																			guint column );
 
@@ -168,9 +179,6 @@ gboolean             ofa_idbdossier_editor_is_valid                  ( const ofa
 																			gchar **message );
 
 gboolean             ofa_idbdossier_editor_apply                     ( const ofaIDBDossierEditor *instance );
-
-void                 ofa_idbdossier_editor_set_provider              ( ofaIDBDossierEditor *instance,
-																			ofaIDBProvider *provider );
 
 void                 ofa_idbdossier_editor_set_dossier_meta          ( ofaIDBDossierEditor *instance,
 																			ofaIDBDossierMeta *dossier_meta );

@@ -63,6 +63,7 @@
    - ofaExerciceMetaBin: new class.
    - ofaIDBDossierEditor: new interface.
    - ofaIDBExerciceEditor: new interface.
+   - ofaIDBprovider: maintains a pointer to ofaHub.
    - ofaLedgerBookBin class is renamed to ofaLedgerBookArgs.
    - ofaLedgerSummaryBin class is renamed to ofaLedgerSummaryArgs.
    - ofaReconcilBin class is renamed to ofaReconcilArgs.

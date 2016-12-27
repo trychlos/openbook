@@ -30,6 +30,7 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
@@ -40,6 +41,7 @@
  */
 typedef struct {
 	ofaIDBProvider *provider;
+	ofaHub         *hub;
 }
 	sEditor;
 
@@ -208,26 +210,91 @@ ofa_idbdossier_editor_get_interface_version( GType type )
 	return( version );
 }
 
-#if 0
 /**
  * ofa_idbdossier_editor_get_provider:
  * @instance: this #ofaIDBDossierEditor instance.
  *
- * Returns: a new reference to the #ofaIDBProvider instance, which
- * manages this #ofaIDBDossierEditor, which should be g_object_unref() by
- * the caller.
+ * Returns: the #ofaIDBProvider instance which was attached at
+ * instanciation time.
+ *
+ * The returned reference is owned by the @instance, and should not be
+ * released by the caller.
  */
-ofaIDBProvider*
-ofa_idbdossier_editor_get_provider( const ofaIDBDossierEditor *instance )
+ofaIDBProvider *
+ofa_idbdossier_editor_get_provider( ofaIDBDossierEditor *instance )
 {
 	sEditor *data;
 
 	g_return_val_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ), NULL );
 
 	data = get_editor_data( instance );
-	return( g_object_ref( data->provider ));
+
+	return( data->provider );
 }
 
+/**
+ * ofa_idbdossier_editor_set_provider:
+ * @instance: this #ofaIDBDossierEditor instance.
+ * @provider: the #ofaIDBProvider instance which manages this editor.
+ *
+ * Attach the editor to the @provider.
+ */
+void
+ofa_idbdossier_editor_set_provider( ofaIDBDossierEditor *instance, ofaIDBProvider *provider )
+{
+	sEditor *data;
+
+	g_return_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ));
+	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
+
+	data = get_editor_data( instance );
+
+	data->provider = provider;
+}
+
+/**
+ * ofa_idbdossier_editor_get_hub:
+ * @instance: this #ofaIDBDossierEditor instance.
+ *
+ * Returns: the #ofaHub object of the application which was attached at
+ * instanciation time.
+ *
+ * The returned reference is owned by the @instance, and should not be
+ * released by the caller.
+ */
+ofaHub *
+ofa_idbdossier_editor_get_hub( ofaIDBDossierEditor *instance )
+{
+	sEditor *data;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ), NULL );
+
+	data = get_editor_data( instance );
+
+	return( data->hub );
+}
+
+/**
+ * ofa_idbdossier_editor_set_hub:
+ * @instance: this #ofaIDBDossierEditor instance.
+ * @hub: the #ofaHub object of the application.
+ *
+ * Attach the @hub to the @instance.
+ */
+void
+ofa_idbdossier_editor_set_hub( ofaIDBDossierEditor *instance, ofaHub *hub )
+{
+	sEditor *data;
+
+	g_return_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	data = get_editor_data( instance );
+
+	data->hub = hub;
+}
+
+#if 0
 /**
  * ofa_idbdossier_editor_set_meta:
  * @instance: this #ofaIDBDossierEditor instance.
@@ -333,25 +400,6 @@ ofa_idbdossier_editor_apply( const ofaIDBDossierEditor *instance )
 	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'apply()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( FALSE );
-}
-
-/**
- * ofa_idbdossier_editor_set_provider:
- * @instance: this #ofaIDBDossierEditor instance.
- * @provider: the #ofaIDBProvider instance which manages this editor.
- *
- * Attach the editor to the @provider.
- */
-void
-ofa_idbdossier_editor_set_provider( ofaIDBDossierEditor *instance, ofaIDBProvider *provider )
-{
-	sEditor *data;
-
-	g_return_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ));
-	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
-
-	data = get_editor_data( instance );
-	data->provider = provider;
 }
 
 static sEditor *

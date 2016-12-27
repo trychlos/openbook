@@ -304,7 +304,7 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 			g_debug( "%s: dossier_name=%s is new, provider=%s", thisfn, dos_name, prov_name );
 			idbprovider = ofa_idbprovider_get_by_name( priv->hub, prov_name );
 			if( idbprovider ){
-				meta = ofa_idbprovider_new_dossier_meta( idbprovider, priv->hub, dos_name );
+				meta = ofa_idbprovider_new_dossier_meta( idbprovider, dos_name );
 			}
 			g_free( prov_name );
 		}

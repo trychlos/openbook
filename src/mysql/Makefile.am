@@ -73,6 +73,10 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-connect.h									\
 	ofa-mysql-dbmodel.c									\
 	ofa-mysql-dbmodel.h									\
+	ofa-mysql-dossier-bin.c								\
+	ofa-mysql-dossier-bin.h								\
+	ofa-mysql-dossier-editor.c							\
+	ofa-mysql-dossier-editor.h							\
 	ofa-mysql-dossier-meta.c							\
 	ofa-mysql-dossier-meta.h							\
 	ofa-mysql-dbprovider.c								\
@@ -89,6 +93,8 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-prefs-bin.h								\
 	ofa-mysql-properties.c								\
 	ofa-mysql-properties.h								\
+	ofa-mysql-root-bin.c								\
+	ofa-mysql-root-bin.h								\
 	ofa-mysql-user-prefs.c								\
 	ofa-mysql-user-prefs.h								\
 	$(NULL)
