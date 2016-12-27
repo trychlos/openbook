@@ -45,7 +45,9 @@ src/ui/ofa-currency-properties.ui
 src/ui/ofa-dos-menubar.ui
 src/ui/ofa-dossier-delete.ui
 src/ui/ofa-dossier-display-notes.ui
+src/ui/ofa-dossier-edit-bin.ui
 src/ui/ofa-dossier-manager.ui
+src/ui/ofa-dossier-meta-bin.ui
 src/ui/ofa-dossier-new.ui
 src/ui/ofa-dossier-new-bin.ui
 src/ui/ofa-dossier-new-mini.ui
@@ -54,6 +56,7 @@ src/ui/ofa-dossier-properties.ui
 src/ui/ofa-entry-page.ui
 src/ui/ofa-entry-properties.ui
 src/ui/ofa-exercice-close-assistant.ui
+src/ui/ofa-exercice-meta-bin.ui
 src/ui/ofa-export-assistant.ui
 src/ui/ofa-guided-ex.ui
 src/ui/ofa-import-assistant.ui

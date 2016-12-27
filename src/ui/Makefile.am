@@ -134,8 +134,12 @@ openbook_SOURCES = \
 	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\
 	ofa-dossier-display-notes.h							\
+	ofa-dossier-edit-bin.c								\
+	ofa-dossier-edit-bin.h								\
 	ofa-dossier-manager.c								\
 	ofa-dossier-manager.h								\
+	ofa-dossier-meta-bin.c								\
+	ofa-dossier-meta-bin.h								\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
 	ofa-dossier-new-bin.c								\
@@ -160,6 +164,8 @@ openbook_SOURCES = \
 	ofa-exercice-combo.h								\
 	ofa-exercice-close-assistant.c						\
 	ofa-exercice-close-assistant.h						\
+	ofa-exercice-meta-bin.c								\
+	ofa-exercice-meta-bin.h								\
 	ofa-exercice-store.c								\
 	ofa-exercice-store.h								\
 	ofa-exercice-treeview.c								\

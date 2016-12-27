@@ -406,7 +406,14 @@
 1301 2016-12-19 review myISettings interface: free_groups() does not have
                 settings arg, while free_string_list() has.
 
-1302
+1302 2016-12-27 ack -lw get_is_valid src
+                replace src/mysql/ofa-mysql-prefs-bin.c::get_is_valid()
+                with is_valid()
+
+1303 2016-12-27 ack -lw get_valid src
+                replace get_valid() with is_valid()
+
+1304
 
 -----------------------------------------------------------------------
  DONE

@@ -16,7 +16,9 @@
     <file>ofa-currency-properties.ui</file>
     <file>ofa-dossier-delete.ui</file>
     <file>ofa-dossier-display-notes.ui</file>
+    <file>ofa-dossier-edit-bin.ui</file>
     <file>ofa-dossier-manager.ui</file>
+    <file>ofa-dossier-meta-bin.ui</file>
     <file>ofa-dossier-new.ui</file>
     <file>ofa-dossier-new-bin.ui</file>
     <file>ofa-dossier-new-mini.ui</file>
@@ -25,6 +27,7 @@
     <file>ofa-entry-page.ui</file>
     <file>ofa-entry-properties.ui</file>
     <file>ofa-exercice-close-assistant.ui</file>
+    <file>ofa-exercice-meta-bin.ui</file>
     <file>ofa-export-assistant.ui</file>
     <file>ofa-guided-ex.ui</file>
     <file>ofa-import-assistant.ui</file>
