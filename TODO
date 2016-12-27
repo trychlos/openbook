@@ -403,7 +403,10 @@
                 user_preferences + dossier_preferences + settings in
                 dossier_new and dossier_open
 
-1301
+1301 2016-12-19 review myISettings interface: free_groups() does not have
+                settings arg, while free_string_list() has.
+
+1302
 
 -----------------------------------------------------------------------
  DONE
