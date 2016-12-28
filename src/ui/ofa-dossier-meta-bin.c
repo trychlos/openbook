@@ -54,12 +54,10 @@ typedef struct {
 	/* UI
 	 */
 	GtkSizeGroup   *group0;
-	GtkWidget      *name_entry;
 	GtkWidget      *dbms_combo;
 
-	/* runtime data
+	/* runtime
 	 */
-	gboolean        initializing;
 	gchar          *dossier_name;
 	gchar          *provider_name;
 	ofaIDBProvider *provider;
@@ -86,14 +84,15 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-meta-bin.ui";
 
-static void setup_bin( ofaDossierMetaBin *self );
-static void setup_dbms_provider( ofaDossierMetaBin *self );
-static void on_dossier_name_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaDossierMetaBin *self );
-static void on_dossier_name_changed( GtkEditable *editable, ofaDossierMetaBin *self );
-static void on_dbms_provider_changed( GtkComboBox *combo, ofaDossierMetaBin *self );
-static void changed_composite( ofaDossierMetaBin *self );
-static void read_settings( ofaDossierMetaBin *self );
-static void write_settings( ofaDossierMetaBin *self );
+static void     setup_bin( ofaDossierMetaBin *self );
+static void     setup_dbms_provider( ofaDossierMetaBin *self );
+static void     on_dossier_name_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaDossierMetaBin *self );
+static void     on_dossier_name_changed( GtkEditable *editable, ofaDossierMetaBin *self );
+static void     on_dbms_provider_changed( GtkComboBox *combo, ofaDossierMetaBin *self );
+static void     changed_composite( ofaDossierMetaBin *self );
+static gboolean is_valid( ofaDossierMetaBin *self, gchar **msgerr );
+static void     read_settings( ofaDossierMetaBin *self );
+static void     write_settings( ofaDossierMetaBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierMetaBin, ofa_dossier_meta_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaDossierMetaBin ))
@@ -158,7 +157,6 @@ ofa_dossier_meta_bin_init( ofaDossierMetaBin *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
-	priv->initializing = FALSE;
 	priv->dossier_name = NULL;
 	priv->provider_name = NULL;
 }
@@ -212,7 +210,7 @@ ofaDossierMetaBin *
 ofa_dossier_meta_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule )
 {
 	static const gchar *thisfn = "ofa_dossier_meta_bin_new";
-	ofaDossierMetaBin *self;
+	ofaDossierMetaBin *bin;
 	ofaDossierMetaBinPrivate *priv;
 
 	g_debug( "%s: hub=%p, settings_prefix=%s, guint=%u",
@@ -221,9 +219,9 @@ ofa_dossier_meta_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( my_strlen( settings_prefix ), NULL );
 
-	self = g_object_new( OFA_TYPE_DOSSIER_META_BIN, NULL );
+	bin = g_object_new( OFA_TYPE_DOSSIER_META_BIN, NULL );
 
-	priv = ofa_dossier_meta_bin_get_instance_private( self );
+	priv = ofa_dossier_meta_bin_get_instance_private( bin );
 
 	priv->hub = hub;
 	priv->rule = rule;
@@ -231,10 +229,11 @@ ofa_dossier_meta_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule 
 	g_free( priv->settings_prefix );
 	priv->settings_prefix = g_strdup( settings_prefix );
 
-	setup_bin( self );
-	read_settings( self );
+	setup_bin( bin );
+	setup_dbms_provider( bin );
+	read_settings( bin );
 
-	return( self );
+	return( bin );
 }
 
 /*
@@ -270,9 +269,6 @@ setup_bin( ofaDossierMetaBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dmb-name-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-	priv->name_entry = entry;
-
-	setup_dbms_provider( self );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -291,8 +287,6 @@ setup_dbms_provider( ofaDossierMetaBin *self )
 	GtkTreeIter iter;
 
 	priv = ofa_dossier_meta_bin_get_instance_private( self );
-
-	priv->initializing = TRUE;
 
 	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dmb-provider-combo" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
@@ -314,6 +308,8 @@ setup_dbms_provider( ofaDossierMetaBin *self )
 	for( it=modules ; it ; it=it->next ){
 		it_name = ofa_idbprovider_get_display_name( OFA_IDBPROVIDER( it->data ));
 		canon_name = ofa_idbprovider_get_canon_name( OFA_IDBPROVIDER( it->data ));
+		ofa_idbprovider_set_hub( OFA_IDBPROVIDER( it->data ), priv->hub );
+
 		if( my_strlen( it_name ) && my_strlen( canon_name )){
 			gtk_list_store_insert_with_values(
 					GTK_LIST_STORE( tmodel ),
@@ -324,6 +320,7 @@ setup_dbms_provider( ofaDossierMetaBin *self )
 					DBMS_COL_PROVIDER, it->data,
 					-1 );
 		}
+
 		g_free( it_name );
 		g_free( canon_name );
 	}
@@ -332,20 +329,20 @@ setup_dbms_provider( ofaDossierMetaBin *self )
 
 	gtk_combo_box_set_id_column( GTK_COMBO_BOX( combo ), DBMS_COL_CANON );
 
-	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_dbms_provider_changed ), self );
-
 	/* setup the mnemonic widget on the label */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dmb-provider-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), combo );
 
-	priv->initializing = FALSE;
+	/* connect the signal after the combo box has been initialized,
+	 * and before reading the user settings */
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_dbms_provider_changed ), self );
 }
 
 /**
  * ofa_dossier_meta_bin_get_size_group:
  * @bin: this #ofaDossierMetaBin instance.
- * @column: the desire column.
+ * @column: the desired column.
  *
  * Returns: the #GtkSizeGroup which handles the desired @column.
  */
@@ -389,20 +386,14 @@ on_dossier_name_insert_text( GtkEditable *editable, gchar *new_text, gint new_te
 static void
 on_dossier_name_changed( GtkEditable *editable, ofaDossierMetaBin *self )
 {
-#if 0
 	ofaDossierMetaBinPrivate *priv;
-	ofaDossierCollection *collection;
 	const gchar *cstr;
 
 	priv = ofa_dossier_meta_bin_get_instance_private( self );
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( editable ));
-
 	g_free( priv->dossier_name );
 	priv->dossier_name = g_strdup( cstr );
-
-	collection = ofa_hub_get_dossier_collection( priv->hub );
-#endif
 
 	changed_composite( self );
 }
@@ -418,26 +409,17 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierMetaBin *self )
 
 	priv = ofa_dossier_meta_bin_get_instance_private( self );
 
-	if( !priv->initializing ){
-		canon_name = gtk_combo_box_get_active_id( combo );
-		g_free( priv->provider_name );
-		priv->provider_name = g_strdup( canon_name );
-		priv->provider = ofa_idbprovider_get_by_name( priv->hub, canon_name );
-		changed_composite( self );
-	}
+	canon_name = gtk_combo_box_get_active_id( combo );
+	g_free( priv->provider_name );
+	priv->provider_name = g_strdup( canon_name );
+	priv->provider = ofa_idbprovider_get_by_name( priv->hub, canon_name );
+
+	changed_composite( self );
 }
 
 static void
 changed_composite( ofaDossierMetaBin *self )
 {
-#if 0
-	ofaDossierMetaBinPrivate *priv;
-
-	priv = ofa_dossier_meta_bin_get_instance_private( self );
-
-	gtk_widget_set_sensitive( priv->dbms_combo, ( priv->dossier_meta == NULL ));
-#endif
-
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
@@ -463,29 +445,59 @@ ofa_dossier_meta_bin_is_valid( ofaDossierMetaBin *bin, gchar **error_message )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	ok = TRUE;
 	str = NULL;
-
-	/* check for dossier name */
-	if( ok ) {
-		if( !my_strlen( priv->dossier_name )){
-			str = g_strdup( _( "Dossier name is not set" ));
-			ok = FALSE;
-		}
-	}
-
-	/* check for DBMS provider */
-	if( ok ){
-		if( !my_strlen( priv->provider_name )){
-			str = g_strdup( _( "DBMS provider is not selected" ));
-			ok = FALSE;
-		}
-	}
+	ok = is_valid( bin, &str );
 
 	if( error_message ){
 		*error_message = str;
 	} else {
 		g_free( str );
+	}
+
+	return( ok );
+}
+
+static gboolean
+is_valid( ofaDossierMetaBin *self, gchar **msgerr )
+{
+	ofaDossierMetaBinPrivate *priv;
+	ofaDossierCollection *collection;
+	ofaIDBDossierMeta *meta;
+	gboolean ok;
+
+	priv = ofa_dossier_meta_bin_get_instance_private( self );
+
+	ok = TRUE;
+
+	/* check that dossier name is set */
+	if( ok ) {
+		if( !my_strlen( priv->dossier_name )){
+			*msgerr = g_strdup( _( "Dossier name is not set" ));
+			ok = FALSE;
+		}
+	}
+
+	/* check that DBMS provider is selected */
+	if( ok ){
+		if( !my_strlen( priv->provider_name )){
+			*msgerr = g_strdup( _( "DBMS provider is not selected" ));
+			ok = FALSE;
+		}
+	}
+
+	/* check against rule */
+	if( ok ){
+		collection = ofa_hub_get_dossier_collection( priv->hub );
+		meta = ofa_dossier_collection_get_by_name( collection, priv->dossier_name );
+
+		switch( priv->rule ){
+			case HUB_RULE_DOSSIER_NEW:
+				if( meta ){
+					*msgerr = g_strdup_printf( _( "Dossier '%s' already exists" ), priv->dossier_name );
+					ok = FALSE;
+				}
+				break;
+		}
 	}
 
 	return( ok );
@@ -519,15 +531,14 @@ ofa_dossier_meta_bin_apply( ofaDossierMetaBin *bin )
 	return( TRUE );
 }
 
-#if 0
 /**
- * ofa_dossier_meta_bin_get_dossier_meta:
+ * ofa_dossier_meta_bin_get_dossier_name:
  * @bin: this #ofaDossierMetaBin instance.
  *
- * Returns: the #ofaDossierMeta object.
+ * Returns: the name of the dossier.
  */
-ofaDossierMeta *
-ofa_dossier_meta_bin_get_dossier_meta( ofaDossierMetaBin *bin )
+const gchar *
+ofa_dossier_meta_bin_get_dossier_name( ofaDossierMetaBin *bin )
 {
 	ofaDossierMetaBinPrivate *priv;
 
@@ -537,33 +548,31 @@ ofa_dossier_meta_bin_get_dossier_meta( ofaDossierMetaBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( priv->dossier_meta );
+	return( priv->dossier_name );
 }
 
 /**
- * ofa_dossier_meta_bin_set_dossier_meta:
+ * ofa_dossier_meta_bin_get_provider:
  * @bin: this #ofaDossierMetaBin instance.
- * @dossier_meta: [allow-none]: the #ofaDossierMeta object.
  *
- * Set the #ofaDossierMeta object.
+ * Returns: the currently selected #ofaIDBProvider.
+ *
+ * The returned reference is owned by the @bin, and should not be
+ * released by the caller.
  */
-void
-ofa_dossier_meta_bin_set_dossier_meta( ofaDossierMetaBin *bin, ofaDossierMeta *dossier_meta )
+ofaIDBProvider *
+ofa_dossier_meta_bin_get_provider( ofaDossierMetaBin *bin )
 {
 	ofaDossierMetaBinPrivate *priv;
 
-	g_return_if_fail( bin && OFA_IS_DOSSIER_META_BIN( bin ));
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_META_BIN( bin ), NULL );
 
 	priv = ofa_dossier_meta_bin_get_instance_private( bin );
 
-	g_return_if_fail( !priv->dispose_has_run );
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	g_clear_object( &priv->dossier_meta );
-	priv->dossier_meta = dossier_meta ? g_object_ref( dossier_meta ) : NULL;
-
-	setup_dossier_meta( bin );
+	return( priv->provider );
 }
-#endif
 
 /*
  * settings are: "last_chosen_provider_name(s);"

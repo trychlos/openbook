@@ -55,12 +55,10 @@ typedef struct {
 	 */
 	gchar                  *settings_prefix;
 	ofaHub                 *hub;
-	gboolean                b_open;
 
 	/* UI
 	 */
 	ofaDossierEditBin      *edit_bin;
-	GtkWidget              *open_btn;
 	GtkWidget              *ok_btn;
 	GtkWidget              *msg_label;
 }
@@ -73,7 +71,6 @@ static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     on_edit_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self );
-static void     on_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
 static void     check_for_enable_dlg( ofaDossierNew *self );
 static gboolean do_create( ofaDossierNew *self, gchar **msgerr );
 static gboolean create_confirmed( const ofaDossierNew *self );
@@ -249,7 +246,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_new_idialog_init";
 	ofaDossierNewPrivate *priv;
-	GtkWidget *parent, *toggle, *label;
+	GtkWidget *parent, *label;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -261,11 +258,6 @@ idialog_init( myIDialog *instance )
 	priv->edit_bin = ofa_dossier_edit_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->edit_bin ));
 	g_signal_connect( priv->edit_bin, "ofa-changed", G_CALLBACK( on_edit_bin_changed ), instance );
-
-	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dn-open" );
-	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( toggle, "toggled", G_CALLBACK( on_open_toggled ), instance );
-	priv->open_btn = toggle;
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
@@ -288,39 +280,21 @@ on_edit_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self )
 }
 
 static void
-on_open_toggled( GtkToggleButton *button, ofaDossierNew *self )
-{
-	ofaDossierNewPrivate *priv;
-
-	priv = ofa_dossier_new_get_instance_private( self );
-
-	priv->b_open = gtk_toggle_button_get_active( button );
-}
-
-/*
- * enable the various dynamic buttons
- *
- * as each check may send an error message which will supersede the
- * previously set, we start from the end so that the user will first
- * see the message at the top of the stack (from the first field in
- * the focus chain)
- */
-static void
 check_for_enable_dlg( ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
-	gboolean enabled;
+	gboolean ok;
 	gchar *message;
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
 	message = NULL;
-	enabled = ofa_dossier_edit_bin_is_valid( priv->edit_bin, &message );
+	ok = ofa_dossier_edit_bin_is_valid( priv->edit_bin, &message );
 	set_message( self, message );
 	g_free( message );
 
 	if( priv->ok_btn ){
-		gtk_widget_set_sensitive( priv->ok_btn, enabled );
+		gtk_widget_set_sensitive( priv->ok_btn, ok );
 	}
 }
 
@@ -344,8 +318,8 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 		return( FALSE );
 	}
 
-	if( priv->b_open ){
 #if 0
+	if( priv->b_open ){
 		dossier_meta = ofa_dossier_edit_bin_get_dossier_meta( priv->edit_bin );
 		exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
 		connect = ofa_idbprovider_new_connect( provider );
@@ -370,8 +344,8 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 		} else {
 			ok = FALSE;
 		}
-#endif
 	}
+#endif
 
 	return( ok );
 }
@@ -407,49 +381,14 @@ set_message( ofaDossierNew *self, const gchar *message )
 }
 
 /*
- * settings are: "open(b);"
+ * settings are: <none>
  */
 static void
 read_settings( ofaDossierNew *self )
 {
-	ofaDossierNewPrivate *priv;
-	myISettings *settings;
-	GList *strlist, *it;
-	const gchar *cstr;
-	gchar *key;
-
-	priv = ofa_dossier_new_get_instance_private( self );
-
-	settings = ofa_hub_get_user_settings( priv->hub );
-	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
-
-	it = strlist;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->open_btn ), my_utils_boolean_from_str( cstr ));
-	}
-
-	my_isettings_free_string_list( settings, strlist );
-	g_free( key );
 }
 
 static void
 write_settings( ofaDossierNew *self )
 {
-	ofaDossierNewPrivate *priv;
-	myISettings *settings;
-	gchar *key, *str;
-
-	priv = ofa_dossier_new_get_instance_private( self );
-
-	str = g_strdup_printf( "%s;",
-				priv->b_open ? "True":"False" );
-
-	settings = ofa_hub_get_user_settings( priv->hub );
-	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
-
-	g_free( key );
-	g_free( str );
 }

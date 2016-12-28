@@ -63,15 +63,18 @@ typedef struct {
 }
 	ofaMysqlDossierEditorClass;
 
-GType                  ofa_mysql_dossier_editor_get_type  ( void ) G_GNUC_CONST;
+GType                  ofa_mysql_dossier_editor_get_type   ( void ) G_GNUC_CONST;
 
-ofaMysqlDossierEditor *ofa_mysql_dossier_editor_new       ( guint rule );
+ofaMysqlDossierEditor *ofa_mysql_dossier_editor_new        ( ofaIDBProvider *provider,
+																guint rule );
 
-const gchar           *ofa_mysql_dossier_editor_get_host  ( ofaMysqlDossierEditor *editor );
+ofaMysqlConnect       *ofa_mysql_dossier_editor_get_connect( ofaMysqlDossierEditor *editor );
 
-const gchar           *ofa_mysql_dossier_editor_get_socket( ofaMysqlDossierEditor *editor );
+const gchar           *ofa_mysql_dossier_editor_get_host   ( ofaMysqlDossierEditor *editor );
 
-guint                  ofa_mysql_dossier_editor_get_port  ( ofaMysqlDossierEditor *editor );
+const gchar           *ofa_mysql_dossier_editor_get_socket ( ofaMysqlDossierEditor *editor );
+
+guint                  ofa_mysql_dossier_editor_get_port   ( ofaMysqlDossierEditor *editor );
 
 G_END_DECLS
 

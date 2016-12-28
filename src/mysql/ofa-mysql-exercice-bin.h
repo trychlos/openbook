@@ -22,11 +22,11 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_MYSQL_EXERCICE_EDITOR_H__
-#define __OFA_MYSQL_EXERCICE_EDITOR_H__
+#ifndef __OFA_MYSQL_EXERCICE_BIN_H__
+#define __OFA_MYSQL_EXERCICE_BIN_H__
 
 /**
- * SECTION: ofa_mysql_exercice_editor
+ * SECTION: ofa_mysql_exercice_bin
  * @short_description: #ofaMysql class definition.
  *
  * Let the user enter connection informations.
@@ -44,32 +44,39 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_MYSQL_EXERCICE_EDITOR                ( ofa_mysql_exercice_editor_get_type())
-#define OFA_MYSQL_EXERCICE_EDITOR( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_EXERCICE_EDITOR, ofaMysqlExerciceEditor ))
-#define OFA_MYSQL_EXERCICE_EDITOR_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_EXERCICE_EDITOR, ofaMysqlExerciceEditorClass ))
-#define OFA_IS_MYSQL_EXERCICE_EDITOR( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_EXERCICE_EDITOR ))
-#define OFA_IS_MYSQL_EXERCICE_EDITOR_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_EXERCICE_EDITOR ))
-#define OFA_MYSQL_EXERCICE_EDITOR_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_EXERCICE_EDITOR, ofaMysqlExerciceEditorClass ))
+#define OFA_TYPE_MYSQL_EXERCICE_BIN                ( ofa_mysql_exercice_bin_get_type())
+#define OFA_MYSQL_EXERCICE_BIN( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_EXERCICE_BIN, ofaMysqlExerciceBin ))
+#define OFA_MYSQL_EXERCICE_BIN_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_EXERCICE_BIN, ofaMysqlExerciceBinClass ))
+#define OFA_IS_MYSQL_EXERCICE_BIN( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_EXERCICE_BIN ))
+#define OFA_IS_MYSQL_EXERCICE_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_EXERCICE_BIN ))
+#define OFA_MYSQL_EXERCICE_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_EXERCICE_BIN, ofaMysqlExerciceBinClass ))
 
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;
 }
-	ofaMysqlExerciceEditor;
+	ofaMysqlExerciceBin;
 
 typedef struct {
 	/*< public members >*/
 	GtkBinClass parent;
 }
-	ofaMysqlExerciceEditorClass;
+	ofaMysqlExerciceBinClass;
 
-GType                   ofa_mysql_exercice_editor_get_type    ( void ) G_GNUC_CONST;
+GType                ofa_mysql_exercice_bin_get_type      ( void ) G_GNUC_CONST;
 
-ofaMysqlExerciceEditor *ofa_mysql_exercice_editor_new         ( ofaIDBProvider *provider,
-																	gboolean editable );
+ofaMysqlExerciceBin *ofa_mysql_exercice_bin_new           ( guint rule );
 
-const gchar            *ofa_mysql_exercice_editor_get_database( ofaMysqlExerciceEditor *exercice_editor );
+GtkSizeGroup        *ofa_mysql_exercice_bin_get_size_group( ofaMysqlExerciceBin *bin,
+																guint column );
+
+gboolean             ofa_mysql_exercice_bin_is_valid      ( ofaMysqlExerciceBin *bin,
+																gchar **message );
+
+gboolean             ofa_mysql_exercice_bin_apply         ( ofaMysqlExerciceBin *bin);
+
+const gchar         *ofa_mysql_exercice_bin_get_database  ( ofaMysqlExerciceBin *bin );
 
 G_END_DECLS
 
-#endif /* __OFA_MYSQL_EXERCICE_EDITOR_H__ */
+#endif /* __OFA_MYSQL_EXERCICE_BIN_H__ */

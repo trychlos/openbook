@@ -46,6 +46,7 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaIDBProvider     *provider;
 	guint               rule;
 
 	/* UI
@@ -53,6 +54,10 @@ typedef struct {
 	GtkSizeGroup       *group0;
 	ofaMysqlDossierBin *dossier_bin;
 	ofaMysqlRootBin    *root_bin;
+
+	/* runtime
+	 */
+	ofaMysqlConnect    *connect;
 }
 	ofaMysqlDossierEditorPrivate;
 
@@ -65,6 +70,10 @@ static gboolean      idbdossier_editor_is_valid( const ofaIDBDossierEditor *inst
 static gboolean      idbdossier_editor_apply( const ofaIDBDossierEditor *instance );
 static void          idbdossier_editor_set_dossier_meta( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta );
 static void          setup_bin( ofaMysqlDossierEditor *self );
+static void          on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlDossierEditor *self );
+static void          on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self );
+static void          changed_composite( ofaMysqlDossierEditor *self );
+static gboolean      check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierEditor, ofa_mysql_dossier_editor, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlDossierEditor )
@@ -101,6 +110,7 @@ mysql_dossier_editor_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->group0 );
+		g_clear_object( &priv->connect );
 	}
 
 	/* chain up to the parent class */
@@ -121,6 +131,7 @@ ofa_mysql_dossier_editor_init( ofaMysqlDossierEditor *self )
 	priv = ofa_mysql_dossier_editor_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->connect = ofa_mysql_connect_new();
 }
 
 static void
@@ -178,7 +189,8 @@ idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint col
 }
 
 /*
- * all the informations are optional
+ * All the informations are optional.
+ * Wen all pieces are valid, then we can check the connection itself.
  */
 static gboolean
 idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message )
@@ -189,7 +201,8 @@ idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message
 	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
 
 	ok = ofa_mysql_dossier_bin_is_valid( priv->dossier_bin, message ) &&
-			ofa_mysql_root_bin_is_valid( priv->root_bin, message );
+			ofa_mysql_root_bin_is_valid( priv->root_bin, message ) &&
+			check_root_connection( OFA_MYSQL_DOSSIER_EDITOR( instance ), message );
 
 	return( ok );
 }
@@ -221,6 +234,7 @@ idbdossier_editor_set_dossier_meta( const ofaIDBDossierEditor *instance, ofaIDBD
 
 /**
  * ofa_mysql_dossier_editor_new:
+ * @provider: the #ofaIDBProvider provider.
  * @rule: the usage of the widget.
  *
  * Returns: a new #ofaMysqlDossierEditor widget.
@@ -230,15 +244,18 @@ idbdossier_editor_set_dossier_meta( const ofaIDBDossierEditor *instance, ofaIDBD
  * - the root credentials.
  */
 ofaMysqlDossierEditor *
-ofa_mysql_dossier_editor_new( guint rule )
+ofa_mysql_dossier_editor_new( ofaIDBProvider *provider, guint rule )
 {
 	ofaMysqlDossierEditor *bin;
 	ofaMysqlDossierEditorPrivate *priv;
+
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
 	bin = g_object_new( OFA_TYPE_MYSQL_DOSSIER_EDITOR, NULL );
 
 	priv = ofa_mysql_dossier_editor_get_instance_private( bin );
 
+	priv->provider = provider;
 	priv->rule = rule;
 
 	setup_bin( bin );
@@ -253,7 +270,6 @@ setup_bin( ofaMysqlDossierEditor *self )
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *parent;
-	ofaIDBProvider *provider;
 
 	priv = ofa_mysql_dossier_editor_get_instance_private( self );
 
@@ -267,23 +283,109 @@ setup_bin( ofaMysqlDossierEditor *self )
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
-	provider = ofa_idbdossier_editor_get_provider( OFA_IDBDOSSIER_EDITOR( self ));
-	g_return_if_fail( provider && OFA_IS_MYSQL_DBPROVIDER( provider ));
-
-	priv->dossier_bin = ofa_mysql_dossier_bin_new( OFA_MYSQL_DBPROVIDER( provider ), priv->rule );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mde-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->dossier_bin = ofa_mysql_dossier_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->rule );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_bin ));
+	g_signal_connect( priv->dossier_bin, "ofa-changed", G_CALLBACK( on_dossier_bin_changed ), self );
 	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_dossier_bin_get_size_group( priv->dossier_bin, 0 ));
 
-	priv->root_bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( provider ), priv->rule );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mde-root-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->root_bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->rule );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->root_bin ));
+	g_signal_connect( priv->root_bin, "ofa-changed", G_CALLBACK( on_root_bin_changed ), self );
 	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_root_bin_get_size_group( priv->root_bin, 0 ));
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
+}
+
+static void
+on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlDossierEditor *self )
+{
+	changed_composite( self );
+}
+
+static void
+on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self )
+{
+	changed_composite( self );
+}
+
+static void
+changed_composite( ofaMysqlDossierEditor *self )
+{
+	ofaMysqlDossierEditorPrivate *priv;
+
+	priv = ofa_mysql_dossier_editor_get_instance_private( self );
+
+	ofa_mysql_connect_close( priv->connect );
+	ofa_mysql_root_bin_set_valid( priv->root_bin, FALSE );
+
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+/*
+ * try a connection with root credentials at server level
+ *
+ * It happens that the MariaDB instance accepts all connections which
+ * have an unknown user and no password, showing only 'test' database.
+ * So we only check here if password is set.
+ */
+static gboolean
+check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr )
+{
+	ofaMysqlDossierEditorPrivate *priv;
+	gboolean ok;
+	const gchar *password;
+
+	priv = ofa_mysql_dossier_editor_get_instance_private( self );
+
+	password = ofa_mysql_root_bin_get_password( priv->root_bin );
+
+	if( my_strlen( password )){
+		ok = ofa_mysql_connect_open_with_details( priv->connect,
+					ofa_mysql_dossier_bin_get_host( priv->dossier_bin ),
+					ofa_mysql_dossier_bin_get_socket( priv->dossier_bin ),
+					ofa_mysql_dossier_bin_get_port( priv->dossier_bin ),
+					NULL,													// database
+					ofa_mysql_root_bin_get_account( priv->root_bin ),
+					password );
+	} else {
+		ok = FALSE;
+	}
+
+	ofa_mysql_root_bin_set_valid( priv->root_bin, ok );
+
+	if( !ok ){
+		*msgerr = g_strdup( _( "DBMS root credentials are not valid" ));
+	}
+
+	return( ok );
+}
+
+/**
+ * ofa_mysql_dossier_editor_get_connect:
+ * @editor: this #ofaMysqlDossierEditor instance.
+ *
+ * Returns: the current #ofaMysqlConnect connection.
+ *
+ * The returned reference is owned by the @editor, and should not be
+ * released by the caller.
+ */
+ofaMysqlConnect *
+ofa_mysql_dossier_editor_get_connect( ofaMysqlDossierEditor *editor )
+{
+	ofaMysqlDossierEditorPrivate *priv;
+
+	g_return_val_if_fail( editor && OFA_IS_MYSQL_DOSSIER_EDITOR( editor ), NULL );
+
+	priv = ofa_mysql_dossier_editor_get_instance_private( editor );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->connect );
 }
 
 /**

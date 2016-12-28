@@ -130,6 +130,8 @@ openbook_SOURCES = \
 	ofa-currency-properties.h							\
 	ofa-currency-treeview.c								\
 	ofa-currency-treeview.h								\
+	ofa-dossier-actions-bin.c							\
+	ofa-dossier-actions-bin.h							\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\

@@ -42,11 +42,21 @@
  *    |
  *    +- ofaDossierMetaBin
  *    |
- *    +- ofaIDBDossierEditor
+ *    +-------------------------------------- ofaIDBDossierEditor
+ *    |                                        |
+ *    |                                        +- ofaMysqlDossierEditor
+ *    |                                            |
+ *    |                                            +- ofaMysqlDossierBin
+ *    |                                            |
+ *    |                                            +- ofaMysqlRootBin
  *    |
  *    +- ofaExerciceMetaBin
  *    |
- *    +- ofaIDBExerciceEditor
+ *    +-------------------------------------- ofaIDBExerciceEditor
+ *    |                                        |
+ *    |                                        +- ofaMysqlExerciceEditor
+ *    |                                            |
+ *    |                                            +- ofaMysqlExerciceBin
  *    |
  *    +- ofaAdminCredentialsBin
  *

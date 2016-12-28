@@ -37,16 +37,16 @@ G_BEGIN_DECLS
 
 const gchar *ofa_mysql_cmdline_backup_get_default_command ( void );
 
-gboolean     ofa_mysql_cmdline_backup_run                 ( ofaMySQLConnect *connect,
+gboolean     ofa_mysql_cmdline_backup_run                 ( ofaMysqlConnect *connect,
 																const gchar *uri );
 
 const gchar *ofa_mysql_cmdline_restore_get_default_command( void );
 
-gboolean     ofa_mysql_cmdline_restore_run                ( ofaMySQLConnect *connect,
+gboolean     ofa_mysql_cmdline_restore_run                ( ofaMysqlConnect *connect,
 																ofaMysqlExerciceMeta *period,
 																const gchar *uri );
 
-gboolean     ofa_mysql_cmdline_archive_and_new            ( ofaMySQLConnect *connect,
+gboolean     ofa_mysql_cmdline_archive_and_new            ( ofaMysqlConnect *connect,
 																const gchar *root_account,
 																const gchar *root_password,
 																const GDate *begin_next,

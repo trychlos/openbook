@@ -82,7 +82,14 @@ GtkSizeGroup    *ofa_mysql_root_bin_get_size_group  ( ofaMysqlRootBin *bin,
 gboolean         ofa_mysql_root_bin_is_valid        ( ofaMysqlRootBin *bin,
 															gchar **error_message );
 
+void             ofa_mysql_root_bin_set_valid       ( ofaMysqlRootBin *bin,
+															gboolean valid );
+
 gboolean         ofa_mysql_root_bin_apply           ( ofaMysqlRootBin *bin );
+
+const gchar     *ofa_mysql_root_bin_get_account     ( ofaMysqlRootBin *bin );
+
+const gchar     *ofa_mysql_root_bin_get_password    ( ofaMysqlRootBin *bin );
 
 void             ofa_mysql_root_bin_get_credentials ( ofaMysqlRootBin *bin,
 															gchar **account,

@@ -54,13 +54,13 @@ typedef struct {
 	guint    port;
 	gchar   *database;
 }
-	ofaMySQLConnectPrivate;
+	ofaMysqlConnectPrivate;
 
 static void     idbconnect_iface_init( ofaIDBConnectInterface *iface );
 static guint    idbconnect_get_interface_version( void );
 static gboolean idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBEditor *editor, gboolean server_only );
 static gboolean idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period );
-static gboolean connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *password, const gchar *host, const gchar *socket, guint port, const gchar *database, gchar **msg );
+static gboolean connect_open( ofaMysqlConnect *connect, const gchar *account, const gchar *password, const gchar *host, const gchar *socket, guint port, const gchar *database, gchar **msg );
 static gboolean idbconnect_query( const ofaIDBConnect *instance, const gchar *query );
 static gboolean idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList **result );
 static gchar   *idbconnect_get_last_error( const ofaIDBConnect *instance );
@@ -69,22 +69,22 @@ static gboolean idbconnect_restore( const ofaIDBConnect *instance, const ofaIDBE
 static gboolean idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next );
 static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance, const ofaIDBDossierMeta *meta );
 static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *account, const gchar *password );
-static gchar   *find_new_database( ofaMySQLConnect *connect, const gchar *prev_database );
-static gboolean local_get_db_exists( ofaMySQLConnect *connect, const gchar *dbname );
+static gchar   *find_new_database( ofaMysqlConnect *connect, const gchar *prev_database );
+static gboolean local_get_db_exists( ofaMysqlConnect *connect, const gchar *dbname );
 static gboolean idbconnect_transaction_start( const ofaIDBConnect *instance );
 static gboolean idbconnect_transaction_commit( const ofaIDBConnect *instance );
 static gboolean idbconnect_transaction_cancel( const ofaIDBConnect *instance );
 static gboolean transaction_execute( const ofaIDBConnect *instance, const gchar *thisfn, const gchar *cmd );
 
-G_DEFINE_TYPE_EXTENDED( ofaMySQLConnect, ofa_mysql_connect, G_TYPE_OBJECT, 0,
-		G_ADD_PRIVATE( ofaMySQLConnect )
+G_DEFINE_TYPE_EXTENDED( ofaMysqlConnect, ofa_mysql_connect, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaMysqlConnect )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBCONNECT, idbconnect_iface_init ))
 
 static void
 mysql_connect_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_finalize";
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ));
 
@@ -106,16 +106,17 @@ mysql_connect_finalize( GObject *instance )
 static void
 mysql_connect_dispose( GObject *instance )
 {
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 
 	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
 
 	if( !priv->dispose_has_run ){
 
+		ofa_mysql_connect_close( OFA_MYSQL_CONNECT( instance ));
+
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		mysql_close( priv->mysql );
 	}
 
 	/* chain up to the parent class */
@@ -123,10 +124,10 @@ mysql_connect_dispose( GObject *instance )
 }
 
 static void
-ofa_mysql_connect_init( ofaMySQLConnect *self )
+ofa_mysql_connect_init( ofaMysqlConnect *self )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_init";
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
@@ -137,7 +138,7 @@ ofa_mysql_connect_init( ofaMySQLConnect *self )
 }
 
 static void
-ofa_mysql_connect_class_init( ofaMySQLConnectClass *klass )
+ofa_mysql_connect_class_init( ofaMysqlConnectClass *klass )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_class_init";
 
@@ -182,12 +183,12 @@ idbconnect_get_interface_version( void )
 /**
  * ofa_mysql_connect_new:
  *
- * Returns: a newly allocated #ofaMySQLConnect object.
+ * Returns: a newly allocated #ofaMysqlConnect object.
  */
-ofaMySQLConnect *
+ofaMysqlConnect *
 ofa_mysql_connect_new( void )
 {
-	ofaMySQLConnect *connect;
+	ofaMysqlConnect *connect;
 
 	connect = g_object_new( OFA_TYPE_MYSQL_CONNECT, NULL );
 
@@ -201,7 +202,7 @@ ofa_mysql_connect_new( void )
 static gboolean
 idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBEditor *editor, gboolean server_only )
 {
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 	gboolean ok;
 	const gchar *host, *socket, *database;
 	guint port;
@@ -231,7 +232,7 @@ idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, cons
 static gboolean
 idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period )
 {
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 	gboolean ok;
 	const gchar *host, *socket, *database;
 	guint port;
@@ -255,8 +256,43 @@ idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const 
 }
 
 /**
+ * ofa_mysql_connect_open_with_details:
+ * @connect: this #ofaMysqlConnect instance.
+ * @host: [allow-none]: the hostname of the DBMS instance.
+ * @socket: [allow-none]: the path to the socket of the DBMS instance.
+ * @port: if greater than zero, the port number of the DBMS instance.
+ * @database: [allow-none]: the name of the database.
+ *  If %NULL, the connection is opened at server-level.
+ * @account: the user account.
+ * @password: the user password.
+ *
+ * Tries to establish the connection to the provided datas.
+ *
+ * Returns: %TRUE if the connection has been successfully established,
+ * %FALSE else.
+ */
+gboolean
+ofa_mysql_connect_open_with_details( ofaMysqlConnect *connect,
+				const gchar *host, const gchar *socket, guint port, const gchar *database,
+				const gchar *account, const gchar *password )
+{
+	ofaMysqlConnectPrivate *priv;
+	gboolean ok;
+
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
+
+	priv = ofa_mysql_connect_get_instance_private( connect );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	ok = connect_open( connect, account, password, host, socket, port, database, NULL );
+
+	return( ok );
+}
+
+/**
  * ofa_mysql_connect_open_with_meta:
- * @connect: this #ofaMySQLConnect instance.
+ * @connect: this #ofaMysqlConnect instance.
  * @account: the user account.
  * @password: the user password.
  * @dossier_meta: the #ofaMysqlDossierMeta object which holds the dossier meta datas.
@@ -270,11 +306,11 @@ idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const 
  * %FALSE else.
  */
 gboolean
-ofa_mysql_connect_open_with_meta( ofaMySQLConnect *connect,
+ofa_mysql_connect_open_with_meta( ofaMysqlConnect *connect,
 									const gchar *account, const gchar *password,
 									const ofaMysqlDossierMeta *dossier_meta, const ofaMysqlExerciceMeta *period )
 {
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
 	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_DOSSIER_META( dossier_meta ), FALSE );
@@ -291,7 +327,7 @@ ofa_mysql_connect_open_with_meta( ofaMySQLConnect *connect,
 
 /*
  * ofa_mysql_connect_open:
- * @connect: this #ofaMySQLConnect object.
+ * @connect: this #ofaMysqlConnect object.
  * @account: the user account.
  * @password: [allow-none]: the user password.
  * @host: [allow-none]: the DBMS host.
@@ -306,12 +342,12 @@ ofa_mysql_connect_open_with_meta( ofaMySQLConnect *connect,
  * Returns: %TRUE if the connection has been successfully opened.
  */
 static gboolean
-connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *password,
+connect_open( ofaMysqlConnect *connect, const gchar *account, const gchar *password,
 							const gchar *host, const gchar *socket, guint port, const gchar *database,
 							gchar **msg )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_open";
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 	MYSQL *mysql;
 	gboolean ok;
 
@@ -325,9 +361,7 @@ connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *passw
 		if( msg ){
 			*msg = g_strdup_printf( _( "%s: connect=%p is already opened" ), thisfn, ( void * ) connect );
 		}
-		/* though the connection is supposed actually opened,
-		 *  we signal the error */
-		return( FALSE );
+		return( TRUE );
 	}
 
 	ok = FALSE;
@@ -362,6 +396,54 @@ connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *passw
 	return( ok );
 }
 
+/**
+ * ofa_mysql_connect_is_opened:
+ * @connect: this #ofaMysqlConnect instance.
+ *
+ * Returns: %TRUE if the connection is opened (and is so expected to be OK).
+ */
+gboolean
+ofa_mysql_connect_is_opened( ofaMysqlConnect *connect )
+{
+	ofaMysqlConnectPrivate *priv;
+	gboolean opened;
+
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
+
+	priv = ofa_mysql_connect_get_instance_private( connect );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	opened = ( priv->mysql != NULL );
+	//g_debug( "ofa_mysql_connect_is_opened: opened=%s", opened ? "True":"False" );
+
+	return( opened );
+}
+
+/**
+ * ofa_mysql_connect_close:
+ * @connect: this #ofaMysqlConnect instance.
+ *
+ * Closes the connection.
+ */
+void
+ofa_mysql_connect_close( ofaMysqlConnect *connect )
+{
+	ofaMysqlConnectPrivate *priv;
+
+	g_return_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ));
+
+	priv = ofa_mysql_connect_get_instance_private( connect );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( priv->mysql ){
+		mysql_close( priv->mysql );
+		g_free( priv->mysql );
+		priv->mysql = NULL;
+	}
+}
+
 /*
  * a create/insert/update/delete/drop query
  * does not return any other result than an execution status
@@ -369,7 +451,7 @@ connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *passw
 static gboolean
 idbconnect_query( const ofaIDBConnect *instance, const gchar *query )
 {
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 	gboolean ok;
 
 	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
@@ -388,9 +470,9 @@ idbconnect_query( const ofaIDBConnect *instance, const gchar *query )
  * else.
  */
 gboolean
-ofa_mysql_connect_query( ofaMySQLConnect *connect, const gchar *query )
+ofa_mysql_connect_query( ofaMysqlConnect *connect, const gchar *query )
 {
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
 
@@ -407,7 +489,7 @@ ofa_mysql_connect_query( ofaMySQLConnect *connect, const gchar *query )
 static gboolean
 idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList **result )
 {
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 	gboolean ok;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
@@ -441,7 +523,7 @@ idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList *
 static gchar *
 idbconnect_get_last_error( const ofaIDBConnect *instance )
 {
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 	gchar *msg;
 
 	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
@@ -479,7 +561,7 @@ static gboolean
 idbconnect_create_dossier( const ofaIDBConnect *instance, const ofaIDBDossierMeta *meta )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_create_dossier";
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 	GString *query;
 	ofaIDBExerciceMeta *period;
 	const gchar *database;
@@ -534,7 +616,7 @@ static gboolean
 idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_grant_user";
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 	GString *query;
 	ofaIDBDossierMeta *meta;
 	gchar *hostname, *msg;
@@ -616,8 +698,35 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *
 }
 
 /**
+ * ofa_mysql_connect_does_database_exist:
+ * @connect: this #ofaMysqlConnect *instance.
+ *  The @connect is expected to come from a server-level root connection.
+ * @database: the database name.
+ *
+ * Returns: %TRUE if the @database already exists.
+ */
+gboolean
+ofa_mysql_connect_does_database_exist( ofaMysqlConnect *connect, const gchar *database )
+{
+	ofaMysqlConnectPrivate *priv;
+	gboolean exists;
+
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
+	g_return_val_if_fail( my_strlen( database ), FALSE );
+
+	priv = ofa_mysql_connect_get_instance_private( connect );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	exists = local_get_db_exists( connect, database );
+	//g_debug( "ofa_mysql_connect_does_database_exist: database=%s, exists=%s", database, exists ? "True":"False" );
+
+	return( exists );
+}
+
+/**
  * ofa_mysql_connect_get_new_database:
- * @connect: this #ofaMySQLConnect *instance.
+ * @connect: this #ofaMysqlConnect *instance.
  *  The @connect is expected to come from a server-level root connection,
  *  so does not have any meta nor period data members set. Only the
  *  MySQL connection itself is active.
@@ -628,9 +737,9 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *
  * a newly allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_mysql_connect_get_new_database( ofaMySQLConnect *connect, const gchar *prev_database )
+ofa_mysql_connect_get_new_database( ofaMysqlConnect *connect, const gchar *prev_database )
 {
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), NULL );
 	g_return_val_if_fail( my_strlen( prev_database ), NULL );
@@ -648,7 +757,7 @@ ofa_mysql_connect_get_new_database( ofaMySQLConnect *connect, const gchar *prev_
  * increment the existing sufix.
  */
 static gchar *
-find_new_database( ofaMySQLConnect *connect, const gchar *prev_database )
+find_new_database( ofaMysqlConnect *connect, const gchar *prev_database )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_find_new_database";
 	gchar *candidate, *prefix, *newdb, *p;
@@ -690,9 +799,9 @@ find_new_database( ofaMySQLConnect *connect, const gchar *prev_database )
 }
 
 static gboolean
-local_get_db_exists( ofaMySQLConnect *connect, const gchar *dbname )
+local_get_db_exists( ofaMysqlConnect *connect, const gchar *dbname )
 {
-	ofaMySQLConnectPrivate *priv;
+	ofaMysqlConnectPrivate *priv;
 	gboolean exists;
 	MYSQL_RES *result;
 

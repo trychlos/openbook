@@ -58,8 +58,18 @@ typedef struct {
 	/* UI
 	 */
 	GtkSizeGroup       *group0;
+	GtkWidget          *revealer;
 }
 	ofaMysqlDossierBinPrivate;
+
+/* signals defined here
+ */
+enum {
+	CHANGED = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-dossier-bin.ui";
 
@@ -68,6 +78,7 @@ static void setup_dossier_meta( ofaMysqlDossierBin *self );
 static void on_host_changed( GtkEntry *entry, ofaMysqlDossierBin *self );
 static void on_port_changed( GtkEntry *entry, ofaMysqlDossierBin *self );
 static void on_socket_changed( GtkEntry *entry, ofaMysqlDossierBin *self );
+static void changed_composite( ofaMysqlDossierBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierBin, ofa_mysql_dossier_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlDossierBin ))
@@ -139,6 +150,31 @@ ofa_mysql_dossier_bin_class_init( ofaMysqlDossierBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_dossier_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_dossier_bin_finalize;
+
+	/**
+	 * ofaMysqlDossierBin::ofa-changed:
+	 *
+	 * This signal is sent on the #ofaMysqlDossierBin when any of the
+	 * underlying information is changed. This includes the host, socket
+	 * and port values.
+	 *
+	 * There is no argument.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaMysqlDossierBin *bin,
+	 * 						gpointer          user_data );
+	 */
+	st_signals[ CHANGED ] = g_signal_new_class_handler(
+				"ofa-changed",
+				OFA_TYPE_MYSQL_DOSSIER_BIN,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
 }
 
 /**
@@ -196,24 +232,27 @@ setup_bin( ofaMysqlDossierBin *self )
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mdb-host-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_host_changed ), self );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_host_changed ), self );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mdb-host-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mdb-port-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_port_changed ), self );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_port_changed ), self );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mdb-port-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mdb-socket-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_socket_changed ), self );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_socket_changed ), self );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mdb-socket-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	priv->revealer = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mdb-revealer" );
+	g_return_if_fail( priv->revealer && GTK_IS_REVEALER( priv->revealer ));
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -253,25 +292,25 @@ ofa_mysql_dossier_bin_get_size_group( ofaMysqlDossierBin *bin, guint column )
 }
 
 static void
-on_host_changed( GtkEntry *entry, ofaMysqlDossierBin *bin )
+on_host_changed( GtkEntry *entry, ofaMysqlDossierBin *self )
 {
 	ofaMysqlDossierBinPrivate *priv;
 
-	priv = ofa_mysql_dossier_bin_get_instance_private( bin );
+	priv = ofa_mysql_dossier_bin_get_instance_private( self );
 
 	g_free( priv->host );
 	priv->host = g_strdup( gtk_entry_get_text( entry ));
 
-	g_signal_emit_by_name( bin, "ofa-changed" );
+	changed_composite( self );
 }
 
 static void
-on_port_changed( GtkEntry *entry, ofaMysqlDossierBin *bin )
+on_port_changed( GtkEntry *entry, ofaMysqlDossierBin *self )
 {
 	ofaMysqlDossierBinPrivate *priv;
 	const gchar *port;
 
-	priv = ofa_mysql_dossier_bin_get_instance_private( bin );
+	priv = ofa_mysql_dossier_bin_get_instance_private( self );
 
 	port = gtk_entry_get_text( entry );
 	if( my_strlen( port )){
@@ -280,20 +319,26 @@ on_port_changed( GtkEntry *entry, ofaMysqlDossierBin *bin )
 		priv->port = 0;
 	}
 
-	g_signal_emit_by_name( bin, "ofa-changed" );
+	changed_composite( self );
 }
 
 static void
-on_socket_changed( GtkEntry *entry, ofaMysqlDossierBin *bin )
+on_socket_changed( GtkEntry *entry, ofaMysqlDossierBin *self )
 {
 	ofaMysqlDossierBinPrivate *priv;
 
-	priv = ofa_mysql_dossier_bin_get_instance_private( bin );
+	priv = ofa_mysql_dossier_bin_get_instance_private( self );
 
 	g_free( priv->socket );
 	priv->socket = g_strdup( gtk_entry_get_text( entry ));
 
-	g_signal_emit_by_name( bin, "ofa-changed" );
+	changed_composite( self );
+}
+
+static void
+changed_composite( ofaMysqlDossierBin *self )
+{
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 /**
@@ -303,7 +348,7 @@ on_socket_changed( GtkEntry *entry, ofaMysqlDossierBin *bin )
  *
  * Returns: %TRUE if the dialog is valid.
  *
- * All the informations are optional.
+ * All the informations are optional: the widget is always valid.
  */
 gboolean
 ofa_mysql_dossier_bin_is_valid( ofaMysqlDossierBin *bin, gchar **message )
@@ -319,6 +364,7 @@ ofa_mysql_dossier_bin_is_valid( ofaMysqlDossierBin *bin, gchar **message )
 	if( message ){
 		*message = NULL;
 	}
+
 	return( TRUE );
 }
 

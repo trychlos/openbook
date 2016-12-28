@@ -43,6 +43,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
 
@@ -79,12 +80,9 @@ gboolean           ofa_dossier_meta_bin_is_valid        ( ofaDossierMetaBin *bin
 
 gboolean           ofa_dossier_meta_bin_apply           ( ofaDossierMetaBin *bin );
 
-#if 0
-ofaDossierMeta    *ofa_dossier_meta_bin_get_dossier_meta( ofaDossierMetaBin *bin );
+const gchar       *ofa_dossier_meta_bin_get_dossier_name( ofaDossierMetaBin *bin );
 
-void               ofa_dossier_meta_bin_set_dossier_meta( ofaDossierMetaBin *bin,
-																ofaDossierMeta *dossier_meta );
-#endif
+ofaIDBProvider    *ofa_dossier_meta_bin_get_provider    ( ofaDossierMetaBin *bin );
 
 G_END_DECLS
 

@@ -41,12 +41,11 @@
  */
 typedef struct {
 	ofaIDBProvider *provider;
-	ofaHub         *hub;
 }
 	sEditor;
 
-#define IDBDOSSIER_EDITOR_DATA             "idbdossier-editor-data"
 #define IDBDOSSIER_EDITOR_LAST_VERSION      1
+#define IDBDOSSIER_EDITOR_DATA             "idbdossier-editor-data"
 
 /* signals defined here
  */
@@ -61,8 +60,8 @@ static guint st_initializations         =   0;	/* interface initialization count
 static GType    register_type( void );
 static void     interface_base_init( ofaIDBDossierEditorInterface *klass );
 static void     interface_base_finalize( ofaIDBDossierEditorInterface *klass );
-static sEditor *get_editor_data( const ofaIDBDossierEditor *editor );
-static void     on_editor_finalized( sEditor *data, GObject *finalized_editor );
+static sEditor *get_instance_data( const ofaIDBDossierEditor *self );
+static void     on_instance_finalized( sEditor *sdata, GObject *finalized_editor );
 
 /**
  * ofa_idbdossier_editor_get_type:
@@ -223,13 +222,13 @@ ofa_idbdossier_editor_get_interface_version( GType type )
 ofaIDBProvider *
 ofa_idbdossier_editor_get_provider( ofaIDBDossierEditor *instance )
 {
-	sEditor *data;
+	sEditor *sdata;
 
 	g_return_val_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ), NULL );
 
-	data = get_editor_data( instance );
+	sdata = get_instance_data( instance );
 
-	return( data->provider );
+	return( sdata->provider );
 }
 
 /**
@@ -242,56 +241,14 @@ ofa_idbdossier_editor_get_provider( ofaIDBDossierEditor *instance )
 void
 ofa_idbdossier_editor_set_provider( ofaIDBDossierEditor *instance, ofaIDBProvider *provider )
 {
-	sEditor *data;
+	sEditor *sdata;
 
 	g_return_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ));
 	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
 
-	data = get_editor_data( instance );
+	sdata = get_instance_data( instance );
 
-	data->provider = provider;
-}
-
-/**
- * ofa_idbdossier_editor_get_hub:
- * @instance: this #ofaIDBDossierEditor instance.
- *
- * Returns: the #ofaHub object of the application which was attached at
- * instanciation time.
- *
- * The returned reference is owned by the @instance, and should not be
- * released by the caller.
- */
-ofaHub *
-ofa_idbdossier_editor_get_hub( ofaIDBDossierEditor *instance )
-{
-	sEditor *data;
-
-	g_return_val_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ), NULL );
-
-	data = get_editor_data( instance );
-
-	return( data->hub );
-}
-
-/**
- * ofa_idbdossier_editor_set_hub:
- * @instance: this #ofaIDBDossierEditor instance.
- * @hub: the #ofaHub object of the application.
- *
- * Attach the @hub to the @instance.
- */
-void
-ofa_idbdossier_editor_set_hub( ofaIDBDossierEditor *instance, ofaHub *hub )
-{
-	sEditor *data;
-
-	g_return_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	data = get_editor_data( instance );
-
-	data->hub = hub;
+	sdata->provider = provider;
 }
 
 #if 0
@@ -365,8 +322,6 @@ ofa_idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **mes
 {
 	static const gchar *thisfn = "ofa_idbdossier_editor_is_valid";
 
-	g_debug( "%s: instance=%p, message=%p", thisfn, ( void * ) instance, ( void * ) message );
-
 	g_return_val_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ), FALSE );
 
 	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( instance )->is_valid ){
@@ -403,27 +358,27 @@ ofa_idbdossier_editor_apply( const ofaIDBDossierEditor *instance )
 }
 
 static sEditor *
-get_editor_data( const ofaIDBDossierEditor *editor )
+get_instance_data( const ofaIDBDossierEditor *self )
 {
-	sEditor *data;
+	sEditor *sdata;
 
-	data = ( sEditor * ) g_object_get_data( G_OBJECT( editor ), IDBDOSSIER_EDITOR_DATA );
+	sdata = ( sEditor * ) g_object_get_data( G_OBJECT( self ), IDBDOSSIER_EDITOR_DATA );
 
-	if( !data ){
-		data = g_new0( sEditor, 1 );
-		g_object_set_data( G_OBJECT( editor ), IDBDOSSIER_EDITOR_DATA, data );
-		g_object_weak_ref( G_OBJECT( editor ), ( GWeakNotify ) on_editor_finalized, data );
+	if( !sdata ){
+		sdata = g_new0( sEditor, 1 );
+		g_object_set_data( G_OBJECT( self ), IDBDOSSIER_EDITOR_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( self ), ( GWeakNotify ) on_instance_finalized, sdata );
 	}
 
-	return( data );
+	return( sdata );
 }
 
 static void
-on_editor_finalized( sEditor *data, GObject *finalized_editor )
+on_instance_finalized( sEditor *sdata, GObject *finalized_instance )
 {
-	static const gchar *thisfn = "ofa_idbdossier_editor_on_editor_finalized";
+	static const gchar *thisfn = "ofa_idbdossier_editor_on_instance_finalized";
 
-	g_debug( "%s: data=%p, finalized_editor=%p", thisfn, ( void * ) data, ( void * ) finalized_editor );
+	g_debug( "%s: sdata=%p, finalized_instance=%p", thisfn, ( void * ) sdata, ( void * ) finalized_instance );
 
-	g_free( data );
+	g_free( sdata );
 }

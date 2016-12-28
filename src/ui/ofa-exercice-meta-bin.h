@@ -78,12 +78,11 @@ gboolean            ofa_exercice_meta_bin_is_valid         ( ofaExerciceMetaBin 
 
 gboolean            ofa_exercice_meta_bin_apply            ( ofaExerciceMetaBin *bin );
 
-#if 0
-ofaExerciceMeta    *ofa_exercice_meta_bin_get_exercice_meta( ofaExerciceMetaBin *bin );
+const GDate        *ofa_exercice_meta_bin_get_begin_date   ( ofaExerciceMetaBin *bin );
 
-void                ofa_exercice_meta_bin_set_exercice_meta( ofaExerciceMetaBin *bin,
-																	ofaExerciceMeta *exercice_meta );
-#endif
+const GDate        *ofa_exercice_meta_bin_get_end_date     ( ofaExerciceMetaBin *bin );
+
+gboolean            ofa_exercice_meta_bin_get_is_current   ( ofaExerciceMetaBin *bin );
 
 G_END_DECLS
 

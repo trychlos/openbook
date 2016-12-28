@@ -30,8 +30,6 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-dossier-meta.h"
-#include "api/ofa-exercice-meta.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbexercice-editor.h"
@@ -40,6 +38,7 @@
 
 #include "core/ofa-admin-credentials-bin.h"
 
+#include "ui/ofa-dossier-actions-bin.h"
 #include "ui/ofa-dossier-edit-bin.h"
 #include "ui/ofa-dossier-meta-bin.h"
 #include "ui/ofa-exercice-meta-bin.h"
@@ -57,6 +56,8 @@ typedef struct {
 
 	/* UI
 	 */
+	GtkSizeGroup           *group0;
+	GtkSizeGroup           *group1;
 	ofaDossierMetaBin      *dossier_meta_bin;
 	GtkWidget              *dossier_editor_parent;
 	ofaIDBDossierEditor    *dossier_editor_bin;
@@ -64,13 +65,12 @@ typedef struct {
 	GtkWidget              *exercice_editor_parent;
 	ofaIDBExerciceEditor   *exercice_editor_bin;
 	ofaAdminCredentialsBin *admin_bin;
+	ofaDossierActionsBin   *actions_bin;
 	GtkWidget              *msg_label;
 
 	/* runtime
 	 */
 	ofaIDBProvider         *provider;
-	ofaDossierMeta         *dossier_meta;
-	ofaExerciceMeta        *exercice_meta;
 }
 	ofaDossierEditBinPrivate;
 
@@ -87,9 +87,11 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier
 
 static void setup_bin( ofaDossierEditBin *self );
 static void on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self );
+static void on_dossier_editor_changed( ofaIDBDossierEditor *editor, ofaDossierEditBin *self );
 static void on_exercice_meta_changed( ofaExerciceMetaBin *bin, ofaDossierEditBin *self );
+static void on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaDossierEditBin *self );
 static void on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierEditBin *self );
-//static void on_actions_bin_changed( ofaDossierActionsBin *bin, ofaDossierEditBin *self );
+static void on_actions_bin_changed( ofaDossierActionsBin *bin, ofaDossierEditBin *self );
 static void changed_composite( ofaDossierEditBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierEditBin, ofa_dossier_edit_bin, GTK_TYPE_BIN, 0,
@@ -129,6 +131,8 @@ dossier_edit_bin_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->group0 );
+		g_clear_object( &priv->group1 );
 	}
 
 	/* chain up to the parent class */
@@ -150,6 +154,9 @@ ofa_dossier_edit_bin_init( ofaDossierEditBin *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
+	priv->provider = NULL;
+	priv->group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	priv->group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 }
 
 static void
@@ -201,7 +208,7 @@ ofaDossierEditBin *
 ofa_dossier_edit_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule )
 {
 	static const gchar *thisfn = "ofa_dossier_edit_bin_new";
-	ofaDossierEditBin *self;
+	ofaDossierEditBin *bin;
 	ofaDossierEditBinPrivate *priv;
 
 	g_debug( "%s: hub=%p, settings_prefix=%s, guint=%u",
@@ -210,9 +217,9 @@ ofa_dossier_edit_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( my_strlen( settings_prefix ), NULL );
 
-	self = g_object_new( OFA_TYPE_DOSSIER_EDIT_BIN, NULL );
+	bin = g_object_new( OFA_TYPE_DOSSIER_EDIT_BIN, NULL );
 
-	priv = ofa_dossier_edit_bin_get_instance_private( self );
+	priv = ofa_dossier_edit_bin_get_instance_private( bin );
 
 	priv->hub = hub;
 	priv->rule = rule;
@@ -220,9 +227,10 @@ ofa_dossier_edit_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule 
 	g_free( priv->settings_prefix );
 	priv->settings_prefix = g_strdup( settings_prefix );
 
-	setup_bin( self );
+	setup_bin( bin );
+	on_dossier_meta_changed( priv->dossier_meta_bin, bin );
 
-	return( self );
+	return( bin );
 }
 
 static void
@@ -231,12 +239,10 @@ setup_bin( ofaDossierEditBin *self )
 	ofaDossierEditBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
-	GtkSizeGroup *colgroup;
 	GtkWidget *toplevel, *parent;
 
 	priv = ofa_dossier_edit_bin_get_instance_private( self );
 
-	colgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "deb-window" );
@@ -251,7 +257,7 @@ setup_bin( ofaDossierEditBin *self )
 	priv->dossier_meta_bin = ofa_dossier_meta_bin_new( priv->hub, priv->settings_prefix, priv->rule );
 	g_signal_connect( priv->dossier_meta_bin, "ofa-changed", G_CALLBACK( on_dossier_meta_changed ), self );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_meta_bin ));
-	my_utils_size_group_add_size_group( colgroup, ofa_dossier_meta_bin_get_size_group( priv->dossier_meta_bin, 0 ));
+	my_utils_size_group_add_size_group( priv->group0, ofa_dossier_meta_bin_get_size_group( priv->dossier_meta_bin, 0 ));
 
 	/* dossier dbeditor */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "deb-dossier-editor-parent" );
@@ -264,7 +270,7 @@ setup_bin( ofaDossierEditBin *self )
 	priv->exercice_meta_bin = ofa_exercice_meta_bin_new( priv->hub, priv->settings_prefix, priv->rule );
 	g_signal_connect( priv->exercice_meta_bin, "ofa-changed", G_CALLBACK( on_exercice_meta_changed ), self );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_meta_bin ));
-	my_utils_size_group_add_size_group( colgroup, ofa_exercice_meta_bin_get_size_group( priv->exercice_meta_bin, 0 ));
+	my_utils_size_group_add_size_group( priv->group0, ofa_exercice_meta_bin_get_size_group( priv->exercice_meta_bin, 0 ));
 
 	/* exercice dbeditor */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "deb-exercice-editor-parent" );
@@ -277,68 +283,73 @@ setup_bin( ofaDossierEditBin *self )
 	priv->admin_bin = ofa_admin_credentials_bin_new();
 	g_signal_connect( priv->admin_bin, "ofa-changed", G_CALLBACK( on_admin_credentials_changed ), self );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_bin ));
-	my_utils_size_group_add_size_group( colgroup, ofa_admin_credentials_bin_get_size_group( priv->admin_bin, 0 ));
+	my_utils_size_group_add_size_group( priv->group0, ofa_admin_credentials_bin_get_size_group( priv->admin_bin, 0 ));
 
-#if 0
-	/* actions on open */
+	/* actions on creation */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "deb-actions-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->actions_bin = ofa_dossier_actions_bin_new();
+	priv->actions_bin = ofa_dossier_actions_bin_new( priv->hub, priv->settings_prefix, priv->rule );
 	g_signal_connect( priv->actions_bin, "ofa-changed", G_CALLBACK( on_actions_bin_changed ), self );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->actions_bin ));
-#endif
+	//my_utils_size_group_add_size_group( priv->group1, ofa_dossier_actions_bin_get_size_group( priv->actions_bin, 0 ));
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
-	g_object_unref( colgroup );
 }
 
 static void
 on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self )
 {
-#if 0
 	ofaDossierEditBinPrivate *priv;
-	GtkSizeGroup *colgroup;
+	ofaIDBProvider *provider;
 
 	priv = ofa_dossier_edit_bin_get_instance_private( self );
 
-	priv->dossier_meta = dossier_meta;
+	provider = ofa_dossier_meta_bin_get_provider( priv->dossier_meta_bin );
+
 	if( provider != priv->provider ){
 		priv->provider = provider;
-		colgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+
 		/* dossier editor */
 		if( priv->dossier_editor_bin ){
 			gtk_container_remove( GTK_CONTAINER( priv->dossier_editor_parent ), GTK_WIDGET( priv->dossier_editor_bin ));
 		}
-		priv->dossier_editor_bin = ofa_idbprovider_new_dossier_editor( provider, priv->editable );
+		priv->dossier_editor_bin = ofa_idbprovider_new_dossier_editor( provider, priv->rule );
 		gtk_container_add( GTK_CONTAINER( priv->dossier_editor_parent ), GTK_WIDGET( priv->dossier_editor_bin ));
-		my_utils_size_group_add_size_group( colgroup, ofa_idbdossier_editor_get_size_group( priv->dossier_editor_bin, 0 ));
+		g_signal_connect( priv->dossier_editor_bin, "ofa-changed", G_CALLBACK( on_dossier_editor_changed ), self );
+		my_utils_size_group_add_size_group( priv->group1, ofa_idbdossier_editor_get_size_group( priv->dossier_editor_bin, 0 ));
+
 		/* exercice editor */
 		if( priv->exercice_editor_bin ){
 			gtk_container_remove( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
 		}
-		priv->exercice_editor_bin = ofa_idbprovider_new_exercice_editor( provider, priv->editable );
+		priv->exercice_editor_bin = ofa_idbprovider_new_exercice_editor( provider, priv->rule, priv->dossier_editor_bin );
 		gtk_container_add( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
-		my_utils_size_group_add_size_group( colgroup, ofa_idbexercice_editor_get_size_group( priv->exercice_editor_bin, 0 ));
+		g_signal_connect( priv->exercice_editor_bin, "ofa-changed", G_CALLBACK( on_exercice_editor_changed ), self );
+		my_utils_size_group_add_size_group( priv->group1, ofa_idbexercice_editor_get_size_group( priv->exercice_editor_bin, 0 ));
+
 		gtk_widget_show_all( GTK_WIDGET( self ));
 	}
 
 	changed_composite( self );
-#endif
+}
+
+static void
+on_dossier_editor_changed( ofaIDBDossierEditor *editor, ofaDossierEditBin *self )
+{
+	changed_composite( self );
 }
 
 static void
 on_exercice_meta_changed( ofaExerciceMetaBin *bin, ofaDossierEditBin *self )
 {
-#if 0
-	ofaDossierEditBinPrivate *priv;
-
-	priv = ofa_dossier_edit_bin_get_instance_private( self );
-
-	priv->exercice_meta = exercice_meta;
-
 	changed_composite( self );
-#endif
+}
+
+static void
+on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaDossierEditBin *self )
+{
+	changed_composite( self );
 }
 
 static void
@@ -347,13 +358,11 @@ on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account,
 	changed_composite( self );
 }
 
-#if 0
 static void
 on_actions_bin_changed( ofaDossierActionsBin *bin, ofaDossierEditBin *self )
 {
 	changed_composite( self );
 }
-#endif
 
 static void
 changed_composite( ofaDossierEditBin *self )
@@ -383,27 +392,21 @@ ofa_dossier_edit_bin_is_valid( ofaDossierEditBin *bin, gchar **message )
 	if( ok ){
 		ok = ofa_dossier_meta_bin_is_valid( priv->dossier_meta_bin, message );
 	}
-	/*
 	if( ok ){
 		ok = priv->dossier_editor_bin ? ofa_idbdossier_editor_is_valid( priv->dossier_editor_bin, message ) : TRUE;
 	}
-	*/
 	if( ok ){
 		ok = ofa_exercice_meta_bin_is_valid( priv->exercice_meta_bin, message );
 	}
-	/*
 	if( ok ){
 		ok = priv->exercice_editor_bin ? ofa_idbexercice_editor_is_valid( priv->exercice_editor_bin, message ) : TRUE;
 	}
-	*/
 	if( ok ){
 		ok = ofa_admin_credentials_bin_is_valid( priv->admin_bin, message );
 	}
-#if 0
 	if( ok ){
 		ok = ofa_dossier_actions_bin_is_valid( priv->actions_bin, message );
 	}
-#endif
 
 	return( ok );
 }
@@ -430,24 +433,18 @@ ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 	if( ok ){
 		ok = ofa_dossier_meta_bin_apply( priv->dossier_meta_bin );
 	}
-	/*
 	if( ok ){
 		ok = priv->dossier_editor_bin ? ofa_idbdossier_editor_apply( priv->dossier_editor_bin ) : TRUE;
 	}
-	*/
 	if( ok ){
 		ok = ofa_exercice_meta_bin_apply( priv->exercice_meta_bin );
 	}
-	/*
 	if( ok ){
 		ok = priv->exercice_editor_bin ? ofa_idbexercice_editor_apply( priv->exercice_editor_bin ) : TRUE;
 	}
-	*/
-#if 0
 	if( ok ){
 		ok = ofa_dossier_actions_bin_apply( priv->actions_bin );
 	}
-#endif
 
 	return( ok );
 }

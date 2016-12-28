@@ -54,7 +54,6 @@ static GType           register_type( void );
 static void            interface_base_init( ofaIDBProviderInterface *klass );
 static void            interface_base_finalize( ofaIDBProviderInterface *klass );
 static ofaIDBProvider *provider_get_by_name( GList *modules, const gchar *name );
-static void            provider_set_hub( ofaIDBProvider *self, ofaHub *hub );
 static sIDBProvider   *get_instance_data( const ofaIDBProvider *self );
 static void            on_instance_finalized( sIDBProvider *sdata, GObject *finalized_provider );
 
@@ -175,7 +174,7 @@ ofa_idbprovider_get_by_name( ofaHub *hub, const gchar *provider_name )
 
 	if( module ){
 		g_return_val_if_fail( OFA_IS_IDBPROVIDER( module ), NULL );
-		provider_set_hub( OFA_IDBPROVIDER( module ), hub );
+		ofa_idbprovider_set_hub( OFA_IDBPROVIDER( module ), hub );
 	}
 
 	return( module );
@@ -198,16 +197,6 @@ provider_get_by_name( GList *modules, const gchar *name )
 	}
 
 	return( NULL );
-}
-
-static void
-provider_set_hub( ofaIDBProvider *self, ofaHub *hub )
-{
-	sIDBProvider *sdata;
-
-	sdata = get_instance_data( self );
-
-	sdata->hub = hub;
 }
 
 /**
@@ -248,6 +237,42 @@ ofa_idbprovider_get_interface_version( GType type )
 	return( version );
 }
 
+/*
+ * ofa_idbprovider_get_canon_name:
+ * @provider: this #ofaIDBProvider provider.
+ *
+ * Returns: the canonical name of the @provider, as a newly
+ * allocated string which should be g_free() by the caller, or %NULL.
+ *
+ * This method relies on the #myIIdent identification interface,
+ * which is expected to be implemented by the @provider class.
+ */
+gchar *
+ofa_idbprovider_get_canon_name( const ofaIDBProvider *provider )
+{
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
+
+	return( MY_IS_IIDENT( provider ) ? my_iident_get_canon_name( MY_IIDENT( provider ), NULL ) : NULL );
+}
+
+/*
+ * ofa_idbprovider_get_display_name:
+ * @provider: this #ofaIDBProvider provider.
+ *
+ * Returns: the displayable name of the @provider, as a newly
+ * allocated string which should be g_free() by the caller, or %NULL.
+ *
+ * This method relies on the #myIIdent identification interface,
+ * which is expected to be implemented by the @provider class.
+ */
+gchar *
+ofa_idbprovider_get_display_name( const ofaIDBProvider *provider )
+{
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
+
+	return( MY_IS_IIDENT( provider ) ? my_iident_get_display_name( MY_IIDENT( provider ), NULL ) : NULL );
+}
+
 /**
  * ofa_idbprovider_get_hub:
  * @provider: this #ofaIDBProvider provider.
@@ -264,6 +289,26 @@ ofa_idbprovider_get_hub( ofaIDBProvider *provider )
 	sdata = get_instance_data( provider );
 
 	return( sdata->hub );
+}
+
+/**
+ * ofa_idbprovider_set_hub:
+ * @provider: this #ofaIDBProvider provider.
+ * @hub: the #ofaHub object of the application.
+ *
+ * Attach the @hub to the @provider.
+ */
+void
+ofa_idbprovider_set_hub( ofaIDBProvider *provider, ofaHub *hub )
+{
+	sIDBProvider *sdata;
+
+	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	sdata = get_instance_data( provider );
+
+	sdata->hub = hub;
 }
 
 /**
@@ -399,40 +444,42 @@ ofa_idbprovider_new_dossier_editor( ofaIDBProvider *provider, guint rule )
 	return( NULL );
 }
 
-/*
- * ofa_idbprovider_get_canon_name:
+/**
+ * ofa_idbprovider_new_exercice_editor:
  * @provider: this #ofaIDBProvider provider.
+ * @rule: the usage of the editor.
+ * @dossier_editor: the corresponding #ofaIDBDossierEditor.
  *
- * Returns: the canonical name of the @provider, as a newly
- * allocated string which should be g_free() by the caller, or %NULL.
+ * Returns: a composite GTK container widget intended to hold the
+ * informations needed to fully identify the DBMS server which manages
+ * a exercice.
  *
- * This method relies on the #myIIdent identification interface,
- * which is expected to be implemented by the @provider class.
+ * The returned container will be added to a GtkWindow and must be
+ * destroyable with this same window. In other words, the DBMS provider
+ * should not keep any reference on this container.
  */
-gchar *
-ofa_idbprovider_get_canon_name( const ofaIDBProvider *provider )
+ofaIDBExerciceEditor *
+ofa_idbprovider_new_exercice_editor( ofaIDBProvider *provider, guint rule, ofaIDBDossierEditor *dossier_editor )
 {
+	static const gchar *thisfn = "ofa_idbprovider_new_exercice_editor";
+	ofaIDBExerciceEditor *editor;
+
+	g_debug( "%s: provider=%p, rule=%u",
+			thisfn,( void * ) provider, rule );
+
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
+	g_return_val_if_fail( dossier_editor && OFA_IS_IDBDOSSIER_EDITOR( dossier_editor ), NULL );
 
-	return( MY_IS_IIDENT( provider ) ? my_iident_get_canon_name( MY_IIDENT( provider ), NULL ) : NULL );
-}
+	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_exercice_editor ){
+		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_exercice_editor( provider, rule );
+		ofa_idbexercice_editor_set_provider( editor, provider );
+		ofa_idbexercice_editor_set_dossier_editor( editor, dossier_editor );
+		return( editor );
+	}
 
-/*
- * ofa_idbprovider_get_display_name:
- * @provider: this #ofaIDBProvider provider.
- *
- * Returns: the displayable name of the @provider, as a newly
- * allocated string which should be g_free() by the caller, or %NULL.
- *
- * This method relies on the #myIIdent identification interface,
- * which is expected to be implemented by the @provider class.
- */
-gchar *
-ofa_idbprovider_get_display_name( const ofaIDBProvider *provider )
-{
-	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
-
-	return( MY_IS_IIDENT( provider ) ? my_iident_get_display_name( MY_IIDENT( provider ), NULL ) : NULL );
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_exercice_editor()' method",
+			thisfn, G_OBJECT_TYPE_NAME( provider ));
+	return( NULL );
 }
 
 static sIDBProvider *

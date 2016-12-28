@@ -32,30 +32,29 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-exercice-meta.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbexercice-editor.h"
 #include "api/ofa-idbprovider.h"
 
-#include "ofa-mysql-connect.h"
-#include "ofa-mysql-exercice-editor.h"
+#include "mysql/ofa-mysql-connect.h"
+#include "mysql/ofa-mysql-dossier-editor.h"
+#include "mysql/ofa-mysql-exercice-bin.h"
+#include "mysql/ofa-mysql-exercice-editor.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean         dispose_has_run;
+	gboolean             dispose_has_run;
 
-	/* setup
+	/* initialization
 	 */
-	ofaIDBProvider  *provider;
-	gboolean         editable;
-
-	/* runtime data
-	 */
-	gchar           *database;
+	ofaIDBProvider      *provider;
+	guint                rule;
 
 	/* UI
 	 */
-	GtkSizeGroup *group0;
+	GtkSizeGroup        *group0;
+	ofaMysqlExerciceBin *exercice_bin;
 }
 	ofaMysqlExerciceEditorPrivate;
 
@@ -66,9 +65,9 @@ static guint         idbexercice_editor_get_interface_version( void );
 static GtkSizeGroup *idbexercice_editor_get_size_group( const ofaIDBExerciceEditor *instance, guint column );
 static gboolean      idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **message );
 static gboolean      idbexercice_editor_apply( const ofaIDBExerciceEditor *instance );
-static void          setup_bin( ofaMysqlExerciceEditor *bin );
-static void          on_database_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaMysqlExerciceEditor *bin );
-static void          on_database_changed( GtkEntry *entry, ofaMysqlExerciceEditor *bin );
+static void          setup_bin( ofaMysqlExerciceEditor *self );
+static void          on_exercice_bin_changed( ofaMysqlExerciceBin *bin, ofaMysqlExerciceEditor *self );
+static gboolean      does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlExerciceEditor, ofa_mysql_exercice_editor, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlExerciceEditor )
@@ -78,7 +77,6 @@ static void
 mysql_exercice_editor_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_mysql_exercice_editor_finalize";
-	ofaMysqlExerciceEditorPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -86,9 +84,6 @@ mysql_exercice_editor_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_MYSQL_EXERCICE_EDITOR( instance ));
 
 	/* free data members here */
-	priv = ofa_mysql_exercice_editor_get_instance_private( OFA_MYSQL_EXERCICE_EDITOR( instance ));
-
-	g_free( priv->database );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_mysql_exercice_editor_parent_class )->finalize( instance );
@@ -191,7 +186,8 @@ static gboolean
 idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **message )
 {
 	ofaMysqlExerciceEditorPrivate *priv;
-	gboolean ok;
+	gboolean ok, exists;
+	const gchar *database;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_EXERCICE_EDITOR( instance ), FALSE );
 
@@ -199,10 +195,27 @@ idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **messa
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	ok = my_strlen( priv->database ) > 0;
-
 	if( message ){
-		*message = ok ? NULL : g_strdup( _( "Database name is not set" ));
+		*message = NULL;
+	}
+
+	ok = ofa_mysql_exercice_bin_is_valid( priv->exercice_bin, message );
+
+	if( ok ){
+		database = ofa_mysql_exercice_bin_get_database( priv->exercice_bin );
+		exists = does_database_exist( OFA_MYSQL_EXERCICE_EDITOR( instance ), database );
+		g_debug( "idbexercice_editor_is_valid: database=%s, exists=%s", database, exists ? "True":"False" );
+
+		switch( priv->rule ){
+			case HUB_RULE_DOSSIER_NEW:
+				if( exists ){
+					ok = FALSE;
+					if( message ){
+						*message = g_strdup_printf( _( "Database '%s' already exists" ), database );
+					}
+				}
+				break;
+		}
 	}
 
 	return( ok );
@@ -211,28 +224,38 @@ idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **messa
 static gboolean
 idbexercice_editor_apply( const ofaIDBExerciceEditor *instance )
 {
-	return( FALSE );
+	ofaMysqlExerciceEditorPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_EXERCICE_EDITOR( instance ), FALSE );
+
+	priv = ofa_mysql_exercice_editor_get_instance_private( OFA_MYSQL_EXERCICE_EDITOR( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( ofa_mysql_exercice_bin_apply( priv->exercice_bin ));
 }
 
 /**
  * ofa_mysql_exercice_editor_new:
- * @provider: the #ofaIDBProvider instance.
- * @editable: whether the widget is editable.
+ * @provider: the #ofaIDBProvider.
+ * @rule: the usage of the widget.
  *
  * Returns: a new #ofaMysqlExerciceEditor widget.
  */
 ofaMysqlExerciceEditor *
-ofa_mysql_exercice_editor_new( ofaIDBProvider *provider, gboolean editable )
+ofa_mysql_exercice_editor_new( ofaIDBProvider *provider, guint rule )
 {
 	ofaMysqlExerciceEditor *bin;
 	ofaMysqlExerciceEditorPrivate *priv;
+
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
 	bin = g_object_new( OFA_TYPE_MYSQL_EXERCICE_EDITOR, NULL );
 
 	priv = ofa_mysql_exercice_editor_get_instance_private( bin );
 
 	priv->provider = provider;
-	priv->editable = editable;
+	priv->rule = rule;
 
 	setup_bin( bin );
 
@@ -240,93 +263,60 @@ ofa_mysql_exercice_editor_new( ofaIDBProvider *provider, gboolean editable )
 }
 
 static void
-setup_bin( ofaMysqlExerciceEditor *bin )
+setup_bin( ofaMysqlExerciceEditor *self )
 {
 	ofaMysqlExerciceEditorPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
-	GtkWidget *toplevel, *entry, *label;
+	GtkWidget *toplevel, *parent;
 
-	priv = ofa_mysql_exercice_editor_get_instance_private( bin );
+	priv = ofa_mysql_exercice_editor_get_instance_private( self );
+
+	priv->group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
-
-	object = gtk_builder_get_object( builder, "mee-col0-hsize" );
-	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
-	priv->group0 = GTK_SIZE_GROUP( g_object_ref( object ));
 
 	object = gtk_builder_get_object( builder, "mee-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
-	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mee-database-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "insert-text", G_CALLBACK( on_database_insert_text ), bin );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_database_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mee-database-prompt" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mee-exercice-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->exercice_bin = ofa_mysql_exercice_bin_new( priv->rule );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
+	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), self );
+	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_exercice_bin_get_size_group( priv->exercice_bin, 0 ));
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
 }
 
-/*
- * keep the database name to the authorized set
- * see http://dev.mysql.com/doc/refman/5.7/en/identifiers.html
- * ASCII: [0-9,a-z,A-Z$_] (basic Latin letters, digits 0-9, dollar, underscore)
- */
 static void
-on_database_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaMysqlExerciceEditor *bin )
+on_exercice_bin_changed( ofaMysqlExerciceBin *bin, ofaMysqlExerciceEditor *self )
 {
-	GRegex *regex;
-	gchar *replaced;
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
 
-	regex = g_regex_new( "[A-Za-z0-9$_]+", 0, 0, NULL );
-	replaced = g_regex_replace( regex, new_text, -1, 0, "", 0, NULL );
-	g_regex_unref( regex );
+static gboolean
+does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database )
+{
+	ofaIDBDossierEditor *dossier_editor;
+	gboolean exists;
+	ofaMysqlConnect *connect;
 
-	if( my_strlen( replaced )){
-		g_signal_stop_emission_by_name( editable, "insert-text" );
+	exists = FALSE;
+
+	dossier_editor = ofa_idbexercice_editor_get_dossier_editor( OFA_IDBEXERCICE_EDITOR( self ));
+	g_return_val_if_fail( dossier_editor && OFA_IS_MYSQL_DOSSIER_EDITOR( dossier_editor ), FALSE );
+
+	connect = ofa_mysql_dossier_editor_get_connect( OFA_MYSQL_DOSSIER_EDITOR( dossier_editor ));
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
+
+	if( ofa_mysql_connect_is_opened( connect )){
+		exists = ofa_mysql_connect_does_database_exist( connect, database );
 	}
 
-	g_free( replaced );
-}
-
-static void
-on_database_changed( GtkEntry *entry, ofaMysqlExerciceEditor *bin )
-{
-	ofaMysqlExerciceEditorPrivate *priv;
-
-	priv = ofa_mysql_exercice_editor_get_instance_private( bin );
-
-	g_free( priv->database );
-	priv->database = g_strdup( gtk_entry_get_text( entry ));
-
-	g_signal_emit_by_name( bin, "ofa-changed" );
-}
-
-/**
- * ofa_mysql_exercice_editor_get_database:
- * @exercice_editor: this #ofaMysqlExerciceEditor instance.
- *
- * Returns: the DBMS database.
- *
- * The returned string is owned by the @exercice_editor, and should not be
- * released by the caller.
- */
-const gchar *
-ofa_mysql_exercice_editor_get_database( ofaMysqlExerciceEditor *exercice_editor )
-{
-ofaMysqlExerciceEditorPrivate *priv;
-
-	g_return_val_if_fail( exercice_editor && OFA_IS_MYSQL_EXERCICE_EDITOR( exercice_editor ), NULL );
-
-	priv = ofa_mysql_exercice_editor_get_instance_private( exercice_editor );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return(( const gchar * ) priv->database );
+	return( exists );
 }

@@ -48,6 +48,7 @@ src/ui/ofa-class-properties.ui
 src/ui/ofa-closing-parms-bin.ui
 src/ui/ofa-currency-properties.ui
 src/ui/ofa-dos-menubar.ui
+src/ui/ofa-dossier-actions-bin.ui
 src/ui/ofa-dossier-delete.ui
 src/ui/ofa-dossier-display-notes.ui
 src/ui/ofa-dossier-edit-bin.ui

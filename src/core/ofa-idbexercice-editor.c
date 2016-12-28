@@ -39,12 +39,13 @@
  * which do not depend of a specific implementation
  */
 typedef struct {
-	ofaIDBProvider *provider;
+	ofaIDBProvider      *provider;
+	ofaIDBDossierEditor *dossier_editor;
 }
 	sEditor;
 
-#define IDBEXERCICE_EDITOR_DATA            "idbexercice-editor-data"
 #define IDBEXERCICE_EDITOR_LAST_VERSION     1
+#define IDBEXERCICE_EDITOR_DATA            "idbexercice-editor-data"
 
 /* signals defined here
  */
@@ -59,8 +60,8 @@ static guint st_initializations         =   0;	/* interface initialization count
 static GType    register_type( void );
 static void     interface_base_init( ofaIDBExerciceEditorInterface *klass );
 static void     interface_base_finalize( ofaIDBExerciceEditorInterface *klass );
-static sEditor *get_editor_data( const ofaIDBExerciceEditor *editor );
-static void     on_editor_finalized( sEditor *data, GObject *finalized_editor );
+static sEditor *get_instance_data( const ofaIDBExerciceEditor *self );
+static void     on_instance_finalized( sEditor *sdata, GObject *finalized_instance );
 
 /**
  * ofa_idbexercice_editor_get_type:
@@ -224,42 +225,68 @@ ofa_idbexercice_editor_get_provider( const ofaIDBExerciceEditor *instance )
 
 	g_return_val_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ), NULL );
 
-	data = get_editor_data( instance );
+	data = get_instance_data( instance );
 	return( g_object_ref( data->provider ));
+}
+#endif
+
+/**
+ * ofa_idbexercice_editor_set_provider:
+ * @instance: this #ofaIDBExerciceEditor instance.
+ * @provider: the #ofaIDBProvider instance which manages this editor.
+ *
+ * Attach the @provider to the @instance.
+ */
+void
+ofa_idbexercice_editor_set_provider( ofaIDBExerciceEditor *instance, ofaIDBProvider *provider )
+{
+	sEditor *sdata;
+
+	g_return_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ));
+	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
+
+	sdata = get_instance_data( instance );
+
+	sdata->provider = provider;
 }
 
 /**
- * ofa_idbexercice_editor_set_meta:
+ * ofa_idbexercice_editor_get_dossier_editor:
  * @instance: this #ofaIDBExerciceEditor instance.
- * @meta: [allow-none]: the #ofaIDBDossierMeta object which holds dossier
- *  informations.
- * @period: [allow-none]: the #ofaIDBExerciceMeta object which holds exercice
- *  informations; must be %NULL if @meta is %NULL.
  *
- * Initialize the widget with provided datas.
+ * Returns: the attached #ofaIDBDossierEditor.
+ */
+ofaIDBDossierEditor *
+ofa_idbexercice_editor_get_dossier_editor( ofaIDBExerciceEditor *instance )
+{
+	sEditor *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ), NULL );
+
+	sdata = get_instance_data( instance );
+
+	return( sdata->dossier_editor );
+}
+
+/**
+ * ofa_idbexercice_editor_set_dossier_editor:
+ * @instance: this #ofaIDBExerciceEditor instance.
+ * @editor: the corresponding #ofaIDBDossierEditor.
+ *
+ * Attach the @editor to the @instance.
  */
 void
-ofa_idbexercice_editor_set_meta( ofaIDBExerciceEditor *instance, const ofaIDBDossierMeta *meta, const ofaIDBExerciceMeta *period )
+ofa_idbexercice_editor_set_dossier_editor( ofaIDBExerciceEditor *instance, ofaIDBDossierEditor *editor )
 {
-	static const gchar *thisfn = "ofa_idbexercice_editor_set_meta";
-
-	g_debug( "%s: instance=%p, meta=%p, period=%p",
-			thisfn, ( void * ) instance, ( void * ) meta, ( void * ) period );
+	sEditor *sdata;
 
 	g_return_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ));
-	g_return_if_fail( !meta || OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ));
-	g_return_if_fail( meta || !period );
+	g_return_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ));
 
-	if( OFA_IDBEXERCICE_EDITOR_GET_INTERFACE( instance )->set_meta ){
-		OFA_IDBEXERCICE_EDITOR_GET_INTERFACE( instance )->set_meta( instance, meta, period );
-		return;
-	}
+	sdata = get_instance_data( instance );
 
-	g_info( "%s: ofaIDBExerciceEditor's %s implementation does not provide 'set_meta()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	sdata->dossier_editor = editor;
 }
-#endif
 
 /**
  * ofa_idbexercice_editor_get_size_group:
@@ -298,8 +325,6 @@ ofa_idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **m
 {
 	static const gchar *thisfn = "ofa_idbexercice_editor_is_valid";
 
-	g_debug( "%s: instance=%p, message=%p", thisfn, ( void * ) instance, ( void * ) message );
-
 	g_return_val_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ), FALSE );
 
 	if( OFA_IDBEXERCICE_EDITOR_GET_INTERFACE( instance )->is_valid ){
@@ -335,47 +360,28 @@ ofa_idbexercice_editor_apply( const ofaIDBExerciceEditor *instance )
 	return( FALSE );
 }
 
-/**
- * ofa_idbexercice_editor_set_provider:
- * @instance: this #ofaIDBExerciceEditor instance.
- * @provider: the #ofaIDBProvider instance which manages this editor.
- *
- * Attach the editor to the @provider.
- */
-void
-ofa_idbexercice_editor_set_provider( ofaIDBExerciceEditor *instance, ofaIDBProvider *provider )
-{
-	sEditor *data;
-
-	g_return_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ));
-	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
-
-	data = get_editor_data( instance );
-	data->provider = provider;
-}
-
 static sEditor *
-get_editor_data( const ofaIDBExerciceEditor *editor )
+get_instance_data( const ofaIDBExerciceEditor *self )
 {
 	sEditor *data;
 
-	data = ( sEditor * ) g_object_get_data( G_OBJECT( editor ), IDBEXERCICE_EDITOR_DATA );
+	data = ( sEditor * ) g_object_get_data( G_OBJECT( self ), IDBEXERCICE_EDITOR_DATA );
 
 	if( !data ){
 		data = g_new0( sEditor, 1 );
-		g_object_set_data( G_OBJECT( editor ), IDBEXERCICE_EDITOR_DATA, data );
-		g_object_weak_ref( G_OBJECT( editor ), ( GWeakNotify ) on_editor_finalized, data );
+		g_object_set_data( G_OBJECT( self ), IDBEXERCICE_EDITOR_DATA, data );
+		g_object_weak_ref( G_OBJECT( self ), ( GWeakNotify ) on_instance_finalized, data );
 	}
 
 	return( data );
 }
 
 static void
-on_editor_finalized( sEditor *data, GObject *finalized_editor )
+on_instance_finalized( sEditor *data, GObject *finalized_instance )
 {
-	static const gchar *thisfn = "ofa_idbexercice_editor_on_editor_finalized";
+	static const gchar *thisfn = "ofa_idbexercice_editor_on_instance_finalized";
 
-	g_debug( "%s: data=%p, finalized_editor=%p", thisfn, ( void * ) data, ( void * ) finalized_editor );
+	g_debug( "%s: data=%p, finalized_instance=%p", thisfn, ( void * ) data, ( void * ) finalized_instance );
 
 	g_free( data );
 }

@@ -78,6 +78,11 @@ label.labelinfo {
 	color: #0000ff;				/* blue */
 }
 
+label.labeliinfo {
+	color: #0000ff;				/* blue italic */
+	font-style: italic;
+}
+
 label.labelbalance {
 	color: #0000ff;
 }

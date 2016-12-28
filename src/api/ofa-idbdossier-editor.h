@@ -167,11 +167,6 @@ ofaIDBProvider      *ofa_idbdossier_editor_get_provider              ( ofaIDBDos
 void                 ofa_idbdossier_editor_set_provider              ( ofaIDBDossierEditor *instance,
 																			ofaIDBProvider *provider );
 
-ofaHub              *ofa_idbdossier_editor_get_hub                   ( ofaIDBDossierEditor *instance );
-
-void                 ofa_idbdossier_editor_set_hub                   ( ofaIDBDossierEditor *instance,
-																			ofaHub *hub );
-
 GtkSizeGroup        *ofa_idbdossier_editor_get_size_group            ( const ofaIDBDossierEditor *instance,
 																			guint column );
 

@@ -52,9 +52,10 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-idbprovider-def.h"
+#include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta.h"
+#include "api/ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
 
@@ -135,28 +136,33 @@ typedef struct {
 /*
  * Interface-wide
  */
-GType         ofa_idbexercice_editor_get_type                  ( void );
+GType                ofa_idbexercice_editor_get_type                  ( void );
 
-guint         ofa_idbexercice_editor_get_interface_last_version( void );
+guint                ofa_idbexercice_editor_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint         ofa_idbexercice_editor_get_interface_version     ( GType type );
+guint                ofa_idbexercice_editor_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-GtkSizeGroup *ofa_idbexercice_editor_get_size_group            ( const ofaIDBExerciceEditor *instance,
-																		guint column );
+void                 ofa_idbexercice_editor_set_provider              ( ofaIDBExerciceEditor *instance,
+																			ofaIDBProvider *provider );
 
-gboolean      ofa_idbexercice_editor_is_valid                  ( const ofaIDBExerciceEditor *instance,
-																		gchar **message );
+ofaIDBDossierEditor *ofa_idbexercice_editor_get_dossier_editor        ( ofaIDBExerciceEditor *instance );
 
-gboolean      ofa_idbexercice_editor_apply                     ( const ofaIDBExerciceEditor *instance );
+void                 ofa_idbexercice_editor_set_dossier_editor        ( ofaIDBExerciceEditor *instance,
+																			ofaIDBDossierEditor *editor );
 
-void          ofa_idbexercice_editor_set_provider              ( ofaIDBExerciceEditor *instance,
-																		ofaIDBProvider *provider );
+GtkSizeGroup        *ofa_idbexercice_editor_get_size_group            ( const ofaIDBExerciceEditor *instance,
+																			guint column );
+
+gboolean             ofa_idbexercice_editor_is_valid                  ( const ofaIDBExerciceEditor *instance,
+																			gchar **message );
+
+gboolean             ofa_idbexercice_editor_apply                     ( const ofaIDBExerciceEditor *instance );
 
 G_END_DECLS
 

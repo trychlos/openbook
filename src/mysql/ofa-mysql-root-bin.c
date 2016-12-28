@@ -51,7 +51,9 @@ typedef struct {
 	 */
 	GtkWidget          *account_entry;
 	GtkWidget          *password_entry;
+	GtkWidget          *msg;
 	GtkSizeGroup       *group0;
+	GtkWidget          *revealer;
 
 	/* runtime data
 	 */
@@ -78,7 +80,9 @@ static void     on_account_changed( GtkEditable *entry, ofaMysqlRootBin *self );
 static void     on_remember_toggled( GtkToggleButton *button, ofaMysqlRootBin *self );
 static void     on_password_changed( GtkEditable *entry, ofaMysqlRootBin *self );
 static void     changed_composite( ofaMysqlRootBin *self );
-static gboolean is_valid_composite( ofaMysqlRootBin *self, gchar **str );
+static gboolean is_valid( ofaMysqlRootBin *self, gchar **str );
+static void     read_settings( ofaMysqlRootBin *self );
+static void     write_settings( ofaMysqlRootBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlRootBin, ofa_mysql_root_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlRootBin ))
@@ -114,6 +118,8 @@ mysql_root_bin_dispose( GObject *instance )
 	priv = ofa_mysql_root_bin_get_instance_private( OFA_MYSQL_ROOT_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		write_settings( OFA_MYSQL_ROOT_BIN( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -159,12 +165,10 @@ ofa_mysql_root_bin_class_init( ofaMysqlRootBinClass *klass )
 	 * This signal is sent on the #ofaMysqlRootBin when the account or
 	 * the password are changed.
 	 *
-	 * Arguments are new account and password.
+	 * There is no argument.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaMysqlRootBin *bin,
-	 * 						const gchar   *account,
-	 * 						const gchar   *password,
 	 * 						gpointer       user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -176,8 +180,8 @@ ofa_mysql_root_bin_class_init( ofaMysqlRootBinClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				2,
-				G_TYPE_STRING, G_TYPE_STRING );
+				0,
+				G_TYPE_NONE );
 }
 
 /**
@@ -207,6 +211,7 @@ ofa_mysql_root_bin_new( ofaMysqlDBProvider *provider, guint rule )
 	priv->rule = rule;
 
 	setup_bin( bin );
+	read_settings( bin );
 
 	return( bin );
 }
@@ -255,6 +260,15 @@ setup_bin( ofaMysqlRootBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mrb-password-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->password_entry );
+
+	priv->revealer = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mrb-revealer" );
+	g_return_if_fail( priv->revealer && GTK_IS_REVEALER( priv->revealer ));
+
+	/* message */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mrb-msg" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	my_style_add( label, "labeliinfo" );
+	priv->msg = label;
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -310,6 +324,18 @@ on_account_changed( GtkEditable *entry, ofaMysqlRootBin *self )
 }
 
 static void
+on_remember_toggled( GtkToggleButton *button, ofaMysqlRootBin *self )
+{
+	ofaMysqlRootBinPrivate *priv;
+
+	priv = ofa_mysql_root_bin_get_instance_private( self );
+
+	priv->remember = gtk_toggle_button_get_active( button );
+
+	changed_composite( self );
+}
+
+static void
 on_password_changed( GtkEditable *entry, ofaMysqlRootBin *self )
 {
 	ofaMysqlRootBinPrivate *priv;
@@ -322,29 +348,14 @@ on_password_changed( GtkEditable *entry, ofaMysqlRootBin *self )
 	changed_composite( self );
 }
 
-static void
-on_remember_toggled( GtkToggleButton *button, ofaMysqlRootBin *self )
-{
-	ofaMysqlRootBinPrivate *priv;
-
-	priv = ofa_mysql_root_bin_get_instance_private( self );
-
-	priv->remember = gtk_toggle_button_get_active( button );
-
-	changed_composite( self );
-}
-
 /*
- * test the MYSQL root connection by trying to connect with empty dbname
+ * The signal 'ofa-changed' is intercepted by ofaMysqlDossierEditor::changed_composite()
+ * which sets ofa_mysql_root_bin_set_valid() to FALSE.
  */
 static void
 changed_composite( ofaMysqlRootBin *self )
 {
-	ofaMysqlRootBinPrivate *priv;
-
-	priv = ofa_mysql_root_bin_get_instance_private( self );
-
-	g_signal_emit_by_name( self, "ofa-changed", priv->account, priv->password );
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 /**
@@ -355,8 +366,6 @@ changed_composite( ofaMysqlRootBin *self )
  *
  * Returns: %TRUE if both account and password are set without actually
  * validating these credentials againt the MYSQL.
- * If dossier meta is set, then the account and password credentials
- * are validated against a successful connection to the MYSQL instance.
  */
 gboolean
 ofa_mysql_root_bin_is_valid( ofaMysqlRootBin *bin, gchar **error_message )
@@ -371,12 +380,10 @@ ofa_mysql_root_bin_is_valid( ofaMysqlRootBin *bin, gchar **error_message )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	ok = is_valid_composite( bin, &str );
+	ok = is_valid( bin, &str );
 
 	if( error_message ){
-		*error_message = ok ?
-				NULL : ( g_strdup( my_strlen( str ) ?
-						str : _( "DBMS root credentials are not valid" )));
+		*error_message = ok ? NULL : g_strdup( str );
 	}
 
 	g_free( str );
@@ -384,31 +391,56 @@ ofa_mysql_root_bin_is_valid( ofaMysqlRootBin *bin, gchar **error_message )
 	return( ok );
 }
 
+/*
+ * we only check here for the presence of an account
+ * as we don't know if it really has a password (though it should for sure)
+ */
 static gboolean
-is_valid_composite( ofaMysqlRootBin *self, gchar **str )
+is_valid( ofaMysqlRootBin *self, gchar **str )
 {
 	ofaMysqlRootBinPrivate *priv;
-	ofaIDBConnect *connect;
 	gboolean ok;
 
 	priv = ofa_mysql_root_bin_get_instance_private( self );
 
-	ok = FALSE;
+	ok = TRUE;
 	*str = NULL;
 
-	if( my_strlen( priv->account ) && my_strlen( priv->password )){
-		ok = TRUE;
-
-		/* this only works if the dossier meta datas have been set */
-		if( priv->dossier_meta ){
-			connect = ofa_idbprovider_new_connect( OFA_IDBPROVIDER( priv->provider ));
-			ok = FALSE; //ofa_idbconnect_open_with_dbmeta(
-						//connect, priv->account, priv->password, priv->dossier_meta, NULL );
-			g_clear_object( &connect );
+	if( ok ){
+		if( !my_strlen( priv->account )){
+			ok = FALSE;
+			*str = g_strdup( _( "DBMS root account is not set" ));
 		}
 	}
 
 	return( ok );
+}
+
+/**
+ * ofa_mysql_root_bin_set_valid:
+ * @bin: this #ofaMysqlRootBin instance.
+ * @valid: whether this @bin is valid.
+ *
+ * Set an information message when the connection is OK.
+ *
+ * The message is cleared when the connection is not OK as error messages
+ * are not handled by this widget.
+ */
+void
+ofa_mysql_root_bin_set_valid( ofaMysqlRootBin *bin, gboolean valid )
+{
+	static const gchar *thisfn = "ofa_mysql_root_bin_set_valid";
+	ofaMysqlRootBinPrivate *priv;
+
+	g_debug( "%s: bin=%p, valid=%s", thisfn, ( void * ) bin, valid ? "True":"False" );
+
+	g_return_if_fail( bin && OFA_IS_MYSQL_ROOT_BIN( bin ));
+
+	priv = ofa_mysql_root_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	gtk_label_set_text( GTK_LABEL( priv->msg ), valid ? _( "DBMS root credentials are valid" ) : "" );
 }
 
 /**
@@ -429,6 +461,46 @@ ofa_mysql_root_bin_apply( ofaMysqlRootBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
 	return( FALSE );
+}
+
+/**
+ * ofa_mysql_root_bin_get_account:
+ * @bin: this #ofaMysqlRootBin instance.
+ *
+ * Returns: the account.
+ */
+const gchar *
+ofa_mysql_root_bin_get_account( ofaMysqlRootBin *bin )
+{
+	ofaMysqlRootBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_MYSQL_ROOT_BIN( bin ), NULL );
+
+	priv = ofa_mysql_root_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return(( const gchar * ) priv->account );
+}
+
+/**
+ * ofa_mysql_root_bin_get_password:
+ * @bin: this #ofaMysqlRootBin instance.
+ *
+ * Returns: the password.
+ */
+const gchar *
+ofa_mysql_root_bin_get_password( ofaMysqlRootBin *bin )
+{
+	ofaMysqlRootBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_MYSQL_ROOT_BIN( bin ), NULL );
+
+	priv = ofa_mysql_root_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return(( const gchar * ) priv->password );
 }
 
 /**
@@ -503,4 +575,16 @@ ofa_mysql_root_bin_set_dossier_meta( ofaMysqlRootBin *bin, ofaIDBDossierMeta *do
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->dossier_meta = dossier_meta;
+}
+
+static void
+read_settings( ofaMysqlRootBin *self )
+{
+
+}
+
+static void
+write_settings( ofaMysqlRootBin *self )
+{
+
 }

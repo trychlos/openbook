@@ -56,6 +56,7 @@
 #include "ofa-idbdossier-meta-def.h"
 #include "ofa-idbdossier-editor.h"
 #include "ofa-idbeditor.h"
+#include "ofa-idbexercice-editor.h"
 #include "ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
@@ -77,6 +78,7 @@ typedef struct _ofaIDBProviderInterface           ofaIDBProviderInterface;
  * @new_connect: [should]: returns a new ofaIDBConnect object.
  * @new_editor: [should]: returns a new ofaIDBEditor object.
  * @new_dossier_editor: [should]: returns a new ofaIDBDossierEditor object.
+ * @new_exercice_editor: [should]: returns a new ofaIDBExerciceEditor object.
  *
  * This defines the interface that an #ofaIDBProvider should implement.
  */
@@ -96,7 +98,7 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1.
 	 */
-	guint                 ( *get_interface_version )( void );
+	guint                  ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 	/**
@@ -107,7 +109,7 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBDossierMeta *   ( *new_dossier_meta )     ( ofaIDBProvider *instance );
+	ofaIDBDossierMeta *    ( *new_dossier_meta )     ( ofaIDBProvider *instance );
 
 	/**
 	 * new_connect:
@@ -117,7 +119,7 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBConnect *       ( *new_connect )          ( ofaIDBProvider *instance );
+	ofaIDBConnect *        ( *new_connect )          ( ofaIDBProvider *instance );
 
 	/**
 	 * new_editor:
@@ -131,7 +133,7 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBEditor *        ( *new_editor )           ( ofaIDBProvider *instance,
+	ofaIDBEditor *         ( *new_editor )           ( ofaIDBProvider *instance,
 															gboolean editable );
 
 	/**
@@ -145,44 +147,65 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBDossierEditor * ( *new_dossier_editor )   ( ofaIDBProvider *instance,
+	ofaIDBDossierEditor *  ( *new_dossier_editor )   ( ofaIDBProvider *instance,
+															guint rule );
+
+	/**
+	 * new_exercice_editor:
+	 * @instance: this #ofaIDBProvider instance.
+	 * @rule: the usage of the editor.
+	 *
+	 * Returns: a #GtkWidget which implements the #ofaIDBExerciceEditor
+	 * interface, and handles the informations needed to qualify a
+	 * DB server and the storage space required for a dossier.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBExerciceEditor * ( *new_exercice_editor )  ( ofaIDBProvider *instance,
 															guint rule );
 };
 
 /*
  * Interface-wide
  */
-GType                ofa_idbprovider_get_type                  ( void );
+GType                 ofa_idbprovider_get_type                  ( void );
 
-guint                ofa_idbprovider_get_interface_last_version( void );
+guint                 ofa_idbprovider_get_interface_last_version( void );
 
-ofaIDBProvider      *ofa_idbprovider_get_by_name               ( ofaHub *hub,
+ofaIDBProvider       *ofa_idbprovider_get_by_name               ( ofaHub *hub,
 																	const gchar *provider_name );
 
 /*
  * Implementation-wide
  */
-guint                ofa_idbprovider_get_interface_version     ( GType type );
+guint                 ofa_idbprovider_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-ofaHub              *ofa_idbprovider_get_hub                   ( ofaIDBProvider *provider );
+gchar                *ofa_idbprovider_get_canon_name            ( const ofaIDBProvider *provider );
 
-ofaIDBDossierMeta   *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider *provider,
-																	const gchar *dossier_name );
+gchar                *ofa_idbprovider_get_display_name          ( const ofaIDBProvider *provider );
 
-ofaIDBConnect       *ofa_idbprovider_new_connect               ( ofaIDBProvider *provider );
+ofaHub               *ofa_idbprovider_get_hub                   ( ofaIDBProvider *provider );
 
-ofaIDBEditor        *ofa_idbprovider_new_editor                ( ofaIDBProvider *provider,
-																	gboolean editable );
+void                  ofa_idbprovider_set_hub                   ( ofaIDBProvider *provider,
+																		ofaHub *hub );
 
-ofaIDBDossierEditor *ofa_idbprovider_new_dossier_editor        ( ofaIDBProvider *provider,
-																	guint rule );
+ofaIDBDossierMeta    *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider *provider,
+																		const gchar *dossier_name );
 
-gchar               *ofa_idbprovider_get_canon_name            ( const ofaIDBProvider *provider );
+ofaIDBConnect        *ofa_idbprovider_new_connect               ( ofaIDBProvider *provider );
 
-gchar               *ofa_idbprovider_get_display_name          ( const ofaIDBProvider *provider );
+ofaIDBEditor         *ofa_idbprovider_new_editor                ( ofaIDBProvider *provider,
+																		gboolean editable );
+
+ofaIDBDossierEditor  *ofa_idbprovider_new_dossier_editor        ( ofaIDBProvider *provider,
+																		guint rule );
+
+ofaIDBExerciceEditor *ofa_idbprovider_new_exercice_editor       ( ofaIDBProvider *provider,
+																		guint rule,
+																		ofaIDBDossierEditor *dossier_editor );
 
 G_END_DECLS
 

@@ -66,9 +66,7 @@ typedef struct {
 GType                   ofa_mysql_exercice_editor_get_type    ( void ) G_GNUC_CONST;
 
 ofaMysqlExerciceEditor *ofa_mysql_exercice_editor_new         ( ofaIDBProvider *provider,
-																	gboolean editable );
-
-const gchar            *ofa_mysql_exercice_editor_get_database( ofaMysqlExerciceEditor *exercice_editor );
+																		guint rule );
 
 G_END_DECLS
 

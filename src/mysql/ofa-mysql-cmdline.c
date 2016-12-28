@@ -74,10 +74,10 @@ typedef struct {
 
 static const gchar *st_window_name = "MySQLExecutionWindow";
 
-static gchar      *cmdline_build_from_connect( const gchar *template, const ofaMySQLConnect *connect, ofaMysqlExerciceMeta *period, const gchar *filename, const gchar *database );
+static gchar      *cmdline_build_from_connect( const gchar *template, const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, const gchar *filename, const gchar *database );
 static gchar      *cmdline_build_from_args( const gchar *template, const gchar *host, const gchar *socket, guint port, const gchar *account, const gchar *password, const gchar *dbname, const gchar *fname, const gchar *new_dbname );
-static gboolean    do_execute_sync( const gchar *template, const ofaMySQLConnect *connect, ofaMysqlExerciceMeta *period, const gchar *fname, const gchar *newdb );
-static gboolean    do_execute_async( const gchar *template, const ofaMySQLConnect *connect, ofaMysqlExerciceMeta *period, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
+static gboolean    do_execute_sync( const gchar *template, const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, const gchar *fname, const gchar *newdb );
+static gboolean    do_execute_async( const gchar *template, const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
 static void        async_create_window( sExecuteInfos *infos, const gchar *window_title );
 static GPid        async_exec_command( const gchar *cmdline, sExecuteInfos *infos );
 static GIOChannel *async_setup_io_channel( gint fd, GIOFunc func, sExecuteInfos *infos );
@@ -116,7 +116,7 @@ ofa_mysql_cmdline_backup_get_default_command( void )
  * %FALSE else.
  */
 gboolean
-ofa_mysql_cmdline_backup_run( ofaMySQLConnect *connect, const gchar *uri )
+ofa_mysql_cmdline_backup_run( ofaMysqlConnect *connect, const gchar *uri )
 {
 	gchar *template, *fname;
 	ofaIDBProvider *provider;
@@ -182,7 +182,7 @@ ofa_mysql_cmdline_restore_get_default_command( void )
  * else.
  */
 gboolean
-ofa_mysql_cmdline_restore_run( ofaMySQLConnect *connect,
+ofa_mysql_cmdline_restore_run( ofaMysqlConnect *connect,
 									ofaMysqlExerciceMeta *period, const gchar *uri )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_restore";
@@ -237,12 +237,12 @@ ofa_mysql_cmdline_restore_run( ofaMySQLConnect *connect,
  * corresponding line accordingly in the dossier settings.
  */
 gboolean
-ofa_mysql_cmdline_archive_and_new( ofaMySQLConnect *connect,
+ofa_mysql_cmdline_archive_and_new( ofaMysqlConnect *connect,
 						const gchar *root_account, const gchar *root_password,
 						const GDate *begin_next, const GDate *end_next )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_archive_and_new";
-	ofaMySQLConnect *server_cnx;
+	ofaMysqlConnect *server_cnx;
 	ofaIDBDossierMeta *meta;
 	const gchar *host, *socket, *prev_dbname;
 	guint port;
@@ -333,7 +333,7 @@ ofa_mysql_cmdline_archive_and_new( ofaMySQLConnect *connect,
  */
 static gchar *
 cmdline_build_from_connect( const gchar *template,
-								const ofaMySQLConnect *connect, ofaMysqlExerciceMeta *period,
+								const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period,
 								const gchar *filename, const gchar *database )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_build_from_connect";
@@ -448,7 +448,7 @@ cmdline_build_from_args( const gchar *template,
 
 static gboolean
 do_execute_sync( const gchar *template,
-					const ofaMySQLConnect *connect, ofaMysqlExerciceMeta *period,
+					const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period,
 					const gchar *fname, const gchar *newdb )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_do_execute_sync";
@@ -476,7 +476,7 @@ do_execute_sync( const gchar *template,
 
 static gboolean
 do_execute_async( const gchar *template,
-					const ofaMySQLConnect *connect, ofaMysqlExerciceMeta *period,
+					const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period,
 					const gchar *fname, const gchar *window_title, GChildWatchFunc pfn,
 					gboolean verbose )
 {

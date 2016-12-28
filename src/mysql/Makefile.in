@@ -182,6 +182,8 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-extension.c ofa-mysql-cmdline.c \
 	ofa-mysql-dbprovider.c ofa-mysql-dbprovider.h \
 	ofa-mysql-editor-display.c ofa-mysql-editor-display.h \
 	ofa-mysql-editor-enter.c ofa-mysql-editor-enter.h \
+	ofa-mysql-exercice-bin.c ofa-mysql-exercice-bin.h \
+	ofa-mysql-exercice-editor.c ofa-mysql-exercice-editor.h \
 	ofa-mysql-exercice-meta.c ofa-mysql-exercice-meta.h \
 	ofa-mysql-ident.c ofa-mysql-ident.h ofa-mysql-prefs-bin.c \
 	ofa-mysql-prefs-bin.h ofa-mysql-properties.c \
@@ -196,6 +198,8 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-extension.c ofa-mysql-cmdline.c \
 @HAVE_MYSQL_TRUE@	ofa-mysql-dbprovider.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-exercice-bin.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-exercice-editor.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-exercice-meta.lo ofa-mysql-ident.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-properties.lo ofa-mysql-root-bin.lo \
@@ -497,6 +501,10 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.h							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.c							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.h							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-exercice-bin.c							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-exercice-bin.h							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-exercice-editor.c							\
+@HAVE_MYSQL_TRUE@	ofa-mysql-exercice-editor.h							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-exercice-meta.c							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-exercice-meta.h							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-ident.c									\
@@ -619,6 +627,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-dossier-meta.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-display.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-enter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-exercice-bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-exercice-editor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-exercice-meta.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-ident.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-prefs-bin.Plo@am__quote@

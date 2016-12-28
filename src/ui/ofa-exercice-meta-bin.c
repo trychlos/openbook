@@ -58,6 +58,7 @@ typedef struct {
 	 */
 	GDate            begin;
 	GDate            end;
+	gboolean         is_current;
 }
 	ofaExerciceMetaBinPrivate;
 
@@ -264,10 +265,22 @@ setup_bin( ofaExerciceMetaBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	/* current flag */
+	/* current flag
+	 * depending of the specified rule, the flag may be initially set */
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-current-btn" );
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
 	g_signal_connect( btn, "toggled", G_CALLBACK( on_current_toggled ), self );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), FALSE );
+
+	switch( priv->rule ){
+
+		/* when defining a new dossier, the new exercice is current
+		 * and this is mandatory */
+		case HUB_RULE_DOSSIER_NEW:
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), TRUE );
+			gtk_widget_set_sensitive( btn, FALSE );
+			break;
+	}
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -303,13 +316,11 @@ ofa_exercice_meta_bin_get_size_group( ofaExerciceMetaBin *bin, guint column )
 static void
 on_begin_changed( GtkEditable *editable, ofaExerciceMetaBin *self )
 {
-#if 0
 	ofaExerciceMetaBinPrivate *priv;
 
 	priv = ofa_exercice_meta_bin_get_instance_private( self );
 
-	//ofa_exercice_meta_set_begin_date( priv->exercice_meta, &priv->begin );
-#endif
+	my_date_set_from_date( &priv->begin, my_date_editable_get_date( editable, NULL ));
 
 	changed_composite( self );
 }
@@ -317,13 +328,11 @@ on_begin_changed( GtkEditable *editable, ofaExerciceMetaBin *self )
 static void
 on_end_changed( GtkEditable *editable, ofaExerciceMetaBin *self )
 {
-#if 0
 	ofaExerciceMetaBinPrivate *priv;
 
 	priv = ofa_exercice_meta_bin_get_instance_private( self );
 
-	//ofa_exercice_meta_set_end_date( priv->exercice_meta, &priv->end );
-#endif
+	my_date_set_from_date( &priv->end, my_date_editable_get_date( editable, NULL ));
 
 	changed_composite( self );
 }
@@ -331,13 +340,11 @@ on_end_changed( GtkEditable *editable, ofaExerciceMetaBin *self )
 static void
 on_current_toggled( GtkToggleButton *button, ofaExerciceMetaBin *self )
 {
-#if 0
 	ofaExerciceMetaBinPrivate *priv;
 
 	priv = ofa_exercice_meta_bin_get_instance_private( self );
 
-	//ofa_exercice_meta_set_is_current( priv->exercice_meta, gtk_toggle_button_get_active( button ));
-#endif
+	priv->is_current = gtk_toggle_button_get_active( button );
 
 	changed_composite( self );
 }
@@ -345,12 +352,6 @@ on_current_toggled( GtkToggleButton *button, ofaExerciceMetaBin *self )
 static void
 changed_composite( ofaExerciceMetaBin *self )
 {
-#if 0
-	ofaExerciceMetaBinPrivate *priv;
-
-	priv = ofa_exercice_meta_bin_get_instance_private( self );
-#endif
-
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
@@ -406,15 +407,14 @@ ofa_exercice_meta_bin_apply( ofaExerciceMetaBin *bin )
 	return( TRUE );
 }
 
-#if 0
 /**
- * ofa_exercice_meta_bin_get_exercice_meta:
+ * ofa_exercice_meta_bin_get_begin_date:
  * @bin: this #ofaExerciceMetaBin instance.
  *
- * Returns: the #ofaExerciceMeta object.
+ * Returns: the beginning date.
  */
-ofaExerciceMeta *
-ofa_exercice_meta_bin_get_exercice_meta( ofaExerciceMetaBin *bin )
+const GDate *
+ofa_exercice_meta_bin_get_begin_date( ofaExerciceMetaBin *bin )
 {
 	ofaExerciceMetaBinPrivate *priv;
 
@@ -424,28 +424,45 @@ ofa_exercice_meta_bin_get_exercice_meta( ofaExerciceMetaBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( priv->exercice_meta );
+	return( &priv->begin );
 }
 
 /**
- * ofa_exercice_meta_bin_set_exercice_meta:
+ * ofa_exercice_meta_bin_get_end_date:
  * @bin: this #ofaExerciceMetaBin instance.
- * @exercice_meta: the #ofaExerciceMeta object to be set.
  *
- * Set the #ofaExerciceMeta object.
+ * Returns: the ending date.
  */
-void
-ofa_exercice_meta_bin_set_exercice_meta( ofaExerciceMetaBin *bin, ofaExerciceMeta *exercice_meta )
+const GDate *
+ofa_exercice_meta_bin_get_end_date( ofaExerciceMetaBin *bin )
 {
 	ofaExerciceMetaBinPrivate *priv;
 
-	g_return_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ));
+	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), NULL );
 
 	priv = ofa_exercice_meta_bin_get_instance_private( bin );
 
-	g_return_if_fail( !priv->dispose_has_run );
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	g_clear_object( &priv->exercice_meta );
-	priv->exercice_meta = exercice_meta ? g_object_ref( exercice_meta ) : NULL;
+	return( &priv->end );
 }
-#endif
+
+/**
+ * ofa_exercice_meta_bin_get_is_current:
+ * @bin: this #ofaExerciceMetaBin instance.
+ *
+ * Returns: %TRUE if the exercice is current.
+ */
+gboolean
+ofa_exercice_meta_bin_get_is_current( ofaExerciceMetaBin *bin )
+{
+	ofaExerciceMetaBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), FALSE );
+
+	priv = ofa_exercice_meta_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->is_current );
+}

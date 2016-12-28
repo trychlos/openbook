@@ -58,6 +58,7 @@
    - No more try to read/write user settings from myIWindow geometry settings (todo #1284).
    - ofaAccountBookBin class is renamed to ofaAccountBookArgs.
    - ofaBalanceBin class is renamed to ofaBalanceArgs.
+   - ofaDossierActionsBin: new class.
    - ofaDossierEditBin: new class.
    - ofaDossierMetaBin: new class.
    - ofaExerciceMetaBin: new class.

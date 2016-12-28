@@ -27,10 +27,10 @@
 
 /**
  * SECTION: ofa_mysql_connect
- * @short_description: #ofaMySQLConnect class definition.
+ * @short_description: #ofaMysqlConnect class definition.
  * @include: mysql/ofa-mysql-connect.h
  *
- * The #ofaMySQLConnect class manages and handles connection to a
+ * The #ofaMysqlConnect class manages and handles connection to a
  * specific dossier and exercice (here, a database).
  * It implements the #ofaIDBConnect interface.
  */
@@ -41,38 +41,53 @@
 G_BEGIN_DECLS
 
 #define OFA_TYPE_MYSQL_CONNECT                ( ofa_mysql_connect_get_type())
-#define OFA_MYSQL_CONNECT( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_CONNECT, ofaMySQLConnect ))
-#define OFA_MYSQL_CONNECT_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_CONNECT, ofaMySQLConnectClass ))
+#define OFA_MYSQL_CONNECT( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_CONNECT, ofaMysqlConnect ))
+#define OFA_MYSQL_CONNECT_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_CONNECT, ofaMysqlConnectClass ))
 #define OFA_IS_MYSQL_CONNECT( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_CONNECT ))
 #define OFA_IS_MYSQL_CONNECT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_CONNECT ))
-#define OFA_MYSQL_CONNECT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_CONNECT, ofaMySQLConnectClass ))
+#define OFA_MYSQL_CONNECT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_CONNECT, ofaMysqlConnectClass ))
 
 typedef struct {
 	/*< public members >*/
 	GObject      parent;
 }
-	ofaMySQLConnect;
+	ofaMysqlConnect;
 
 typedef struct {
 	/*< public members >*/
 	GObjectClass parent;
 }
-	ofaMySQLConnectClass;
+	ofaMysqlConnectClass;
 
-GType            ofa_mysql_connect_get_type        ( void ) G_GNUC_CONST;
+GType            ofa_mysql_connect_get_type           ( void ) G_GNUC_CONST;
 
-ofaMySQLConnect *ofa_mysql_connect_new             ( void );
+ofaMysqlConnect *ofa_mysql_connect_new                ( void );
 
-gboolean         ofa_mysql_connect_open_with_meta  ( ofaMySQLConnect *connect,
+gboolean         ofa_mysql_connect_open_with_details  ( ofaMysqlConnect *connect,
+															const gchar *host,
+															const gchar *soket,
+															guint port,
+															const gchar *database,
+															const gchar *account,
+															const gchar *password );
+
+gboolean         ofa_mysql_connect_open_with_meta     ( ofaMysqlConnect *connect,
 															const gchar *account,
 															const gchar *password,
 															const ofaMysqlDossierMeta *dossier_meta,
 															const ofaMysqlExerciceMeta *period );
 
-gboolean         ofa_mysql_connect_query           ( ofaMySQLConnect *connect,
+gboolean         ofa_mysql_connect_is_opened          ( ofaMysqlConnect *connect );
+
+void             ofa_mysql_connect_close              ( ofaMysqlConnect *connect );
+
+gboolean         ofa_mysql_connect_query              ( ofaMysqlConnect *connect,
 															const gchar *query );
 
-gchar           *ofa_mysql_connect_get_new_database( ofaMySQLConnect *connect,
+gboolean         ofa_mysql_connect_does_database_exist( ofaMysqlConnect *connect,
+															const gchar *database );
+
+gchar           *ofa_mysql_connect_get_new_database   ( ofaMysqlConnect *connect,
 															const gchar *prev_database );
 
 G_END_DECLS
