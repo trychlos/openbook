@@ -139,14 +139,15 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-account-book-args.$(OBJEXT) \
 	ofa-account-book-render.$(OBJEXT) \
 	ofa-account-filter-vv-bin.$(OBJEXT) ofa-account-page.$(OBJEXT) \
-	ofa-application.$(OBJEXT) ofa-backup.$(OBJEXT) \
-	ofa-balance-args.$(OBJEXT) ofa-balance-grid-bin.$(OBJEXT) \
-	ofa-balance-render.$(OBJEXT) ofa-batline-treeview.$(OBJEXT) \
-	ofa-bat-page.$(OBJEXT) ofa-bat-properties.$(OBJEXT) \
-	ofa-bat-properties-bin.$(OBJEXT) ofa-bat-select.$(OBJEXT) \
-	ofa-bat-store.$(OBJEXT) ofa-bat-treeview.$(OBJEXT) \
-	ofa-bat-utils.$(OBJEXT) ofa-check-balances.$(OBJEXT) \
-	ofa-check-balances-bin.$(OBJEXT) ofa-check-integrity.$(OBJEXT) \
+	ofa-admin-credentials-bin.$(OBJEXT) ofa-application.$(OBJEXT) \
+	ofa-backup.$(OBJEXT) ofa-balance-args.$(OBJEXT) \
+	ofa-balance-grid-bin.$(OBJEXT) ofa-balance-render.$(OBJEXT) \
+	ofa-batline-treeview.$(OBJEXT) ofa-bat-page.$(OBJEXT) \
+	ofa-bat-properties.$(OBJEXT) ofa-bat-properties-bin.$(OBJEXT) \
+	ofa-bat-select.$(OBJEXT) ofa-bat-store.$(OBJEXT) \
+	ofa-bat-treeview.$(OBJEXT) ofa-bat-utils.$(OBJEXT) \
+	ofa-check-balances.$(OBJEXT) ofa-check-balances-bin.$(OBJEXT) \
+	ofa-check-integrity.$(OBJEXT) \
 	ofa-check-integrity-bin.$(OBJEXT) ofa-class-page.$(OBJEXT) \
 	ofa-class-properties.$(OBJEXT) ofa-class-store.$(OBJEXT) \
 	ofa-class-treeview.$(OBJEXT) ofa-closing-parms-bin.$(OBJEXT) \
@@ -505,6 +506,8 @@ openbook_SOURCES = \
 	ofa-account-filter-vv-bin.h							\
 	ofa-account-page.c									\
 	ofa-account-page.h									\
+	ofa-admin-credentials-bin.c							\
+	ofa-admin-credentials-bin.h							\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-application-def.h								\
@@ -803,6 +806,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-filter-vv-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-page.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-admin-credentials-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-application.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-backup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-args.Po@am__quote@

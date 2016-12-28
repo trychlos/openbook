@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_admin_credentials_bin
  * @short_description: #ofaAdminCredentialsBin class definition.
- * @include: core/ofa-admin-credentials-bin.h
+ * @include: ui/ofa-admin-credentials-bin.h
  *
  * Let the user enter dossier administrative account and password when
  * defining a new (or restoring a) dossier. We do not check here whether
@@ -71,8 +71,6 @@ ofaAdminCredentialsBin *ofa_admin_credentials_bin_new           ( void );
 
 GtkSizeGroup           *ofa_admin_credentials_bin_get_size_group( ofaAdminCredentialsBin *bin,
 																			guint column );
-
-void                    ofa_admin_credentials_bin_grab_focus    ( ofaAdminCredentialsBin *bin );
 
 gboolean                ofa_admin_credentials_bin_is_valid      ( ofaAdminCredentialsBin *bin,
 																			gchar **error_message );

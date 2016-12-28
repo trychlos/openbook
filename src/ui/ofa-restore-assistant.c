@@ -49,9 +49,9 @@
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 
-#include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
 
+#include "ui/ofa-admin-credentials-bin.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new-mini.h"
 #include "ui/ofa-dossier-open.h"
@@ -1011,8 +1011,6 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	p4_on_open_toggled( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), self );
 
 	p4_check_for_complete( self );
-
-	/*ofa_admin_credentials_bin_grab_focus( priv->p4_admin_credentials );*/
 }
 
 static void

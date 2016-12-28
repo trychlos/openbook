@@ -36,8 +36,7 @@
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 
-#include "core/ofa-admin-credentials-bin.h"
-
+#include "ui/ofa-admin-credentials-bin.h"
 #include "ui/ofa-dossier-actions-bin.h"
 #include "ui/ofa-dossier-edit-bin.h"
 #include "ui/ofa-dossier-meta-bin.h"

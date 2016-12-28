@@ -30,7 +30,7 @@
 
 #include "my/my-utils.h"
 
-#include "core/ofa-admin-credentials-bin.h"
+#include "ui/ofa-admin-credentials-bin.h"
 
 /* private instance data
  */
@@ -44,7 +44,7 @@ typedef struct {
 	GtkWidget    *password_entry;
 	GtkWidget    *bis_entry;
 
-	/* runtime data
+	/* runtime
 	 */
 	gchar        *account;
 	gchar        *password;
@@ -61,7 +61,7 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-admin-credentials-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-admin-credentials-bin.ui";
 
 static void     setup_bin( ofaAdminCredentialsBin *bin );
 static void     on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
@@ -266,41 +266,6 @@ ofa_admin_credentials_bin_get_size_group( ofaAdminCredentialsBin *bin, guint col
 	}
 
 	return( NULL );
-}
-
-/**
- * ofa_admin_credentials_bin_grab_focus:
- * @bin: this #ofaAdminCredentialsBin instance.
- *
- * Set the focus.
- */
-void
-ofa_admin_credentials_bin_grab_focus( ofaAdminCredentialsBin *bin )
-{
-	static const gchar *thisfn = "ofa_admin_credentials_bin_grab_focus";
-	ofaAdminCredentialsBinPrivate *priv;
-
-	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
-
-	g_return_if_fail( bin && OFA_IS_ADMIN_CREDENTIALS_BIN( bin ));
-
-	priv = ofa_admin_credentials_bin_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	if( my_strlen( priv->account )){
-		if( my_strlen( priv->password )){
-			if( my_strlen( priv->bis )){
-				gtk_widget_grab_focus( priv->account_entry );
-			} else {
-				gtk_widget_grab_focus( priv->bis_entry );
-			}
-		} else {
-			gtk_widget_grab_focus( priv->password_entry );
-		}
-	} else {
-		gtk_widget_grab_focus( priv->account_entry );
-	}
 }
 
 static void

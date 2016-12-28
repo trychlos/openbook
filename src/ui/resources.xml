@@ -3,6 +3,7 @@
   <gresource prefix="/org/trychlos/openbook/ui">
     <file>ofa-account-book-args.ui</file>
     <file>ofa-account-filter-vv-bin.ui</file>
+    <file>ofa-admin-credentials-bin.ui</file>
     <file>ofa-balance-args.ui</file>
     <file>ofa-bat-properties.ui</file>
     <file>ofa-bat-properties-bin.ui</file>

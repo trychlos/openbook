@@ -79,6 +79,8 @@ openbook_SOURCES = \
 	ofa-account-filter-vv-bin.h							\
 	ofa-account-page.c									\
 	ofa-account-page.h									\
+	ofa-admin-credentials-bin.c							\
+	ofa-admin-credentials-bin.h							\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-application-def.h								\
