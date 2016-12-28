@@ -73,6 +73,7 @@ static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, g
 static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, guint rule );
 static ofaIDBExerciceEditor *idbprovider_new_exercice_editor( ofaIDBProvider *instance, guint rule );
 static void                  isetter_iface_init( ofaISetterInterface *iface );
+static ofaIGetter           *isetter_get_getter( ofaISetter *instance );
 static void                  isetter_set_getter( ofaISetter *instance, ofaIGetter *getter );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDBProvider, ofa_mysql_dbprovider, G_TYPE_OBJECT, 0,
@@ -258,7 +259,18 @@ isetter_iface_init( ofaISetterInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->get_getter = isetter_get_getter;
 	iface->set_getter = isetter_set_getter;
+}
+
+static ofaIGetter *
+isetter_get_getter( ofaISetter *instance )
+{
+	ofaMysqlDBProviderPrivate *priv;
+
+	priv = ofa_mysql_dbprovider_get_instance_private( OFA_MYSQL_DBPROVIDER( instance ));
+
+	return( priv->getter );
 }
 
 static void

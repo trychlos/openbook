@@ -162,6 +162,28 @@ ofa_isetter_get_interface_version( GType type )
 }
 
 /**
+ * ofa_isetter_get_getter:
+ * @instance: this #ofaISetter instance.
+ *
+ * Returns: the previously attached #ofaIGetter.
+ */
+ofaIGetter *
+ofa_isetter_get_getter( ofaISetter *instance )
+{
+	static const gchar *thisfn = "ofa_isetter_get_getter";
+
+	g_return_val_if_fail( instance && OFA_IS_ISETTER( instance ), NULL );
+
+	if( OFA_ISETTER_GET_INTERFACE( instance )->get_getter ){
+		return( OFA_ISETTER_GET_INTERFACE( instance )->get_getter( instance ));
+	}
+
+	g_info( "%s: ofaISetter's %s implementation does not provide 'get_getter()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( NULL );
+}
+
+/**
  * ofa_isetter_set_getter:
  * @instance: this #ofaISetter instance.
  * @getter: a #ofaIGetter of the application.

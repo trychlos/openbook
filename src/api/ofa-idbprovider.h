@@ -48,7 +48,7 @@
  * This is an Openbook software suite choice to store most of the
  * meta data a dossier may require in a dedicated settings file.
  *
- * The #ofaIDBProvider implementation must implement the #ofaISetter
+ * The #ofaIDBProvider implementation *must* implement the #ofaISetter
  * interface. This is at least needed to get an access to the #ofaHub
  * object of the application, and though it to the #myISettings
  * interface used to managed the dedicated settings file.
@@ -178,7 +178,7 @@ GType                 ofa_idbprovider_get_type                  ( void );
 guint                 ofa_idbprovider_get_interface_last_version( void );
 
 ofaIDBProvider       *ofa_idbprovider_get_by_name               ( ofaHub *hub,
-																	const gchar *provider_name );
+																		const gchar *provider_name );
 
 /*
  * Implementation-wide
@@ -193,9 +193,6 @@ gchar                *ofa_idbprovider_get_canon_name            ( const ofaIDBPr
 gchar                *ofa_idbprovider_get_display_name          ( const ofaIDBProvider *provider );
 
 ofaHub               *ofa_idbprovider_get_hub                   ( ofaIDBProvider *provider );
-
-void                  ofa_idbprovider_set_hub                   ( ofaIDBProvider *provider,
-																		ofaHub *hub );
 
 ofaIDBDossierMeta    *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider *provider,
 																		const gchar *dossier_name );

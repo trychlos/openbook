@@ -71,9 +71,19 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint    ( *get_interface_version )( void );
+	guint        ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
+	/**
+	 * get_getter:
+	 * @instance: the #ofaISetter instance.
+	 *
+	 * Returns: the previously set #ofaIGetter instance.
+	 *
+	 * Since: version 1.
+	 */
+	ofaIGetter * ( *get_getter )          ( ofaISetter *instance );
+
 	/**
 	 * set_getter:
 	 * @instance: the #ofaISetter instance.
@@ -81,30 +91,34 @@ typedef struct {
 	 *
 	 * Set a @getter.
 	 *
+	 * This method is called right after instanciation of the object.
+	 *
 	 * Since: version 1.
 	 */
-	void      ( *set_getter )          ( ofaISetter *instance,
-											ofaIGetter *getter );
+	void         ( *set_getter )          ( ofaISetter *instance,
+												ofaIGetter *getter );
 }
 	ofaISetterInterface;
 
 /*
  * Interface-wide
  */
-GType  ofa_isetter_get_type                  ( void );
+GType       ofa_isetter_get_type                  ( void );
 
-guint  ofa_isetter_get_interface_last_version( void );
+guint       ofa_isetter_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint  ofa_isetter_get_interface_version     ( GType type );
+guint       ofa_isetter_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-void   ofa_isetter_set_getter                ( ofaISetter *instance,
-													ofaIGetter *getter );
+ofaIGetter *ofa_isetter_get_getter                ( ofaISetter *instance );
+
+void        ofa_isetter_set_getter                ( ofaISetter *instance,
+														ofaIGetter *getter );
 
 G_END_DECLS
 

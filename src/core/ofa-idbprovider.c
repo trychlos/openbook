@@ -35,18 +35,10 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
-
-/* some data attached to each IDBConnect instance
- * we store here the data provided by the application
- * which do not depend of a specific implementation
- */
-typedef struct {
-	ofaHub *hub;
-}
-	sIDBProvider;
+#include "api/ofa-igetter.h"
+#include "api/ofa-isetter.h"
 
 #define IDBPROVIDER_LAST_VERSION        1
-#define IDBPROVIDER_DATA               "idbprovider-data"
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
@@ -54,8 +46,6 @@ static GType           register_type( void );
 static void            interface_base_init( ofaIDBProviderInterface *klass );
 static void            interface_base_finalize( ofaIDBProviderInterface *klass );
 static ofaIDBProvider *provider_get_by_name( GList *modules, const gchar *name );
-static sIDBProvider   *get_instance_data( const ofaIDBProvider *self );
-static void            on_instance_finalized( sIDBProvider *sdata, GObject *finalized_provider );
 
 /**
  * ofa_idbprovider_get_type:
@@ -152,6 +142,12 @@ ofa_idbprovider_get_interface_last_version( void )
  * Returns: the #ofaIDBProvider module instance which publishes this
  * canonical name.
  *
+ * We check here:
+ * - that the #ofaIDBProvider implementation also implements the
+ *   #ofaISetter interface (which is a prerequisite).
+ *
+ * A provider which does not satisfy all prerequisites is not returned.
+ *
  * The returned reference is owned by the provider, and should not be
  * unreffed by the caller.
  */
@@ -172,11 +168,6 @@ ofa_idbprovider_get_by_name( ofaHub *hub, const gchar *provider_name )
 
 	ofa_extender_collection_free_types( modules );
 
-	if( module ){
-		g_return_val_if_fail( OFA_IS_IDBPROVIDER( module ), NULL );
-		ofa_idbprovider_set_hub( OFA_IDBPROVIDER( module ), hub );
-	}
-
 	return( module );
 }
 
@@ -188,11 +179,13 @@ provider_get_by_name( GList *modules, const gchar *name )
 	gint cmp;
 
 	for( it=modules ; it ; it=it->next ){
-		it_name = ofa_idbprovider_get_canon_name( OFA_IDBPROVIDER( it->data ));
-		cmp = my_collate( it_name, name );
-		g_free( it_name );
-		if( cmp == 0 ){
-			return( OFA_IDBPROVIDER( it->data ));
+		if( OFA_IS_ISETTER( it->data )){
+			it_name = ofa_idbprovider_get_canon_name( OFA_IDBPROVIDER( it->data ));
+			cmp = my_collate( it_name, name );
+			g_free( it_name );
+			if( cmp == 0 ){
+				return( OFA_IDBPROVIDER( it->data ));
+			}
 		}
 	}
 
@@ -282,33 +275,18 @@ ofa_idbprovider_get_display_name( const ofaIDBProvider *provider )
 ofaHub *
 ofa_idbprovider_get_hub( ofaIDBProvider *provider )
 {
-	sIDBProvider *sdata;
+	ofaIGetter *getter;
+	ofaHub *hub;
 
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
-	sdata = get_instance_data( provider );
+	getter = ofa_isetter_get_getter( OFA_ISETTER( provider ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	return( sdata->hub );
-}
+	hub = ofa_igetter_get_hub( getter );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-/**
- * ofa_idbprovider_set_hub:
- * @provider: this #ofaIDBProvider provider.
- * @hub: the #ofaHub object of the application.
- *
- * Attach the @hub to the @provider.
- */
-void
-ofa_idbprovider_set_hub( ofaIDBProvider *provider, ofaHub *hub )
-{
-	sIDBProvider *sdata;
-
-	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	sdata = get_instance_data( provider );
-
-	sdata->hub = hub;
+	return( hub );
 }
 
 /**
@@ -480,31 +458,4 @@ ofa_idbprovider_new_exercice_editor( ofaIDBProvider *provider, guint rule, ofaID
 	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_exercice_editor()' method",
 			thisfn, G_OBJECT_TYPE_NAME( provider ));
 	return( NULL );
-}
-
-static sIDBProvider *
-get_instance_data( const ofaIDBProvider *self )
-{
-	sIDBProvider *sdata;
-
-	sdata = ( sIDBProvider * ) g_object_get_data( G_OBJECT( self ), IDBPROVIDER_DATA );
-
-	if( !sdata ){
-		sdata = g_new0( sIDBProvider, 1 );
-		g_object_set_data( G_OBJECT( self ), IDBPROVIDER_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( self ), ( GWeakNotify ) on_instance_finalized, sdata );
-	}
-
-	return( sdata );
-}
-
-static void
-on_instance_finalized( sIDBProvider *sdata, GObject *finalized_provider)
-{
-	static const gchar *thisfn = "ofa_idbprovider_on_instance_finalized";
-
-	g_debug( "%s: sdata=%p, finalized_provider=%p",
-			thisfn, ( void * ) sdata, ( void * ) finalized_provider );
-
-	g_free( sdata );
 }

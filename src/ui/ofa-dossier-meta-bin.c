@@ -312,7 +312,6 @@ setup_dbms_provider( ofaDossierMetaBin *self )
 	for( it=modules ; it ; it=it->next ){
 		it_name = ofa_idbprovider_get_display_name( OFA_IDBPROVIDER( it->data ));
 		canon_name = ofa_idbprovider_get_canon_name( OFA_IDBPROVIDER( it->data ));
-		ofa_idbprovider_set_hub( OFA_IDBPROVIDER( it->data ), priv->hub );
 
 		if( my_strlen( it_name ) && my_strlen( canon_name )){
 			gtk_list_store_insert_with_values(
