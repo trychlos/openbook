@@ -48,6 +48,7 @@ typedef struct {
 	/* UI
 	 */
 	GtkSizeGroup *group0;
+	GtkWidget    *open_btn;
 	GtkWidget    *standard_btn;
 
 	/* runtime
@@ -70,6 +71,8 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier
 static void setup_bin( ofaDossierActionsBin *self );
 static void on_open_toggled( GtkToggleButton *button, ofaDossierActionsBin *self );
 static void changed_composite( ofaDossierActionsBin *self );
+static void read_settings( ofaDossierActionsBin *self );
+static void write_settings( ofaDossierActionsBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierActionsBin, ofa_dossier_actions_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaDossierActionsBin ))
@@ -104,6 +107,8 @@ dossier_actions_bin_dispose( GObject *instance )
 	priv = ofa_dossier_actions_bin_get_instance_private( OFA_DOSSIER_ACTIONS_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		write_settings( OFA_DOSSIER_ACTIONS_BIN( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -200,6 +205,7 @@ ofa_dossier_actions_bin_new( ofaHub *hub, const gchar *settings_prefix, guint ru
 	priv->settings_prefix = g_strdup( settings_prefix );
 
 	setup_bin( bin );
+	read_settings( bin );
 
 	return( bin );
 }
@@ -235,6 +241,7 @@ setup_bin( ofaDossierActionsBin *self )
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dab-open-btn" );
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
 	g_signal_connect( btn, "toggled", G_CALLBACK( on_open_toggled ), self );
+	priv->open_btn = btn;
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), FALSE );
 	on_open_toggled( GTK_TOGGLE_BUTTON( btn ), self );
 
@@ -323,4 +330,59 @@ ofa_dossier_actions_bin_apply( ofaDossierActionsBin *bin )
 	ok = TRUE;
 
 	return( ok );
+}
+
+/*
+ * settings are: "open_on_creation(b); apply_standard_actions(b);"
+ */
+static void
+read_settings( ofaDossierActionsBin *self )
+{
+	ofaDossierActionsBinPrivate *priv;
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gchar *key;
+
+	priv = ofa_dossier_actions_bin_get_instance_private( self );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-dossier-actions", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->open_btn ), my_utils_boolean_from_str( cstr ));
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->standard_btn ), my_utils_boolean_from_str( cstr ));
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
+}
+
+static void
+write_settings( ofaDossierActionsBin *self )
+{
+	ofaDossierActionsBinPrivate *priv;
+	myISettings *settings;
+	gchar *key, *str;
+
+	priv = ofa_dossier_actions_bin_get_instance_private( self );
+
+	str = g_strdup_printf( "%s;%s;",
+				gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_btn )) ? "True":"False",
+				gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->standard_btn )) ? "True":"False" );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-dossier-actions", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
+
+	g_free( key );
+	g_free( str );
 }
