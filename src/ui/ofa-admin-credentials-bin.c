@@ -30,6 +30,8 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
+
 #include "ui/ofa-admin-credentials-bin.h"
 
 /* private instance data
@@ -37,10 +39,16 @@
 typedef struct {
 	gboolean      dispose_has_run;
 
+	/* initialization
+	 */
+	ofaHub       *hub;
+	gchar        *settings_prefix;
+
 	/* UI
 	 */
 	GtkSizeGroup *group0;
 	GtkWidget    *account_entry;
+	GtkWidget    *remember_btn;
 	GtkWidget    *password_entry;
 	GtkWidget    *bis_entry;
 
@@ -69,6 +77,8 @@ static void     on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin 
 static void     on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
 static void     changed_composite( ofaAdminCredentialsBin *self );
 static gboolean is_valid_composite( ofaAdminCredentialsBin *self );
+static void     read_settings( ofaAdminCredentialsBin *self );
+static void     write_settings( ofaAdminCredentialsBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaAdminCredentialsBin, ofa_admin_credentials_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaAdminCredentialsBin ))
@@ -87,6 +97,7 @@ admin_credentials_bin_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_admin_credentials_bin_get_instance_private( OFA_ADMIN_CREDENTIALS_BIN( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->account );
 	g_free( priv->password );
 	g_free( priv->bis );
@@ -105,6 +116,8 @@ admin_credentials_bin_dispose( GObject *instance )
 	priv = ofa_admin_credentials_bin_get_instance_private( OFA_ADMIN_CREDENTIALS_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		write_settings( OFA_ADMIN_CREDENTIALS_BIN( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -130,6 +143,7 @@ ofa_admin_credentials_bin_init( ofaAdminCredentialsBin *self )
 	priv = ofa_admin_credentials_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -143,7 +157,7 @@ ofa_admin_credentials_bin_class_init( ofaAdminCredentialsBinClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = admin_credentials_bin_finalize;
 
 	/**
-	 * ofaAdminCredentialsBin::changed:
+	 * ofaAdminCredentialsBin::ofa-changed:
 	 *
 	 * This signal is sent on the #ofaAdminCredentialsBin when one of
 	 * the three entry fields (account, password or second password) is
@@ -172,15 +186,30 @@ ofa_admin_credentials_bin_class_init( ofaAdminCredentialsBinClass *klass )
 
 /**
  * ofa_admin_credentials_bin_new:
+ * @hub: the #ofaHub object of the application.
+ * @settings_prefix: the prefix of the key in user settings.
+ *
+ * Returns: a new #ofaAdminCredentialsBin widget.
  */
 ofaAdminCredentialsBin *
-ofa_admin_credentials_bin_new( void )
+ofa_admin_credentials_bin_new( ofaHub *hub, const gchar *settings_prefix )
 {
 	ofaAdminCredentialsBin *bin;
+	ofaAdminCredentialsBinPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	bin = g_object_new( OFA_TYPE_ADMIN_CREDENTIALS_BIN, NULL );
 
+	priv = ofa_admin_credentials_bin_get_instance_private( bin );
+
+	priv->hub = hub;
+
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( settings_prefix );
+
 	setup_bin( bin );
+	read_settings( bin );
 
 	return( bin );
 }
@@ -191,7 +220,7 @@ setup_bin( ofaAdminCredentialsBin *bin )
 	ofaAdminCredentialsBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
-	GtkWidget *toplevel, *label;
+	GtkWidget *toplevel, *label, *btn;
 
 	priv = ofa_admin_credentials_bin_get_instance_private( bin );
 
@@ -213,6 +242,10 @@ setup_bin( ofaAdminCredentialsBin *bin )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->account_entry );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-remember-btn" );
+	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	priv->remember_btn = btn;
 
 	priv->password_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "acb-password-entry" );
 	g_return_if_fail( priv->password_entry && GTK_IS_ENTRY( priv->password_entry ));
@@ -366,4 +399,52 @@ is_valid_composite( ofaAdminCredentialsBin *bin )
 			!g_utf8_collate( priv->password, priv->bis );
 
 	return( ok );
+}
+
+/*
+ * settings are: remember_admin_account(b);
+ */
+static void
+read_settings( ofaAdminCredentialsBin *self )
+{
+	ofaAdminCredentialsBinPrivate *priv;
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gchar *key;
+
+	priv = ofa_admin_credentials_bin_get_instance_private( self );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-admin-credentials", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->remember_btn ), my_utils_boolean_from_str( cstr ));
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
+}
+
+static void
+write_settings( ofaAdminCredentialsBin *self )
+{
+	ofaAdminCredentialsBinPrivate *priv;
+	myISettings *settings;
+	gchar *key, *str;
+
+	priv = ofa_admin_credentials_bin_get_instance_private( self );
+
+	str = g_strdup_printf( "%s;",
+				gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->remember_btn )) ? "True":"False" );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-admin-credentials", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
+
+	g_free( key );
+	g_free( str );
 }

@@ -965,7 +965,7 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-admin-credentials" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p4_admin_credentials = ofa_admin_credentials_bin_new();
+	priv->p4_admin_credentials = ofa_admin_credentials_bin_new( priv->hub, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_admin_credentials ));
 	my_utils_size_group_add_size_group(
 			hgroup, ofa_admin_credentials_bin_get_size_group( priv->p4_admin_credentials, 0 ));

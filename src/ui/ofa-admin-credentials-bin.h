@@ -44,6 +44,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-hub-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_ADMIN_CREDENTIALS_BIN                ( ofa_admin_credentials_bin_get_type())
@@ -67,7 +69,8 @@ typedef struct {
 
 GType                   ofa_admin_credentials_bin_get_type      ( void ) G_GNUC_CONST;
 
-ofaAdminCredentialsBin *ofa_admin_credentials_bin_new           ( void );
+ofaAdminCredentialsBin *ofa_admin_credentials_bin_new           ( ofaHub *hub,
+																		const gchar *settings_prefix );
 
 GtkSizeGroup           *ofa_admin_credentials_bin_get_size_group( ofaAdminCredentialsBin *bin,
 																			guint column );
