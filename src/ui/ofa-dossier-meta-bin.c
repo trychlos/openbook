@@ -43,24 +43,28 @@
 /* private instance data
  */
 typedef struct {
-	gboolean        dispose_has_run;
+	gboolean           dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub         *hub;
-	gchar          *settings_prefix;
-	guint           rule;
+	ofaHub            *hub;
+	gchar             *settings_prefix;
+	guint              rule;
 
 	/* UI
 	 */
-	GtkSizeGroup   *group0;
-	GtkWidget      *dbms_combo;
+	GtkSizeGroup      *group0;
+	GtkWidget         *dbms_combo;
 
 	/* runtime
 	 */
-	gchar          *dossier_name;
-	gchar          *provider_name;
-	ofaIDBProvider *provider;
+	gchar             *dossier_name;
+	gchar             *provider_name;
+	ofaIDBProvider    *provider;
+
+	/* on apply
+	 */
+	ofaIDBDossierMeta *dossier_meta;
 }
 	ofaDossierMetaBinPrivate;
 
@@ -507,19 +511,16 @@ is_valid( ofaDossierMetaBin *self, gchar **msgerr )
  * ofa_dossier_meta_bin_apply:
  * @bin: this #ofaDossierMetaBin instance.
  *
- * Define the dossier in user settings, which triggers a #ofaDossierStore
- * update.
+ * If needed (on new dossier), instanciates a new #ofaIDBDossierMeta.
+ * Register the #ofaIDBDossierMeta in dossier settings.
  *
- * The #ofaDossierMeta object passed at initialization time is
- * instanciated if not already done, and updated with the meta datas.
- *
- * Returns: %TRUE if the dossier has been successfully defined in the
- * settings.
+ * Returns: %TRUE.
  */
 gboolean
 ofa_dossier_meta_bin_apply( ofaDossierMetaBin *bin )
 {
 	ofaDossierMetaBinPrivate *priv;
+	ofaDossierCollection *collection;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_META_BIN( bin ), FALSE );
 	g_return_val_if_fail( ofa_dossier_meta_bin_is_valid( bin, NULL ), FALSE );
@@ -528,37 +529,25 @@ ofa_dossier_meta_bin_apply( ofaDossierMetaBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
+	switch( priv->rule ){
+		case HUB_RULE_DOSSIER_NEW:
+			priv->dossier_meta = ofa_idbprovider_new_dossier_meta( priv->provider, priv->dossier_name );
+			collection = ofa_hub_get_dossier_collection( priv->hub );
+			ofa_dossier_collection_register_meta( collection, priv->dossier_meta );
+			break;
+	}
+
 	return( TRUE );
-}
-
-/**
- * ofa_dossier_meta_bin_get_dossier_name:
- * @bin: this #ofaDossierMetaBin instance.
- *
- * Returns: the name of the dossier.
- */
-const gchar *
-ofa_dossier_meta_bin_get_dossier_name( ofaDossierMetaBin *bin )
-{
-	ofaDossierMetaBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_META_BIN( bin ), NULL );
-
-	priv = ofa_dossier_meta_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->dossier_name );
 }
 
 /**
  * ofa_dossier_meta_bin_get_provider:
  * @bin: this #ofaDossierMetaBin instance.
  *
- * Returns: the currently selected #ofaIDBProvider.
+ * Returns: the currently selected #ofaIDBProvider instance.
  *
- * The returned reference is owned by the @bin, and should not be
- * released by the caller.
+ * The returned reference is owned by the @bin instance, and should not
+ * be released by the caller.
  */
 ofaIDBProvider *
 ofa_dossier_meta_bin_get_provider( ofaDossierMetaBin *bin )
@@ -572,6 +561,29 @@ ofa_dossier_meta_bin_get_provider( ofaDossierMetaBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->provider );
+}
+
+/**
+ * ofa_dossier_meta_bin_get_dossier_meta:
+ * @bin: this #ofaDossierMetaBin instance.
+ *
+ * Returns: the #ofaIDBDossierMeta object.
+ *
+ * On new dossier, the #ofaIDBDossierMeta object has been instanciated
+ * at apply time.
+ */
+ofaIDBDossierMeta *
+ofa_dossier_meta_bin_get_dossier_meta( ofaDossierMetaBin *bin )
+{
+	ofaDossierMetaBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_META_BIN( bin ), NULL );
+
+	priv = ofa_dossier_meta_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->dossier_meta );
 }
 
 /*

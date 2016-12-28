@@ -371,24 +371,29 @@ ofa_mysql_dossier_bin_is_valid( ofaMysqlDossierBin *bin, gchar **message )
 /**
  * ofa_mysql_dossier_bin_apply:
  * @bin: this #ofaMysqlDossierBin instance.
+ * @meta: the #ofaIDBDossierMeta dossier.
  *
- * Write informations in the settings.
+ * Write informations in the dossier settings.
  *
- * Returns: %TRUE if the informations have been successfully written in
- * the settings.
+ * Returns: %TRUE.
  */
 gboolean
-ofa_mysql_dossier_bin_apply( ofaMysqlDossierBin *bin )
+ofa_mysql_dossier_bin_apply( ofaMysqlDossierBin *bin, ofaIDBDossierMeta *meta )
 {
 	ofaMysqlDossierBinPrivate *priv;
 
 	g_return_val_if_fail( bin && OFA_IS_MYSQL_DOSSIER_BIN( bin ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), FALSE );
 
 	priv = ofa_mysql_dossier_bin_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( FALSE );
+	ofa_mysql_dossier_meta_set_host( OFA_MYSQL_DOSSIER_META( meta ), priv->host );
+	ofa_mysql_dossier_meta_set_port( OFA_MYSQL_DOSSIER_META( meta ), priv->port );
+	ofa_mysql_dossier_meta_set_socket( OFA_MYSQL_DOSSIER_META( meta ), priv->socket );
+
+	return( TRUE );
 }
 
 /**

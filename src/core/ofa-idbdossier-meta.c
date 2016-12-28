@@ -296,6 +296,26 @@ ofa_idbdossier_meta_get_settings( const ofaIDBDossierMeta *meta )
 }
 
 /**
+ * ofa_idbdossier_meta_set_settings:
+ * @meta: this #ofaIDBDossierMeta instance.
+ * @settings: the dossier settings interface.
+ *
+ * Set the @settings.
+ */
+void
+ofa_idbdossier_meta_set_settings( ofaIDBDossierMeta *meta, myISettings *settings )
+{
+	sIDBMeta *sdata;
+
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
+	g_return_if_fail( settings && MY_IS_ISETTINGS( settings ));
+
+	sdata = get_instance_data( meta );
+
+	sdata->settings = settings;
+}
+
+/**
  * ofa_idbdossier_meta_get_group_name:
  * @meta: this #ofaIDBDossierMeta instance.
  *
@@ -313,6 +333,27 @@ ofa_idbdossier_meta_get_group_name( const ofaIDBDossierMeta *meta )
 	sdata = get_instance_data( meta );
 
 	return( g_strdup( sdata->group_name ));
+}
+
+/**
+ * ofa_idbdossier_meta_set_group_name:
+ * @meta: this #ofaIDBDossierMeta instance.
+ * @group_name: the group of this @meta in the settings.
+ *
+ * Set the @group_name.
+ */
+void
+ofa_idbdossier_meta_set_group_name( ofaIDBDossierMeta *meta, const gchar *group_name )
+{
+	sIDBMeta *sdata;
+
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
+	g_return_if_fail( my_strlen( group_name ));
+
+	sdata = get_instance_data( meta );
+
+	g_free( sdata->group_name );
+	sdata->group_name = g_strdup( group_name );
 }
 
 /**
@@ -335,8 +376,7 @@ ofa_idbdossier_meta_set_from_settings( ofaIDBDossierMeta *meta, myISettings *set
 
 	sdata = get_instance_data( meta );
 
-	g_clear_object( &sdata->settings );
-	sdata->settings = g_object_ref( settings );
+	sdata->settings = settings;
 
 	g_free( sdata->group_name );
 	sdata->group_name = g_strdup( group_name );
@@ -705,7 +745,6 @@ on_instance_finalized( sIDBMeta *sdata, GObject *finalized_meta )
 
 	g_clear_object( &sdata->provider );
 	g_free( sdata->dossier_name );
-	g_clear_object( &sdata->settings );
 	g_free( sdata->group_name );
 	ofa_idbdossier_meta_free_periods( sdata->periods );
 	g_free( sdata );

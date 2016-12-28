@@ -85,7 +85,8 @@ gboolean         ofa_mysql_root_bin_is_valid        ( ofaMysqlRootBin *bin,
 void             ofa_mysql_root_bin_set_valid       ( ofaMysqlRootBin *bin,
 															gboolean valid );
 
-gboolean         ofa_mysql_root_bin_apply           ( ofaMysqlRootBin *bin );
+gboolean         ofa_mysql_root_bin_apply           ( ofaMysqlRootBin *bin,
+															ofaIDBDossierMeta *meta );
 
 const gchar     *ofa_mysql_root_bin_get_account     ( ofaMysqlRootBin *bin );
 

@@ -128,6 +128,7 @@ libofa_core_la_SOURCES = \
 	ofa-iprintable.c									\
 	ofa-iproperties.c									\
 	ofa-irenderable.c									\
+	ofa-isetter.c										\
 	ofa-isignal-hub.c									\
 	ofa-istore.c										\
 	ofa-itree-adder.c									\

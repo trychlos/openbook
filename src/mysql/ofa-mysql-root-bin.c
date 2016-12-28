@@ -35,6 +35,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
 
+#include "mysql/ofa-mysql-dossier-meta.h"
 #include "mysql/ofa-mysql-root-bin.h"
 
 /* private instance data
@@ -446,21 +447,25 @@ ofa_mysql_root_bin_set_valid( ofaMysqlRootBin *bin, gboolean valid )
 /**
  * ofa_mysql_root_bin_apply:
  * @bin: this #ofaMysqlRootBin instance.
+ * @meta: the #ofaIDBDossierMeta dossier.
  *
- * Returns: %TRUE if settings have been successfully registered.
+ * Returns: %TRUE.
  */
 gboolean
-ofa_mysql_root_bin_apply( ofaMysqlRootBin *bin )
+ofa_mysql_root_bin_apply( ofaMysqlRootBin *bin, ofaIDBDossierMeta *meta )
 {
 	ofaMysqlRootBinPrivate *priv;
 
 	g_return_val_if_fail( bin && OFA_IS_MYSQL_ROOT_BIN( bin ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), FALSE );
 
 	priv = ofa_mysql_root_bin_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( FALSE );
+	ofa_mysql_dossier_meta_set_root_account( OFA_MYSQL_DOSSIER_META( meta ), priv->remember ? priv->account : NULL );
+
+	return( TRUE );
 }
 
 /**

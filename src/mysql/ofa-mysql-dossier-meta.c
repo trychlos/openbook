@@ -46,6 +46,7 @@ typedef struct {
 	gchar   *host;
 	gchar   *socket;
 	guint    port;
+	gchar   *root_account;
 }
 	ofaMysqlDossierMetaPrivate;
 
@@ -62,6 +63,7 @@ static ofaMysqlExerciceMeta *find_period( ofaMysqlExerciceMeta *period, GList *l
 static void                  idbdossier_meta_update_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period, gboolean current, const GDate *begin, const GDate *end );
 static void                  idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period );
 static void                  idbdossier_meta_dump( const ofaIDBDossierMeta *instance );
+static void                  write_settings( ofaMysqlDossierMeta *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierMeta, ofa_mysql_dossier_meta, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlDossierMeta )
@@ -83,6 +85,7 @@ mysql_dossier_meta_finalize( GObject *instance )
 
 	g_free( priv->host );
 	g_free( priv->socket );
+	g_free( priv->root_account );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_mysql_dossier_meta_parent_class )->finalize( instance );
@@ -118,6 +121,10 @@ ofa_mysql_dossier_meta_init( ofaMysqlDossierMeta *self )
 	priv = ofa_mysql_dossier_meta_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->host = NULL;
+	priv->port = 0;
+	priv->socket = NULL;
+	priv->root_account = NULL;
 }
 
 static void
@@ -358,6 +365,77 @@ ofa_mysql_dossier_meta_get_host( ofaMysqlDossierMeta *meta )
 }
 
 /**
+ * ofa_mysql_dossier_meta_set_host:
+ * @meta: this #ofaMysqlDossierMeta object.
+ * @host: [allow-none]: the hostname to be set.
+ *
+ * Set the hostname of the DBMS instance.
+ */
+void
+ofa_mysql_dossier_meta_set_host( ofaMysqlDossierMeta *meta, const gchar *host )
+{
+	ofaMysqlDossierMetaPrivate *priv;
+
+	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
+
+	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->host );
+	priv->host = NULL;
+	if( my_strlen( host )){
+		priv->host = g_strdup( host );
+	}
+
+	write_settings( meta );
+}
+
+/**
+ * ofa_mysql_dossier_meta_get_port:
+ * @meta: this #ofaMysqlDossierMeta object.
+ *
+ * Returns: the listening port of the dataserver, or zero for the
+ * default value.
+ */
+guint
+ofa_mysql_dossier_meta_get_port( ofaMysqlDossierMeta *meta )
+{
+	ofaMysqlDossierMetaPrivate *priv;
+
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), 0 );
+
+	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
+
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+
+	return( priv->port );
+}
+
+/**
+ * ofa_mysql_dossier_meta_set_port:
+ * @meta: this #ofaMysqlDossierMeta object.
+ * @port: the port number to be set, or zero.
+ *
+ * Set the port number of the DBMS instance.
+ */
+void
+ofa_mysql_dossier_meta_set_port( ofaMysqlDossierMeta *meta, guint port )
+{
+	ofaMysqlDossierMetaPrivate *priv;
+
+	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
+
+	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->port = port;
+
+	write_settings( meta );
+}
+
+/**
  * ofa_mysql_dossier_meta_get_socket:
  * @meta: this #ofaMysqlDossierMeta object.
  *
@@ -381,24 +459,80 @@ ofa_mysql_dossier_meta_get_socket( ofaMysqlDossierMeta *meta )
 }
 
 /**
- * ofa_mysql_dossier_meta_get_port:
+ * ofa_mysql_dossier_meta_set_socket:
  * @meta: this #ofaMysqlDossierMeta object.
+ * @socket: [allow-none]: the socket path to be set.
  *
- * Returns: the listening port of the dataserver, or zero for the
- * default value.
+ * Set the socket path of the DBMS instance.
  */
-guint
-ofa_mysql_dossier_meta_get_port( ofaMysqlDossierMeta *meta )
+void
+ofa_mysql_dossier_meta_set_socket( ofaMysqlDossierMeta *meta, const gchar *socket )
 {
 	ofaMysqlDossierMetaPrivate *priv;
 
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), 0 );
+	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
 
 	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
 
-	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+	g_return_if_fail( !priv->dispose_has_run );
 
-	return( priv->port );
+	g_free( priv->socket );
+	priv->socket = NULL;
+	if( my_strlen( socket )){
+		priv->socket = g_strdup( socket );
+	}
+
+	write_settings( meta );
+}
+
+/**
+ * ofa_mysql_dossier_meta_get_root_account:
+ * @meta: this #ofaMysqlDossierMeta object.
+ *
+ * Returns: the root_account of the dataserver (if set), or %NULL.
+ *
+ * The returned string is owned by the @meta object, and should not be
+ * freed by the caller.
+ */
+const gchar *
+ofa_mysql_dossier_meta_get_root_account( ofaMysqlDossierMeta *meta )
+{
+	ofaMysqlDossierMetaPrivate *priv;
+
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), NULL );
+
+	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return(( const gchar * ) priv->root_account );
+}
+
+/**
+ * ofa_mysql_dossier_meta_set_root_account:
+ * @meta: this #ofaMysqlDossierMeta object.
+ * @root_account: [allow-none]: the root_account to be set.
+ *
+ * Set the root_account of the DBMS instance.
+ */
+void
+ofa_mysql_dossier_meta_set_root_account( ofaMysqlDossierMeta *meta, const gchar *root_account )
+{
+	ofaMysqlDossierMetaPrivate *priv;
+
+	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
+
+	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->root_account );
+	priv->root_account = NULL;
+	if( my_strlen( root_account )){
+		priv->root_account = g_strdup( root_account );
+	}
+
+	write_settings( meta );
 }
 
 /**
@@ -429,4 +563,31 @@ ofa_mysql_dossier_meta_add_period( ofaMysqlDossierMeta *meta,
 	g_object_unref( period );
 
 	g_free( group );
+}
+
+/*
+ * Settings are: "host(s); port(u); socket(s); root_account(s);
+ */
+static void
+write_settings( ofaMysqlDossierMeta *self )
+{
+	ofaMysqlDossierMetaPrivate *priv;
+	myISettings *settings;
+	const gchar *group;
+	gchar *str;
+
+	priv = ofa_mysql_dossier_meta_get_instance_private( self );
+
+	str = g_strdup_printf( "%s;%u;%s;%s;",
+			my_strlen( priv->host ) ? priv->host : "",
+			priv->port,
+			my_strlen( priv->socket ) ? priv->socket : "",
+			my_strlen( priv->root_account ) ? priv->root_account : "" );
+
+	settings = ofa_idbdossier_meta_get_settings( OFA_IDBDOSSIER_META( self ));
+	group = ofa_idbdossier_meta_get_group_name( OFA_IDBDOSSIER_META( self ));
+
+	my_isettings_set_string( settings, group, "mysql-instance", str );
+
+	g_free( str );
 }

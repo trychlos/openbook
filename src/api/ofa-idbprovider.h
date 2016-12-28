@@ -38,7 +38,7 @@
  *
  * The module which provides an #ofaIDBProvider instance should most
  * probably also provide an #ofaIDBModel implementation, as it is the
- * IDBProvider responsability to create the underlying DB model.
+ * #ofaIDBProvider responsability to create the underlying DB model.
  *
  * As the two #ofaIDBProvider and #ofaIDBmodel must each provides their
  * own identification, and because this identification relies on the
@@ -47,6 +47,11 @@
  *
  * This is an Openbook software suite choice to store most of the
  * meta data a dossier may require in a dedicated settings file.
+ *
+ * The #ofaIDBProvider implementation must implement the #ofaISetter
+ * interface. This is at least needed to get an access to the #ofaHub
+ * object of the application, and though it to the #myISettings
+ * interface used to managed the dedicated settings file.
  */
 
 #include <glib-object.h>

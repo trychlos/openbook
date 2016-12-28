@@ -124,12 +124,16 @@ guint        ofa_extension_list_types        ( const GType **types );
  * @cb: an application-provided #ofaExtensionEnumTypesCb callback.
  * @user_data: user data to be passed to the @cb.
  *
- * The plugin manager call this function after successfull
+ * The plugin manager call this function after successful
  * #ofa_extension_startup().
  *
  * It is expected that the dynamic extension calls the @cb callback
- * once for each managed #GType object. These objects will be instanciated
- * by the plugin manager.
+ * once for each managed #GType object. Each one of these objects will
+ * be instanciated once by the plugin manager.
+ *
+ * The #ofaISetter interface is called on those of these objects which
+ * implement this interface. This interface aims to provide some initial
+ * pointers to plugin objects.
  *
  * An Openbook extension implementing the version 2 of this API MUST
  * implement this function in order to be considered as a valid candidate

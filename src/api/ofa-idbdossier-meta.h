@@ -198,7 +198,13 @@ void                ofa_idbdossier_meta_set_dossier_name          ( ofaIDBDossie
 
 myISettings        *ofa_idbdossier_meta_get_settings              ( const ofaIDBDossierMeta *meta );
 
+void                ofa_idbdossier_meta_set_settings              ( ofaIDBDossierMeta *meta,
+																		myISettings *settings );
+
 gchar              *ofa_idbdossier_meta_get_group_name            ( const ofaIDBDossierMeta *meta );
+
+void                ofa_idbdossier_meta_set_group_name            ( ofaIDBDossierMeta *meta,
+																		const gchar *group_name );
 
 void                ofa_idbdossier_meta_set_from_settings         ( ofaIDBDossierMeta *meta,
 																		myISettings *settings,

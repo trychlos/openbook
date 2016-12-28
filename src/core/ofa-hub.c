@@ -765,7 +765,7 @@ ofa_hub_get_for_type( ofaHub *hub, GType type )
  * view.
  *
  * The returned reference is owned by the @hub instance, and should not
- * be unreffed by the caller.
+ * be released by the caller.
  */
 ofaDossierCollection *
 ofa_hub_get_dossier_collection( ofaHub *hub )

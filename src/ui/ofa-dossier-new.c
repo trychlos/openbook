@@ -298,6 +298,10 @@ check_for_enable_dlg( ofaDossierNew *self )
 	}
 }
 
+/*
+ * Create the database
+ * and register the new dossier in dossier settings
+ */
 static gboolean
 do_create( ofaDossierNew *self, gchar **msgerr )
 {

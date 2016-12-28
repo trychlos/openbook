@@ -413,7 +413,8 @@ ofa_dossier_edit_bin_is_valid( ofaDossierEditBin *bin, gchar **message )
 /**
  * ofa_dossier_edit_bin_apply:
  *
- * Define the dossier in user settings.
+ * Define the dossier in dossier settings.
+ * The caller is responsible for actually creating the database.
  *
  * Returns: %TRUE if the new dossier has been successfully registered.
  */
@@ -421,7 +422,8 @@ gboolean
 ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 {
 	ofaDossierEditBinPrivate *priv;
-	gboolean ok = TRUE;
+	gboolean ok;
+	ofaIDBDossierMeta *dossier_meta;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), FALSE );
 
@@ -429,11 +431,17 @@ ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
+	ok = TRUE;
+	dossier_meta = NULL;
+
 	if( ok ){
 		ok = ofa_dossier_meta_bin_apply( priv->dossier_meta_bin );
+		if( ok ){
+			dossier_meta = ofa_dossier_meta_bin_get_dossier_meta( priv->dossier_meta_bin );
+		}
 	}
 	if( ok ){
-		ok = priv->dossier_editor_bin ? ofa_idbdossier_editor_apply( priv->dossier_editor_bin ) : TRUE;
+		ok = priv->dossier_editor_bin ? ofa_idbdossier_editor_apply( priv->dossier_editor_bin, dossier_meta ) : TRUE;
 	}
 	if( ok ){
 		ok = ofa_exercice_meta_bin_apply( priv->exercice_meta_bin );

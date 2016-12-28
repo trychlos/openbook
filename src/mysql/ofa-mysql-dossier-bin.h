@@ -76,7 +76,8 @@ GtkSizeGroup       *ofa_mysql_dossier_bin_get_size_group  ( ofaMysqlDossierBin *
 gboolean            ofa_mysql_dossier_bin_is_valid        ( ofaMysqlDossierBin *bin,
 																gchar **error_message );
 
-gboolean            ofa_mysql_dossier_bin_apply           ( ofaMysqlDossierBin *bin );
+gboolean            ofa_mysql_dossier_bin_apply           ( ofaMysqlDossierBin *bin,
+																ofaIDBDossierMeta *meta );
 
 const gchar        *ofa_mysql_dossier_bin_get_host        ( ofaMysqlDossierBin *bin );
 

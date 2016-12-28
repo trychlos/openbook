@@ -34,6 +34,7 @@ x * Open Firm Accounting
 #include "api/ofa-extender-module.h"
 #include "api/ofa-extension.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-isetter.h"
 
 /* private instance data
  */
@@ -332,6 +333,7 @@ plugin_enum_type( GType type, ofaExtenderModule *self )
 /*
  * The plugin has returned a list of the primary GType it provides.
  * Allocate a new object for each of these.
+ * For those who implement the ofaISetter interface, calls it.
  */
 static void
 plugin_add_type( ofaExtenderModule *self, GType type )
@@ -345,6 +347,10 @@ plugin_add_type( ofaExtenderModule *self, GType type )
 	object = g_object_new( type, NULL );
 
 	g_debug( "%s: object=%p (%s)", thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+
+	if( OFA_IS_ISETTER( object )){
+		ofa_isetter_set_getter( OFA_ISETTER( object ), priv->getter );
+	}
 
 	g_object_weak_ref( object, ( GWeakNotify ) on_object_finalized, self );
 

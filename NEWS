@@ -65,6 +65,7 @@
    - ofaIDBDossierEditor: new interface.
    - ofaIDBExerciceEditor: new interface.
    - ofaIDBprovider: maintains a pointer to ofaHub.
+   - ofaISetter: new interface which targets dynamic objects.
    - ofaLedgerBookBin class is renamed to ofaLedgerBookArgs.
    - ofaLedgerSummaryBin class is renamed to ofaLedgerSummaryArgs.
    - ofaMysqlDossierBin: new class.

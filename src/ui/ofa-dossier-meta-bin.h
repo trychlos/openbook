@@ -80,9 +80,9 @@ gboolean           ofa_dossier_meta_bin_is_valid        ( ofaDossierMetaBin *bin
 
 gboolean           ofa_dossier_meta_bin_apply           ( ofaDossierMetaBin *bin );
 
-const gchar       *ofa_dossier_meta_bin_get_dossier_name( ofaDossierMetaBin *bin );
-
 ofaIDBProvider    *ofa_dossier_meta_bin_get_provider    ( ofaDossierMetaBin *bin );
+
+ofaIDBDossierMeta *ofa_dossier_meta_bin_get_dossier_meta( ofaDossierMetaBin *bin );
 
 G_END_DECLS
 

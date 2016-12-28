@@ -73,7 +73,6 @@ typedef struct _ofaIDBDossierEditor                     ofaIDBDossierEditor;
  * @get_size_group: [may]: returns the #GtkSizeGroup of the column.
  * @is_valid: [may]: returns %TRUE if the entered informations are valid.
  * @apply: [may]: register the informations in the settings.
- * @set_meta: [may]: initialize the widget with provided data.
  *
  * This defines the interface that an #ofaIDBDossierEditor should implement.
  */
@@ -106,7 +105,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	GtkSizeGroup * ( *get_size_group )       ( const ofaIDBDossierEditor *instance,
-															guint column );
+														guint column );
 
 	/**
 	 * is_valid:
@@ -121,7 +120,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean       ( *is_valid )             ( const ofaIDBDossierEditor *instance,
-															gchar **message );
+														gchar **message );
 
 	/**
 	 * apply:
@@ -131,19 +130,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean       ( *apply )                ( const ofaIDBDossierEditor *instance );
-
-	/**
-	 * set_dossier_meta:
-	 * @instance: the #ofaIDBDossierEditor instance.
-	 * @dossier_meta: the #ofaIDBDossierMeta object.
-	 *
-	 * Setup the @dossier_meta.
-	 *
-	 * Since: version 1
-	 */
-	void           ( *set_dossier_meta )     ( const ofaIDBDossierEditor *instance,
-															ofaIDBDossierMeta *dossier_meta );
+	gboolean       ( *apply )                ( const ofaIDBDossierEditor *instance,
+														ofaIDBDossierMeta *dossier_meta );
 }
 	ofaIDBDossierEditorInterface;
 
@@ -162,21 +150,19 @@ guint                ofa_idbdossier_editor_get_interface_version     ( GType typ
 /*
  * Instance-wide
  */
-ofaIDBProvider      *ofa_idbdossier_editor_get_provider              ( ofaIDBDossierEditor *instance );
+ofaIDBProvider      *ofa_idbdossier_editor_get_provider              ( ofaIDBDossierEditor *editor );
 
-void                 ofa_idbdossier_editor_set_provider              ( ofaIDBDossierEditor *instance,
+void                 ofa_idbdossier_editor_set_provider              ( ofaIDBDossierEditor *editor,
 																			ofaIDBProvider *provider );
 
-GtkSizeGroup        *ofa_idbdossier_editor_get_size_group            ( const ofaIDBDossierEditor *instance,
+GtkSizeGroup        *ofa_idbdossier_editor_get_size_group            ( const ofaIDBDossierEditor *editor,
 																			guint column );
 
-gboolean             ofa_idbdossier_editor_is_valid                  ( const ofaIDBDossierEditor *instance,
+gboolean             ofa_idbdossier_editor_is_valid                  ( const ofaIDBDossierEditor *editor,
 																			gchar **message );
 
-gboolean             ofa_idbdossier_editor_apply                     ( const ofaIDBDossierEditor *instance );
-
-void                 ofa_idbdossier_editor_set_dossier_meta          ( ofaIDBDossierEditor *instance,
-																			ofaIDBDossierMeta *dossier_meta );
+gboolean             ofa_idbdossier_editor_apply                     ( const ofaIDBDossierEditor *editor,
+																			ofaIDBDossierMeta *meta );
 
 G_END_DECLS
 

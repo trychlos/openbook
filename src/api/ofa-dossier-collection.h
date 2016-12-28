@@ -79,11 +79,14 @@ GList                *ofa_dossier_collection_get_list            ( ofaDossierCol
 guint                 ofa_dossier_collection_get_count           ( ofaDossierCollection *collection );
 
 ofaIDBDossierMeta    *ofa_dossier_collection_get_by_name         ( ofaDossierCollection *collection,
-																			const gchar *dossier_name );
+																		const gchar *dossier_name );
+
+void                  ofa_dossier_collection_register_meta       ( ofaDossierCollection *collection,
+																		ofaIDBDossierMeta *meta );
 
 void                  ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection,
-																			ofaIDBDossierMeta *meta,
-																			const ofaIDBEditor *editor );
+																		ofaIDBDossierMeta *meta,
+																		const ofaIDBEditor *editor );
 
 G_END_DECLS
 

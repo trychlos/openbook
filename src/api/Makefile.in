@@ -425,6 +425,7 @@ api_include_HEADERS = \
 	ofa-iprintable.h									\
 	ofa-iproperties.h									\
 	ofa-irenderable.h									\
+	ofa-isetter.h										\
 	ofa-isignal-hub.h									\
 	ofa-istore.h										\
 	ofa-itvcolumnable.h									\

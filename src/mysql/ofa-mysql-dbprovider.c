@@ -37,6 +37,8 @@
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-igetter.h"
+#include "api/ofa-isetter.h"
 
 #include "mysql/ofa-mysql-connect.h"
 #include "mysql/ofa-mysql-dbprovider.h"
@@ -50,7 +52,9 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
+
+	ofaIGetter *getter;
 }
 	ofaMysqlDBProviderPrivate;
 
@@ -68,11 +72,14 @@ static ofaIDBConnect        *idbprovider_new_connect( ofaIDBProvider *instance )
 static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
 static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, guint rule );
 static ofaIDBExerciceEditor *idbprovider_new_exercice_editor( ofaIDBProvider *instance, guint rule );
+static void                  isetter_iface_init( ofaISetterInterface *iface );
+static void                  isetter_set_getter( ofaISetter *instance, ofaIGetter *getter );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDBProvider, ofa_mysql_dbprovider, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlDBProvider )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBPROVIDER, idbprovider_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBPROVIDER, idbprovider_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISETTER, isetter_iface_init ))
 
 static void
 mysql_dbprovider_finalize( GObject *instance )
@@ -239,4 +246,29 @@ idbprovider_new_exercice_editor( ofaIDBProvider *instance, guint rule )
 	widget = ofa_mysql_exercice_editor_new( instance, rule );
 
 	return( OFA_IDBEXERCICE_EDITOR( widget ));
+}
+
+/*
+ * #ofaISetter interface setup
+ */
+static void
+isetter_iface_init( ofaISetterInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_dbprovider_isetter_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->set_getter = isetter_set_getter;
+}
+
+static void
+isetter_set_getter( ofaISetter *instance, ofaIGetter *getter )
+{
+	ofaMysqlDBProviderPrivate *priv;
+
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+
+	priv = ofa_mysql_dbprovider_get_instance_private( OFA_MYSQL_DBPROVIDER( instance ));
+
+	priv->getter = getter;
 }

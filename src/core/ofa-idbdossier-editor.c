@@ -211,149 +211,116 @@ ofa_idbdossier_editor_get_interface_version( GType type )
 
 /**
  * ofa_idbdossier_editor_get_provider:
- * @instance: this #ofaIDBDossierEditor instance.
+ * @editor: this #ofaIDBDossierEditor instance.
  *
  * Returns: the #ofaIDBProvider instance which was attached at
  * instanciation time.
  *
- * The returned reference is owned by the @instance, and should not be
+ * The returned reference is owned by the @editor, and should not be
  * released by the caller.
  */
 ofaIDBProvider *
-ofa_idbdossier_editor_get_provider( ofaIDBDossierEditor *instance )
+ofa_idbdossier_editor_get_provider( ofaIDBDossierEditor *editor )
 {
 	sEditor *sdata;
 
-	g_return_val_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ), NULL );
+	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), NULL );
 
-	sdata = get_instance_data( instance );
+	sdata = get_instance_data( editor );
 
 	return( sdata->provider );
 }
 
 /**
  * ofa_idbdossier_editor_set_provider:
- * @instance: this #ofaIDBDossierEditor instance.
- * @provider: the #ofaIDBProvider instance which manages this editor.
+ * @editor: this #ofaIDBDossierEditor instance.
+ * @provider: the #ofaIDBProvider instance which manages this @editor.
  *
- * Attach the editor to the @provider.
+ * Attach the @provider to the @editor.
  */
 void
-ofa_idbdossier_editor_set_provider( ofaIDBDossierEditor *instance, ofaIDBProvider *provider )
+ofa_idbdossier_editor_set_provider( ofaIDBDossierEditor *editor, ofaIDBProvider *provider )
 {
 	sEditor *sdata;
 
-	g_return_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ));
+	g_return_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ));
 	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
 
-	sdata = get_instance_data( instance );
+	sdata = get_instance_data( editor );
 
 	sdata->provider = provider;
 }
 
-#if 0
-/**
- * ofa_idbdossier_editor_set_meta:
- * @instance: this #ofaIDBDossierEditor instance.
- * @meta: [allow-none]: the #ofaIDBDossierMeta object which holds dossier
- *  informations.
- * @period: [allow-none]: the #ofaIDBExerciceMeta object which holds exercice
- *  informations; must be %NULL if @meta is %NULL.
- *
- * Initialize the widget with provided datas.
- */
-void
-ofa_idbdossier_editor_set_meta( ofaIDBDossierEditor *instance, const ofaIDBDossierMeta *meta, const ofaIDBExerciceMeta *period )
-{
-	static const gchar *thisfn = "ofa_idbdossier_editor_set_meta";
-
-	g_debug( "%s: instance=%p, meta=%p, period=%p",
-			thisfn, ( void * ) instance, ( void * ) meta, ( void * ) period );
-
-	g_return_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ));
-	g_return_if_fail( !meta || OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ));
-	g_return_if_fail( meta || !period );
-
-	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( instance )->set_meta ){
-		OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( instance )->set_meta( instance, meta, period );
-		return;
-	}
-
-	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'set_meta()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-}
-#endif
-
 /**
  * ofa_idbdossier_editor_get_size_group:
- * @instance: this #ofaIDBDossierEditor instance.
+ * @editor: this #ofaIDBDossierEditor instance.
  * @column: the desired column.
  *
  * Returns: the #GtkSizeGroup of the specified @column.
  */
 GtkSizeGroup *
-ofa_idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint column )
+ofa_idbdossier_editor_get_size_group( const ofaIDBDossierEditor *editor, guint column )
 {
 	static const gchar *thisfn = "ofa_idbdossier_editor_get_size_group";
 
-	g_debug( "%s: instance=%p, column=%u", thisfn, ( void * ) instance, column );
+	g_debug( "%s: editor=%p, column=%u", thisfn, ( void * ) editor, column );
 
-	g_return_val_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ), NULL );
+	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), NULL );
 
-	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( instance )->get_size_group ){
-		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( instance )->get_size_group( instance, column ));
+	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->get_size_group ){
+		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->get_size_group( editor, column ));
 	}
 
 	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'get_size_group()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
+			thisfn, G_OBJECT_TYPE_NAME( editor ));
 	return( NULL );
 }
 
 /**
  * ofa_idbdossier_editor_is_valid:
- * @instance: this #ofaIDBDossierEditor instance.
+ * @editor: this #ofaIDBDossierEditor instance.
  * @message: [allow-none][out]: a message to be set.
  *
  * Returns: %TRUE if the entered connection informations are valid.
  */
 gboolean
-ofa_idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message )
+ofa_idbdossier_editor_is_valid( const ofaIDBDossierEditor *editor, gchar **message )
 {
 	static const gchar *thisfn = "ofa_idbdossier_editor_is_valid";
 
-	g_return_val_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ), FALSE );
+	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), FALSE );
 
-	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( instance )->is_valid ){
-		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( instance )->is_valid( instance, message ));
+	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->is_valid ){
+		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->is_valid( editor, message ));
 	}
 
 	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'is_valid()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
+			thisfn, G_OBJECT_TYPE_NAME( editor ));
 	return( FALSE );
 }
 
 /**
  * ofa_idbdossier_editor_apply:
- * @instance: this #ofaIDBDossierEditor instance.
+ * @editor: this #ofaIDBDossierEditor instance.
+ * @meta: the #ofaIDBDossierMeta dossier.
  *
  * Returns: %TRUE if the informations have been successfully registered.
  */
 gboolean
-ofa_idbdossier_editor_apply( const ofaIDBDossierEditor *instance )
+ofa_idbdossier_editor_apply( const ofaIDBDossierEditor *editor, ofaIDBDossierMeta *meta )
 {
 	static const gchar *thisfn = "ofa_idbdossier_editor_apply";
 
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+	g_debug( "%s: editor=%p, meta=%p", thisfn, ( void * ) editor, ( void * ) meta );
 
-	g_return_val_if_fail( instance && OFA_IS_IDBDOSSIER_EDITOR( instance ), FALSE );
+	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), FALSE );
 
-	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( instance )->apply ){
-		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( instance )->apply( instance ));
+	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->apply ){
+		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->apply( editor, meta ));
 	}
 
 	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'apply()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
+			thisfn, G_OBJECT_TYPE_NAME( editor ));
 	return( FALSE );
 }
 
