@@ -51,8 +51,8 @@ typedef struct {
 	/* runtime data
 	 */
 	gchar              *host;
-	gchar              *socket;
 	guint               port;
+	gchar              *socket;
 	ofaIDBDossierMeta  *dossier_meta;
 
 	/* UI
@@ -369,34 +369,6 @@ ofa_mysql_dossier_bin_is_valid( ofaMysqlDossierBin *bin, gchar **message )
 }
 
 /**
- * ofa_mysql_dossier_bin_apply:
- * @bin: this #ofaMysqlDossierBin instance.
- * @meta: the #ofaIDBDossierMeta dossier.
- *
- * Write informations in the dossier settings.
- *
- * Returns: %TRUE.
- */
-gboolean
-ofa_mysql_dossier_bin_apply( ofaMysqlDossierBin *bin, ofaIDBDossierMeta *meta )
-{
-	ofaMysqlDossierBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_MYSQL_DOSSIER_BIN( bin ), FALSE );
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), FALSE );
-
-	priv = ofa_mysql_dossier_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	ofa_mysql_dossier_meta_set_host( OFA_MYSQL_DOSSIER_META( meta ), priv->host );
-	ofa_mysql_dossier_meta_set_port( OFA_MYSQL_DOSSIER_META( meta ), priv->port );
-	ofa_mysql_dossier_meta_set_socket( OFA_MYSQL_DOSSIER_META( meta ), priv->socket );
-
-	return( TRUE );
-}
-
-/**
  * ofa_mysql_dossier_bin_get_host:
  * @bin: this #ofaMysqlDossierBin instance.
  *
@@ -420,6 +392,26 @@ ofa_mysql_dossier_bin_get_host( ofaMysqlDossierBin *bin )
 }
 
 /**
+ * ofa_mysql_dossier_bin_get_port:
+ * @bin: this #ofaMysqlDossierBin instance.
+ *
+ * Returns: the DBMS listening port.
+ */
+guint
+ofa_mysql_dossier_bin_get_port( ofaMysqlDossierBin *bin )
+{
+	ofaMysqlDossierBinPrivate *priv;
+
+g_return_val_if_fail( bin && OFA_IS_MYSQL_DOSSIER_BIN( bin ), 0 );
+
+	priv = ofa_mysql_dossier_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+
+	return( priv->port );
+}
+
+/**
  * ofa_mysql_dossier_bin_get_socket:
  * @bin: this #ofaMysqlDossierBin instance.
  *
@@ -440,26 +432,6 @@ ofa_mysql_dossier_bin_get_socket( ofaMysqlDossierBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return(( const gchar * ) priv->socket );
-}
-
-/**
- * ofa_mysql_dossier_bin_get_port:
- * @bin: this #ofaMysqlDossierBin instance.
- *
- * Returns: the DBMS listening port.
- */
-guint
-ofa_mysql_dossier_bin_get_port( ofaMysqlDossierBin *bin )
-{
-	ofaMysqlDossierBinPrivate *priv;
-
-g_return_val_if_fail( bin && OFA_IS_MYSQL_DOSSIER_BIN( bin ), 0 );
-
-	priv = ofa_mysql_dossier_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, 0 );
-
-	return( priv->port );
 }
 
 /**

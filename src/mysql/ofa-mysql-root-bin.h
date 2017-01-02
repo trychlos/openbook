@@ -71,37 +71,36 @@ typedef struct {
 }
 	ofaMysqlRootBinClass;
 
-GType            ofa_mysql_root_bin_get_type        ( void ) G_GNUC_CONST;
+GType            ofa_mysql_root_bin_get_type              ( void ) G_GNUC_CONST;
 
-ofaMysqlRootBin *ofa_mysql_root_bin_new             ( ofaMysqlDBProvider *provider,
-															guint rule );
+ofaMysqlRootBin *ofa_mysql_root_bin_new                   ( ofaMysqlDBProvider *provider,
+																guint rule );
 
-GtkSizeGroup    *ofa_mysql_root_bin_get_size_group  ( ofaMysqlRootBin *bin,
-															guint column );
+GtkSizeGroup    *ofa_mysql_root_bin_get_size_group        ( ofaMysqlRootBin *bin,
+																guint column );
 
-gboolean         ofa_mysql_root_bin_is_valid        ( ofaMysqlRootBin *bin,
-															gchar **error_message );
+gboolean         ofa_mysql_root_bin_is_valid              ( ofaMysqlRootBin *bin,
+																gchar **error_message );
 
-void             ofa_mysql_root_bin_set_valid       ( ofaMysqlRootBin *bin,
-															gboolean valid );
+void             ofa_mysql_root_bin_set_valid             ( ofaMysqlRootBin *bin,
+																gboolean valid );
 
-gboolean         ofa_mysql_root_bin_apply           ( ofaMysqlRootBin *bin,
-															ofaIDBDossierMeta *meta );
+const gchar     *ofa_mysql_root_bin_get_account           ( ofaMysqlRootBin *bin );
 
-const gchar     *ofa_mysql_root_bin_get_account     ( ofaMysqlRootBin *bin );
+const gchar     *ofa_mysql_root_bin_get_password          ( ofaMysqlRootBin *bin );
 
-const gchar     *ofa_mysql_root_bin_get_password    ( ofaMysqlRootBin *bin );
+const gchar     *ofa_mysql_root_bin_get_remembered_account( ofaMysqlRootBin *bin );
 
-void             ofa_mysql_root_bin_get_credentials ( ofaMysqlRootBin *bin,
-															gchar **account,
-															gchar **password );
+void             ofa_mysql_root_bin_get_credentials       ( ofaMysqlRootBin *bin,
+																gchar **account,
+																gchar **password );
 
-void             ofa_mysql_root_bin_set_credentials ( ofaMysqlRootBin *bin,
-															const gchar *account,
-															const gchar *password );
+void             ofa_mysql_root_bin_set_credentials       ( ofaMysqlRootBin *bin,
+																const gchar *account,
+																const gchar *password );
 
-void             ofa_mysql_root_bin_set_dossier_meta( ofaMysqlRootBin *bin,
-															ofaIDBDossierMeta *dossier_meta );
+void             ofa_mysql_root_bin_set_dossier_meta      ( ofaMysqlRootBin *bin,
+																ofaIDBDossierMeta *dossier_meta );
 
 G_END_DECLS
 

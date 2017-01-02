@@ -532,7 +532,7 @@ ofa_dossier_meta_bin_apply( ofaDossierMetaBin *bin )
 		case HUB_RULE_DOSSIER_NEW:
 			priv->dossier_meta = ofa_idbprovider_new_dossier_meta( priv->provider, priv->dossier_name );
 			collection = ofa_hub_get_dossier_collection( priv->hub );
-			ofa_dossier_collection_register_meta( collection, priv->dossier_meta );
+			ofa_dossier_collection_add_meta( collection, priv->dossier_meta );
 			break;
 	}
 

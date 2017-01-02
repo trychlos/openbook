@@ -32,7 +32,9 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-editor.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-editor.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 
@@ -424,6 +426,7 @@ ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 	ofaDossierEditBinPrivate *priv;
 	gboolean ok;
 	ofaIDBDossierMeta *dossier_meta;
+	ofaIDBExerciceMeta *exercice_meta;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), FALSE );
 
@@ -436,18 +439,13 @@ ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 
 	if( ok ){
 		ok = ofa_dossier_meta_bin_apply( priv->dossier_meta_bin );
-		if( ok ){
-			dossier_meta = ofa_dossier_meta_bin_get_dossier_meta( priv->dossier_meta_bin );
-		}
+		dossier_meta = ofa_dossier_meta_bin_get_dossier_meta( priv->dossier_meta_bin );
+		ofa_idbdossier_meta_set_from_editor( dossier_meta, priv->dossier_editor_bin );
 	}
 	if( ok ){
-		ok = priv->dossier_editor_bin ? ofa_idbdossier_editor_apply( priv->dossier_editor_bin, dossier_meta ) : TRUE;
-	}
-	if( ok ){
-		ok = ofa_exercice_meta_bin_apply( priv->exercice_meta_bin );
-	}
-	if( ok ){
-		ok = priv->exercice_editor_bin ? ofa_idbexercice_editor_apply( priv->exercice_editor_bin ) : TRUE;
+		ok = ofa_exercice_meta_bin_apply( priv->exercice_meta_bin, dossier_meta );
+		exercice_meta = ofa_exercice_meta_bin_get_exercice_meta( priv->exercice_meta_bin );
+		ofa_idbexercice_meta_set_from_editor( exercice_meta, priv->exercice_editor_bin );
 	}
 	if( ok ){
 		ok = ofa_dossier_actions_bin_apply( priv->actions_bin );

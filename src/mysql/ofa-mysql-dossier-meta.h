@@ -36,6 +36,9 @@
 
 #include <glib-object.h>
 
+#include "mysql/ofa-mysql-dossier-bin.h"
+#include "mysql/ofa-mysql-root-bin.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_MYSQL_DOSSIER_META                ( ofa_mysql_dossier_meta_get_type())
@@ -61,34 +64,26 @@ GType                ofa_mysql_dossier_meta_get_type        ( void ) G_GNUC_CONS
 
 ofaMysqlDossierMeta *ofa_mysql_dossier_meta_new             ( void );
 
-void                 ofa_mysql_dossier_meta_load_periods    ( ofaMysqlDossierMeta *meta,
-																	GList *keys );
-
 const gchar         *ofa_mysql_dossier_meta_get_host        ( ofaMysqlDossierMeta *meta );
-
-void                 ofa_mysql_dossier_meta_set_host        ( ofaMysqlDossierMeta *meta,
-																	const gchar *host );
 
 guint                ofa_mysql_dossier_meta_get_port        ( ofaMysqlDossierMeta *meta );
 
-void                 ofa_mysql_dossier_meta_set_port        ( ofaMysqlDossierMeta *meta,
-																	guint port );
-
 const gchar         *ofa_mysql_dossier_meta_get_socket      ( ofaMysqlDossierMeta *meta );
-
-void                 ofa_mysql_dossier_meta_set_socket      ( ofaMysqlDossierMeta *meta,
-																	const gchar *socket );
 
 const gchar         *ofa_mysql_dossier_meta_get_root_account( ofaMysqlDossierMeta *meta );
 
-void                 ofa_mysql_dossier_meta_set_root_account( ofaMysqlDossierMeta *meta,
-																	const gchar *root_account );
+void                 ofa_mysql_dossier_meta_load_periods    ( ofaMysqlDossierMeta *meta,
+																	GList *keys );
 
 void                 ofa_mysql_dossier_meta_add_period      ( ofaMysqlDossierMeta *meta,
 																	gboolean current,
 																	const GDate *begin,
 																	const GDate *end,
 																	const gchar *database );
+
+void                 ofa_mysql_dossier_meta_set_from_editor ( ofaMysqlDossierMeta *meta,
+																	ofaMysqlDossierBin *dossier_bin,
+																	ofaMysqlRootBin *root_bin );
 
 G_END_DECLS
 

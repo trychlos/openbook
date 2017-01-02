@@ -81,7 +81,7 @@ guint                 ofa_dossier_collection_get_count           ( ofaDossierCol
 ofaIDBDossierMeta    *ofa_dossier_collection_get_by_name         ( ofaDossierCollection *collection,
 																		const gchar *dossier_name );
 
-void                  ofa_dossier_collection_register_meta       ( ofaDossierCollection *collection,
+void                  ofa_dossier_collection_add_meta            ( ofaDossierCollection *collection,
 																		ofaIDBDossierMeta *meta );
 
 void                  ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection,

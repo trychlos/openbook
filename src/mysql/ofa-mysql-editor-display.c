@@ -152,7 +152,7 @@ idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_met
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_EDITOR_DISPLAY( instance ));
 	g_return_if_fail( !dossier_meta || OFA_IS_MYSQL_DOSSIER_META( dossier_meta ));
-	g_return_if_fail( !period || OFA_IS_MUSQL_EXERCICE_META( period ));
+	g_return_if_fail( !period || OFA_IS_MYSQL_EXERCICE_META( period ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "host" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -185,7 +185,7 @@ idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_met
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "database" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	text = period ? g_strdup( ofa_mysql_exercice_meta_get_database( OFA_MUSQL_EXERCICE_META( period ))) : NULL;
+	text = period ? g_strdup( ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( period ))) : NULL;
 	if( my_strlen( text )){
 		gtk_label_set_text( GTK_LABEL( label ), text );
 	}

@@ -70,7 +70,7 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static void               setup_settings( ofaDossierCollection *self );
 static void               on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCollection *self );
 static GList             *load_dossiers( ofaDossierCollection *self, GList *previous_list );
-static void               set_dossier_meta_properties( ofaDossierCollection *self, ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group_name );
+static void               set_dossier_meta_properties( ofaDossierCollection *self, ofaIDBDossierMeta *meta, const gchar *group_name );
 static void               dossier_collection_free_list( ofaDossierCollection *self );
 static ofaIDBDossierMeta *get_dossier_by_name( GList *list, const gchar *dossier_name );
 static void               free_dossiers_list( GList *list );
@@ -185,6 +185,7 @@ ofa_dossier_collection_new( ofaHub *hub )
 	priv->hub = hub;
 
 	setup_settings( collection );
+	priv->list = load_dossiers( collection, NULL );
 
 	return( collection );
 }
@@ -204,7 +205,6 @@ setup_settings( ofaDossierCollection *self )
 	g_free( filename );
 
 	g_signal_connect( priv->monitor, "changed", G_CALLBACK( on_settings_changed ), self );
-	on_settings_changed( priv->monitor, NULL, self );
 }
 
 /**
@@ -253,7 +253,6 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCo
 		prev_list = priv->list;
 		priv->list = load_dossiers( collection, prev_list );
 		free_dossiers_list( prev_list );
-		g_signal_emit_by_name( collection, DOSSIER_COLLECTION_SIGNAL_CHANGED, g_list_length( priv->list ));
 	}
 }
 
@@ -306,26 +305,34 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 			idbprovider = ofa_idbprovider_get_by_name( priv->hub, prov_name );
 			if( idbprovider ){
 				meta = ofa_idbprovider_new_dossier_meta( idbprovider, dos_name );
-				set_dossier_meta_properties( self, meta, priv->dossier_settings, cstr );
+				set_dossier_meta_properties( self, meta, cstr );
+			} else {
+				g_info( "%s: provider=%s not found", thisfn, prov_name );
+				continue;
 			}
 			g_free( prov_name );
 		}
-		ofa_idbdossier_meta_set_from_settings( meta, MY_ISETTINGS( priv->dossier_settings ), cstr );
+		ofa_idbdossier_meta_set_from_settings( meta );
 		ofa_idbdossier_meta_dump_full( meta );
 		outlist = g_list_prepend( outlist, meta );
 		g_free( dos_name );
 	}
 
 	my_isettings_free_groups( inlist );
+	g_signal_emit_by_name( self, DOSSIER_COLLECTION_SIGNAL_CHANGED, g_list_length( outlist ));
 
 	return( g_list_reverse( outlist ));
 }
 
 static void
-set_dossier_meta_properties( ofaDossierCollection *self, ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group_name )
+set_dossier_meta_properties( ofaDossierCollection *self, ofaIDBDossierMeta *meta, const gchar *group_name )
 {
-	ofa_idbdossier_meta_set_group_name( meta, group_name );
-	ofa_idbdossier_meta_set_settings( meta, settings );
+	ofaDossierCollectionPrivate *priv;
+
+	priv = ofa_dossier_collection_get_instance_private( self );
+
+	ofa_idbdossier_meta_set_settings_iface( meta, priv->dossier_settings );
+	ofa_idbdossier_meta_set_settings_group( meta, group_name );
 }
 
 /**
@@ -381,16 +388,16 @@ ofa_dossier_collection_get_by_name( ofaDossierCollection *collection, const gcha
 }
 
 /**
- * ofa_dossier_collection_register_meta:
+ * ofa_dossier_collection_add_meta:
  * @collection: this #ofaDossierCollection instance.
  * @meta: the #ofaIDBDossierMeta to be registered.
  *
- * Define the @meta informations in the dossier settings.
+ * Register the @meta informations in the dossier settings.
  */
 void
-ofa_dossier_collection_register_meta( ofaDossierCollection *collection, ofaIDBDossierMeta *meta )
+ofa_dossier_collection_add_meta( ofaDossierCollection *collection, ofaIDBDossierMeta *meta )
 {
-	static const gchar *thisfn = "ofa_dossier_collection_register_meta";
+	static const gchar *thisfn = "ofa_dossier_collection_add_meta";
 	ofaDossierCollectionPrivate *priv;
 	gchar *group, *prov_name;
 	ofaIDBProvider *prov_instance;
@@ -414,7 +421,7 @@ ofa_dossier_collection_register_meta( ofaDossierCollection *collection, ofaIDBDo
 
 	my_isettings_set_string( priv->dossier_settings, group, DOSSIER_COLLECTION_PROVIDER_KEY, prov_name );
 
-	set_dossier_meta_properties( collection, meta, priv->dossier_settings, group );
+	set_dossier_meta_properties( collection, meta, group );
 
 	g_free( prov_name );
 	g_object_unref( prov_instance );
@@ -460,7 +467,7 @@ ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, o
 
 	my_isettings_set_string( priv->dossier_settings, group, DOSSIER_COLLECTION_PROVIDER_KEY, prov_name );
 
-	ofa_idbdossier_meta_set_from_editor( meta, editor, MY_ISETTINGS( priv->dossier_settings ), group );
+	//ofa_idbdossier_meta_set_from_editor( meta, editor, MY_ISETTINGS( priv->dossier_settings ), group );
 
 	g_free( prov_name );
 	g_object_unref( prov_instance );
@@ -492,13 +499,11 @@ get_dossier_by_name( GList *list, const gchar *dossier_name )
 {
 	GList *it;
 	ofaIDBDossierMeta *meta;
-	const gchar *meta_name;
 
 	for( it=list ; it ; it=it->next ){
 		meta = ( ofaIDBDossierMeta * ) it->data;
 		g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
-		meta_name = ofa_idbdossier_meta_get_dossier_name( meta );
-		if( my_collate( meta_name, dossier_name ) == 0 ){
+		if( ofa_idbdossier_meta_compare_by_name( meta, dossier_name ) == 0 ){
 			return( meta );
 		}
 	}

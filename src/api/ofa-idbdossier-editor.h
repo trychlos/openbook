@@ -121,48 +121,34 @@ typedef struct {
 	 */
 	gboolean       ( *is_valid )             ( const ofaIDBDossierEditor *instance,
 														gchar **message );
-
-	/**
-	 * apply:
-	 * @instance: the #ofaIDBDossierEditor instance.
-	 *
-	 * Returns: %TRUE if the informations have been successfully registered.
-	 *
-	 * Since: version 1
-	 */
-	gboolean       ( *apply )                ( const ofaIDBDossierEditor *instance,
-														ofaIDBDossierMeta *dossier_meta );
 }
 	ofaIDBDossierEditorInterface;
 
 /*
  * Interface-wide
  */
-GType                ofa_idbdossier_editor_get_type                  ( void );
+GType           ofa_idbdossier_editor_get_type                  ( void );
 
-guint                ofa_idbdossier_editor_get_interface_last_version( void );
+guint           ofa_idbdossier_editor_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint                ofa_idbdossier_editor_get_interface_version     ( GType type );
+guint           ofa_idbdossier_editor_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-ofaIDBProvider      *ofa_idbdossier_editor_get_provider              ( ofaIDBDossierEditor *editor );
+ofaIDBProvider *ofa_idbdossier_editor_get_provider              ( ofaIDBDossierEditor *editor );
 
-void                 ofa_idbdossier_editor_set_provider              ( ofaIDBDossierEditor *editor,
-																			ofaIDBProvider *provider );
+void            ofa_idbdossier_editor_set_provider              ( ofaIDBDossierEditor *editor,
+																		ofaIDBProvider *provider );
 
-GtkSizeGroup        *ofa_idbdossier_editor_get_size_group            ( const ofaIDBDossierEditor *editor,
-																			guint column );
+GtkSizeGroup   *ofa_idbdossier_editor_get_size_group            ( const ofaIDBDossierEditor *editor,
+																		guint column );
 
-gboolean             ofa_idbdossier_editor_is_valid                  ( const ofaIDBDossierEditor *editor,
-																			gchar **message );
-
-gboolean             ofa_idbdossier_editor_apply                     ( const ofaIDBDossierEditor *editor,
-																			ofaIDBDossierMeta *meta );
+gboolean        ofa_idbdossier_editor_is_valid                  ( const ofaIDBDossierEditor *editor,
+																		gchar **message );
 
 G_END_DECLS
 

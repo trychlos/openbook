@@ -299,31 +299,6 @@ ofa_idbdossier_editor_is_valid( const ofaIDBDossierEditor *editor, gchar **messa
 	return( FALSE );
 }
 
-/**
- * ofa_idbdossier_editor_apply:
- * @editor: this #ofaIDBDossierEditor instance.
- * @meta: the #ofaIDBDossierMeta dossier.
- *
- * Returns: %TRUE if the informations have been successfully registered.
- */
-gboolean
-ofa_idbdossier_editor_apply( const ofaIDBDossierEditor *editor, ofaIDBDossierMeta *meta )
-{
-	static const gchar *thisfn = "ofa_idbdossier_editor_apply";
-
-	g_debug( "%s: editor=%p, meta=%p", thisfn, ( void * ) editor, ( void * ) meta );
-
-	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), FALSE );
-
-	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->apply ){
-		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->apply( editor, meta ));
-	}
-
-	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'apply()' method",
-			thisfn, G_OBJECT_TYPE_NAME( editor ));
-	return( FALSE );
-}
-
 static sEditor *
 get_instance_data( const ofaIDBDossierEditor *self )
 {

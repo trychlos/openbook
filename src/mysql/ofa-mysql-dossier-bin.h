@@ -76,14 +76,11 @@ GtkSizeGroup       *ofa_mysql_dossier_bin_get_size_group  ( ofaMysqlDossierBin *
 gboolean            ofa_mysql_dossier_bin_is_valid        ( ofaMysqlDossierBin *bin,
 																gchar **error_message );
 
-gboolean            ofa_mysql_dossier_bin_apply           ( ofaMysqlDossierBin *bin,
-																ofaIDBDossierMeta *meta );
-
 const gchar        *ofa_mysql_dossier_bin_get_host        ( ofaMysqlDossierBin *bin );
 
-const gchar        *ofa_mysql_dossier_bin_get_socket      ( ofaMysqlDossierBin *bin );
-
 guint               ofa_mysql_dossier_bin_get_port        ( ofaMysqlDossierBin *bin );
+
+const gchar        *ofa_mysql_dossier_bin_get_socket      ( ofaMysqlDossierBin *bin );
 
 void                ofa_mysql_dossier_bin_set_dossier_meta( ofaMysqlDossierBin *bin,
 																ofaIDBDossierMeta *dossier_meta );

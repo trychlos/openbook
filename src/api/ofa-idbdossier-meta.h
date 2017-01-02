@@ -47,6 +47,7 @@
 #include "my/my-isettings.h"
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
@@ -99,33 +100,26 @@ struct _ofaIDBDossierMetaInterface {
 	/**
 	 * set_from_settings:
 	 * @instance: the #ofaIDBDossierMeta instance.
-	 * @settings: a #myISettings instance.
-	 * @group: the group name in the settings.
 	 *
-	 * Set the @instance object with informations read from @settings.
+	 * Set the @instance object with informations read from dossier settings.
 	 * Reset the defined financial periods accordingly.
 	 *
 	 * Since: version 1
 	 */
-	void             ( *set_from_settings )    ( ofaIDBDossierMeta *instance,
-													myISettings *settings,
-													const gchar *group );
+	void             ( *set_from_settings )    ( ofaIDBDossierMeta *instance );
 
 	/**
 	 * set_from_editor:
 	 * @instance: the #ofaIDBDossierMeta instance.
-	 * @editor: the #ofaIDBEditor which handles the connection informations.
-	 * @settings: a #myISettings instance.
-	 * @group: the group name in the settings.
+	 * @editor: the #ofaIDBDossierEditor which handles the connection
+	 *  informations.
 	 *
 	 * Writes the connection informations to @settings file.
 	 *
 	 * Since: version 1
 	 */
 	void             ( *set_from_editor )      ( ofaIDBDossierMeta *instance,
-													const ofaIDBEditor *editor,
-													myISettings *settings,
-													const gchar *group );
+													ofaIDBDossierEditor *editor );
 
 	/**
 	 * update_period:
@@ -196,24 +190,20 @@ const gchar        *ofa_idbdossier_meta_get_dossier_name          ( const ofaIDB
 void                ofa_idbdossier_meta_set_dossier_name          ( ofaIDBDossierMeta *meta,
 																		const gchar *dossier_name );
 
-myISettings        *ofa_idbdossier_meta_get_settings              ( const ofaIDBDossierMeta *meta );
+myISettings        *ofa_idbdossier_meta_get_settings_iface        ( const ofaIDBDossierMeta *meta );
 
-void                ofa_idbdossier_meta_set_settings              ( ofaIDBDossierMeta *meta,
+void                ofa_idbdossier_meta_set_settings_iface        ( ofaIDBDossierMeta *meta,
 																		myISettings *settings );
 
-gchar              *ofa_idbdossier_meta_get_group_name            ( const ofaIDBDossierMeta *meta );
+gchar              *ofa_idbdossier_meta_get_settings_group        ( const ofaIDBDossierMeta *meta );
 
-void                ofa_idbdossier_meta_set_group_name            ( ofaIDBDossierMeta *meta,
+void                ofa_idbdossier_meta_set_settings_group        ( ofaIDBDossierMeta *meta,
 																		const gchar *group_name );
 
-void                ofa_idbdossier_meta_set_from_settings         ( ofaIDBDossierMeta *meta,
-																		myISettings *settings,
-																		const gchar *group_name );
+void                ofa_idbdossier_meta_set_from_settings         ( ofaIDBDossierMeta *meta );
 
 void                ofa_idbdossier_meta_set_from_editor           ( ofaIDBDossierMeta *meta,
-																		const ofaIDBEditor *editor,
-																		myISettings *settings,
-																		const gchar *group_name );
+																		ofaIDBDossierEditor *editor );
 
 void                ofa_idbdossier_meta_remove_meta               ( ofaIDBDossierMeta *meta );
 
@@ -244,7 +234,10 @@ ofaIDBExerciceMeta *ofa_idbdossier_meta_get_period                ( const ofaIDB
 																		const GDate *end );
 
 gint                ofa_idbdossier_meta_compare                   ( const ofaIDBDossierMeta *a,
-																	const ofaIDBDossierMeta *b );
+																		const ofaIDBDossierMeta *b );
+
+gint                ofa_idbdossier_meta_compare_by_name           ( const ofaIDBDossierMeta *a,
+																		const gchar *name );
 
 void                ofa_idbdossier_meta_dump                      ( const ofaIDBDossierMeta *meta );
 

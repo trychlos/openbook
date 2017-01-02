@@ -167,14 +167,14 @@ ofa_igetter_get_interface_version( GType type )
  * Returns: a permanent instance of an #ofaIGetter implementation.
  *
  * The exact returned implementation is only garanteed to be at least
- * the same lifre than those of the #ofoDossier.
+ * the same life than those of the #ofoDossier.
  *
  * This is to be used when the life of the user is longer that those of
  * the provided #ofaIGetter.
  *
  * Example: a #ofaReconciliation page opens a #ofaAccountSelect composite
  * widget, providing it with its own #ofaIGetter. At some time then, this
- * #ofaReconciliation page is closed by the used, thus invalidating the
+ * #ofaReconciliation page is closed by the user, thus invalidating the
  * provided #ofaIGetter instance.
  *
  * But the #ofaAccountSelect life is as long as those of the #ofoDossier.

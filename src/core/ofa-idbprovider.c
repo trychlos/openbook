@@ -34,6 +34,7 @@
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isetter.h"
@@ -134,6 +135,44 @@ ofa_idbprovider_get_interface_last_version( void )
 }
 
 /**
+ * ofa_idbprovider_get_all:
+ * @hub: the main #ofaHub object of the application.
+ *
+ * Returns: the list of available #ofaIDBProvider providers.
+ *
+ * The returned list should be g_list_free() by the caller.
+ */
+GList *
+ofa_idbprovider_get_all( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofa_idbprovider_get_all";
+	ofaExtenderCollection *extenders;
+	GList *modules, *it, *all;
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	all = NULL;
+	extenders = ofa_hub_get_extender_collection( hub );
+	modules = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBPROVIDER );
+
+	for( it=modules ; it ; it=it->next ){
+		if( !MY_IS_IIDENT( it->data )){
+			g_info( "%s: %s class does not implement myIIdent interface",
+					thisfn, G_OBJECT_TYPE_NAME( it->data ));
+		} else if( !OFA_IS_ISETTER( it->data )){
+			g_info( "%s: %s class does not implement ofaISetter interface",
+					thisfn, G_OBJECT_TYPE_NAME( it->data ));
+		} else {
+			all = g_list_prepend( all, it->data );
+		}
+	}
+
+	ofa_extender_collection_free_types( modules );
+
+	return( all );
+}
+
+/**
  * ofa_idbprovider_get_by_name:
  * @hub: the main #ofaHub object of the application.
  * @provider_name: the name of the provider as published in the
@@ -155,20 +194,16 @@ ofaIDBProvider *
 ofa_idbprovider_get_by_name( ofaHub *hub, const gchar *provider_name )
 {
 	static const gchar *thisfn = "ofa_idbprovider_get_by_name";
-	ofaExtenderCollection *extenders;
 	GList *modules;
-	ofaIDBProvider *module;
+	ofaIDBProvider *provider;
 
-	g_debug( "%s: provider_name=%s", thisfn, provider_name );
+	g_debug( "%s: hub=%p, provider_name=%s", thisfn, ( void * ) hub, provider_name );
 
-	extenders = ofa_hub_get_extender_collection( hub );
-	modules = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBPROVIDER );
+	modules = ofa_idbprovider_get_all( hub );
+	provider = provider_get_by_name( modules, provider_name );
+	g_list_free( modules );
 
-	module = provider_get_by_name( modules, provider_name );
-
-	ofa_extender_collection_free_types( modules );
-
-	return( module );
+	return( provider );
 }
 
 static ofaIDBProvider *
@@ -179,13 +214,11 @@ provider_get_by_name( GList *modules, const gchar *name )
 	gint cmp;
 
 	for( it=modules ; it ; it=it->next ){
-		if( OFA_IS_ISETTER( it->data )){
-			it_name = ofa_idbprovider_get_canon_name( OFA_IDBPROVIDER( it->data ));
-			cmp = my_collate( it_name, name );
-			g_free( it_name );
-			if( cmp == 0 ){
-				return( OFA_IDBPROVIDER( it->data ));
-			}
+		it_name = ofa_idbprovider_get_canon_name( OFA_IDBPROVIDER( it->data ));
+		cmp = my_collate( it_name, name );
+		g_free( it_name );
+		if( cmp == 0 ){
+			return( OFA_IDBPROVIDER( it->data ));
 		}
 	}
 
@@ -303,7 +336,8 @@ ofa_idbprovider_new_dossier_meta( ofaIDBProvider *provider, const gchar *dossier
 	static const gchar *thisfn = "ofa_idbprovider_new_dossier_meta";
 	ofaIDBDossierMeta *meta;
 
-	g_debug( "%s: provider=%p", thisfn, ( void * ) provider );
+	g_debug( "%s: provider=%p, dossier_name=%s",
+			thisfn, ( void * ) provider, dossier_name );
 
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 	g_return_val_if_fail( my_strlen( dossier_name ), NULL );
@@ -316,6 +350,37 @@ ofa_idbprovider_new_dossier_meta( ofaIDBProvider *provider, const gchar *dossier
 	}
 
 	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_dossier_meta()' method",
+			thisfn, G_OBJECT_TYPE_NAME( provider ));
+	return( NULL );
+}
+
+/**
+ * ofa_idbprovider_new_exercice_meta:
+ * @provider: this #ofaIDBProvider provider.
+ * @dossier_meta: the #ofaIDBDossierMeta dossier.
+ *
+ * Returns: a newly allocated #ofaIDBExerciceMeta object, which should be
+ * g_object_unref() by the caller.
+ */
+ofaIDBExerciceMeta *
+ofa_idbprovider_new_exercice_meta( ofaIDBProvider *provider, ofaIDBDossierMeta *dossier_meta )
+{
+	static const gchar *thisfn = "ofa_idbprovider_new_exercice_meta";
+	ofaIDBExerciceMeta *exercice_meta;
+
+	g_debug( "%s: provider=%p, dossier_meta=%p",
+			thisfn, ( void * ) provider, ( void * ) dossier_meta );
+
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
+	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), NULL );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_exercice_meta ){
+		exercice_meta = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_exercice_meta( provider );
+		ofa_idbexercice_meta_set_dossier_meta( exercice_meta, dossier_meta );
+		return( exercice_meta );
+	}
+
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_exercice_meta()' method",
 			thisfn, G_OBJECT_TYPE_NAME( provider ));
 	return( NULL );
 }

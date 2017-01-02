@@ -117,6 +117,16 @@ struct _ofaIDBProviderInterface {
 	ofaIDBDossierMeta *    ( *new_dossier_meta )     ( ofaIDBProvider *instance );
 
 	/**
+	 * new_exercice_meta:
+	 * @instance: this #ofaIDBProvider instance.
+	 *
+	 * Returns: a newly defined #ofaIDBExerciceMeta object.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBExerciceMeta *   ( *new_exercice_meta )    ( ofaIDBProvider *instance );
+
+	/**
 	 * new_connect:
 	 * @instance: this #ofaIDBProvider instance.
 	 *
@@ -177,6 +187,8 @@ GType                 ofa_idbprovider_get_type                  ( void );
 
 guint                 ofa_idbprovider_get_interface_last_version( void );
 
+GList                *ofa_idbprovider_get_all                   ( ofaHub *hub );
+
 ofaIDBProvider       *ofa_idbprovider_get_by_name               ( ofaHub *hub,
 																		const gchar *provider_name );
 
@@ -196,6 +208,9 @@ ofaHub               *ofa_idbprovider_get_hub                   ( ofaIDBProvider
 
 ofaIDBDossierMeta    *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider *provider,
 																		const gchar *dossier_name );
+
+ofaIDBExerciceMeta   *ofa_idbprovider_new_exercice_meta         ( ofaIDBProvider *provider,
+																		ofaIDBDossierMeta *dossier_meta );
 
 ofaIDBConnect        *ofa_idbprovider_new_connect               ( ofaIDBProvider *provider );
 

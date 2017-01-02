@@ -402,7 +402,7 @@ ofa_dossier_prefs_set_background_img( ofaDossierPrefs *prefs, const gchar *uri )
 	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_dossier_meta( connect );
 	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_group_name( meta );
+	group = ofa_idbdossier_meta_get_settings_group( meta );
 
 	my_isettings_set_string( settings, group, st_background_img, priv->background_uri );
 
@@ -429,7 +429,7 @@ read_settings( ofaDossierPrefs *self )
 	settings = ofa_hub_get_dossier_settings( priv->hub );
 	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_dossier_meta( connect );
-	group = ofa_idbdossier_meta_get_group_name( meta );
+	group = ofa_idbdossier_meta_get_settings_group( meta );
 
 	list = my_isettings_get_string_list( settings, group, st_prefs_settings );
 
@@ -477,7 +477,7 @@ write_settings( ofaDossierPrefs *self )
 	settings = ofa_hub_get_dossier_settings( priv->hub );
 	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_dossier_meta( connect );
-	group = ofa_idbdossier_meta_get_group_name( meta );
+	group = ofa_idbdossier_meta_get_settings_group( meta );
 
 	str = g_strdup_printf( "%s;%s;%s;%s;%s;",
 			priv->notes ? "True":"False",

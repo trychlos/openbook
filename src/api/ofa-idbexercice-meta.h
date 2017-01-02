@@ -38,6 +38,8 @@
 #include <glib-object.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
+#include "api/ofa-idbexercice-editor.h"
 #include "api/ofa-idbexercice-meta-def.h"
 
 G_BEGIN_DECLS
@@ -56,6 +58,8 @@ typedef struct _ofaIDBExerciceMetaInterface            ofaIDBExerciceMetaInterfa
  * ofaIDBExerciceMetaInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
+ * @set_from_settings: [should] read datas from settings.
+ * @set_from_editor: [should] read datas from editor.
  * @get_name: [should]: returns a name.
  * @compare: [should]: compare two objects.
  * @dump: [should]: dump the object.
@@ -82,6 +86,30 @@ struct _ofaIDBExerciceMetaInterface {
 	guint    ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
+	/**
+	 * set_from_settings:
+	 * @instance: the #ofaIDBExerciceMeta instance.
+	 * @key_id: the key identifier.
+	 *
+	 * Set the @instance with data read from dossier settings.
+	 *
+	 * Since: version 1
+	 */
+	void     ( *set_from_settings )    ( ofaIDBExerciceMeta *instance,
+												const gchar *key_id );
+
+	/**
+	 * set_from_editor:
+	 * @instance: the #ofaIDBExerciceMeta instance.
+	 * @editor: the #ofaIDBExerciceEditor widget.
+	 *
+	 * Set the @instance with data read from @editor.
+	 *
+	 * Since: version 1
+	 */
+	void     ( *set_from_editor )    ( ofaIDBExerciceMeta *instance,
+												ofaIDBExerciceEditor *editor );
+
 	/**
 	 * get_name:
 	 * @instance: the #ofaIDBExerciceMeta instance.
@@ -124,52 +152,59 @@ struct _ofaIDBExerciceMetaInterface {
 /*
  * Interface-wide
  */
-GType        ofa_idbexercice_meta_get_type                  ( void );
+GType              ofa_idbexercice_meta_get_type                  ( void );
 
-guint        ofa_idbexercice_meta_get_interface_last_version( void );
+guint              ofa_idbexercice_meta_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint        ofa_idbexercice_meta_get_interface_version     ( GType type );
+guint              ofa_idbexercice_meta_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-ofaHub      *ofa_idbexercice_meta_get_hub                   ( const ofaIDBExerciceMeta *period );
+ofaIDBDossierMeta *ofa_idbexercice_meta_get_dossier_meta          ( const ofaIDBExerciceMeta *exercice_meta );
 
-void         ofa_idbexercice_meta_set_hub                   ( ofaIDBExerciceMeta *period,
-																	ofaHub *hub );
+void               ofa_idbexercice_meta_set_dossier_meta          ( ofaIDBExerciceMeta *exercice_meta,
+																		ofaIDBDossierMeta *dossier_meta );
 
-const GDate *ofa_idbexercice_meta_get_begin_date            ( const ofaIDBExerciceMeta *period );
+void               ofa_idbexercice_meta_set_from_settings         ( ofaIDBExerciceMeta *exercice_meta,
+																		const gchar *key,
+																		const gchar *key_id );
 
-void         ofa_idbexercice_meta_set_begin_date            ( ofaIDBExerciceMeta *period,
-																	const GDate *date );
+void               ofa_idbexercice_meta_set_from_editor           ( ofaIDBExerciceMeta *exercice_meta,
+																		ofaIDBExerciceEditor *editor );
 
-const GDate *ofa_idbexercice_meta_get_end_date              ( const ofaIDBExerciceMeta *period );
+const GDate       *ofa_idbexercice_meta_get_begin_date            ( const ofaIDBExerciceMeta *exercice_meta );
 
-void         ofa_idbexercice_meta_set_end_date              ( ofaIDBExerciceMeta *period,
-																	const GDate *date );
+void               ofa_idbexercice_meta_set_begin_date            ( ofaIDBExerciceMeta *exercice_meta,
+																		const GDate *date );
 
-gboolean     ofa_idbexercice_meta_get_current               ( const ofaIDBExerciceMeta *period );
+const GDate       *ofa_idbexercice_meta_get_end_date              ( const ofaIDBExerciceMeta *exercice_meta );
 
-void         ofa_idbexercice_meta_set_current               ( ofaIDBExerciceMeta *period,
-																	gboolean current );
+void               ofa_idbexercice_meta_set_end_date              ( ofaIDBExerciceMeta *exercice_meta,
+																		const GDate *date );
 
-gchar       *ofa_idbexercice_meta_get_status                ( const ofaIDBExerciceMeta *period );
+gboolean           ofa_idbexercice_meta_get_current               ( const ofaIDBExerciceMeta *exercice_meta );
 
-gchar       *ofa_idbexercice_meta_get_label                 ( const ofaIDBExerciceMeta *period );
+void               ofa_idbexercice_meta_set_current               ( ofaIDBExerciceMeta *exercice_meta,
+																		gboolean current );
 
-gchar       *ofa_idbexercice_meta_get_name                  ( const ofaIDBExerciceMeta *period );
+gchar             *ofa_idbexercice_meta_get_status                ( const ofaIDBExerciceMeta *exercice_meta );
 
-gint         ofa_idbexercice_meta_compare                   ( const ofaIDBExerciceMeta *a,
-																	const ofaIDBExerciceMeta *b );
+gchar             *ofa_idbexercice_meta_get_label                 ( const ofaIDBExerciceMeta *exercice_meta );
 
-gboolean     ofa_idbexercice_meta_is_suitable               ( const ofaIDBExerciceMeta *period,
-																	const GDate *begin,
-																	const GDate *end );
+gchar             *ofa_idbexercice_meta_get_name                  ( const ofaIDBExerciceMeta *exercice_meta );
 
-void         ofa_idbexercice_meta_dump                      ( const ofaIDBExerciceMeta *period );
+gint               ofa_idbexercice_meta_compare                   ( const ofaIDBExerciceMeta *a,
+																		const ofaIDBExerciceMeta *b );
+
+gboolean           ofa_idbexercice_meta_is_suitable               ( const ofaIDBExerciceMeta *exercice_meta,
+																		const GDate *begin,
+																		const GDate *end );
+
+void               ofa_idbexercice_meta_dump                      ( const ofaIDBExerciceMeta *exercice_meta );
 
 G_END_DECLS
 

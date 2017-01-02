@@ -239,7 +239,7 @@ idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const 
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
 	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_DOSSIER_META( dossier_meta ), FALSE );
-	g_return_val_if_fail( !period || OFA_IS_MUSQL_EXERCICE_META( period ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_MYSQL_EXERCICE_META( period ), FALSE );
 
 	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
 
@@ -248,7 +248,7 @@ idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const 
 	host = ofa_mysql_dossier_meta_get_host( OFA_MYSQL_DOSSIER_META( dossier_meta ));
 	socket = ofa_mysql_dossier_meta_get_socket( OFA_MYSQL_DOSSIER_META( dossier_meta ));
 	port = ofa_mysql_dossier_meta_get_port( OFA_MYSQL_DOSSIER_META( dossier_meta ));
-	database = period ? ofa_mysql_exercice_meta_get_database( OFA_MUSQL_EXERCICE_META( period )) : NULL;
+	database = period ? ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( period )) : NULL;
 
 	ok = connect_open( OFA_MYSQL_CONNECT( instance ), account, password, host, socket, port, database, NULL );
 
@@ -314,7 +314,7 @@ ofa_mysql_connect_open_with_meta( ofaMysqlConnect *connect,
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
 	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_DOSSIER_META( dossier_meta ), FALSE );
-	g_return_val_if_fail( !period || OFA_IS_MUSQL_EXERCICE_META( period ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_MYSQL_EXERCICE_META( period ), FALSE );
 
 	priv = ofa_mysql_connect_get_instance_private( connect );
 
@@ -543,7 +543,7 @@ static gboolean
 idbconnect_restore( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *uri )
 {
 	return( ofa_mysql_cmdline_restore_run(
-					OFA_MYSQL_CONNECT( instance ), OFA_MUSQL_EXERCICE_META( period ), uri ));
+					OFA_MYSQL_CONNECT( instance ), OFA_MYSQL_EXERCICE_META( period ), uri ));
 }
 
 
@@ -578,7 +578,7 @@ idbconnect_create_dossier( const ofaIDBConnect *instance, const ofaIDBDossierMet
 	period = ofa_idbdossier_meta_get_current_period( meta );
 	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 
-	database = ofa_mysql_exercice_meta_get_database( OFA_MUSQL_EXERCICE_META( period ));
+	database = ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( period ));
 	query = g_string_new( "" );
 	ok = TRUE;
 
@@ -624,7 +624,7 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *
 	gboolean ok;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
-	g_return_val_if_fail( period && OFA_IS_MUSQL_EXERCICE_META( period ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ), FALSE );
 	g_return_val_if_fail( my_strlen( account ), FALSE );
 
 	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
@@ -654,7 +654,7 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *
 	idbconnect_query( instance, query->str );
 	ok = TRUE;
 
-	database = ofa_mysql_exercice_meta_get_database( OFA_MUSQL_EXERCICE_META( period ));
+	database = ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( period ));
 
 	g_string_printf( query,
 			"GRANT ALL ON %s.* TO '%s'@'%s' WITH GRANT OPTION",

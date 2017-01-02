@@ -214,7 +214,7 @@ init_dialog( ofaBackup *self )
 	g_free( def_name );
 
 	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+	group = ofa_idbdossier_meta_get_settings_group( priv->meta );
 	last_folder = my_isettings_get_string( settings, group, st_backup_folder );
 	if( my_strlen( last_folder )){
 		gtk_file_chooser_set_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ), last_folder );
@@ -272,7 +272,7 @@ do_backup( ofaBackup *self )
 	folder = g_path_get_dirname( uri );
 
 	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+	group = ofa_idbdossier_meta_get_settings_group( priv->meta );
 	my_isettings_set_string( settings, group, st_backup_folder, folder );
 
 	ok = ofa_idbconnect_backup( priv->connect, uri );

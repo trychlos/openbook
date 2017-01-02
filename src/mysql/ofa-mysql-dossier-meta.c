@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include "my/my-isettings.h"
 #include "my/my-utils.h"
 
@@ -56,13 +58,14 @@ typedef struct {
 
 static void                  idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface );
 static guint                 idbdossier_meta_get_interface_version( void );
-static void                  idbdossier_meta_set_from_settings( ofaIDBDossierMeta *instance, myISettings *settings, const gchar *group );
-static void                  idbdossier_meta_set_from_editor( ofaIDBDossierMeta *instance, const ofaIDBEditor *editor, myISettings *settings, const gchar *group );
-static GList                *load_periods( ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group );
-static ofaMysqlExerciceMeta *find_period( ofaMysqlExerciceMeta *period, GList *list );
+static void                  idbdossier_meta_set_from_settings( ofaIDBDossierMeta *instance );
+static void                  idbdossier_meta_set_from_editor( ofaIDBDossierMeta *instance, ofaIDBDossierEditor *editor );
+//static GList                *load_periods( ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group );
+//static ofaMysqlExerciceMeta *find_period( ofaMysqlExerciceMeta *period, GList *list );
 static void                  idbdossier_meta_update_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period, gboolean current, const GDate *begin, const GDate *end );
 static void                  idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period );
 static void                  idbdossier_meta_dump( const ofaIDBDossierMeta *instance );
+static void                  read_settings( ofaMysqlDossierMeta *self );
 static void                  write_settings( ofaMysqlDossierMeta *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierMeta, ofa_mysql_dossier_meta, G_TYPE_OBJECT, 0,
@@ -163,10 +166,9 @@ idbdossier_meta_get_interface_version( void )
 }
 
 static void
-idbdossier_meta_set_from_settings( ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group )
+idbdossier_meta_set_from_settings( ofaIDBDossierMeta *meta )
 {
 	ofaMysqlDossierMetaPrivate *priv;
-	GList *periods;
 
 	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
 
@@ -175,10 +177,10 @@ idbdossier_meta_set_from_settings( ofaIDBDossierMeta *meta, myISettings *setting
 	g_return_if_fail( !priv->dispose_has_run );
 
 	/* read connection informations from settings */
-	priv->host = my_isettings_get_string( settings, group, MYSQL_HOST_KEY );
-	priv->socket = my_isettings_get_string( settings, group, MYSQL_SOCKET_KEY );
-	priv->port = my_isettings_get_uint( settings, group, MYSQL_PORT_KEY );
+	read_settings( OFA_MYSQL_DOSSIER_META( meta ));
 
+#if 0
+	GList *periods;
 	/* reload defined periods */
 	periods = load_periods( meta, settings, group );
 	ofa_idbdossier_meta_set_periods( meta, periods );
@@ -238,11 +240,13 @@ find_period( ofaMysqlExerciceMeta *period, GList *list )
 	}
 
 	return( NULL );
+#endif
 }
 
 static void
-idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, const ofaIDBEditor *editor, myISettings *settings, const gchar *group )
+idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, ofaIDBDossierEditor *editor )
 {
+#if 0
 	ofaMysqlDossierMetaPrivate *priv;
 	const gchar *host, *socket, *database;
 	guint port;
@@ -276,6 +280,7 @@ idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, const ofaIDBEditor *ed
 	periods = g_list_append( NULL, period );
 	ofa_idbdossier_meta_set_periods( meta, periods );
 	ofa_idbdossier_meta_free_periods( periods );
+#endif
 }
 
 static void
@@ -286,11 +291,11 @@ idbdossier_meta_update_period( ofaIDBDossierMeta *instance,
 	gchar *group;
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
-	g_return_if_fail( period && OFA_IS_MUSQL_EXERCICE_META( period ));
+	g_return_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ));
 
-	settings = ofa_idbdossier_meta_get_settings( instance );
-	group = ofa_idbdossier_meta_get_group_name( instance );
-	ofa_mysql_exercice_meta_update( OFA_MUSQL_EXERCICE_META( period ), settings, group, current, begin, end );
+	settings = ofa_idbdossier_meta_get_settings_iface( instance );
+	group = ofa_idbdossier_meta_get_settings_group( instance );
+	ofa_mysql_exercice_meta_update( OFA_MYSQL_EXERCICE_META( period ), settings, group, current, begin, end );
 
 	g_free( group );
 }
@@ -302,11 +307,11 @@ idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *
 	gchar *group;
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
-	g_return_if_fail( period && OFA_IS_MUSQL_EXERCICE_META( period ));
+	g_return_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ));
 
-	settings = ofa_idbdossier_meta_get_settings( instance );
-	group = ofa_idbdossier_meta_get_group_name( instance );
-	ofa_mysql_exercice_meta_remove( OFA_MUSQL_EXERCICE_META( period ), settings, group );
+	settings = ofa_idbdossier_meta_get_settings_iface( instance );
+	group = ofa_idbdossier_meta_get_settings_group( instance );
+	ofa_mysql_exercice_meta_remove( OFA_MYSQL_EXERCICE_META( period ), settings, group );
 
 	g_free( group );
 }
@@ -365,33 +370,6 @@ ofa_mysql_dossier_meta_get_host( ofaMysqlDossierMeta *meta )
 }
 
 /**
- * ofa_mysql_dossier_meta_set_host:
- * @meta: this #ofaMysqlDossierMeta object.
- * @host: [allow-none]: the hostname to be set.
- *
- * Set the hostname of the DBMS instance.
- */
-void
-ofa_mysql_dossier_meta_set_host( ofaMysqlDossierMeta *meta, const gchar *host )
-{
-	ofaMysqlDossierMetaPrivate *priv;
-
-	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
-
-	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	g_free( priv->host );
-	priv->host = NULL;
-	if( my_strlen( host )){
-		priv->host = g_strdup( host );
-	}
-
-	write_settings( meta );
-}
-
-/**
  * ofa_mysql_dossier_meta_get_port:
  * @meta: this #ofaMysqlDossierMeta object.
  *
@@ -410,29 +388,6 @@ ofa_mysql_dossier_meta_get_port( ofaMysqlDossierMeta *meta )
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
 	return( priv->port );
-}
-
-/**
- * ofa_mysql_dossier_meta_set_port:
- * @meta: this #ofaMysqlDossierMeta object.
- * @port: the port number to be set, or zero.
- *
- * Set the port number of the DBMS instance.
- */
-void
-ofa_mysql_dossier_meta_set_port( ofaMysqlDossierMeta *meta, guint port )
-{
-	ofaMysqlDossierMetaPrivate *priv;
-
-	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
-
-	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->port = port;
-
-	write_settings( meta );
 }
 
 /**
@@ -459,33 +414,6 @@ ofa_mysql_dossier_meta_get_socket( ofaMysqlDossierMeta *meta )
 }
 
 /**
- * ofa_mysql_dossier_meta_set_socket:
- * @meta: this #ofaMysqlDossierMeta object.
- * @socket: [allow-none]: the socket path to be set.
- *
- * Set the socket path of the DBMS instance.
- */
-void
-ofa_mysql_dossier_meta_set_socket( ofaMysqlDossierMeta *meta, const gchar *socket )
-{
-	ofaMysqlDossierMetaPrivate *priv;
-
-	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
-
-	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	g_free( priv->socket );
-	priv->socket = NULL;
-	if( my_strlen( socket )){
-		priv->socket = g_strdup( socket );
-	}
-
-	write_settings( meta );
-}
-
-/**
  * ofa_mysql_dossier_meta_get_root_account:
  * @meta: this #ofaMysqlDossierMeta object.
  *
@@ -509,33 +437,6 @@ ofa_mysql_dossier_meta_get_root_account( ofaMysqlDossierMeta *meta )
 }
 
 /**
- * ofa_mysql_dossier_meta_set_root_account:
- * @meta: this #ofaMysqlDossierMeta object.
- * @root_account: [allow-none]: the root_account to be set.
- *
- * Set the root_account of the DBMS instance.
- */
-void
-ofa_mysql_dossier_meta_set_root_account( ofaMysqlDossierMeta *meta, const gchar *root_account )
-{
-	ofaMysqlDossierMetaPrivate *priv;
-
-	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
-
-	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	g_free( priv->root_account );
-	priv->root_account = NULL;
-	if( my_strlen( root_account )){
-		priv->root_account = g_strdup( root_account );
-	}
-
-	write_settings( meta );
-}
-
-/**
  * ofa_mysql_dossier_meta_add_period:
  * @meta: this #ofaMysqlDossierMeta instance.
  * @current: whether the financial period (exercice) is current.
@@ -555,8 +456,8 @@ ofa_mysql_dossier_meta_add_period( ofaMysqlDossierMeta *meta,
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
-	settings = ofa_idbdossier_meta_get_settings( OFA_IDBDOSSIER_META( meta ));
-	group = ofa_idbdossier_meta_get_group_name( OFA_IDBDOSSIER_META( meta ));
+	settings = ofa_idbdossier_meta_get_settings_iface( OFA_IDBDOSSIER_META( meta ));
+	group = ofa_idbdossier_meta_get_settings_group( OFA_IDBDOSSIER_META( meta ));
 
 	period = ofa_mysql_exercice_meta_new_to_settings( settings, group, current, begin, end, database );
 	ofa_idbdossier_meta_add_period( OFA_IDBDOSSIER_META( meta ), OFA_IDBEXERCICE_META( period ));
@@ -565,9 +466,106 @@ ofa_mysql_dossier_meta_add_period( ofaMysqlDossierMeta *meta,
 	g_free( group );
 }
 
-/*
- * Settings are: "host(s); port(u); socket(s); root_account(s);
+/**
+ * ofa_mysql_dossier_meta_set_from_editor:
+ * @meta: this #ofaMysqlDossierMeta instance.
+ * @dossier_bin: the #ofaMysqlDossierBin dossier editor.
+ * @root_bin: the #ofaMysqlRootBin root credentials editor.
+ *
+ * Defines data from the editor.
+ * Writes them into dossier settings.
  */
+void
+ofa_mysql_dossier_meta_set_from_editor( ofaMysqlDossierMeta *meta, ofaMysqlDossierBin *dossier_bin, ofaMysqlRootBin *root_bin )
+{
+	ofaMysqlDossierMetaPrivate *priv;
+	const gchar *cstr;
+
+	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
+	g_return_if_fail( dossier_bin && OFA_IS_MYSQL_DOSSIER_BIN( dossier_bin ));
+	g_return_if_fail( root_bin && OFA_IS_MYSQL_ROOT_BIN( root_bin ));
+
+	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->host );
+	priv->host = NULL;
+	cstr = ofa_mysql_dossier_bin_get_host( dossier_bin );
+	if( my_strlen( cstr )){
+		priv->host = g_strdup( cstr );
+	}
+
+	priv->port = ofa_mysql_dossier_bin_get_port( dossier_bin );
+
+	g_free( priv->socket );
+	priv->socket = NULL;
+	cstr = ofa_mysql_dossier_bin_get_socket( dossier_bin );
+	if( my_strlen( cstr )){
+		priv->socket = g_strdup( cstr );
+	}
+
+	g_free( priv->root_account );
+	priv->root_account = NULL;
+	cstr = ofa_mysql_root_bin_get_remembered_account( root_bin );
+	if( my_strlen( cstr )){
+		priv->root_account = g_strdup( cstr );
+	}
+
+	write_settings( meta );
+}
+
+/*
+ * Settings are: "host(s); port(u); socket(s); root_account(s);"
+ */
+static void
+read_settings( ofaMysqlDossierMeta *self )
+{
+	ofaMysqlDossierMetaPrivate *priv;
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *group, *cstr;
+
+	priv = ofa_mysql_dossier_meta_get_instance_private( self );
+
+	settings = ofa_idbdossier_meta_get_settings_iface( OFA_IDBDOSSIER_META( self ));
+	group = ofa_idbdossier_meta_get_settings_group( OFA_IDBDOSSIER_META( self ));
+	strlist = my_isettings_get_string_list( settings, group, "mysql-instance" );
+
+	/* host */
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		g_free( priv->host );
+		priv->host = g_strdup( cstr );
+	}
+
+	/* port */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->port = atoi( cstr );
+	}
+
+	/* socket */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		g_free( priv->socket );
+		priv->socket = g_strdup( cstr );
+	}
+
+	/* remembered root account */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		g_free( priv->root_account );
+		priv->root_account = g_strdup( cstr );
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+}
+
 static void
 write_settings( ofaMysqlDossierMeta *self )
 {
@@ -584,8 +582,8 @@ write_settings( ofaMysqlDossierMeta *self )
 			my_strlen( priv->socket ) ? priv->socket : "",
 			my_strlen( priv->root_account ) ? priv->root_account : "" );
 
-	settings = ofa_idbdossier_meta_get_settings( OFA_IDBDOSSIER_META( self ));
-	group = ofa_idbdossier_meta_get_group_name( OFA_IDBDOSSIER_META( self ));
+	settings = ofa_idbdossier_meta_get_settings_iface( OFA_IDBDOSSIER_META( self ));
+	group = ofa_idbdossier_meta_get_settings_group( OFA_IDBDOSSIER_META( self ));
 
 	my_isettings_set_string( settings, group, "mysql-instance", str );
 

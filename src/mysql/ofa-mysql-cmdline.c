@@ -138,7 +138,7 @@ ofa_mysql_cmdline_backup_run( ofaMysqlConnect *connect, const gchar *uri )
 	ok = do_execute_async(
 				template,
 				connect,
-				OFA_MUSQL_EXERCICE_META( period ),
+				OFA_MYSQL_EXERCICE_META( period ),
 				fname,
 				_( "Openbook backup" ),
 				( GChildWatchFunc ) backup_exit_cb,
@@ -195,7 +195,7 @@ ofa_mysql_cmdline_restore_run( ofaMysqlConnect *connect,
 			thisfn, ( void * ) connect, ( void * ) period, uri );
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
-	g_return_val_if_fail( period && OFA_IS_MUSQL_EXERCICE_META( period ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ), FALSE );
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
 
 	/* It happens that MySQL has some issues with dropping an non-existant
@@ -267,9 +267,9 @@ ofa_mysql_cmdline_archive_and_new( ofaMysqlConnect *connect,
 
 	/* get previous database from current connection on closed exercice */
 	period = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
-	g_return_val_if_fail( period && OFA_IS_MUSQL_EXERCICE_META( period ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ), FALSE );
 
-	prev_dbname = ofa_mysql_exercice_meta_get_database( OFA_MUSQL_EXERCICE_META( period ));
+	prev_dbname = ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( period ));
 	new_db = ofa_mysql_connect_get_new_database( server_cnx, prev_dbname );
 
 	g_object_unref( period );

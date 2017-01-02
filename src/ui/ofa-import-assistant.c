@@ -1583,7 +1583,7 @@ read_settings( ofaImportAssistant *self )
 	/* dossier settings
 	 */
 	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+	group = ofa_idbdossier_meta_get_settings_group( priv->meta );
 
 	priv->p1_folder = my_isettings_get_string( settings, group, st_import_folder );
 
@@ -1617,7 +1617,7 @@ write_settings( ofaImportAssistant *self )
 	/* dossier settings
 	 */
 	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+	group = ofa_idbdossier_meta_get_settings_group( priv->meta );
 
 	if( my_strlen( priv->p1_folder )){
 		my_isettings_set_string( settings, group, st_import_folder, priv->p1_folder );

@@ -42,6 +42,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
 
 G_BEGIN_DECLS
 
@@ -76,7 +77,10 @@ GtkSizeGroup       *ofa_exercice_meta_bin_get_size_group   ( ofaExerciceMetaBin 
 gboolean            ofa_exercice_meta_bin_is_valid         ( ofaExerciceMetaBin *bin,
 																	gchar **error_message );
 
-gboolean            ofa_exercice_meta_bin_apply            ( ofaExerciceMetaBin *bin );
+gboolean            ofa_exercice_meta_bin_apply            ( ofaExerciceMetaBin *bin,
+																	ofaIDBDossierMeta *dossier_meta );
+
+ofaIDBExerciceMeta *ofa_exercice_meta_bin_get_exercice_meta( ofaExerciceMetaBin *bin );
 
 const GDate        *ofa_exercice_meta_bin_get_begin_date   ( ofaExerciceMetaBin *bin );
 

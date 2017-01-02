@@ -1076,7 +1076,7 @@ read_settings( ofaExportAssistant *self )
 	/* dossier settings
 	 */
 	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+	group = ofa_idbdossier_meta_get_settings_group( priv->meta );
 
 	priv->p3_folder_uri = my_isettings_get_string( settings, group, st_export_folder );
 	if( !my_strlen( priv->p3_folder_uri )){
@@ -1116,7 +1116,7 @@ write_settings( ofaExportAssistant *self )
 	/* dossier settings
 	 */
 	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+	group = ofa_idbdossier_meta_get_settings_group( priv->meta );
 
 	if( my_strlen( priv->p3_folder_uri )){
 		my_isettings_set_string( settings, group, st_export_folder, priv->p3_folder_uri );

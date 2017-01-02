@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_MUSQL_EXERCICE_META_H__
-#define __OFA_MUSQL_EXERCICE_META_H__
+#ifndef __OFA_MYSQL_EXERCICE_META_H__
+#define __OFA_MYSQL_EXERCICE_META_H__
 
 /**
  * SECTION: ofa_mysql_exercice_meta
@@ -38,12 +38,12 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_MUSQL_EXERCICE_META                ( ofa_mysql_exercice_meta_get_type())
-#define OFA_MUSQL_EXERCICE_META( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MUSQL_EXERCICE_META, ofaMysqlExerciceMeta ))
-#define OFA_MUSQL_EXERCICE_META_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MUSQL_EXERCICE_META, ofaMysqlExerciceMetaClass ))
-#define OFA_IS_MUSQL_EXERCICE_META( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MUSQL_EXERCICE_META ))
-#define OFA_IS_MUSQL_EXERCICE_META_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MUSQL_EXERCICE_META ))
-#define OFA_MUSQL_EXERCICE_META_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MUSQL_EXERCICE_META, ofaMysqlExerciceMetaClass ))
+#define OFA_TYPE_MYSQL_EXERCICE_META                ( ofa_mysql_exercice_meta_get_type())
+#define OFA_MYSQL_EXERCICE_META( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_EXERCICE_META, ofaMysqlExerciceMeta ))
+#define OFA_MYSQL_EXERCICE_META_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_EXERCICE_META, ofaMysqlExerciceMetaClass ))
+#define OFA_IS_MYSQL_EXERCICE_META( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_EXERCICE_META ))
+#define OFA_IS_MYSQL_EXERCICE_META_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_EXERCICE_META ))
+#define OFA_MYSQL_EXERCICE_META_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_EXERCICE_META, ofaMysqlExerciceMetaClass ))
 
 typedef struct {
 	/*< public members >*/
@@ -58,6 +58,8 @@ typedef struct {
 	ofaMysqlExerciceMetaClass;
 
 GType                 ofa_mysql_exercice_meta_get_type         ( void ) G_GNUC_CONST;
+
+ofaMysqlExerciceMeta *ofa_mysql_exercice_meta_new              ( void );
 
 ofaMysqlExerciceMeta *ofa_mysql_exercice_meta_new_from_settings( myISettings *settings,
 																		const gchar *group,
@@ -85,4 +87,4 @@ void                  ofa_mysql_exercice_meta_remove           ( ofaMysqlExercic
 
 G_END_DECLS
 
-#endif /* __OFA_MUSQL_EXERCICE_META_H__ */
+#endif /* __OFA_MYSQL_EXERCICE_META_H__ */

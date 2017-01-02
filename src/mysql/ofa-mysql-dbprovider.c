@@ -68,6 +68,7 @@ static gchar                *iident_get_display_name( const myIIdent *instance, 
 static gchar                *iident_get_version( const myIIdent *instance, void *user_data );
 static void                  idbprovider_iface_init( ofaIDBProviderInterface *iface );
 static ofaIDBDossierMeta    *idbprovider_new_dossier_meta( ofaIDBProvider *instance );
+static ofaIDBExerciceMeta   *idbprovider_new_exercice_meta( ofaIDBProvider *instance );
 static ofaIDBConnect        *idbprovider_new_connect( ofaIDBProvider *instance );
 static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
 static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, guint rule );
@@ -187,6 +188,7 @@ idbprovider_iface_init( ofaIDBProviderInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->new_dossier_meta = idbprovider_new_dossier_meta;
+	iface->new_exercice_meta = idbprovider_new_exercice_meta;
 	iface->new_connect = idbprovider_new_connect;
 	iface->new_editor = idbprovider_new_editor;
 	iface->new_dossier_editor = idbprovider_new_dossier_editor;
@@ -204,6 +206,19 @@ idbprovider_new_dossier_meta( ofaIDBProvider *instance )
 	meta = ofa_mysql_dossier_meta_new();
 
 	return( OFA_IDBDOSSIER_META( meta ));
+}
+
+/*
+ * instanciates a new ofaIDBExerciceMeta object
+ */
+static ofaIDBExerciceMeta *
+idbprovider_new_exercice_meta( ofaIDBProvider *instance )
+{
+	ofaMysqlExerciceMeta *meta;
+
+	meta = ofa_mysql_exercice_meta_new();
+
+	return( OFA_IDBEXERCICE_META( meta ));
 }
 
 /*

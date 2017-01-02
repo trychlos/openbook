@@ -29,9 +29,12 @@
 #include <glib/gi18n.h>
 
 #include "my/my-date.h"
+#include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
+#include "api/ofa-idbprovider.h"
 #include "api/ofa-preferences.h"
 
 /* some data attached to each IDBExerciceMeta instance
@@ -39,10 +42,22 @@
  * which do not depend of a specific implementation
  */
 typedef struct {
-	ofaHub  *hub;
-	GDate    begin;
-	GDate    end;
-	gboolean current;
+
+	/* initialization
+	 */
+	ofaIDBDossierMeta *dossier_meta;
+
+	/* second init stage
+	 */
+	gchar             *settings_key;
+	gchar             *settings_id;
+
+	/* runtime
+	 */
+	GDate              begin;
+	GDate              end;
+	gboolean           current;
+	gchar             *admin_account;
 }
 	sIDBMeta;
 
@@ -54,8 +69,9 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType     register_type( void );
 static void      interface_base_init( ofaIDBExerciceMetaInterface *klass );
 static void      interface_base_finalize( ofaIDBExerciceMetaInterface *klass );
-static sIDBMeta *get_idbperiod_data( const ofaIDBExerciceMeta *period );
-static void      on_period_finalized( sIDBMeta *data, GObject *finalized_period );
+static void      read_settings( ofaIDBExerciceMeta *self );
+static sIDBMeta *get_instance_data( const ofaIDBExerciceMeta *self );
+static void      on_instance_finalized( sIDBMeta *sdata, GObject *finalized_instance );
 
 /**
  * ofa_idbexercice_meta_get_type:
@@ -184,45 +200,108 @@ ofa_idbexercice_meta_get_interface_version( GType type )
 }
 
 /**
- * ofa_idbexercice_meta_get_hub:
- * @period: this #ofaIDBExerciceMeta instance.
+ * ofa_idbexercice_meta_get_dossier_meta:
+ * @exercice_meta: this #ofaIDBExerciceMeta instance.
  *
- * Returns: the #ofaHub object of the application which has been set
- * at initialization time.
+ * Returns: the attached #ofaIDBDossierMeta dossier.
  *
- * The returned reference is owned by the @period instance, and should
- * not be released by the caller.
+ * The returned reference is owned by @exercice_meta, and should not be
+ * released by the caller.
  */
-ofaHub *
-ofa_idbexercice_meta_get_hub( const ofaIDBExerciceMeta *period )
+ofaIDBDossierMeta *
+ofa_idbexercice_meta_get_dossier_meta( const ofaIDBExerciceMeta *exercice_meta )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
-	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
+	g_return_val_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ), NULL );
 
-	data = get_idbperiod_data( period );
+	sdata = get_instance_data( exercice_meta );
 
-	return( data->hub );
+	return( sdata->dossier_meta );
 }
 
 /**
- * ofa_idbexercice_meta_set_hub:
- * @period: this #ofaIDBExerciceMeta instance.
- * @hub: the #ofaHub object of the application.
+ * ofa_idbexercice_meta_set_dossier_meta:
+ * @exercice_meta: this #ofaIDBExerciceMeta instance.
+ * @dossier_meta: the #ofaIDBDossierMeta dossier.
  *
- * Set the @hub object.
+ * Attach the @dossier_meta to the @exercice_meta.
  */
 void
-ofa_idbexercice_meta_set_hub( ofaIDBExerciceMeta *period, ofaHub *hub )
+ofa_idbexercice_meta_set_dossier_meta( ofaIDBExerciceMeta *exercice_meta, ofaIDBDossierMeta *dossier_meta )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
-	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
+	g_return_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ));
 
-	data = get_idbperiod_data( period );
+	sdata = get_instance_data( exercice_meta );
 
-	data->hub = hub;
+	sdata->dossier_meta = dossier_meta;
+}
+
+/**
+ * ofa_idbexercice_meta_set_from_settings:
+ * @exercice_meta: this #ofaIDBExerciceMeta instance.
+ * @key: the key of the exercice in dossier settings.
+ * @key_id: the identifier of the exercice.
+ *
+ * Reads from dossier settings informations relative to the @exercice_meta
+ * exercice.
+ */
+void
+ofa_idbexercice_meta_set_from_settings( ofaIDBExerciceMeta *exercice_meta, const gchar *key, const gchar *key_id )
+{
+	static const gchar *thisfn = "ofa_idbexercice_meta_set_from_settings";
+	sIDBMeta *sdata;
+
+	g_debug( "%s: exercice_meta=%p, key=%s, key_id=%s",
+			thisfn, ( void * ) exercice_meta, key, key_id );
+
+	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
+
+	sdata = get_instance_data( exercice_meta );
+
+	g_free( sdata->settings_key );
+	sdata->settings_key = g_strdup( key );
+	g_free( sdata->settings_id );
+	sdata->settings_id = g_strdup( key_id );
+
+	read_settings( exercice_meta );
+
+	if( OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_settings ){
+		OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_settings( exercice_meta, key_id );
+		return;
+	}
+
+	g_info( "%s: ofaIDBExerciceMeta's %s implementation does not provide 'set_from_settings()' method",
+			thisfn, G_OBJECT_TYPE_NAME( exercice_meta ));
+}
+
+/**
+ * ofa_idbexercice_meta_set_from_editor:
+ * @exercice_meta: this #ofaIDBExerciceMeta instance.
+ * @editor: the #ofaIDBExerciceEditor widget.
+ *
+ * Setup the @exercice_meta exercice with informations from @editor.
+ */
+void
+ofa_idbexercice_meta_set_from_editor( ofaIDBExerciceMeta *exercice_meta, ofaIDBExerciceEditor *editor )
+{
+	static const gchar *thisfn = "ofa_idbexercice_meta_set_from_editor";
+
+	g_debug( "%s: exercice_meta=%p, editor=%p",
+			thisfn, ( void * ) exercice_meta, editor );
+
+	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
+
+	if( OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_editor ){
+		OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_editor( exercice_meta, editor );
+		return;
+	}
+
+	g_info( "%s: ofaIDBExerciceMeta's %s implementation does not provide 'set_from_editor()' method",
+			thisfn, G_OBJECT_TYPE_NAME( exercice_meta ));
 }
 
 /**
@@ -234,13 +313,13 @@ ofa_idbexercice_meta_set_hub( ofaIDBExerciceMeta *period, ofaHub *hub )
 const GDate *
 ofa_idbexercice_meta_get_begin_date( const ofaIDBExerciceMeta *period )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 
-	data = get_idbperiod_data( period );
+	sdata = get_instance_data( period );
 
-	return(( const GDate * ) &data->begin );
+	return(( const GDate * ) &sdata->begin );
 }
 
 /**
@@ -253,13 +332,13 @@ ofa_idbexercice_meta_get_begin_date( const ofaIDBExerciceMeta *period )
 void
 ofa_idbexercice_meta_set_begin_date( ofaIDBExerciceMeta *period, const GDate *date )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
-	data = get_idbperiod_data( period );
+	sdata = get_instance_data( period );
 
-	my_date_set_from_date( &data->begin, date );
+	my_date_set_from_date( &sdata->begin, date );
 }
 
 /**
@@ -271,13 +350,13 @@ ofa_idbexercice_meta_set_begin_date( ofaIDBExerciceMeta *period, const GDate *da
 const GDate *
 ofa_idbexercice_meta_get_end_date( const ofaIDBExerciceMeta *period )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 
-	data = get_idbperiod_data( period );
+	sdata = get_instance_data( period );
 
-	return(( const GDate * ) &data->end );
+	return(( const GDate * ) &sdata->end );
 }
 
 /**
@@ -290,13 +369,13 @@ ofa_idbexercice_meta_get_end_date( const ofaIDBExerciceMeta *period )
 void
 ofa_idbexercice_meta_set_end_date( ofaIDBExerciceMeta *period, const GDate *date )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
-	data = get_idbperiod_data( period );
+	sdata = get_instance_data( period );
 
-	my_date_set_from_date( &data->end, date );
+	my_date_set_from_date( &sdata->end, date );
 }
 
 /**
@@ -309,13 +388,13 @@ ofa_idbexercice_meta_set_end_date( ofaIDBExerciceMeta *period, const GDate *date
 gboolean
 ofa_idbexercice_meta_get_current( const ofaIDBExerciceMeta *period )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 
-	data = get_idbperiod_data( period );
+	sdata = get_instance_data( period );
 
-	return( data->current );
+	return( sdata->current );
 }
 
 /**
@@ -328,13 +407,13 @@ ofa_idbexercice_meta_get_current( const ofaIDBExerciceMeta *period )
 void
 ofa_idbexercice_meta_set_current( ofaIDBExerciceMeta *period, gboolean current )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
-	data = get_idbperiod_data( period );
+	sdata = get_instance_data( period );
 
-	data->current = current;
+	sdata->current = current;
 }
 
 /**
@@ -370,14 +449,18 @@ ofa_idbexercice_meta_get_status( const ofaIDBExerciceMeta *period )
 gchar *
 ofa_idbexercice_meta_get_label( const ofaIDBExerciceMeta *period )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 	GString *svalue;
 	gchar *sdate;
 	const GDate *begin, *end;
+	ofaIDBProvider *provider;
+	ofaHub *hub;
 
 	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 
-	data = get_idbperiod_data( period );
+	sdata = get_instance_data( period );
+	provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
+	hub = ofa_idbprovider_get_hub( provider );
 
 	svalue = g_string_new( ofa_idbexercice_meta_get_current( period )
 					? _( "Current exercice" )
@@ -385,14 +468,14 @@ ofa_idbexercice_meta_get_label( const ofaIDBExerciceMeta *period )
 
 	begin = ofa_idbexercice_meta_get_begin_date( period );
 	if( my_date_is_valid( begin )){
-		sdate = my_date_to_str( begin, ofa_prefs_date_display( data->hub ));
+		sdate = my_date_to_str( begin, ofa_prefs_date_display( hub ));
 		g_string_append_printf( svalue, _( " from %s" ), sdate );
 		g_free( sdate );
 	}
 
 	end = ofa_idbexercice_meta_get_end_date( period );
 	if( my_date_is_valid( end )){
-		sdate = my_date_to_str( end, ofa_prefs_date_display( data->hub ));
+		sdate = my_date_to_str( end, ofa_prefs_date_display( hub ));
 		g_string_append_printf( svalue, _( " to %s" ), sdate );
 		g_free( sdate );
 	}
@@ -483,15 +566,15 @@ ofa_idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceM
 gboolean
 ofa_idbexercice_meta_is_suitable( const ofaIDBExerciceMeta *period, const GDate *begin, const GDate *end )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 	gboolean begin_ok, end_ok;
 
 	begin_ok = FALSE;
 	end_ok = FALSE;
-	data = get_idbperiod_data( period );
+	sdata = get_instance_data( period );
 
-	begin_ok = begin ? my_date_compare_ex( begin, &data->begin, TRUE ) : TRUE;
-	end_ok = end ? my_date_compare_ex( end, &data->end, FALSE ) : TRUE;
+	begin_ok = begin ? my_date_compare_ex( begin, &sdata->begin, TRUE ) : TRUE;
+	end_ok = end ? my_date_compare_ex( end, &sdata->end, FALSE ) : TRUE;
 
 	return( begin_ok && end_ok );
 }
@@ -506,7 +589,7 @@ void
 ofa_idbexercice_meta_dump( const ofaIDBExerciceMeta *period )
 {
 	static const gchar *thisfn = "ofa_idbexercice_meta_dump";
-	sIDBMeta *data;
+	sIDBMeta *sdata;
 	gchar *begin, *end;
 
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
@@ -515,42 +598,98 @@ ofa_idbexercice_meta_dump( const ofaIDBExerciceMeta *period )
 		OFA_IDBEXERCICE_META_GET_INTERFACE( period )->dump( period );
 	}
 
-	data = get_idbperiod_data( period );
-	begin = my_date_to_str( &data->begin, MY_DATE_SQL );
-	end = my_date_to_str( &data->end, MY_DATE_SQL );
+	sdata = get_instance_data( period );
+	begin = my_date_to_str( &sdata->begin, MY_DATE_SQL );
+	end = my_date_to_str( &sdata->end, MY_DATE_SQL );
 
 	g_debug( "%s: period=%p (%s)",
 			thisfn, ( void * ) period, G_OBJECT_TYPE_NAME( period ));
 	g_debug( "%s:   begin=%s", thisfn, begin );
 	g_debug( "%s:   end=%s", thisfn, end );
-	g_debug( "%s:   current=%s", thisfn, data->current ? "True":"False" );
+	g_debug( "%s:   current=%s", thisfn, sdata->current ? "True":"False" );
 
 	g_free( begin );
 	g_free( end );
 }
 
-static sIDBMeta *
-get_idbperiod_data( const ofaIDBExerciceMeta *period )
+/*
+ * settings are: "begin(s), end(s); current(s); admin_account(s);"
+ */
+static void
+read_settings( ofaIDBExerciceMeta *self )
 {
-	sIDBMeta *data;
+	sIDBMeta *sdata;
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *group, *cstr;
 
-	data = ( sIDBMeta * ) g_object_get_data( G_OBJECT( period ), IDBEXERCICE_META_DATA );
+	sdata = get_instance_data( self );
 
-	if( !data ){
-		data = g_new0( sIDBMeta, 1 );
-		g_object_set_data( G_OBJECT( period ), IDBEXERCICE_META_DATA, data );
-		g_object_weak_ref( G_OBJECT( period ), ( GWeakNotify ) on_period_finalized, data );
+	settings = ofa_idbdossier_meta_get_settings_iface( sdata->dossier_meta );
+	group = ofa_idbdossier_meta_get_settings_group( sdata->dossier_meta );
+	strlist = my_isettings_get_string_list( settings, group, sdata->settings_key );
+
+	/* beginning date as YYYYMMDD */
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		my_date_set_from_str( &sdata->begin, cstr, MY_DATE_YYMD );
 	}
 
-	return( data );
+	/* ending date as YYYYMMDD */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		my_date_set_from_str( &sdata->end, cstr, MY_DATE_YYMD );
+	}
+
+	/* is_current */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		sdata->current = my_utils_boolean_from_str( cstr );
+	}
+
+	/* remembered admin account */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		g_free( sdata->admin_account );
+		sdata->admin_account = g_strdup( cstr );
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+}
+
+static sIDBMeta *
+get_instance_data( const ofaIDBExerciceMeta *self )
+{
+	sIDBMeta *sdata;
+
+	sdata = ( sIDBMeta * ) g_object_get_data( G_OBJECT( self ), IDBEXERCICE_META_DATA );
+
+	if( !sdata ){
+		sdata = g_new0( sIDBMeta, 1 );
+		g_object_set_data( G_OBJECT( self ), IDBEXERCICE_META_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( self ), ( GWeakNotify ) on_instance_finalized, sdata );
+
+		my_date_clear( &sdata->begin );
+		my_date_clear( &sdata->end );
+	}
+
+	return( sdata );
 }
 
 static void
-on_period_finalized( sIDBMeta *data, GObject *finalized_period )
+on_instance_finalized( sIDBMeta *sdata, GObject *finalized_period )
 {
-	static const gchar *thisfn = "ofa_idbexercice_meta_on_period_finalized";
+	static const gchar *thisfn = "ofa_idbexercice_meta_on_instance_finalized";
 
-	g_debug( "%s: data=%p, finalized_period=%p", thisfn, ( void * ) data, ( void * ) finalized_period );
+	g_debug( "%s: sdata=%p, finalized_period=%p", thisfn, ( void * ) sdata, ( void * ) finalized_period );
 
-	g_free( data );
+	g_free( sdata->settings_key );
+	g_free( sdata->settings_id );
+	g_free( sdata->admin_account );
+
+	g_free( sdata );
 }

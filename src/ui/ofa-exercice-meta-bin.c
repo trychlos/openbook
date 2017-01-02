@@ -33,6 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-preferences.h"
 
@@ -42,23 +43,27 @@
 /* private instance data
  */
 typedef struct {
-	gboolean         dispose_has_run;
+	gboolean            dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub          *hub;
-	gchar           *settings_prefix;
-	guint            rule;
+	ofaHub             *hub;
+	gchar              *settings_prefix;
+	guint               rule;
 
 	/* UI
 	 */
-	GtkSizeGroup    *group0;
+	GtkSizeGroup       *group0;
 
 	/* runtime data
 	 */
-	GDate            begin;
-	GDate            end;
-	gboolean         is_current;
+	GDate               begin;
+	GDate               end;
+	gboolean            is_current;
+
+	/* on apply
+	 */
+	ofaIDBExerciceMeta *exercice_meta;
 }
 	ofaExerciceMetaBinPrivate;
 
@@ -371,40 +376,51 @@ ofa_exercice_meta_bin_is_valid( ofaExerciceMetaBin *bin, gchar **error_message )
 /**
  * ofa_exercice_meta_bin_apply:
  * @bin: this #ofaExerciceMetaBin instance.
+ * @dossier_meta: the #ofaIDBDossierMeta dossier.
  *
- * Returns: %TRUE if the exercice has been successfully defined in the
- * settings.
+ * Returns: %TRUE.
  */
 gboolean
-ofa_exercice_meta_bin_apply( ofaExerciceMetaBin *bin )
+ofa_exercice_meta_bin_apply( ofaExerciceMetaBin *bin, ofaIDBDossierMeta *dossier_meta )
 {
-#if 0
 	ofaExerciceMetaBinPrivate *priv;
 	ofaIDBProvider *provider;
-	ofaIDBDossierMeta *meta;
-	ofaDossierCollection *collection;
 
 	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), FALSE );
-	g_return_val_if_fail( ofa_exercice_meta_bin_get_valid( bin, NULL ), FALSE );
+	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), FALSE );
+
+	priv = ofa_exercice_meta_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	switch( priv->rule ){
+		case HUB_RULE_DOSSIER_NEW:
+			provider = ofa_idbdossier_meta_get_provider( dossier_meta );
+			priv->exercice_meta = ofa_idbprovider_new_exercice_meta( provider, dossier_meta );
+			break;
+	}
+
+	return( TRUE );
+}
+
+/**
+ * ofa_exercice_meta_bin_get_exercice_meta:
+ * @bin: this #ofaExerciceMetaBin instance.
+ *
+ * Returns: the #ofaIDBExerciceMeta instance allocated on apply.
+ */
+ofaIDBExerciceMeta *
+ofa_exercice_meta_bin_get_exercice_meta( ofaExerciceMetaBin *bin )
+{
+	ofaExerciceMetaBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), NULL );
 
 	priv = ofa_exercice_meta_bin_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	if( !priv->exercice_meta ){
-		priv->exercice_meta = ofa_exercice_meta_new();
-	}
-
-	ofa_exercice_meta_set_exercice_name( priv->exercice_meta, priv->exercice_name );
-	ofa_exercice_meta_set_dbprovider( priv->exercice_meta, priv->provider );
-
-	collection = ofa_hub_get_dossier_collection( priv->hub );
-	g_return_val_if_fail( collection && OFA_IS_DOSSIER_COLLECTION( collection ), FALSE );
-	ofa_dossier_collection_set_exercice_meta( collection, priv->exercice_meta );
-
-	return( meta );
-#endif
-	return( TRUE );
+	return( priv->exercice_meta );
 }
 
 /**

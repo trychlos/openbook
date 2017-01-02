@@ -82,8 +82,6 @@ static void     on_remember_toggled( GtkToggleButton *button, ofaMysqlRootBin *s
 static void     on_password_changed( GtkEditable *entry, ofaMysqlRootBin *self );
 static void     changed_composite( ofaMysqlRootBin *self );
 static gboolean is_valid( ofaMysqlRootBin *self, gchar **str );
-static void     read_settings( ofaMysqlRootBin *self );
-static void     write_settings( ofaMysqlRootBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlRootBin, ofa_mysql_root_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlRootBin ))
@@ -119,8 +117,6 @@ mysql_root_bin_dispose( GObject *instance )
 	priv = ofa_mysql_root_bin_get_instance_private( OFA_MYSQL_ROOT_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
-
-		write_settings( OFA_MYSQL_ROOT_BIN( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -212,7 +208,6 @@ ofa_mysql_root_bin_new( ofaMysqlDBProvider *provider, guint rule )
 	priv->rule = rule;
 
 	setup_bin( bin );
-	read_settings( bin );
 
 	return( bin );
 }
@@ -445,30 +440,6 @@ ofa_mysql_root_bin_set_valid( ofaMysqlRootBin *bin, gboolean valid )
 }
 
 /**
- * ofa_mysql_root_bin_apply:
- * @bin: this #ofaMysqlRootBin instance.
- * @meta: the #ofaIDBDossierMeta dossier.
- *
- * Returns: %TRUE.
- */
-gboolean
-ofa_mysql_root_bin_apply( ofaMysqlRootBin *bin, ofaIDBDossierMeta *meta )
-{
-	ofaMysqlRootBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_MYSQL_ROOT_BIN( bin ), FALSE );
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), FALSE );
-
-	priv = ofa_mysql_root_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	ofa_mysql_dossier_meta_set_root_account( OFA_MYSQL_DOSSIER_META( meta ), priv->remember ? priv->account : NULL );
-
-	return( TRUE );
-}
-
-/**
  * ofa_mysql_root_bin_get_account:
  * @bin: this #ofaMysqlRootBin instance.
  *
@@ -506,6 +477,26 @@ ofa_mysql_root_bin_get_password( ofaMysqlRootBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return(( const gchar * ) priv->password );
+}
+
+/**
+ * ofa_mysql_root_bin_get_remembered_account:
+ * @bin: this #ofaMysqlRootBin instance.
+ *
+ * Returns: the account if the user has asked to remember it, %NULL else.
+ */
+const gchar *
+ofa_mysql_root_bin_get_remembered_account( ofaMysqlRootBin *bin )
+{
+	ofaMysqlRootBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_MYSQL_ROOT_BIN( bin ), NULL );
+
+	priv = ofa_mysql_root_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return(( const gchar * )( priv->remember ? priv->account : NULL ));
 }
 
 /**
@@ -580,16 +571,4 @@ ofa_mysql_root_bin_set_dossier_meta( ofaMysqlRootBin *bin, ofaIDBDossierMeta *do
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->dossier_meta = dossier_meta;
-}
-
-static void
-read_settings( ofaMysqlRootBin *self )
-{
-
-}
-
-static void
-write_settings( ofaMysqlRootBin *self )
-{
-
 }

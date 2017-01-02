@@ -67,8 +67,6 @@ static void          idbdossier_editor_iface_init( ofaIDBDossierEditorInterface 
 static guint         idbdossier_editor_get_interface_version( void );
 static GtkSizeGroup *idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint column );
 static gboolean      idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message );
-static gboolean      idbdossier_editor_apply( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *meta );
-//static void          idbdossier_editor_set_dossier_meta( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta );
 static void          setup_bin( ofaMysqlDossierEditor *self );
 static void          on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlDossierEditor *self );
 static void          on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self );
@@ -158,8 +156,6 @@ idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface )
 	iface->get_interface_version = idbdossier_editor_get_interface_version;
 	iface->get_size_group = idbdossier_editor_get_size_group;
 	iface->is_valid = idbdossier_editor_is_valid;
-	iface->apply = idbdossier_editor_apply;
-	//iface->set_dossier_meta = idbdossier_editor_set_dossier_meta;
 }
 
 static guint
@@ -206,33 +202,6 @@ idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message
 
 	return( ok );
 }
-
-static gboolean
-idbdossier_editor_apply( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *meta )
-{
-	ofaMysqlDossierEditorPrivate *priv;
-	gboolean ok;
-
-	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
-
-	ok = ofa_mysql_dossier_bin_apply( priv->dossier_bin, meta ) &&
-			ofa_mysql_root_bin_apply( priv->root_bin, meta );
-
-	return( ok );
-}
-
-#if 0
-static void
-idbdossier_editor_set_dossier_meta( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta )
-{
-	ofaMysqlDossierEditorPrivate *priv;
-
-	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
-
-	ofa_mysql_dossier_bin_set_dossier_meta( priv->dossier_bin, dossier_meta );
-	ofa_mysql_root_bin_set_dossier_meta( priv->root_bin, dossier_meta );
-}
-#endif
 
 /**
  * ofa_mysql_dossier_editor_new:
