@@ -47,7 +47,6 @@
 #include "mysql/ofa-mysql-editor-display.h"
 #include "mysql/ofa-mysql-editor-enter.h"
 #include "mysql/ofa-mysql-exercice-editor.h"
-#include "mysql/ofa-mysql-exercice-meta.h"
 
 /* private instance data
  */
@@ -70,7 +69,6 @@ static void                  idbprovider_iface_init( ofaIDBProviderInterface *if
 static ofaIDBDossierMeta    *idbprovider_new_dossier_meta( ofaIDBProvider *instance );
 static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
 static ofaIDBConnect        *idbprovider_new_connect( ofaIDBProvider *instance, const gchar *account, const gchar *password, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta );
-static ofaIDBExerciceMeta   *idbprovider_new_exercice_meta( ofaIDBProvider *instance );
 static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
 static ofaIDBExerciceEditor *idbprovider_new_exercice_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
 static void                  isetter_iface_init( ofaISetterInterface *iface );
@@ -188,7 +186,6 @@ idbprovider_iface_init( ofaIDBProviderInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->new_dossier_meta = idbprovider_new_dossier_meta;
-	iface->new_exercice_meta = idbprovider_new_exercice_meta;
 	iface->new_connect = idbprovider_new_connect;
 	iface->new_editor = idbprovider_new_editor;
 	iface->new_dossier_editor = idbprovider_new_dossier_editor;
@@ -206,19 +203,6 @@ idbprovider_new_dossier_meta( ofaIDBProvider *instance )
 	meta = ofa_mysql_dossier_meta_new();
 
 	return( OFA_IDBDOSSIER_META( meta ));
-}
-
-/*
- * instanciates a new ofaIDBExerciceMeta object
- */
-static ofaIDBExerciceMeta *
-idbprovider_new_exercice_meta( ofaIDBProvider *instance )
-{
-	ofaMysqlExerciceMeta *meta;
-
-	meta = ofa_mysql_exercice_meta_new();
-
-	return( OFA_IDBEXERCICE_META( meta ));
 }
 
 /*

@@ -436,37 +436,6 @@ ofa_idbprovider_new_connect( ofaIDBProvider *provider, const gchar *account, con
 }
 
 /**
- * ofa_idbprovider_new_exercice_meta:
- * @provider: this #ofaIDBProvider provider.
- * @dossier_meta: the #ofaIDBDossierMeta dossier.
- *
- * Returns: a newly allocated #ofaIDBExerciceMeta object, which should be
- * g_object_unref() by the caller.
- */
-ofaIDBExerciceMeta *
-ofa_idbprovider_new_exercice_meta( ofaIDBProvider *provider, ofaIDBDossierMeta *dossier_meta )
-{
-	static const gchar *thisfn = "ofa_idbprovider_new_exercice_meta";
-	ofaIDBExerciceMeta *exercice_meta;
-
-	g_debug( "%s: provider=%p, dossier_meta=%p",
-			thisfn, ( void * ) provider, ( void * ) dossier_meta );
-
-	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
-	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), NULL );
-
-	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_exercice_meta ){
-		exercice_meta = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_exercice_meta( provider );
-		ofa_idbexercice_meta_set_dossier_meta( exercice_meta, dossier_meta );
-		return( exercice_meta );
-	}
-
-	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_exercice_meta()' method",
-			thisfn, G_OBJECT_TYPE_NAME( provider ));
-	return( NULL );
-}
-
-/**
  * ofa_idbprovider_new_editor:
  * @provider: this #ofaIDBProvider provider.
  * @editable: whether the informations in the container have to be

@@ -66,9 +66,9 @@ static guint st_initializations          = 0;	/* interface initialization count 
 static GType               register_type( void );
 static void                interface_base_init( ofaIDBDossierMetaInterface *klass );
 static void                interface_base_finalize( ofaIDBDossierMetaInterface *klass );
-static void                set_exercices_from_settings( ofaIDBDossierMeta *meta, sIDBMeta *sdata );
-static ofaIDBExerciceMeta *find_exercice( ofaIDBDossierMeta *meta, sIDBMeta *sdata, ofaIDBExerciceMeta *exercice_meta );
-static void                get_exercice_key( ofaIDBDossierMeta *meta, gchar **key, gchar **key_id );
+static void                set_exercices_from_settings( ofaIDBDossierMeta *self, sIDBMeta *sdata );
+static ofaIDBExerciceMeta *find_exercice( ofaIDBDossierMeta *self, sIDBMeta *sdata, ofaIDBExerciceMeta *exercice_meta );
+static void                get_exercice_key( ofaIDBDossierMeta *self, gchar **key, gchar **key_id );
 static sIDBMeta           *get_instance_data( const ofaIDBDossierMeta *self );
 static void                on_instance_finalized( sIDBMeta *sdata, GObject *finalized_meta );
 
@@ -395,7 +395,7 @@ ofa_idbdossier_meta_set_from_settings( ofaIDBDossierMeta *meta )
  * load the defined exercices from the settings
  */
 static void
-set_exercices_from_settings( ofaIDBDossierMeta *meta, sIDBMeta *sdata )
+set_exercices_from_settings( ofaIDBDossierMeta *self, sIDBMeta *sdata )
 {
 	GList *keys, *itk, *new_list;
 	const gchar *key;
@@ -409,9 +409,9 @@ set_exercices_from_settings( ofaIDBDossierMeta *meta, sIDBMeta *sdata )
 	for( itk=keys ; itk ; itk=itk->next ){
 		key = ( const gchar * ) itk->data;
 		if( g_str_has_prefix( key, IDBDOSSIER_META_PERIOD_KEY_PREFIX )){
-			exercice_meta = ofa_idbprovider_new_exercice_meta( sdata->provider, meta );
+			exercice_meta = ofa_idbdossier_meta_new_exercice_meta( self );
 			ofa_idbexercice_meta_set_from_settings( exercice_meta, key, key+lenstr );
-			period = find_exercice( meta, sdata, exercice_meta );
+			period = find_exercice( self, sdata, exercice_meta );
 			if( period ){
 				g_object_ref( period );
 				g_object_unref( exercice_meta );
@@ -432,7 +432,7 @@ set_exercices_from_settings( ofaIDBDossierMeta *meta, sIDBMeta *sdata )
  * Returns: the found ofaIDBExerciceMeta or NULL.
  */
 static ofaIDBExerciceMeta *
-find_exercice( ofaIDBDossierMeta *meta, sIDBMeta *sdata, ofaIDBExerciceMeta *exercice_meta )
+find_exercice( ofaIDBDossierMeta *self, sIDBMeta *sdata, ofaIDBExerciceMeta *exercice_meta )
 {
 	GList *it;
 	ofaIDBExerciceMeta *current;
@@ -472,6 +472,35 @@ ofa_idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, ofaIDBDossierEdito
 
 	g_info( "%s: ofaIDBDossierMeta's %s implementation does not provide 'set_from_editor()' method",
 			thisfn, G_OBJECT_TYPE_NAME( meta ));
+}
+
+/**
+ * ofa_idbdossier_meta_new_exercice_meta:
+ * @dossier_meta: this #ofaIDBDossierMeta dossier.
+ *
+ * Returns: a newly allocated #ofaIDBExerciceMeta object, which should be
+ * g_object_unref() by the caller.
+ */
+ofaIDBExerciceMeta *
+ofa_idbdossier_meta_new_exercice_meta( ofaIDBDossierMeta *dossier_meta )
+{
+	static const gchar *thisfn = "ofa_idbdossier_meta_new_exercice_meta";
+	ofaIDBExerciceMeta *exercice_meta;
+
+	g_debug( "%s: dossier_meta=%p",
+			thisfn, ( void * ) dossier_meta );
+
+	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), NULL );
+
+	if( OFA_IDBDOSSIER_META_GET_INTERFACE( dossier_meta )->new_exercice_meta ){
+		exercice_meta = OFA_IDBDOSSIER_META_GET_INTERFACE( dossier_meta )->new_exercice_meta( dossier_meta );
+		ofa_idbexercice_meta_set_dossier_meta( exercice_meta, dossier_meta );
+		return( exercice_meta );
+	}
+
+	g_info( "%s: ofaIDBDossierMeta's %s implementation does not provide 'new_exercice_meta()' method",
+			thisfn, G_OBJECT_TYPE_NAME( dossier_meta ));
+	return( NULL );
 }
 
 /**
@@ -569,7 +598,7 @@ ofa_idbdossier_meta_add_period( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *per
  * Returns: a new key as an alphanumeric string
  */
 static void
-get_exercice_key( ofaIDBDossierMeta *meta, gchar **key, gchar **key_id )
+get_exercice_key( ofaIDBDossierMeta *self, gchar **key, gchar **key_id )
 {
 	sIDBMeta *sdata;
 	gboolean exists;
@@ -577,7 +606,7 @@ get_exercice_key( ofaIDBDossierMeta *meta, gchar **key, gchar **key_id )
 	*key = NULL;
 	*key_id = NULL;
 	exists = TRUE;
-	sdata = get_instance_data( meta );
+	sdata = get_instance_data( self );
 
 	while( exists ){
 		g_free( *key );

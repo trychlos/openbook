@@ -153,16 +153,6 @@ struct _ofaIDBProviderInterface {
 															ofaIDBExerciceMeta *exercice_meta );
 
 	/**
-	 * new_exercice_meta:
-	 * @instance: this #ofaIDBProvider instance.
-	 *
-	 * Returns: a newly defined #ofaIDBExerciceMeta object.
-	 *
-	 * Since: version 1
-	 */
-	ofaIDBExerciceMeta *   ( *new_exercice_meta )    ( ofaIDBProvider *instance );
-
-	/**
 	 * new_editor:
 	 * @instance: this #ofaIDBProvider instance.
 	 * @editable: whether the returned widget should handle informations
@@ -232,9 +222,6 @@ ofaIDBConnect        *ofa_idbprovider_new_connect               ( ofaIDBProvider
 																		const gchar *password,
 																		ofaIDBDossierMeta *dossier_meta,
 																		ofaIDBExerciceMeta *exercice_meta );
-
-ofaIDBExerciceMeta   *ofa_idbprovider_new_exercice_meta         ( ofaIDBProvider *provider,
-																		ofaIDBDossierMeta *dossier_meta );
 
 ofaIDBEditor         *ofa_idbprovider_new_editor                ( ofaIDBProvider *provider,
 																		gboolean editable );

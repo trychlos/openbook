@@ -71,6 +71,7 @@ typedef struct _ofaIDBDossierMetaInterface            ofaIDBDossierMetaInterface
  *                         interface that the plugin implements.
  * @set_from_settings: [should]: set datas from settings.
  * @set_from_editor: [should]: set datas from ofaIDBEditor.
+ * @new_exercice_meta: [should]: instanciates a new #ofaIDBExerciceMeta instance.
  * @update_period: [should]: updates a period in the settings.
  * @remove_period: [should]: removes a period from the settings.
  * @dump: [should]: dump data.
@@ -94,23 +95,23 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1.
 	 */
-	guint            ( *get_interface_version )( void );
+	guint                ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 	/**
 	 * set_from_settings:
-	 * @instance: the #ofaIDBDossierMeta instance.
+	 * @instance: this #ofaIDBDossierMeta instance.
 	 *
 	 * Set the @instance object with informations read from dossier settings.
 	 * Reset the defined financial periods accordingly.
 	 *
 	 * Since: version 1
 	 */
-	void             ( *set_from_settings )    ( ofaIDBDossierMeta *instance );
+	void                 ( *set_from_settings )    ( ofaIDBDossierMeta *instance );
 
 	/**
 	 * set_from_editor:
-	 * @instance: the #ofaIDBDossierMeta instance.
+	 * @instance: this #ofaIDBDossierMeta instance.
 	 * @editor: the #ofaIDBDossierEditor which handles the connection
 	 *  informations.
 	 *
@@ -118,12 +119,22 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1
 	 */
-	void             ( *set_from_editor )      ( ofaIDBDossierMeta *instance,
-													ofaIDBDossierEditor *editor );
+	void                 ( *set_from_editor )      ( ofaIDBDossierMeta *instance,
+														ofaIDBDossierEditor *editor );
+
+	/**
+	 * new_exercice_meta:
+	 * @instance: this #ofaIDBDossierMeta instance.
+	 *
+	 * Returns: a newly defined #ofaIDBExerciceMeta object.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBExerciceMeta * ( *new_exercice_meta )    ( ofaIDBDossierMeta *instance );
 
 	/**
 	 * update_period:
-	 * @instance: the #ofaIDBDossierMeta instance.
+	 * @instance: this #ofaIDBDossierMeta instance.
 	 * @exercice_meta: the #ofaIDBExerciceMeta to be updated.
 	 * @current: whether the financial period (exercice) is current.
 	 * @begin: [allow-none]: the beginning date.
@@ -134,15 +145,15 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1
 	 */
-	void             ( *update_period )        ( ofaIDBDossierMeta *instance,
-													ofaIDBExerciceMeta *exercice_meta,
-													gboolean current,
-													const GDate *begin,
-													const GDate *end );
+	void                 ( *update_period )        ( ofaIDBDossierMeta *instance,
+														ofaIDBExerciceMeta *exercice_meta,
+														gboolean current,
+														const GDate *begin,
+														const GDate *end );
 
 	/**
 	 * remove_period:
-	 * @instance: the #ofaIDBDossierMeta instance.
+	 * @instance: this #ofaIDBDossierMeta instance.
 	 * @exercice_meta: the #ofaIDBExerciceMeta to be removed.
 	 *
 	 * Removes the @period from the dossier settings file.
@@ -151,18 +162,18 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1
 	 */
-	void             ( *remove_period )        ( ofaIDBDossierMeta *instance,
-													ofaIDBExerciceMeta *exercice_meta );
+	void                 ( *remove_period )        ( ofaIDBDossierMeta *instance,
+														ofaIDBExerciceMeta *exercice_meta );
 
 	/**
 	 * dump:
-	 * @instance: the #ofaIDBDossierMeta instance.
+	 * @instance: this #ofaIDBDossierMeta instance.
 	 *
 	 * Dumps the @instance.
 	 *
 	 * Since: version 1
 	 */
-	void             ( *dump )                 ( const ofaIDBDossierMeta *instance );
+	void                 ( *dump )                 ( const ofaIDBDossierMeta *instance );
 };
 
 /*
@@ -204,6 +215,8 @@ void                ofa_idbdossier_meta_set_from_settings         ( ofaIDBDossie
 
 void                ofa_idbdossier_meta_set_from_editor           ( ofaIDBDossierMeta *meta,
 																		ofaIDBDossierEditor *editor );
+
+ofaIDBExerciceMeta *ofa_idbdossier_meta_new_exercice_meta         ( ofaIDBDossierMeta *dossier_meta );
 
 void                ofa_idbdossier_meta_remove_meta               ( ofaIDBDossierMeta *meta );
 
