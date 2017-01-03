@@ -242,6 +242,24 @@ ofa_idbexercice_meta_set_dossier_meta( ofaIDBExerciceMeta *exercice_meta, ofaIDB
 }
 
 /**
+ * ofa_idbexercice_meta_get_settings_id:
+ * @exercice_meta: this #ofaIDBExerciceMeta instance.
+ *
+ * Returns: the identifier of the settings key.
+ */
+const gchar *
+ofa_idbexercice_meta_get_settings_id( const ofaIDBExerciceMeta *exercice_meta )
+{
+	sIDBMeta *sdata;
+
+	g_return_val_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ), NULL );
+
+	sdata = get_instance_data( exercice_meta );
+
+	return( sdata->settings_id );
+}
+
+/**
  * ofa_idbexercice_meta_set_from_settings:
  * @exercice_meta: this #ofaIDBExerciceMeta instance.
  * @key: the key of the exercice in dossier settings.

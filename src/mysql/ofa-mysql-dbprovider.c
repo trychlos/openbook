@@ -203,17 +203,35 @@ idbprovider_new_dossier_meta( ofaIDBProvider *instance )
 	return( OFA_IDBDOSSIER_META( meta ));
 }
 
+static ofaIDBDossierEditor *
+idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule )
+{
+	ofaMysqlDossierEditor *widget;
+
+	widget = ofa_mysql_dossier_editor_new( instance, settings_prefix, rule );
+
+	return( OFA_IDBDOSSIER_EDITOR( widget ));
+}
+
 /*
  * instanciates a new ofaIDBConnect object
  */
 static ofaIDBConnect *
-idbprovider_new_connect( ofaIDBProvider *instance, const gchar *account, const gchar *password, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta )
+idbprovider_new_connect( ofaIDBProvider *instance,
+		const gchar *account, const gchar *password, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta )
 {
 	ofaMysqlConnect *connect;
 
 	connect = ofa_mysql_connect_new();
 
-	return( OFA_IDBCONNECT( connect ));
+	if( !ofa_mysql_connect_open_with_meta(
+			connect, account, password,
+			OFA_MYSQL_DOSSIER_META( dossier_meta ), OFA_MYSQL_EXERCICE_META( exercice_meta ))){
+
+		g_clear_object( &connect );
+	}
+
+	return( connect ? OFA_IDBCONNECT( connect ) : NULL );
 }
 
 static ofaIDBEditor *
@@ -224,16 +242,6 @@ idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable )
 	widget = editable ? ofa_mysql_editor_enter_new() : ofa_mysql_editor_display_new();
 
 	return( OFA_IDBEDITOR( widget ));
-}
-
-static ofaIDBDossierEditor *
-idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule )
-{
-	ofaMysqlDossierEditor *widget;
-
-	widget = ofa_mysql_dossier_editor_new( instance, settings_prefix, rule );
-
-	return( OFA_IDBDOSSIER_EDITOR( widget ));
 }
 
 /*

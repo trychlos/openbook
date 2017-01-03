@@ -62,7 +62,7 @@ static gboolean     idbconnect_query( const ofaIDBConnect *connect, const gchar 
 static void         audit_query( const ofaIDBConnect *connect, const gchar *query );
 static gchar       *quote_query( const gchar *query );
 static void         error_query( const ofaIDBConnect *connect, const gchar *query );
-static gboolean     idbconnect_set_admin_credentials( const ofaIDBConnect *connect, ofaIDBExerciceMeta *period, const gchar *adm_account, const gchar *adm_password );
+static gboolean     set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password );
 static sIDBConnect *get_instance_data( const ofaIDBConnect *connect );
 static void         on_instance_finalized( sIDBConnect *sdata, GObject *finalized_dbconnect );
 
@@ -851,6 +851,8 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 	static const gchar *thisfn = "ofa_idbconnect_restore";
 	sIDBConnect *sdata;
 	ofaIDBExerciceMeta *target_period;
+	ofaIDBProvider *provider;
+	ofaIDBConnect *target_connect;
 	gboolean ok;
 
 	g_debug( "%s: connect=%p, period=%p, uri=%s, adm_account=%s, adm_password=%s",
@@ -863,19 +865,25 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore ){
 		ok = FALSE;
+		sdata = get_instance_data( connect );
+		g_return_val_if_fail( sdata->dossier_meta && OFA_IS_IDBDOSSIER_META( sdata->dossier_meta ), FALSE );
 
 		if( period ){
 			target_period = ( ofaIDBExerciceMeta * ) period;
 		} else {
-			sdata = get_instance_data( connect );
-			g_return_val_if_fail( sdata->dossier_meta && OFA_IS_IDBDOSSIER_META( sdata->dossier_meta ), FALSE );
 			target_period = ofa_idbdossier_meta_get_current_period( sdata->dossier_meta );
 		}
+		g_return_val_if_fail( target_period && OFA_IS_IDBEXERCICE_META( target_period ), FALSE );
 
-		if( target_period ){
-			ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->restore( connect, target_period, uri ) &&
-					idbconnect_set_admin_credentials( connect, target_period, adm_account, adm_password );
+		if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore( connect, target_period, uri )){
+			provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
+			target_connect = ofa_idbprovider_new_connect(
+					provider, sdata->account, sdata->password, sdata->dossier_meta, target_period );
+			set_admin_credentials( target_connect, adm_account, adm_password );
+			g_object_unref( target_connect );
+			g_object_unref( provider );
 		}
+
 		if( !period ){
 			g_clear_object( &target_period );
 		}
@@ -931,10 +939,8 @@ ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
  * ofa_idbconnect_create_dossier:
  * @connect: an #ofaIDBConnect object which handles a superuser
  *  connection on the DBMS at server-level. The connection may have
- *  been opened with editor informations, and meta and period members
- *  are not expected to be valid.
- * @meta: the #ofaIDBDossierMeta which describes the dossier settings,
- *  including the first opened financial period.
+ *  been opened with editor informations, and period member is not
+ *  expected to be valid.
  * @adm_account: the Openbook administrative user account.
  * @adm_password: the Openbook administrative user password.
  *
@@ -945,9 +951,7 @@ ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
  * Returns: %TRUE if successful.
  */
 gboolean
-ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
-									ofaIDBDossierMeta *meta,
-									const gchar *adm_account, const gchar *adm_password )
+ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password )
 {
 	static const gchar *thisfn = "ofa_idbconnect_create_dossier";
 	sIDBConnect *sdata;
@@ -957,19 +961,17 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	ofaIDBExerciceMeta *period;
 	ofaIDBConnect *db_connection;
 
-	g_debug( "%s: connect=%p, meta=%p, adm_account=%s, adm_password=%s",
-			thisfn, ( void * ) connect, ( void * ) meta,
-			adm_account, adm_password ? "******":adm_password );
+	g_debug( "%s: connect=%p, adm_account=%s, adm_password=%s",
+			thisfn, ( void * ) connect, adm_account, adm_password ? "******":adm_password );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), FALSE );
 
 	ok = FALSE;
 	sdata = get_instance_data( connect );
 
 	/* create the minimal database and grant the user */
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier( connect, meta );
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier( connect );
 
 	} else {
 		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'create_dossier()' method",
@@ -983,13 +985,13 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	query = g_string_new( "" );
 
 	/* define the dossier administrative account
-	 * requires another superuser connection, on the period at this time */
+	 * requires another superuser connection, on the exercice at this time */
 	if( ok ){
-		ofa_idbdossier_meta_dump_full( meta );
-		period = ofa_idbdossier_meta_get_current_period( meta );
-		provider = ofa_idbdossier_meta_get_provider( meta );
-		db_connection = ofa_idbprovider_new_connect( provider, sdata->account, sdata->password, meta, period );
+		period = ofa_idbdossier_meta_get_current_period( sdata->dossier_meta );
+		provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
+		db_connection = ofa_idbprovider_new_connect( provider, sdata->account, sdata->password, sdata->dossier_meta, period );
 		g_object_unref( provider );
+		g_object_unref( period );
 		ok = ( db_connection != NULL );
 	}
 	if( ok ){
@@ -1011,24 +1013,21 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	}
 	/* set admin credentials */
 	if( ok ){
-		ok = idbconnect_set_admin_credentials( db_connection, period, adm_account, adm_password );
+		ok = set_admin_credentials( db_connection, adm_account, adm_password );
 	}
 	g_string_free( query, TRUE );
 
 	g_clear_object( &db_connection );
-	g_clear_object( &period );
 
 	return( ok );
 }
 
 /*
- * idbconnect_set_admin_credentials:
+ * set_admin_credentials:
  * @connect: an #ofaIDBConnect object which handles a superuser
- *  connection on the DBMS at server-level. It is expected this
- *  @connect object holds a valid #ofaIDBDossierMeta object which describes
- *  the target dossier.
- * @period: the #ofaIDBExerciceMeta object which describes
- *  the target exercice.
+ *  connection on the DBMS. It is expected this @connect object holds
+ *  valid #ofaIDBDossierMeta and #ofaIDBExerciceMeta objects which
+ *  describe the target exercice.
  * @adm_account: the Openbook administrative user account.
  * @adm_password: the Openbook administrative user password.
  *
@@ -1038,29 +1037,25 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
  * Returns: %TRUE if successful.
  */
 static gboolean
-idbconnect_set_admin_credentials( const ofaIDBConnect *connect, ofaIDBExerciceMeta *period,
-										const gchar *adm_account, const gchar *adm_password )
+set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password )
 {
 	static const gchar *thisfn = "ofa_idbconnect_set_admin_credentials";
 	sIDBConnect *sdata;
 	gboolean ok;
 	GString *query;
-	ofaIDBProvider *provider;
-	ofaIDBConnect *period_connect;
 
-	g_debug( "%s: connect=%p, period=%p, adm_account=%s, adm_password=%s",
-			thisfn, ( void * ) connect, ( void * ) period,
-			adm_account, adm_password ? "******" : adm_password );
+	g_debug( "%s: connect=%p, adm_account=%s, adm_password=%s",
+			thisfn, ( void * ) connect, adm_account, adm_password ? "******" : adm_password );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 	g_return_val_if_fail( my_strlen( adm_account ), FALSE );
 
 	ok = FALSE;
 	sdata = get_instance_data( connect );
+	query = g_string_new( "" );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user( connect, period, adm_account, adm_password );
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user( connect, sdata->exercice_meta, adm_account, adm_password );
 
 	} else {
 		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'grant_user()' method",
@@ -1068,16 +1063,6 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, ofaIDBExerciceMe
 		return( FALSE );
 	}
 
-	/* define the dossier administrative account
-	 * requires another superuser connection, on the period at this time */
-	period_connect = NULL;
-	query = g_string_new( "" );
-
-	if( ok ){
-		provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
-		period_connect = ofa_idbprovider_new_connect( provider, sdata->account, sdata->password, sdata->dossier_meta, period );
-		g_object_unref( provider );
-	}
 	/* be sure the user has 'admin' role
 	 * Insert works if row did not exist yet while Update works
 	 * if row did exist */
@@ -1085,16 +1070,14 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, ofaIDBExerciceMe
 		g_string_printf( query,
 					"INSERT IGNORE INTO OFA_T_ROLES "
 					"	(ROL_USER,ROL_IS_ADMIN) VALUES ('%s',1)", adm_account );
-		ok = ofa_idbconnect_query( period_connect, query->str, TRUE );
+		ok = ofa_idbconnect_query( connect, query->str, TRUE );
 	}
 	if( ok ){
 		g_string_printf( query,
 					"UPDATE OFA_T_ROLES SET ROL_IS_ADMIN=1 WHERE ROL_USER='%s'", adm_account );
-		ok = ofa_idbconnect_query( period_connect, query->str, TRUE );
+		ok = ofa_idbconnect_query( connect, query->str, TRUE );
 	}
 	g_string_free( query, TRUE );
-
-	g_clear_object( &period_connect );
 
 	return( ok );
 }

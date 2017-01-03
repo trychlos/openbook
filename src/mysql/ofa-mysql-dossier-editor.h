@@ -71,8 +71,6 @@ ofaMysqlDossierEditor *ofa_mysql_dossier_editor_new                   ( ofaIDBPr
 																			const gchar *settings_prefix,
 																			guint rule );
 
-ofaMysqlConnect       *ofa_mysql_dossier_editor_get_connect           ( ofaMysqlDossierEditor *editor );
-
 const gchar           *ofa_mysql_dossier_editor_get_host              ( ofaMysqlDossierEditor *editor );
 
 guint                  ofa_mysql_dossier_editor_get_port              ( ofaMysqlDossierEditor *editor );

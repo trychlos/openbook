@@ -40,10 +40,6 @@
 typedef struct {
 	gboolean  dispose_has_run;
 
-	/* initialization
-	 */
-	gchar    *settings_id;
-
 	/* runtime data
 	 */
 	gchar    *database;
@@ -52,17 +48,17 @@ typedef struct {
 
 #define MYSQL_DATABASE_KEY_PREFIX       "mysql-db-"
 
-static void            idbexercice_meta_iface_init( ofaIDBExerciceMetaInterface *iface );
-static guint           idbexercice_meta_get_interface_version( void );
-static void            idbexercice_meta_set_from_settings( ofaIDBExerciceMeta *instance, const gchar *key_id );
-static void            idbexercice_meta_set_from_editor( ofaIDBExerciceMeta *instance, ofaIDBExerciceEditor *editor, const gchar *key_id );
-static gchar          *idbexercice_meta_get_name( const ofaIDBExerciceMeta *instance );
-static gint            idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b );
-static void            idbexercice_meta_dump( const ofaIDBExerciceMeta *instance );
+static void   idbexercice_meta_iface_init( ofaIDBExerciceMetaInterface *iface );
+static guint  idbexercice_meta_get_interface_version( void );
+static void   idbexercice_meta_set_from_settings( ofaIDBExerciceMeta *instance, const gchar *key_id );
+static void   idbexercice_meta_set_from_editor( ofaIDBExerciceMeta *instance, ofaIDBExerciceEditor *editor, const gchar *key_id );
+static gchar *idbexercice_meta_get_name( const ofaIDBExerciceMeta *instance );
+static gint   idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b );
+static void   idbexercice_meta_dump( const ofaIDBExerciceMeta *instance );
+static void   read_settings( ofaMysqlExerciceMeta *self, const gchar *key_id );
+static void   write_settings( ofaMysqlExerciceMeta *self, const gchar *key_id );
 static ofaMysqlExerciceMeta *read_from_settings( myISettings *settings, const gchar *group, const gchar *key );
-static void            read_settings( ofaMysqlExerciceMeta *self );
-static void            write_settings( ofaMysqlExerciceMeta *self );
-static void            write_to_settings( ofaMysqlExerciceMeta *period, myISettings *settings, const gchar *group );
+static void                  write_to_settings( ofaMysqlExerciceMeta *period, myISettings *settings, const gchar *group );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlExerciceMeta, ofa_mysql_exercice_meta, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlExerciceMeta )
@@ -82,7 +78,6 @@ mysql_exercice_meta_finalize( GObject *instance )
 	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( instance ));
 
 	/* free data members here */
-	g_free( priv->settings_id );
 	g_free( priv->database );
 
 	/* chain up to the parent class */
@@ -130,97 +125,6 @@ ofa_mysql_exercice_meta_class_init( ofaMysqlExerciceMetaClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_exercice_meta_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_exercice_meta_finalize;
-}
-
-/*
- * ofaIDBExerciceMeta interface management
- */
-static void
-idbexercice_meta_iface_init( ofaIDBExerciceMetaInterface *iface )
-{
-	static const gchar *thisfn = "ofa_mysql_exercice_meta_idbexercice_meta_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = idbexercice_meta_get_interface_version;
-	iface->set_from_settings = idbexercice_meta_set_from_settings;
-	iface->set_from_editor = idbexercice_meta_set_from_editor;
-	iface->get_name = idbexercice_meta_get_name;
-	iface->compare = idbexercice_meta_compare;
-	iface->dump = idbexercice_meta_dump;
-}
-
-static guint
-idbexercice_meta_get_interface_version( void )
-{
-	return( 1 );
-}
-
-static void
-idbexercice_meta_set_from_settings( ofaIDBExerciceMeta *instance, const gchar *key_id )
-{
-	ofaMysqlExerciceMetaPrivate *priv;
-
-	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( instance ));
-
-	g_free( priv->settings_id );
-	priv->settings_id = g_strdup( key_id );
-
-	read_settings( OFA_MYSQL_EXERCICE_META( instance ));
-}
-
-static void
-idbexercice_meta_set_from_editor( ofaIDBExerciceMeta *instance, ofaIDBExerciceEditor *editor, const gchar *key_id )
-{
-	ofaMysqlExerciceMetaPrivate *priv;
-
-	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( instance ));
-
-	g_free( priv->settings_id );
-	priv->settings_id = g_strdup( key_id );
-	g_free( priv->database );
-	priv->database = g_strdup( ofa_mysql_exercice_editor_get_database( OFA_MYSQL_EXERCICE_EDITOR( editor )));
-
-	write_settings( OFA_MYSQL_EXERCICE_META( instance ));
-}
-
-static gchar *
-idbexercice_meta_get_name( const ofaIDBExerciceMeta *instance )
-{
-	ofaMysqlExerciceMetaPrivate *priv;
-
-	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( instance ));
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( g_strdup( priv->database ));
-}
-
-static gint
-idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b )
-{
-	ofaMysqlExerciceMetaPrivate *a_priv, *b_priv;
-	gint cmp;
-
-	a_priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( a ));
-	b_priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( b ));
-
-	cmp = g_utf8_collate( a_priv->database, b_priv->database );
-
-	return( cmp );
-}
-
-static void
-idbexercice_meta_dump( const ofaIDBExerciceMeta *instance )
-{
-	static const gchar *thisfn = "ofa_mysql_exercice_meta_dump";
-	ofaMysqlExerciceMetaPrivate *priv;
-
-	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( instance ));
-
-	g_debug( "%s: period=%p", thisfn, ( void * ) instance );
-	g_debug( "%s:   settings_id=%s", thisfn, priv->settings_id );
-	g_debug( "%s:   database=%s", thisfn, priv->database );
 }
 
 /**
@@ -449,10 +353,91 @@ ofa_mysql_exercice_meta_remove( ofaMysqlExerciceMeta *period, myISettings *setti
 }
 
 /*
+ * ofaIDBExerciceMeta interface management
+ */
+static void
+idbexercice_meta_iface_init( ofaIDBExerciceMetaInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_exercice_meta_idbexercice_meta_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idbexercice_meta_get_interface_version;
+	iface->set_from_settings = idbexercice_meta_set_from_settings;
+	iface->set_from_editor = idbexercice_meta_set_from_editor;
+	iface->get_name = idbexercice_meta_get_name;
+	iface->compare = idbexercice_meta_compare;
+	iface->dump = idbexercice_meta_dump;
+}
+
+static guint
+idbexercice_meta_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static void
+idbexercice_meta_set_from_settings( ofaIDBExerciceMeta *instance, const gchar *key_id )
+{
+	read_settings( OFA_MYSQL_EXERCICE_META( instance ), key_id );
+}
+
+static void
+idbexercice_meta_set_from_editor( ofaIDBExerciceMeta *instance, ofaIDBExerciceEditor *editor, const gchar *key_id )
+{
+	ofaMysqlExerciceMetaPrivate *priv;
+
+	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( instance ));
+
+	g_free( priv->database );
+	priv->database = g_strdup( ofa_mysql_exercice_editor_get_database( OFA_MYSQL_EXERCICE_EDITOR( editor )));
+
+	write_settings( OFA_MYSQL_EXERCICE_META( instance ), key_id );
+}
+
+static gchar *
+idbexercice_meta_get_name( const ofaIDBExerciceMeta *instance )
+{
+	ofaMysqlExerciceMetaPrivate *priv;
+
+	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( g_strdup( priv->database ));
+}
+
+static gint
+idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b )
+{
+	ofaMysqlExerciceMetaPrivate *a_priv, *b_priv;
+	gint cmp;
+
+	a_priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( a ));
+	b_priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( b ));
+
+	cmp = g_utf8_collate( a_priv->database, b_priv->database );
+
+	return( cmp );
+}
+
+static void
+idbexercice_meta_dump( const ofaIDBExerciceMeta *instance )
+{
+	static const gchar *thisfn = "ofa_mysql_exercice_meta_dump";
+	ofaMysqlExerciceMetaPrivate *priv;
+
+	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( instance ));
+
+	g_debug( "%s: period=%p", thisfn, ( void * ) instance );
+	g_debug( "%s:   database=%s", thisfn, priv->database );
+}
+
+/*
  * Settings are: "database(s);"
  */
 static void
-read_settings( ofaMysqlExerciceMeta *self )
+read_settings( ofaMysqlExerciceMeta *self, const gchar *key_id )
 {
 	ofaMysqlExerciceMetaPrivate *priv;
 	ofaIDBDossierMeta *dossier_meta;
@@ -466,7 +451,7 @@ read_settings( ofaMysqlExerciceMeta *self )
 	dossier_meta = ofa_idbexercice_meta_get_dossier_meta( OFA_IDBEXERCICE_META( self ));
 	settings = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
 	group = ofa_idbdossier_meta_get_settings_group( dossier_meta );
-	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, priv->settings_id );
+	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, key_id );
 
 	strlist = my_isettings_get_string_list( settings, group, key );
 
@@ -483,7 +468,7 @@ read_settings( ofaMysqlExerciceMeta *self )
 }
 
 static void
-write_settings( ofaMysqlExerciceMeta *self )
+write_settings( ofaMysqlExerciceMeta *self, const gchar *key_id )
 {
 	ofaMysqlExerciceMetaPrivate *priv;
 	ofaIDBDossierMeta *dossier_meta;
@@ -499,7 +484,7 @@ write_settings( ofaMysqlExerciceMeta *self )
 	dossier_meta = ofa_idbexercice_meta_get_dossier_meta( OFA_IDBEXERCICE_META( self ));
 	settings = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
 	group = ofa_idbdossier_meta_get_settings_group( dossier_meta );
-	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, priv->settings_id );
+	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, key_id );
 
 	my_isettings_set_string( settings, group, key, str );
 

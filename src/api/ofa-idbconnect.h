@@ -236,7 +236,6 @@ struct _ofaIDBConnectInterface {
 	/**
 	 * create_dossier:
 	 * @instance: an #ofaIDBConnect superuser connection on the DBMS server.
-	 * @meta: the #ofaIDBDossierMeta object which describes the new dossier.
 	 *
 	 * Create and initialize a new minimal dossier database.
 	 * It is expected that the DBMS provider drops its database and
@@ -246,8 +245,7 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *create_dossier )       ( const ofaIDBConnect *instance,
-											const ofaIDBDossierMeta *meta );
+	gboolean ( *create_dossier )       ( const ofaIDBConnect *instance );
 
 	/**
 	 * grant_user:
@@ -404,7 +402,6 @@ gboolean            ofa_idbconnect_archive_and_new          ( const ofaIDBConnec
 																	const GDate *end_next );
 
 gboolean            ofa_idbconnect_create_dossier           ( const ofaIDBConnect *connect,
-																	ofaIDBDossierMeta *meta,
 																	const gchar *adm_account,
 																	const gchar *adm_password );
 

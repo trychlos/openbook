@@ -170,6 +170,8 @@ ofaIDBDossierMeta *ofa_idbexercice_meta_get_dossier_meta          ( const ofaIDB
 void               ofa_idbexercice_meta_set_dossier_meta          ( ofaIDBExerciceMeta *exercice_meta,
 																		ofaIDBDossierMeta *dossier_meta );
 
+const gchar       *ofa_idbexercice_meta_get_settings_id           ( const ofaIDBExerciceMeta *exercice_meta );
+
 void               ofa_idbexercice_meta_set_from_settings         ( ofaIDBExerciceMeta *exercice_meta,
 																		const gchar *key,
 																		const gchar *key_id );

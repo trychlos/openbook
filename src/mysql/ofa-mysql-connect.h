@@ -75,7 +75,7 @@ gboolean         ofa_mysql_connect_open_with_meta     ( ofaMysqlConnect *connect
 															const gchar *account,
 															const gchar *password,
 															const ofaMysqlDossierMeta *dossier_meta,
-															const ofaMysqlExerciceMeta *period );
+															const ofaMysqlExerciceMeta *exercice_meta );
 
 gboolean         ofa_mysql_connect_is_opened          ( ofaMysqlConnect *connect );
 

@@ -128,18 +128,20 @@ struct _ofaIDBDossierEditorInterface {
 	 * Since: version 1
 	 */
 	gboolean               ( *is_valid )             ( const ofaIDBDossierEditor *instance,
-														       gchar **message );
+														    gchar **message );
 
 	/**
 	 * get_valid_connect:
 	 * @instance: the #ofaIDBDossierEditor instance.
+	 * @dossier_meta: the #ofaIDBDossierMeta to associate with the @instance.
 	 *
 	 * Returns: the #ofaIDBConnect which was used to validate the @instance,
 	 * or %NULL.
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBConnect *        ( *get_valid_connect )    ( const ofaIDBDossierEditor *instance );
+	ofaIDBConnect *        ( *get_valid_connect )    ( const ofaIDBDossierEditor *instance,
+															ofaIDBDossierMeta *dossier_meta );
 
 	/**
 	 * new_exercice_editor:
@@ -184,7 +186,8 @@ GtkSizeGroup         *ofa_idbdossier_editor_get_size_group            ( const of
 gboolean              ofa_idbdossier_editor_is_valid                  ( const ofaIDBDossierEditor *editor,
 																			gchar **message );
 
-ofaIDBConnect        *ofa_idbdossier_editor_get_valid_connect         ( const ofaIDBDossierEditor *editor );
+ofaIDBConnect        *ofa_idbdossier_editor_get_valid_connect         ( const ofaIDBDossierEditor *editor,
+																			ofaIDBDossierMeta *dossier_meta );
 
 ofaIDBExerciceEditor *ofa_idbdossier_editor_new_exercice_editor       ( ofaIDBDossierEditor *editor,
 																			const gchar *settings_prefix,

@@ -77,7 +77,7 @@ static void                  idbdossier_editor_iface_init( ofaIDBDossierEditorIn
 static guint                 idbdossier_editor_get_interface_version( void );
 static GtkSizeGroup         *idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint column );
 static gboolean              idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message );
-static ofaIDBConnect        *idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance );
+static ofaIDBConnect        *idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta );
 static ofaIDBExerciceEditor *idbdossier_editor_new_exercice_editor( ofaIDBDossierEditor *instance, const gchar *settings_prefix, guint rule );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierEditor, ofa_mysql_dossier_editor, GTK_TYPE_BIN, 0,
@@ -294,29 +294,6 @@ check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr )
 }
 
 /**
- * ofa_mysql_dossier_editor_get_connect:
- * @editor: this #ofaMysqlDossierEditor instance.
- *
- * Returns: the current #ofaMysqlConnect connection.
- *
- * The returned reference is owned by the @editor, and should not be
- * released by the caller.
- */
-ofaMysqlConnect *
-ofa_mysql_dossier_editor_get_connect( ofaMysqlDossierEditor *editor )
-{
-	ofaMysqlDossierEditorPrivate *priv;
-
-	g_return_val_if_fail( editor && OFA_IS_MYSQL_DOSSIER_EDITOR( editor ), NULL );
-
-	priv = ofa_mysql_dossier_editor_get_instance_private( editor );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->connect );
-}
-
-/**
  * ofa_mysql_dossier_editor_get_host:
  * @editor: this #ofaMysqlDossierEditor instance.
  *
@@ -468,15 +445,20 @@ idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message
 }
 
 static ofaIDBConnect *
-idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance )
+idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta )
 {
 	ofaMysqlDossierEditorPrivate *priv;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_DOSSIER_EDITOR( instance ), NULL );
+	g_return_val_if_fail( idbdossier_editor_is_valid( instance, NULL ), NULL );
 
 	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	ofa_idbconnect_set_account( OFA_IDBCONNECT( priv->connect ), ofa_mysql_root_bin_get_account( priv->root_bin ));
+	ofa_idbconnect_set_password( OFA_IDBCONNECT( priv->connect ), ofa_mysql_root_bin_get_password( priv->root_bin ));
+	ofa_idbconnect_set_dossier_meta( OFA_IDBCONNECT( priv->connect ), dossier_meta );
 
 	return( OFA_IDBCONNECT( priv->connect ));
 }
