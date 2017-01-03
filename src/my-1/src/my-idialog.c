@@ -39,7 +39,8 @@
  */
 typedef struct {
 	gboolean          initialized;
-	myIDialogUpdateCb cb;
+	GtkWidget        *update_btn;
+	myIDialogUpdateCb update_cb;
 }
 	sIDialog;
 
@@ -483,7 +484,8 @@ my_idialog_click_to_update( myIDialog *instance, GtkWidget *button, myIDialogUpd
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 
 	sdata = get_idialog_data( instance );
-	sdata->cb = cb;
+	sdata->update_btn = button;
+	sdata->update_cb = cb;
 
 	if( cb ){
 		g_signal_connect( button, "clicked", G_CALLBACK( on_update_button_clicked ), instance );
@@ -504,14 +506,15 @@ do_update( myIDialog *instance )
 	gchar *msgerr;
 
 	sdata = get_idialog_data( instance );
-	if( sdata->cb ){
+	if( sdata->update_cb ){
 		msgerr = NULL;
-		ok = sdata->cb( instance, &msgerr );
+		ok = sdata->update_cb( instance, &msgerr );
 
 		if( ok ){
 			my_iwindow_close( MY_IWINDOW( instance ));
 
 		} else {
+			gtk_widget_set_sensitive( sdata->update_btn, FALSE );
 			if( !my_strlen( msgerr )){
 				g_free( msgerr );
 				msgerr = g_strdup( _( "Undefined error on update" ));
@@ -535,7 +538,8 @@ get_idialog_data( const myIDialog *instance )
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_idialog_finalized, sdata );
 
 		sdata->initialized = FALSE;
-		sdata->cb = NULL;
+		sdata->update_btn = NULL;
+		sdata->update_cb = NULL;
 	}
 
 	return( sdata );

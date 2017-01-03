@@ -68,7 +68,7 @@ static gboolean      idbexercice_editor_is_valid( const ofaIDBExerciceEditor *in
 static gboolean      idbexercice_editor_apply( const ofaIDBExerciceEditor *instance );
 static void          setup_bin( ofaMysqlExerciceEditor *self );
 static void          on_exercice_bin_changed( ofaMysqlExerciceBin *bin, ofaMysqlExerciceEditor *self );
-static gboolean      does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database );
+//static gboolean      does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlExerciceEditor, ofa_mysql_exercice_editor, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlExerciceEditor )
@@ -192,8 +192,7 @@ static gboolean
 idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **message )
 {
 	ofaMysqlExerciceEditorPrivate *priv;
-	gboolean ok, exists;
-	const gchar *database;
+	gboolean ok;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_EXERCICE_EDITOR( instance ), FALSE );
 
@@ -207,6 +206,9 @@ idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **messa
 
 	ok = ofa_mysql_exercice_bin_is_valid( priv->exercice_bin, message );
 
+#if 0
+	const gchar *database;
+	gboolean exists;
 	if( ok ){
 		database = ofa_mysql_exercice_bin_get_database( priv->exercice_bin );
 		exists = does_database_exist( OFA_MYSQL_EXERCICE_EDITOR( instance ), database );
@@ -223,6 +225,7 @@ idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **messa
 				break;
 		}
 	}
+#endif
 
 	return( ok );
 }
@@ -310,6 +313,7 @@ on_exercice_bin_changed( ofaMysqlExerciceBin *bin, ofaMysqlExerciceEditor *self 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
+#if 0
 static gboolean
 does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database )
 {
@@ -331,6 +335,7 @@ does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database )
 
 	return( exists );
 }
+#endif
 
 /**
  * ofa_mysql_exercice_editor_get_database:
