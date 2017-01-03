@@ -971,12 +971,11 @@ static gboolean
 bat_insert_main( ofoBat *bat, ofaHub *hub )
 {
 	GString *query;
-	gchar *suri, *str, *userid;
+	gchar *suri, *str, *stamp_str;
 	const GDate *begin, *end;
 	gboolean ok;
-	gchar *stamp_str;
 	GTimeVal stamp;
-	const gchar *cur_code;
+	const gchar *userid, *cur_code;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
 
@@ -1074,7 +1073,6 @@ bat_insert_main( ofoBat *bat, ofaHub *hub )
 		ok = TRUE;
 	}
 
-	g_free( userid );
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
 
@@ -1114,11 +1112,10 @@ static gboolean
 bat_do_update( ofoBat *bat, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *notes, *userid;
+	gchar *notes, *stamp_str;
 	gboolean ok;
 	GTimeVal stamp;
-	gchar *stamp_str;
-	const gchar *caccount;
+	const gchar *userid, *caccount;
 
 	ok = FALSE;
 	notes = my_utils_quote_sql( ofo_bat_get_notes( bat ));
@@ -1151,7 +1148,6 @@ bat_do_update( ofoBat *bat, const ofaIDBConnect *connect )
 		ok = TRUE;
 	}
 
-	g_free( userid );
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( stamp_str );

@@ -438,10 +438,10 @@ static gboolean
 paimean_insert_main( ofoPaimean *paimean, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *userid;
+	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	gchar *stamp_str;
 	GTimeVal stamp;
+	const gchar *userid;
 
 	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), FALSE );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
@@ -482,7 +482,6 @@ paimean_insert_main( ofoPaimean *paimean, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -527,10 +526,10 @@ static gboolean
 paimean_update_main( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *userid;
+	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	gchar *stamp_str;
 	GTimeVal stamp;
+	const gchar *userid;
 
 	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), FALSE );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
@@ -570,7 +569,6 @@ paimean_update_main( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBCo
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }

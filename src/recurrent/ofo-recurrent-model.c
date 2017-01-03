@@ -752,8 +752,8 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	const gchar *period, *def_amount1, *def_amount2, *def_amount3;
-	gchar *label, *template, *notes, *userid, *stamp_str;
+	const gchar *period, *def_amount1, *def_amount2, *def_amount3, *userid;
+	gchar *label, *template, *notes, *stamp_str;
 	GTimeVal stamp;
 	ofxCounter detail;
 
@@ -840,7 +840,6 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	g_free( template );
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -886,8 +885,8 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 {
 	gboolean ok;
 	GString *query;
-	gchar *label, *notes, *userid;
-	const gchar *new_mnemo, *template, *period, *def_amount;
+	gchar *label, *notes;
+	const gchar *new_mnemo, *template, *period, *def_amount, *userid;
 	gchar *stamp_str;
 	GTimeVal stamp;
 	ofxCounter detail;
@@ -979,7 +978,6 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	g_free( notes );
 	g_free( stamp_str );
 	g_free( label );
-	g_free( userid );
 
 	return( ok );
 }

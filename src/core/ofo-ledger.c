@@ -1500,10 +1500,10 @@ static gboolean
 ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *userid;
+	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	gchar *stamp_str;
 	GTimeVal stamp;
+	const gchar *userid;
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
@@ -1540,7 +1540,6 @@ ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -1580,11 +1579,12 @@ static gboolean
 ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *userid;
+	gchar *label, *notes;
 	gboolean ok;
 	gchar *stamp_str, *sdate;
 	GTimeVal stamp;
 	const GDate *last_clo;
+	const gchar *userid;
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
@@ -1627,7 +1627,6 @@ ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaIDBConnec
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	if( ok && g_utf8_collate( prev_mnemo, ofo_ledger_get_mnemo( ledger ))){
 		query = g_string_new( "UPDATE OFA_T_LEDGERS_CUR SET " );

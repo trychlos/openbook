@@ -1124,9 +1124,9 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *notes, *corresp, *sbegin, *send, *sdope, *userid;
-	gchar *stamp_str;
+	gchar *notes, *corresp, *sbegin, *send, *sdope, *stamp_str;
 	GTimeVal stamp;
+	const gchar *userid;
 
 	userid = ofa_idbconnect_get_account( connect );
 	corresp = my_utils_quote_sql( ofo_tva_record_get_correspondence( record ));
@@ -1191,7 +1191,6 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -1381,9 +1380,8 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *notes, *corresp, *sbegin, *send, *sdope, *userid;
-	const gchar *mnemo;
-	gchar *stamp_str;
+	gchar *notes, *corresp, *sbegin, *send, *sdope, *stamp_str;
+	const gchar *mnemo, *userid;
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
@@ -1444,7 +1442,6 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	g_free( sbegin );
 	g_free( send );
 	g_free( sdope );
-	g_free( userid );
 
 	return( ok );
 }

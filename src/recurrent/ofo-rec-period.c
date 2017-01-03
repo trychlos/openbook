@@ -874,8 +874,9 @@ rec_period_insert_main( ofoRecPeriod *period, ofaHub *hub )
 	gboolean ok;
 	const ofaIDBConnect *connect;
 	GString *query;
-	gchar *userid, *sstamp, *notes;
+	gchar *sstamp, *notes;
 	GTimeVal stamp;
+	const gchar *userid;
 
 	connect = ofa_hub_get_connect( hub );
 
@@ -905,7 +906,6 @@ rec_period_insert_main( ofoRecPeriod *period, ofaHub *hub )
 
 	g_string_free( query, TRUE );
 	g_free( sstamp );
-	g_free( userid );
 	g_free( notes );
 
 	return( ok );
@@ -1009,8 +1009,9 @@ rec_period_update_main( ofoRecPeriod *period, ofaHub *hub )
 	gboolean ok;
 	const ofaIDBConnect *connect;
 	GString *query;
-	gchar *userid, *sstamp, *notes;
+	gchar *sstamp, *notes;
 	GTimeVal stamp;
+	const gchar *userid;
 
 	connect = ofa_hub_get_connect( hub );
 
@@ -1043,7 +1044,6 @@ rec_period_update_main( ofoRecPeriod *period, ofaHub *hub )
 
 	g_string_free( query, TRUE );
 	g_free( sstamp );
-	g_free( userid );
 	g_free( notes );
 
 	return( ok );

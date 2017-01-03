@@ -60,8 +60,8 @@ typedef struct {
 	/* runtime
 	 */
 	ofaHub              *hub;
-	const ofaIDBConnect *connect;		/* its user connection */
-	ofaIDBDossierMeta   *meta;			/* its meta datas */
+	const ofaIDBConnect *connect;			/* its user connection */
+	ofaIDBDossierMeta   *dossier_meta;		/* its meta datas */
 }
 	ofaBackupPrivate;
 
@@ -111,7 +111,7 @@ backup_dispose( GObject *instance )
 
 		gtk_widget_destroy( priv->dialog );
 
-		g_clear_object( &priv->meta );
+		g_clear_object( &priv->dossier_meta );
 	}
 
 	/* chain up to the parent class */
@@ -194,7 +194,7 @@ init_dialog( ofaBackup *self )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->connect = ofa_hub_get_connect( priv->hub );
-	priv->meta = ofa_idbconnect_get_dossier_meta( priv->connect );
+	priv->dossier_meta = g_object_ref( ofa_idbconnect_get_dossier_meta( priv->connect ));
 
 	priv->dialog = gtk_file_chooser_dialog_new(
 							_( "Backup the dossier" ),
@@ -214,7 +214,7 @@ init_dialog( ofaBackup *self )
 	g_free( def_name );
 
 	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_settings_group( priv->meta );
+	group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 	last_folder = my_isettings_get_string( settings, group, st_backup_folder );
 	if( my_strlen( last_folder )){
 		gtk_file_chooser_set_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ), last_folder );
@@ -227,7 +227,7 @@ static gchar *
 get_default_name( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
-	ofaIDBExerciceMeta *period;
+	ofaIDBExerciceMeta *exercice_meta;
 	GRegex *regex;
 	gchar *name, *fname, *sdate, *result;
 	GDate date;
@@ -235,14 +235,13 @@ get_default_name( ofaBackup *self )
 	priv = ofa_backup_get_instance_private( self );
 
 	/* get name without spaces */
-	period = ofa_idbconnect_get_exercice_meta( priv->connect );
-	name = ofa_idbexercice_meta_get_name( period );
+	exercice_meta = ofa_idbconnect_get_exercice_meta( priv->connect );
+	name = ofa_idbexercice_meta_get_name( exercice_meta );
 
 	regex = g_regex_new( " ", 0, 0, NULL );
 	fname = g_regex_replace_literal( regex, name, -1, 0, "", 0, NULL );
 
 	g_free( name );
-	g_object_unref( period );
 
 	my_date_set_now( &date );
 	sdate = my_date_to_str( &date, MY_DATE_YYMD );
@@ -272,7 +271,7 @@ do_backup( ofaBackup *self )
 	folder = g_path_get_dirname( uri );
 
 	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_settings_group( priv->meta );
+	group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 	my_isettings_set_string( settings, group, st_backup_folder, folder );
 
 	ok = ofa_idbconnect_backup( priv->connect, uri );

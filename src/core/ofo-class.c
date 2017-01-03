@@ -456,10 +456,10 @@ static gboolean
 class_do_insert( ofoClass *class, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *userid;
+	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	gchar *stamp_str;
 	GTimeVal stamp;
+	const gchar *userid;
 
 	query = g_string_new( "INSERT INTO OFA_T_CLASSES " );
 
@@ -493,7 +493,6 @@ class_do_insert( ofoClass *class, const ofaIDBConnect *connect )
 
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -531,9 +530,10 @@ static gboolean
 class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *stamp_str, *userid;
+	gchar *label, *notes, *stamp_str;
 	GTimeVal stamp;
 	gboolean ok;
+	const gchar *userid;
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
@@ -567,7 +567,6 @@ class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect )
 	g_free( label );
 	g_free( notes );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }

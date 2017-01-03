@@ -356,6 +356,86 @@ ofa_idbprovider_new_dossier_meta( ofaIDBProvider *provider, const gchar *dossier
 }
 
 /**
+ * ofa_idbprovider_new_dossier_editor:
+ * @provider: this #ofaIDBProvider provider.
+ * @settings_prefix: the prefix of a user preference key.
+ * @rule: the usage of the editor.
+ *
+ * Returns: a composite GTK container widget intended to hold the
+ * informations needed to fully identify the DBMS server which manages
+ * a dossier.
+ *
+ * The returned container will be added to a GtkWindow and must be
+ * destroyable with this same window. In other words, the DBMS provider
+ * should not keep any reference on this container.
+ */
+ofaIDBDossierEditor *
+ofa_idbprovider_new_dossier_editor( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule )
+{
+	static const gchar *thisfn = "ofa_idbprovider_new_dossier_editor";
+	ofaIDBDossierEditor *editor;
+
+	g_debug( "%s: provider=%p, settings_prefix=%s, rule=%u",
+			thisfn,( void * ) provider, settings_prefix, rule );
+
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor ){
+		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor( provider, settings_prefix, rule );
+		ofa_idbdossier_editor_set_provider( editor, provider );
+		return( editor );
+	}
+
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_dossier_editor()' method",
+			thisfn, G_OBJECT_TYPE_NAME( provider ));
+	return( NULL );
+}
+
+/**
+ * ofa_idbprovider_new_connect:
+ * @provider: this #ofaIDBProvider provider.
+ * @account: the account of the connection.
+ * @password: the password of the connection.
+ * @dossier_meta: the #ofaIDBDossierMeta object.
+ * @exercice_meta: [allow-none]: the #ofaIDBEXerciceMeta object;
+ *  if %NULL, the connection is established at server level.
+ *
+ * Returns: a newly defined #ofaIDBConnect object, or %NULL if the
+ * connection could not be established.
+ */
+ofaIDBConnect *
+ofa_idbprovider_new_connect( ofaIDBProvider *provider, const gchar *account, const gchar *password,
+									ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta )
+{
+	static const gchar *thisfn = "ofa_idbprovider_new_connect";
+	ofaIDBConnect *connect;
+
+	g_debug( "%s: provider=%p, account=%s, password=%s, dossier_meta=%p, exercice_meta=%p",
+			thisfn, ( void * ) provider, account, "******", ( void * ) dossier_meta, ( void * ) exercice_meta );
+
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
+	g_return_val_if_fail( my_strlen( account ), NULL );
+	g_return_val_if_fail( my_strlen( password ), NULL );
+	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), NULL );
+	g_return_val_if_fail( !exercice_meta || OFA_IS_IDBEXERCICE_META( exercice_meta ), NULL );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect ){
+		connect = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect( provider, account, password, dossier_meta, exercice_meta );
+		if( connect ){
+			ofa_idbconnect_set_account( connect, account );
+			ofa_idbconnect_set_password( connect, password );
+			ofa_idbconnect_set_dossier_meta( connect, dossier_meta );
+			ofa_idbconnect_set_exercice_meta( connect, exercice_meta );
+		}
+		return( connect );
+	}
+
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_connect()' method",
+			thisfn, G_OBJECT_TYPE_NAME( provider ));
+	return( NULL );
+}
+
+/**
  * ofa_idbprovider_new_exercice_meta:
  * @provider: this #ofaIDBProvider provider.
  * @dossier_meta: the #ofaIDBDossierMeta dossier.
@@ -382,34 +462,6 @@ ofa_idbprovider_new_exercice_meta( ofaIDBProvider *provider, ofaIDBDossierMeta *
 	}
 
 	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_exercice_meta()' method",
-			thisfn, G_OBJECT_TYPE_NAME( provider ));
-	return( NULL );
-}
-
-/**
- * ofa_idbprovider_new_connect:
- * @provider: this #ofaIDBProvider provider.
- *
- * Returns: a newly allocated #ofaIDBConnect object, which should be
- * g_object_unref() by the caller.
- */
-ofaIDBConnect *
-ofa_idbprovider_new_connect( ofaIDBProvider *provider )
-{
-	static const gchar *thisfn = "ofa_idbprovider_new_connect";
-	ofaIDBConnect *connect;
-
-	g_debug( "%s: provider=%p", thisfn, ( void * ) provider );
-
-	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
-
-	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect ){
-		connect = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect( provider );
-		ofa_idbconnect_set_provider( connect, provider );
-		return( connect );
-	}
-
-	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_connect()' method",
 			thisfn, G_OBJECT_TYPE_NAME( provider ));
 	return( NULL );
 }
@@ -449,42 +501,6 @@ ofa_idbprovider_new_editor( ofaIDBProvider *provider, gboolean editable )
 	}
 
 	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'get_editor()' method",
-			thisfn, G_OBJECT_TYPE_NAME( provider ));
-	return( NULL );
-}
-
-/**
- * ofa_idbprovider_new_dossier_editor:
- * @provider: this #ofaIDBProvider provider.
- * @settings_prefix: the prefix of a user preference key.
- * @rule: the usage of the editor.
- *
- * Returns: a composite GTK container widget intended to hold the
- * informations needed to fully identify the DBMS server which manages
- * a dossier.
- *
- * The returned container will be added to a GtkWindow and must be
- * destroyable with this same window. In other words, the DBMS provider
- * should not keep any reference on this container.
- */
-ofaIDBDossierEditor *
-ofa_idbprovider_new_dossier_editor( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule )
-{
-	static const gchar *thisfn = "ofa_idbprovider_new_dossier_editor";
-	ofaIDBDossierEditor *editor;
-
-	g_debug( "%s: provider=%p, settings_prefix=%s, rule=%u",
-			thisfn,( void * ) provider, settings_prefix, rule );
-
-	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
-
-	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor ){
-		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor( provider, settings_prefix, rule );
-		ofa_idbdossier_editor_set_provider( editor, provider );
-		return( editor );
-	}
-
-	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_dossier_editor()' method",
 			thisfn, G_OBJECT_TYPE_NAME( provider ));
 	return( NULL );
 }

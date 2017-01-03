@@ -68,10 +68,10 @@ static gchar                *iident_get_display_name( const myIIdent *instance, 
 static gchar                *iident_get_version( const myIIdent *instance, void *user_data );
 static void                  idbprovider_iface_init( ofaIDBProviderInterface *iface );
 static ofaIDBDossierMeta    *idbprovider_new_dossier_meta( ofaIDBProvider *instance );
-static ofaIDBExerciceMeta   *idbprovider_new_exercice_meta( ofaIDBProvider *instance );
-static ofaIDBConnect        *idbprovider_new_connect( ofaIDBProvider *instance );
-static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
 static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
+static ofaIDBConnect        *idbprovider_new_connect( ofaIDBProvider *instance, const gchar *account, const gchar *password, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta );
+static ofaIDBExerciceMeta   *idbprovider_new_exercice_meta( ofaIDBProvider *instance );
+static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
 static ofaIDBExerciceEditor *idbprovider_new_exercice_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
 static void                  isetter_iface_init( ofaISetterInterface *iface );
 static ofaIGetter           *isetter_get_getter( ofaISetter *instance );
@@ -225,7 +225,7 @@ idbprovider_new_exercice_meta( ofaIDBProvider *instance )
  * instanciates a new ofaIDBConnect object
  */
 static ofaIDBConnect *
-idbprovider_new_connect( ofaIDBProvider *instance )
+idbprovider_new_connect( ofaIDBProvider *instance, const gchar *account, const gchar *password, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta )
 {
 	ofaMysqlConnect *connect;
 

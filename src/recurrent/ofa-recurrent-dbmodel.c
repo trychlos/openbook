@@ -622,13 +622,14 @@ dbmodel_to_v6( ofaRecurrentDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v6";
 	ofaRecurrentDBModelPrivate *priv;
-	gchar *user, *query;
+	gchar *query;
 	gboolean ok;
+	const gchar *userid;
 
 	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
 	priv = ofa_recurrent_dbmodel_get_instance_private( self );
-	user = ofa_idbconnect_get_account( priv->connect );
+	userid = ofa_idbconnect_get_account( priv->connect );
 
 	/* 1 - create Periodicity table */
 	/* altered in v7 */
@@ -675,7 +676,7 @@ dbmodel_to_v6( ofaRecurrentDBModel *self, guint version )
 			"		VALUES "
 			"	('0N','Never','N',NULL,NULL,'%s'),"
 			"	('3W','Weekly','Y','D',7,'%s'),"
-			"	('6M','Monthly','Y','M',1,'%s')", user, user, user );
+			"	('6M','Monthly','Y','M',1,'%s')", userid, userid, userid );
 	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
@@ -795,8 +796,6 @@ dbmodel_to_v6( ofaRecurrentDBModel *self, guint version )
 			"	SET REC_PERIOD_DETAIL='6SUN' WHERE REC_PERIOD_DETAIL='SUN'" )){
 		return( FALSE );
 	}
-
-	g_free( user );
 
 	return( TRUE );
 }

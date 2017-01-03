@@ -82,7 +82,7 @@ typedef struct {
 	ofaHub               *hub;
 	ofoDossier           *dossier;
 	const ofaIDBConnect  *connect;
-	ofaIDBDossierMeta    *meta;
+	ofaIDBDossierMeta    *dossier_meta;
 	gchar                *dos_name;
 
 	/* p1 - closing parms
@@ -278,7 +278,7 @@ exercice_close_assistant_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->meta );
+		g_clear_object( &priv->dossier_meta );
 		ofa_extender_collection_free_types( priv->close_list );
 
 		if( priv->getter ){
@@ -441,8 +441,8 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
 	priv->connect = ofa_hub_get_connect( priv->hub );
-	priv->meta = ofa_idbconnect_get_dossier_meta( priv->connect );
-	priv->dos_name = g_strdup( ofa_idbdossier_meta_get_dossier_name( priv->meta ));
+	priv->dossier_meta = g_object_ref( ofa_idbconnect_get_dossier_meta( priv->connect ));
+	priv->dos_name = g_strdup( ofa_idbdossier_meta_get_dossier_name( priv->dossier_meta ));
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 
@@ -694,7 +694,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p2_dbms_credentials = ofa_dbms_root_bin_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dbms_credentials ));
-	ofa_dbms_root_bin_set_meta( priv->p2_dbms_credentials, priv->meta );
+	ofa_dbms_root_bin_set_meta( priv->p2_dbms_credentials, priv->dossier_meta );
 
 	g_signal_connect(
 			priv->p2_dbms_credentials, "ofa-changed", G_CALLBACK( p2_on_dbms_root_changed ), self );
@@ -1413,8 +1413,8 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	gboolean ok;
 	const GDate *begin_old, *end_old;
 	const GDate *begin_next, *end_next;
-	gchar *cur_account, *cur_password;
 	ofaIDBProvider *provider;
+	const gchar *cur_account, *cur_password;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1428,8 +1428,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	period = ofa_idbconnect_get_exercice_meta( priv->connect );
 	begin_old = ofo_dossier_get_exe_begin( priv->dossier );
 	end_old = ofo_dossier_get_exe_end( priv->dossier );
-	ofa_idbdossier_meta_update_period( priv->meta, period, FALSE, begin_old, end_old );
-	g_object_unref( period );
+	ofa_idbdossier_meta_update_period( priv->dossier_meta, period, FALSE, begin_old, end_old );
 
 	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 	end_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
@@ -1444,19 +1443,17 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	} else {
 		/* open the new exercice */
-		period = ofa_idbdossier_meta_get_current_period( priv->meta );
+		period = ofa_idbdossier_meta_get_current_period( priv->dossier_meta );
 		g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 		ofa_idbexercice_meta_dump( period );
 
-		provider = ofa_idbdossier_meta_get_provider( priv->meta );
+		provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
 		cur_account = ofa_idbconnect_get_account( priv->connect );
 		cur_password = ofa_idbconnect_get_password( priv->connect );
 
-		cnx = ofa_idbprovider_new_connect( provider );
-		ok = ofa_idbconnect_open_with_meta( cnx, cur_account, cur_password, priv->meta, period );
+		cnx = ofa_idbprovider_new_connect( provider, cur_account, cur_password, priv->dossier_meta, period );
+		ok = ( cnx != NULL );
 
-		g_free( cur_password );
-		g_free( cur_account );
 		g_object_unref( provider );
 		g_object_unref( period );
 

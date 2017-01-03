@@ -513,9 +513,9 @@ static gboolean
 currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *stamp_str, *userid;
+	gchar *label, *notes, *stamp_str;
 	GTimeVal stamp;
-	const gchar *symbol;
+	const gchar *symbol, *userid;
 	gboolean ok;
 
 	ok = FALSE;
@@ -557,7 +557,6 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect )
 	g_free( label );
 	g_free( notes );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -593,9 +592,10 @@ static gboolean
 currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *stamp_str, *userid;
+	gchar *label, *notes, *stamp_str;
 	GTimeVal stamp;
 	gboolean ok;
+	const gchar *userid;
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
@@ -633,7 +633,6 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBC
 	g_free( label );
 	g_free( notes );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }

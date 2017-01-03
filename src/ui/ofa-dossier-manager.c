@@ -373,7 +373,7 @@ on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExer
 	gboolean ok, is_opened;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *dossier_meta;
-	ofaIDBExerciceMeta *dossier_period;
+	ofaIDBExerciceMeta *exercice_meta;
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
@@ -381,10 +381,10 @@ on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExer
 	if( connect ){
 		g_return_if_fail( OFA_IS_IDBCONNECT( connect ));
 		dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
-		dossier_period = ofa_idbconnect_get_exercice_meta( connect );
+		exercice_meta = ofa_idbconnect_get_exercice_meta( connect );
 	}
 
-	is_opened = ( connect && meta == dossier_meta && period == dossier_period );
+	is_opened = ( connect && meta == dossier_meta && period == exercice_meta );
 
 	ok = ( meta && period && !is_opened );
 
@@ -467,7 +467,7 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 	ofaDossierManagerPrivate *priv;
 	const ofaIDBConnect *dossier_connect;
 	ofaIDBDossierMeta *meta, *dossier_meta;
-	ofaIDBExerciceMeta *period, *dossier_period;
+	ofaIDBExerciceMeta *period, *exercice_meta;
 	ofoDossier *dossier;
 	gint cmp;
 
@@ -491,12 +491,10 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 			g_return_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ));
 			cmp = 1;
 			if( ofa_idbdossier_meta_compare( meta, dossier_meta ) == 0 ){
-				dossier_period = ofa_idbconnect_get_exercice_meta( dossier_connect );
-				g_return_if_fail( dossier_period && OFA_IS_IDBEXERCICE_META( dossier_period ));
-				cmp = ofa_idbexercice_meta_compare( period, dossier_period );
-				g_object_unref( dossier_period );
+				exercice_meta = ofa_idbconnect_get_exercice_meta( dossier_connect );
+				g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
+				cmp = ofa_idbexercice_meta_compare( period, exercice_meta );
 			}
-			g_object_unref( dossier_meta );
 			if( cmp == 0 ){
 				ofa_hub_dossier_close( priv->hub );
 			}

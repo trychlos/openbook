@@ -328,10 +328,25 @@ guint              ofa_idbconnect_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
-ofaIDBProvider     *ofa_idbconnect_get_provider             ( const ofaIDBConnect *connect );
+const gchar        *ofa_idbconnect_get_account              ( const ofaIDBConnect *connect );
 
-void                ofa_idbconnect_set_provider             ( ofaIDBConnect *connect,
-																	const ofaIDBProvider *provider );
+void                ofa_idbconnect_set_account              ( ofaIDBConnect *connect,
+																	const gchar *account );
+
+const gchar        *ofa_idbconnect_get_password             ( const ofaIDBConnect *connect );
+
+void                ofa_idbconnect_set_password             ( ofaIDBConnect *connect,
+																	const gchar *password );
+
+ofaIDBDossierMeta  *ofa_idbconnect_get_dossier_meta         ( const ofaIDBConnect *connect );
+
+void                ofa_idbconnect_set_dossier_meta         ( ofaIDBConnect *connect,
+																	ofaIDBDossierMeta *dossier_meta );
+
+ofaIDBExerciceMeta *ofa_idbconnect_get_exercice_meta        ( const ofaIDBConnect *connect );
+
+void                ofa_idbconnect_set_exercice_meta        ( ofaIDBConnect *connect,
+																	ofaIDBExerciceMeta *exercice_meta );
 
 gboolean            ofa_idbconnect_open_with_editor         ( ofaIDBConnect *connect,
 																	const ofaIDBDossierEditor *editor );
@@ -341,14 +356,6 @@ gboolean            ofa_idbconnect_open_with_meta           ( ofaIDBConnect *con
 																	const gchar *password,
 																	const ofaIDBDossierMeta *dossier_meta,
 																	const ofaIDBExerciceMeta *period );
-
-gchar              *ofa_idbconnect_get_account              ( const ofaIDBConnect *connect );
-
-gchar              *ofa_idbconnect_get_password             ( const ofaIDBConnect *connect );
-
-ofaIDBDossierMeta  *ofa_idbconnect_get_dossier_meta         ( const ofaIDBConnect *connect );
-
-ofaIDBExerciceMeta *ofa_idbconnect_get_exercice_meta        ( const ofaIDBConnect *connect );
 
 gboolean            ofa_idbconnect_query                    ( const ofaIDBConnect *connect,
 																	const gchar *query,
@@ -396,7 +403,7 @@ gboolean            ofa_idbconnect_archive_and_new          ( const ofaIDBConnec
 																	const GDate *end_next );
 
 gboolean            ofa_idbconnect_create_dossier           ( const ofaIDBConnect *connect,
-																	const ofaIDBDossierMeta *meta,
+																	ofaIDBDossierMeta *meta,
 																	const gchar *adm_account,
 																	const gchar *adm_password );
 

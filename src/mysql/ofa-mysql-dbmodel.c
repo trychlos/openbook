@@ -457,7 +457,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	ofaMysqlDBModelPrivate *priv;
 	gchar *query;
 	gboolean ok;
-	ofaIDBDossierMeta *meta;
+	ofaIDBDossierMeta *dossier_meta;
 	const gchar *dossier_name;
 
 	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
@@ -636,8 +636,8 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 
 	/* n° 7
 	 * dossier name is set as a default value for the label */
-	meta = ofa_idbconnect_get_dossier_meta( priv->connect );
-	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
+	dossier_meta = ofa_idbconnect_get_dossier_meta( priv->connect );
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( dossier_meta );
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
 			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,"
@@ -646,7 +646,6 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 			DOSSIER_ROW_ID, dossier_name, DOSSIER_EXERCICE_DEFAULT_LENGTH, "O", "CLORAN", "CLOSLD" );
 	ok = exec_query( self, query );
 	g_free( query );
-	g_object_unref( meta );
 	if( !ok ){
 		return( FALSE );
 	}
@@ -1794,9 +1793,9 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v33";
 	ofaMysqlDBModelPrivate *priv;
-	gchar *query, *user;
+	gchar *query;
 	GSList *result, *irow, *icol;
-	const gchar *cstr;
+	const gchar *cstr, *userid;
 	GList *ita, *itd;
 	ofoAccount *account;
 	GDate begin, date;
@@ -1806,7 +1805,7 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 
 	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
-	user = ofa_idbconnect_get_account( priv->connect );
+	userid = ofa_idbconnect_get_account( priv->connect );
 
 	/* 1 - get dossier begin exercice */
 	query = g_strdup_printf( "SELECT DOS_EXE_BEGIN FROM OFA_T_DOSSIER WHERE DOS_ID=%u", DOSSIER_ROW_ID );
@@ -1925,7 +1924,7 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_PAIMEANS (PAM_CODE,PAM_LABEL,PAM_UPD_USER) VALUES "
 			"	('VC','Visa card','%s'),"
-			"	('CH','Cheque','%s')", user, user );
+			"	('CH','Cheque','%s')", userid, userid );
 	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
@@ -1942,8 +1941,6 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 	/* make sure that we end up at 100% */
 	priv->current = priv->total;
 	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
-
-	g_free( user );
 
 	return( TRUE );
 }

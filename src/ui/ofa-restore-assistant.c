@@ -913,10 +913,8 @@ p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	g_clear_object( &priv->p3_connect );
 	provider = ofa_idbdossier_meta_get_provider( priv->p2_dossier_meta );
-	priv->p3_connect = ofa_idbprovider_new_connect( provider );
-	if( !ofa_idbconnect_open_with_meta(
-			priv->p3_connect, priv->p3_account, priv->p3_password, priv->p2_dossier_meta, NULL )){
-		g_clear_object( &priv->p3_connect );
+	priv->p3_connect = ofa_idbprovider_new_connect( provider, priv->p3_account, priv->p3_password, priv->p2_dossier_meta, NULL );
+	if( !priv->p3_connect ){
 		g_warning( "%s: unable to open a new '%s' connection on DBMS", thisfn, priv->p3_account );
 	}
 }

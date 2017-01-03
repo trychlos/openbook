@@ -620,7 +620,7 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *
 	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_grant_user";
 	ofaMysqlConnectPrivate *priv;
 	GString *query;
-	ofaIDBDossierMeta *meta;
+	ofaIDBDossierMeta *dossier_meta;
 	gchar *hostname, *msg;
 	const gchar *database;
 	gboolean ok;
@@ -635,16 +635,14 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *
 
 	query = g_string_new( "" );
 
-	meta = ofa_idbconnect_get_dossier_meta( instance );
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), FALSE );
+	dossier_meta = ofa_idbconnect_get_dossier_meta( instance );
+	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_DOSSIER_META( dossier_meta ), FALSE );
 
-	hostname = g_strdup( ofa_mysql_dossier_meta_get_host( OFA_MYSQL_DOSSIER_META( meta )));
+	hostname = g_strdup( ofa_mysql_dossier_meta_get_host( OFA_MYSQL_DOSSIER_META( dossier_meta )));
 	if( !my_strlen( hostname )){
 		g_free( hostname );
 		hostname = g_strdup( "localhost" );
 	}
-
-	g_object_unref( meta );
 
 	/* doesn't trap error on create user as the user may already exist */
 	g_string_printf( query,

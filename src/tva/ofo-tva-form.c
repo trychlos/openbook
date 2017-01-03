@@ -1130,9 +1130,9 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *label, *notes, *userid;
-	gchar *stamp_str;
+	gchar *label, *notes, *stamp_str;
 	GTimeVal stamp;
+	const gchar *userid;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_tva_form_get_label( form ));
@@ -1173,7 +1173,6 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -1358,9 +1357,8 @@ form_update_main( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *p
 {
 	gboolean ok;
 	GString *query;
-	gchar *label, *notes, *userid;
-	const gchar *new_mnemo;
-	gchar *stamp_str;
+	gchar *label, *notes, *stamp_str;
+	const gchar *new_mnemo, *userid;
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
@@ -1408,7 +1406,6 @@ form_update_main( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *p
 	g_free( notes );
 	g_free( stamp_str );
 	g_free( label );
-	g_free( userid );
 
 	return( ok );
 }

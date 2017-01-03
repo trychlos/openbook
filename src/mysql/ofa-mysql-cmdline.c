@@ -119,9 +119,10 @@ gboolean
 ofa_mysql_cmdline_backup_run( ofaMysqlConnect *connect, const gchar *uri )
 {
 	gchar *template, *fname;
+	ofaIDBDossierMeta *dossier_meta;
+	ofaIDBExerciceMeta *exercice_meta;
 	ofaIDBProvider *provider;
 	ofaHub *hub;
-	ofaIDBExerciceMeta *period;
 	gboolean ok;
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
@@ -129,24 +130,25 @@ ofa_mysql_cmdline_backup_run( ofaMysqlConnect *connect, const gchar *uri )
 
 	ofa_mysql_connect_query( connect, "FLUSH TABLES WITH READ LOCK" );
 
-	provider = ofa_idbconnect_get_provider( OFA_IDBCONNECT( connect ));
+	dossier_meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
+	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 	hub = ofa_idbprovider_get_hub( provider );
 	template = ofa_mysql_user_prefs_get_backup_command( hub );
 	fname = g_filename_from_uri( uri, NULL, NULL );
-	period = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
+	exercice_meta = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
 
 	ok = do_execute_async(
 				template,
 				connect,
-				OFA_MYSQL_EXERCICE_META( period ),
+				OFA_MYSQL_EXERCICE_META( exercice_meta ),
 				fname,
 				_( "Openbook backup" ),
 				( GChildWatchFunc ) backup_exit_cb,
 				TRUE );
 
-	g_object_unref( period );
 	g_free( fname );
 	g_free( template );
+	g_object_unref( provider );
 
 	ofa_mysql_connect_query( connect, "UNLOCK TABLES" );
 
@@ -188,6 +190,7 @@ ofa_mysql_cmdline_restore_run( ofaMysqlConnect *connect,
 	static const gchar *thisfn = "ofa_mysql_cmdline_restore";
 	gboolean ok;
 	gchar *fname, *template;
+	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBProvider *provider;
 	ofaHub *hub;
 
@@ -204,7 +207,9 @@ ofa_mysql_cmdline_restore_run( ofaMysqlConnect *connect,
 			"/bin/sh \"mysql -u%U -p%P -e 'create database %B'\"", connect, period, NULL, NULL );
 
 	fname = g_filename_from_uri( uri, NULL, NULL );
-	provider = ofa_idbconnect_get_provider( OFA_IDBCONNECT( connect ));
+
+	dossier_meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
+	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 	hub = ofa_idbprovider_get_hub( provider );
 	template = ofa_mysql_user_prefs_get_restore_command( hub );
 
@@ -219,6 +224,7 @@ ofa_mysql_cmdline_restore_run( ofaMysqlConnect *connect,
 
 	g_free( template );
 	g_free( fname );
+	g_object_unref( provider );
 
 	return( ok );
 }
@@ -243,47 +249,43 @@ ofa_mysql_cmdline_archive_and_new( ofaMysqlConnect *connect,
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_archive_and_new";
 	ofaMysqlConnect *server_cnx;
-	ofaIDBDossierMeta *meta;
-	const gchar *host, *socket, *prev_dbname;
+	ofaIDBDossierMeta *dossier_meta;
+	ofaIDBExerciceMeta *exercice_meta;
+	const gchar *host, *socket, *prev_dbname, *prev_account;
 	guint port;
-	ofaIDBExerciceMeta *period;
-	gchar *new_db, *prev_account;
+	gchar *new_db;
 	gboolean ok;
 	gchar *cmdline, *cmd, *stdout, *stderr;
 	gint status;
 
 	/* meta informations on the current dossier */
-	meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), FALSE );
+	dossier_meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
+	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_DOSSIER_META( dossier_meta ), FALSE );
 
 	/* open a superuser new connection at DBMS server level */
 	server_cnx = ofa_mysql_connect_new();
 	if( !ofa_mysql_connect_open_with_meta(
-				server_cnx, root_account, root_password, OFA_MYSQL_DOSSIER_META( meta ), NULL )){
+				server_cnx, root_account, root_password, OFA_MYSQL_DOSSIER_META( dossier_meta ), NULL )){
 		g_warning( "%s: unable to get a root connection on the DB server", thisfn );
-		g_object_unref( meta );
 		return( FALSE );
 	}
 
 	/* get previous database from current connection on closed exercice */
-	period = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
-	g_return_val_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ), FALSE );
+	exercice_meta = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
+	g_return_val_if_fail( exercice_meta && OFA_IS_MYSQL_EXERCICE_META( exercice_meta ), FALSE );
 
-	prev_dbname = ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( period ));
+	prev_dbname = ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( exercice_meta ));
 	new_db = ofa_mysql_connect_get_new_database( server_cnx, prev_dbname );
-
-	g_object_unref( period );
 
 	if( !my_strlen( new_db )){
 		g_warning( "%s: unable to get a new database name", thisfn );
-		g_object_unref( meta );
 		g_object_unref( server_cnx );
 		return( FALSE );
 	}
 
-	host = ofa_mysql_dossier_meta_get_host( OFA_MYSQL_DOSSIER_META( meta ));
-	socket = ofa_mysql_dossier_meta_get_socket( OFA_MYSQL_DOSSIER_META( meta ));
-	port = ofa_mysql_dossier_meta_get_port( OFA_MYSQL_DOSSIER_META( meta ));
+	host = ofa_mysql_dossier_meta_get_host( OFA_MYSQL_DOSSIER_META( dossier_meta ));
+	socket = ofa_mysql_dossier_meta_get_socket( OFA_MYSQL_DOSSIER_META( dossier_meta ));
+	port = ofa_mysql_dossier_meta_get_port( OFA_MYSQL_DOSSIER_META( dossier_meta ));
 
 	cmdline = cmdline_build_from_args(
 					"mysql %O -u%U -p%P -e 'drop database if exists %N'; "
@@ -316,10 +318,9 @@ ofa_mysql_cmdline_archive_and_new( ofaMysqlConnect *connect,
 	g_free( cmd );
 
 	if( ok ){
-		ofa_mysql_dossier_meta_add_period( OFA_MYSQL_DOSSIER_META( meta ), TRUE, begin_next, end_next, new_db );
+		ofa_mysql_dossier_meta_add_period( OFA_MYSQL_DOSSIER_META( dossier_meta ), TRUE, begin_next, end_next, new_db );
 		prev_account = ofa_idbconnect_get_account( OFA_IDBCONNECT( connect ));
 		do_duplicate_grants( OFA_IDBCONNECT( server_cnx ), host, prev_account, prev_dbname, new_db );
-		g_free( prev_account );
 	}
 
 	g_free( new_db );
@@ -337,20 +338,20 @@ cmdline_build_from_connect( const gchar *template,
 								const gchar *filename, const gchar *database )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_build_from_connect";
-	gchar *cmdline, *account, *password;
-	ofaIDBDossierMeta *meta;
-	const gchar *host, *socket, *connect_database;
+	gchar *cmdline;
+	ofaIDBDossierMeta *dossier_meta;
+	const gchar *host, *socket, *connect_database, *account, *password;
 	guint port;
 
 	g_debug( "%s: connect=%p, period=%p, template=%s, filename=%s, database=%s",
 					thisfn, ( void * ) connect, ( void * ) period, template, filename, database );
 
-	meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), NULL );
+	dossier_meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
+	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_DOSSIER_META( dossier_meta ), NULL );
 
-	host = ofa_mysql_dossier_meta_get_host( OFA_MYSQL_DOSSIER_META( meta ));
-	socket = ofa_mysql_dossier_meta_get_socket( OFA_MYSQL_DOSSIER_META( meta ));
-	port = ofa_mysql_dossier_meta_get_port( OFA_MYSQL_DOSSIER_META( meta ));
+	host = ofa_mysql_dossier_meta_get_host( OFA_MYSQL_DOSSIER_META( dossier_meta ));
+	socket = ofa_mysql_dossier_meta_get_socket( OFA_MYSQL_DOSSIER_META( dossier_meta ));
+	port = ofa_mysql_dossier_meta_get_port( OFA_MYSQL_DOSSIER_META( dossier_meta ));
 
 	connect_database = ofa_mysql_exercice_meta_get_database( period );
 
@@ -359,10 +360,6 @@ cmdline_build_from_connect( const gchar *template,
 
 	cmdline = cmdline_build_from_args( template,
 					host, socket, port, account, password, connect_database, filename, database );
-
-	g_free( password );
-	g_free( account );
-	g_object_unref( meta );
 
 	return( cmdline );
 }
@@ -481,6 +478,7 @@ do_execute_async( const gchar *template,
 					gboolean verbose )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_do_execute_async";
+	ofaIDBDossierMeta *dossier_meta;
 	sExecuteInfos *infos;
 	gchar *cmdline;
 	GPid child_pid;
@@ -493,7 +491,8 @@ do_execute_async( const gchar *template,
 	cmdline = cmdline_build_from_connect( template, connect, period, fname, NULL );
 	g_debug( "%s: cmdline=%s", thisfn, cmdline );
 
-	provider = ofa_idbconnect_get_provider( OFA_IDBCONNECT( connect ));
+	dossier_meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
+	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 	hub = ofa_idbprovider_get_hub( provider );
 	settings = ofa_hub_get_user_settings( hub );
 
@@ -541,6 +540,7 @@ do_execute_async( const gchar *template,
 
 	g_free( infos );
 	g_free( cmdline );
+	g_object_unref( provider );
 
 	g_debug( "%s: returning %s", thisfn, ok ? "True":"False" );
 	return( ok );

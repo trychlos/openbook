@@ -484,15 +484,14 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 	const ofaIDBConnect *connect;
-	ofaIDBDossierMeta *meta;
+	ofaIDBDossierMeta *dossier_meta;
 	const gchar *dossier_name;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	connect = ofa_hub_get_connect( priv->hub );
-	meta = ofa_idbconnect_get_dossier_meta( connect );
-	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
-	g_object_unref( meta );
+	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( dossier_meta );
 
 	return( g_strdup( dossier_name ));
 }

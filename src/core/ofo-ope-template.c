@@ -1130,10 +1130,10 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *label, *notes, *ref, *userid;
-	gchar *stamp_str;
+	gchar *label, *notes, *ref, *stamp_str;
 	GTimeVal stamp;
 	gint row;
+	const gchar *userid;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_ope_template_get_label( model ));
@@ -1186,7 +1186,6 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -1349,9 +1348,8 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 {
 	gboolean ok;
 	GString *query;
-	gchar *label, *ref, *notes, *userid;
-	const gchar *new_mnemo;
-	gchar *stamp_str;
+	gchar *label, *ref, *notes, *stamp_str;
+	const gchar *new_mnemo, *userid;
 	GTimeVal stamp;
 	gint row;
 
@@ -1404,7 +1402,6 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 	g_free( notes );
 	g_free( stamp_str );
 	g_free( label );
-	g_free( userid );
 
 	return( ok );
 }

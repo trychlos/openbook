@@ -616,9 +616,8 @@ is_connection_valid( ofaDossierOpen *self, gchar **msg )
 	valid = FALSE;
 
 	provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
-	priv->connect = ofa_idbprovider_new_connect( provider );
-	valid = ofa_idbconnect_open_with_meta(
-					priv->connect, priv->account, priv->password, priv->dossier_meta, priv->exercice_meta );
+	priv->connect = ofa_idbprovider_new_connect( provider, priv->account, priv->password, priv->dossier_meta, priv->exercice_meta );
+	valid = ( priv->connect != NULL );
 	g_object_unref( provider );
 
 	if( msg ){

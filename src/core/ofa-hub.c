@@ -1061,7 +1061,7 @@ check_db_vs_settings( ofaHub *self )
 	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
 	const ofaIDBConnect *cnx;
 	ofaIDBExerciceMeta *period;
-	ofaIDBDossierMeta *meta;
+	ofaIDBDossierMeta *dossier_meta;
 	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
 
 	remediated = FALSE;
@@ -1099,14 +1099,11 @@ check_db_vs_settings( ofaHub *self )
 		g_free( ssetbegin );
 		g_free( ssetend );
 
-		meta = ofa_idbconnect_get_dossier_meta( cnx );
-		ofa_idbdossier_meta_update_period( meta, period, db_current, db_begin, db_end );
-		g_object_unref( meta );
+		dossier_meta = ofa_idbconnect_get_dossier_meta( cnx );
+		ofa_idbdossier_meta_update_period( dossier_meta, period, db_current, db_begin, db_end );
 
 		remediated = TRUE;
 	}
-
-	g_object_unref( period );
 
 	return( remediated );
 }

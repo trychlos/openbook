@@ -1591,10 +1591,10 @@ static gboolean
 account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *userid;
+	gchar *label, *notes, *stamp_str;
 	gboolean ok;
 	GTimeVal stamp;
-	gchar *stamp_str;
+	const gchar *userid;
 
 	ok = FALSE;
 
@@ -1644,7 +1644,6 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -1692,11 +1691,11 @@ static gboolean
 account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number )
 {
 	GString *query;
-	gchar *label, *notes, *userid;
+	gchar *label, *notes, *stamp_str;
 	gboolean ok;
 	const gchar *new_number;
-	gchar *stamp_str;
 	GTimeVal stamp;
+	const gchar *userid;
 
 	ok = FALSE;
 
@@ -1759,7 +1758,6 @@ account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gcha
 	g_free( stamp_str );
 	g_free( notes );
 	g_free( label );
-	g_free( userid );
 
 	return( ok );
 }

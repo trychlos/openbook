@@ -97,7 +97,7 @@ typedef struct {
 	 */
 	ofaIGetter          *getter;
 	GtkWindow           *parent;
-	ofaIDBDossierMeta   *meta;
+	ofaIDBDossierMeta   *dossier_meta;
 
 	/* runtime
 	 */
@@ -342,7 +342,6 @@ import_assistant_dispose( GObject *instance )
 		write_settings( OFA_IMPORT_ASSISTANT( instance ));
 
 		/* unref object members here */
-		g_clear_object( &priv->meta );
 		g_list_free_full( priv->p2_importables, ( GDestroyNotify ) g_object_unref );
 		g_list_free_full( priv->p3_importers, ( GDestroyNotify ) g_object_unref );
 		g_clear_object( &priv->p5_import_settings );
@@ -449,7 +448,7 @@ iwindow_init( myIWindow *instance )
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 
 	connect = ofa_hub_get_connect( priv->hub );
-	priv->meta = ofa_idbconnect_get_dossier_meta( connect );
+	priv->dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
 
 	read_settings( OFA_IMPORT_ASSISTANT( instance ));
 }
@@ -1584,7 +1583,7 @@ read_settings( ofaImportAssistant *self )
 	/* dossier settings
 	 */
 	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_settings_group( priv->meta );
+	group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
 	priv->p1_folder = my_isettings_get_string( settings, group, st_import_folder );
 
@@ -1618,7 +1617,7 @@ write_settings( ofaImportAssistant *self )
 	/* dossier settings
 	 */
 	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_settings_group( priv->meta );
+	group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
 	if( my_strlen( priv->p1_folder )){
 		my_isettings_set_string( settings, group, st_import_folder, priv->p1_folder );

@@ -786,10 +786,10 @@ static gboolean
 rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *userid;
+	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	gchar *stamp_str;
 	GTimeVal stamp;
+	const gchar *userid;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
@@ -828,7 +828,6 @@ rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -962,10 +961,10 @@ static gboolean
 rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *connect )
 {
 	GString *query;
-	gchar *label, *notes, *userid;
+	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	gchar *stamp_str;
 	GTimeVal stamp;
+	const gchar *userid;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
@@ -1004,7 +1003,6 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *c
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }

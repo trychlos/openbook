@@ -117,6 +117,42 @@ struct _ofaIDBProviderInterface {
 	ofaIDBDossierMeta *    ( *new_dossier_meta )     ( ofaIDBProvider *instance );
 
 	/**
+	 * new_dossier_editor:
+	 * @instance: this #ofaIDBProvider instance.
+	 * @settings_prefix: the prefix of a user preference key.
+	 * @rule: the usage of the editor.
+	 *
+	 * Returns: a #GtkWidget which implements the #ofaIDBDossierEditor
+	 * interface, and handles the informations needed to qualify a
+	 * DB server and the storage space required for a dossier.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBDossierEditor *  ( *new_dossier_editor )   ( ofaIDBProvider *instance,
+															const gchar *settings_prefix,
+															guint rule );
+
+	/**
+	 * new_connect:
+	 * @instance: this #ofaIDBProvider instance.
+	 * @account: the account of the connection.
+	 * @password: the password of the connection.
+	 * @dossier_meta: the #ofaIDBDossierMeta object.
+	 * @exercice_meta: [allow-none]: the #ofaIDBEXerciceMeta object;
+	 *  if %NULL, the connection is established at server level.
+	 *
+	 * Returns: a newly defined #ofaIDBConnect object, or %NULL if the
+	 * connection could not be established.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBConnect *        ( *new_connect )          ( ofaIDBProvider *instance,
+															const gchar *account,
+															const gchar *password,
+															ofaIDBDossierMeta *dossier_meta,
+															ofaIDBExerciceMeta *exercice_meta );
+
+	/**
 	 * new_exercice_meta:
 	 * @instance: this #ofaIDBProvider instance.
 	 *
@@ -125,16 +161,6 @@ struct _ofaIDBProviderInterface {
 	 * Since: version 1
 	 */
 	ofaIDBExerciceMeta *   ( *new_exercice_meta )    ( ofaIDBProvider *instance );
-
-	/**
-	 * new_connect:
-	 * @instance: this #ofaIDBProvider instance.
-	 *
-	 * Returns: a newly defined #ofaIDBConnect object.
-	 *
-	 * Since: version 1
-	 */
-	ofaIDBConnect *        ( *new_connect )          ( ofaIDBProvider *instance );
 
 	/**
 	 * new_editor:
@@ -150,22 +176,6 @@ struct _ofaIDBProviderInterface {
 	 */
 	ofaIDBEditor *         ( *new_editor )           ( ofaIDBProvider *instance,
 															gboolean editable );
-
-	/**
-	 * new_dossier_editor:
-	 * @instance: this #ofaIDBProvider instance.
-	 * @settings_prefix: the prefix of a user preference key.
-	 * @rule: the usage of the editor.
-	 *
-	 * Returns: a #GtkWidget which implements the #ofaIDBDossierEditor
-	 * interface, and handles the informations needed to qualify a
-	 * DB server and the storage space required for a dossier.
-	 *
-	 * Since: version 1
-	 */
-	ofaIDBDossierEditor *  ( *new_dossier_editor )   ( ofaIDBProvider *instance,
-															const gchar *settings_prefix,
-															guint rule );
 
 	/**
 	 * new_exercice_editor:
@@ -213,17 +223,21 @@ ofaHub               *ofa_idbprovider_get_hub                   ( ofaIDBProvider
 ofaIDBDossierMeta    *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider *provider,
 																		const gchar *dossier_name );
 
-ofaIDBExerciceMeta   *ofa_idbprovider_new_exercice_meta         ( ofaIDBProvider *provider,
-																		ofaIDBDossierMeta *dossier_meta );
-
-ofaIDBConnect        *ofa_idbprovider_new_connect               ( ofaIDBProvider *provider );
-
-ofaIDBEditor         *ofa_idbprovider_new_editor                ( ofaIDBProvider *provider,
-																		gboolean editable );
-
 ofaIDBDossierEditor  *ofa_idbprovider_new_dossier_editor        ( ofaIDBProvider *provider,
 																		const gchar *settings_prefix,
 																		guint rule );
+
+ofaIDBConnect        *ofa_idbprovider_new_connect               ( ofaIDBProvider *provider,
+																		const gchar *account,
+																		const gchar *password,
+																		ofaIDBDossierMeta *dossier_meta,
+																		ofaIDBExerciceMeta *exercice_meta );
+
+ofaIDBExerciceMeta   *ofa_idbprovider_new_exercice_meta         ( ofaIDBProvider *provider,
+																		ofaIDBDossierMeta *dossier_meta );
+
+ofaIDBEditor         *ofa_idbprovider_new_editor                ( ofaIDBProvider *provider,
+																		gboolean editable );
 
 ofaIDBExerciceEditor *ofa_idbprovider_new_exercice_editor       ( ofaIDBProvider *provider,
 																		const gchar *settings_prefix,

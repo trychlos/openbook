@@ -897,7 +897,7 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 	ofaHub *hub;
 	ofoDossier *dossier;
 	const ofaIDBConnect *connect;
-	ofaIDBDossierMeta *meta;
+	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBExerciceMeta *period;
 	gchar *title, *period_label, *period_name;
 	const gchar *dos_name;
@@ -912,9 +912,9 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 
 	if( dossier ){
 		connect = ofa_hub_get_connect( hub );
-		meta = ofa_idbconnect_get_dossier_meta( connect );
+		dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
 		period = ofa_idbconnect_get_exercice_meta( connect );
-		dos_name = ofa_idbdossier_meta_get_dossier_name( meta );
+		dos_name = ofa_idbdossier_meta_get_dossier_name( dossier_meta );
 		period_label = ofa_idbexercice_meta_get_label( period );
 		period_name = ofa_idbexercice_meta_get_name( period );
 
@@ -926,8 +926,6 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 
 		g_free( period_name );
 		g_free( period_label );
-		g_object_unref( period );
-		g_object_unref( meta );
 
 	} else {
 		title = g_strdup( priv->orig_title );

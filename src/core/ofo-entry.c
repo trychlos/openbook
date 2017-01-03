@@ -1754,11 +1754,10 @@ entry_do_insert( ofoEntry *entry, ofaHub *hub )
 {
 	GString *query;
 	gchar *label, *ref;
-	gchar *sdeff, *sdope, *sdebit, *scredit, *userid;
+	gchar *sdeff, *sdope, *sdebit, *scredit, *stamp_str;
 	gboolean ok;
 	GTimeVal stamp;
-	gchar *stamp_str;
-	const gchar *model, *cur_code;
+	const gchar *model, *cur_code, *userid;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
 	ofxCounter ope_number;
@@ -1849,7 +1848,6 @@ entry_do_insert( ofoEntry *entry, ofaHub *hub )
 	g_free( ref );
 	g_free( label );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -1982,11 +1980,11 @@ static gboolean
 entry_do_update( ofoEntry *entry, ofaHub *hub )
 {
 	GString *query;
-	gchar *sdeff, *sdope, *sdeb, *scre, *userid;
+	gchar *sdeff, *sdope, *sdeb, *scre;
 	gchar *stamp_str, *label, *ref;
 	GTimeVal stamp;
 	gboolean ok;
-	const gchar *model, *cstr;
+	const gchar *model, *cstr, *userid;
 	const gchar *cur_code;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
@@ -2057,7 +2055,6 @@ entry_do_update( ofoEntry *entry, ofaHub *hub )
 	g_free( sdeb );
 	g_free( scre );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -2096,9 +2093,10 @@ static gboolean
 do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter number )
 {
 	GString *query;
-	gchar *stamp_str, *userid;
+	gchar *stamp_str;
 	GTimeVal stamp;
 	gboolean ok;
+	const gchar *userid;
 
 	userid = ofa_idbconnect_get_account( connect );
 
@@ -2128,7 +2126,6 @@ do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	g_string_free( query, TRUE );
-	g_free( userid );
 
 	return( ok );
 }
@@ -2904,11 +2901,10 @@ iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoE
 {
 	static const gchar *thisfn = "ofo_entry_iimportable_import_concil";
 	GSList *itf;
-	const gchar *cstr;
+	const gchar *cstr, *userid;
 	GDate date;
 	GTimeVal stamp;
 	ofoConcil *concil;
-	gchar *userid;
 	const ofaIDBConnect *connect;
 	myDateFormat date_format;
 
@@ -2932,14 +2928,12 @@ iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoE
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( concil ){
-		userid = g_strdup( cstr );
+		userid = cstr;
 		if( !my_strlen( userid )){
-			g_free( userid );
 			userid = ofa_idbconnect_get_account( connect );
 		}
 		ofo_concil_set_user( concil, userid );
 		g_debug( "%s: new concil user=%s", thisfn, userid );
-		g_free( userid );
 	}
 
 	/* exported reconciliation timestamp (defaults to now) */

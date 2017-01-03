@@ -227,7 +227,7 @@ ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval )
 	ofoConcil *concil;
 	const ofaIDBConnect *connect;
 	GTimeVal stamp;
-	gchar *userid;
+	const gchar *userid;
 
 	g_return_val_if_fail( instance && OFA_IS_ICONCIL( instance ), NULL );
 
@@ -243,8 +243,6 @@ ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval )
 	ofo_concil_set_stamp( concil, my_utils_stamp_set_now( &stamp ));
 
 	ofa_iconcil_new_concil_ex( instance, concil );
-
-	g_free( userid );
 
 	return( concil );
 }

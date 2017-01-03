@@ -1407,10 +1407,10 @@ do_update_properties( ofoDossier *dossier )
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	GString *query;
-	gchar *label, *notes, *stamp_str, *sdate, *userid;
+	gchar *label, *notes, *stamp_str, *sdate;
 	GTimeVal stamp;
 	gboolean ok, current;
-	const gchar *cstr;
+	const gchar *cstr, *userid;
 	const GDate *date;
 	ofxCounter number;
 
@@ -1551,7 +1551,6 @@ do_update_properties( ofoDossier *dossier )
 	}
 
 	g_string_free( query, TRUE );
-	g_free( userid );
 
 	return( ok );
 }
@@ -1586,13 +1585,13 @@ do_update_currency_properties( ofoDossier *dossier )
 	ofoDossierPrivate *priv;
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
-	gchar *query, *userid;
+	gchar *query, *stamp_str;
 	GList *details;
 	gboolean ok;
 	GList *it;
 	GTimeVal stamp;
-	gchar *stamp_str;
 	gint count;
+	const gchar *userid;
 
 	priv = ofo_dossier_get_instance_private( dossier );
 	hub = ofo_base_get_hub( OFO_BASE( dossier ));
@@ -1633,8 +1632,6 @@ do_update_currency_properties( ofoDossier *dossier )
 			}
 		}
 	}
-
-	g_free( userid );
 
 	return( ok );
 }
@@ -1925,9 +1922,6 @@ hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *pre
 
 		ofa_idbdossier_meta_update_period( dossier_meta, exercice_meta,
 				TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
-
-		g_object_unref( exercice_meta );
-		g_object_unref( dossier_meta );
 	}
 }
 

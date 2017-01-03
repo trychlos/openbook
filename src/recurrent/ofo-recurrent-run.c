@@ -536,8 +536,8 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaHub *hub )
 	const ofaIDBConnect *connect;
 	GString *query;
 	const GDate *date;
-	const gchar *mnemo, *status, *csdef;
-	gchar *sdate, *userid, *stamp_str, *samount;
+	const gchar *mnemo, *status, *csdef, *userid;
+	gchar *sdate, *stamp_str, *samount;
 	GTimeVal stamp;
 	ofoRecurrentModel *model;
 	ofxCounter numseq;
@@ -612,7 +612,6 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaHub *hub )
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
@@ -660,8 +659,8 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaHub *hub )
 	gboolean ok;
 	const ofaIDBConnect *connect;
 	GString *query;
-	gchar *userid, *samount;
-	const gchar *status, *mnemo, *csdef;
+	gchar *samount;
+	const gchar *userid, *status, *mnemo, *csdef;
 	gchar *stamp_str;
 	GTimeVal stamp;
 	ofoRecurrentModel *model;
@@ -730,7 +729,6 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaHub *hub )
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
-	g_free( userid );
 
 	return( ok );
 }
