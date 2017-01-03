@@ -42,6 +42,8 @@
 
 #include "api/ofa-idbprovider-def.h"
 
+#include "mysql/ofa-mysql-connect.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_MYSQL_DOSSIER_EDITOR                ( ofa_mysql_dossier_editor_get_type())
@@ -63,18 +65,21 @@ typedef struct {
 }
 	ofaMysqlDossierEditorClass;
 
-GType                  ofa_mysql_dossier_editor_get_type   ( void ) G_GNUC_CONST;
+GType                  ofa_mysql_dossier_editor_get_type              ( void ) G_GNUC_CONST;
 
-ofaMysqlDossierEditor *ofa_mysql_dossier_editor_new        ( ofaIDBProvider *provider,
-																guint rule );
+ofaMysqlDossierEditor *ofa_mysql_dossier_editor_new                   ( ofaIDBProvider *provider,
+																			const gchar *settings_prefix,
+																			guint rule );
 
-ofaMysqlConnect       *ofa_mysql_dossier_editor_get_connect( ofaMysqlDossierEditor *editor );
+ofaMysqlConnect       *ofa_mysql_dossier_editor_get_connect           ( ofaMysqlDossierEditor *editor );
 
-const gchar           *ofa_mysql_dossier_editor_get_host   ( ofaMysqlDossierEditor *editor );
+const gchar           *ofa_mysql_dossier_editor_get_host              ( ofaMysqlDossierEditor *editor );
 
-const gchar           *ofa_mysql_dossier_editor_get_socket ( ofaMysqlDossierEditor *editor );
+guint                  ofa_mysql_dossier_editor_get_port              ( ofaMysqlDossierEditor *editor );
 
-guint                  ofa_mysql_dossier_editor_get_port   ( ofaMysqlDossierEditor *editor );
+const gchar           *ofa_mysql_dossier_editor_get_socket            ( ofaMysqlDossierEditor *editor );
+
+const gchar           *ofa_mysql_dossier_editor_get_remembered_account( ofaMysqlDossierEditor *editor );
 
 G_END_DECLS
 

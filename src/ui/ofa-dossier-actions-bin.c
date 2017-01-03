@@ -310,16 +310,15 @@ ofa_dossier_actions_bin_is_valid( ofaDossierActionsBin *bin, gchar **error_messa
 }
 
 /**
- * ofa_dossier_actions_bin_apply:
+ * ofa_dossier_actions_bin_get_open_on_create:
  * @bin: this #ofaDossierActionsBin instance.
  *
- * Returns: %TRUE.
+ * Returns: %TRUE if the dossier should be opened after creation.
  */
 gboolean
-ofa_dossier_actions_bin_apply( ofaDossierActionsBin *bin )
+ofa_dossier_actions_bin_get_open_on_create( ofaDossierActionsBin *bin )
 {
 	ofaDossierActionsBinPrivate *priv;
-	gboolean ok;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_ACTIONS_BIN( bin ), FALSE );
 
@@ -327,9 +326,7 @@ ofa_dossier_actions_bin_apply( ofaDossierActionsBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	ok = TRUE;
-
-	return( ok );
+	return( priv->do_open );
 }
 
 /*

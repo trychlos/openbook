@@ -70,6 +70,7 @@ static GType     register_type( void );
 static void      interface_base_init( ofaIDBExerciceMetaInterface *klass );
 static void      interface_base_finalize( ofaIDBExerciceMetaInterface *klass );
 static void      read_settings( ofaIDBExerciceMeta *self );
+static void      write_settings( ofaIDBExerciceMeta *self );
 static sIDBMeta *get_instance_data( const ofaIDBExerciceMeta *self );
 static void      on_instance_finalized( sIDBMeta *sdata, GObject *finalized_instance );
 
@@ -289,14 +290,22 @@ void
 ofa_idbexercice_meta_set_from_editor( ofaIDBExerciceMeta *exercice_meta, ofaIDBExerciceEditor *editor )
 {
 	static const gchar *thisfn = "ofa_idbexercice_meta_set_from_editor";
+	sIDBMeta *sdata;
 
 	g_debug( "%s: exercice_meta=%p, editor=%p",
 			thisfn, ( void * ) exercice_meta, editor );
 
 	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
 
+	sdata = get_instance_data( exercice_meta );
+
+	g_free( sdata->settings_key );
+	g_free( sdata->settings_id );
+	ofa_idbdossier_meta_add_period( sdata->dossier_meta, exercice_meta, &sdata->settings_key, &sdata->settings_id );
+	write_settings( exercice_meta );
+
 	if( OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_editor ){
-		OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_editor( exercice_meta, editor );
+		OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_editor( exercice_meta, editor, sdata->settings_id );
 		return;
 	}
 
@@ -376,6 +385,45 @@ ofa_idbexercice_meta_set_end_date( ofaIDBExerciceMeta *period, const GDate *date
 	sdata = get_instance_data( period );
 
 	my_date_set_from_date( &sdata->end, date );
+}
+
+/**
+ * ofa_idbexercice_meta_get_remembered_account:
+ * @period: this #ofaIDBExerciceMeta instance.
+ *
+ * Returns: the administrative account that the user has asked us to
+ * remember, or %NULL.
+ */
+const gchar *
+ofa_idbexercice_meta_get_remembered_account( const ofaIDBExerciceMeta *period )
+{
+	sIDBMeta *sdata;
+
+	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
+
+	sdata = get_instance_data( period );
+
+	return(( const gchar * ) sdata->admin_account );
+}
+
+/**
+ * ofa_idbexercice_meta_set_remembered_account:
+ * @period: this #ofaIDBExerciceMeta instance.
+ * @date: the endning date to be set.
+ *
+ * Set the ending date of the @period.
+ */
+void
+ofa_idbexercice_meta_set_remembered_account( ofaIDBExerciceMeta *period, const gchar *account )
+{
+	sIDBMeta *sdata;
+
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
+
+	sdata = get_instance_data( period );
+
+	g_free( sdata->admin_account );
+	sdata->admin_account = g_strdup( account );
 }
 
 /**
@@ -594,22 +642,25 @@ ofa_idbexercice_meta_dump( const ofaIDBExerciceMeta *period )
 
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
-	if( OFA_IDBEXERCICE_META_GET_INTERFACE( period )->dump ){
-		OFA_IDBEXERCICE_META_GET_INTERFACE( period )->dump( period );
-	}
-
 	sdata = get_instance_data( period );
 	begin = my_date_to_str( &sdata->begin, MY_DATE_SQL );
 	end = my_date_to_str( &sdata->end, MY_DATE_SQL );
 
 	g_debug( "%s: period=%p (%s)",
 			thisfn, ( void * ) period, G_OBJECT_TYPE_NAME( period ));
+	g_debug( "%s:   settings_key=%s", thisfn, sdata->settings_key );
+	g_debug( "%s:   settings_id=%s", thisfn, sdata->settings_id );
 	g_debug( "%s:   begin=%s", thisfn, begin );
 	g_debug( "%s:   end=%s", thisfn, end );
 	g_debug( "%s:   current=%s", thisfn, sdata->current ? "True":"False" );
+	g_debug( "%s:   admin_account=%s", thisfn, sdata->admin_account );
 
 	g_free( begin );
 	g_free( end );
+
+	if( OFA_IDBEXERCICE_META_GET_INTERFACE( period )->dump ){
+		OFA_IDBEXERCICE_META_GET_INTERFACE( period )->dump( period );
+	}
 }
 
 /*
@@ -659,6 +710,35 @@ read_settings( ofaIDBExerciceMeta *self )
 	}
 
 	my_isettings_free_string_list( settings, strlist );
+}
+
+static void
+write_settings( ofaIDBExerciceMeta *self )
+{
+	sIDBMeta *sdata;
+	myISettings *settings;
+	const gchar *group;
+	gchar *sbegin, *send, *str;
+
+	sdata = get_instance_data( self );
+
+	sbegin = my_date_is_valid( &sdata->begin ) ? my_date_to_str( &sdata->begin, MY_DATE_YYMD ) : g_strdup( "" );
+	send = my_date_is_valid( &sdata->end ) ? my_date_to_str( &sdata->end, MY_DATE_YYMD ) : g_strdup( "" );
+
+	str = g_strdup_printf( "%s;%s;%s;%s;",
+				sbegin,
+				send,
+				sdata->current ? "True":"False",
+				my_strlen( sdata->admin_account ) ? sdata->admin_account : "" );
+
+	settings = ofa_idbdossier_meta_get_settings_iface( sdata->dossier_meta );
+	group = ofa_idbdossier_meta_get_settings_group( sdata->dossier_meta );
+
+	my_isettings_set_string( settings, group, sdata->settings_key, str );
+
+	g_free( sbegin );
+	g_free( send );
+	g_free( str );
 }
 
 static sIDBMeta *

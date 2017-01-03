@@ -74,6 +74,7 @@ typedef struct {
 GType            ofa_mysql_root_bin_get_type              ( void ) G_GNUC_CONST;
 
 ofaMysqlRootBin *ofa_mysql_root_bin_new                   ( ofaMysqlDBProvider *provider,
+																const gchar *settings_prefix,
 																guint rule );
 
 GtkSizeGroup    *ofa_mysql_root_bin_get_size_group        ( ofaMysqlRootBin *bin,
@@ -91,6 +92,7 @@ const gchar     *ofa_mysql_root_bin_get_password          ( ofaMysqlRootBin *bin
 
 const gchar     *ofa_mysql_root_bin_get_remembered_account( ofaMysqlRootBin *bin );
 
+#if 0
 void             ofa_mysql_root_bin_get_credentials       ( ofaMysqlRootBin *bin,
 																gchar **account,
 																gchar **password );
@@ -101,6 +103,7 @@ void             ofa_mysql_root_bin_set_credentials       ( ofaMysqlRootBin *bin
 
 void             ofa_mysql_root_bin_set_dossier_meta      ( ofaMysqlRootBin *bin,
 																ofaIDBDossierMeta *dossier_meta );
+#endif
 
 G_END_DECLS
 

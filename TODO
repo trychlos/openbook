@@ -418,7 +418,9 @@
 
 1305 2016-12-28 ofa_idbdossier_meta_get_group_name(): returns a const gchar *
 
-1306
+1306 2017- 1- 3 my_iident_get_canon_name: does not need user_data ?
+
+1307
 
 -----------------------------------------------------------------------
  DONE

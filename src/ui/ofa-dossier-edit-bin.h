@@ -70,6 +70,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
 
 G_BEGIN_DECLS
 
@@ -92,16 +93,26 @@ typedef struct {
 }
 	ofaDossierEditBinClass;
 
-GType              ofa_dossier_edit_bin_get_type( void ) G_GNUC_CONST;
+GType                ofa_dossier_edit_bin_get_type             ( void ) G_GNUC_CONST;
 
-ofaDossierEditBin *ofa_dossier_edit_bin_new     ( ofaHub *hub,
-														const gchar *settings_prefix,
-														guint rule );
+ofaDossierEditBin   *ofa_dossier_edit_bin_new                  ( ofaHub *hub,
+																	const gchar *settings_prefix,
+																	guint rule );
 
-gboolean           ofa_dossier_edit_bin_is_valid( ofaDossierEditBin *bin,
-														gchar **message );
+gboolean             ofa_dossier_edit_bin_is_valid             ( ofaDossierEditBin *bin,
+																	gchar **message );
 
-gboolean           ofa_dossier_edit_bin_apply   ( ofaDossierEditBin *bin );
+gboolean             ofa_dossier_edit_bin_apply                ( ofaDossierEditBin *bin );
+
+ofaIDBDossierEditor *ofa_dossier_edit_bin_get_dossier_editor   ( ofaDossierEditBin *bin );
+
+ofaIDBDossierMeta   *ofa_dossier_edit_bin_get_dossier_meta     ( ofaDossierEditBin *bin );
+
+void                 ofa_dossier_edit_bin_get_admin_credentials( ofaDossierEditBin *bin,
+																	gchar **account,
+																	gchar **password );
+
+gboolean             ofa_dossier_edit_bin_get_open_on_create   ( ofaDossierEditBin *bin );
 
 G_END_DECLS
 

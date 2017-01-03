@@ -68,6 +68,7 @@ static void                interface_base_init( ofaIDBDossierMetaInterface *klas
 static void                interface_base_finalize( ofaIDBDossierMetaInterface *klass );
 static void                set_exercices_from_settings( ofaIDBDossierMeta *meta, sIDBMeta *sdata );
 static ofaIDBExerciceMeta *find_exercice( ofaIDBDossierMeta *meta, sIDBMeta *sdata, ofaIDBExerciceMeta *exercice_meta );
+static void                get_exercice_key( ofaIDBDossierMeta *meta, gchar **key, gchar **key_id );
 static sIDBMeta           *get_instance_data( const ofaIDBDossierMeta *self );
 static void                on_instance_finalized( sIDBMeta *sdata, GObject *finalized_meta );
 
@@ -539,21 +540,53 @@ ofa_idbdossier_meta_set_periods( ofaIDBDossierMeta *meta, GList *periods )
  * ofa_idbdossier_meta_add_period:
  * @meta: this #ofaIDBDossierMeta instance.
  * @period: the new #ofaIDBExerciceMeta to be added.
+ * @key: [out]: the key to be used by @period in dossier settings.
+ * @key_id: [out]: the identifier of the key.
  *
- * Takes a reference on the provided @period, and adds it to the list
+ * Takes the ownership of the provided @period, and adds it to the list
  * of defined financial periods.
  */
 void
-ofa_idbdossier_meta_add_period( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period )
+ofa_idbdossier_meta_add_period( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, gchar **key, gchar **key_id )
 {
+	static const gchar *thisfn = "ofa_idbdossier_meta_add_period";
 	sIDBMeta *sdata;
+
+	g_debug( "%s: meta=%p, period=%p, key=%p, key_id=%p",
+			thisfn, ( void * ) meta, ( void * ) period, ( void * ) key, ( void * ) key_id );
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
+	g_return_if_fail( key );
+	g_return_if_fail( key_id );
 
 	sdata = get_instance_data( meta );
+	sdata->periods = g_list_prepend( sdata->periods, period );
+	get_exercice_key( meta, key, key_id );
+}
 
-	sdata->periods = g_list_prepend( sdata->periods, g_object_ref( period ));
+/*
+ * Returns: a new key as an alphanumeric string
+ */
+static void
+get_exercice_key( ofaIDBDossierMeta *meta, gchar **key, gchar **key_id )
+{
+	sIDBMeta *sdata;
+	gboolean exists;
+
+	*key = NULL;
+	*key_id = NULL;
+	exists = TRUE;
+	sdata = get_instance_data( meta );
+
+	while( exists ){
+		g_free( *key );
+		g_free( *key_id );
+		*key_id = g_strdup_printf( "%6x", g_random_int());
+		*key = g_strdup_printf( "%s%s", IDBDOSSIER_META_PERIOD_KEY_PREFIX, *key_id );
+		exists = my_isettings_has_key( sdata->settings_iface, sdata->settings_group, *key );
+		//g_debug( "id=%s, exists=%s", *key_id, exists ? "True":"False" );
+	}
 }
 
 /**
@@ -755,7 +788,11 @@ ofa_idbdossier_meta_dump( const ofaIDBDossierMeta *meta )
 	g_debug( "%s:   dossier_name=%s", thisfn, sdata->dossier_name );
 	g_debug( "%s:   settings=%p", thisfn, ( void * ) sdata->settings_iface );
 	g_debug( "%s:   group_name=%s", thisfn, sdata->settings_group );
-	g_debug( "%s:   periods=%p (length=%u)", thisfn, ( void * ) sdata->periods, g_list_length( sdata->periods ));
+	g_debug( "%s:   periods=%p (count=%u)", thisfn, ( void * ) sdata->periods, g_list_length( sdata->periods ));
+
+	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->dump ){
+		OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->dump( meta );
+	}
 }
 
 /**

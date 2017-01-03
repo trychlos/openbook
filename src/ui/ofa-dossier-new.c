@@ -36,6 +36,9 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-idbconnect.h"
+#include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 
 #include "ui/ofa-dossier-edit-bin.h"
@@ -305,27 +308,63 @@ check_for_enable_dlg( ofaDossierNew *self )
 static gboolean
 do_create( ofaDossierNew *self, gchar **msgerr )
 {
+	static const gchar *thisfn = "ofa_dossier_new_do_create";
 	ofaDossierNewPrivate *priv;
-	gboolean ok;
+	gboolean open, ok;
+	ofaIDBDossierMeta *dossier_meta;
+	ofaIDBProvider *provider;
+	ofaIDBConnect *connect;
+	ofaIDBDossierEditor *dossier_editor;
+	gchar *adm_account, *adm_password;
+	ofaDossierCollection *collection;
+
+	g_debug( "%s: self=%p, msgerr=%p", thisfn, ( void * ) self, ( void * ) msgerr );
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
-	ok = FALSE;
+	ok = TRUE;
 
 	/* ask for user confirmation */
 	if( !create_confirmed( self )){
 		return( FALSE );
 	}
 
+	/* register the new dossier in dossier settings */
 	if( !ofa_dossier_edit_bin_apply( priv->edit_bin )){
-		*msgerr = g_strdup( _( "Unable to create the dossier" ));
+		*msgerr = g_strdup( _( "Unable to register the new dossier in settings" ));
 		return( FALSE );
 	}
 
+	/* create the new dossier */
+	dossier_meta = ofa_dossier_edit_bin_get_dossier_meta( priv->edit_bin );
+	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
+	dossier_editor = ofa_dossier_edit_bin_get_dossier_editor( priv->edit_bin );
+	connect = ofa_idbdossier_editor_get_valid_connect( dossier_editor );
+	ofa_dossier_edit_bin_get_admin_credentials( priv->edit_bin, &adm_account, &adm_password );
+
+	if( !ofa_idbconnect_create_dossier( connect, dossier_meta, adm_account, adm_password )){
+		collection = ofa_hub_get_dossier_collection( priv->hub );
+		ofa_dossier_collection_remove_meta( collection, dossier_meta );
+		*msgerr = g_strdup( _( "Unable to create the new dossier" ));
+		ok = FALSE;
+	}
+
+	g_free( adm_password );
+	g_free( adm_account );
+	g_object_unref( provider );
+
+	if( !ok ){
+		return( FALSE );
+	}
+
+	/* open the newly created dossier if asked for */
+	open = ofa_dossier_edit_bin_get_open_on_create( priv->edit_bin );
+	if( open ){
+		//exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
+
+	}
 #if 0
 	if( priv->b_open ){
-		dossier_meta = ofa_dossier_edit_bin_get_dossier_meta( priv->edit_bin );
-		exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
 		connect = ofa_idbprovider_new_connect( provider );
 		if( !ofa_idbconnect_open_with_meta(
 				connect, priv->adm_account, priv->adm_password, priv->meta, period )){

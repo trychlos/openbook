@@ -37,6 +37,7 @@
 #include "api/ofa-account-editable.h"
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-paimean-editable.h"
 #include "api/ofa-preferences.h"

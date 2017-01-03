@@ -58,7 +58,7 @@ typedef struct {
 
 static void     idbconnect_iface_init( ofaIDBConnectInterface *iface );
 static guint    idbconnect_get_interface_version( void );
-static gboolean idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBEditor *editor, gboolean server_only );
+//static gboolean idbconnect_open_with_editor( ofaIDBConnect *instance, const ofaIDBDossierEditor *editor );
 static gboolean idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period );
 static gboolean connect_open( ofaMysqlConnect *connect, const gchar *account, const gchar *password, const gchar *host, const gchar *socket, guint port, const gchar *database, gchar **msg );
 static gboolean idbconnect_query( const ofaIDBConnect *instance, const gchar *query );
@@ -159,7 +159,7 @@ idbconnect_iface_init( ofaIDBConnectInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idbconnect_get_interface_version;
-	iface->open_with_editor = idbconnect_open_with_editor;
+	//iface->open_with_editor = idbconnect_open_with_editor;
 	iface->open_with_meta = idbconnect_open_with_meta;
 	iface->query = idbconnect_query;
 	iface->query_ex = idbconnect_query_ex;
@@ -195,12 +195,13 @@ ofa_mysql_connect_new( void )
 	return( connect );
 }
 
+#if 0
 /*
  * tries to establish the connection with informations provided by
  * the @editor
  */
 static gboolean
-idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBEditor *editor, gboolean server_only )
+idbconnect_open_with_editor( ofaIDBConnect *instance, const ofaIDBEditor *editor )
 {
 	ofaMysqlConnectPrivate *priv;
 	gboolean ok;
@@ -208,7 +209,7 @@ idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, cons
 	guint port;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
-	g_return_val_if_fail( editor && OFA_IS_MYSQL_EDITOR_ENTER( editor ), FALSE );
+	g_return_val_if_fail( editor && OFA_IS_MYSQL_DOSSIER_EDITOR( editor ), FALSE );
 
 	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
 
@@ -223,6 +224,7 @@ idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, cons
 
 	return( ok );
 }
+#endif
 
 /*
  * Tries to establish the connection to the @period exercice of @meta

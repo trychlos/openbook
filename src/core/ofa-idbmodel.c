@@ -40,6 +40,7 @@
 
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-igetter.h"
 #include "api/ofo-account.h"

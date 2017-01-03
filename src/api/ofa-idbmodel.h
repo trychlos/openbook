@@ -68,7 +68,7 @@
 #include "my/my-iwindow.h"
 
 #include "api/ofa-hub-def.h"
-#include "api/ofa-idbconnect.h"
+#include "api/ofa-idbconnect-def.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 

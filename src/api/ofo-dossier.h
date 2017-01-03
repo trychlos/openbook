@@ -44,7 +44,7 @@
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub-def.h"
-#include "api/ofa-idbconnect.h"
+#include "api/ofa-idbconnect-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-dossier-def.h"
 #include "api/ofo-ledger-def.h"

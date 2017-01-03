@@ -57,7 +57,7 @@
 #include <glib-object.h>
 
 #include "ofa-hub-def.h"
-#include "ofa-idbconnect.h"
+#include "ofa-idbconnect-def.h"
 #include "ofa-idbdossier-meta-def.h"
 #include "ofa-idbdossier-editor.h"
 #include "ofa-idbeditor.h"
@@ -154,6 +154,7 @@ struct _ofaIDBProviderInterface {
 	/**
 	 * new_dossier_editor:
 	 * @instance: this #ofaIDBProvider instance.
+	 * @settings_prefix: the prefix of a user preference key.
 	 * @rule: the usage of the editor.
 	 *
 	 * Returns: a #GtkWidget which implements the #ofaIDBDossierEditor
@@ -163,11 +164,13 @@ struct _ofaIDBProviderInterface {
 	 * Since: version 1
 	 */
 	ofaIDBDossierEditor *  ( *new_dossier_editor )   ( ofaIDBProvider *instance,
+															const gchar *settings_prefix,
 															guint rule );
 
 	/**
 	 * new_exercice_editor:
 	 * @instance: this #ofaIDBProvider instance.
+	 * @settings_prefix: the prefix of a user preference key.
 	 * @rule: the usage of the editor.
 	 *
 	 * Returns: a #GtkWidget which implements the #ofaIDBExerciceEditor
@@ -177,6 +180,7 @@ struct _ofaIDBProviderInterface {
 	 * Since: version 1
 	 */
 	ofaIDBExerciceEditor * ( *new_exercice_editor )  ( ofaIDBProvider *instance,
+															const gchar *settings_prefix,
 															guint rule );
 };
 
@@ -218,9 +222,11 @@ ofaIDBEditor         *ofa_idbprovider_new_editor                ( ofaIDBProvider
 																		gboolean editable );
 
 ofaIDBDossierEditor  *ofa_idbprovider_new_dossier_editor        ( ofaIDBProvider *provider,
+																		const gchar *settings_prefix,
 																		guint rule );
 
 ofaIDBExerciceEditor *ofa_idbprovider_new_exercice_editor       ( ofaIDBProvider *provider,
+																		const gchar *settings_prefix,
 																		guint rule,
 																		ofaIDBDossierEditor *dossier_editor );
 

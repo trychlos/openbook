@@ -42,6 +42,7 @@
 
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-igetter.h"

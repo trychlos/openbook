@@ -66,7 +66,10 @@ typedef struct {
 GType                   ofa_mysql_exercice_editor_get_type    ( void ) G_GNUC_CONST;
 
 ofaMysqlExerciceEditor *ofa_mysql_exercice_editor_new         ( ofaIDBProvider *provider,
-																		guint rule );
+																	const gchar *settings_prefix,
+																	guint rule );
+
+const gchar            *ofa_mysql_exercice_editor_get_database( ofaMysqlExerciceEditor *editor );
 
 G_END_DECLS
 

@@ -71,8 +71,9 @@ static void               setup_settings( ofaDossierCollection *self );
 static void               on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCollection *self );
 static GList             *load_dossiers( ofaDossierCollection *self, GList *previous_list );
 static void               set_dossier_meta_properties( ofaDossierCollection *self, ofaIDBDossierMeta *meta, const gchar *group_name );
-static void               dossier_collection_free_list( ofaDossierCollection *self );
 static ofaIDBDossierMeta *get_dossier_by_name( GList *list, const gchar *dossier_name );
+static void               collection_dump( ofaDossierCollection *collection, GList *list );
+static void               dossier_collection_free_list( ofaDossierCollection *self );
 static void               free_dossiers_list( GList *list );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierCollection, ofa_dossier_collection, G_TYPE_OBJECT, 0,
@@ -238,8 +239,12 @@ ofa_dossier_collection_get_list( ofaDossierCollection *collection )
 static void
 on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCollection *collection )
 {
+	static const gchar *thisfn = "ofa_dossier_collection_on_settings_changed";
 	ofaDossierCollectionPrivate *priv;
 	GList *prev_list;
+
+	g_debug( "%s: monitor=%p, filename=%s, collection=%p",
+			thisfn, ( void * ) monitor, filename, ( void * ) collection );
 
 	priv = ofa_dossier_collection_get_instance_private( collection );
 
@@ -247,6 +252,7 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCo
 	 * update the settings ourselves (so that the store may be
 	 * synchronized without having to wait for the timeout) */
 	if( priv->ignore_next ){
+		g_debug( "%s: ignoring message", thisfn );
 		priv->ignore_next = FALSE;
 
 	} else {
@@ -313,11 +319,11 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 			g_free( prov_name );
 		}
 		ofa_idbdossier_meta_set_from_settings( meta );
-		ofa_idbdossier_meta_dump_full( meta );
 		outlist = g_list_prepend( outlist, meta );
 		g_free( dos_name );
 	}
 
+	collection_dump( self, outlist );
 	my_isettings_free_groups( inlist );
 	g_signal_emit_by_name( self, DOSSIER_COLLECTION_SIGNAL_CHANGED, g_list_length( outlist ));
 
@@ -413,22 +419,62 @@ ofa_dossier_collection_add_meta( ofaDossierCollection *collection, ofaIDBDossier
 
 	g_return_if_fail( !priv->dispose_has_run );
 
+	priv->list = g_list_prepend( priv->list, meta );
+
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
 	group = g_strdup_printf( "%s%s", DOSSIER_COLLECTION_DOSSIER_GROUP_PREFIX, dossier_name );
+	set_dossier_meta_properties( collection, meta, group );
 
 	prov_instance = ofa_idbdossier_meta_get_provider( meta );
 	prov_name = ofa_idbprovider_get_canon_name( prov_instance );
-
 	my_isettings_set_string( priv->dossier_settings, group, DOSSIER_COLLECTION_PROVIDER_KEY, prov_name );
-
-	set_dossier_meta_properties( collection, meta, group );
 
 	g_free( prov_name );
 	g_object_unref( prov_instance );
 	g_free( group );
+}
 
-	on_settings_changed( priv->monitor, NULL, collection );
-	priv->ignore_next = TRUE;
+/**
+ * ofa_dossier_collection_remove_meta:
+ * @collection: this #ofaDossierCollection instance.
+ * @meta: the #ofaIDBDossierMeta to be removed.
+ *
+ * Remove the @meta informations from the dossier settings.
+ */
+void
+ofa_dossier_collection_remove_meta( ofaDossierCollection *collection, ofaIDBDossierMeta *meta )
+{
+#if 0
+	static const gchar *thisfn = "ofa_dossier_collection_remove_meta";
+	ofaDossierCollectionPrivate *priv;
+	gchar *group, *prov_name;
+	ofaIDBProvider *prov_instance;
+	const gchar *dossier_name;
+
+	g_debug( "%s: collection=%p, meta=%p",
+			thisfn, ( void * ) collection, ( void * ) meta );
+
+	g_return_if_fail( collection && OFA_IS_DOSSIER_COLLECTION( collection ));
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
+
+	priv = ofa_dossier_collection_get_instance_private( collection );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->list = g_list_prepend( priv->list, meta );
+
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
+	group = g_strdup_printf( "%s%s", DOSSIER_COLLECTION_DOSSIER_GROUP_PREFIX, dossier_name );
+	set_dossier_meta_properties( collection, meta, group );
+
+	prov_instance = ofa_idbdossier_meta_get_provider( meta );
+	prov_name = ofa_idbprovider_get_canon_name( prov_instance );
+	my_isettings_set_string( priv->dossier_settings, group, DOSSIER_COLLECTION_PROVIDER_KEY, prov_name );
+
+	g_free( prov_name );
+	g_object_unref( prov_instance );
+	g_free( group );
+#endif
 }
 
 /**
@@ -478,20 +524,6 @@ ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, o
 }
 
 /*
- * free the list of dossiers
- */
-static void
-dossier_collection_free_list( ofaDossierCollection *self )
-{
-	ofaDossierCollectionPrivate *priv;
-
-	priv = ofa_dossier_collection_get_instance_private( self );
-
-	free_dossiers_list( priv->list );
-	priv->list = NULL;
-}
-
-/*
  * find the #ofaIDBDossierMeta by dossier name if exists
  */
 static ofaIDBDossierMeta *
@@ -511,9 +543,50 @@ get_dossier_by_name( GList *list, const gchar *dossier_name )
 	return( NULL );
 }
 
+/**
+ * ofa_dossier_collection_dump:
+ * @collection: this #ofaDossierCollection instance.
+ *
+ * Dump the collection.
+ */
+void
+ofa_dossier_collection_dump( ofaDossierCollection *collection )
+{
+	ofaDossierCollectionPrivate *priv;
+
+	g_return_if_fail( collection && OFA_IS_DOSSIER_COLLECTION( collection ));
+
+	priv = ofa_dossier_collection_get_instance_private( collection );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	collection_dump( collection, priv->list );
+}
+
+static void
+collection_dump( ofaDossierCollection *collection, GList *list )
+{
+	GList *it;
+
+	for( it=list ; it ; it=it->next ){
+		ofa_idbdossier_meta_dump_full( OFA_IDBDOSSIER_META( it->data ));
+	}
+}
+
 /*
  * free the list of dossiers
  */
+static void
+dossier_collection_free_list( ofaDossierCollection *self )
+{
+	ofaDossierCollectionPrivate *priv;
+
+	priv = ofa_dossier_collection_get_instance_private( self );
+
+	free_dossiers_list( priv->list );
+	priv->list = NULL;
+}
+
 static void
 free_dossiers_list( GList *list )
 {

@@ -40,7 +40,7 @@
 
 #include "ofa-hub-def.h"
 #include "ofa-idbdossier-meta-def.h"
-#include "ofa-idbeditor.h"
+#include "ofa-idbdossier-editor.h"
 #include "ofa-idbexercice-meta-def.h"
 #include "ofa-idbprovider-def.h"
 
@@ -51,7 +51,10 @@ G_BEGIN_DECLS
 #define OFA_IS_IDBCONNECT( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IDBCONNECT ))
 #define OFA_IDBCONNECT_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IDBCONNECT, ofaIDBConnectInterface ))
 
+#if 0
 typedef struct _ofaIDBConnect                    ofaIDBConnect;
+typedef struct _ofaIDBConnectInterface           ofaIDBConnectInterface;
+#endif
 
 /**
  * ofaIDBConnectInterface:
@@ -69,7 +72,7 @@ typedef struct _ofaIDBConnect                    ofaIDBConnect;
  *
  * This defines the interface that an #ofaIDBConnect should implement.
  */
-typedef struct {
+struct _ofaIDBConnectInterface {
 	/*< private >*/
 	GTypeInterface parent;
 
@@ -91,11 +94,10 @@ typedef struct {
 	/**
 	 * open_with_editor:
 	 * @instance: this #ofaIDBConnect connection.
-	 * @account: the user account.
-	 * @password: [allow-none]: the user password.
-	 * @editor: a #ofaIDBEditor object which handles connection
+	 * @editor: a #ofaIDBDossierEditor object which handles connection
 	 *  informations.
-	 * @server_only: whether to use full connection informations.
+	 *
+	 * Establishes a (root) connection to the DBMS at server level.
 	 *
 	 * Returns: %TRUE if the connection has been successfully
 	 * established, %FALSE else.
@@ -103,10 +105,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *open_with_editor )     ( ofaIDBConnect *instance,
-											const gchar *account,
-											const gchar *password,
-											const ofaIDBEditor *editor,
-											gboolean server_only );
+											const ofaIDBDossierEditor *editor );
 
 	/**
 	 * open_with_meta:
@@ -312,8 +311,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *transaction_cancel )   ( const ofaIDBConnect *instance );
-}
-	ofaIDBConnectInterface;
+};
 
 /*
  * Interface-wide
@@ -336,10 +334,7 @@ void                ofa_idbconnect_set_provider             ( ofaIDBConnect *con
 																	const ofaIDBProvider *provider );
 
 gboolean            ofa_idbconnect_open_with_editor         ( ofaIDBConnect *connect,
-																	const gchar *account,
-																	const gchar *password,
-																	const ofaIDBEditor *editor,
-																	gboolean server_only );
+																	const ofaIDBDossierEditor *editor );
 
 gboolean            ofa_idbconnect_open_with_meta           ( ofaIDBConnect *connect,
 																	const gchar *account,

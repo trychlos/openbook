@@ -518,8 +518,11 @@ is_valid( ofaDossierMetaBin *self, gchar **msgerr )
 gboolean
 ofa_dossier_meta_bin_apply( ofaDossierMetaBin *bin )
 {
+	static const gchar *thisfn = "ofa_dossier_meta_bin_apply";
 	ofaDossierMetaBinPrivate *priv;
 	ofaDossierCollection *collection;
+
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_META_BIN( bin ), FALSE );
 	g_return_val_if_fail( ofa_dossier_meta_bin_is_valid( bin, NULL ), FALSE );

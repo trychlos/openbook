@@ -31,6 +31,7 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
 
@@ -47,6 +48,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIDBProvider     *provider;
+	gchar              *settings_prefix;
 	guint               rule;
 
 	/* UI
@@ -63,15 +65,16 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-dossier-editor.ui";
 
-static void          idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface );
-static guint         idbdossier_editor_get_interface_version( void );
-static GtkSizeGroup *idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint column );
-static gboolean      idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message );
-static void          setup_bin( ofaMysqlDossierEditor *self );
-static void          on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlDossierEditor *self );
-static void          on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self );
-static void          changed_composite( ofaMysqlDossierEditor *self );
-static gboolean      check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr );
+static void           idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface );
+static guint          idbdossier_editor_get_interface_version( void );
+static GtkSizeGroup  *idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint column );
+static gboolean       idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message );
+static ofaIDBConnect *idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance );
+static void           setup_bin( ofaMysqlDossierEditor *self );
+static void           on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlDossierEditor *self );
+static void           on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self );
+static void           changed_composite( ofaMysqlDossierEditor *self );
+static gboolean       check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierEditor, ofa_mysql_dossier_editor, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlDossierEditor )
@@ -81,6 +84,7 @@ static void
 mysql_dossier_editor_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_mysql_dossier_editor_finalize";
+	ofaMysqlDossierEditorPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -88,6 +92,9 @@ mysql_dossier_editor_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_EDITOR( instance ));
 
 	/* free data members here */
+	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_mysql_dossier_editor_parent_class )->finalize( instance );
@@ -129,6 +136,7 @@ ofa_mysql_dossier_editor_init( ofaMysqlDossierEditor *self )
 	priv = ofa_mysql_dossier_editor_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->connect = ofa_mysql_connect_new();
 }
 
@@ -156,6 +164,7 @@ idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface )
 	iface->get_interface_version = idbdossier_editor_get_interface_version;
 	iface->get_size_group = idbdossier_editor_get_size_group;
 	iface->is_valid = idbdossier_editor_is_valid;
+	iface->get_valid_connect = idbdossier_editor_get_valid_connect;
 }
 
 static guint
@@ -186,7 +195,7 @@ idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint col
 
 /*
  * All the informations are optional.
- * Wen all pieces are valid, then we can check the connection itself.
+ * When all pieces are valid, then we can check the connection itself.
  */
 static gboolean
 idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message )
@@ -203,9 +212,24 @@ idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message
 	return( ok );
 }
 
+static ofaIDBConnect *
+idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance )
+{
+	ofaMysqlDossierEditorPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_DOSSIER_EDITOR( instance ), NULL );
+
+	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( OFA_IDBCONNECT( priv->connect ));
+}
+
 /**
  * ofa_mysql_dossier_editor_new:
  * @provider: the #ofaIDBProvider provider.
+ * @settings_prefix: the prefix of a user preference key.
  * @rule: the usage of the widget.
  *
  * Returns: a new #ofaMysqlDossierEditor widget.
@@ -215,7 +239,7 @@ idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message
  * - the root credentials.
  */
 ofaMysqlDossierEditor *
-ofa_mysql_dossier_editor_new( ofaIDBProvider *provider, guint rule )
+ofa_mysql_dossier_editor_new( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule )
 {
 	ofaMysqlDossierEditor *bin;
 	ofaMysqlDossierEditorPrivate *priv;
@@ -227,6 +251,10 @@ ofa_mysql_dossier_editor_new( ofaIDBProvider *provider, guint rule )
 	priv = ofa_mysql_dossier_editor_get_instance_private( bin );
 
 	priv->provider = provider;
+
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( settings_prefix );
+
 	priv->rule = rule;
 
 	setup_bin( bin );
@@ -256,14 +284,14 @@ setup_bin( ofaMysqlDossierEditor *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mde-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->dossier_bin = ofa_mysql_dossier_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->rule );
+	priv->dossier_bin = ofa_mysql_dossier_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->settings_prefix, priv->rule );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_bin ));
 	g_signal_connect( priv->dossier_bin, "ofa-changed", G_CALLBACK( on_dossier_bin_changed ), self );
 	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_dossier_bin_get_size_group( priv->dossier_bin, 0 ));
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mde-root-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->root_bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->rule );
+	priv->root_bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->settings_prefix, priv->rule );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->root_bin ));
 	g_signal_connect( priv->root_bin, "ofa-changed", G_CALLBACK( on_root_bin_changed ), self );
 	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_root_bin_get_size_group( priv->root_bin, 0 ));
@@ -383,6 +411,26 @@ ofa_mysql_dossier_editor_get_host( ofaMysqlDossierEditor *editor )
 }
 
 /**
+ * ofa_mysql_dossier_editor_get_port:
+ * @editor: this #ofaMysqlDossierEditor instance.
+ *
+ * Returns: the DBMS listening port.
+ */
+guint
+ofa_mysql_dossier_editor_get_port( ofaMysqlDossierEditor *editor )
+{
+	ofaMysqlDossierEditorPrivate *priv;
+
+	g_return_val_if_fail( editor && OFA_IS_MYSQL_DOSSIER_EDITOR( editor ), 0 );
+
+	priv = ofa_mysql_dossier_editor_get_instance_private( editor );
+
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+
+	return( ofa_mysql_dossier_bin_get_port( priv->dossier_bin ));
+}
+
+/**
  * ofa_mysql_dossier_editor_get_socket:
  * @editor: this #ofaMysqlDossierEditor instance.
  *
@@ -406,21 +454,24 @@ ofa_mysql_dossier_editor_get_socket( ofaMysqlDossierEditor *editor )
 }
 
 /**
- * ofa_mysql_dossier_editor_get_port:
+ * ofa_mysql_dossier_editor_get_remembered_account:
  * @editor: this #ofaMysqlDossierEditor instance.
  *
- * Returns: the DBMS listening port.
+ * Returns: the DBMS remembered root account.
+ *
+ * The returned string is owned by the @editor, and should not be
+ * released by the caller.
  */
-guint
-ofa_mysql_dossier_editor_get_port( ofaMysqlDossierEditor *editor )
+const gchar *
+ofa_mysql_dossier_editor_get_remembered_account( ofaMysqlDossierEditor *editor )
 {
 	ofaMysqlDossierEditorPrivate *priv;
 
-	g_return_val_if_fail( editor && OFA_IS_MYSQL_DOSSIER_EDITOR( editor ), 0 );
+	g_return_val_if_fail( editor && OFA_IS_MYSQL_DOSSIER_EDITOR( editor ), NULL );
 
 	priv = ofa_mysql_dossier_editor_get_instance_private( editor );
 
-	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( ofa_mysql_dossier_bin_get_port( priv->dossier_bin ));
+	return( ofa_mysql_root_bin_get_remembered_account( priv->root_bin ));
 }

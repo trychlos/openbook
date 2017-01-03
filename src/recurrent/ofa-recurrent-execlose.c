@@ -31,6 +31,8 @@
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-idbconnect.h"
+
 #include "ofa-recurrent-execlose.h"
 
 /* a dedicated structure to hold needed datas

@@ -68,6 +68,7 @@ typedef struct {
 GType               ofa_mysql_dossier_bin_get_type        ( void ) G_GNUC_CONST;
 
 ofaMysqlDossierBin *ofa_mysql_dossier_bin_new             ( ofaMysqlDBProvider *provider,
+																const gchar *settings_prefix,
 																guint rule );
 
 GtkSizeGroup       *ofa_mysql_dossier_bin_get_size_group  ( ofaMysqlDossierBin *bin,

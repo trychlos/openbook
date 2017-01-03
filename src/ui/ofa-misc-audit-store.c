@@ -32,6 +32,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-idbconnect.h"
 
 #include "ui/ofa-misc-audit-store.h"
 

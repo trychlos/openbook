@@ -31,9 +31,12 @@
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-igetter.h"
+#include "api/ofa-isetter.h"
 
 #include "mysql/ofa-mysql-dossier-meta.h"
 #include "mysql/ofa-mysql-root-bin.h"
@@ -46,11 +49,13 @@ typedef struct {
 	/* initialization
 	 */
 	ofaMysqlDBProvider *provider;
+	gchar              *settings_prefix;
 	guint               rule;
 
 	/* UI
 	 */
 	GtkWidget          *account_entry;
+	GtkWidget          *remember_btn;
 	GtkWidget          *password_entry;
 	GtkWidget          *msg;
 	GtkSizeGroup       *group0;
@@ -82,6 +87,8 @@ static void     on_remember_toggled( GtkToggleButton *button, ofaMysqlRootBin *s
 static void     on_password_changed( GtkEditable *entry, ofaMysqlRootBin *self );
 static void     changed_composite( ofaMysqlRootBin *self );
 static gboolean is_valid( ofaMysqlRootBin *self, gchar **str );
+static void     read_settings( ofaMysqlRootBin *self );
+static void     write_settings( ofaMysqlRootBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlRootBin, ofa_mysql_root_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlRootBin ))
@@ -100,6 +107,7 @@ mysql_root_bin_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_mysql_root_bin_get_instance_private( OFA_MYSQL_ROOT_BIN( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->account );
 	g_free( priv->password );
 
@@ -117,6 +125,8 @@ mysql_root_bin_dispose( GObject *instance )
 	priv = ofa_mysql_root_bin_get_instance_private( OFA_MYSQL_ROOT_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		write_settings( OFA_MYSQL_ROOT_BIN( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -142,6 +152,7 @@ ofa_mysql_root_bin_init( ofaMysqlRootBin *self )
 	priv = ofa_mysql_root_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->account = NULL;
 	priv->password = NULL;
 }
@@ -184,19 +195,20 @@ ofa_mysql_root_bin_class_init( ofaMysqlRootBinClass *klass )
 /**
  * ofa_mysql_root_bin_new:
  * @provider: the #ofaMysqlDBProvider instance.
+ * @settings_prefix: the prefix of a user preference key.
  * @rule: the usage of this widget.
  *
  * Returns: a new #ofaMysqlRootBin widget.
  */
 ofaMysqlRootBin *
-ofa_mysql_root_bin_new( ofaMysqlDBProvider *provider, guint rule )
+ofa_mysql_root_bin_new( ofaMysqlDBProvider *provider, const gchar *settings_prefix, guint rule )
 {
 	static const gchar *thisfn = "ofa_mysql_root_bin_new";
 	ofaMysqlRootBin *bin;
 	ofaMysqlRootBinPrivate *priv;
 
-	g_debug( "%s: provider=%p (%s), rule=%u",
-			thisfn, ( void * ) provider, G_OBJECT_TYPE_NAME( provider ), rule );
+	g_debug( "%s: provider=%p (%s), settings_prefix=%s, rule=%u",
+			thisfn, ( void * ) provider, G_OBJECT_TYPE_NAME( provider ), settings_prefix, rule );
 
 	g_return_val_if_fail( provider && OFA_IS_MYSQL_DBPROVIDER( provider ), NULL );
 
@@ -205,9 +217,14 @@ ofa_mysql_root_bin_new( ofaMysqlDBProvider *provider, guint rule )
 	priv = ofa_mysql_root_bin_get_instance_private( bin );
 
 	priv->provider = provider;
+
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( settings_prefix );
+
 	priv->rule = rule;
 
 	setup_bin( bin );
+	read_settings( bin );
 
 	return( bin );
 }
@@ -247,6 +264,7 @@ setup_bin( ofaMysqlRootBin *self )
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mrb-remember-btn" );
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
 	g_signal_connect( btn, "toggled", G_CALLBACK( on_remember_toggled ), self );
+	priv->remember_btn = btn;
 
 	/* connect to the 'changed' signal of the entry */
 	priv->password_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mrb-password-entry" );
@@ -499,6 +517,7 @@ ofa_mysql_root_bin_get_remembered_account( ofaMysqlRootBin *bin )
 	return(( const gchar * )( priv->remember ? priv->account : NULL ));
 }
 
+#if 0
 /**
  * ofa_mysql_root_bin_get_credentials:
  * @bin: this #ofaMysqlRootBin instance.
@@ -571,4 +590,61 @@ ofa_mysql_root_bin_set_dossier_meta( ofaMysqlRootBin *bin, ofaIDBDossierMeta *do
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->dossier_meta = dossier_meta;
+}
+#endif
+
+/*
+ * settings are: remember_root_account(b);
+ */
+static void
+read_settings( ofaMysqlRootBin *self )
+{
+	ofaMysqlRootBinPrivate *priv;
+	ofaIGetter *getter;
+	ofaHub *hub;
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gchar *key;
+
+	priv = ofa_mysql_root_bin_get_instance_private( self );
+
+	getter = ofa_isetter_get_getter( OFA_ISETTER( priv->provider ));
+	hub = ofa_igetter_get_hub( getter );
+	settings = ofa_hub_get_user_settings( hub );
+	key = g_strdup_printf( "%s-mysql-root", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->remember_btn ), my_utils_boolean_from_str( cstr ));
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
+}
+
+static void
+write_settings( ofaMysqlRootBin *self )
+{
+	ofaMysqlRootBinPrivate *priv;
+	ofaIGetter *getter;
+	ofaHub *hub;
+	myISettings *settings;
+	gchar *key, *str;
+
+	priv = ofa_mysql_root_bin_get_instance_private( self );
+
+	str = g_strdup_printf( "%s;",
+				gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->remember_btn )) ? "True":"False" );
+
+	getter = ofa_isetter_get_getter( OFA_ISETTER( priv->provider ));
+	hub = ofa_igetter_get_hub( getter );
+	settings = ofa_hub_get_user_settings( hub );
+	key = g_strdup_printf( "%s-mysql-root", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
+
+	g_free( key );
+	g_free( str );
 }

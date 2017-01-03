@@ -71,8 +71,8 @@ static ofaIDBDossierMeta    *idbprovider_new_dossier_meta( ofaIDBProvider *insta
 static ofaIDBExerciceMeta   *idbprovider_new_exercice_meta( ofaIDBProvider *instance );
 static ofaIDBConnect        *idbprovider_new_connect( ofaIDBProvider *instance );
 static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
-static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, guint rule );
-static ofaIDBExerciceEditor *idbprovider_new_exercice_editor( ofaIDBProvider *instance, guint rule );
+static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
+static ofaIDBExerciceEditor *idbprovider_new_exercice_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
 static void                  isetter_iface_init( ofaISetterInterface *iface );
 static ofaIGetter           *isetter_get_getter( ofaISetter *instance );
 static void                  isetter_set_getter( ofaISetter *instance, ofaIGetter *getter );
@@ -245,21 +245,21 @@ idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable )
 }
 
 static ofaIDBDossierEditor *
-idbprovider_new_dossier_editor( ofaIDBProvider *instance, guint rule )
+idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule )
 {
 	ofaMysqlDossierEditor *widget;
 
-	widget = ofa_mysql_dossier_editor_new( instance, rule );
+	widget = ofa_mysql_dossier_editor_new( instance, settings_prefix, rule );
 
 	return( OFA_IDBDOSSIER_EDITOR( widget ));
 }
 
 static ofaIDBExerciceEditor *
-idbprovider_new_exercice_editor( ofaIDBProvider *instance, guint rule )
+idbprovider_new_exercice_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule )
 {
 	ofaMysqlExerciceEditor *widget;
 
-	widget = ofa_mysql_exercice_editor_new( instance, rule );
+	widget = ofa_mysql_exercice_editor_new( instance, settings_prefix, rule );
 
 	return( OFA_IDBEXERCICE_EDITOR( widget ));
 }

@@ -59,7 +59,7 @@
  * +------------------------------------------------------------------+
  */
 
-#include "api/ofa-idbconnect.h"
+#include "api/ofa-idbconnect-def.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-page-def.h"
 #include "api/ofo-dossier-def.h"

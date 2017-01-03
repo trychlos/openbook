@@ -53,7 +53,7 @@
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub-def.h"
-#include "api/ofa-idbconnect.h"
+#include "api/ofa-idbconnect-def.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-stream-format.h"

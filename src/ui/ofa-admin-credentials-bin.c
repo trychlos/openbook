@@ -396,9 +396,57 @@ is_valid_composite( ofaAdminCredentialsBin *bin )
 	ok = my_strlen( priv->account ) &&
 			my_strlen( priv->password ) &&
 			my_strlen( priv->bis ) &&
-			!g_utf8_collate( priv->password, priv->bis );
+			!my_collate( priv->password, priv->bis );
 
 	return( ok );
+}
+
+/**
+ * ofa_admin_credentials_bin_get_remembered_account:
+ * @bin: this #ofaAdminCredentialsBin instance.
+ *
+ * Returns: the administrative account which should be remembered, or %NULL.
+ */
+const gchar *
+ofa_admin_credentials_bin_get_remembered_account( ofaAdminCredentialsBin *bin )
+{
+	ofaAdminCredentialsBinPrivate *priv;
+	gboolean remember;
+
+	g_return_val_if_fail( bin && OFA_IS_ADMIN_CREDENTIALS_BIN( bin ), NULL );
+
+	priv = ofa_admin_credentials_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	remember = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->remember_btn ));
+
+	return(( const gchar * )( remember ? priv->account : NULL ));
+}
+
+/**
+ * ofa_admin_credentials_bin_get_credentials:
+ * @bin: this #ofaAdminCredentialsBin instance.
+ * @account: [out]: a placeholder for the account.
+ * @password: [out]: a placeholder for the password.
+ *
+ * Set the provided placeholders to their respective value.
+ */
+void
+ofa_admin_credentials_bin_get_credentials( ofaAdminCredentialsBin *bin, gchar **account, gchar **password )
+{
+	ofaAdminCredentialsBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_ADMIN_CREDENTIALS_BIN( bin ));
+	g_return_if_fail( account );
+	g_return_if_fail( password );
+
+	priv = ofa_admin_credentials_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	*account = g_strdup( priv->account );
+	*password = g_strdup( priv->password );
 }
 
 /*

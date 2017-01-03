@@ -65,19 +65,19 @@ typedef struct {
 }
 	ofaDossierActionsBinClass;
 
-GType                 ofa_dossier_actions_bin_get_type      ( void ) G_GNUC_CONST;
+GType                 ofa_dossier_actions_bin_get_type          ( void ) G_GNUC_CONST;
 
-ofaDossierActionsBin *ofa_dossier_actions_bin_new           ( ofaHub *hub,
-																	const gchar *settings_prefix,
-																	guint rule );
+ofaDossierActionsBin *ofa_dossier_actions_bin_new               ( ofaHub *hub,
+																		const gchar *settings_prefix,
+																		guint rule );
 
-GtkSizeGroup         *ofa_dossier_actions_bin_get_size_group( ofaDossierActionsBin *bin,
-																	guint column );
+GtkSizeGroup         *ofa_dossier_actions_bin_get_size_group    ( ofaDossierActionsBin *bin,
+																		guint column );
 
-gboolean              ofa_dossier_actions_bin_is_valid      ( ofaDossierActionsBin *bin,
-																	gchar **error_message );
+gboolean              ofa_dossier_actions_bin_is_valid          ( ofaDossierActionsBin *bin,
+																		gchar **error_message );
 
-gboolean              ofa_dossier_actions_bin_apply         ( ofaDossierActionsBin *bin );
+gboolean              ofa_dossier_actions_bin_get_open_on_create( ofaDossierActionsBin *bin );
 
 G_END_DECLS
 

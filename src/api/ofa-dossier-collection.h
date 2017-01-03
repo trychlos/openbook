@@ -84,9 +84,14 @@ ofaIDBDossierMeta    *ofa_dossier_collection_get_by_name         ( ofaDossierCol
 void                  ofa_dossier_collection_add_meta            ( ofaDossierCollection *collection,
 																		ofaIDBDossierMeta *meta );
 
+void                  ofa_dossier_collection_remove_meta         ( ofaDossierCollection *collection,
+																		ofaIDBDossierMeta *meta );
+
 void                  ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection,
 																		ofaIDBDossierMeta *meta,
 																		const ofaIDBEditor *editor );
+
+void                  ofa_dossier_collection_dump                ( ofaDossierCollection *collection );
 
 G_END_DECLS
 

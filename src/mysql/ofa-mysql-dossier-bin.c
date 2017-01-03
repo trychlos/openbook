@@ -46,6 +46,7 @@ typedef struct {
 	/* setup
 	 */
 	ofaMysqlDBProvider *provider;
+	gchar              *settings_prefix;
 	guint               rule;
 
 	/* runtime data
@@ -97,6 +98,7 @@ mysql_dossier_bin_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_mysql_dossier_bin_get_instance_private( OFA_MYSQL_DOSSIER_BIN( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->host );
 	g_free( priv->socket );
 
@@ -139,6 +141,7 @@ ofa_mysql_dossier_bin_init( ofaMysqlDossierBin *self )
 	priv = ofa_mysql_dossier_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -180,19 +183,20 @@ ofa_mysql_dossier_bin_class_init( ofaMysqlDossierBinClass *klass )
 /**
  * ofa_mysql_dossier_bin_new:
  * @provider: the #ofaIDBProvider instance.
+ * @settings_prefix: the prefix of a user preference key.
  * @rule: the usage of this widget.
  *
  * Returns: a new #ofaMysqlDossierBin widget.
  */
 ofaMysqlDossierBin *
-ofa_mysql_dossier_bin_new( ofaMysqlDBProvider *provider, guint rule )
+ofa_mysql_dossier_bin_new( ofaMysqlDBProvider *provider, const gchar *settings_prefix, guint rule )
 {
 	static const gchar *thisfn = "ofa_mysql_dossier_bin_new";
 	ofaMysqlDossierBin *bin;
 	ofaMysqlDossierBinPrivate *priv;
 
-	g_debug( "%s: provider=%p (%s), rule=%u",
-			thisfn, ( void * ) provider, G_OBJECT_TYPE_NAME( provider ), rule );
+	g_debug( "%s: provider=%p (%s), settings_prefix=%s, rule=%u",
+			thisfn, ( void * ) provider, G_OBJECT_TYPE_NAME( provider ), settings_prefix, rule );
 
 	g_return_val_if_fail( provider && OFA_IS_MYSQL_DBPROVIDER( provider ), NULL );
 
@@ -201,6 +205,10 @@ ofa_mysql_dossier_bin_new( ofaMysqlDBProvider *provider, guint rule )
 	priv = ofa_mysql_dossier_bin_get_instance_private( bin );
 
 	priv->provider = provider;
+
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( settings_prefix );
+
 	priv->rule = rule;
 
 	setup_bin( bin );

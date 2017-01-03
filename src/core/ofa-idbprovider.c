@@ -33,6 +33,7 @@
 
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
@@ -455,6 +456,7 @@ ofa_idbprovider_new_editor( ofaIDBProvider *provider, gboolean editable )
 /**
  * ofa_idbprovider_new_dossier_editor:
  * @provider: this #ofaIDBProvider provider.
+ * @settings_prefix: the prefix of a user preference key.
  * @rule: the usage of the editor.
  *
  * Returns: a composite GTK container widget intended to hold the
@@ -466,18 +468,18 @@ ofa_idbprovider_new_editor( ofaIDBProvider *provider, gboolean editable )
  * should not keep any reference on this container.
  */
 ofaIDBDossierEditor *
-ofa_idbprovider_new_dossier_editor( ofaIDBProvider *provider, guint rule )
+ofa_idbprovider_new_dossier_editor( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_dossier_editor";
 	ofaIDBDossierEditor *editor;
 
-	g_debug( "%s: provider=%p, rule=%u",
-			thisfn,( void * ) provider, rule );
+	g_debug( "%s: provider=%p, settings_prefix=%s, rule=%u",
+			thisfn,( void * ) provider, settings_prefix, rule );
 
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor ){
-		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor( provider, rule );
+		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor( provider, settings_prefix, rule );
 		ofa_idbdossier_editor_set_provider( editor, provider );
 		return( editor );
 	}
@@ -490,6 +492,7 @@ ofa_idbprovider_new_dossier_editor( ofaIDBProvider *provider, guint rule )
 /**
  * ofa_idbprovider_new_exercice_editor:
  * @provider: this #ofaIDBProvider provider.
+ * @settings_prefix: the prefix of a user preference key.
  * @rule: the usage of the editor.
  * @dossier_editor: the corresponding #ofaIDBDossierEditor.
  *
@@ -502,19 +505,19 @@ ofa_idbprovider_new_dossier_editor( ofaIDBProvider *provider, guint rule )
  * should not keep any reference on this container.
  */
 ofaIDBExerciceEditor *
-ofa_idbprovider_new_exercice_editor( ofaIDBProvider *provider, guint rule, ofaIDBDossierEditor *dossier_editor )
+ofa_idbprovider_new_exercice_editor( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule, ofaIDBDossierEditor *dossier_editor )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_exercice_editor";
 	ofaIDBExerciceEditor *editor;
 
-	g_debug( "%s: provider=%p, rule=%u",
-			thisfn,( void * ) provider, rule );
+	g_debug( "%s: provider=%p, settings_prefix=%s, rule=%u, dossier_editor=%p",
+			thisfn,( void * ) provider, settings_prefix, rule, ( void * ) dossier_editor );
 
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 	g_return_val_if_fail( dossier_editor && OFA_IS_IDBDOSSIER_EDITOR( dossier_editor ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_exercice_editor ){
-		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_exercice_editor( provider, rule );
+		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_exercice_editor( provider, settings_prefix, rule );
 		ofa_idbexercice_editor_set_provider( editor, provider );
 		ofa_idbexercice_editor_set_dossier_editor( editor, dossier_editor );
 		return( editor );

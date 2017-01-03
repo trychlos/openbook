@@ -49,6 +49,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIDBProvider      *provider;
+	gchar               *settings_prefix;
 	guint                rule;
 
 	/* UI
@@ -77,6 +78,7 @@ static void
 mysql_exercice_editor_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_mysql_exercice_editor_finalize";
+	ofaMysqlExerciceEditorPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -84,6 +86,9 @@ mysql_exercice_editor_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_MYSQL_EXERCICE_EDITOR( instance ));
 
 	/* free data members here */
+	priv = ofa_mysql_exercice_editor_get_instance_private( OFA_MYSQL_EXERCICE_EDITOR( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_mysql_exercice_editor_parent_class )->finalize( instance );
@@ -124,6 +129,7 @@ ofa_mysql_exercice_editor_init( ofaMysqlExerciceEditor *self )
 	priv = ofa_mysql_exercice_editor_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -204,7 +210,7 @@ idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **messa
 	if( ok ){
 		database = ofa_mysql_exercice_bin_get_database( priv->exercice_bin );
 		exists = does_database_exist( OFA_MYSQL_EXERCICE_EDITOR( instance ), database );
-		g_debug( "idbexercice_editor_is_valid: database=%s, exists=%s", database, exists ? "True":"False" );
+		//g_debug( "ofa_idbexercice_editor_is_valid: database=%s, exists=%s", database, exists ? "True":"False" );
 
 		switch( priv->rule ){
 			case HUB_RULE_DOSSIER_NEW:
@@ -238,12 +244,13 @@ idbexercice_editor_apply( const ofaIDBExerciceEditor *instance )
 /**
  * ofa_mysql_exercice_editor_new:
  * @provider: the #ofaIDBProvider.
+ * @settings_prefix: the prefix of a user preference key.
  * @rule: the usage of the widget.
  *
  * Returns: a new #ofaMysqlExerciceEditor widget.
  */
 ofaMysqlExerciceEditor *
-ofa_mysql_exercice_editor_new( ofaIDBProvider *provider, guint rule )
+ofa_mysql_exercice_editor_new( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule )
 {
 	ofaMysqlExerciceEditor *bin;
 	ofaMysqlExerciceEditorPrivate *priv;
@@ -255,6 +262,10 @@ ofa_mysql_exercice_editor_new( ofaIDBProvider *provider, guint rule )
 	priv = ofa_mysql_exercice_editor_get_instance_private( bin );
 
 	priv->provider = provider;
+
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( settings_prefix );
+
 	priv->rule = rule;
 
 	setup_bin( bin );
@@ -284,7 +295,7 @@ setup_bin( ofaMysqlExerciceEditor *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mee-exercice-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->exercice_bin = ofa_mysql_exercice_bin_new( priv->rule );
+	priv->exercice_bin = ofa_mysql_exercice_bin_new( priv->settings_prefix, priv->rule );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
 	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), self );
 	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_exercice_bin_get_size_group( priv->exercice_bin, 0 ));
@@ -319,4 +330,27 @@ does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database )
 	}
 
 	return( exists );
+}
+
+/**
+ * ofa_mysql_exercice_editor_get_database:
+ * @period: this #ofaMysqlExerciceMeta object.
+ *
+ * Returns: the database name.
+ *
+ * The returned string is owned by the @period object, and should not
+ * be freed by the caller.
+ */
+const gchar *
+ofa_mysql_exercice_editor_get_database( ofaMysqlExerciceEditor *editor )
+{
+	ofaMysqlExerciceEditorPrivate *priv;
+
+	g_return_val_if_fail( editor && OFA_IS_MYSQL_EXERCICE_EDITOR( editor ), NULL );
+
+	priv = ofa_mysql_exercice_editor_get_instance_private( editor );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( ofa_mysql_exercice_bin_get_database( priv->exercice_bin ));
 }

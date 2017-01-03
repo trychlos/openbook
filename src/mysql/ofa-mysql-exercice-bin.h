@@ -65,7 +65,8 @@ typedef struct {
 
 GType                ofa_mysql_exercice_bin_get_type      ( void ) G_GNUC_CONST;
 
-ofaMysqlExerciceBin *ofa_mysql_exercice_bin_new           ( guint rule );
+ofaMysqlExerciceBin *ofa_mysql_exercice_bin_new           ( const gchar *settings_prefix,
+																guint rule );
 
 GtkSizeGroup        *ofa_mysql_exercice_bin_get_size_group( ofaMysqlExerciceBin *bin,
 																guint column );

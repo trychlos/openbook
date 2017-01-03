@@ -238,37 +238,28 @@ ofa_idbconnect_set_provider( ofaIDBConnect *connect, const ofaIDBProvider *provi
 /**
  * ofa_idbconnect_open_with_editor:
  * @connect: this #ofaIDBConnect instance.
- * @account: the user account.
- * @password: [allow-none]: the user password.
- * @editor: a #ofaIDBEditor object which handles connection informations.
- * @server_only: whether only server-level informations must be used to
- *  open the connection, or all informations provided by @editor.
+ * @editor: a #ofaIDBDossierEditor object which handles needed connection
+ *  informations.
  *
- * Establish a connection to the DBMS.
+ * Establishes a (root) connection to the DBMS at server level.
  *
  * Returns: %TRUE if the connection has been successfully established,
  * %FALSE else.
  */
 gboolean
-ofa_idbconnect_open_with_editor( ofaIDBConnect *connect, const gchar *account, const gchar *password, const ofaIDBEditor *editor, gboolean server_only )
+ofa_idbconnect_open_with_editor( ofaIDBConnect *connect, const ofaIDBDossierEditor *editor )
 {
 	static const gchar *thisfn = "ofa_idbconnect_open_with_editor";
 	gboolean ok;
 
-	g_debug( "%s: connect=%p, account=%s, password=%s, editor=%p, server_only=%s",
-			thisfn, ( void * ) connect,
-			account, password ? "******":password,
-			( void * ) editor, server_only ? "True":"False" );
+	g_debug( "%s: connect=%p, editor=%p",
+			thisfn, ( void * ) connect, ( void * ) editor );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-	g_return_val_if_fail( editor && OFA_IS_IDBEDITOR( editor ), FALSE );
+	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), FALSE );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_editor ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_editor( connect, account, password, editor, server_only );
-		if( ok ){
-			idbconnect_set_account( connect, account );
-			idbconnect_set_password( connect, password );
-		}
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_editor( connect, editor );
 		return( ok );
 	}
 

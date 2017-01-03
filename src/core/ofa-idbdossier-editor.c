@@ -299,6 +299,37 @@ ofa_idbdossier_editor_is_valid( const ofaIDBDossierEditor *editor, gchar **messa
 	return( FALSE );
 }
 
+/**
+ * ofa_idbdossier_editor_get_valid_connect:
+ * @editor: this #ofaIDBDossierEditor instance.
+ *
+ * Returns: the #ofaIDBConnect which was used to validate the @editor.
+ *
+ * This #ofaIDBConnect is expected to handles a superuser connection to
+ * the DBMS at server level. It is not expected that it knows anything
+ * about #ofaIDBDossierMeta ot #ofaIDBExerciceMeta.
+ *
+ * If not %NULL, the returned reference is owned by @editor, and should
+ * not be released by the caller.
+ */
+ofaIDBConnect *
+ofa_idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *editor )
+{
+	static const gchar *thisfn = "ofa_idbdossier_editor_get_valid_connect";
+
+	g_debug( "%s: editor=%p", thisfn, ( void * ) editor );
+
+	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), NULL );
+
+	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->get_valid_connect ){
+		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->get_valid_connect( editor ));
+	}
+
+	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'get_valid_connect()' method",
+			thisfn, G_OBJECT_TYPE_NAME( editor ));
+	return( NULL );
+}
+
 static sEditor *
 get_instance_data( const ofaIDBDossierEditor *self )
 {

@@ -34,6 +34,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-preferences.h"
 
@@ -383,8 +384,11 @@ ofa_exercice_meta_bin_is_valid( ofaExerciceMetaBin *bin, gchar **error_message )
 gboolean
 ofa_exercice_meta_bin_apply( ofaExerciceMetaBin *bin, ofaIDBDossierMeta *dossier_meta )
 {
+	static const gchar *thisfn = "ofa_exercice_meta_bin_apply";
 	ofaExerciceMetaBinPrivate *priv;
 	ofaIDBProvider *provider;
+
+	g_debug( "%s: bin=%p, dossier_meta=%p", thisfn, ( void * ) bin, ( void * ) dossier_meta );
 
 	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), FALSE );
 	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), FALSE );
@@ -397,6 +401,9 @@ ofa_exercice_meta_bin_apply( ofaExerciceMetaBin *bin, ofaIDBDossierMeta *dossier
 		case HUB_RULE_DOSSIER_NEW:
 			provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 			priv->exercice_meta = ofa_idbprovider_new_exercice_meta( provider, dossier_meta );
+			ofa_idbexercice_meta_set_begin_date( priv->exercice_meta, &priv->begin );
+			ofa_idbexercice_meta_set_end_date( priv->exercice_meta, &priv->end );
+			ofa_idbexercice_meta_set_current( priv->exercice_meta, priv->is_current );
 			break;
 	}
 

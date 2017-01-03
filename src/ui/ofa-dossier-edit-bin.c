@@ -72,6 +72,10 @@ typedef struct {
 	/* runtime
 	 */
 	ofaIDBProvider         *provider;
+
+	/* result
+	 */
+	ofaIDBDossierMeta      *dossier_meta;		/* the newly created ofaIDBDossierMeta */
 }
 	ofaDossierEditBinPrivate;
 
@@ -155,9 +159,10 @@ ofa_dossier_edit_bin_init( ofaDossierEditBin *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
-	priv->provider = NULL;
 	priv->group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	priv->group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	priv->provider = NULL;
+	priv->dossier_meta = NULL;
 }
 
 static void
@@ -315,7 +320,7 @@ on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self )
 		if( priv->dossier_editor_bin ){
 			gtk_container_remove( GTK_CONTAINER( priv->dossier_editor_parent ), GTK_WIDGET( priv->dossier_editor_bin ));
 		}
-		priv->dossier_editor_bin = ofa_idbprovider_new_dossier_editor( provider, priv->rule );
+		priv->dossier_editor_bin = ofa_idbprovider_new_dossier_editor( provider, priv->settings_prefix, priv->rule );
 		gtk_container_add( GTK_CONTAINER( priv->dossier_editor_parent ), GTK_WIDGET( priv->dossier_editor_bin ));
 		g_signal_connect( priv->dossier_editor_bin, "ofa-changed", G_CALLBACK( on_dossier_editor_changed ), self );
 		my_utils_size_group_add_size_group( priv->group1, ofa_idbdossier_editor_get_size_group( priv->dossier_editor_bin, 0 ));
@@ -324,7 +329,7 @@ on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self )
 		if( priv->exercice_editor_bin ){
 			gtk_container_remove( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
 		}
-		priv->exercice_editor_bin = ofa_idbprovider_new_exercice_editor( provider, priv->rule, priv->dossier_editor_bin );
+		priv->exercice_editor_bin = ofa_idbprovider_new_exercice_editor( provider, priv->settings_prefix, priv->rule, priv->dossier_editor_bin );
 		gtk_container_add( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
 		g_signal_connect( priv->exercice_editor_bin, "ofa-changed", G_CALLBACK( on_exercice_editor_changed ), self );
 		my_utils_size_group_add_size_group( priv->group1, ofa_idbexercice_editor_get_size_group( priv->exercice_editor_bin, 0 ));
@@ -414,6 +419,7 @@ ofa_dossier_edit_bin_is_valid( ofaDossierEditBin *bin, gchar **message )
 
 /**
  * ofa_dossier_edit_bin_apply:
+ * @bin: this #ofaDossierEditBin instance.
  *
  * Define the dossier in dossier settings.
  * The caller is responsible for actually creating the database.
@@ -423,10 +429,13 @@ ofa_dossier_edit_bin_is_valid( ofaDossierEditBin *bin, gchar **message )
 gboolean
 ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 {
+	static const gchar *thisfn = "ofa_dossier_edit_bin_apply";
 	ofaDossierEditBinPrivate *priv;
 	gboolean ok;
-	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBExerciceMeta *exercice_meta;
+	const gchar *account;
+
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), FALSE );
 
@@ -435,21 +444,103 @@ ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
 	ok = TRUE;
-	dossier_meta = NULL;
 
 	if( ok ){
 		ok = ofa_dossier_meta_bin_apply( priv->dossier_meta_bin );
-		dossier_meta = ofa_dossier_meta_bin_get_dossier_meta( priv->dossier_meta_bin );
-		ofa_idbdossier_meta_set_from_editor( dossier_meta, priv->dossier_editor_bin );
+		priv->dossier_meta = ofa_dossier_meta_bin_get_dossier_meta( priv->dossier_meta_bin );
+		ofa_idbdossier_meta_set_from_editor( priv->dossier_meta, priv->dossier_editor_bin );
 	}
 	if( ok ){
-		ok = ofa_exercice_meta_bin_apply( priv->exercice_meta_bin, dossier_meta );
+		ok = ofa_exercice_meta_bin_apply( priv->exercice_meta_bin, priv->dossier_meta );
 		exercice_meta = ofa_exercice_meta_bin_get_exercice_meta( priv->exercice_meta_bin );
+		account = ofa_admin_credentials_bin_get_remembered_account( priv->admin_bin );
+		ofa_idbexercice_meta_set_remembered_account( exercice_meta, account );
 		ofa_idbexercice_meta_set_from_editor( exercice_meta, priv->exercice_editor_bin );
-	}
-	if( ok ){
-		ok = ofa_dossier_actions_bin_apply( priv->actions_bin );
 	}
 
 	return( ok );
+}
+
+/**
+ * ofa_dossier_edit_bin_get_dossier_editor:
+ * @bin: this #ofaDossierEditBin instance.
+ *
+ * Returns: the #ofaIDBDossierEditor.
+ */
+ofaIDBDossierEditor *
+ofa_dossier_edit_bin_get_dossier_editor( ofaDossierEditBin *bin )
+{
+	ofaDossierEditBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), NULL );
+
+	priv = ofa_dossier_edit_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->dossier_editor_bin );
+}
+
+/**
+ * ofa_dossier_edit_bin_get_dossier_meta:
+ * @bin: this #ofaDossierEditBin instance.
+ *
+ * Returns: the #ofaIDBDossierMeta newly created, or %NULL.
+ */
+ofaIDBDossierMeta *
+ofa_dossier_edit_bin_get_dossier_meta( ofaDossierEditBin *bin )
+{
+	ofaDossierEditBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), NULL );
+
+	priv = ofa_dossier_edit_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->dossier_meta );
+}
+
+/**
+ * ofa_dossier_edit_bin_get_admin_credentials:
+ * @bin: this #ofaDossierEditBin instance.
+ * @account: [out]: a placeholder for the account.
+ * @password: [out]: a placeholder for the password.
+ *
+ * Set the provided placeholders to their respective value.
+ */
+void
+ofa_dossier_edit_bin_get_admin_credentials( ofaDossierEditBin *bin, gchar **account, gchar **password )
+{
+	ofaDossierEditBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ));
+	g_return_if_fail( account );
+	g_return_if_fail( password );
+
+	priv = ofa_dossier_edit_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	return( ofa_admin_credentials_bin_get_credentials( priv->admin_bin, account, password ));
+}
+
+/**
+ * ofa_dossier_edit_bin_get_open_on_create:
+ * @bin: this #ofaDossierEditBin instance.
+ *
+ * Returns: %TRUE if the new dossier should be opened after creation.
+ */
+gboolean
+ofa_dossier_edit_bin_get_open_on_create( ofaDossierEditBin *bin )
+{
+	ofaDossierEditBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), FALSE );
+
+	priv = ofa_dossier_edit_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( ofa_dossier_actions_bin_get_open_on_create( priv->actions_bin ));
 }

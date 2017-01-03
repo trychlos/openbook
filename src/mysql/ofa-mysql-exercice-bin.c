@@ -45,6 +45,7 @@ typedef struct {
 
 	/* initialization
 	 */
+	gchar        *settings_prefix;
 	guint         rule;
 
 	/* runtime
@@ -89,6 +90,7 @@ mysql_exercice_bin_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_mysql_exercice_bin_get_instance_private( OFA_MYSQL_EXERCICE_BIN( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->database );
 
 	/* chain up to the parent class */
@@ -130,6 +132,7 @@ ofa_mysql_exercice_bin_init( ofaMysqlExerciceBin *self )
 	priv = ofa_mysql_exercice_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -169,12 +172,13 @@ ofa_mysql_exercice_bin_class_init( ofaMysqlExerciceBinClass *klass )
 
 /**
  * ofa_mysql_exercice_bin_new:
+ * @settings_prefix: the prefix of a user preference key.
  * @rule: the usage of the widget.
  *
  * Returns: a new #ofaMysqlExerciceBin widget.
  */
 ofaMysqlExerciceBin *
-ofa_mysql_exercice_bin_new( guint rule )
+ofa_mysql_exercice_bin_new( const gchar *settings_prefix, guint rule )
 {
 	ofaMysqlExerciceBin *bin;
 	ofaMysqlExerciceBinPrivate *priv;
@@ -182,6 +186,9 @@ ofa_mysql_exercice_bin_new( guint rule )
 	bin = g_object_new( OFA_TYPE_MYSQL_EXERCICE_BIN, NULL );
 
 	priv = ofa_mysql_exercice_bin_get_instance_private( bin );
+
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( settings_prefix );
 
 	priv->rule = rule;
 

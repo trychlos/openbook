@@ -216,7 +216,9 @@ void                ofa_idbdossier_meta_set_periods               ( ofaIDBDossie
 																		GList *periods );
 
 void                ofa_idbdossier_meta_add_period                ( ofaIDBDossierMeta *meta,
-																		ofaIDBExerciceMeta *exercice_meta );
+																		ofaIDBExerciceMeta *exercice_meta,
+																		gchar **key,
+																		gchar **key_id );
 
 void                ofa_idbdossier_meta_update_period             ( ofaIDBDossierMeta *meta,
 																		ofaIDBExerciceMeta *exercice_meta,

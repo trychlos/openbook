@@ -34,6 +34,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 
+#include "ofa-mysql-dossier-editor.h"
 #include "ofa-mysql-dossier-meta.h"
 #include "ofa-mysql-editor-enter.h"
 #include "ofa-mysql-exercice-meta.h"
@@ -246,41 +247,24 @@ find_period( ofaMysqlExerciceMeta *period, GList *list )
 static void
 idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, ofaIDBDossierEditor *editor )
 {
-#if 0
 	ofaMysqlDossierMetaPrivate *priv;
-	const gchar *host, *socket, *database;
-	guint port;
-	ofaMysqlExerciceMeta *period;
-	GList *periods;
 
 	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
-	g_return_if_fail( editor && OFA_IS_MYSQL_EDITOR_ENTER( editor ));
+	g_return_if_fail( editor && OFA_IS_MYSQL_DOSSIER_EDITOR( editor ));
 
 	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( meta ));
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	/* write connection informations to settings */
-	host = ofa_mysql_editor_enter_get_host( OFA_MYSQL_EDITOR_ENTER( editor ));
-	if( my_strlen( host )){
-		my_isettings_set_string( settings, group, MYSQL_HOST_KEY, host );
-	}
-	socket = ofa_mysql_editor_enter_get_socket( OFA_MYSQL_EDITOR_ENTER( editor ));
-	if( my_strlen( socket )){
-		my_isettings_set_string( settings, group, MYSQL_SOCKET_KEY, socket );
-	}
-	port = ofa_mysql_editor_enter_get_port( OFA_MYSQL_EDITOR_ENTER( editor ));
-	if( port > 0 ){
-		my_isettings_set_uint( settings, group, MYSQL_PORT_KEY, port );
-	}
+	g_free( priv->host );
+	priv->host = g_strdup( ofa_mysql_dossier_editor_get_host( OFA_MYSQL_DOSSIER_EDITOR( editor )));
+	priv->port = ofa_mysql_dossier_editor_get_port( OFA_MYSQL_DOSSIER_EDITOR( editor ));
+	g_free( priv->socket );
+	priv->socket = g_strdup( ofa_mysql_dossier_editor_get_socket( OFA_MYSQL_DOSSIER_EDITOR( editor )));
+	g_free( priv->root_account );
+	priv->root_account = g_strdup( ofa_mysql_dossier_editor_get_remembered_account( OFA_MYSQL_DOSSIER_EDITOR( editor )));
 
-	/* initialize a new current period */
-	database = ofa_mysql_editor_enter_get_database( OFA_MYSQL_EDITOR_ENTER( editor ));
-	period = ofa_mysql_exercice_meta_new_to_settings( settings, group, TRUE, NULL, NULL, database );
-	periods = g_list_append( NULL, period );
-	ofa_idbdossier_meta_set_periods( meta, periods );
-	ofa_idbdossier_meta_free_periods( periods );
-#endif
+	write_settings( OFA_MYSQL_DOSSIER_META( meta ));
 }
 
 static void
@@ -328,6 +312,7 @@ idbdossier_meta_dump( const ofaIDBDossierMeta *instance )
 	g_debug( "%s:   host=%s", thisfn, priv->host );
 	g_debug( "%s:   socket=%s", thisfn, priv->socket );
 	g_debug( "%s:   port=%u", thisfn, priv->port );
+	g_debug( "%s:   root_account=%s", thisfn, priv->root_account );
 }
 
 /**
@@ -460,7 +445,7 @@ ofa_mysql_dossier_meta_add_period( ofaMysqlDossierMeta *meta,
 	group = ofa_idbdossier_meta_get_settings_group( OFA_IDBDOSSIER_META( meta ));
 
 	period = ofa_mysql_exercice_meta_new_to_settings( settings, group, current, begin, end, database );
-	ofa_idbdossier_meta_add_period( OFA_IDBDOSSIER_META( meta ), OFA_IDBEXERCICE_META( period ));
+	//ofa_idbdossier_meta_add_period( OFA_IDBDOSSIER_META( meta ), OFA_IDBEXERCICE_META( period ));
 	g_object_unref( period );
 
 	g_free( group );
@@ -572,13 +557,15 @@ write_settings( ofaMysqlDossierMeta *self )
 	ofaMysqlDossierMetaPrivate *priv;
 	myISettings *settings;
 	const gchar *group;
-	gchar *str;
+	gchar *sport, *str;
 
 	priv = ofa_mysql_dossier_meta_get_instance_private( self );
 
-	str = g_strdup_printf( "%s;%u;%s;%s;",
+	sport = priv->port ? g_strdup_printf( "%u", priv->port ) : g_strdup( "" );
+
+	str = g_strdup_printf( "%s;%s;%s;%s;",
 			my_strlen( priv->host ) ? priv->host : "",
-			priv->port,
+			sport,
 			my_strlen( priv->socket ) ? priv->socket : "",
 			my_strlen( priv->root_account ) ? priv->root_account : "" );
 
@@ -587,5 +574,6 @@ write_settings( ofaMysqlDossierMeta *self )
 
 	my_isettings_set_string( settings, group, "mysql-instance", str );
 
+	g_free( sport );
 	g_free( str );
 }

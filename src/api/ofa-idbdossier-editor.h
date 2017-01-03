@@ -55,6 +55,7 @@
 #include "my/my-isettings.h"
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbprovider-def.h"
 
@@ -72,7 +73,7 @@ typedef struct _ofaIDBDossierEditor                     ofaIDBDossierEditor;
  * @get_interface_version: [should]: returns the interface version number.
  * @get_size_group: [may]: returns the #GtkSizeGroup of the column.
  * @is_valid: [may]: returns %TRUE if the entered informations are valid.
- * @apply: [may]: register the informations in the settings.
+ * @get_valid_connect: [may]: returns the valid connection.
  *
  * This defines the interface that an #ofaIDBDossierEditor should implement.
  */
@@ -92,7 +93,7 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint          ( *get_interface_version )( void );
+	guint           ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 	/**
@@ -104,7 +105,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GtkSizeGroup * ( *get_size_group )       ( const ofaIDBDossierEditor *instance,
+	GtkSizeGroup *  ( *get_size_group )       ( const ofaIDBDossierEditor *instance,
 														guint column );
 
 	/**
@@ -114,13 +115,25 @@ typedef struct {
 	 *
 	 * Returns: %TRUE if the entered connection informations are valid.
 	 *
-	 * Note that we only do here an intrinsic check as we do not have
-	 * any credentials to test for a real server connection.
+	 * MySQL note: the DBMS provider validates the connection after having
+	 * successfully established a root connection to the DBMS at server
+	 * level.
 	 *
 	 * Since: version 1
 	 */
-	gboolean       ( *is_valid )             ( const ofaIDBDossierEditor *instance,
+	gboolean        ( *is_valid )             ( const ofaIDBDossierEditor *instance,
 														gchar **message );
+
+	/**
+	 * get_valid_connect:
+	 * @instance: the #ofaIDBDossierEditor instance.
+	 *
+	 * Returns: the #ofaIDBConnect which was used to validate the @instance,
+	 * or %NULL.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBConnect * ( *get_valid_connect )    ( const ofaIDBDossierEditor *instance );
 }
 	ofaIDBDossierEditorInterface;
 
@@ -149,6 +162,8 @@ GtkSizeGroup   *ofa_idbdossier_editor_get_size_group            ( const ofaIDBDo
 
 gboolean        ofa_idbdossier_editor_is_valid                  ( const ofaIDBDossierEditor *editor,
 																		gchar **message );
+
+ofaIDBConnect  *ofa_idbdossier_editor_get_valid_connect         ( const ofaIDBDossierEditor *editor );
 
 G_END_DECLS
 
