@@ -48,16 +48,18 @@ api_include_HEADERS = \
 	ofa-idbconnect.h									\
 	ofa-idbconnect-def.h								\
 	ofa-idbdossier-editor.h								\
+	ofa-idbdossier-editor-def.h							\
 	ofa-idbdossier-meta.h								\
 	ofa-idbdossier-meta-def.h							\
 	ofa-idbeditor.h										\
+	ofa-idbexercice-editor.h							\
+	ofa-idbexercice-editor-def.h						\
 	ofa-idbexercice-meta.h								\
 	ofa-idbexercice-meta-def.h							\
 	ofa-idbmodel.h										\
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
 	ofa-iexe-close.h									\
-	ofa-idbexercice-editor.h							\
 	ofa-iexportable.h									\
 	ofa-igetter.h										\
 	ofa-igetter-def.h									\

@@ -329,7 +329,7 @@ on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self )
 		if( priv->exercice_editor_bin ){
 			gtk_container_remove( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
 		}
-		priv->exercice_editor_bin = ofa_idbprovider_new_exercice_editor( provider, priv->settings_prefix, priv->rule, priv->dossier_editor_bin );
+		priv->exercice_editor_bin = ofa_idbdossier_editor_new_exercice_editor( priv->dossier_editor_bin, priv->settings_prefix, priv->rule );
 		gtk_container_add( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
 		g_signal_connect( priv->exercice_editor_bin, "ofa-changed", G_CALLBACK( on_exercice_editor_changed ), self );
 		my_utils_size_group_add_size_group( priv->group1, ofa_idbexercice_editor_get_size_group( priv->exercice_editor_bin, 0 ));

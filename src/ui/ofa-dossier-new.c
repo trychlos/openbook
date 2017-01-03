@@ -37,6 +37,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
@@ -47,23 +48,23 @@
 /* private instance data
  */
 typedef struct {
-	gboolean                dispose_has_run;
+	gboolean           dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter             *getter;
-	GtkWindow              *parent;
+	ofaIGetter        *getter;
+	GtkWindow         *parent;
 
 	/* runtime
 	 */
-	gchar                  *settings_prefix;
-	ofaHub                 *hub;
+	gchar             *settings_prefix;
+	ofaHub            *hub;
 
 	/* UI
 	 */
-	ofaDossierEditBin      *edit_bin;
-	GtkWidget              *ok_btn;
-	GtkWidget              *msg_label;
+	ofaDossierEditBin *edit_bin;
+	GtkWidget         *ok_btn;
+	GtkWidget         *msg_label;
 }
 	ofaDossierNewPrivate;
 

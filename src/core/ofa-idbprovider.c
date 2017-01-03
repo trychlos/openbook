@@ -34,6 +34,7 @@
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
@@ -470,45 +471,6 @@ ofa_idbprovider_new_editor( ofaIDBProvider *provider, gboolean editable )
 	}
 
 	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'get_editor()' method",
-			thisfn, G_OBJECT_TYPE_NAME( provider ));
-	return( NULL );
-}
-
-/**
- * ofa_idbprovider_new_exercice_editor:
- * @provider: this #ofaIDBProvider provider.
- * @settings_prefix: the prefix of a user preference key.
- * @rule: the usage of the editor.
- * @dossier_editor: the corresponding #ofaIDBDossierEditor.
- *
- * Returns: a composite GTK container widget intended to hold the
- * informations needed to fully identify the DBMS server which manages
- * a exercice.
- *
- * The returned container will be added to a GtkWindow and must be
- * destroyable with this same window. In other words, the DBMS provider
- * should not keep any reference on this container.
- */
-ofaIDBExerciceEditor *
-ofa_idbprovider_new_exercice_editor( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule, ofaIDBDossierEditor *dossier_editor )
-{
-	static const gchar *thisfn = "ofa_idbprovider_new_exercice_editor";
-	ofaIDBExerciceEditor *editor;
-
-	g_debug( "%s: provider=%p, settings_prefix=%s, rule=%u, dossier_editor=%p",
-			thisfn,( void * ) provider, settings_prefix, rule, ( void * ) dossier_editor );
-
-	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
-	g_return_val_if_fail( dossier_editor && OFA_IS_IDBDOSSIER_EDITOR( dossier_editor ), NULL );
-
-	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_exercice_editor ){
-		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_exercice_editor( provider, settings_prefix, rule );
-		ofa_idbexercice_editor_set_provider( editor, provider );
-		ofa_idbexercice_editor_set_dossier_editor( editor, dossier_editor );
-		return( editor );
-	}
-
-	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_exercice_editor()' method",
 			thisfn, G_OBJECT_TYPE_NAME( provider ));
 	return( NULL );
 }

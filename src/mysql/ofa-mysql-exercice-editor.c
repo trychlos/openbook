@@ -33,6 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbexercice-editor.h"
 #include "api/ofa-idbprovider.h"
 
@@ -48,7 +49,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaIDBProvider      *provider;
+	ofaIDBDossierEditor *editor;
 	gchar               *settings_prefix;
 	guint                rule;
 
@@ -61,14 +62,14 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-exercice-editor.ui";
 
+static void          setup_bin( ofaMysqlExerciceEditor *self );
+static void          on_exercice_bin_changed( ofaMysqlExerciceBin *bin, ofaMysqlExerciceEditor *self );
+//static gboolean      does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database );
 static void          idbexercice_editor_iface_init( ofaIDBExerciceEditorInterface *iface );
 static guint         idbexercice_editor_get_interface_version( void );
 static GtkSizeGroup *idbexercice_editor_get_size_group( const ofaIDBExerciceEditor *instance, guint column );
 static gboolean      idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **message );
 static gboolean      idbexercice_editor_apply( const ofaIDBExerciceEditor *instance );
-static void          setup_bin( ofaMysqlExerciceEditor *self );
-static void          on_exercice_bin_changed( ofaMysqlExerciceBin *bin, ofaMysqlExerciceEditor *self );
-//static gboolean      does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlExerciceEditor, ofa_mysql_exercice_editor, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlExerciceEditor )
@@ -141,6 +142,122 @@ ofa_mysql_exercice_editor_class_init( ofaMysqlExerciceEditorClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_exercice_editor_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_exercice_editor_finalize;
+}
+
+/**
+ * ofa_mysql_exercice_editor_new:
+ * @editor: the #ofaIDBDOssierEditor.
+ * @settings_prefix: the prefix of a user preference key.
+ * @rule: the usage of the widget.
+ *
+ * Returns: a new #ofaMysqlExerciceEditor widget.
+ */
+ofaMysqlExerciceEditor *
+ofa_mysql_exercice_editor_new( ofaIDBDossierEditor *editor, const gchar *settings_prefix, guint rule )
+{
+	ofaMysqlExerciceEditor *bin;
+	ofaMysqlExerciceEditorPrivate *priv;
+
+	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), NULL );
+
+	bin = g_object_new( OFA_TYPE_MYSQL_EXERCICE_EDITOR, NULL );
+
+	priv = ofa_mysql_exercice_editor_get_instance_private( bin );
+
+	priv->editor = editor;
+
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( settings_prefix );
+
+	priv->rule = rule;
+
+	setup_bin( bin );
+
+	return( bin );
+}
+
+static void
+setup_bin( ofaMysqlExerciceEditor *self )
+{
+	ofaMysqlExerciceEditorPrivate *priv;
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *toplevel, *parent;
+
+	priv = ofa_mysql_exercice_editor_get_instance_private( self );
+
+	priv->group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
+
+	object = gtk_builder_get_object( builder, "mee-window" );
+	g_return_if_fail( object && GTK_IS_WINDOW( object ));
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
+
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mee-exercice-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->exercice_bin = ofa_mysql_exercice_bin_new( priv->settings_prefix, priv->rule );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
+	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), self );
+	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_exercice_bin_get_size_group( priv->exercice_bin, 0 ));
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
+}
+
+static void
+on_exercice_bin_changed( ofaMysqlExerciceBin *bin, ofaMysqlExerciceEditor *self )
+{
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+#if 0
+static gboolean
+does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database )
+{
+	ofaIDBDossierEditor *dossier_editor;
+	gboolean exists;
+	ofaMysqlConnect *connect;
+
+	exists = FALSE;
+
+	dossier_editor = ofa_idbexercice_editor_get_dossier_editor( OFA_IDBEXERCICE_EDITOR( self ));
+	g_return_val_if_fail( dossier_editor && OFA_IS_MYSQL_DOSSIER_EDITOR( dossier_editor ), FALSE );
+
+	connect = ofa_mysql_dossier_editor_get_connect( OFA_MYSQL_DOSSIER_EDITOR( dossier_editor ));
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
+
+	if( ofa_mysql_connect_is_opened( connect )){
+		exists = ofa_mysql_connect_does_database_exist( connect, database );
+	}
+
+	return( exists );
+}
+#endif
+
+/**
+ * ofa_mysql_exercice_editor_get_database:
+ * @period: this #ofaMysqlExerciceMeta object.
+ *
+ * Returns: the database name.
+ *
+ * The returned string is owned by the @period object, and should not
+ * be freed by the caller.
+ */
+const gchar *
+ofa_mysql_exercice_editor_get_database( ofaMysqlExerciceEditor *editor )
+{
+	ofaMysqlExerciceEditorPrivate *priv;
+
+	g_return_val_if_fail( editor && OFA_IS_MYSQL_EXERCICE_EDITOR( editor ), NULL );
+
+	priv = ofa_mysql_exercice_editor_get_instance_private( editor );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( ofa_mysql_exercice_bin_get_database( priv->exercice_bin ));
 }
 
 /*
@@ -242,120 +359,4 @@ idbexercice_editor_apply( const ofaIDBExerciceEditor *instance )
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
 	return( ofa_mysql_exercice_bin_apply( priv->exercice_bin ));
-}
-
-/**
- * ofa_mysql_exercice_editor_new:
- * @provider: the #ofaIDBProvider.
- * @settings_prefix: the prefix of a user preference key.
- * @rule: the usage of the widget.
- *
- * Returns: a new #ofaMysqlExerciceEditor widget.
- */
-ofaMysqlExerciceEditor *
-ofa_mysql_exercice_editor_new( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule )
-{
-	ofaMysqlExerciceEditor *bin;
-	ofaMysqlExerciceEditorPrivate *priv;
-
-	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
-
-	bin = g_object_new( OFA_TYPE_MYSQL_EXERCICE_EDITOR, NULL );
-
-	priv = ofa_mysql_exercice_editor_get_instance_private( bin );
-
-	priv->provider = provider;
-
-	g_free( priv->settings_prefix );
-	priv->settings_prefix = g_strdup( settings_prefix );
-
-	priv->rule = rule;
-
-	setup_bin( bin );
-
-	return( bin );
-}
-
-static void
-setup_bin( ofaMysqlExerciceEditor *self )
-{
-	ofaMysqlExerciceEditorPrivate *priv;
-	GtkBuilder *builder;
-	GObject *object;
-	GtkWidget *toplevel, *parent;
-
-	priv = ofa_mysql_exercice_editor_get_instance_private( self );
-
-	priv->group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
-
-	builder = gtk_builder_new_from_resource( st_resource_ui );
-
-	object = gtk_builder_get_object( builder, "mee-window" );
-	g_return_if_fail( object && GTK_IS_WINDOW( object ));
-	toplevel = GTK_WIDGET( g_object_ref( object ));
-
-	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
-
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mee-exercice-parent" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->exercice_bin = ofa_mysql_exercice_bin_new( priv->settings_prefix, priv->rule );
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
-	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), self );
-	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_exercice_bin_get_size_group( priv->exercice_bin, 0 ));
-
-	gtk_widget_destroy( toplevel );
-	g_object_unref( builder );
-}
-
-static void
-on_exercice_bin_changed( ofaMysqlExerciceBin *bin, ofaMysqlExerciceEditor *self )
-{
-	g_signal_emit_by_name( self, "ofa-changed" );
-}
-
-#if 0
-static gboolean
-does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database )
-{
-	ofaIDBDossierEditor *dossier_editor;
-	gboolean exists;
-	ofaMysqlConnect *connect;
-
-	exists = FALSE;
-
-	dossier_editor = ofa_idbexercice_editor_get_dossier_editor( OFA_IDBEXERCICE_EDITOR( self ));
-	g_return_val_if_fail( dossier_editor && OFA_IS_MYSQL_DOSSIER_EDITOR( dossier_editor ), FALSE );
-
-	connect = ofa_mysql_dossier_editor_get_connect( OFA_MYSQL_DOSSIER_EDITOR( dossier_editor ));
-	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
-
-	if( ofa_mysql_connect_is_opened( connect )){
-		exists = ofa_mysql_connect_does_database_exist( connect, database );
-	}
-
-	return( exists );
-}
-#endif
-
-/**
- * ofa_mysql_exercice_editor_get_database:
- * @period: this #ofaMysqlExerciceMeta object.
- *
- * Returns: the database name.
- *
- * The returned string is owned by the @period object, and should not
- * be freed by the caller.
- */
-const gchar *
-ofa_mysql_exercice_editor_get_database( ofaMysqlExerciceEditor *editor )
-{
-	ofaMysqlExerciceEditorPrivate *priv;
-
-	g_return_val_if_fail( editor && OFA_IS_MYSQL_EXERCICE_EDITOR( editor ), NULL );
-
-	priv = ofa_mysql_exercice_editor_get_instance_private( editor );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( ofa_mysql_exercice_bin_get_database( priv->exercice_bin ));
 }

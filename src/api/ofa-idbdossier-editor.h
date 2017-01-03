@@ -56,7 +56,9 @@
 
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
+#include "api/ofa-idbdossier-editor-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
+#include "api/ofa-idbexercice-editor-def.h"
 #include "api/ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
@@ -66,7 +68,10 @@ G_BEGIN_DECLS
 #define OFA_IS_IDBDOSSIER_EDITOR( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IDBDOSSIER_EDITOR ))
 #define OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IDBDOSSIER_EDITOR, ofaIDBDossierEditorInterface ))
 
+#if 0
 typedef struct _ofaIDBDossierEditor                     ofaIDBDossierEditor;
+typedef struct _ofaIDBDossierEditorInterface            ofaIDBDossierEditorInterface;
+#endif
 
 /**
  * ofaIDBDossierEditorInterface:
@@ -74,10 +79,11 @@ typedef struct _ofaIDBDossierEditor                     ofaIDBDossierEditor;
  * @get_size_group: [may]: returns the #GtkSizeGroup of the column.
  * @is_valid: [may]: returns %TRUE if the entered informations are valid.
  * @get_valid_connect: [may]: returns the valid connection.
+ * @new_exercice_editor: [should]: returns a new ofaIDBExerciceEditor object.
  *
  * This defines the interface that an #ofaIDBDossierEditor should implement.
  */
-typedef struct {
+struct _ofaIDBDossierEditorInterface {
 	/*< private >*/
 	GTypeInterface parent;
 
@@ -93,7 +99,7 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint           ( *get_interface_version )( void );
+	guint                  ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 	/**
@@ -105,8 +111,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GtkSizeGroup *  ( *get_size_group )       ( const ofaIDBDossierEditor *instance,
-														guint column );
+	GtkSizeGroup *         ( *get_size_group )       ( const ofaIDBDossierEditor *instance,
+															guint column );
 
 	/**
 	 * is_valid:
@@ -121,8 +127,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean        ( *is_valid )             ( const ofaIDBDossierEditor *instance,
-														gchar **message );
+	gboolean               ( *is_valid )             ( const ofaIDBDossierEditor *instance,
+														       gchar **message );
 
 	/**
 	 * get_valid_connect:
@@ -133,37 +139,56 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBConnect * ( *get_valid_connect )    ( const ofaIDBDossierEditor *instance );
-}
-	ofaIDBDossierEditorInterface;
+	ofaIDBConnect *        ( *get_valid_connect )    ( const ofaIDBDossierEditor *instance );
+
+	/**
+	 * new_exercice_editor:
+	 * @instance: this #ofaIDBDossierEditor instance.
+	 * @settings_prefix: the prefix of a user preference key.
+	 * @rule: the usage of the editor.
+	 *
+	 * Returns: a #GtkWidget which implements the #ofaIDBExerciceEditor
+	 * interface, and handles the informations needed to qualify a
+	 * DB server and the storage space required for a dossier.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBExerciceEditor * ( *new_exercice_editor )  ( ofaIDBDossierEditor *instance,
+															const gchar *settings_prefix,
+															guint rule );
+};
 
 /*
  * Interface-wide
  */
-GType           ofa_idbdossier_editor_get_type                  ( void );
+GType                 ofa_idbdossier_editor_get_type                  ( void );
 
-guint           ofa_idbdossier_editor_get_interface_last_version( void );
+guint                 ofa_idbdossier_editor_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint           ofa_idbdossier_editor_get_interface_version     ( GType type );
+guint                 ofa_idbdossier_editor_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-ofaIDBProvider *ofa_idbdossier_editor_get_provider              ( ofaIDBDossierEditor *editor );
+ofaIDBProvider       *ofa_idbdossier_editor_get_provider              ( ofaIDBDossierEditor *editor );
 
-void            ofa_idbdossier_editor_set_provider              ( ofaIDBDossierEditor *editor,
-																		ofaIDBProvider *provider );
+void                  ofa_idbdossier_editor_set_provider              ( ofaIDBDossierEditor *editor,
+																			ofaIDBProvider *provider );
 
-GtkSizeGroup   *ofa_idbdossier_editor_get_size_group            ( const ofaIDBDossierEditor *editor,
-																		guint column );
+GtkSizeGroup         *ofa_idbdossier_editor_get_size_group            ( const ofaIDBDossierEditor *editor,
+																			guint column );
 
-gboolean        ofa_idbdossier_editor_is_valid                  ( const ofaIDBDossierEditor *editor,
-																		gchar **message );
+gboolean              ofa_idbdossier_editor_is_valid                  ( const ofaIDBDossierEditor *editor,
+																			gchar **message );
 
-ofaIDBConnect  *ofa_idbdossier_editor_get_valid_connect         ( const ofaIDBDossierEditor *editor );
+ofaIDBConnect        *ofa_idbdossier_editor_get_valid_connect         ( const ofaIDBDossierEditor *editor );
+
+ofaIDBExerciceEditor *ofa_idbdossier_editor_new_exercice_editor       ( ofaIDBDossierEditor *editor,
+																			const gchar *settings_prefix,
+																			guint rule );
 
 G_END_DECLS
 

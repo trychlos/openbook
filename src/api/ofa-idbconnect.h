@@ -39,8 +39,9 @@
  */
 
 #include "ofa-hub-def.h"
+#include "ofa-idbconnect-def.h"
 #include "ofa-idbdossier-meta-def.h"
-#include "ofa-idbdossier-editor.h"
+#include "ofa-idbdossier-editor-def.h"
 #include "ofa-idbexercice-meta-def.h"
 #include "ofa-idbprovider-def.h"
 

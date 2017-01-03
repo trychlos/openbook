@@ -52,8 +52,9 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-idbdossier-editor.h"
+#include "api/ofa-idbdossier-editor-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
+#include "api/ofa-idbexercice-editor-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-idbprovider-def.h"
 
@@ -64,7 +65,10 @@ G_BEGIN_DECLS
 #define OFA_IS_IDBEXERCICE_EDITOR( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IDBEXERCICE_EDITOR ))
 #define OFA_IDBEXERCICE_EDITOR_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IDBEXERCICE_EDITOR, ofaIDBExerciceEditorInterface ))
 
+#if 0
 typedef struct _ofaIDBExerciceEditor                     ofaIDBExerciceEditor;
+typedef struct _ofaIDBExerciceEditorInterface            ofaIDBExerciceEditorInterface;
+#endif
 
 /**
  * ofaIDBExerciceEditorInterface:
@@ -75,7 +79,7 @@ typedef struct _ofaIDBExerciceEditor                     ofaIDBExerciceEditor;
  *
  * This defines the interface that an #ofaIDBExerciceEditor should implement.
  */
-typedef struct {
+struct _ofaIDBExerciceEditorInterface {
 	/*< private >*/
 	GTypeInterface parent;
 
@@ -130,8 +134,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean       ( *apply )                ( const ofaIDBExerciceEditor *instance );
-}
-	ofaIDBExerciceEditorInterface;
+};
 
 /*
  * Interface-wide

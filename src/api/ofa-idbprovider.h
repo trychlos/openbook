@@ -59,9 +59,8 @@
 #include "ofa-hub-def.h"
 #include "ofa-idbconnect-def.h"
 #include "ofa-idbdossier-meta-def.h"
-#include "ofa-idbdossier-editor.h"
+#include "ofa-idbdossier-editor-def.h"
 #include "ofa-idbeditor.h"
-#include "ofa-idbexercice-editor.h"
 #include "ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
@@ -79,11 +78,10 @@ typedef struct _ofaIDBProviderInterface           ofaIDBProviderInterface;
 /**
  * ofaIDBProviderInterface:
  * @get_interface_version: [should]: returns the implemented version number.
- * @new_meta: [should]: returns a new ofaIDBDossierMeta object.
+ * @new_dossier_meta: [should]: returns a new ofaIDBDossierMeta object.
+ * @new_dossier_editor: [should]: returns a new ofaIDBDossierEditor object.
  * @new_connect: [should]: returns a new ofaIDBConnect object.
  * @new_editor: [should]: returns a new ofaIDBEditor object.
- * @new_dossier_editor: [should]: returns a new ofaIDBDossierEditor object.
- * @new_exercice_editor: [should]: returns a new ofaIDBExerciceEditor object.
  *
  * This defines the interface that an #ofaIDBProvider should implement.
  */
@@ -166,22 +164,6 @@ struct _ofaIDBProviderInterface {
 	 */
 	ofaIDBEditor *         ( *new_editor )           ( ofaIDBProvider *instance,
 															gboolean editable );
-
-	/**
-	 * new_exercice_editor:
-	 * @instance: this #ofaIDBProvider instance.
-	 * @settings_prefix: the prefix of a user preference key.
-	 * @rule: the usage of the editor.
-	 *
-	 * Returns: a #GtkWidget which implements the #ofaIDBExerciceEditor
-	 * interface, and handles the informations needed to qualify a
-	 * DB server and the storage space required for a dossier.
-	 *
-	 * Since: version 1
-	 */
-	ofaIDBExerciceEditor * ( *new_exercice_editor )  ( ofaIDBProvider *instance,
-															const gchar *settings_prefix,
-															guint rule );
 };
 
 /*
@@ -225,11 +207,6 @@ ofaIDBConnect        *ofa_idbprovider_new_connect               ( ofaIDBProvider
 
 ofaIDBEditor         *ofa_idbprovider_new_editor                ( ofaIDBProvider *provider,
 																		gboolean editable );
-
-ofaIDBExerciceEditor *ofa_idbprovider_new_exercice_editor       ( ofaIDBProvider *provider,
-																		const gchar *settings_prefix,
-																		guint rule,
-																		ofaIDBDossierEditor *dossier_editor );
 
 G_END_DECLS
 

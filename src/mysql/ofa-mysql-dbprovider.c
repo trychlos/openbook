@@ -33,6 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbexercice-meta.h"
@@ -46,7 +47,6 @@
 #include "mysql/ofa-mysql-dossier-meta.h"
 #include "mysql/ofa-mysql-editor-display.h"
 #include "mysql/ofa-mysql-editor-enter.h"
-#include "mysql/ofa-mysql-exercice-editor.h"
 
 /* private instance data
  */
@@ -70,7 +70,6 @@ static ofaIDBDossierMeta    *idbprovider_new_dossier_meta( ofaIDBProvider *insta
 static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
 static ofaIDBConnect        *idbprovider_new_connect( ofaIDBProvider *instance, const gchar *account, const gchar *password, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta );
 static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
-static ofaIDBExerciceEditor *idbprovider_new_exercice_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
 static void                  isetter_iface_init( ofaISetterInterface *iface );
 static ofaIGetter           *isetter_get_getter( ofaISetter *instance );
 static void                  isetter_set_getter( ofaISetter *instance, ofaIGetter *getter );
@@ -189,7 +188,6 @@ idbprovider_iface_init( ofaIDBProviderInterface *iface )
 	iface->new_connect = idbprovider_new_connect;
 	iface->new_editor = idbprovider_new_editor;
 	iface->new_dossier_editor = idbprovider_new_dossier_editor;
-	iface->new_exercice_editor = idbprovider_new_exercice_editor;
 }
 
 /*
@@ -236,16 +234,6 @@ idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_
 	widget = ofa_mysql_dossier_editor_new( instance, settings_prefix, rule );
 
 	return( OFA_IDBDOSSIER_EDITOR( widget ));
-}
-
-static ofaIDBExerciceEditor *
-idbprovider_new_exercice_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule )
-{
-	ofaMysqlExerciceEditor *widget;
-
-	widget = ofa_mysql_exercice_editor_new( instance, settings_prefix, rule );
-
-	return( OFA_IDBEXERCICE_EDITOR( widget ));
 }
 
 /*

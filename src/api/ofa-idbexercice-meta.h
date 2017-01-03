@@ -39,7 +39,7 @@
 
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
-#include "api/ofa-idbexercice-editor.h"
+#include "api/ofa-idbexercice-editor-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
 
 G_BEGIN_DECLS
