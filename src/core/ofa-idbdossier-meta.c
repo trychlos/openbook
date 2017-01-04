@@ -424,7 +424,7 @@ set_exercices_from_settings( ofaIDBDossierMeta *self, sIDBMeta *sdata )
 		}
 	}
 
-	ofa_idbdossier_meta_free_periods( sdata->periods );
+	g_list_free_full( sdata->periods, ( GDestroyNotify ) g_object_unref );
 	sdata->periods = new_list;
 	my_isettings_free_keys( sdata->settings_iface, keys );
 }
@@ -530,11 +530,13 @@ ofa_idbdossier_meta_remove_meta( ofaIDBDossierMeta *meta )
  * ofa_idbdossier_meta_get_periods:
  * @meta: this #ofaIDBDossierMeta instance.
  *
- * Returns: a list of defined financial periods (exercices) for this
- * file (dossier), as a #GList of #ofaIDBExerciceMeta object, which should
- * be #ofa_idbdossier_meta_free_periods() by the caller.
+ * Returns: the #GList of defined financial periods (exercices) for this
+ * file (dossier).
+ *
+ * The returned #GList is owned by @meta, and should not be released by
+ * the caller.
  */
-GList *
+const GList *
 ofa_idbdossier_meta_get_periods( const ofaIDBDossierMeta *meta )
 {
 	sIDBMeta *sdata;
@@ -543,7 +545,25 @@ ofa_idbdossier_meta_get_periods( const ofaIDBDossierMeta *meta )
 
 	sdata = get_instance_data( meta );
 
-	return( g_list_copy_deep( sdata->periods, ( GCopyFunc ) g_object_ref, NULL ));
+	return(( const GList * ) sdata->periods );
+}
+
+/**
+ * ofa_idbdossier_meta_get_periods_count:
+ * @meta: this #ofaIDBDossierMeta instance.
+ *
+ * Returns: the of defined periods.
+ */
+guint
+ofa_idbdossier_meta_get_periods_count( const ofaIDBDossierMeta *meta )
+{
+	sIDBMeta *sdata;
+
+	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), 0 );
+
+	sdata = get_instance_data( meta );
+
+	return( g_list_length( sdata->periods ));
 }
 
 /**
@@ -563,7 +583,7 @@ ofa_idbdossier_meta_set_periods( ofaIDBDossierMeta *meta, GList *periods )
 
 	sdata = get_instance_data( meta );
 
-	ofa_idbdossier_meta_free_periods( sdata->periods );
+	g_list_free_full( sdata->periods, ( GDestroyNotify ) g_object_unref );
 	sdata->periods = g_list_copy_deep( periods, ( GCopyFunc ) g_object_ref, NULL );
 }
 
@@ -873,6 +893,6 @@ on_instance_finalized( sIDBMeta *sdata, GObject *finalized_meta )
 	g_clear_object( &sdata->provider );
 	g_free( sdata->dossier_name );
 	g_free( sdata->settings_group );
-	ofa_idbdossier_meta_free_periods( sdata->periods );
+	g_list_free_full( sdata->periods, ( GDestroyNotify ) g_object_unref );
 	g_free( sdata );
 }

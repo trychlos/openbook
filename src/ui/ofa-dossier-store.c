@@ -267,7 +267,7 @@ load_dataset( ofaDossierStore *self, ofaDossierCollection *collection )
 {
 	GList *dossier_list, *itd;
 	ofaIDBDossierMeta *dossier_meta;
-	GList *period_list, *itp;
+	const GList *period_list, *itp;
 	ofaIDBExerciceMeta *period;
 
 	dossier_list = ofa_dossier_collection_get_list( collection );
@@ -283,7 +283,6 @@ load_dataset( ofaDossierStore *self, ofaDossierCollection *collection )
 
 			insert_row( self, dossier_meta, period );
 		}
-		ofa_idbdossier_meta_free_periods( period_list );
 	}
 }
 

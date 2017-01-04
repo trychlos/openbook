@@ -189,7 +189,7 @@ void
 ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBDossierMeta *meta )
 {
 	ofaExerciceStorePrivate *priv;
-	GList *period_list, *it;
+	const GList *period_list, *it;
 	ofaIDBExerciceMeta *period;
 	GtkTreeIter iter;
 	gchar *begin, *end, *status, *label;
@@ -232,6 +232,4 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBDossierMeta *meta
 		g_free( status );
 		g_free( label );
 	}
-
-	ofa_idbdossier_meta_free_periods( period_list );
 }

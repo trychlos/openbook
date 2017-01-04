@@ -220,10 +220,9 @@ ofaIDBExerciceMeta *ofa_idbdossier_meta_new_exercice_meta         ( ofaIDBDossie
 
 void                ofa_idbdossier_meta_remove_meta               ( ofaIDBDossierMeta *meta );
 
-GList              *ofa_idbdossier_meta_get_periods               ( const ofaIDBDossierMeta *meta );
+const GList        *ofa_idbdossier_meta_get_periods               ( const ofaIDBDossierMeta *meta );
 
-#define             ofa_idbdossier_meta_free_periods(L)           g_list_free_full(( L ), \
-																		( GDestroyNotify ) g_object_unref )
+guint               ofa_idbdossier_meta_get_periods_count         ( const ofaIDBDossierMeta *meta );
 
 void                ofa_idbdossier_meta_set_periods               ( ofaIDBDossierMeta *meta,
 																		GList *periods );

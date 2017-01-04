@@ -571,7 +571,7 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 	gboolean visible;
 	ofaIDBDossierMeta *meta;
 	ofaIDBExerciceMeta *period;
-	GList *periods;
+	guint count;
 
 	priv = ofa_dossier_treeview_get_instance_private( OFA_DOSSIER_TREEVIEW( tvbin ));
 
@@ -589,13 +589,12 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 		visible = TRUE;
 
 	} else {
-		periods = ofa_idbdossier_meta_get_periods( meta );
-		if( g_list_length( periods ) == 1 ){
+		count = ofa_idbdossier_meta_get_periods_count( meta );
+		if( count == 1 ){
 			visible = TRUE;
 		} else {
 			visible = ofa_idbexercice_meta_get_current( period );
 		}
-		ofa_idbdossier_meta_free_periods( periods );
 	}
 
 	g_object_unref( period );

@@ -37,6 +37,7 @@
    - ofaIDBDossierEditor: new interface.
    - ofa_idbdossier_meta_get_provider() no more returns a new reference (todo #1304).
    - ofa_idbdossier_meta_get_settings_group() no more returns a new string (todo #1305).
+   - ofa_idbdossier_meta_get_periods() no more returns a new list.
    - ofaIDBExerciceEditor: new interface.
    - ofaIDBProvider: maintains a pointer to ofaHub.
    - ofaIDBProvider::connect() set arguments for an automatic connection.
