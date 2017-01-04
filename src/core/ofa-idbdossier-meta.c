@@ -709,9 +709,11 @@ ofa_idbdossier_meta_remove_period( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *
  * ofa_idbdossier_meta_get_current_period:
  * @meta: this #ofaIDBDossierMeta instance.
  *
- * Returns: a new reference of the #ofaIDBExerciceMeta which identifies the
- * current financial period. This reference should be g_object_unref()
- * by the caller.
+ * Returns: the #ofaIDBExerciceMeta which identifies the current
+ * financial period, or %NULL.
+ *
+ * If not %NULL, the returned reference is owned by the @meta, and should
+ * not be released by the caller.
  */
 ofaIDBExerciceMeta *
 ofa_idbdossier_meta_get_current_period( const ofaIDBDossierMeta *meta )
@@ -728,7 +730,7 @@ ofa_idbdossier_meta_get_current_period( const ofaIDBDossierMeta *meta )
 		period = ( ofaIDBExerciceMeta * ) it->data;
 		g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 		if( ofa_idbexercice_meta_get_current( period )){
-			return( g_object_ref( period ));
+			return( period );
 		}
 	}
 

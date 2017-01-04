@@ -605,7 +605,6 @@ idbconnect_create_dossier( const ofaIDBConnect *instance )
 			g_free( msg );
 		}
 	}
-	g_object_unref( period );
 	g_string_free( query, TRUE );
 
 	return( ok );

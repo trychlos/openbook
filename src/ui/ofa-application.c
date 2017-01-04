@@ -847,7 +847,6 @@ application_activate( GApplication *application )
 					OFA_IGETTER( application ), GTK_WINDOW( priv->main_window ),
 					meta, period, st_dossier_user_opt, st_dossier_passwd_opt );
 		}
-		g_clear_object( &period );
 	}
 }
 

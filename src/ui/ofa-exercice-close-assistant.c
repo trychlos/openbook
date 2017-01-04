@@ -1454,8 +1454,6 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		cnx = ofa_idbprovider_new_connect( provider, cur_account, cur_password, priv->dossier_meta, period );
 		ok = ( cnx != NULL );
 
-		g_object_unref( period );
-
 		if( !ok ){
 			my_iwindow_msg_dialog(
 					MY_IWINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to open a connection on the new exercice" ));

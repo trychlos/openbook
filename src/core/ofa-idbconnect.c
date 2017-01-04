@@ -883,10 +883,6 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 			g_object_unref( target_connect );
 		}
 
-		if( !period ){
-			g_clear_object( &target_period );
-		}
-
 		return( ok );
 	}
 
@@ -989,7 +985,6 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_ac
 		period = ofa_idbdossier_meta_get_current_period( sdata->dossier_meta );
 		provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
 		db_connection = ofa_idbprovider_new_connect( provider, sdata->account, sdata->password, sdata->dossier_meta, period );
-		g_object_unref( period );
 		ok = ( db_connection != NULL );
 	}
 	if( ok ){
