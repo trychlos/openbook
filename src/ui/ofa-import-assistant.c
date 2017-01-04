@@ -1544,9 +1544,9 @@ read_settings( ofaImportAssistant *self )
 {
 	ofaImportAssistantPrivate *priv;
 	GList *strlist, *it;
-	const gchar *cstr;
+	const gchar *cstr, *group;
 	myISettings *settings;
-	gchar *key, *group;
+	gchar *key;
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
@@ -1586,8 +1586,6 @@ read_settings( ofaImportAssistant *self )
 	group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
 	priv->p1_folder = my_isettings_get_string( settings, group, st_import_folder );
-
-	g_free( group );
 }
 
 static void
@@ -1595,7 +1593,8 @@ write_settings( ofaImportAssistant *self )
 {
 	ofaImportAssistantPrivate *priv;
 	myISettings *settings;
-	gchar *key, *group, *str;
+	gchar *key, *str;
+	const gchar *group;
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
@@ -1622,8 +1621,6 @@ write_settings( ofaImportAssistant *self )
 	if( my_strlen( priv->p1_folder )){
 		my_isettings_set_string( settings, group, st_import_folder, priv->p1_folder );
 	}
-
-	g_free( group );
 }
 
 /*

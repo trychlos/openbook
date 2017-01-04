@@ -185,8 +185,9 @@ static void
 init_dialog( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
-	gchar *group, *last_folder, *def_name;
+	gchar *last_folder, *def_name;
 	myISettings *settings;
+	const gchar *group;
 
 	priv = ofa_backup_get_instance_private( self );
 
@@ -220,7 +221,6 @@ init_dialog( ofaBackup *self )
 		gtk_file_chooser_set_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ), last_folder );
 	}
 	g_free( last_folder );
-	g_free( group );
 }
 
 static gchar *
@@ -257,9 +257,10 @@ static gboolean
 do_backup( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
-	gchar *group, *folder, *uri;
+	gchar *folder, *uri;
 	gboolean ok;
 	myISettings *settings;
+	const gchar *group;
 
 	priv = ofa_backup_get_instance_private( self );
 
@@ -276,7 +277,6 @@ do_backup( ofaBackup *self )
 
 	ok = ofa_idbconnect_backup( priv->connect, uri );
 
-	g_free( group );
 	g_free( folder );
 	g_free( uri );
 

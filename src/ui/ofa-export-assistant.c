@@ -1052,9 +1052,9 @@ read_settings( ofaExportAssistant *self )
 {
 	ofaExportAssistantPrivate *priv;
 	GList *strlist, *it;
-	const gchar *cstr;
+	const gchar *cstr, *group;
 	myISettings *settings;
-	gchar *key, *group;
+	gchar *key;
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
@@ -1088,8 +1088,6 @@ read_settings( ofaExportAssistant *self )
 		priv->p3_folder_uri = g_strdup( "." );
 	}
 	g_debug( "read_settings: p3_folder_uri=%s", priv->p3_folder_uri );
-
-	g_free( group );
 }
 
 static void
@@ -1097,7 +1095,8 @@ write_settings( ofaExportAssistant *self )
 {
 	ofaExportAssistantPrivate *priv;
 	myISettings *settings;
-	gchar *key, *str, *group;
+	gchar *key, *str;
+	const gchar *group;
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
@@ -1121,8 +1120,6 @@ write_settings( ofaExportAssistant *self )
 	if( my_strlen( priv->p3_folder_uri )){
 		my_isettings_set_string( settings, group, st_export_folder, priv->p3_folder_uri );
 	}
-
-	g_free( group );
 }
 
 /*

@@ -413,8 +413,6 @@
 1303 2016-12-27 ack -lw get_valid src
                 replace get_valid() with is_valid()
 
-1305 2016-12-28 ofa_idbdossier_meta_get_group_name(): returns a const gchar *
-
 1307
 
 -----------------------------------------------------------------------
@@ -424,6 +422,9 @@
 1304 2016-12-28 ofa_idbdossier_meta_get_provider(): should not return 
                 a new reference
      2017- 1- 4 fixed
+
+1305 2016-12-28 ofa_idbdossier_meta_get_group_name(): returns a const gchar *
+     2017- 1- 4 done
 
 1306 2017- 1- 3 my_iident_get_canon_name: does not need user_data ?
      2017- 1- 4 this is at least used in my_iident_get_version to let

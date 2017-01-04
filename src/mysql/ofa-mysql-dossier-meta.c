@@ -287,7 +287,7 @@ idbdossier_meta_update_period( ofaIDBDossierMeta *instance,
 		ofaIDBExerciceMeta *period, gboolean current, const GDate *begin, const GDate *end )
 {
 	myISettings *settings;
-	gchar *group;
+	const gchar *group;
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
 	g_return_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ));
@@ -295,15 +295,13 @@ idbdossier_meta_update_period( ofaIDBDossierMeta *instance,
 	settings = ofa_idbdossier_meta_get_settings_iface( instance );
 	group = ofa_idbdossier_meta_get_settings_group( instance );
 	ofa_mysql_exercice_meta_update( OFA_MYSQL_EXERCICE_META( period ), settings, group, current, begin, end );
-
-	g_free( group );
 }
 
 static void
 idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period )
 {
 	myISettings *settings;
-	gchar *group;
+	const gchar *group;
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
 	g_return_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ));
@@ -311,8 +309,6 @@ idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *
 	settings = ofa_idbdossier_meta_get_settings_iface( instance );
 	group = ofa_idbdossier_meta_get_settings_group( instance );
 	ofa_mysql_exercice_meta_remove( OFA_MYSQL_EXERCICE_META( period ), settings, group );
-
-	g_free( group );
 }
 
 static void
@@ -452,7 +448,7 @@ ofa_mysql_dossier_meta_add_period( ofaMysqlDossierMeta *meta,
 {
 	ofaMysqlExerciceMeta *period;
 	myISettings *settings;
-	gchar *group;
+	const gchar *group;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
@@ -462,8 +458,6 @@ ofa_mysql_dossier_meta_add_period( ofaMysqlDossierMeta *meta,
 	period = ofa_mysql_exercice_meta_new_to_settings( settings, group, current, begin, end, database );
 	//ofa_idbdossier_meta_add_period( OFA_IDBDOSSIER_META( meta ), OFA_IDBEXERCICE_META( period ));
 	g_object_unref( period );
-
-	g_free( group );
 }
 
 /**

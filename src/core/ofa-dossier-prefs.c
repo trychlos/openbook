@@ -388,7 +388,7 @@ ofa_dossier_prefs_set_background_img( ofaDossierPrefs *prefs, const gchar *uri )
 	ofaDossierPrefsPrivate *priv;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *dossier_meta;
-	gchar *group;
+	const gchar *group;
 	myISettings *settings;
 
 	g_return_if_fail( prefs && OFA_IS_DOSSIER_PREFS( prefs ));
@@ -406,8 +406,6 @@ ofa_dossier_prefs_set_background_img( ofaDossierPrefs *prefs, const gchar *uri )
 	group = ofa_idbdossier_meta_get_settings_group( dossier_meta );
 
 	my_isettings_set_string( settings, group, st_background_img, priv->background_uri );
-
-	g_free( group );
 }
 
 /*
@@ -421,8 +419,8 @@ read_settings( ofaDossierPrefs *self )
 	GList *list, *it;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *dossier_meta;
-	const gchar *cstr;
-	gchar *group, *str;
+	const gchar *group, *cstr;
+	gchar *str;
 
 	priv = ofa_dossier_prefs_get_instance_private( self );
 
@@ -458,8 +456,6 @@ read_settings( ofaDossierPrefs *self )
 	str = my_isettings_get_string( settings, group, st_background_img );
 	g_free( priv->background_uri );
 	priv->background_uri = str;
-
-	g_free( group );
 }
 
 static void
@@ -469,7 +465,8 @@ write_settings( ofaDossierPrefs *self )
 	myISettings *settings;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *dossier_meta;
-	gchar *group, *str;
+	gchar *str;
+	const gchar *group;
 
 	priv = ofa_dossier_prefs_get_instance_private( self );
 
@@ -488,5 +485,4 @@ write_settings( ofaDossierPrefs *self )
 	my_isettings_set_string( settings, group, st_prefs_settings, str );
 
 	g_free( str );
-	g_free( group );
 }

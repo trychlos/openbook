@@ -206,7 +206,7 @@ myISettings        *ofa_idbdossier_meta_get_settings_iface        ( const ofaIDB
 void                ofa_idbdossier_meta_set_settings_iface        ( ofaIDBDossierMeta *meta,
 																		myISettings *settings );
 
-gchar              *ofa_idbdossier_meta_get_settings_group        ( const ofaIDBDossierMeta *meta );
+const gchar        *ofa_idbdossier_meta_get_settings_group        ( const ofaIDBDossierMeta *meta );
 
 void                ofa_idbdossier_meta_set_settings_group        ( ofaIDBDossierMeta *meta,
 																		const gchar *group_name );

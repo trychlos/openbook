@@ -330,10 +330,9 @@ ofa_idbdossier_meta_set_settings_iface( ofaIDBDossierMeta *meta, myISettings *se
  * @meta: this #ofaIDBDossierMeta instance.
  *
  * Returns: the name of the group which holds all dossier informations
- * in the settings file, as a newly allocated string which should be
- * g_free() by the caller.
+ * in the settings file.
  */
-gchar *
+const gchar *
 ofa_idbdossier_meta_get_settings_group( const ofaIDBDossierMeta *meta )
 {
 	sIDBMeta *sdata;
@@ -342,7 +341,7 @@ ofa_idbdossier_meta_get_settings_group( const ofaIDBDossierMeta *meta )
 
 	sdata = get_instance_data( meta );
 
-	return( g_strdup( sdata->settings_group ));
+	return(( const gchar * ) sdata->settings_group );
 }
 
 /**
