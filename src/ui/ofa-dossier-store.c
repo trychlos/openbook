@@ -313,7 +313,6 @@ set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofa
 	dosname = ofa_idbdossier_meta_get_dossier_name( dossier_meta );
 	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 	provname = ofa_idbprovider_get_canon_name( provider );
-	g_object_unref( provider );
 
 	begin = my_date_to_str( ofa_idbexercice_meta_get_begin_date( period ), ofa_prefs_date_display( priv->hub ));
 	end = my_date_to_str( ofa_idbexercice_meta_get_end_date( period ), ofa_prefs_date_display( priv->hub ));

@@ -827,7 +827,6 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	provider = ofa_idbdossier_meta_get_provider( priv->p2_dossier_meta );
 	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
 	editor = ofa_idbprovider_new_editor( provider, FALSE );
-	g_object_unref( provider );
 
 	ofa_idbeditor_set_meta( editor, priv->p2_dossier_meta, priv->p2_exercice_meta );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( editor ));

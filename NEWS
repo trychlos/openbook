@@ -13,7 +13,7 @@
 
  New features and improvements:
 
-   - ofaDossierOpen: exercice is unselectable if no dossier is selected (todo #1297).
+   - ofaDossierOpen: exercice is disabled if no dossier is selected (todo #1297).
    - ofaExportAssistant: have a message when output file is not set.
 
  Bug fixes:
@@ -24,6 +24,7 @@
 
  Other changes:
 
+   - myIDialog: set OK button insensitive in case of an error.
    - myIWindow: set_settings() is renamed set_geometry_settings() (todo #1282).
    - myIWindow: deprecate my_iwindow_get_keyname() (todo #1283).
    - No more try to read/write user settings from myIWindow geometry settings (todo #1284).
@@ -34,8 +35,12 @@
    - ofaDossierMetaBin: new class.
    - ofaExerciceMetaBin: new class.
    - ofaIDBDossierEditor: new interface.
+   - ofa_idbdossier_meta_get_provider() no more returns a new reference (todo #1304).
    - ofaIDBExerciceEditor: new interface.
-   - ofaIDBprovider: maintains a pointer to ofaHub.
+   - ofaIDBProvider: maintains a pointer to ofaHub.
+   - ofaIDBProvider::connect() set arguments for an automatic connection.
+   - ofaIDBProvider::new_exercice_editor() is moved to ofaIDBDossierEditor.
+   - ofaIDBProvider::new_exercice_meta() is moved to ofaIDBDossierMeta.
    - ofaISetter: new interface which targets dynamic objects.
    - ofaLedgerBookBin class is renamed to ofaLedgerBookArgs.
    - ofaLedgerSummaryBin class is renamed to ofaLedgerSummaryArgs.

@@ -430,7 +430,6 @@ ofa_dossier_collection_add_meta( ofaDossierCollection *collection, ofaIDBDossier
 	my_isettings_set_string( priv->dossier_settings, group, DOSSIER_COLLECTION_PROVIDER_KEY, prov_name );
 
 	g_free( prov_name );
-	g_object_unref( prov_instance );
 	g_free( group );
 }
 
@@ -472,7 +471,6 @@ ofa_dossier_collection_remove_meta( ofaDossierCollection *collection, ofaIDBDoss
 	my_isettings_set_string( priv->dossier_settings, group, DOSSIER_COLLECTION_PROVIDER_KEY, prov_name );
 
 	g_free( prov_name );
-	g_object_unref( prov_instance );
 	g_free( group );
 #endif
 }

@@ -313,7 +313,6 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	ofaDossierNewPrivate *priv;
 	gboolean open, ok;
 	ofaIDBDossierMeta *dossier_meta;
-	ofaIDBProvider *provider;
 	ofaIDBConnect *connect;
 	ofaIDBDossierEditor *dossier_editor;
 	gchar *adm_account, *adm_password;
@@ -338,7 +337,6 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 
 	/* create the new dossier */
 	dossier_meta = ofa_dossier_edit_bin_get_dossier_meta( priv->edit_bin );
-	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 	dossier_editor = ofa_dossier_edit_bin_get_dossier_editor( priv->edit_bin );
 	connect = ofa_idbdossier_editor_get_valid_connect( dossier_editor, dossier_meta );
 	ofa_dossier_edit_bin_get_admin_credentials( priv->edit_bin, &adm_account, &adm_password );
@@ -352,7 +350,6 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 
 	g_free( adm_password );
 	g_free( adm_account );
-	g_object_unref( provider );
 
 	if( !ok ){
 		return( FALSE );

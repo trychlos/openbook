@@ -881,7 +881,6 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 					provider, sdata->account, sdata->password, sdata->dossier_meta, target_period );
 			set_admin_credentials( target_connect, adm_account, adm_password );
 			g_object_unref( target_connect );
-			g_object_unref( provider );
 		}
 
 		if( !period ){
@@ -990,7 +989,6 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_ac
 		period = ofa_idbdossier_meta_get_current_period( sdata->dossier_meta );
 		provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
 		db_connection = ofa_idbprovider_new_connect( provider, sdata->account, sdata->password, sdata->dossier_meta, period );
-		g_object_unref( provider );
 		g_object_unref( period );
 		ok = ( db_connection != NULL );
 	}

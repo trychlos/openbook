@@ -148,7 +148,6 @@ ofa_mysql_cmdline_backup_run( ofaMysqlConnect *connect, const gchar *uri )
 
 	g_free( fname );
 	g_free( template );
-	g_object_unref( provider );
 
 	ofa_mysql_connect_query( connect, "UNLOCK TABLES" );
 
@@ -224,7 +223,6 @@ ofa_mysql_cmdline_restore_run( ofaMysqlConnect *connect,
 
 	g_free( template );
 	g_free( fname );
-	g_object_unref( provider );
 
 	return( ok );
 }
@@ -540,7 +538,6 @@ do_execute_async( const gchar *template,
 
 	g_free( infos );
 	g_free( cmdline );
-	g_object_unref( provider );
 
 	g_debug( "%s: returning %s", thisfn, ok ? "True":"False" );
 	return( ok );

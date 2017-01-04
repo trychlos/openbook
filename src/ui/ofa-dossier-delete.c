@@ -62,7 +62,6 @@ typedef struct {
 	/* runtime
 	 */
 	ofaHub                   *hub;
-	ofaIDBProvider           *provider;
 	gchar                    *root_account;
 	gchar                    *root_password;
 
@@ -128,7 +127,6 @@ dossier_delete_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->dossier_meta );
 		g_clear_object( &priv->exercice_meta );
-		g_clear_object( &priv->provider );
 	}
 
 	/* chain up to the parent class */
@@ -256,6 +254,7 @@ idialog_init( myIDialog *instance )
 	gchar *msg;
 	GtkSizeGroup *group;
 	const gchar *dossier_name;
+	ofaIDBProvider *provider;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -276,9 +275,9 @@ idialog_init( myIDialog *instance )
 	g_free( msg );
 
 	/* connection infos */
-	priv->provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
-	g_return_if_fail( priv->provider && OFA_IS_IDBPROVIDER( priv->provider ));
-	priv->infos = ofa_idbprovider_new_editor( priv->provider, FALSE );
+	provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
+	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
+	priv->infos = ofa_idbprovider_new_editor( provider, FALSE );
 	g_return_if_fail( priv->infos && GTK_IS_WIDGET( priv->infos ));
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "infos-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));

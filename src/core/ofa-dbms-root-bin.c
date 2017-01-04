@@ -426,7 +426,6 @@ is_valid_composite( ofaDBMSRootBin *self )
 				ok = ( connect != NULL );
 				g_clear_object( &connect );
 			}
-			g_clear_object( &provider );
 			ofa_dbms_root_bin_set_valid( self, ok );
 		}
 	}

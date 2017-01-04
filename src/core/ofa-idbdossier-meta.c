@@ -203,8 +203,10 @@ ofa_idbdossier_meta_get_interface_version( GType type )
  * ofa_idbdossier_meta_get_provider:
  * @meta: this #ofaIDBDossierMeta instance.
  *
- * Returns: a new reference to the provider instance which should be
- * g_object_unref() by the caller.
+ * Returns: the attached #ofaIDBProvider.
+ *
+ * The returned reference is owned by @meta, and should not be released
+ * by the caller.
  */
 ofaIDBProvider *
 ofa_idbdossier_meta_get_provider( const ofaIDBDossierMeta *meta )
@@ -215,7 +217,7 @@ ofa_idbdossier_meta_get_provider( const ofaIDBDossierMeta *meta )
 
 	sdata = get_instance_data( meta );
 
-	return( g_object_ref( sdata->provider ));
+	return( sdata->provider );
 }
 
 /**
