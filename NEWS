@@ -34,6 +34,7 @@
    - ofaDossierEditBin: new class.
    - ofaDossierMetaBin: new class.
    - ofaExerciceMetaBin: new class.
+   - ofaIDBConnect::create_dossier() can now output an error message.
    - ofaIDBDossierEditor: new interface.
    - ofa_idbdossier_meta_get_provider() no more returns a new reference (todo #1304).
    - ofa_idbdossier_meta_get_settings_group() no more returns a new string (todo #1305).

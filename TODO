@@ -413,7 +413,9 @@
 1303 2016-12-27 ack -lw get_valid src
                 replace get_valid() with is_valid()
 
-1307
+1307 2017- 1- 4 idbconnect_restore(): add a msgerr
+
+1308
 
 -----------------------------------------------------------------------
  DONE

@@ -341,7 +341,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	connect = ofa_idbdossier_editor_get_valid_connect( dossier_editor, dossier_meta );
 	ofa_dossier_edit_bin_get_admin_credentials( priv->edit_bin, &adm_account, &adm_password );
 
-	if( !ofa_idbconnect_create_dossier( connect, adm_account, adm_password )){
+	if( !ofa_idbconnect_create_dossier( connect, adm_account, adm_password, msgerr )){
 		collection = ofa_hub_get_dossier_collection( priv->hub );
 		ofa_dossier_collection_remove_meta( collection, dossier_meta );
 		*msgerr = g_strdup( _( "Unable to create the new dossier" ));

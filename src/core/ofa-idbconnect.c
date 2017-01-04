@@ -62,7 +62,7 @@ static gboolean     idbconnect_query( const ofaIDBConnect *connect, const gchar 
 static void         audit_query( const ofaIDBConnect *connect, const gchar *query );
 static gchar       *quote_query( const gchar *query );
 static void         error_query( const ofaIDBConnect *connect, const gchar *query );
-static gboolean     set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password );
+static gboolean     set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr );
 static sIDBConnect *get_instance_data( const ofaIDBConnect *connect );
 static void         on_instance_finalized( sIDBConnect *sdata, GObject *finalized_dbconnect );
 
@@ -879,7 +879,7 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 			provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
 			target_connect = ofa_idbprovider_new_connect(
 					provider, sdata->account, sdata->password, sdata->dossier_meta, target_period );
-			set_admin_credentials( target_connect, adm_account, adm_password );
+			set_admin_credentials( target_connect, adm_account, adm_password, NULL );
 			g_object_unref( target_connect );
 		}
 
@@ -938,6 +938,7 @@ ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
  *  expected to be valid.
  * @adm_account: the Openbook administrative user account.
  * @adm_password: the Openbook administrative user password.
+ * @msgerr: [out][allow-none]: a placeholder for an error message.
  *
  * Creates the minimal storage space required to handle the dossier in
  * the DBMS provider.
@@ -946,7 +947,7 @@ ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
  * Returns: %TRUE if successful.
  */
 gboolean
-ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password )
+ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr )
 {
 	static const gchar *thisfn = "ofa_idbconnect_create_dossier";
 	sIDBConnect *sdata;
@@ -956,8 +957,8 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_ac
 	ofaIDBExerciceMeta *period;
 	ofaIDBConnect *db_connection;
 
-	g_debug( "%s: connect=%p, adm_account=%s, adm_password=%s",
-			thisfn, ( void * ) connect, adm_account, adm_password ? "******":adm_password );
+	g_debug( "%s: connect=%p, adm_account=%s, adm_password=%s, msgerr=%p",
+			thisfn, ( void * ) connect, adm_account, adm_password ? "******":adm_password, ( void * ) msgerr );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
@@ -966,7 +967,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_ac
 
 	/* create the minimal database and grant the user */
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier( connect );
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier( connect, msgerr );
 
 	} else {
 		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'create_dossier()' method",
@@ -995,18 +996,24 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_ac
 				"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"
 				"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query timestamp',"
 				"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query content') " );
-		ok = ofa_idbconnect_query( db_connection, query->str, TRUE );
+		ok = ofa_idbconnect_query( db_connection, query->str, FALSE );
+		if( !ok && msgerr ){
+			*msgerr = ofa_idbconnect_get_last_error( db_connection );
+		}
 	}
 	if( ok ){
 		g_string_printf( query,
 				"CREATE TABLE IF NOT EXISTS OFA_T_ROLES ("
 					"ROL_USER     VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'User account',"
 					"ROL_IS_ADMIN INTEGER                            COMMENT 'Whether the user has administration role') " );
-		ok = ofa_idbconnect_query( db_connection, query->str, TRUE );
+		ok = ofa_idbconnect_query( db_connection, query->str, FALSE );
+		if( !ok && msgerr ){
+			*msgerr = ofa_idbconnect_get_last_error( db_connection );
+		}
 	}
 	/* set admin credentials */
 	if( ok ){
-		ok = set_admin_credentials( db_connection, adm_account, adm_password );
+		ok = set_admin_credentials( db_connection, adm_account, adm_password, msgerr );
 	}
 	g_string_free( query, TRUE );
 
@@ -1023,6 +1030,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_ac
  *  describe the target exercice.
  * @adm_account: the Openbook administrative user account.
  * @adm_password: the Openbook administrative user password.
+ * @msgerr: [out][allow-none]: a placeholder for an error message.
  *
  * Defines the administrative user, and grants permissions to him on
  * the specified dossier/exercice.
@@ -1030,15 +1038,15 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_ac
  * Returns: %TRUE if successful.
  */
 static gboolean
-set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password )
+set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr )
 {
 	static const gchar *thisfn = "ofa_idbconnect_set_admin_credentials";
 	sIDBConnect *sdata;
 	gboolean ok;
 	GString *query;
 
-	g_debug( "%s: connect=%p, adm_account=%s, adm_password=%s",
-			thisfn, ( void * ) connect, adm_account, adm_password ? "******" : adm_password );
+	g_debug( "%s: connect=%p, adm_account=%s, adm_password=%s, msgerr=%p",
+			thisfn, ( void * ) connect, adm_account, adm_password ? "******" : adm_password, ( void * ) msgerr );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 	g_return_val_if_fail( my_strlen( adm_account ), FALSE );
@@ -1048,7 +1056,7 @@ set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, c
 	query = g_string_new( "" );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user( connect, sdata->exercice_meta, adm_account, adm_password );
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user( connect, sdata->exercice_meta, adm_account, adm_password, msgerr );
 
 	} else {
 		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'grant_user()' method",
@@ -1063,12 +1071,18 @@ set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, c
 		g_string_printf( query,
 					"INSERT IGNORE INTO OFA_T_ROLES "
 					"	(ROL_USER,ROL_IS_ADMIN) VALUES ('%s',1)", adm_account );
-		ok = ofa_idbconnect_query( connect, query->str, TRUE );
+		ok = ofa_idbconnect_query( connect, query->str, FALSE );
+		if( !ok && msgerr ){
+			*msgerr = ofa_idbconnect_get_last_error( connect );
+		}
 	}
 	if( ok ){
 		g_string_printf( query,
 					"UPDATE OFA_T_ROLES SET ROL_IS_ADMIN=1 WHERE ROL_USER='%s'", adm_account );
-		ok = ofa_idbconnect_query( connect, query->str, TRUE );
+		ok = ofa_idbconnect_query( connect, query->str, FALSE );
+		if( !ok && msgerr ){
+			*msgerr = ofa_idbconnect_get_last_error( connect );
+		}
 	}
 	g_string_free( query, TRUE );
 

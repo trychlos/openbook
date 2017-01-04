@@ -236,6 +236,7 @@ struct _ofaIDBConnectInterface {
 	/**
 	 * create_dossier:
 	 * @instance: an #ofaIDBConnect superuser connection on the DBMS server.
+	 * @msgerr: [out][allow-none]: a placeholder for an error message.
 	 *
 	 * Create and initialize a new minimal dossier database.
 	 * It is expected that the DBMS provider drops its database and
@@ -245,7 +246,8 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *create_dossier )       ( const ofaIDBConnect *instance );
+	gboolean ( *create_dossier )       ( const ofaIDBConnect *instance,
+											gchar **msgerr );
 
 	/**
 	 * grant_user:
@@ -255,6 +257,7 @@ struct _ofaIDBConnectInterface {
 	 * @period: the target financial period.
 	 * @user_account: the account to be granted.
 	 * @user_password: the corresponding password.
+	 * @msgerr: [out][allow-none]: a placeholder for an error message.
 	 *
 	 * Grant the user for access to the dossier/exercice.
 	 *
@@ -273,7 +276,8 @@ struct _ofaIDBConnectInterface {
 	gboolean ( *grant_user )           ( const ofaIDBConnect *instance,
 											const ofaIDBExerciceMeta *period,
 											const gchar *user_account,
-											const gchar *user_password );
+											const gchar *user_password,
+											gchar **msgerr );
 
 	/**
 	 * transaction_start:
@@ -403,7 +407,8 @@ gboolean            ofa_idbconnect_archive_and_new          ( const ofaIDBConnec
 
 gboolean            ofa_idbconnect_create_dossier           ( const ofaIDBConnect *connect,
 																	const gchar *adm_account,
-																	const gchar *adm_password );
+																	const gchar *adm_password,
+																	gchar **msgerr );
 
 gboolean            ofa_idbconnect_transaction_start        ( const ofaIDBConnect *connect,
 																	gboolean display_error,

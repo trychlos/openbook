@@ -67,8 +67,8 @@ static gchar   *idbconnect_get_last_error( const ofaIDBConnect *instance );
 static gboolean idbconnect_backup( const ofaIDBConnect *instance, const gchar *uri );
 static gboolean idbconnect_restore( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *uri );
 static gboolean idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next );
-static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance );
-static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *account, const gchar *password );
+static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance, gchar **msgerr );
+static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *account, const gchar *password, gchar **msgerr );
 static gchar   *find_new_database( ofaMysqlConnect *connect, const gchar *prev_database );
 static gboolean local_get_db_exists( ofaMysqlConnect *connect, const gchar *dbname );
 static gboolean idbconnect_transaction_start( const ofaIDBConnect *instance );
@@ -560,7 +560,7 @@ idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_acc
  * @instance: a superuser connection on the DBMS server
  */
 static gboolean
-idbconnect_create_dossier( const ofaIDBConnect *instance )
+idbconnect_create_dossier( const ofaIDBConnect *instance, gchar **msgerr )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_create_dossier";
 	ofaMysqlConnectPrivate *priv;
@@ -591,8 +591,12 @@ idbconnect_create_dossier( const ofaIDBConnect *instance )
 		ok = idbconnect_query( instance, query->str );
 		if( !ok ){
 			msg = idbconnect_get_last_error( instance );
-			g_warning( "%s: %s", thisfn, msg );
-			g_free( msg );
+			if( msgerr ){
+				*msgerr = msg;
+			} else {
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+			}
 		}
 	}
 	if( ok ){
@@ -601,8 +605,12 @@ idbconnect_create_dossier( const ofaIDBConnect *instance )
 		ok = idbconnect_query( instance, query->str );
 		if( !ok ){
 			msg = idbconnect_get_last_error( instance );
-			g_warning( "%s: %s", thisfn, msg );
-			g_free( msg );
+			if( msgerr ){
+				*msgerr = msg;
+			} else {
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+			}
 		}
 	}
 	g_string_free( query, TRUE );
@@ -615,7 +623,8 @@ idbconnect_create_dossier( const ofaIDBConnect *instance )
  * @period: the target financial period
  */
 static gboolean
-idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *account, const gchar *password )
+idbconnect_grant_user( const ofaIDBConnect *instance,
+			const ofaIDBExerciceMeta *period, const gchar *account, const gchar *password, gchar **msgerr )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_grant_user";
 	ofaMysqlConnectPrivate *priv;
@@ -662,11 +671,15 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *
 				account,
 				hostname );
 	g_debug( "%s: %s", thisfn, query->str );
-	if( !idbconnect_query( instance, query->str )){
+	ok = idbconnect_query( instance, query->str );
+	if( !ok ){
 		msg = idbconnect_get_last_error( instance );
-		g_warning( "%s: %s", thisfn, msg );
-		g_free( msg );
-		ok = FALSE;
+		if( msgerr ){
+			*msgerr = msg;
+		} else {
+			g_warning( "%s: %s", thisfn, msg );
+			g_free( msg );
+		}
 	}
 	if( ok ){
 		g_string_printf( query,
@@ -674,22 +687,30 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *
 					account,
 					hostname );
 		g_debug( "%s: %s", thisfn, query->str );
-		if( !idbconnect_query( instance, query->str )){
+		ok = idbconnect_query( instance, query->str );
+		if( !ok ){
 			msg = idbconnect_get_last_error( instance );
-			g_warning( "%s: %s", thisfn, msg );
-			g_free( msg );
-			ok = FALSE;
+			if( msgerr ){
+				*msgerr = msg;
+			} else {
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+			}
 		}
 	}
 	if( ok ){
 		g_string_printf( query,
 				"FLUSH PRIVILEGES" );
 		g_debug( "%s: %s", thisfn, query->str );
-		if( !idbconnect_query( instance, query->str )){
+		ok = idbconnect_query( instance, query->str );
+		if( !ok ){
 			msg = idbconnect_get_last_error( instance );
-			g_warning( "%s: %s", thisfn, msg );
-			g_free( msg );
-			ok = FALSE;
+			if( msgerr ){
+				*msgerr = msg;
+			} else {
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+			}
 		}
 	}
 	g_string_free( query, TRUE );
