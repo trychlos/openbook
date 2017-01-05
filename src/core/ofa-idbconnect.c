@@ -931,7 +931,7 @@ ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
 }
 
 /**
- * ofa_idbconnect_create_dossier:
+ * ofa_idbconnect_period_new:
  * @connect: an #ofaIDBConnect object which handles a superuser
  *  connection on the DBMS at server-level. The connection may have
  *  been opened with editor informations, and period member is not
@@ -947,9 +947,9 @@ ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
  * Returns: %TRUE if successful.
  */
 gboolean
-ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr )
+ofa_idbconnect_period_new( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr )
 {
-	static const gchar *thisfn = "ofa_idbconnect_create_dossier";
+	static const gchar *thisfn = "ofa_idbconnect_period_new";
 	sIDBConnect *sdata;
 	gboolean ok;
 	GString *query;
@@ -966,11 +966,11 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect, const gchar *adm_ac
 	sdata = get_instance_data( connect );
 
 	/* create the minimal database and grant the user */
-	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier( connect, msgerr );
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->period_new ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->period_new( connect, msgerr );
 
 	} else {
-		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'create_dossier()' method",
+		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'period_new()' method",
 				thisfn, G_OBJECT_TYPE_NAME( connect ));
 		return( FALSE );
 	}
@@ -1090,6 +1090,42 @@ set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, c
 }
 
 /**
+ * ofa_idbconnect_period_delete:
+ * @connect: an #ofaIDBConnect object which handles a superuser
+ *  connection on the DBMS at server-level. The period member is
+ *  expected to identify the period to be deleted.
+ * @msgerr: [out][allow-none]: a placeholder for an error message.
+ *
+ * Delete the financial period.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_period_delete( const ofaIDBConnect *connect, gchar **msgerr )
+{
+	static const gchar *thisfn = "ofa_idbconnect_period_delete";
+	gboolean ok;
+
+	g_debug( "%s: connect=%p, msgerr=%p",
+			thisfn, ( void * ) connect, ( void * ) msgerr );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+
+	ok = FALSE;
+
+	/* create the minimal database and grant the user */
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->period_delete ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->period_delete( connect, msgerr );
+
+	} else {
+		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'period_delete()' method",
+				thisfn, G_OBJECT_TYPE_NAME( connect ));
+	}
+
+	return( ok );
+}
+
+/**
  * ofa_idbconnect_transaction_start:
  * @connect: an #ofaIDBConnect object which handles a user
  *  connection on the DBMS.
@@ -1125,41 +1161,6 @@ ofa_idbconnect_transaction_start( const ofaIDBConnect *connect, gboolean display
 }
 
 /**
- * ofa_idbconnect_transaction_commit:
- * @connect: an #ofaIDBConnect object which handles a user
- *  connection on the DBMS.
- * @display_error: whether display an error in a dialog box.
- * @msgerr: [out][allow-none]: if set, and @display_error is %FALSE,
- *  then this is a placeholder for an error message.
- *
- * Commit a transaction.
- *
- * Returns: %TRUE if successful.
- */
-gboolean
-ofa_idbconnect_transaction_commit( const ofaIDBConnect *connect, gboolean display_error, gchar **msgerr )
-{
-	static const gchar *thisfn = "ofa_idbconnect_transaction_commit";
-	gboolean ok;
-
-	g_debug( "%s: connect=%p, display_error=%s, msgerr=%p",
-			thisfn, ( void * ) connect, display_error ? "True":"False", ( void * ) msgerr );
-
-	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-
-	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->transaction_commit ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->transaction_commit( connect );
-
-	} else {
-		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'transaction_commit()' method",
-				thisfn, G_OBJECT_TYPE_NAME( connect ));
-		return( FALSE );
-	}
-
-	return( ok );
-}
-
-/**
  * ofa_idbconnect_transaction_cancel:
  * @connect: an #ofaIDBConnect object which handles a user
  *  connection on the DBMS.
@@ -1187,6 +1188,41 @@ ofa_idbconnect_transaction_cancel( const ofaIDBConnect *connect, gboolean displa
 
 	} else {
 		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'transaction_cancel()' method",
+				thisfn, G_OBJECT_TYPE_NAME( connect ));
+		return( FALSE );
+	}
+
+	return( ok );
+}
+
+/**
+ * ofa_idbconnect_transaction_commit:
+ * @connect: an #ofaIDBConnect object which handles a user
+ *  connection on the DBMS.
+ * @display_error: whether display an error in a dialog box.
+ * @msgerr: [out][allow-none]: if set, and @display_error is %FALSE,
+ *  then this is a placeholder for an error message.
+ *
+ * Commit a transaction.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_transaction_commit( const ofaIDBConnect *connect, gboolean display_error, gchar **msgerr )
+{
+	static const gchar *thisfn = "ofa_idbconnect_transaction_commit";
+	gboolean ok;
+
+	g_debug( "%s: connect=%p, display_error=%s, msgerr=%p",
+			thisfn, ( void * ) connect, display_error ? "True":"False", ( void * ) msgerr );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->transaction_commit ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->transaction_commit( connect );
+
+	} else {
+		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'transaction_commit()' method",
 				thisfn, G_OBJECT_TYPE_NAME( connect ));
 		return( FALSE );
 	}

@@ -33,6 +33,7 @@
 #include "api/ofa-dossier-collection.h"
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
 
@@ -434,45 +435,38 @@ ofa_dossier_collection_add_meta( ofaDossierCollection *collection, ofaIDBDossier
 }
 
 /**
- * ofa_dossier_collection_remove_meta:
+ * ofa_dossier_collection_delete_meta:
  * @collection: this #ofaDossierCollection instance.
  * @meta: the #ofaIDBDossierMeta to be removed.
+ * @connect: a superuser connection to the DBMS.
  *
- * Remove the @meta informations from the dossier settings.
+ * Remove the @meta informations from the @collection.
+ * Delete the whole @meta dossier from the DBMS.
+ * Update the dossier settings accordingly.
+ *
+ * This method does not release the @meta object, which is left to the
+ * caller.
  */
 void
-ofa_dossier_collection_remove_meta( ofaDossierCollection *collection, ofaIDBDossierMeta *meta )
+ofa_dossier_collection_delete_meta( ofaDossierCollection *collection, ofaIDBDossierMeta *meta, ofaIDBConnect *connect )
 {
-#if 0
-	static const gchar *thisfn = "ofa_dossier_collection_remove_meta";
+	static const gchar *thisfn = "ofa_dossier_collection_delete_meta";
 	ofaDossierCollectionPrivate *priv;
-	gchar *group, *prov_name;
-	ofaIDBProvider *prov_instance;
-	const gchar *dossier_name;
 
-	g_debug( "%s: collection=%p, meta=%p",
-			thisfn, ( void * ) collection, ( void * ) meta );
+	g_debug( "%s: collection=%p, meta=%p, connect=%p",
+			thisfn, ( void * ) collection, ( void * ) meta, ( void * ) connect );
 
 	g_return_if_fail( collection && OFA_IS_DOSSIER_COLLECTION( collection ));
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
+	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
 
 	priv = ofa_dossier_collection_get_instance_private( collection );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->list = g_list_prepend( priv->list, meta );
+	priv->list = g_list_remove( priv->list, meta );
 
-	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
-	group = g_strdup_printf( "%s%s", DOSSIER_COLLECTION_DOSSIER_GROUP_PREFIX, dossier_name );
-	set_dossier_meta_properties( collection, meta, group );
-
-	prov_instance = ofa_idbdossier_meta_get_provider( meta );
-	prov_name = ofa_idbprovider_get_canon_name( prov_instance );
-	my_isettings_set_string( priv->dossier_settings, group, DOSSIER_COLLECTION_PROVIDER_KEY, prov_name );
-
-	g_free( prov_name );
-	g_free( group );
-#endif
+	ofa_idbdossier_meta_delete( meta, connect );
 }
 
 /**

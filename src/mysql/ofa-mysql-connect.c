@@ -67,13 +67,15 @@ static gchar   *idbconnect_get_last_error( const ofaIDBConnect *instance );
 static gboolean idbconnect_backup( const ofaIDBConnect *instance, const gchar *uri );
 static gboolean idbconnect_restore( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *uri );
 static gboolean idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next );
-static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance, gchar **msgerr );
+static gboolean idbconnect_period_new( const ofaIDBConnect *instance, gchar **msgerr );
+static gboolean idbconnect_period_delete( const ofaIDBConnect *instance, gchar **msgerr );
+static gboolean drop_database( ofaMysqlConnect *self, const gchar *database, gchar **msgerr );
 static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *account, const gchar *password, gchar **msgerr );
-static gchar   *find_new_database( ofaMysqlConnect *connect, const gchar *prev_database );
-static gboolean local_get_db_exists( ofaMysqlConnect *connect, const gchar *dbname );
+static gchar   *find_new_database( ofaMysqlConnect *self, const gchar *prev_database );
+static gboolean local_get_db_exists( ofaMysqlConnect *self, const gchar *dbname );
 static gboolean idbconnect_transaction_start( const ofaIDBConnect *instance );
-static gboolean idbconnect_transaction_commit( const ofaIDBConnect *instance );
 static gboolean idbconnect_transaction_cancel( const ofaIDBConnect *instance );
+static gboolean idbconnect_transaction_commit( const ofaIDBConnect *instance );
 static gboolean transaction_execute( const ofaIDBConnect *instance, const gchar *thisfn, const gchar *cmd );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlConnect, ofa_mysql_connect, G_TYPE_OBJECT, 0,
@@ -167,11 +169,12 @@ idbconnect_iface_init( ofaIDBConnectInterface *iface )
 	iface->backup = idbconnect_backup;
 	iface->restore = idbconnect_restore;
 	iface->archive_and_new = idbconnect_archive_and_new;
-	iface->create_dossier = idbconnect_create_dossier;
+	iface->period_new = idbconnect_period_new;
+	iface->period_delete = idbconnect_period_delete;
 	iface->grant_user = idbconnect_grant_user;
 	iface->transaction_start = idbconnect_transaction_start;
-	iface->transaction_commit = idbconnect_transaction_commit;
 	iface->transaction_cancel = idbconnect_transaction_cancel;
+	iface->transaction_commit = idbconnect_transaction_commit;
 }
 
 static guint
@@ -557,12 +560,12 @@ idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_acc
 }
 
 /*
- * @instance: a superuser connection on the DBMS server
+ * @instance: a superuser connection on the DBMS server.
  */
 static gboolean
-idbconnect_create_dossier( const ofaIDBConnect *instance, gchar **msgerr )
+idbconnect_period_new( const ofaIDBConnect *instance, gchar **msgerr )
 {
-	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_create_dossier";
+	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_period_new";
 	ofaMysqlConnectPrivate *priv;
 	ofaIDBDossierMeta *dossier_meta;
 	GString *query;
@@ -583,22 +586,9 @@ idbconnect_create_dossier( const ofaIDBConnect *instance, gchar **msgerr )
 
 	database = ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( period ));
 	query = g_string_new( "" );
-	ok = TRUE;
 
-	if( ok ){
-		g_string_printf( query, "DROP DATABASE IF EXISTS %s", database );
-		g_debug( "%s: %s", thisfn, query->str );
-		ok = idbconnect_query( instance, query->str );
-		if( !ok ){
-			msg = idbconnect_get_last_error( instance );
-			if( msgerr ){
-				*msgerr = msg;
-			} else {
-				g_warning( "%s: %s", thisfn, msg );
-				g_free( msg );
-			}
-		}
-	}
+	ok = drop_database( OFA_MYSQL_CONNECT( instance ), database, msgerr );
+
 	if( ok ){
 		g_string_printf( query, "CREATE DATABASE %s CHARACTER SET utf8", database );
 		g_debug( "%s: %s", thisfn, query->str );
@@ -613,7 +603,54 @@ idbconnect_create_dossier( const ofaIDBConnect *instance, gchar **msgerr )
 			}
 		}
 	}
+
 	g_string_free( query, TRUE );
+
+	return( ok );
+}
+
+/*
+ * @instance: a superuser connection on the database
+ */
+static gboolean
+idbconnect_period_delete( const ofaIDBConnect *instance, gchar **msgerr )
+{
+	ofaIDBExerciceMeta *exercice_meta;
+	const gchar *database;
+
+	exercice_meta = ofa_idbconnect_get_exercice_meta( instance );
+	g_return_val_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ), FALSE );
+
+	database = ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( exercice_meta ));
+
+	return( drop_database( OFA_MYSQL_CONNECT( instance ), database, msgerr ));
+}
+
+static gboolean
+drop_database( ofaMysqlConnect *self, const gchar *database, gchar **msgerr )
+{
+	static const gchar *thisfn = "ofa_mysql_connect_drop_database";
+	GString *query;
+	gboolean ok;
+	gchar *msg;
+
+	query = g_string_new( "" );
+	ok = TRUE;
+
+	if( ok ){
+		g_string_printf( query, "DROP DATABASE IF EXISTS %s", database );
+		g_debug( "%s: %s", thisfn, query->str );
+		ok = idbconnect_query( OFA_IDBCONNECT( self ), query->str );
+		if( !ok ){
+			msg = idbconnect_get_last_error( OFA_IDBCONNECT( self ));
+			if( msgerr ){
+				*msgerr = msg;
+			} else {
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+			}
+		}
+	}
 
 	return( ok );
 }
@@ -778,7 +815,7 @@ ofa_mysql_connect_get_new_database( ofaMysqlConnect *connect, const gchar *prev_
  * increment the existing sufix.
  */
 static gchar *
-find_new_database( ofaMysqlConnect *connect, const gchar *prev_database )
+find_new_database( ofaMysqlConnect *self, const gchar *prev_database )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_find_new_database";
 	gchar *candidate, *prefix, *newdb, *p;
@@ -805,7 +842,7 @@ find_new_database( ofaMysqlConnect *connect, const gchar *prev_database )
 	while( TRUE ){
 		i += 1;
 		candidate = g_strdup_printf( "%s_%d", prefix, i );
-		exists = local_get_db_exists( connect, candidate );
+		exists = local_get_db_exists( self, candidate );
 		g_debug( "%s: candidate=%s, exists=%s", thisfn, candidate, exists ? "True":"False" );
 		if( !exists ){
 			newdb = candidate;
@@ -820,13 +857,13 @@ find_new_database( ofaMysqlConnect *connect, const gchar *prev_database )
 }
 
 static gboolean
-local_get_db_exists( ofaMysqlConnect *connect, const gchar *dbname )
+local_get_db_exists( ofaMysqlConnect *self, const gchar *dbname )
 {
 	ofaMysqlConnectPrivate *priv;
 	gboolean exists;
 	MYSQL_RES *result;
 
-	priv = ofa_mysql_connect_get_instance_private( connect );
+	priv = ofa_mysql_connect_get_instance_private( self );
 	exists = FALSE;
 
 	result = mysql_list_dbs( priv->mysql, dbname );
@@ -860,22 +897,6 @@ idbconnect_transaction_start( const ofaIDBConnect *instance )
  * @instance: a user connection on the DBMS server
  */
 static gboolean
-idbconnect_transaction_commit( const ofaIDBConnect *instance )
-{
-	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_transaction_commit";
-	gboolean ok;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
-
-	ok = transaction_execute( instance, thisfn, "COMMIT" );
-
-	return( ok );
-}
-
-/*
- * @instance: a user connection on the DBMS server
- */
-static gboolean
 idbconnect_transaction_cancel( const ofaIDBConnect *instance )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_transaction_cancel";
@@ -884,6 +905,22 @@ idbconnect_transaction_cancel( const ofaIDBConnect *instance )
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
 
 	ok = transaction_execute( instance, thisfn, "ROLLBACK" );
+
+	return( ok );
+}
+
+/*
+ * @instance: a user connection on the DBMS server
+ */
+static gboolean
+idbconnect_transaction_commit( const ofaIDBConnect *instance )
+{
+	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_transaction_commit";
+	gboolean ok;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
+
+	ok = transaction_execute( instance, thisfn, "COMMIT" );
 
 	return( ok );
 }

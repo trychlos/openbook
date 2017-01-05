@@ -39,6 +39,7 @@
  */
 typedef struct {
 	gboolean          initialized;
+	GtkWidget        *cancel_btn;
 	GtkWidget        *update_btn;
 	myIDialogUpdateCb update_cb;
 }
@@ -247,12 +248,18 @@ static void
 button_connect( myIDialog *instance, const gchar *label, gint response_code, GCallback cb )
 {
 	static const gchar *thisfn = "my_idialog_button_connect";
+	sIDialog *sdata;
 	GtkWidget *btn;
 
 	btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), response_code );
 	if( btn ){
 		g_return_if_fail( GTK_IS_BUTTON( btn ));
 		g_signal_connect( btn, "clicked", cb, instance );
+
+		if( response_code == GTK_RESPONSE_CANCEL ){
+			sdata = get_idialog_data( instance );
+			sdata->cancel_btn = btn;
+		}
 	} else {
 		g_debug( "%s: unable to identify the [%s] button", thisfn, label );
 	}
@@ -515,6 +522,8 @@ do_update( myIDialog *instance )
 
 		} else {
 			gtk_widget_set_sensitive( sdata->update_btn, FALSE );
+			gtk_button_set_label( GTK_BUTTON( sdata->cancel_btn ), _( "Close" ));
+
 			if( !my_strlen( msgerr )){
 				g_free( msgerr );
 				msgerr = g_strdup( _( "Undefined error on update" ));

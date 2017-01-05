@@ -415,7 +415,19 @@
 
 1307 2017- 1- 4 idbconnect_restore(): add a msgerr
 
-1308
+1308 2017- 1- 4 ofa_dossier_delete_delete: to be completed
+
+1309 2017- 1- 5 obsolete ofa_idbdossier_meta_remove_meta()
+
+1310 2017- 1- 5 rename ofa_idbdossier_meta_remove_period() to 
+                ofa_idbdossier_meta_delete_period() 
+
+1311 2017- 1- 5 review ofa_idbdossier_meta_new_exercice_meta() vs.
+                ofa_idbdossier_meta_add_period()
+
+1312 2017- 1- 5 obsolete ofaIDBDossierMeta::remove_period method
+
+1313
 
 -----------------------------------------------------------------------
  DONE

@@ -47,6 +47,7 @@
 #include "my/my-isettings.h"
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-editor-def.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbdossier-meta-def.h"
@@ -256,6 +257,9 @@ gint                ofa_idbdossier_meta_compare_by_name           ( const ofaIDB
 void                ofa_idbdossier_meta_dump                      ( const ofaIDBDossierMeta *meta );
 
 void                ofa_idbdossier_meta_dump_full                 ( const ofaIDBDossierMeta *meta );
+
+void                ofa_idbdossier_meta_delete                    ( ofaIDBDossierMeta *meta,
+																		ofaIDBConnect *connect );
 
 G_END_DECLS
 

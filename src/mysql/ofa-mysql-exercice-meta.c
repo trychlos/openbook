@@ -51,6 +51,7 @@ typedef struct {
 static void   idbexercice_meta_iface_init( ofaIDBExerciceMetaInterface *iface );
 static guint  idbexercice_meta_get_interface_version( void );
 static void   idbexercice_meta_set_from_settings( ofaIDBExerciceMeta *instance, const gchar *key_id );
+static void   idbexercice_meta_remove_from_settings( ofaIDBExerciceMeta *instance, const gchar *key_id );
 static void   idbexercice_meta_set_from_editor( ofaIDBExerciceMeta *instance, ofaIDBExerciceEditor *editor, const gchar *key_id );
 static gchar *idbexercice_meta_get_name( const ofaIDBExerciceMeta *instance );
 static gint   idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b );
@@ -364,6 +365,7 @@ idbexercice_meta_iface_init( ofaIDBExerciceMetaInterface *iface )
 
 	iface->get_interface_version = idbexercice_meta_get_interface_version;
 	iface->set_from_settings = idbexercice_meta_set_from_settings;
+	iface->remove_from_settings = idbexercice_meta_remove_from_settings;
 	iface->set_from_editor = idbexercice_meta_set_from_editor;
 	iface->get_name = idbexercice_meta_get_name;
 	iface->compare = idbexercice_meta_compare;
@@ -380,6 +382,24 @@ static void
 idbexercice_meta_set_from_settings( ofaIDBExerciceMeta *instance, const gchar *key_id )
 {
 	read_settings( OFA_MYSQL_EXERCICE_META( instance ), key_id );
+}
+
+static void
+idbexercice_meta_remove_from_settings( ofaIDBExerciceMeta *instance, const gchar *key_id )
+{
+	ofaIDBDossierMeta *dossier_meta;
+	myISettings *settings;
+	const gchar *group;
+	gchar *key;
+
+	dossier_meta = ofa_idbexercice_meta_get_dossier_meta( instance );
+	settings = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
+	group = ofa_idbdossier_meta_get_settings_group( dossier_meta );
+	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, key_id );
+
+	my_isettings_remove_key( settings, group, key );
+
+	g_free( key );
 }
 
 static void

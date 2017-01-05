@@ -68,8 +68,12 @@ typedef struct _ofaIDBConnectInterface           ofaIDBConnectInterface;
  * @backup: [should]: backups the currently opened dossier.
  * @restore: [should]: restore a file to a dossier.
  * @archive_and_new: [should]: archives the current and defines a new exercice.
- * @create_dossier: [should]: creates a new dossier.
+ * @period_new: [should]: creates a new financial period.
+ * @period_delete: [should]: deletes a financial period.
  * @grant_user: [should]: grant permissions on a dossier to a user.
+ * @transaction_start: [should]: start a transaction.
+ * @transaction_cancel: [should]: cancel a transaction.
+ * @transaction_commit: [should]: commit a transaction.
  *
  * This defines the interface that an #ofaIDBConnect should implement.
  */
@@ -234,7 +238,7 @@ struct _ofaIDBConnectInterface {
 											const GDate *end_next );
 
 	/**
-	 * create_dossier:
+	 * period_new:
 	 * @instance: an #ofaIDBConnect superuser connection on the DBMS server.
 	 * @msgerr: [out][allow-none]: a placeholder for an error message.
 	 *
@@ -246,7 +250,21 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *create_dossier )       ( const ofaIDBConnect *instance,
+	gboolean ( *period_new )           ( const ofaIDBConnect *instance,
+											gchar **msgerr );
+
+	/**
+	 * period_delete:
+	 * @instance: an #ofaIDBConnect superuser connection on the DBMS server.
+	 * @msgerr: [out][allow-none]: a placeholder for an error message.
+	 *
+	 * Delete the financial period.
+	 *
+	 * Returns: %TRUE if successful, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *period_delete )        ( const ofaIDBConnect *instance,
 											gchar **msgerr );
 
 	/**
@@ -292,18 +310,6 @@ struct _ofaIDBConnectInterface {
 	gboolean ( *transaction_start )    ( const ofaIDBConnect *instance );
 
 	/**
-	 * transaction_commit:
-	 * @instance: an #ofaIDBConnect user connection on the DBMS server.
-	 *
-	 * Commit a transaction.
-	 *
-	 * Returns: %TRUE if successful, %FALSE else.
-	 *
-	 * Since: version 1
-	 */
-	gboolean ( *transaction_commit )   ( const ofaIDBConnect *instance );
-
-	/**
 	 * transaction_cancel:
 	 * @instance: an #ofaIDBConnect user connection on the DBMS server.
 	 *
@@ -314,6 +320,18 @@ struct _ofaIDBConnectInterface {
 	 * Since: version 1
 	 */
 	gboolean ( *transaction_cancel )   ( const ofaIDBConnect *instance );
+
+	/**
+	 * transaction_commit:
+	 * @instance: an #ofaIDBConnect user connection on the DBMS server.
+	 *
+	 * Commit a transaction.
+	 *
+	 * Returns: %TRUE if successful, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *transaction_commit )   ( const ofaIDBConnect *instance );
 };
 
 /*
@@ -405,20 +423,23 @@ gboolean            ofa_idbconnect_archive_and_new          ( const ofaIDBConnec
 																	const GDate *begin_next,
 																	const GDate *end_next );
 
-gboolean            ofa_idbconnect_create_dossier           ( const ofaIDBConnect *connect,
+gboolean            ofa_idbconnect_period_new               ( const ofaIDBConnect *connect,
 																	const gchar *adm_account,
 																	const gchar *adm_password,
+																	gchar **msgerr );
+
+gboolean            ofa_idbconnect_period_delete            ( const ofaIDBConnect *connect,
 																	gchar **msgerr );
 
 gboolean            ofa_idbconnect_transaction_start        ( const ofaIDBConnect *connect,
 																	gboolean display_error,
 																	gchar **msgerr );
 
-gboolean            ofa_idbconnect_transaction_commit       ( const ofaIDBConnect *connect,
+gboolean            ofa_idbconnect_transaction_cancel       ( const ofaIDBConnect *connect,
 																	gboolean display_error,
 																	gchar **msgerr );
 
-gboolean            ofa_idbconnect_transaction_cancel       ( const ofaIDBConnect *connect,
+gboolean            ofa_idbconnect_transaction_commit       ( const ofaIDBConnect *connect,
 																	gboolean display_error,
 																	gchar **msgerr );
 

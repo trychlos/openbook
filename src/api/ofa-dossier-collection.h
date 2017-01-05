@@ -46,6 +46,7 @@
 #include <glib-object.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbeditor.h"
 
@@ -84,8 +85,9 @@ ofaIDBDossierMeta    *ofa_dossier_collection_get_by_name         ( ofaDossierCol
 void                  ofa_dossier_collection_add_meta            ( ofaDossierCollection *collection,
 																		ofaIDBDossierMeta *meta );
 
-void                  ofa_dossier_collection_remove_meta         ( ofaDossierCollection *collection,
-																		ofaIDBDossierMeta *meta );
+void                  ofa_dossier_collection_delete_meta         ( ofaDossierCollection *collection,
+																		ofaIDBDossierMeta *meta,
+																		ofaIDBConnect *connect );
 
 void                  ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection,
 																		ofaIDBDossierMeta *meta,

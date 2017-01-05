@@ -38,6 +38,7 @@
 #include <glib-object.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-editor-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
@@ -99,6 +100,18 @@ struct _ofaIDBExerciceMetaInterface {
 												const gchar *key_id );
 
 	/**
+	 * remove_from_settings:
+	 * @instance: the #ofaIDBExerciceMeta instance.
+	 * @key_id: the key identifier.
+	 *
+	 * Remove the @instance from dossier settings.
+	 *
+	 * Since: version 1
+	 */
+	void     ( *remove_from_settings ) ( ofaIDBExerciceMeta *instance,
+												const gchar *key_id );
+
+	/**
 	 * set_from_editor:
 	 * @instance: the #ofaIDBExerciceMeta instance.
 	 * @editor: the #ofaIDBExerciceEditor widget.
@@ -139,6 +152,7 @@ struct _ofaIDBExerciceMetaInterface {
 	 */
 	gint     ( *compare )              ( const ofaIDBExerciceMeta *a,
 												const ofaIDBExerciceMeta *b );
+
 	/**
 	 * dump:
 	 * @instance: the #ofaIDBExerciceMeta instance.
@@ -213,6 +227,9 @@ gboolean           ofa_idbexercice_meta_is_suitable               ( const ofaIDB
 																		const GDate *end );
 
 void               ofa_idbexercice_meta_dump                      ( const ofaIDBExerciceMeta *exercice_meta );
+
+void               ofa_idbexercice_meta_delete                    ( ofaIDBExerciceMeta *exercice_meta,
+																		ofaIDBConnect *connect );
 
 G_END_DECLS
 
