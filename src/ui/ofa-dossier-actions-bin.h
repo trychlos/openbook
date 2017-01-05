@@ -79,6 +79,8 @@ gboolean              ofa_dossier_actions_bin_is_valid          ( ofaDossierActi
 
 gboolean              ofa_dossier_actions_bin_get_open_on_create( ofaDossierActionsBin *bin );
 
+gboolean              ofa_dossier_actions_bin_get_apply_actions ( ofaDossierActionsBin *bin );
+
 G_END_DECLS
 
 #endif /* __OFA_DOSSIER_ACTIONS_BIN_H__ */

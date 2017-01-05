@@ -427,7 +427,10 @@
 
 1312 2017- 1- 5 obsolete ofaIDBDossierMeta::remove_period method
 
-1313
+1313 2017- 1- 5 generalize my_idialog_click_to_update_ex() in replacement
+                of my_idialog_click_to_update()
+
+1314
 
 -----------------------------------------------------------------------
  DONE

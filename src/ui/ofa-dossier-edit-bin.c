@@ -544,3 +544,23 @@ ofa_dossier_edit_bin_get_open_on_create( ofaDossierEditBin *bin )
 
 	return( ofa_dossier_actions_bin_get_open_on_create( priv->actions_bin ));
 }
+
+/**
+ * ofa_dossier_edit_bin_get_apply_actions:
+ * @bin: this #ofaDossierEditBin instance.
+ *
+ * Returns: %TRUE if the new dossier should be opened after creation.
+ */
+gboolean
+ofa_dossier_edit_bin_get_apply_actions( ofaDossierEditBin *bin )
+{
+	ofaDossierEditBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), FALSE );
+
+	priv = ofa_dossier_edit_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( ofa_dossier_actions_bin_get_apply_actions( priv->actions_bin ));
+}

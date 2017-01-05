@@ -76,7 +76,7 @@ static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     on_edit_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self );
 static void     check_for_enable_dlg( ofaDossierNew *self );
-static gboolean do_create( ofaDossierNew *self, gchar **msgerr );
+static guint    do_create( ofaDossierNew *self, gchar **msgerr );
 static gboolean create_confirmed( const ofaDossierNew *self );
 static void     set_message( ofaDossierNew *self, const gchar *message );
 static void     read_settings( ofaDossierNew *self );
@@ -265,7 +265,7 @@ idialog_init( myIDialog *instance )
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_create );
+	my_idialog_click_to_update_ex( instance, priv->ok_btn, ( myIDialogUpdateExCb ) do_create );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dn-msg" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -306,33 +306,37 @@ check_for_enable_dlg( ofaDossierNew *self )
  * Create the database
  * and register the new dossier in dossier settings
  */
-static gboolean
+static guint
 do_create( ofaDossierNew *self, gchar **msgerr )
 {
 	static const gchar *thisfn = "ofa_dossier_new_do_create";
 	ofaDossierNewPrivate *priv;
-	gboolean open, ok;
+	gboolean open, apply_actions;
 	ofaIDBDossierMeta *dossier_meta;
+	ofaIDBExerciceMeta *exercice_meta;
+	ofaIDBProvider *provider;
 	ofaIDBConnect *connect;
 	ofaIDBDossierEditor *dossier_editor;
 	gchar *adm_account, *adm_password;
 	ofaDossierCollection *collection;
+	guint ret;
 
 	g_debug( "%s: self=%p, msgerr=%p", thisfn, ( void * ) self, ( void * ) msgerr );
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
-	ok = TRUE;
+	ret = IDIALOG_UPDATE_OK;
+	open = FALSE;
 
 	/* ask for user confirmation */
 	if( !create_confirmed( self )){
-		return( FALSE );
+		return( IDIALOG_UPDATE_REDO );
 	}
 
 	/* register the new dossier in dossier settings */
 	if( !ofa_dossier_edit_bin_apply( priv->edit_bin )){
 		*msgerr = g_strdup( _( "Unable to register the new dossier in settings" ));
-		return( FALSE );
+		return( IDIALOG_UPDATE_ERROR );
 	}
 
 	/* create the new dossier */
@@ -341,56 +345,40 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	connect = ofa_idbdossier_editor_get_valid_connect( dossier_editor, dossier_meta );
 	ofa_dossier_edit_bin_get_admin_credentials( priv->edit_bin, &adm_account, &adm_password );
 
-	ok = ofa_idbconnect_period_new( connect, adm_account, adm_password, msgerr );
-	ok = FALSE;
+	if( !ofa_idbconnect_period_new( connect, adm_account, adm_password, msgerr )){
+		collection = ofa_hub_get_dossier_collection( priv->hub );
+		ofa_dossier_collection_delete_meta( collection, dossier_meta, connect );
+		if( !my_strlen( *msgerr )){
+			*msgerr = g_strdup( _( "Unable to create the new dossier" ));
+		}
+		g_object_unref( dossier_meta );
+
+	/* open the newly created dossier if asked for */
+	} else {
+		open = ofa_dossier_edit_bin_get_open_on_create( priv->edit_bin );
+		if( open ){
+			provider = ofa_idbdossier_meta_get_provider( dossier_meta );
+			exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
+			connect = ofa_idbprovider_new_connect( provider, adm_account, adm_password, dossier_meta, exercice_meta );
+			if( !connect ){
+				*msgerr = g_strdup( _( "Unable to connect to newly created dossier" ));
+				ret = IDIALOG_UPDATE_ERROR;
+			} else {
+				apply_actions = ofa_dossier_edit_bin_get_apply_actions( priv->edit_bin );
+				if( ofa_hub_dossier_open( priv->hub, priv->parent, connect, apply_actions, FALSE )){
+					ofa_hub_dossier_remediate_settings( priv->hub );
+				} else {
+					*msgerr = g_strdup( _( "Unable to open the newly created dossier" ));
+					ret = IDIALOG_UPDATE_ERROR;
+				}
+			}
+		}
+	}
 
 	g_free( adm_password );
 	g_free( adm_account );
 
-	if( !ok ){
-		collection = ofa_hub_get_dossier_collection( priv->hub );
-		ofa_dossier_collection_delete_meta( collection, dossier_meta, connect );
-		g_object_unref( dossier_meta );
-		if( !my_strlen( *msgerr )){
-			*msgerr = g_strdup( _( "Unable to create the new dossier" ));
-		}
-		return( FALSE );
-	}
-
-	/* open the newly created dossier if asked for */
-	open = ofa_dossier_edit_bin_get_open_on_create( priv->edit_bin );
-	if( open ){
-		//exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
-
-	}
-#if 0
-	if( priv->b_open ){
-		connect = ofa_idbprovider_new_connect( provider );
-		if( !ofa_idbconnect_open_with_meta(
-				connect, priv->adm_account, priv->adm_password, priv->meta, period )){
-			*msgerr = g_strdup( _( "Unable to connect to newly created dossier" ));
-			g_clear_object( &connect );
-			ok = FALSE;
-		}
-		g_clear_object( &period );
-		g_clear_object( &provider );
-	}
-
-	if( ok && priv->b_open ){
-		if( ofa_hub_dossier_open( priv->hub, GTK_WINDOW( self ), connect, TRUE, FALSE )){
-			ofa_hub_dossier_remediate_settings( priv->hub );
-
-			if( priv->b_properties ){
-				main_window = ofa_igetter_get_main_window( priv->getter );
-				ofa_main_window_dossier_properties( OFA_MAIN_WINDOW( main_window ));
-			}
-		} else {
-			ok = FALSE;
-		}
-	}
-#endif
-
-	return( ok );
+	return( ret );
 }
 
 static gboolean

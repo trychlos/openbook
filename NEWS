@@ -24,6 +24,7 @@
 
  Other changes:
 
+   - my_idialog_click_to_update_ex(): new method.
    - myIDialog: set OK button insensitive in case of an error.
    - myIWindow: set_settings() is renamed set_geometry_settings() (todo #1282).
    - myIWindow: deprecate my_iwindow_get_keyname() (todo #1283).

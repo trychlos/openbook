@@ -114,6 +114,8 @@ void                 ofa_dossier_edit_bin_get_admin_credentials( ofaDossierEditB
 
 gboolean             ofa_dossier_edit_bin_get_open_on_create   ( ofaDossierEditBin *bin );
 
+gboolean             ofa_dossier_edit_bin_get_apply_actions    ( ofaDossierEditBin *bin );
+
 G_END_DECLS
 
 #endif /* __OFA_DOSSIER_EDIT_BIN_H__ */

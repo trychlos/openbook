@@ -329,6 +329,26 @@ ofa_dossier_actions_bin_get_open_on_create( ofaDossierActionsBin *bin )
 	return( priv->do_open );
 }
 
+/**
+ * ofa_dossier_actions_bin_get_apply_actions:
+ * @bin: this #ofaDossierActionsBin instance.
+ *
+ * Returns: %TRUE if the standard actions should be applied on open.
+ */
+gboolean
+ofa_dossier_actions_bin_get_apply_actions( ofaDossierActionsBin *bin )
+{
+	ofaDossierActionsBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_ACTIONS_BIN( bin ), FALSE );
+
+	priv = ofa_dossier_actions_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->standard_btn )));
+}
+
 /*
  * settings are: "open_on_creation(b); apply_standard_actions(b);"
  */
