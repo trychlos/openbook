@@ -131,7 +131,7 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBExerciceMeta * ( *new_exercice_meta )    ( ofaIDBDossierMeta *instance );
+	ofaIDBExerciceMeta * ( *new_period )           ( ofaIDBDossierMeta *instance );
 
 	/**
 	 * update_period:
@@ -217,10 +217,6 @@ void                ofa_idbdossier_meta_set_from_settings         ( ofaIDBDossie
 void                ofa_idbdossier_meta_set_from_editor           ( ofaIDBDossierMeta *meta,
 																		ofaIDBDossierEditor *editor );
 
-ofaIDBExerciceMeta *ofa_idbdossier_meta_new_exercice_meta         ( ofaIDBDossierMeta *dossier_meta );
-
-void                ofa_idbdossier_meta_remove_meta               ( ofaIDBDossierMeta *meta );
-
 const GList        *ofa_idbdossier_meta_get_periods               ( const ofaIDBDossierMeta *meta );
 
 guint               ofa_idbdossier_meta_get_periods_count         ( const ofaIDBDossierMeta *meta );
@@ -228,10 +224,8 @@ guint               ofa_idbdossier_meta_get_periods_count         ( const ofaIDB
 void                ofa_idbdossier_meta_set_periods               ( ofaIDBDossierMeta *meta,
 																		GList *periods );
 
-void                ofa_idbdossier_meta_add_period                ( ofaIDBDossierMeta *meta,
-																		ofaIDBExerciceMeta *exercice_meta,
-																		gchar **key,
-																		gchar **key_id );
+ofaIDBExerciceMeta *ofa_idbdossier_meta_new_period                ( ofaIDBDossierMeta *meta,
+																		gboolean attach );
 
 void                ofa_idbdossier_meta_update_period             ( ofaIDBDossierMeta *meta,
 																		ofaIDBExerciceMeta *exercice_meta,
@@ -260,6 +254,8 @@ void                ofa_idbdossier_meta_dump_full                 ( const ofaIDB
 
 void                ofa_idbdossier_meta_delete                    ( ofaIDBDossierMeta *meta,
 																		ofaIDBConnect *connect );
+
+void                ofa_idbdossier_meta_remove_meta               ( ofaIDBDossierMeta *meta );
 
 G_END_DECLS
 

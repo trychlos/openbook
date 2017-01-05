@@ -61,7 +61,7 @@ static void                idbdossier_meta_iface_init( ofaIDBDossierMetaInterfac
 static guint               idbdossier_meta_get_interface_version( void );
 static void                idbdossier_meta_set_from_settings( ofaIDBDossierMeta *instance );
 static void                idbdossier_meta_set_from_editor( ofaIDBDossierMeta *instance, ofaIDBDossierEditor *editor );
-static ofaIDBExerciceMeta *idbdossier_meta_new_exercice_meta( ofaIDBDossierMeta *instance );
+static ofaIDBExerciceMeta *idbdossier_meta_new_period( ofaIDBDossierMeta *instance );
 //static GList                *load_periods( ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group );
 //static ofaMysqlExerciceMeta *find_period( ofaMysqlExerciceMeta *period, GList *list );
 static void                idbdossier_meta_update_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period, gboolean current, const GDate *begin, const GDate *end );
@@ -156,7 +156,7 @@ idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface )
 	iface->get_interface_version = idbdossier_meta_get_interface_version;
 	iface->set_from_settings = idbdossier_meta_set_from_settings;
 	iface->set_from_editor = idbdossier_meta_set_from_editor;
-	iface->new_exercice_meta = idbdossier_meta_new_exercice_meta;
+	iface->new_period = idbdossier_meta_new_period;
 	iface->update_period = idbdossier_meta_update_period;
 	iface->remove_period = idbdossier_meta_remove_period;
 	iface->dump = idbdossier_meta_dump;
@@ -273,7 +273,7 @@ idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, ofaIDBDossierEditor *e
  * instanciates a new ofaIDBExerciceMeta object
  */
 static ofaIDBExerciceMeta *
-idbdossier_meta_new_exercice_meta( ofaIDBDossierMeta *meta )
+idbdossier_meta_new_period( ofaIDBDossierMeta *meta )
 {
 	ofaMysqlExerciceMeta *exercice_meta;
 

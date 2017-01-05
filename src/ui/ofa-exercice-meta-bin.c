@@ -398,7 +398,7 @@ ofa_exercice_meta_bin_apply( ofaExerciceMetaBin *bin, ofaIDBDossierMeta *dossier
 
 	switch( priv->rule ){
 		case HUB_RULE_DOSSIER_NEW:
-			priv->exercice_meta = ofa_idbdossier_meta_new_exercice_meta( dossier_meta );
+			priv->exercice_meta = ofa_idbdossier_meta_new_period( dossier_meta, TRUE );
 			ofa_idbexercice_meta_set_begin_date( priv->exercice_meta, &priv->begin );
 			ofa_idbexercice_meta_set_end_date( priv->exercice_meta, &priv->end );
 			ofa_idbexercice_meta_set_current( priv->exercice_meta, priv->is_current );

@@ -422,9 +422,6 @@
 1310 2017- 1- 5 rename ofa_idbdossier_meta_remove_period() to 
                 ofa_idbdossier_meta_delete_period() 
 
-1311 2017- 1- 5 review ofa_idbdossier_meta_new_exercice_meta() vs.
-                ofa_idbdossier_meta_add_period()
-
 1312 2017- 1- 5 obsolete ofaIDBDossierMeta::remove_period method
 
 1313 2017- 1- 5 generalize my_idialog_click_to_update_ex() in replacement
@@ -448,6 +445,10 @@
                 the plugin access the database through the passed-in
                 connection
                 -> cancelled
+
+1311 2017- 1- 5 review ofa_idbdossier_meta_new_exercice_meta() vs.
+                ofa_idbdossier_meta_add_period()
+     2017- 1- 5 the two functions are merged into ofa_idbdossier_meta_new_period()
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

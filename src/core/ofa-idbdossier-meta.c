@@ -412,8 +412,10 @@ set_exercices_from_settings( ofaIDBDossierMeta *self, sIDBMeta *sdata )
 	for( itk=keys ; itk ; itk=itk->next ){
 		key = ( const gchar * ) itk->data;
 		if( g_str_has_prefix( key, IDBDOSSIER_META_PERIOD_KEY_PREFIX )){
-			exercice_meta = ofa_idbdossier_meta_new_exercice_meta( self );
-			ofa_idbexercice_meta_set_from_settings( exercice_meta, key, key+lenstr );
+			exercice_meta = ofa_idbdossier_meta_new_period( self, FALSE );
+			ofa_idbexercice_meta_set_settings_key( exercice_meta, key );
+			ofa_idbexercice_meta_set_settings_id( exercice_meta, key+lenstr );
+			ofa_idbexercice_meta_set_from_settings( exercice_meta );
 			period = find_exercice( self, sdata, exercice_meta );
 			if( period ){
 				g_object_ref( period );
@@ -478,56 +480,6 @@ ofa_idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, ofaIDBDossierEdito
 }
 
 /**
- * ofa_idbdossier_meta_new_exercice_meta:
- * @dossier_meta: this #ofaIDBDossierMeta dossier.
- *
- * Returns: a newly allocated #ofaIDBExerciceMeta object, which should be
- * g_object_unref() by the caller.
- */
-ofaIDBExerciceMeta *
-ofa_idbdossier_meta_new_exercice_meta( ofaIDBDossierMeta *dossier_meta )
-{
-	static const gchar *thisfn = "ofa_idbdossier_meta_new_exercice_meta";
-	ofaIDBExerciceMeta *exercice_meta;
-
-	g_debug( "%s: dossier_meta=%p",
-			thisfn, ( void * ) dossier_meta );
-
-	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), NULL );
-
-	if( OFA_IDBDOSSIER_META_GET_INTERFACE( dossier_meta )->new_exercice_meta ){
-		exercice_meta = OFA_IDBDOSSIER_META_GET_INTERFACE( dossier_meta )->new_exercice_meta( dossier_meta );
-		ofa_idbexercice_meta_set_dossier_meta( exercice_meta, dossier_meta );
-		return( exercice_meta );
-	}
-
-	g_info( "%s: ofaIDBDossierMeta's %s implementation does not provide 'new_exercice_meta()' method",
-			thisfn, G_OBJECT_TYPE_NAME( dossier_meta ));
-	return( NULL );
-}
-
-/**
- * ofa_idbdossier_meta_remove_meta:
- * @meta: this #ofaIDBDossierMeta instance.
- *
- * Remove @meta from the dossier settings file.
- *
- * The #ofaIDBDossierMeta object itself will be finalized on automatic update
- * of the dossiers collection.
- */
-void
-ofa_idbdossier_meta_remove_meta( ofaIDBDossierMeta *meta )
-{
-	sIDBMeta *sdata;
-
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-
-	sdata = get_instance_data( meta );
-
-	my_isettings_remove_group( sdata->settings_iface, sdata->settings_group );
-}
-
-/**
  * ofa_idbdossier_meta_get_periods:
  * @meta: this #ofaIDBDossierMeta instance.
  *
@@ -589,32 +541,59 @@ ofa_idbdossier_meta_set_periods( ofaIDBDossierMeta *meta, GList *periods )
 }
 
 /**
- * ofa_idbdossier_meta_add_period:
- * @meta: this #ofaIDBDossierMeta instance.
- * @period: the new #ofaIDBExerciceMeta to be added.
- * @key: [out]: the key to be used by @period in dossier settings.
- * @key_id: [out]: the identifier of the key.
+ * ofa_idbdossier_meta_new_period:
+ * @meta: this #ofaIDBDossierMeta dossier.
+ * @attach: whether to attach the newly created period to the dossier.
  *
- * Takes the ownership of the provided @period, and adds it to the list
- * of defined financial periods.
+ * Returns: a newly allocated #ofaIDBExerciceMeta object, which should be
+ * g_object_unref() by the caller.
+ *
+ * At this time, the new #ofaIDBExerciceMeta is initialized with @meta
+ * and a unique random key identifier, but not yet attached to the @meta
+ * (see #ofa_idbdossier_meta_attach_period() for that).
+ *
+ * If @attach is %TRUE, then the period is attached to the dossier. This
+ * is required when creating a new period, because we cannot rely on the
+ * dossier settings monitor handler to auto update the list of periods
+ * before we need to access it.
+ *
+ * If @attach is %FALSE, then the period is not attached here to the
+ * dossier. This is the normal case when loading the dossier at startup.
  */
-void
-ofa_idbdossier_meta_add_period( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, gchar **key, gchar **key_id )
+ofaIDBExerciceMeta *
+ofa_idbdossier_meta_new_period( ofaIDBDossierMeta *meta, gboolean attach )
 {
-	static const gchar *thisfn = "ofa_idbdossier_meta_add_period";
+	static const gchar *thisfn = "ofa_idbdossier_meta_new_period";
+	ofaIDBExerciceMeta *exercice_meta;
 	sIDBMeta *sdata;
+	gchar *key, *key_id;
 
-	g_debug( "%s: meta=%p, period=%p, key=%p, key_id=%p",
-			thisfn, ( void * ) meta, ( void * ) period, ( void * ) key, ( void * ) key_id );
+	g_debug( "%s: meta=%p, attach=%s",
+			thisfn, ( void * ) meta, attach ? "True":"False" );
 
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
-	g_return_if_fail( key );
-	g_return_if_fail( key_id );
+	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 
-	sdata = get_instance_data( meta );
-	sdata->periods = g_list_prepend( sdata->periods, period );
-	get_exercice_key( meta, key, key_id );
+	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->new_period ){
+		exercice_meta = OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->new_period( meta );
+
+		get_exercice_key( meta, &key, &key_id );
+		ofa_idbexercice_meta_set_dossier_meta( exercice_meta, meta );
+		ofa_idbexercice_meta_set_settings_key( exercice_meta, key );
+		ofa_idbexercice_meta_set_settings_id( exercice_meta, key_id );
+		g_free( key );
+		g_free( key_id );
+
+		if( attach ){
+			sdata = get_instance_data( meta );
+			sdata->periods = g_list_prepend( sdata->periods, exercice_meta );
+		}
+
+		return( exercice_meta );
+	}
+
+	g_info( "%s: ofaIDBDossierMeta's %s implementation does not provide 'new_period()' method",
+			thisfn, G_OBJECT_TYPE_NAME( meta ));
+	return( NULL );
 }
 
 /*
@@ -908,6 +887,27 @@ ofa_idbdossier_meta_delete( ofaIDBDossierMeta *meta, ofaIDBConnect *connect )
 	settings = ofa_idbdossier_meta_get_settings_iface( meta );
 	group_name = ofa_idbdossier_meta_get_settings_group( meta );
 	my_isettings_remove_group( settings, group_name );
+}
+
+/**
+ * ofa_idbdossier_meta_remove_meta:
+ * @meta: this #ofaIDBDossierMeta instance.
+ *
+ * Remove @meta from the dossier settings file.
+ *
+ * The #ofaIDBDossierMeta object itself will be finalized on automatic update
+ * of the dossiers collection.
+ */
+void
+ofa_idbdossier_meta_remove_meta( ofaIDBDossierMeta *meta )
+{
+	sIDBMeta *sdata;
+
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
+
+	sdata = get_instance_data( meta );
+
+	my_isettings_remove_group( sdata->settings_iface, sdata->settings_group );
 }
 
 static sIDBMeta *

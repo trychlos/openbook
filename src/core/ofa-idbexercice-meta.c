@@ -244,6 +244,44 @@ ofa_idbexercice_meta_set_dossier_meta( ofaIDBExerciceMeta *exercice_meta, ofaIDB
 }
 
 /**
+ * ofa_idbexercice_meta_get_settings_key:
+ * @exercice_meta: this #ofaIDBExerciceMeta instance.
+ *
+ * Returns: the settings key.
+ */
+const gchar *
+ofa_idbexercice_meta_get_settings_key( const ofaIDBExerciceMeta *exercice_meta )
+{
+	sIDBMeta *sdata;
+
+	g_return_val_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ), NULL );
+
+	sdata = get_instance_data( exercice_meta );
+
+	return( sdata->settings_key );
+}
+
+/**
+ * ofa_idbexercice_meta_set_settings_key:
+ * @exercice_meta: this #ofaIDBExerciceMeta instance.
+ * @settings_key: [allow-none]: the exercice key in the settings.
+ *
+ * Set the settings key.
+ */
+void
+ofa_idbexercice_meta_set_settings_key( ofaIDBExerciceMeta *exercice_meta, const gchar *settings_key )
+{
+	sIDBMeta *sdata;
+
+	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
+
+	sdata = get_instance_data( exercice_meta );
+
+	g_free( sdata->settings_key );
+	sdata->settings_key = g_strdup( settings_key );
+}
+
+/**
  * ofa_idbexercice_meta_get_settings_id:
  * @exercice_meta: this #ofaIDBExerciceMeta instance.
  *
@@ -262,36 +300,47 @@ ofa_idbexercice_meta_get_settings_id( const ofaIDBExerciceMeta *exercice_meta )
 }
 
 /**
- * ofa_idbexercice_meta_set_from_settings:
+ * ofa_idbexercice_meta_set_settings_id:
  * @exercice_meta: this #ofaIDBExerciceMeta instance.
- * @key: the key of the exercice in dossier settings.
- * @key_id: the identifier of the exercice.
+ * @settings_id: [allow-none]: the identifier of the exercice in the settings.
  *
- * Reads from dossier settings informations relative to the @exercice_meta
- * exercice.
+ * Set the identifier of the settings key.
  */
 void
-ofa_idbexercice_meta_set_from_settings( ofaIDBExerciceMeta *exercice_meta, const gchar *key, const gchar *key_id )
+ofa_idbexercice_meta_set_settings_id( ofaIDBExerciceMeta *exercice_meta, const gchar *settings_id )
 {
-	static const gchar *thisfn = "ofa_idbexercice_meta_set_from_settings";
 	sIDBMeta *sdata;
-
-	g_debug( "%s: exercice_meta=%p, key=%s, key_id=%s",
-			thisfn, ( void * ) exercice_meta, key, key_id );
 
 	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
 
 	sdata = get_instance_data( exercice_meta );
 
-	g_free( sdata->settings_key );
-	sdata->settings_key = g_strdup( key );
 	g_free( sdata->settings_id );
-	sdata->settings_id = g_strdup( key_id );
+	sdata->settings_id = g_strdup( settings_id );
+}
+
+/**
+ * ofa_idbexercice_meta_set_from_settings:
+ * @exercice_meta: this #ofaIDBExerciceMeta instance.
+ *
+ * Reads from dossier settings informations relative to the @exercice_meta
+ * exercice.
+ */
+void
+ofa_idbexercice_meta_set_from_settings( ofaIDBExerciceMeta *exercice_meta )
+{
+	static const gchar *thisfn = "ofa_idbexercice_meta_set_from_settings";
+	sIDBMeta *sdata;
+
+	g_debug( "%s: exercice_meta=%p", thisfn, ( void * ) exercice_meta );
+
+	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
 
 	read_settings( exercice_meta );
 
 	if( OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_settings ){
-		OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_settings( exercice_meta, key_id );
+		sdata = get_instance_data( exercice_meta );
+		OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_settings( exercice_meta, sdata->settings_id );
 		return;
 	}
 
@@ -351,14 +400,10 @@ ofa_idbexercice_meta_set_from_editor( ofaIDBExerciceMeta *exercice_meta, ofaIDBE
 
 	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
 
-	sdata = get_instance_data( exercice_meta );
-
-	g_free( sdata->settings_key );
-	g_free( sdata->settings_id );
-	ofa_idbdossier_meta_add_period( sdata->dossier_meta, exercice_meta, &sdata->settings_key, &sdata->settings_id );
 	write_settings( exercice_meta );
 
 	if( OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_editor ){
+		sdata = get_instance_data( exercice_meta );
 		OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->set_from_editor( exercice_meta, editor, sdata->settings_id );
 		return;
 	}
