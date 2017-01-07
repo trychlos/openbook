@@ -221,9 +221,6 @@ const GList        *ofa_idbdossier_meta_get_periods               ( const ofaIDB
 
 guint               ofa_idbdossier_meta_get_periods_count         ( const ofaIDBDossierMeta *meta );
 
-void                ofa_idbdossier_meta_set_periods               ( ofaIDBDossierMeta *meta,
-																		GList *periods );
-
 ofaIDBExerciceMeta *ofa_idbdossier_meta_new_period                ( ofaIDBDossierMeta *meta,
 																		gboolean attach );
 

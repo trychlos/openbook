@@ -520,27 +520,6 @@ ofa_idbdossier_meta_get_periods_count( const ofaIDBDossierMeta *meta )
 }
 
 /**
- * ofa_idbdossier_meta_set_periods:
- * @meta: this #ofaIDBDossierMeta instance.
- * @list: the list of the periods for the dossier.
- *
- * Stores the list of the defined financial periods (exercices) of the
- * dossier, as a deep copy of the provided @list.
- */
-void
-ofa_idbdossier_meta_set_periods( ofaIDBDossierMeta *meta, GList *periods )
-{
-	sIDBMeta *sdata;
-
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-
-	sdata = get_instance_data( meta );
-
-	g_list_free_full( sdata->periods, ( GDestroyNotify ) g_object_unref );
-	sdata->periods = g_list_copy_deep( periods, ( GCopyFunc ) g_object_ref, NULL );
-}
-
-/**
  * ofa_idbdossier_meta_new_period:
  * @meta: this #ofaIDBDossierMeta dossier.
  * @attach: whether to attach the newly created period to the dossier.

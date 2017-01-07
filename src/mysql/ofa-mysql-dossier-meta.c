@@ -62,8 +62,6 @@ static guint               idbdossier_meta_get_interface_version( void );
 static void                idbdossier_meta_set_from_settings( ofaIDBDossierMeta *instance );
 static void                idbdossier_meta_set_from_editor( ofaIDBDossierMeta *instance, ofaIDBDossierEditor *editor );
 static ofaIDBExerciceMeta *idbdossier_meta_new_period( ofaIDBDossierMeta *instance );
-//static GList                *load_periods( ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group );
-//static ofaMysqlExerciceMeta *find_period( ofaMysqlExerciceMeta *period, GList *list );
 static void                idbdossier_meta_update_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period, gboolean current, const GDate *begin, const GDate *end );
 static void                idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period );
 static void                idbdossier_meta_dump( const ofaIDBDossierMeta *instance );
@@ -141,189 +139,6 @@ ofa_mysql_dossier_meta_class_init( ofaMysqlDossierMetaClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_dossier_meta_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_dossier_meta_finalize;
-}
-
-/*
- * ofaIDBDossierMeta interface management
- */
-static void
-idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface )
-{
-	static const gchar *thisfn = "ofa_mysql_dossier_meta_idbdossier_meta_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = idbdossier_meta_get_interface_version;
-	iface->set_from_settings = idbdossier_meta_set_from_settings;
-	iface->set_from_editor = idbdossier_meta_set_from_editor;
-	iface->new_period = idbdossier_meta_new_period;
-	iface->update_period = idbdossier_meta_update_period;
-	iface->remove_period = idbdossier_meta_remove_period;
-	iface->dump = idbdossier_meta_dump;
-}
-
-static guint
-idbdossier_meta_get_interface_version( void )
-{
-	return( 1 );
-}
-
-static void
-idbdossier_meta_set_from_settings( ofaIDBDossierMeta *meta )
-{
-	ofaMysqlDossierMetaPrivate *priv;
-
-	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
-
-	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( meta ));
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* read connection informations from settings */
-	read_settings( OFA_MYSQL_DOSSIER_META( meta ));
-
-#if 0
-	GList *periods;
-	/* reload defined periods */
-	periods = load_periods( meta, settings, group );
-	ofa_idbdossier_meta_set_periods( meta, periods );
-	ofa_idbdossier_meta_free_periods( periods );
-}
-
-/*
- * returns the list the defined periods, making its best to reuse
- *  existing references
- */
-static GList *
-load_periods( ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group )
-{
-	GList *outlist, *prev_list;
-	GList *keys, *itk;
-	const gchar *cstr;
-	ofaMysqlExerciceMeta *new_period, *exist_period, *period;
-
-	keys = my_isettings_get_keys( settings, group );
-	prev_list = ofa_idbdossier_meta_get_periods( meta );
-	outlist = NULL;
-
-	for( itk=keys ; itk ; itk=itk->next ){
-		cstr = ( const gchar * ) itk->data;
-		/* define a new period with the settings */
-		new_period = ofa_mysql_exercice_meta_new_from_settings( settings, group, cstr );
-		if( new_period ){
-			/* search for this period in the previous list */
-			exist_period = find_period( new_period, prev_list );
-			if( exist_period ){
-				period = exist_period;
-				g_object_unref( new_period );
-			} else {
-				period = new_period;
-			}
-			outlist = g_list_prepend( outlist, period );
-		}
-	}
-
-	ofa_idbdossier_meta_free_periods( prev_list );
-	my_isettings_free_keys( settings, keys );
-
-	return( g_list_reverse( outlist ));
-}
-
-static ofaMysqlExerciceMeta *
-find_period( ofaMysqlExerciceMeta *period, GList *list )
-{
-	GList *it;
-	ofaMysqlExerciceMeta *current;
-
-	for( it=list ; it ; it=it->next ){
-		current = ( ofaMysqlExerciceMeta * ) it->data;
-		if( ofa_idbexercice_meta_compare( OFA_IDBEXERCICE_META( current ), OFA_IDBEXERCICE_META( period )) == 0 ){
-			return( g_object_ref( current ));
-		}
-	}
-
-	return( NULL );
-#endif
-}
-
-static void
-idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, ofaIDBDossierEditor *editor )
-{
-	ofaMysqlDossierMetaPrivate *priv;
-
-	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
-	g_return_if_fail( editor && OFA_IS_MYSQL_DOSSIER_EDITOR( editor ));
-
-	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( meta ));
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	g_free( priv->host );
-	priv->host = g_strdup( ofa_mysql_dossier_editor_get_host( OFA_MYSQL_DOSSIER_EDITOR( editor )));
-	priv->port = ofa_mysql_dossier_editor_get_port( OFA_MYSQL_DOSSIER_EDITOR( editor ));
-	g_free( priv->socket );
-	priv->socket = g_strdup( ofa_mysql_dossier_editor_get_socket( OFA_MYSQL_DOSSIER_EDITOR( editor )));
-	g_free( priv->root_account );
-	priv->root_account = g_strdup( ofa_mysql_dossier_editor_get_remembered_account( OFA_MYSQL_DOSSIER_EDITOR( editor )));
-
-	write_settings( OFA_MYSQL_DOSSIER_META( meta ));
-}
-
-/*
- * instanciates a new ofaIDBExerciceMeta object
- */
-static ofaIDBExerciceMeta *
-idbdossier_meta_new_period( ofaIDBDossierMeta *meta )
-{
-	ofaMysqlExerciceMeta *exercice_meta;
-
-	exercice_meta = ofa_mysql_exercice_meta_new();
-
-	return( OFA_IDBEXERCICE_META( exercice_meta ));
-}
-
-static void
-idbdossier_meta_update_period( ofaIDBDossierMeta *instance,
-		ofaIDBExerciceMeta *period, gboolean current, const GDate *begin, const GDate *end )
-{
-	myISettings *settings;
-	const gchar *group;
-
-	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
-	g_return_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ));
-
-	settings = ofa_idbdossier_meta_get_settings_iface( instance );
-	group = ofa_idbdossier_meta_get_settings_group( instance );
-	ofa_mysql_exercice_meta_update( OFA_MYSQL_EXERCICE_META( period ), settings, group, current, begin, end );
-}
-
-static void
-idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period )
-{
-	myISettings *settings;
-	const gchar *group;
-
-	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
-	g_return_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ));
-
-	settings = ofa_idbdossier_meta_get_settings_iface( instance );
-	group = ofa_idbdossier_meta_get_settings_group( instance );
-	ofa_mysql_exercice_meta_remove( OFA_MYSQL_EXERCICE_META( period ), settings, group );
-}
-
-static void
-idbdossier_meta_dump( const ofaIDBDossierMeta *instance )
-{
-	static const gchar *thisfn = "ofa_mysql_dossier_meta_dump";
-	ofaMysqlDossierMetaPrivate *priv;
-
-	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( instance ));
-
-	g_debug( "%s: meta=%p", thisfn, ( void * ) instance );
-	g_debug( "%s:   host=%s", thisfn, priv->host );
-	g_debug( "%s:   socket=%s", thisfn, priv->socket );
-	g_debug( "%s:   port=%u", thisfn, priv->port );
-	g_debug( "%s:   root_account=%s", thisfn, priv->root_account );
 }
 
 /**
@@ -585,4 +400,127 @@ write_settings( ofaMysqlDossierMeta *self )
 
 	g_free( sport );
 	g_free( str );
+}
+
+/*
+ * ofaIDBDossierMeta interface management
+ */
+static void
+idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_dossier_meta_idbdossier_meta_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idbdossier_meta_get_interface_version;
+	iface->set_from_settings = idbdossier_meta_set_from_settings;
+	iface->set_from_editor = idbdossier_meta_set_from_editor;
+	iface->new_period = idbdossier_meta_new_period;
+	iface->update_period = idbdossier_meta_update_period;
+	iface->remove_period = idbdossier_meta_remove_period;
+	iface->dump = idbdossier_meta_dump;
+}
+
+static guint
+idbdossier_meta_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static void
+idbdossier_meta_set_from_settings( ofaIDBDossierMeta *meta )
+{
+	ofaMysqlDossierMetaPrivate *priv;
+
+	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
+
+	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( meta ));
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	/* read connection informations from settings */
+	read_settings( OFA_MYSQL_DOSSIER_META( meta ));
+}
+
+static void
+idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, ofaIDBDossierEditor *editor )
+{
+	ofaMysqlDossierMetaPrivate *priv;
+
+	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
+	g_return_if_fail( editor && OFA_IS_MYSQL_DOSSIER_EDITOR( editor ));
+
+	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( meta ));
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->host );
+	priv->host = g_strdup( ofa_mysql_dossier_editor_get_host( OFA_MYSQL_DOSSIER_EDITOR( editor )));
+
+	priv->port = ofa_mysql_dossier_editor_get_port( OFA_MYSQL_DOSSIER_EDITOR( editor ));
+
+	g_free( priv->socket );
+	priv->socket = g_strdup( ofa_mysql_dossier_editor_get_socket( OFA_MYSQL_DOSSIER_EDITOR( editor )));
+
+	g_free( priv->root_account );
+	priv->root_account = g_strdup( ofa_mysql_dossier_editor_get_remembered_account( OFA_MYSQL_DOSSIER_EDITOR( editor )));
+
+	write_settings( OFA_MYSQL_DOSSIER_META( meta ));
+}
+
+/*
+ * instanciates a new ofaIDBExerciceMeta object
+ */
+static ofaIDBExerciceMeta *
+idbdossier_meta_new_period( ofaIDBDossierMeta *meta )
+{
+	ofaMysqlExerciceMeta *exercice_meta;
+
+	exercice_meta = ofa_mysql_exercice_meta_new();
+
+	return( OFA_IDBEXERCICE_META( exercice_meta ));
+}
+
+static void
+idbdossier_meta_update_period( ofaIDBDossierMeta *instance,
+		ofaIDBExerciceMeta *period, gboolean current, const GDate *begin, const GDate *end )
+{
+	myISettings *settings;
+	const gchar *group;
+
+	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
+	g_return_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ));
+
+	settings = ofa_idbdossier_meta_get_settings_iface( instance );
+	group = ofa_idbdossier_meta_get_settings_group( instance );
+	ofa_mysql_exercice_meta_update( OFA_MYSQL_EXERCICE_META( period ), settings, group, current, begin, end );
+}
+
+static void
+idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period )
+{
+	myISettings *settings;
+	const gchar *group;
+
+	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
+	g_return_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ));
+
+	settings = ofa_idbdossier_meta_get_settings_iface( instance );
+	group = ofa_idbdossier_meta_get_settings_group( instance );
+	ofa_mysql_exercice_meta_remove( OFA_MYSQL_EXERCICE_META( period ), settings, group );
+}
+
+static void
+idbdossier_meta_dump( const ofaIDBDossierMeta *instance )
+{
+	static const gchar *thisfn = "ofa_mysql_dossier_meta_dump";
+	ofaMysqlDossierMetaPrivate *priv;
+
+	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( instance ));
+
+	g_debug( "%s: meta=%p", thisfn, ( void * ) instance );
+	g_debug( "%s:   host=%s", thisfn, priv->host );
+	g_debug( "%s:   socket=%s", thisfn, priv->socket );
+	g_debug( "%s:   port=%u", thisfn, priv->port );
+	g_debug( "%s:   root_account=%s", thisfn, priv->root_account );
 }
