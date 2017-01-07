@@ -32,13 +32,13 @@
  *
  * Guide the user through the process of restoring an exercice.
  *
- * Restoring only happens on the current exercice (though maybe on a
- * newly created dossier).
- * The operation requires:
- * - the DBMS root account and password,
- * - the dossier admin account and password.
- * All these datas must be entered by the user as the Openbook software
- * cannot guess them.
+ * Restoring may happen to any target, but to an archived existing
+ * period: only a backup of this same period may be restored to this
+ * archive.
+ *
+ * Begin and end exercice dates got from the restored file are never
+ * remediated, but they must be compatible with the already defined
+ * exercices in the target dossier.
  */
 
 #include <gtk/gtk.h>

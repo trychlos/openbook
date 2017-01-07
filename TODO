@@ -415,8 +415,6 @@
 
 1307 2017- 1- 4 idbconnect_restore(): add a msgerr
 
-1308 2017- 1- 4 ofa_dossier_delete_delete: to be completed
-
 1309 2017- 1- 5 obsolete ofa_idbdossier_meta_remove_meta()
 
 1310 2017- 1- 5 rename ofa_idbdossier_meta_remove_period() to 
@@ -427,7 +425,9 @@
 1313 2017- 1- 5 generalize my_idialog_click_to_update_ex() in replacement
                 of my_idialog_click_to_update()
 
-1314
+1314 2017- 1- 6 OFA_T_DOSSIER: add a unique id to identify the dossier
+
+1315
 
 -----------------------------------------------------------------------
  DONE
@@ -445,6 +445,9 @@
                 the plugin access the database through the passed-in
                 connection
                 -> cancelled
+
+1308 2017- 1- 4 ofa_dossier_delete_delete: to be completed
+     2017- 1- 5 cancelled
 
 1311 2017- 1- 5 review ofa_idbdossier_meta_new_exercice_meta() vs.
                 ofa_idbdossier_meta_add_period()
