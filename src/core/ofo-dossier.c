@@ -1906,23 +1906,26 @@ hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *pre
 {
 	static const gchar *thisfn = "ofo_dossier_hub_on_exe_dates_changed";
 	const ofaIDBConnect *connect;
-	ofaIDBDossierMeta *dossier_meta;
-	ofaIDBExerciceMeta *exercice_meta;
+	ofaIDBExerciceMeta *period;
 	ofoDossier *dossier;
+	gboolean current;
 
 	g_debug( "%s: hub=%p, prev_begin=%p, prev_end=%p, empty=%p",
 			thisfn, ( void * ) hub, ( void * ) prev_begin, ( void * ) prev_end, ( void * ) empty );
 
 	dossier = ofa_hub_get_dossier( hub );
-	if( dossier && OFO_IS_DOSSIER( dossier )){
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
-		connect = ofa_hub_get_connect( hub );
-		dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
-		exercice_meta = ofa_idbconnect_get_exercice_meta( connect );
+	current = ofo_dossier_is_current( dossier );
+	g_return_if_fail( current );
 
-		ofa_idbdossier_meta_update_period( dossier_meta, exercice_meta,
-				TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
-	}
+	connect = ofa_hub_get_connect( hub );
+	period = ofa_idbconnect_get_exercice_meta( connect );
+
+	ofa_idbexercice_meta_set_current( period, current );
+	ofa_idbexercice_meta_set_begin_date( period, ofo_dossier_get_exe_begin( dossier ));
+	ofa_idbexercice_meta_set_end_date( period, ofo_dossier_get_exe_end( dossier ));
+	ofa_idbexercice_meta_update_settings( period );
 }
 
 /*

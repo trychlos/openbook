@@ -1043,9 +1043,11 @@ ofa_hub_dossier_remediate_settings( ofaHub *hub )
 	return( check_db_vs_settings( hub ));
 }
 
-/* when opening the dossier, make sure the settings are up to date
+/*
+ * When opening the dossier, make sure the settings are up to date
  * (this may not be the case when the dossier has just been restored
  *  or created)
+ *
  * The datas found in the dossier database take precedence over those
  * read from dossier settings. This is because dossier database is
  * (expected to be) updated via the Openbook software suite and so be
@@ -1061,7 +1063,6 @@ check_db_vs_settings( ofaHub *self )
 	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
 	const ofaIDBConnect *cnx;
 	ofaIDBExerciceMeta *period;
-	ofaIDBDossierMeta *dossier_meta;
 	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
 
 	remediated = FALSE;
@@ -1089,7 +1090,7 @@ check_db_vs_settings( ofaHub *self )
 		ssetbegin = my_date_to_str( settings_begin, MY_DATE_SQL );
 		ssetend = my_date_to_str( settings_end, MY_DATE_SQL );
 
-		g_debug( "%s: db_current=%s, db_begin=%s, db_end=%s, settings_current=%s, settings_begin=%s, settings_end=%s: updating settings",
+		g_debug( "%s: db_current=%s, db_begin=%s, db_end=%s, settings_current=%s, settings_begin=%s, settings_end=%s: remediating settings",
 				thisfn,
 				db_current ? "True":"False", sdbbegin, sdbend,
 				settings_current ? "True":"False", ssetbegin, ssetend );
@@ -1099,8 +1100,10 @@ check_db_vs_settings( ofaHub *self )
 		g_free( ssetbegin );
 		g_free( ssetend );
 
-		dossier_meta = ofa_idbconnect_get_dossier_meta( cnx );
-		ofa_idbdossier_meta_update_period( dossier_meta, period, db_current, db_begin, db_end );
+		ofa_idbexercice_meta_set_current( period, db_current );
+		ofa_idbexercice_meta_set_begin_date( period, db_begin );
+		ofa_idbexercice_meta_set_end_date( period, db_end );
+		ofa_idbexercice_meta_update_settings( period );
 
 		remediated = TRUE;
 	}

@@ -72,7 +72,7 @@ static void      interface_base_init( ofaIDBExerciceMetaInterface *klass );
 static void      interface_base_finalize( ofaIDBExerciceMetaInterface *klass );
 static void      remove_from_settings( ofaIDBExerciceMeta *exercice_meta );
 static void      read_settings( ofaIDBExerciceMeta *self );
-static void      write_settings( ofaIDBExerciceMeta *self );
+static void      write_settings( const ofaIDBExerciceMeta *self );
 static sIDBMeta *get_instance_data( const ofaIDBExerciceMeta *self );
 static void      on_instance_finalized( sIDBMeta *sdata, GObject *finalized_instance );
 
@@ -510,7 +510,7 @@ ofa_idbexercice_meta_get_remembered_account( const ofaIDBExerciceMeta *period )
  * @period: this #ofaIDBExerciceMeta instance.
  * @date: the endning date to be set.
  *
- * Set the ending date of the @period.
+ * Set the administrative account to be remembered.
  */
 void
 ofa_idbexercice_meta_set_remembered_account( ofaIDBExerciceMeta *period, const gchar *account )
@@ -799,6 +799,30 @@ ofa_idbexercice_meta_delete( ofaIDBExerciceMeta *period, ofaIDBConnect *connect 
 	remove_from_settings( period );
 }
 
+/**
+ * ofa_idbexercice_meta_update_settings:
+ * @period: this #ofaIDBExerciceMeta instance.
+ *
+ * Write meta datas to dossier settings.
+ */
+void
+ofa_idbexercice_meta_update_settings( const ofaIDBExerciceMeta *period )
+{
+	static const gchar *thisfn = "ofa_idbexercice_meta_update_settings";
+
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
+
+	write_settings( period );
+
+	if( OFA_IDBEXERCICE_META_GET_INTERFACE( period )->update_settings ){
+		OFA_IDBEXERCICE_META_GET_INTERFACE( period )->update_settings( period );
+		return;
+	}
+
+	g_info( "%s: ofaIDBExerciceMeta's %s implementation does not provide 'update_settings() method",
+			thisfn, G_OBJECT_TYPE_NAME( period ));
+}
+
 /*
  * settings are: "begin(s), end(s); current(s); admin_account(s);"
  */
@@ -849,7 +873,7 @@ read_settings( ofaIDBExerciceMeta *self )
 }
 
 static void
-write_settings( ofaIDBExerciceMeta *self )
+write_settings( const ofaIDBExerciceMeta *self )
 {
 	sIDBMeta *sdata;
 	myISettings *settings;

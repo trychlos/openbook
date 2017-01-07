@@ -73,7 +73,6 @@ typedef struct _ofaIDBDossierMetaInterface            ofaIDBDossierMetaInterface
  * @set_from_settings: [should]: set datas from settings.
  * @set_from_editor: [should]: set datas from ofaIDBEditor.
  * @new_exercice_meta: [should]: instanciates a new #ofaIDBExerciceMeta instance.
- * @update_period: [should]: updates a period in the settings.
  * @remove_period: [should]: removes a period from the settings.
  * @dump: [should]: dump data.
  *
@@ -223,12 +222,6 @@ guint               ofa_idbdossier_meta_get_periods_count         ( const ofaIDB
 
 ofaIDBExerciceMeta *ofa_idbdossier_meta_new_period                ( ofaIDBDossierMeta *meta,
 																		gboolean attach );
-
-void                ofa_idbdossier_meta_update_period             ( ofaIDBDossierMeta *meta,
-																		ofaIDBExerciceMeta *exercice_meta,
-																		gboolean current,
-																		const GDate *begin,
-																		const GDate *end );
 
 void                ofa_idbdossier_meta_remove_period             ( ofaIDBDossierMeta *meta,
 																		ofaIDBExerciceMeta *exercice_meta );

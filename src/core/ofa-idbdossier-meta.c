@@ -600,38 +600,6 @@ get_exercice_key( ofaIDBDossierMeta *self, gchar **key, gchar **key_id )
 }
 
 /**
- * ofa_idbdossier_meta_update_period:
- * @meta: this #ofaIDBDossierMeta instance.
- * @period: the #ofaIDBExerciceMeta to be updated.
- * @current: whether the financial period (exercice) is current.
- * @begin: [allow-none]: the beginning date.
- * @end: [allow-none]: the ending date.
- *
- * Update the dossier settings for this @period with the specified datas.
- */
-void
-ofa_idbdossier_meta_update_period( ofaIDBDossierMeta *meta,
-		ofaIDBExerciceMeta *period, gboolean current, const GDate *begin, const GDate *end )
-{
-	static const gchar *thisfn = "ofa_idbdossier_meta_update_period";
-
-	g_debug( "%s: meta=%p, period=%p, current=%s, begin=%p, end=%p",
-			thisfn, ( void * ) meta, ( void * ) period,
-			current ? "True":"False", ( void * ) begin, ( void * ) end );
-
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
-
-	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->update_period ){
-		OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->update_period( meta, period, current, begin, end );
-		return;
-	}
-
-	g_info( "%s: ofaIDBDossierMeta's %s implementation does not provide 'update_period()' method",
-			thisfn, G_OBJECT_TYPE_NAME( meta ));
-}
-
-/**
  * ofa_idbdossier_meta_remove_period:
  * @meta: this #ofaIDBDossierMeta instance.
  * @exercice_meta: the new #ofaIDBExerciceMeta to be removed.

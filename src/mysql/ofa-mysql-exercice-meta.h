@@ -61,10 +61,6 @@ GType                 ofa_mysql_exercice_meta_get_type         ( void ) G_GNUC_C
 
 ofaMysqlExerciceMeta *ofa_mysql_exercice_meta_new              ( void );
 
-ofaMysqlExerciceMeta *ofa_mysql_exercice_meta_new_from_settings( myISettings *settings,
-																		const gchar *group,
-																		const gchar *key );
-
 ofaMysqlExerciceMeta *ofa_mysql_exercice_meta_new_to_settings  ( myISettings *settings,
 																		const gchar *group,
 																		gboolean current,
@@ -73,13 +69,6 @@ ofaMysqlExerciceMeta *ofa_mysql_exercice_meta_new_to_settings  ( myISettings *se
 																		const gchar *database );
 
 const gchar          *ofa_mysql_exercice_meta_get_database     ( ofaMysqlExerciceMeta *period );
-
-void                  ofa_mysql_exercice_meta_update           ( ofaMysqlExerciceMeta *period,
-																		myISettings *settings,
-																		const gchar *group,
-																		gboolean current,
-																		const GDate *begin,
-																		const GDate *end );
 
 void                  ofa_mysql_exercice_meta_remove           ( ofaMysqlExerciceMeta *period,
 																		myISettings *settings,

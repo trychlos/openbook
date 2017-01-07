@@ -57,16 +57,15 @@ typedef struct {
 #define MYSQL_SOCKET_KEY                "mysql-socket"
 #define MYSQL_PORT_KEY                  "mysql-port"
 
+static void                read_settings( ofaMysqlDossierMeta *self );
+static void                write_settings( ofaMysqlDossierMeta *self );
 static void                idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface );
 static guint               idbdossier_meta_get_interface_version( void );
 static void                idbdossier_meta_set_from_settings( ofaIDBDossierMeta *instance );
 static void                idbdossier_meta_set_from_editor( ofaIDBDossierMeta *instance, ofaIDBDossierEditor *editor );
 static ofaIDBExerciceMeta *idbdossier_meta_new_period( ofaIDBDossierMeta *instance );
-static void                idbdossier_meta_update_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period, gboolean current, const GDate *begin, const GDate *end );
 static void                idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period );
 static void                idbdossier_meta_dump( const ofaIDBDossierMeta *instance );
-static void                read_settings( ofaMysqlDossierMeta *self );
-static void                write_settings( ofaMysqlDossierMeta *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierMeta, ofa_mysql_dossier_meta, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlDossierMeta )
@@ -416,7 +415,6 @@ idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface )
 	iface->set_from_settings = idbdossier_meta_set_from_settings;
 	iface->set_from_editor = idbdossier_meta_set_from_editor;
 	iface->new_period = idbdossier_meta_new_period;
-	iface->update_period = idbdossier_meta_update_period;
 	iface->remove_period = idbdossier_meta_remove_period;
 	iface->dump = idbdossier_meta_dump;
 }
@@ -479,21 +477,6 @@ idbdossier_meta_new_period( ofaIDBDossierMeta *meta )
 	exercice_meta = ofa_mysql_exercice_meta_new();
 
 	return( OFA_IDBEXERCICE_META( exercice_meta ));
-}
-
-static void
-idbdossier_meta_update_period( ofaIDBDossierMeta *instance,
-		ofaIDBExerciceMeta *period, gboolean current, const GDate *begin, const GDate *end )
-{
-	myISettings *settings;
-	const gchar *group;
-
-	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
-	g_return_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ));
-
-	settings = ofa_idbdossier_meta_get_settings_iface( instance );
-	group = ofa_idbdossier_meta_get_settings_group( instance );
-	ofa_mysql_exercice_meta_update( OFA_MYSQL_EXERCICE_META( period ), settings, group, current, begin, end );
 }
 
 static void

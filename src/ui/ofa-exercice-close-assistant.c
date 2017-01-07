@@ -1425,10 +1425,15 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofo_dossier_set_current( priv->dossier, FALSE );
 	ofo_dossier_update( priv->dossier );
 
-	period = ofa_idbconnect_get_exercice_meta( priv->connect );
 	begin_old = ofo_dossier_get_exe_begin( priv->dossier );
 	end_old = ofo_dossier_get_exe_end( priv->dossier );
-	ofa_idbdossier_meta_update_period( priv->dossier_meta, period, FALSE, begin_old, end_old );
+
+	period = ofa_idbconnect_get_exercice_meta( priv->connect );
+
+	ofa_idbexercice_meta_set_current( period, FALSE );
+	ofa_idbexercice_meta_set_begin_date( period, begin_old );
+	ofa_idbexercice_meta_set_end_date( period, end_old );
+	ofa_idbexercice_meta_update_settings( period );
 
 	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 	end_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );

@@ -162,6 +162,16 @@ struct _ofaIDBExerciceMetaInterface {
 	 * Since: version 1
 	 */
 	void     ( *dump )                 ( const ofaIDBExerciceMeta *instance );
+
+	/**
+	 * update_settings:
+	 * @instance: the #ofaIDBExerciceMeta instance.
+	 *
+	 * Update the settings after an update of some meta datas.
+	 *
+	 * Since: version 1
+	 */
+	void     ( *update_settings )      ( const ofaIDBExerciceMeta *instance );
 };
 
 /*
@@ -236,6 +246,8 @@ void               ofa_idbexercice_meta_dump                      ( const ofaIDB
 
 void               ofa_idbexercice_meta_delete                    ( ofaIDBExerciceMeta *exercice_meta,
 																		ofaIDBConnect *connect );
+
+void               ofa_idbexercice_meta_update_settings           ( const ofaIDBExerciceMeta *exercice_meta );
 
 G_END_DECLS
 
