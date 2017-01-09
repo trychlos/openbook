@@ -59,9 +59,53 @@ typedef struct {
 }
 	ofaJsonHeaderClass;
 
-GType          ofa_json_header_get_type( void ) G_GNUC_CONST;
+GType           ofa_json_header_get_type            ( void ) G_GNUC_CONST;
 
-ofaJsonHeader *ofa_json_header_new     ( void );
+ofaJsonHeader  *ofa_json_header_new                 ( void );
+
+gboolean        ofa_json_header_get_is_current      ( ofaJsonHeader *header );
+
+void            ofa_json_header_set_is_current      ( ofaJsonHeader *header,
+														gboolean is_current );
+
+const GDate    *ofa_json_header_get_begin_date      ( ofaJsonHeader *header );
+
+void            ofa_json_header_set_begin_date      ( ofaJsonHeader *header,
+														const GDate *date );
+
+const GDate    *ofa_json_header_get_end_date        ( ofaJsonHeader *header );
+
+void            ofa_json_header_set_end_date        ( ofaJsonHeader *header,
+														const GDate *date );
+
+const gchar    *ofa_json_header_get_openbook_version( ofaJsonHeader *header );
+
+void            ofa_json_header_set_openbook_version( ofaJsonHeader *header,
+														const gchar *version );
+
+void            ofa_json_header_set_plugin          ( ofaJsonHeader *header,
+														const gchar *canon_name,
+														const gchar *display_name,
+														const gchar *version );
+
+void            ofa_json_header_set_dbmodel         ( ofaJsonHeader *header,
+														const gchar *id,
+														const gchar *version );
+
+const gchar    *ofa_json_header_get_comment         ( ofaJsonHeader *header );
+
+void            ofa_json_header_set_comment         ( ofaJsonHeader *header,
+														const gchar *comment );
+
+const GTimeVal *ofa_json_header_get_current_stamp   ( ofaJsonHeader *header );
+
+void            ofa_json_header_set_current_stamp   ( ofaJsonHeader *header,
+														const GTimeVal *stamp );
+
+const gchar    *ofa_json_header_get_current_user    ( ofaJsonHeader *header );
+
+void            ofa_json_header_set_current_user    ( ofaJsonHeader *header,
+														const gchar *userid );
 
 G_END_DECLS
 
