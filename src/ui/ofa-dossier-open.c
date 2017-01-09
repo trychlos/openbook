@@ -227,6 +227,9 @@ ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent,
 	priv->getter = ofa_igetter_get_permanent_getter( getter );
 	priv->parent = parent;
 
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), FALSE );
+
 	if( meta ){
 		priv->dossier_meta = g_object_ref( meta );
 		if( period ){
@@ -279,10 +282,6 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_dossier_open_get_instance_private( OFA_DOSSIER_OPEN( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
 	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
@@ -545,6 +544,7 @@ check_for_enable_dlg( ofaDossierOpen *self )
 static gboolean
 are_data_set( ofaDossierOpen *self, gchar **msg )
 {
+	static const gchar *thisfn = "ofa_dossier_open_are_data_set";
 	ofaDossierOpenPrivate *priv;
 	gboolean valid;
 
@@ -571,6 +571,8 @@ are_data_set( ofaDossierOpen *self, gchar **msg )
 	} else {
 		valid = TRUE;
 	}
+
+	g_debug( "%s: valid=%s, msg=%s", thisfn, valid ? "True":"False", valid ? "":*msg );
 
 	return( valid );
 }
@@ -606,6 +608,7 @@ idialog_quit_on_ok( myIDialog *instance )
 static gboolean
 is_connection_valid( ofaDossierOpen *self, gchar **msg )
 {
+	static const gchar *thisfn = "ofa_dossier_open_is_connection_valid";
 	ofaDossierOpenPrivate *priv;
 	ofaIDBProvider *provider;
 	gboolean valid;
@@ -627,6 +630,8 @@ is_connection_valid( ofaDossierOpen *self, gchar **msg )
 			*msg = g_strdup_printf( _( "Invalid credentials for '%s' account" ), priv->account );
 		}
 	}
+
+	g_debug( "%s: valid=%s, msg=%s", thisfn, valid ? "True":"False", valid ? "":*msg );
 
 	return( valid );
 }

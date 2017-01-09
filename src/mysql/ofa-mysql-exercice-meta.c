@@ -58,6 +58,7 @@ static void   idbexercice_meta_set_from_editor( ofaIDBExerciceMeta *instance, of
 static gchar *idbexercice_meta_get_name( const ofaIDBExerciceMeta *instance );
 static gint   idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b );
 static void   idbexercice_meta_dump( const ofaIDBExerciceMeta *instance );
+static void   idbexercice_meta_update_settings( const ofaIDBExerciceMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlExerciceMeta, ofa_mysql_exercice_meta, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlExerciceMeta )
@@ -145,55 +146,6 @@ ofa_mysql_exercice_meta_new( void )
 }
 
 /**
- * ofa_mysql_exercice_meta_new_to_settings:
- * @settings: the #myISettings instance which holds the dossier settings
- *  file.
- * @group: the group name for this dossier.
- * @current: whether the financial period is current.
- * @begin: [allow-none]: the beginning date.
- * @end: [allow-none]: the ending date.
- * @database: the database name.
- *
- * Defines a new financial period in the dossier settings
- *
- * Returns: a reference to a new #ofaMysqlExerciceMeta object, which
- * implements the #ofaIDBExerciceMeta interface.
- */
-ofaMysqlExerciceMeta *
-ofa_mysql_exercice_meta_new_to_settings( myISettings *settings, const gchar *group,
-									gboolean current, const GDate *begin, const GDate *end, const gchar *database )
-{
-	ofaMysqlExerciceMeta *period;
-	ofaMysqlExerciceMetaPrivate *priv;
-	gchar *key, *sbegin, *send, *content;
-
-	g_return_val_if_fail( settings && MY_IS_ISETTINGS( settings ), NULL );
-	g_return_val_if_fail( my_strlen( group ), NULL );
-	g_return_val_if_fail( my_strlen( database ), NULL );
-
-	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, database );
-	sbegin = my_date_to_str( begin, MY_DATE_YYMD );
-	send = my_date_to_str( end, MY_DATE_YYMD );
-	content = g_strdup_printf( "%s;%s;%s;", current ? "True":"False", sbegin, send );
-
-	my_isettings_set_string( settings, group, key, content );
-
-	g_free( content );
-	g_free( send );
-	g_free( sbegin );
-	g_free( key );
-
-	period = g_object_new( OFA_TYPE_MYSQL_EXERCICE_META, NULL );
-	priv = ofa_mysql_exercice_meta_get_instance_private( period );
-	priv->database = g_strdup( database );
-	ofa_idbexercice_meta_set_current( OFA_IDBEXERCICE_META( period ), current );
-	ofa_idbexercice_meta_set_begin_date( OFA_IDBEXERCICE_META( period ), begin );
-	ofa_idbexercice_meta_set_end_date( OFA_IDBEXERCICE_META( period ), end );
-
-	return( period );
-}
-
-/**
  * ofa_mysql_exercice_meta_get_database:
  * @period: this #ofaMysqlExerciceMeta object.
  *
@@ -214,6 +166,28 @@ ofa_mysql_exercice_meta_get_database( ofaMysqlExerciceMeta *period )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return(( const gchar * ) priv->database );
+}
+
+/**
+ * ofa_mysql_exercice_meta_set_database:
+ * @period: this #ofaMysqlExerciceMeta object.
+ * @database: [allow-none]: the database to be set.
+ *
+ * Set the database name.
+ */
+void
+ofa_mysql_exercice_meta_set_database( ofaMysqlExerciceMeta *period, const gchar *database )
+{
+	ofaMysqlExerciceMetaPrivate *priv;
+
+	g_return_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ));
+
+	priv = ofa_mysql_exercice_meta_get_instance_private( period );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->database );
+	priv->database = g_strdup( database );
 }
 
 /**
@@ -315,6 +289,7 @@ idbexercice_meta_iface_init( ofaIDBExerciceMetaInterface *iface )
 	iface->get_name = idbexercice_meta_get_name;
 	iface->compare = idbexercice_meta_compare;
 	iface->dump = idbexercice_meta_dump;
+	iface->update_settings = idbexercice_meta_update_settings;
 }
 
 static guint
@@ -377,11 +352,15 @@ idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta 
 {
 	ofaMysqlExerciceMetaPrivate *a_priv, *b_priv;
 	gint cmp;
+	glong a_len, b_len;
 
 	a_priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( a ));
 	b_priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MYSQL_EXERCICE_META( b ));
 
-	cmp = g_utf8_collate( a_priv->database, b_priv->database );
+	a_len = my_strlen( a_priv->database );
+	b_len = my_strlen( b_priv->database );
+
+	cmp = ( a_len < b_len ? -1 : ( a_len > b_len ? 1 : 0 ));
 
 	return( cmp );
 }
@@ -396,4 +375,13 @@ idbexercice_meta_dump( const ofaIDBExerciceMeta *instance )
 
 	g_debug( "%s: period=%p", thisfn, ( void * ) instance );
 	g_debug( "%s:   database=%s", thisfn, priv->database );
+}
+
+static void
+idbexercice_meta_update_settings( const ofaIDBExerciceMeta *instance )
+{
+	const gchar *key_id;
+
+	key_id = ofa_idbexercice_meta_get_settings_id( instance );
+	write_settings( OFA_MYSQL_EXERCICE_META( instance ), key_id );
 }

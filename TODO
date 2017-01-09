@@ -385,10 +385,6 @@
 1271 2016-12- 1 obsoletes ofaDbmsRootBin
                 moving to mysql
 
-1276 2016-12-10 review the way the exercices are written in dossier settings
-                so that this may be managed by the application instead of
-                by the dbms plugin
-
 1285 2016-12-13 myIWindow: deprecate ::get_identifier() method
                 when several windows of same name are opened, just shift them 
 
@@ -413,8 +409,6 @@
 1303 2016-12-27 ack -lw get_valid src
                 replace get_valid() with is_valid()
 
-1307 2017- 1- 4 idbconnect_restore(): add a msgerr
-
 1309 2017- 1- 5 obsolete ofa_idbdossier_meta_remove_meta()
 
 1310 2017- 1- 5 rename ofa_idbdossier_meta_remove_period() to 
@@ -425,13 +419,18 @@
 1313 2017- 1- 5 generalize my_idialog_click_to_update_ex() in replacement
                 of my_idialog_click_to_update()
 
-1314 2017- 1- 6 OFA_T_DOSSIER: add a unique id to identify the dossier
+1314 2017- 1- 6 DB: OFA_T_DOSSIER: add a unique id to identify the dossier
 
 1315
 
 -----------------------------------------------------------------------
  DONE
  ====
+
+1276 2016-12-10 review the way the exercices are written in dossier settings
+                so that this may be managed by the application instead of
+                by the dbms plugin
+     2017- 1- 9 done
 
 1304 2016-12-28 ofa_idbdossier_meta_get_provider(): should not return 
                 a new reference
@@ -445,6 +444,9 @@
                 the plugin access the database through the passed-in
                 connection
                 -> cancelled
+
+1307 2017- 1- 4 idbconnect_restore(): add a msgerr
+     2017- 1- 9 cancelled as duplicate of #1073
 
 1308 2017- 1- 4 ofa_dossier_delete_delete: to be completed
      2017- 1- 5 cancelled

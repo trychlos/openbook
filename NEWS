@@ -51,13 +51,18 @@
    - ofaLedgerSummaryBin class is renamed to ofaLedgerSummaryArgs.
    - ofaMysqlDossierBin: new class.
    - ofaMysqlDossierEditor: new class.
+   - ofa_mysql_dossier_meta_add_period(), ofa_mysql_dossier_meta_load_periods(): removed functions.
    - ofaMysqlExerciceBin: new class.
    - ofaMysqlExerciceEditor: new class.
+   - ofa_mysql_exercice_meta_new_to_settings(): removed function.
+   - ofa_mysql_exercice_meta_set_database(): new function.
    - ofaMysqlRootBin: new class.
    - ofaReconcilBin class is renamed to ofaReconcilArgs.
    - ofa_prefs_export_default_folder(): new function.
 
-   + General review of read/write user settings.
+   + General review of read/write user and dossier settings:
+
+   - Let the application manage its own settings for an exercice (todo #1276).
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -881,6 +881,7 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 					provider, sdata->account, sdata->password, sdata->dossier_meta, target_period );
 			set_admin_credentials( target_connect, adm_account, adm_password, NULL );
 			g_object_unref( target_connect );
+			ok = TRUE;
 		}
 
 		return( ok );

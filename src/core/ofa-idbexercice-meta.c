@@ -665,6 +665,7 @@ ofa_idbexercice_meta_get_name( const ofaIDBExerciceMeta *period )
 gint
 ofa_idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b )
 {
+	static const gchar *thisfn = "ofa_idbexercice_meta_compare";
 	gint cmp;
 	const GDate *a_begin, *a_end, *b_begin, *b_end;
 
@@ -685,6 +686,9 @@ ofa_idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceM
 			if( cmp == 0 ){
 				if( OFA_IDBEXERCICE_META_GET_INTERFACE( a )->compare ){
 					cmp = OFA_IDBEXERCICE_META_GET_INTERFACE( a )->compare( a, b );
+				} else {
+					g_info( "%s: ofaIDBExerciceMeta's %s implementation does not provide 'compare() method",
+							thisfn, G_OBJECT_TYPE_NAME( a ));
 				}
 			}
 			return( cmp );

@@ -72,15 +72,6 @@ const gchar         *ofa_mysql_dossier_meta_get_socket      ( ofaMysqlDossierMet
 
 const gchar         *ofa_mysql_dossier_meta_get_root_account( ofaMysqlDossierMeta *meta );
 
-void                 ofa_mysql_dossier_meta_load_periods    ( ofaMysqlDossierMeta *meta,
-																	GList *keys );
-
-void                 ofa_mysql_dossier_meta_add_period      ( ofaMysqlDossierMeta *meta,
-																	gboolean current,
-																	const GDate *begin,
-																	const GDate *end,
-																	const gchar *database );
-
 void                 ofa_mysql_dossier_meta_set_from_editor ( ofaMysqlDossierMeta *meta,
 																	ofaMysqlDossierBin *dossier_bin,
 																	ofaMysqlRootBin *root_bin );

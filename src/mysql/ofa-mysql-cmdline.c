@@ -49,6 +49,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 
 #include "ofa-mysql-cmdline.h"
@@ -316,7 +317,12 @@ ofa_mysql_cmdline_archive_and_new( ofaMysqlConnect *connect,
 	g_free( cmd );
 
 	if( ok ){
-		ofa_mysql_dossier_meta_add_period( OFA_MYSQL_DOSSIER_META( dossier_meta ), TRUE, begin_next, end_next, new_db );
+		exercice_meta = ofa_idbdossier_meta_new_period( dossier_meta, TRUE );
+		ofa_idbexercice_meta_set_current( exercice_meta, TRUE );
+		ofa_idbexercice_meta_set_begin_date( exercice_meta, begin_next );
+		ofa_idbexercice_meta_set_end_date( exercice_meta, end_next );
+		ofa_mysql_exercice_meta_set_database( OFA_MYSQL_EXERCICE_META( exercice_meta ), new_db );
+		ofa_idbexercice_meta_update_settings( exercice_meta );
 		prev_account = ofa_idbconnect_get_account( OFA_IDBCONNECT( connect ));
 		do_duplicate_grants( OFA_IDBCONNECT( server_cnx ), host, prev_account, prev_dbname, new_db );
 	}

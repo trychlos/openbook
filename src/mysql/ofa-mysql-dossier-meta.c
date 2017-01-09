@@ -247,34 +247,6 @@ ofa_mysql_dossier_meta_get_root_account( ofaMysqlDossierMeta *meta )
 }
 
 /**
- * ofa_mysql_dossier_meta_add_period:
- * @meta: this #ofaMysqlDossierMeta instance.
- * @current: whether the financial period (exercice) is current.
- * @begin: [allow-none]: the beginning date.
- * @end: [allow-none]: the ending date.
- * @database: the database name.
- *
- * Defines a new financial period with the provided datas.
- */
-void
-ofa_mysql_dossier_meta_add_period( ofaMysqlDossierMeta *meta,
-							gboolean current, const GDate *begin, const GDate *end, const gchar *database )
-{
-	ofaMysqlExerciceMeta *period;
-	myISettings *settings;
-	const gchar *group;
-
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-
-	settings = ofa_idbdossier_meta_get_settings_iface( OFA_IDBDOSSIER_META( meta ));
-	group = ofa_idbdossier_meta_get_settings_group( OFA_IDBDOSSIER_META( meta ));
-
-	period = ofa_mysql_exercice_meta_new_to_settings( settings, group, current, begin, end, database );
-	//ofa_idbdossier_meta_add_period( OFA_IDBDOSSIER_META( meta ), OFA_IDBEXERCICE_META( period ));
-	g_object_unref( period );
-}
-
-/**
  * ofa_mysql_dossier_meta_set_from_editor:
  * @meta: this #ofaMysqlDossierMeta instance.
  * @dossier_bin: the #ofaMysqlDossierBin dossier editor.
