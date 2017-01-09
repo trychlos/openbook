@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "my/my-file-monitor.h"
 #include "my/my-isettings.h"
 #include "my/my-utils.h"
@@ -35,6 +37,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 
 /* private instance data
@@ -435,41 +438,6 @@ ofa_dossier_collection_add_meta( ofaDossierCollection *collection, ofaIDBDossier
 }
 
 /**
- * ofa_dossier_collection_delete_meta:
- * @collection: this #ofaDossierCollection instance.
- * @meta: the #ofaIDBDossierMeta to be removed.
- * @connect: a superuser connection to the DBMS.
- *
- * Remove the @meta informations from the @collection.
- * Delete the whole @meta dossier from the DBMS.
- * Update the dossier settings accordingly.
- *
- * This method does not release the @meta object, which is left to the
- * caller.
- */
-void
-ofa_dossier_collection_delete_meta( ofaDossierCollection *collection, ofaIDBDossierMeta *meta, ofaIDBConnect *connect )
-{
-	static const gchar *thisfn = "ofa_dossier_collection_delete_meta";
-	ofaDossierCollectionPrivate *priv;
-
-	g_debug( "%s: collection=%p, meta=%p, connect=%p",
-			thisfn, ( void * ) collection, ( void * ) meta, ( void * ) connect );
-
-	g_return_if_fail( collection && OFA_IS_DOSSIER_COLLECTION( collection ));
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
-
-	priv = ofa_dossier_collection_get_instance_private( collection );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->list = g_list_remove( priv->list, meta );
-
-	ofa_idbdossier_meta_delete( meta, connect );
-}
-
-/**
  * ofa_dossier_collection_set_meta_from_editor:
  * @collection: this #ofaDossierCollection instance.
  * @meta: the #ofaIDBDossierMeta to be set.
@@ -533,6 +501,76 @@ get_dossier_by_name( GList *list, const gchar *dossier_name )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_dossier_collection_delete_period:
+ * @collection: this #ofaDossierCollection instance.
+ * @connect: a superuser connection to the DBMS;
+ *  the #ofaIDBDossierMeta member is expected to be set to the target dossier;
+ *  the #ofaIDBExerciceMeta member is ignored.
+ * @period: [allow-none]: the financial period to be deleted;
+ *  if %NULL, all existing periods will be deleted.
+ * @delete_dossier_on_last: whether to also delete the dossier when empty.
+ * @msgerr: [out][allow-none]: a placeholder for an error message
+ *
+ * Remove the @period informations from the @collection.
+ * Delete the whole @period from the DBMS.
+ * Update the dossier settings accordingly.
+ *
+ * This method does not release the @period (nor the dossier) object(s).
+ * These objects will be automatically released on @collection automatic
+ * update.
+ *
+ * This function is expected to be the entry point for all deletion
+ * operations. Full code path is:
+ *
+ *   ofa_dossier_collection_delete_period()
+ *     ofa_idbdossier_meta_delete_period()
+ *       ofaIDBDossierMeta::delete_period()
+ *         ofaMysqlDossierMeta::idbdossier_meta_delete_period()
+ *       ofa_idbexercice_meta_delete()
+ *         ofaIDBExerciceMeta::delete()
+ *           ofaMysqlExerciceMeta::ofa_idbexercice_meta_delete()
+ *             ofa_mysql_connect_drop_database()
+ */
+gboolean
+ofa_dossier_collection_delete_period( ofaDossierCollection *collection,
+		ofaIDBConnect *connect, ofaIDBExerciceMeta *period, gboolean delete_dossier_on_last, gchar **msgerr )
+{
+	static const gchar *thisfn = "ofa_dossier_collection_delete_period";
+	ofaDossierCollectionPrivate *priv;
+	ofaIDBDossierMeta *dossier_meta;
+	gboolean ok;
+
+	g_debug( "%s: collection=%p, connect=%p, period=%p, delete_dossier_on_last=%s, msgerr=%p",
+			thisfn, ( void * ) collection, ( void * ) connect, ( void * ) period,
+			delete_dossier_on_last ? "True":"False", ( void * ) msgerr );
+
+	g_return_val_if_fail( collection && OFA_IS_DOSSIER_COLLECTION( collection ), FALSE );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ), FALSE );
+
+	priv = ofa_dossier_collection_get_instance_private( collection );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
+	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
+	if( !dossier_meta ){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "The provided connection does not handle any dossier information" ));
+			return( FALSE );
+		}
+	}
+	g_return_val_if_fail( OFA_IS_IDBDOSSIER_META( dossier_meta ), FALSE );
+
+	ok = ofa_idbdossier_meta_delete_period( dossier_meta, connect, period, delete_dossier_on_last, msgerr );
+
+	return( ok );
 }
 
 /**

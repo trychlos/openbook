@@ -1184,6 +1184,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_display";
 	ofaRestoreAssistantPrivate *priv;
+	ofaDossierCollection *collection;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
@@ -1195,7 +1196,8 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	if( !p6_restore_confirmed( self )){
 		if( priv->p2_is_new_dossier ){
-			ofa_idbdossier_meta_remove_meta( priv->p2_dossier_meta );
+			collection = ofa_hub_get_dossier_collection( priv->hub );
+			ofa_dossier_collection_delete_period( collection, priv->p3_connect, NULL, TRUE, NULL );
 		}
 		gtk_label_set_text(
 				GTK_LABEL( priv->p6_label1 ),

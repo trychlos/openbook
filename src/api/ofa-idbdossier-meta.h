@@ -72,8 +72,8 @@ typedef struct _ofaIDBDossierMetaInterface            ofaIDBDossierMetaInterface
  *                         interface that the plugin implements.
  * @set_from_settings: [should]: set datas from settings.
  * @set_from_editor: [should]: set datas from ofaIDBEditor.
- * @new_exercice_meta: [should]: instanciates a new #ofaIDBExerciceMeta instance.
- * @remove_period: [should]: removes a period from the settings.
+ * @new_period: [should]: instanciates a new #ofaIDBExerciceMeta instance.
+ * @delete_period: [should]: deletes a period from dbms and settings.
  * @dump: [should]: dump data.
  *
  * This defines the interface that an #ofaIDBDossierMeta should/must
@@ -133,37 +133,25 @@ struct _ofaIDBDossierMetaInterface {
 	ofaIDBExerciceMeta * ( *new_period )           ( ofaIDBDossierMeta *instance );
 
 	/**
-	 * update_period:
+	 * delete_period:
 	 * @instance: this #ofaIDBDossierMeta instance.
-	 * @exercice_meta: the #ofaIDBExerciceMeta to be updated.
-	 * @current: whether the financial period (exercice) is current.
-	 * @begin: [allow-none]: the beginning date.
-	 * @end: [allow-none]: the ending date.
+	 * @connect: a superuser connect on the DBMS;
+	 *  the #ofaIDBDossierMeta is expected to be set to this @instance;
+	 *  the #ofaIDBExerciceMeta is ignored.
+	 * @exercice_meta: the #ofaIDBExerciceMeta to be deleted.
+	 * @msgerr: [out][allow-none]: a placeholder for an error message.
 	 *
-	 * Update the dossier settings for this @period with the specified
-	 * datas.
+	 * Deletes from the DBMS the datas attached to the @period at
+	 * @instance level.
+	 *
+	 * Returns: %TRUE if the deletion has been successful.
 	 *
 	 * Since: version 1
 	 */
-	void                 ( *update_period )        ( ofaIDBDossierMeta *instance,
+	gboolean             ( *delete_period )        ( ofaIDBDossierMeta *instance,
+														ofaIDBConnect *connect,
 														ofaIDBExerciceMeta *exercice_meta,
-														gboolean current,
-														const GDate *begin,
-														const GDate *end );
-
-	/**
-	 * remove_period:
-	 * @instance: this #ofaIDBDossierMeta instance.
-	 * @exercice_meta: the #ofaIDBExerciceMeta to be removed.
-	 *
-	 * Removes the @period from the dossier settings file.
-	 * The interface makes sure this method is only called when
-	 * @period is not the last financial period of the @instance.
-	 *
-	 * Since: version 1
-	 */
-	void                 ( *remove_period )        ( ofaIDBDossierMeta *instance,
-														ofaIDBExerciceMeta *exercice_meta );
+														gchar **msgerr );
 
 	/**
 	 * dump:
@@ -223,9 +211,6 @@ guint               ofa_idbdossier_meta_get_periods_count         ( const ofaIDB
 ofaIDBExerciceMeta *ofa_idbdossier_meta_new_period                ( ofaIDBDossierMeta *meta,
 																		gboolean attach );
 
-void                ofa_idbdossier_meta_remove_period             ( ofaIDBDossierMeta *meta,
-																		ofaIDBExerciceMeta *exercice_meta );
-
 ofaIDBExerciceMeta *ofa_idbdossier_meta_get_current_period        ( const ofaIDBDossierMeta *meta );
 
 ofaIDBExerciceMeta *ofa_idbdossier_meta_get_period                ( const ofaIDBDossierMeta *meta,
@@ -238,14 +223,15 @@ gint                ofa_idbdossier_meta_compare                   ( const ofaIDB
 gint                ofa_idbdossier_meta_compare_by_name           ( const ofaIDBDossierMeta *a,
 																		const gchar *name );
 
+gboolean            ofa_idbdossier_meta_delete_period             ( ofaIDBDossierMeta *meta,
+																		ofaIDBConnect *connect,
+																		ofaIDBExerciceMeta *period,
+																		gboolean delete_dossier_on_last,
+																		gchar **msgerr );
+
 void                ofa_idbdossier_meta_dump                      ( const ofaIDBDossierMeta *meta );
 
 void                ofa_idbdossier_meta_dump_full                 ( const ofaIDBDossierMeta *meta );
-
-void                ofa_idbdossier_meta_delete                    ( ofaIDBDossierMeta *meta,
-																		ofaIDBConnect *connect );
-
-void                ofa_idbdossier_meta_remove_meta               ( ofaIDBDossierMeta *meta );
 
 G_END_DECLS
 

@@ -308,8 +308,10 @@ ofa_idbdossier_editor_is_valid( const ofaIDBDossierEditor *editor, gchar **messa
  * Returns: the #ofaIDBConnect which was used to validate the @editor.
  *
  * This #ofaIDBConnect is expected to handles a superuser connection to
- * the DBMS at server level. It is not expected that it knows anything
- * about an #ofaIDBExerciceMeta.
+ * the DBMS at server level, and thus dossier_meta, account and password
+ * are set.
+ *
+ * It is not expected that it knows anything about an #ofaIDBExerciceMeta.
  *
  * If not %NULL, the returned reference is owned by @editor, and should
  * not be released by the caller.

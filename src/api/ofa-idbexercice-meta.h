@@ -100,18 +100,6 @@ struct _ofaIDBExerciceMetaInterface {
 												const gchar *key_id );
 
 	/**
-	 * remove_from_settings:
-	 * @instance: the #ofaIDBExerciceMeta instance.
-	 * @key_id: the key identifier.
-	 *
-	 * Remove the @instance from dossier settings.
-	 *
-	 * Since: version 1
-	 */
-	void     ( *remove_from_settings ) ( ofaIDBExerciceMeta *instance,
-												const gchar *key_id );
-
-	/**
 	 * set_from_editor:
 	 * @instance: the #ofaIDBExerciceMeta instance.
 	 * @editor: the #ofaIDBExerciceEditor widget.
@@ -154,16 +142,6 @@ struct _ofaIDBExerciceMetaInterface {
 												const ofaIDBExerciceMeta *b );
 
 	/**
-	 * dump:
-	 * @instance: the #ofaIDBExerciceMeta instance.
-	 *
-	 * Dump the object.
-	 *
-	 * Since: version 1
-	 */
-	void     ( *dump )                 ( const ofaIDBExerciceMeta *instance );
-
-	/**
 	 * update_settings:
 	 * @instance: the #ofaIDBExerciceMeta instance.
 	 *
@@ -172,6 +150,33 @@ struct _ofaIDBExerciceMetaInterface {
 	 * Since: version 1
 	 */
 	void     ( *update_settings )      ( const ofaIDBExerciceMeta *instance );
+
+	/**
+	 * delete:
+	 * @instance: the #ofaIDBExerciceMeta instance.
+	 * @connect: a #ofaIDBConnect superuser connection on the DBMS.
+	 * @msgerr: [out][allow-none]: a placeholder for an error message.
+	 *
+	 * Delete the @instance from the DBMS.
+	 * Update the settings accordingly.
+	 *
+	 * Returns: %TRUE if deletion has been sucessful.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *delete )               ( ofaIDBExerciceMeta *instance,
+												ofaIDBConnect *connect,
+												gchar **msgerr );
+
+	/**
+	 * dump:
+	 * @instance: the #ofaIDBExerciceMeta instance.
+	 *
+	 * Dump the object.
+	 *
+	 * Since: version 1
+	 */
+	void     ( *dump )                 ( const ofaIDBExerciceMeta *instance );
 };
 
 /*
@@ -242,12 +247,13 @@ gboolean           ofa_idbexercice_meta_is_suitable               ( const ofaIDB
 																		const GDate *begin,
 																		const GDate *end );
 
-void               ofa_idbexercice_meta_dump                      ( const ofaIDBExerciceMeta *exercice_meta );
-
-void               ofa_idbexercice_meta_delete                    ( ofaIDBExerciceMeta *exercice_meta,
-																		ofaIDBConnect *connect );
-
 void               ofa_idbexercice_meta_update_settings           ( const ofaIDBExerciceMeta *exercice_meta );
+
+gboolean           ofa_idbexercice_meta_delete                    ( ofaIDBExerciceMeta *exercice_meta,
+																		ofaIDBConnect *connect,
+																		gchar **msgerr );
+
+void               ofa_idbexercice_meta_dump                      ( const ofaIDBExerciceMeta *exercice_meta );
 
 G_END_DECLS
 

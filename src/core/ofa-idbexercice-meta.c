@@ -70,7 +70,6 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType     register_type( void );
 static void      interface_base_init( ofaIDBExerciceMetaInterface *klass );
 static void      interface_base_finalize( ofaIDBExerciceMetaInterface *klass );
-static void      remove_from_settings( ofaIDBExerciceMeta *exercice_meta );
 static void      read_settings( ofaIDBExerciceMeta *self );
 static void      write_settings( const ofaIDBExerciceMeta *self );
 static sIDBMeta *get_instance_data( const ofaIDBExerciceMeta *self );
@@ -345,40 +344,6 @@ ofa_idbexercice_meta_set_from_settings( ofaIDBExerciceMeta *exercice_meta )
 	}
 
 	g_info( "%s: ofaIDBExerciceMeta's %s implementation does not provide 'set_from_settings()' method",
-			thisfn, G_OBJECT_TYPE_NAME( exercice_meta ));
-}
-
-/*
- * remove_from_settings:
- * @exercice_meta: this #ofaIDBExerciceMeta instance.
- *
- * Remove this @exercice_meta from the dossier settings.
- */
-static void
-remove_from_settings( ofaIDBExerciceMeta *exercice_meta )
-{
-	static const gchar *thisfn = "ofa_idbexercice_meta_remove_from_settings";
-	sIDBMeta *sdata;
-	myISettings *settings;
-	const gchar *group;
-
-	g_debug( "%s: exercice_meta=%p", thisfn, ( void * ) exercice_meta );
-
-	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
-
-	sdata = get_instance_data( exercice_meta );
-
-	settings = ofa_idbdossier_meta_get_settings_iface( sdata->dossier_meta );
-	group = ofa_idbdossier_meta_get_settings_group( sdata->dossier_meta );
-
-	my_isettings_remove_key( settings, group, sdata->settings_key );
-
-	if( OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->remove_from_settings ){
-		OFA_IDBEXERCICE_META_GET_INTERFACE( exercice_meta )->remove_from_settings( exercice_meta, sdata->settings_id );
-		return;
-	}
-
-	g_info( "%s: ofaIDBExerciceMeta's %s implementation does not provide 'remove_from_settings()' method",
 			thisfn, G_OBJECT_TYPE_NAME( exercice_meta ));
 }
 
@@ -731,6 +696,72 @@ ofa_idbexercice_meta_is_suitable( const ofaIDBExerciceMeta *period, const GDate 
 }
 
 /**
+ * ofa_idbexercice_meta_update_settings:
+ * @period: this #ofaIDBExerciceMeta instance.
+ *
+ * Write meta datas to dossier settings.
+ */
+void
+ofa_idbexercice_meta_update_settings( const ofaIDBExerciceMeta *period )
+{
+	static const gchar *thisfn = "ofa_idbexercice_meta_update_settings";
+
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
+
+	write_settings( period );
+
+	if( OFA_IDBEXERCICE_META_GET_INTERFACE( period )->update_settings ){
+		OFA_IDBEXERCICE_META_GET_INTERFACE( period )->update_settings( period );
+		return;
+	}
+
+	g_info( "%s: ofaIDBExerciceMeta's %s implementation does not provide 'update_settings() method",
+			thisfn, G_OBJECT_TYPE_NAME( period ));
+}
+
+/**
+ * ofa_idbexercice_meta_delete:
+ * @period: this #ofaIDBExerciceMeta instance.
+ * @connect: a #ofaIDBConnect superuser connection on the DBMS.
+ * @msgerr: [out][allow-none]: a placeholder for an error message.
+ *
+ * Delete the @instance from the DBMS.
+ * Update the settings accordingly.
+ *
+ * Returns: %TRUE if deletion has been sucessful.
+ */
+gboolean
+ofa_idbexercice_meta_delete( ofaIDBExerciceMeta *period, ofaIDBConnect *connect, gchar **msgerr )
+{
+	static const gchar *thisfn = "ofa_idbexercice_meta_delete";
+	myISettings *settings;
+	const gchar *group;
+	sIDBMeta *sdata;
+	gboolean ok;
+
+	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+
+	ok = TRUE;
+	sdata = get_instance_data( period );
+
+	sdata = get_instance_data( period );
+
+	settings = ofa_idbdossier_meta_get_settings_iface( sdata->dossier_meta );
+	group = ofa_idbdossier_meta_get_settings_group( sdata->dossier_meta );
+	my_isettings_remove_key( settings, group, sdata->settings_key );
+
+	if( OFA_IDBEXERCICE_META_GET_INTERFACE( period )->delete ){
+		ok = OFA_IDBEXERCICE_META_GET_INTERFACE( period )->delete( period, connect, msgerr );
+	} else {
+		g_info( "%s: ofaIDBExerciceMeta's %s implementation does not provide 'delete() method",
+				thisfn, G_OBJECT_TYPE_NAME( period ));
+	}
+
+	return( ok );
+}
+
+/**
  * ofa_idbexercice_meta_dump:
  * @period: this #ofaIDBExerciceMeta instance.
  *
@@ -764,67 +795,6 @@ ofa_idbexercice_meta_dump( const ofaIDBExerciceMeta *period )
 	if( OFA_IDBEXERCICE_META_GET_INTERFACE( period )->dump ){
 		OFA_IDBEXERCICE_META_GET_INTERFACE( period )->dump( period );
 	}
-}
-
-/**
- * ofa_idbexercice_meta_delete:
- * @period: this #ofaIDBExerciceMeta instance.
- * @connect: a superuser connection to the DBMS.
- *
- * Delete the @period in DBMS.
- * Remove the @period from dossier settings.
- */
-void
-ofa_idbexercice_meta_delete( ofaIDBExerciceMeta *period, ofaIDBConnect *connect )
-{
-	static const gchar *thisfn = "ofa_idbexercice_meta_delete";
-	sIDBMeta *sdata;
-	ofaIDBProvider *provider;
-	ofaIDBConnect *db_connect;
-	const gchar *account, *password;
-
-	g_debug( "%s: period=%p, connect=%p", thisfn, ( void * ) period, ( void * ) connect );
-
-	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
-	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
-
-	sdata = get_instance_data( period );
-
-	provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
-	account = ofa_idbconnect_get_account( connect );
-	password = ofa_idbconnect_get_password( connect );
-
-	db_connect = ofa_idbprovider_new_connect( provider, account, password, sdata->dossier_meta, period );
-	if( db_connect ){
-		ofa_idbconnect_period_delete( db_connect, NULL );
-		g_object_unref( db_connect );
-	}
-
-	remove_from_settings( period );
-}
-
-/**
- * ofa_idbexercice_meta_update_settings:
- * @period: this #ofaIDBExerciceMeta instance.
- *
- * Write meta datas to dossier settings.
- */
-void
-ofa_idbexercice_meta_update_settings( const ofaIDBExerciceMeta *period )
-{
-	static const gchar *thisfn = "ofa_idbexercice_meta_update_settings";
-
-	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
-
-	write_settings( period );
-
-	if( OFA_IDBEXERCICE_META_GET_INTERFACE( period )->update_settings ){
-		OFA_IDBEXERCICE_META_GET_INTERFACE( period )->update_settings( period );
-		return;
-	}
-
-	g_info( "%s: ofaIDBExerciceMeta's %s implementation does not provide 'update_settings() method",
-			thisfn, G_OBJECT_TYPE_NAME( period ));
 }
 
 /*

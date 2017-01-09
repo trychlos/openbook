@@ -85,13 +85,15 @@ ofaIDBDossierMeta    *ofa_dossier_collection_get_by_name         ( ofaDossierCol
 void                  ofa_dossier_collection_add_meta            ( ofaDossierCollection *collection,
 																		ofaIDBDossierMeta *meta );
 
-void                  ofa_dossier_collection_delete_meta         ( ofaDossierCollection *collection,
-																		ofaIDBDossierMeta *meta,
-																		ofaIDBConnect *connect );
-
 void                  ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection,
 																		ofaIDBDossierMeta *meta,
 																		const ofaIDBEditor *editor );
+
+gboolean              ofa_dossier_collection_delete_period       ( ofaDossierCollection *collection,
+																		ofaIDBConnect *connect,
+																		ofaIDBExerciceMeta *period,
+																		gboolean delete_dossier_on_last,
+																		gchar **msgerr );
 
 void                  ofa_dossier_collection_dump                ( ofaDossierCollection *collection );
 

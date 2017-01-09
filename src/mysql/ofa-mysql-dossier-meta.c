@@ -64,7 +64,6 @@ static guint               idbdossier_meta_get_interface_version( void );
 static void                idbdossier_meta_set_from_settings( ofaIDBDossierMeta *instance );
 static void                idbdossier_meta_set_from_editor( ofaIDBDossierMeta *instance, ofaIDBDossierEditor *editor );
 static ofaIDBExerciceMeta *idbdossier_meta_new_period( ofaIDBDossierMeta *instance );
-static void                idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period );
 static void                idbdossier_meta_dump( const ofaIDBDossierMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierMeta, ofa_mysql_dossier_meta, G_TYPE_OBJECT, 0,
@@ -387,7 +386,6 @@ idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface )
 	iface->set_from_settings = idbdossier_meta_set_from_settings;
 	iface->set_from_editor = idbdossier_meta_set_from_editor;
 	iface->new_period = idbdossier_meta_new_period;
-	iface->remove_period = idbdossier_meta_remove_period;
 	iface->dump = idbdossier_meta_dump;
 }
 
@@ -449,20 +447,6 @@ idbdossier_meta_new_period( ofaIDBDossierMeta *meta )
 	exercice_meta = ofa_mysql_exercice_meta_new();
 
 	return( OFA_IDBEXERCICE_META( exercice_meta ));
-}
-
-static void
-idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period )
-{
-	myISettings *settings;
-	const gchar *group;
-
-	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
-	g_return_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ));
-
-	settings = ofa_idbdossier_meta_get_settings_iface( instance );
-	group = ofa_idbdossier_meta_get_settings_group( instance );
-	ofa_mysql_exercice_meta_remove( OFA_MYSQL_EXERCICE_META( period ), settings, group );
 }
 
 static void

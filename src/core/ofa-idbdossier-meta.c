@@ -71,6 +71,9 @@ static void                interface_base_finalize( ofaIDBDossierMetaInterface *
 static void                set_exercices_from_settings( ofaIDBDossierMeta *self, sIDBMeta *sdata );
 static ofaIDBExerciceMeta *find_exercice( ofaIDBDossierMeta *self, sIDBMeta *sdata, ofaIDBExerciceMeta *exercice_meta );
 static void                get_exercice_key( ofaIDBDossierMeta *self, gchar **key, gchar **key_id );
+static gboolean            delete_period( ofaIDBDossierMeta *meta, ofaIDBConnect *connect, ofaIDBExerciceMeta *period, gchar **msgerr );
+static gboolean            delete_meta( ofaIDBDossierMeta *meta, ofaIDBConnect *connect, gchar **msgerr );
+static void                delete_add_msg( gchar **msgerr, const gchar *msg );
 static sIDBMeta           *get_instance_data( const ofaIDBDossierMeta *self );
 static void                on_instance_finalized( sIDBMeta *sdata, GObject *finalized_meta );
 
@@ -600,41 +603,6 @@ get_exercice_key( ofaIDBDossierMeta *self, gchar **key, gchar **key_id )
 }
 
 /**
- * ofa_idbdossier_meta_remove_period:
- * @meta: this #ofaIDBDossierMeta instance.
- * @exercice_meta: the new #ofaIDBExerciceMeta to be removed.
- *
- * Remove @exercice_meta from the list of financial periods of @meta,
- * which may leave the @meta object with an empty list.
- *
- * Do not release the @exercice_meta object, which is left to the caller.
- */
-void
-ofa_idbdossier_meta_remove_period( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *exercice_meta )
-{
-	static const gchar *thisfn = "ofa_idbdossier_meta_remove_period";
-	sIDBMeta *sdata;
-
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
-
-	sdata = get_instance_data( meta );
-
-	if( g_list_length( sdata->periods ) == 1 ){
-		ofa_idbdossier_meta_remove_meta( meta );
-
-	} else {
-		sdata->periods = g_list_remove( sdata->periods, exercice_meta );
-		if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->remove_period ){
-			OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->remove_period( meta, exercice_meta );
-		} else {
-			g_info( "%s: ofaIDBDossierMeta's %s implementation does not provide 'remove_period()' method",
-					thisfn, G_OBJECT_TYPE_NAME( meta ));
-		}
-	}
-}
-
-/**
  * ofa_idbdossier_meta_get_current_period:
  * @meta: this #ofaIDBDossierMeta instance.
  *
@@ -750,6 +718,126 @@ ofa_idbdossier_meta_compare_by_name( const ofaIDBDossierMeta *a, const gchar *na
 }
 
 /**
+ * ofa_idbdossier_meta_delete_period:
+ * @meta: this #ofaIDBDossierMeta instance.
+ * @connect: a superuser connection to the DBMS;
+ *  the #ofaIDBDossierMeta member is expected to be set to the target dossier;
+ *  the #ofaIDBExerciceMeta member is ignored.
+ * @period: [allow-none]: the financial period to be deleted;
+ *  if %NULL, then all existing periods will be deleted.
+ * @delete_dossier_on_last: whether to also delete the dossier when empty.
+ * @msgerr: [out][allow-none]: a placeholder for an error message
+ *
+ * Delete the @period from the DBMS.
+ * Update the dossier settings accordingly.
+ *
+ * This method does not release the @period object, which is left to
+ * the caller.
+ */
+gboolean
+ofa_idbdossier_meta_delete_period( ofaIDBDossierMeta *meta,
+		ofaIDBConnect *connect, ofaIDBExerciceMeta *period, gboolean delete_dossier_on_last, gchar **msgerr )
+{
+	static const gchar *thisfn = "ofa_idbdossier_meta_delete_period";
+	sIDBMeta *sdata;
+	gboolean ok;
+	gchar *msg;
+
+	g_debug( "%s: meta=%p, connect=%p, period=%p, delete_dossier_on_last=%s, msgerr=%p",
+			thisfn, ( void * ) meta, ( void * ) connect, ( void * ) period,
+			delete_dossier_on_last ? "True":"False", ( void * ) msgerr );
+
+	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), FALSE );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ), FALSE );
+
+	ok = TRUE;
+	sdata = get_instance_data( meta );
+
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
+	/* ask the period to delete itself */
+	if( period ){
+		ok &= delete_period( meta, connect, period, &msg );
+		delete_add_msg( msgerr, msg );
+		g_free( msg );
+	} else {
+		while( sdata->periods ){
+			ok &= delete_period( meta, connect, OFA_IDBEXERCICE_META( sdata->periods->data ), &msg );
+			delete_add_msg( msgerr, msg );
+			g_free( msg );
+		}
+	}
+
+	/* delete the dossier if required */
+	if( g_list_length( sdata->periods ) == 0 && delete_dossier_on_last ){
+		ok &= delete_meta( meta, connect, &msg );
+		delete_add_msg( msgerr, msg );
+		g_free( msg );
+	}
+
+	return( ok );
+}
+
+static gboolean
+delete_period( ofaIDBDossierMeta *meta, ofaIDBConnect *connect, ofaIDBExerciceMeta *period, gchar **msgerr )
+{
+	static const gchar *thisfn = "ofa_idbdossier_meta_delete_period";
+	sIDBMeta *sdata;
+	gboolean ok;
+
+	ok = TRUE;
+	sdata = get_instance_data( meta );
+
+	sdata->periods = g_list_remove( sdata->periods, period );
+
+	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->delete_period ){
+		ok = OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->delete_period( meta, connect, period, msgerr );
+	} else {
+		g_info( "%s: ofaIDBDossierMeta's %s implementation does not provide 'delete_period()' method",
+				thisfn, G_OBJECT_TYPE_NAME( meta ));
+	}
+
+	if( ok ){
+		ok = ofa_idbexercice_meta_delete( period, connect, msgerr );
+	}
+
+	return( ok );
+}
+
+static gboolean
+delete_meta( ofaIDBDossierMeta *meta, ofaIDBConnect *connect, gchar **msgerr )
+{
+	sIDBMeta *sdata;
+	gboolean ok;
+
+	sdata = get_instance_data( meta );
+
+	my_isettings_remove_group( sdata->settings_iface, sdata->settings_group );
+
+	ok = TRUE;
+
+	return( ok );
+}
+
+static void
+delete_add_msg( gchar **msgerr, const gchar *msg )
+{
+	gchar *tmp;
+
+	if( my_strlen( msg )){
+		tmp = g_strdup_printf( "%s%s%s",
+				my_strlen( *msgerr ) ? *msgerr : "",
+				my_strlen( *msgerr ) ? "\\n" : "",
+				msg );
+		g_free( *msgerr );
+		*msgerr = tmp;
+	}
+}
+
+/**
  * ofa_idbdossier_meta_dump:
  * @meta: this #ofaIDBDossierMeta instance.
  *
@@ -796,65 +884,6 @@ ofa_idbdossier_meta_dump_full( const ofaIDBDossierMeta *meta )
 	for( it=sdata->periods ; it ; it=it->next ){
 		ofa_idbexercice_meta_dump( OFA_IDBEXERCICE_META( it->data ));
 	}
-}
-
-/**
- * ofa_idbdossier_meta_delete:
- * @meta: the #ofaIDBDossierMeta to be removed.
- * @connect: a superuser connection to the DBMS.
- *
- * Delete the whole @meta dossier from the DBMS.
- * Remove the @meta from dossier settings.
- *
- * This does not release the @meta object, which is left to the caller.
- */
-void
-ofa_idbdossier_meta_delete( ofaIDBDossierMeta *meta, ofaIDBConnect *connect )
-{
-	static const gchar *thisfn = "ofa_idbdossier_meta_delete";
-	sIDBMeta *sdata;
-	ofaIDBExerciceMeta *period;
-	myISettings *settings;
-	const gchar *group_name;
-
-	g_debug( "%s: meta=%p, connect=%p", thisfn, ( void * ) meta, ( void * ) connect );
-
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
-
-	sdata = get_instance_data( meta );
-
-	while( sdata->periods ){
-		period = OFA_IDBEXERCICE_META( sdata->periods->data );
-		sdata->periods = g_list_remove( sdata->periods, period );
-		ofa_idbexercice_meta_delete( period, connect );
-		g_object_unref( period );
-	}
-
-	settings = ofa_idbdossier_meta_get_settings_iface( meta );
-	group_name = ofa_idbdossier_meta_get_settings_group( meta );
-	my_isettings_remove_group( settings, group_name );
-}
-
-/**
- * ofa_idbdossier_meta_remove_meta:
- * @meta: this #ofaIDBDossierMeta instance.
- *
- * Remove @meta from the dossier settings file.
- *
- * The #ofaIDBDossierMeta object itself will be finalized on automatic update
- * of the dossiers collection.
- */
-void
-ofa_idbdossier_meta_remove_meta( ofaIDBDossierMeta *meta )
-{
-	sIDBMeta *sdata;
-
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-
-	sdata = get_instance_data( meta );
-
-	my_isettings_remove_group( sdata->settings_iface, sdata->settings_group );
 }
 
 static sIDBMeta *

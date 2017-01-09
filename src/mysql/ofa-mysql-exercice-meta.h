@@ -66,10 +66,6 @@ const gchar          *ofa_mysql_exercice_meta_get_database     ( ofaMysqlExercic
 void                  ofa_mysql_exercice_meta_set_database     ( ofaMysqlExerciceMeta *period,
 																		const gchar *database );
 
-void                  ofa_mysql_exercice_meta_remove           ( ofaMysqlExerciceMeta *period,
-																		myISettings *settings,
-																		const gchar *group );
-
 G_END_DECLS
 
 #endif /* __OFA_MYSQL_EXERCICE_META_H__ */

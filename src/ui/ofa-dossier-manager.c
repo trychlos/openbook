@@ -499,7 +499,8 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 				ofa_hub_dossier_close( priv->hub );
 			}
 		}
-		ofa_idbdossier_meta_remove_period( meta, period );
+		/* TODO: delete dossier */
+		g_warning( "%s: ofa_dossier_collection_delete_period() to be implemented", thisfn );
 	}
 }
 

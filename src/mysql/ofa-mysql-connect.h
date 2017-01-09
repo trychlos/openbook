@@ -90,6 +90,10 @@ gboolean         ofa_mysql_connect_does_database_exist( ofaMysqlConnect *connect
 gchar           *ofa_mysql_connect_get_new_database   ( ofaMysqlConnect *connect,
 															const gchar *prev_database );
 
+gboolean         ofa_mysql_connect_drop_database      ( ofaMysqlConnect *connect,
+															const gchar *database,
+															gchar **msgerr );
+
 G_END_DECLS
 
 #endif /* __OFA_MYSQL_CONNECT_H__ */

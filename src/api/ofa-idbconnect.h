@@ -69,7 +69,6 @@ typedef struct _ofaIDBConnectInterface           ofaIDBConnectInterface;
  * @restore: [should]: restore a file to a dossier.
  * @archive_and_new: [should]: archives the current and defines a new exercice.
  * @period_new: [should]: creates a new financial period.
- * @period_delete: [should]: deletes a financial period.
  * @grant_user: [should]: grant permissions on a dossier to a user.
  * @transaction_start: [should]: start a transaction.
  * @transaction_cancel: [should]: cancel a transaction.
@@ -254,20 +253,6 @@ struct _ofaIDBConnectInterface {
 											gchar **msgerr );
 
 	/**
-	 * period_delete:
-	 * @instance: an #ofaIDBConnect superuser connection on the DBMS server.
-	 * @msgerr: [out][allow-none]: a placeholder for an error message.
-	 *
-	 * Delete the financial period.
-	 *
-	 * Returns: %TRUE if successful, %FALSE else.
-	 *
-	 * Since: version 1
-	 */
-	gboolean ( *period_delete )        ( const ofaIDBConnect *instance,
-											gchar **msgerr );
-
-	/**
 	 * grant_user:
 	 * @instance: an #ofaIDBConnect superuser connection on the DBMS at
 	 * 	server-level. The #ofaIDBDossierMeta embedded object is expected to
@@ -426,9 +411,6 @@ gboolean            ofa_idbconnect_archive_and_new          ( const ofaIDBConnec
 gboolean            ofa_idbconnect_period_new               ( const ofaIDBConnect *connect,
 																	const gchar *adm_account,
 																	const gchar *adm_password,
-																	gchar **msgerr );
-
-gboolean            ofa_idbconnect_period_delete            ( const ofaIDBConnect *connect,
 																	gchar **msgerr );
 
 gboolean            ofa_idbconnect_transaction_start        ( const ofaIDBConnect *connect,

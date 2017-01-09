@@ -1091,42 +1091,6 @@ set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, c
 }
 
 /**
- * ofa_idbconnect_period_delete:
- * @connect: an #ofaIDBConnect object which handles a superuser
- *  connection on the DBMS at server-level. The period member is
- *  expected to identify the period to be deleted.
- * @msgerr: [out][allow-none]: a placeholder for an error message.
- *
- * Delete the financial period.
- *
- * Returns: %TRUE if successful.
- */
-gboolean
-ofa_idbconnect_period_delete( const ofaIDBConnect *connect, gchar **msgerr )
-{
-	static const gchar *thisfn = "ofa_idbconnect_period_delete";
-	gboolean ok;
-
-	g_debug( "%s: connect=%p, msgerr=%p",
-			thisfn, ( void * ) connect, ( void * ) msgerr );
-
-	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-
-	ok = FALSE;
-
-	/* create the minimal database and grant the user */
-	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->period_delete ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->period_delete( connect, msgerr );
-
-	} else {
-		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'period_delete()' method",
-				thisfn, G_OBJECT_TYPE_NAME( connect ));
-	}
-
-	return( ok );
-}
-
-/**
  * ofa_idbconnect_transaction_start:
  * @connect: an #ofaIDBConnect object which handles a user
  *  connection on the DBMS.

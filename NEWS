@@ -60,6 +60,18 @@
    - ofaReconcilBin class is renamed to ofaReconcilArgs.
    - ofa_prefs_export_default_folder(): new function.
 
+   + General review of exercice deletion:
+
+   - ofa_dossier_collection_delete_meta(): removed function.
+   - ofa_idbconnect_period_delete(): removed function.
+   - ofa_idbdossier_meta_delete(): removed function.
+   - ofa_idbdossier_meta_remove_meta(): removed function (todo #1309).
+   - ofa_idbdossier_meta_remove_period(): removed function (todo #1310).
+   - ofaIDBDossierMeta::remove_period(): removed method (todo #1312).
+   - ofa_dossier_collection_delete_period(): new function.
+   - ofa_idbdossier_meta_delete_period(): new function.
+   - ofa_mysql_connect_drop_database(): new function.
+
    + General review of read/write user and dossier settings:
 
    - Let the application manage its own settings for an exercice (todo #1276).
