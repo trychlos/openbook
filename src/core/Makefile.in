@@ -185,8 +185,8 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-ipage-manager.lo ofa-iprintable.lo ofa-iproperties.lo \
 	ofa-irenderable.lo ofa-isetter.lo ofa-isignal-hub.lo \
 	ofa-istore.lo ofa-itree-adder.lo ofa-itvcolumnable.lo \
-	ofa-itvfilterable.lo ofa-itvsortable.lo ofa-ledger-combo.lo \
-	ofa-ledger-store.lo ofa-list-store.lo \
+	ofa-itvfilterable.lo ofa-itvsortable.lo ofa-json-header.lo \
+	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
 	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
 	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
 	ofa-ope-template-select.lo ofa-ope-template-store.lo \
@@ -557,6 +557,7 @@ libofa_core_la_SOURCES = \
 	ofa-itvcolumnable.c									\
 	ofa-itvfilterable.c									\
 	ofa-itvsortable.c									\
+	ofa-json-header.c									\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\
 	ofa-ledger-store.c									\
@@ -779,6 +780,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itvcolumnable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itvfilterable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itvsortable.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-json-header.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-list-store.Plo@am__quote@

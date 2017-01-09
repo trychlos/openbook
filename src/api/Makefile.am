@@ -78,6 +78,7 @@ api_include_HEADERS = \
 	ofa-itvfilterable.h									\
 	ofa-itvsortable.h									\
 	ofa-itree-adder.h									\
+	ofa-json-header.h									\
 	ofa-list-store.h									\
 	ofa-ope-template-editable.h							\
 	ofa-ope-template-store.h							\

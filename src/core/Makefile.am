@@ -135,6 +135,7 @@ libofa_core_la_SOURCES = \
 	ofa-itvcolumnable.c									\
 	ofa-itvfilterable.c									\
 	ofa-itvsortable.c									\
+	ofa-json-header.c									\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\
 	ofa-ledger-store.c									\

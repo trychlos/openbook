@@ -22,7 +22,9 @@
 
  Other changes:
 
-   - 
+   - ofaJsonHeader: new class.
+
+   + Add a prequisite on JSON-GLib library.
 
 -----------------------------------------------------------------------
  Version 0.64
