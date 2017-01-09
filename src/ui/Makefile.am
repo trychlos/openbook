@@ -205,6 +205,8 @@ openbook_SOURCES = \
 	ofa-main-window.c									\
 	ofa-main-window.h									\
 	ofa-main-window-def.h								\
+	ofa-maintainer.c									\
+	ofa-maintainer.h									\
 	ofa-misc-audit-item.c								\
 	ofa-misc-audit-item.h								\
 	ofa-misc-audit-store.c								\

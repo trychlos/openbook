@@ -49,6 +49,7 @@
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-store.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-maintainer.h"
 #include "ui/ofa-misc-audit-item.h"
 #include "ui/ofa-misc-collector-item.h"
 #include "ui/ofa-plugin-manager.h"
@@ -139,7 +140,6 @@ static void                  application_startup( GApplication *application );
 static void                  appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
 static void                  application_activate( GApplication *application );
 static void                  application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
-static void                  maintainer_test_function( ofaApplication *application );
 static void                  on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaApplication *application );
 static void                  enable_action_open( ofaApplication *application, gboolean enable );
 static void                  on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -804,14 +804,14 @@ application_activate( GApplication *application )
 
 	priv = ofa_application_get_instance_private( OFA_APPLICATION( application ));
 
+	/* just an entry point for some test functions dedicated to the maintainer
+	 * in normal run, there is no content */
+	ofa_maintainer_run_by_application( OFA_APPLICATION( application ));
+
+	/* then create the main window */
 	priv->main_window = ofa_main_window_new( OFA_APPLICATION( application ));
 	g_debug( "%s: main window instanciated at %p", thisfn, priv->main_window );
-
 	gtk_window_present( GTK_WINDOW( priv->main_window ));
-
-	if( 1 ){
-		maintainer_test_function( OFA_APPLICATION( application ));
-	}
 
 	/* if a dossier is to be opened due to options specified in the
 	 * command-line */
@@ -876,39 +876,6 @@ application_open( GApplication *application, GFile **files, gint n_files, const 
 			thisfn, ( void * ) application, n_files, hint );
 }
 
-static void
-maintainer_test_function( ofaApplication *application )
-{
-	static const gchar *thisfn = "ofa_application_maintainer_test_function";
-	ofaApplicationPrivate *priv;
-
-	g_debug( "%s: application=%p", thisfn, ( void * ) application );
-
-	priv = ofa_application_get_instance_private( OFA_APPLICATION( application ));
-
-#if 0
-	gchar *cstr = "GRANT ALL PRIVILEGES ON `ofat`.* TO 'ofat'@'localhost' WITH GRANT OPTION";
-	gchar *prev_dbname = "ofat";
-	gchar *dbname = "ofat_3";
-	GRegex *regex;
-	gchar *str = g_strdup_printf( " `%s`\\.\\* ", prev_dbname );
-	g_debug( "%s: str='%s'", thisfn, str );
-	regex = g_regex_new( str, 0, 0, NULL );
-	g_free( str );
-	/*str = g_strdup_printf( "\\1%s", dbname );*/
-	str = g_strdup_printf( " `%s`.* ", dbname );
-	g_debug( "%s: str=%s", thisfn, str );
-	if( g_regex_match( regex, cstr, 0, NULL )){
-		gchar *query = g_regex_replace( regex, cstr, -1, 0, str, 0, NULL );
-		g_debug( "%s: cstr=%s", thisfn, cstr );
-		g_debug( "%s: query=%s", thisfn, query );
-	}
-#endif
-
-	if( 0 ){
-		ofa_formula_test( priv->hub );
-	}
-}
 /*                                                                   */
 /*                                                                   */
 /******************* END OF APPLICATION STARTUP **********************/
