@@ -2,7 +2,7 @@
  * A double-entry accounting application for professional services.
  * Open Firm Accounting
  *
- * Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)
+ * Copyright (C) 2014,2015,2016,2017 Pierre Wieser (see AUTHORS)
  *
  * Open Firm Accounting is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as

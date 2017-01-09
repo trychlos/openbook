@@ -2,7 +2,7 @@
  * Open Firm Accounting
  * A double-entry accounting application for professional services.
  *
- * Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)
+ * Copyright (C) 2014,2015,2016,2017 Pierre Wieser (see AUTHORS)
  *
  * Open Firm Accounting is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -43,7 +43,7 @@ static const gchar *st_authors[] = {
 const gchar *
 ofa_core_get_copyright( void )
 {
-	return( _( "Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)" ));
+	return( _( "Copyright (C) 2014,2015,2016,2017 Pierre Wieser (see AUTHORS)" ));
 }
 
 /**
