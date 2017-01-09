@@ -646,6 +646,10 @@ PWI_LIBS
 GLIB_GENMARSHAL
 HAVE_MYSQL_FALSE
 HAVE_MYSQL_TRUE
+HAVE_JSON_GLIB_FALSE
+HAVE_JSON_GLIB_TRUE
+JSON_GLIB_LIBS
+JSON_GLIB_CFLAGS
 HAVE_POPPLER_GLIB_FALSE
 HAVE_POPPLER_GLIB_TRUE
 POPPLER_GLIB_LIBS
@@ -898,7 +902,9 @@ GMODULE_LIBS
 POPPLER_CFLAGS
 POPPLER_LIBS
 POPPLER_GLIB_CFLAGS
-POPPLER_GLIB_LIBS'
+POPPLER_GLIB_LIBS
+JSON_GLIB_CFLAGS
+JSON_GLIB_LIBS'
 
 
 # Initialize some variables set by options.
@@ -1587,6 +1593,10 @@ Some influential environment variables:
               C compiler flags for POPPLER_GLIB, overriding pkg-config
   POPPLER_GLIB_LIBS
               linker flags for POPPLER_GLIB, overriding pkg-config
+  JSON_GLIB_CFLAGS
+              C compiler flags for JSON_GLIB, overriding pkg-config
+  JSON_GLIB_LIBS
+              linker flags for JSON_GLIB, overriding pkg-config
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -14895,6 +14905,126 @@ fi
 
 
 
+	_ac_cond="json-glib-1.0"
+	if test "1.2" != ""; then _ac_cond="json-glib-1.0 >= 1.2"; fi
+	_ac_fatal="yes"
+	if test "" = "no"; then _ac_fatal="no"; fi
+
+	# if CFLAGS or LIBS are set, then missing library is fatal
+	#echo "JSON_GLIB_CFLAGS='${JSON_GLIB_CFLAGS}'"
+	#echo "JSON_GLIB_LIBS='${JSON_GLIB_LIBS}'"
+	if ! test -z "${JSON_GLIB_CFLAGS}${JSON_GLIB_LIBS}"; then
+		_ac_fatal="yes"
+	fi
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for JSON_GLIB" >&5
+$as_echo_n "checking for JSON_GLIB... " >&6; }
+
+if test -n "$JSON_GLIB_CFLAGS"; then
+    pkg_cv_JSON_GLIB_CFLAGS="$JSON_GLIB_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"\${_ac_cond}\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "${_ac_cond}") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_JSON_GLIB_CFLAGS=`$PKG_CONFIG --cflags "${_ac_cond}" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$JSON_GLIB_LIBS"; then
+    pkg_cv_JSON_GLIB_LIBS="$JSON_GLIB_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"\${_ac_cond}\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "${_ac_cond}") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_JSON_GLIB_LIBS=`$PKG_CONFIG --libs "${_ac_cond}" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        JSON_GLIB_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "${_ac_cond}" 2>&1`
+        else
+	        JSON_GLIB_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "${_ac_cond}" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$JSON_GLIB_PKG_ERRORS" >&5
+
+	have_JSON_GLIB="no"
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	have_JSON_GLIB="no"
+else
+	JSON_GLIB_CFLAGS=$pkg_cv_JSON_GLIB_CFLAGS
+	JSON_GLIB_LIBS=$pkg_cv_JSON_GLIB_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	have_JSON_GLIB="yes"
+fi
+
+	#echo "have_gtk2=$have_gtk2 have_gtk3=$have_gtk3"
+	#echo "JSON_GLIB_CFLAGS='${JSON_GLIB_CFLAGS}'"
+	#echo "JSON_GLIB_LIBS='${JSON_GLIB_LIBS}'"
+	#echo "against Gtk2: $(echo ${JSON_GLIB_LIBS} | grep -E 'gtk-[^-]+-2\.0')"
+	#echo "against Gtk3: $(echo ${JSON_GLIB_LIBS} | grep -E 'gtk-[^-]+-3\.0')"
+
+	if test "${have_JSON_GLIB}" = "yes"; then
+		JSON_GLIB_msg_version=$(pkg-config --modversion json-glib-1.0)
+		PWI_CFLAGS="${PWI_CFLAGS} ${JSON_GLIB_CFLAGS}"
+		PWI_LIBS="${PWI_LIBS} ${JSON_GLIB_LIBS}"
+	else
+
+	if test "${_ac_fatal}" = "no"; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: warning: JSON_GLIB: condition ${_ac_cond} not satisfied" >&5
+$as_echo "warning: JSON_GLIB: condition ${_ac_cond} not satisfied" >&6; }
+	else
+		let pwi_fatal_count+=1
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: JSON_GLIB: condition ${_ac_cond} not satisfied (fatal_count=${pwi_fatal_count})" >&5
+$as_echo "$as_me: WARNING: JSON_GLIB: condition ${_ac_cond} not satisfied (fatal_count=${pwi_fatal_count})" >&2;}
+		if test "${pwi_fatal_list}" != ""; then pwi_fatal_list="${pwi_fatal_list}
+"; fi
+		pwi_fatal_list="${pwi_fatal_list}JSON_GLIB: condition ${_ac_cond} not satisfied"
+	fi
+
+	fi
+
+	 if test "${have_JSON_GLIB}" = "yes"; then
+  HAVE_JSON_GLIB_TRUE=
+  HAVE_JSON_GLIB_FALSE='#'
+else
+  HAVE_JSON_GLIB_TRUE='#'
+  HAVE_JSON_GLIB_FALSE=
+fi
+
+
+
 
 # Check whether --with-mysql-config was given.
 if test "${with_mysql_config+set}" = set; then :
@@ -15246,6 +15376,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_POPPLER_GLIB_TRUE}" && test -z "${HAVE_POPPLER_GLIB_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_POPPLER_GLIB\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_JSON_GLIB_TRUE}" && test -z "${HAVE_JSON_GLIB_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_JSON_GLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_MYSQL_TRUE}" && test -z "${HAVE_MYSQL_FALSE}"; then
@@ -17463,10 +17597,13 @@ $as_echo "
 
 	Installation prefix             ${prefix}
 	Build system type               ${ac_cv_build}
-	Gtk+ version                    ${GTK3_msg_version}
-	GLib version                    ${GLIB_msg_version}
 	Maintainer mode                 ${msg_maintainer_mode}
 	Enable deprecated functions     ${enable_deprecated}
+	Libraries:
+	  Gtk+                          ${GTK3_msg_version}
+	  GLib                          ${GLIB_msg_version}
+	  GModule                       ${GMODULE_msg_version}
+	  JSON                          ${JSON_GLIB_msg_version}
 	Built plugins:"
 if test "${have_POPPLER}" = "yes"; then
 	$as_echo "	  Stock importers               ${have_IMPORTERS} (with Poppler ${POPPLER_msg_version})"

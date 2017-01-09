@@ -78,11 +78,12 @@ fi
 # Oldest supported distribution as of May 2014: ?
 glib_required=2.28
 gtk3_required=3.10
-PWI_CHECK_MODULE([GTK3],        [gtk+-3.0],    [${gtk3_required}])
-PWI_CHECK_MODULE([GLIB],        [glib-2.0],    [${glib_required}])
-PWI_CHECK_MODULE([GMODULE],     [gmodule-2.0], [${glib_required}])
-PWI_CHECK_MODULE([POPPLER],     [poppler],     [0.24],            [no])
-PWI_CHECK_MODULE([POPPLER_GLIB],[poppler-glib],[0.24],            [no])
+PWI_CHECK_MODULE([GTK3],        [gtk+-3.0],     [${gtk3_required}])
+PWI_CHECK_MODULE([GLIB],        [glib-2.0],     [${glib_required}])
+PWI_CHECK_MODULE([GMODULE],     [gmodule-2.0],  [${glib_required}])
+PWI_CHECK_MODULE([POPPLER],     [poppler],      [0.24],            [no])
+PWI_CHECK_MODULE([POPPLER_GLIB],[poppler-glib], [0.24],            [no])
+PWI_CHECK_MODULE([JSON_GLIB],   [json-glib-1.0],[1.2])
 PWI_CHECK_MYSQL([5.5],[no])
 
 # /org/trychlos/my miscellaneous library v1
@@ -150,10 +151,13 @@ $as_echo "
 
 	Installation prefix             ${prefix}
 	Build system type               ${ac_cv_build}
-	Gtk+ version                    ${GTK3_msg_version}
-	GLib version                    ${GLIB_msg_version}
 	Maintainer mode                 ${msg_maintainer_mode}
 	Enable deprecated functions     ${enable_deprecated}
+	Libraries:
+	  Gtk+                          ${GTK3_msg_version}
+	  GLib                          ${GLIB_msg_version}
+	  GModule                       ${GMODULE_msg_version}
+	  JSON                          ${JSON_GLIB_msg_version}
 	Built plugins:"
 if test "${have_POPPLER}" = "yes"; then
 	$as_echo "	  Stock importers               ${have_IMPORTERS} (with Poppler ${POPPLER_msg_version})"
