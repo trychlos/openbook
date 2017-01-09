@@ -174,7 +174,6 @@ ofa_backup_run( ofaIGetter *getter, GtkWindow *parent )
 	init_dialog( self );
 
 	if( gtk_dialog_run( GTK_DIALOG( priv->dialog )) == GTK_RESPONSE_OK ){
-
 		do_backup( self );
 	}
 
@@ -264,7 +263,7 @@ do_backup( ofaBackup *self )
 
 	priv = ofa_backup_get_instance_private( self );
 
-	/* folder is nul while the user has not make it the current folder
+	/* folder is null while the user has not make it the current folder
 	 * by entering into the folder */
 	/*folder = gtk_file_chooser_get_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ));*/
 
