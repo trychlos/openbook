@@ -322,14 +322,14 @@ struct _ofaIDBConnectInterface {
 /*
  * Interface-wide
  */
-GType              ofa_idbconnect_get_type                  ( void );
+GType               ofa_idbconnect_get_type                  ( void );
 
-guint              ofa_idbconnect_get_interface_last_version( void );
+guint               ofa_idbconnect_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint              ofa_idbconnect_get_interface_version     ( GType type );
+guint               ofa_idbconnect_get_interface_version     ( GType type );
 
 /*
  * Instance-wide

@@ -22,6 +22,7 @@
 
  Other changes:
 
+   - ofaIDBBackup: new interface.
    - ofaJsonHeader: new class.
 
    + Add a prequisite on JSON-GLib library.
