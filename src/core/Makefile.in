@@ -176,33 +176,33 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-formula-engine.lo ofa-guided-input.lo \
 	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
 	ofa-iactionable.lo ofa-iactioner.lo ofa-icontext.lo \
-	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbbackup.lo \
-	ofa-idbconnect.lo ofa-idbdossier-editor.lo \
-	ofa-idbdossier-meta.lo ofa-idbeditor.lo \
-	ofa-idbexercice-meta.lo ofa-idbmodel.lo ofa-idbprovider.lo \
-	ofa-iexe-close.lo ofa-idbexercice-editor.lo ofa-iexportable.lo \
-	ofa-igetter.lo ofa-iimporter.lo ofa-iimportable.lo \
-	ofa-import-duplicate.lo ofa-ipage-manager.lo ofa-iprintable.lo \
-	ofa-iproperties.lo ofa-irenderable.lo ofa-isetter.lo \
-	ofa-isignal-hub.lo ofa-istore.lo ofa-itree-adder.lo \
-	ofa-itvcolumnable.lo ofa-itvfilterable.lo ofa-itvsortable.lo \
-	ofa-json-header.lo ofa-ledger-combo.lo ofa-ledger-store.lo \
-	ofa-list-store.lo ofa-ope-template-editable.lo \
-	ofa-ope-template-frame-bin.lo ofa-ope-template-help.lo \
-	ofa-ope-template-properties.lo ofa-ope-template-select.lo \
-	ofa-ope-template-store.lo ofa-ope-template-treeview.lo \
-	ofa-open-prefs-bin.lo ofa-paimean-editable.lo \
-	ofa-paimean-frame-bin.lo ofa-paimean-properties.lo \
-	ofa-paimean-select.lo ofa-paimean-store.lo \
-	ofa-paimean-treeview.lo ofa-paned-page.lo ofa-page.lo \
-	ofa-preferences.lo ofa-rate-store.lo ofa-render-page.lo \
-	ofa-stream-format.lo ofa-stream-format-bin.lo \
-	ofa-stream-format-disp.lo ofa-tree-store.lo ofa-tvbin.lo \
-	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
-	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
-	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-paimean.lo \
-	ofo-rate.lo ofs-account-balance.lo ofs-concil-id.lo \
-	ofs-currency.lo ofs-ledger-balance.lo ofs-ope.lo
+	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
+	ofa-idbdossier-editor.lo ofa-idbdossier-meta.lo \
+	ofa-idbeditor.lo ofa-idbexercice-meta.lo ofa-idbmodel.lo \
+	ofa-idbprovider.lo ofa-iexe-close.lo ofa-idbexercice-editor.lo \
+	ofa-iexportable.lo ofa-igetter.lo ofa-iimporter.lo \
+	ofa-iimportable.lo ofa-import-duplicate.lo \
+	ofa-ipage-manager.lo ofa-iprintable.lo ofa-iproperties.lo \
+	ofa-irenderable.lo ofa-isetter.lo ofa-isignal-hub.lo \
+	ofa-istore.lo ofa-itree-adder.lo ofa-itvcolumnable.lo \
+	ofa-itvfilterable.lo ofa-itvsortable.lo ofa-json-header.lo \
+	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
+	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
+	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
+	ofa-ope-template-select.lo ofa-ope-template-store.lo \
+	ofa-ope-template-treeview.lo ofa-open-prefs-bin.lo \
+	ofa-paimean-editable.lo ofa-paimean-frame-bin.lo \
+	ofa-paimean-properties.lo ofa-paimean-select.lo \
+	ofa-paimean-store.lo ofa-paimean-treeview.lo ofa-paned-page.lo \
+	ofa-page.lo ofa-preferences.lo ofa-rate-store.lo \
+	ofa-render-page.lo ofa-stream-format.lo \
+	ofa-stream-format-bin.lo ofa-stream-format-disp.lo \
+	ofa-tree-store.lo ofa-tvbin.lo ofo-account.lo ofo-base.lo \
+	ofo-bat.lo ofo-bat-line.lo ofo-class.lo ofo-concil.lo \
+	ofo-currency.lo ofo-dossier.lo ofo-entry.lo ofo-ledger.lo \
+	ofo-ope-template.lo ofo-paimean.lo ofo-rate.lo \
+	ofs-account-balance.lo ofs-concil-id.lo ofs-currency.lo \
+	ofs-ledger-balance.lo ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
@@ -532,7 +532,6 @@ libofa_core_la_SOURCES = \
 	ofa-iconcil.c										\
 	ofa-iconcil.h										\
 	ofa-idate-filter.c									\
-	ofa-idbbackup.c										\
 	ofa-idbconnect.c									\
 	ofa-idbdossier-editor.c								\
 	ofa-idbdossier-meta.c								\
@@ -756,7 +755,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iconcil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-icontext.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idate-filter.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbbackup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbconnect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbdossier-editor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbdossier-meta.Plo@am__quote@

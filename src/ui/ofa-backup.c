@@ -260,25 +260,25 @@ do_backup( ofaBackup *self )
 	gboolean ok;
 	myISettings *settings;
 	const gchar *group;
+	GtkWindow *toplevel;
 
 	priv = ofa_backup_get_instance_private( self );
 
 	/* folder is null while the user has not make it the current folder
 	 * by entering into the folder */
 	/*folder = gtk_file_chooser_get_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ));*/
-
 	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( priv->dialog ));
-	folder = g_path_get_dirname( uri );
 
+	folder = g_path_get_dirname( uri );
 	settings = ofa_hub_get_dossier_settings( priv->hub );
 	group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 	my_isettings_set_string( settings, group, st_backup_folder, folder );
-
-	ofa_idbconnect_backup_db( priv->connect, priv->hub, NULL, NULL );
-	//ok = ofa_idbconnect_backup( priv->connect, uri );
-	ok = FALSE;
-
 	g_free( folder );
+
+	toplevel = my_utils_widget_get_toplevel( priv->dialog );
+	ok = ofa_idbconnect_backup_db( priv->connect, NULL, uri, toplevel );
+	//ok = ofa_idbconnect_backup( priv->connect, uri );
+
 	g_free( uri );
 
 	return( ok );

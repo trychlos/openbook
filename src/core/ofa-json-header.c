@@ -69,6 +69,20 @@ typedef struct {
 }
 	sDBModel;
 
+static const gchar *st_current          = "current";
+static const gchar *st_begin            = "begin";
+static const gchar *st_end              = "end";
+static const gchar *st_openbook         = "openbook";
+static const gchar *st_plugins          = "plugins";
+static const gchar *st_dbms             = "dbms";
+static const gchar *st_comment          = "comment";
+static const gchar *st_stamp            = "stamp";
+static const gchar *st_userid           = "userid";
+static const gchar *st_canon            = "canon";
+static const gchar *st_display          = "display";
+static const gchar *st_version          = "version";
+static const gchar *st_id               = "id";
+
 static void free_plugin( sPlugin *sdata );
 static void free_dbmodel( sDBModel *sdata );
 
@@ -543,6 +557,101 @@ ofa_json_header_set_current_user( ofaJsonHeader *header, const gchar *userid )
 
 	g_free( priv->userid );
 	priv->userid = g_strdup( userid );
+}
+
+/**
+ * ofa_json_header_get_string:
+ * @header: this #ofaJsonHeader object.
+ *
+ * Returns: the JSON datas as a null-terminated string, in a newly
+ * allocated buffer which should be #g_free() by the caller.
+ */
+gchar *
+ofa_json_header_get_string( ofaJsonHeader *header )
+{
+	ofaJsonHeaderPrivate *priv;
+	JsonBuilder *builder;
+	JsonGenerator *generator;
+	gchar *sdate;
+	sPlugin *splugin;
+	sDBModel *sdbmodel;
+	GList *it;
+	gchar *str;
+
+	g_return_val_if_fail( header && OFA_IS_JSON_HEADER( header ), NULL );
+
+	priv = ofa_json_header_get_instance_private( header );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	builder = json_builder_new();
+	json_builder_begin_object( builder );
+
+	json_builder_set_member_name( builder, st_current );
+	json_builder_add_string_value( builder, priv->is_current ? "Y":"N" );
+
+	sdate = my_date_is_valid( &priv->begin_date ) ? my_date_to_str( &priv->begin_date, MY_DATE_YYMD ) : g_strdup( "" );
+	json_builder_set_member_name( builder, st_begin );
+	json_builder_add_string_value( builder, sdate );
+	g_free( sdate );
+
+	sdate = my_date_is_valid( &priv->end_date ) ? my_date_to_str( &priv->end_date, MY_DATE_YYMD ) : g_strdup( "" );
+	json_builder_set_member_name( builder, st_end );
+	json_builder_add_string_value( builder, sdate );
+	g_free( sdate );
+
+	json_builder_set_member_name( builder, st_openbook );
+	json_builder_add_string_value( builder, priv->openbook_version );
+
+	json_builder_set_member_name( builder, st_plugins );
+	json_builder_begin_array( builder );
+	for( it=priv->plugins ; it ; it=it->next ){
+		splugin = ( sPlugin * ) it->data;
+		json_builder_begin_object( builder );
+		json_builder_set_member_name( builder, st_canon );
+		json_builder_add_string_value( builder, splugin->canon_name ? splugin->canon_name : "" );
+		json_builder_set_member_name( builder, st_display );
+		json_builder_add_string_value( builder, splugin->display_name ? splugin->display_name : "" );
+		json_builder_set_member_name( builder, st_version );
+		json_builder_add_string_value( builder, splugin->version ? splugin->version : "" );
+		json_builder_end_object( builder );
+	}
+	json_builder_end_array( builder );
+
+	json_builder_set_member_name( builder, st_dbms );
+	json_builder_begin_array( builder );
+	for( it=priv->dbmodels ; it ; it=it->next ){
+		sdbmodel = ( sDBModel * ) it->data;
+		json_builder_begin_object( builder );
+		json_builder_set_member_name( builder, st_id );
+		json_builder_add_string_value( builder, sdbmodel->id ? sdbmodel->id : "" );
+		json_builder_set_member_name( builder, st_version );
+		json_builder_add_string_value( builder, sdbmodel->version ? sdbmodel->version : "" );
+		json_builder_end_object( builder );
+	}
+	json_builder_end_array( builder );
+
+	json_builder_set_member_name( builder, st_comment );
+	json_builder_add_string_value( builder, priv->comment ? priv->comment : "" );
+
+	sdate = my_utils_stamp_to_str( &priv->stamp, MY_STAMP_YYMDHMS );
+	json_builder_set_member_name( builder, st_stamp );
+	json_builder_add_string_value( builder, sdate );
+	g_free( sdate );
+
+	json_builder_set_member_name( builder, st_userid );
+	json_builder_add_string_value( builder, priv->userid );
+
+	json_builder_end_object( builder );
+
+	generator = json_generator_new();
+	json_generator_set_root( generator, json_builder_get_root( builder ));
+	str = json_generator_to_data( generator, NULL );
+
+	g_object_unref( generator );
+	g_object_unref( builder );
+
+	return( str );
 }
 
 static void

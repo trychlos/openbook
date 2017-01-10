@@ -22,7 +22,6 @@
 
  Other changes:
 
-   - ofaIDBBackup: new interface.
    - ofa_idbconnect_backup_db(): new function.
    - ofaJsonHeader: new class.
 

@@ -417,7 +417,9 @@
 1316 2017- 1- 9 DossierManager: implement call to ofa_dossier_collection_delete_period()
                 (requires a superuser connection on the dbms)
 
-1317
+1317 2017- 1-10 move ofaBackup to myIDialog
+
+1318
 
 -----------------------------------------------------------------------
  DONE

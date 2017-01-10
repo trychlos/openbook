@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "my/my-iident.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
@@ -67,7 +68,8 @@ static gboolean       idbconnect_query( const ofaIDBConnect *connect, const gcha
 static void           audit_query( const ofaIDBConnect *connect, const gchar *query );
 static gchar         *quote_query( const gchar *query );
 static void           error_query( const ofaIDBConnect *connect, const gchar *query );
-static ofaJsonHeader *get_json_header( ofaIDBBackup *self, ofaHub *hub, const gchar *comment );
+static ofaJsonHeader *build_json_header( const ofaIDBConnect *self, const gchar *comment );
+static gboolean       backup_json_header( const ofaIDBConnect *connect, GOutputStream *output_stream, const gchar *json );
 static gboolean       set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr );
 static sIDBConnect   *get_instance_data( const ofaIDBConnect *connect );
 static void           on_instance_finalized( sIDBConnect *sdata, GObject *finalized_dbconnect );
@@ -838,35 +840,195 @@ ofa_idbconnect_backup( const ofaIDBConnect *connect, const gchar *uri )
  * ofa_idbconnect_backup_db:
  * @connect: a #ofaIDBConnect instance which handles a user
  *  connection on the dossier/exercice to be backuped.
- * @hub: the #ofaHub object of the application.
  * @comment: [allow-none]: a user comment.
  * @uri: the target file.
+ * @parent: [allow-none]: in verbose mode, the parent #GtkWindow.
+ *  If %NULL, then no message is outputed.
+ *  If set, messages are displayed in a dedicated window.
  *
  * Backup the current period to the @uri file.
+ *
+ * The output @uri file is unconditionnally deleted before being
+ * written with output datas.
  *
  * Returns: %TRUE if successful.
  */
 gboolean
-ofa_idbconnect_backup_db( const ofaIDBConnect *connect, ofaHub *hub, const gchar *comment, const gchar *uri )
+ofa_idbconnect_backup_db( const ofaIDBConnect *connect, const gchar *comment, const gchar *uri, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_db";
 	gboolean ok;
-	ofaJsonHeader *header;
+	GFile *file;
+	GError *error;
+	GFileOutputStream *output_stream;
+	ofaJsonHeader *json_header;
+	gchar *str;
 
-	g_debug( "%s: connect=%p, uri=%s", thisfn, ( void * ) connect, uri );
+	g_debug( "%s: connect=%p, comment=%s, uri=%s, parent=%p",
+			thisfn, ( void * ) connect, comment, uri, ( void * ) parent );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
+	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
 
-	header = get_json_header( connect, hub, comment );
+	ok = TRUE;
 
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->backup_db ){
 
-	g_object_unref( header );
+		/* create an output stream for the output file */
+		error = NULL;
+		file = g_file_new_for_uri( uri );
+		output_stream = g_file_replace( file, NULL, FALSE, G_FILE_CREATE_REPLACE_DESTINATION, NULL, &error );
+		if( !output_stream ){
+			my_utils_msg_dialog( parent, GTK_MESSAGE_ERROR, error->message );
+			g_error_free( error );
 
-	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'backup()' method",
-			thisfn, G_OBJECT_TYPE_NAME( connect ));
-	return( FALSE );
+		} else {
+			/* write the JSON header to the output stream */
+			json_header = build_json_header( connect, comment );
+			str = ofa_json_header_get_string( json_header );
+			ok = backup_json_header( connect, G_OUTPUT_STREAM( output_stream ), str );
+			g_free( str );
+			g_object_unref( json_header );
+
+			/* write the DBMS backup to the output stream */
+
+			g_output_stream_close( G_OUTPUT_STREAM( output_stream ), NULL, NULL );
+			g_object_unref( output_stream );
+		}
+
+		g_object_unref( file );
+
+	} else {
+		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'backup_db()' method",
+				thisfn, G_OBJECT_TYPE_NAME( connect ));
+		ok = FALSE;
+	}
+
+	return( ok );
+}
+
+static ofaJsonHeader *
+build_json_header( const ofaIDBConnect *self, const gchar *comment )
+{
+	ofaJsonHeader *header;
+	sIDBConnect *sdata;
+	ofaIDBDossierMeta *dossier_meta;
+	ofaIDBProvider *provider;
+	ofaHub *hub;
+	ofoDossier *dossier;
+	ofaExtenderCollection *extenders;
+	ofaExtenderModule *plugin;
+	const GList *modules, *itm;
+	GList *dbmodels, *itb;
+	gchar *canon, *display, *id, *version;
+
+	dossier_meta = ofa_idbconnect_get_dossier_meta( self );
+	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
+	hub = ofa_idbprovider_get_hub( provider );
+
+	header = ofa_json_header_new();
+
+	dossier = ofa_hub_get_dossier( hub );
+	ofa_json_header_set_is_current( header, ofo_dossier_is_current( dossier ));
+	ofa_json_header_set_begin_date( header, ofo_dossier_get_exe_begin( dossier ));
+	ofa_json_header_set_end_date( header, ofo_dossier_get_exe_end( dossier ));
+
+	extenders = ofa_hub_get_extender_collection( hub );
+	modules = ofa_extender_collection_get_modules( extenders );
+
+	for( itm=modules ; itm ; itm=itm->next ){
+		plugin = OFA_EXTENDER_MODULE( itm->data );
+		canon = ofa_extender_module_get_canon_name( plugin );
+		display = ofa_extender_module_get_display_name( plugin );
+		version = ofa_extender_module_get_version( plugin );
+		ofa_json_header_set_plugin( header, canon, display, version );
+		g_free( version );
+		g_free( display );
+		g_free( canon );
+	}
+
+	dbmodels = ofa_hub_get_for_type( hub, OFA_TYPE_IDBMODEL );
+
+	for( itb=dbmodels ; itb ; itb=itb->next ){
+		if( MY_IS_IIDENT( itb->data )){
+			id = my_iident_get_canon_name( MY_IIDENT( itb->data ), NULL );
+			version = my_iident_get_version( MY_IIDENT( itb->data ), NULL );
+			ofa_json_header_set_dbmodel( header, id, version );
+			g_free( version );
+			g_free( id );
+		}
+	}
+
+	g_list_free_full( dbmodels, ( GDestroyNotify ) g_object_unref );
+
+	ofa_json_header_set_comment( header, comment );
+
+	sdata = get_instance_data( self );
+	ofa_json_header_set_current_user( header, sdata->account );
+
+	return( header );
+}
+
+static gboolean
+backup_json_header( const ofaIDBConnect *connect, GOutputStream *output_stream, const gchar *json )
+{
+	static const gchar *thisfn = "ofa_idbconnect_backup_json_header";
+	GZlibCompressor *compressor;
+	gboolean finished, abort;
+	GConverterResult result;
+	GError *error;
+	gsize insize, outsize, bytes_read, bytes_written;
+	void *outbuf;
+	GInputStream *input_stream;
+	GFileInfo *info;
+
+	/* create a compressor */
+	compressor = g_zlib_compressor_new( G_ZLIB_COMPRESSOR_FORMAT_GZIP, -1 );
+	info = g_file_info_new();
+	g_file_info_set_name( info, "JSON_Header" );
+	g_zlib_compressor_set_file_info( compressor, info );
+	g_object_unref( info );
+
+	finished = FALSE;
+	abort = FALSE;
+	error = NULL;
+	insize = my_strlen( json );
+	outsize = 2*insize;					// hope this is enough
+	outbuf = g_new0( gchar, outsize );
+
+	while( !finished && !abort ){
+		result = g_converter_convert(
+				G_CONVERTER( compressor ), json, insize, outbuf, outsize, G_CONVERTER_INPUT_AT_END, &bytes_read, &bytes_written, &error );
+		/* when writing the json header
+		 * result=G_CONVERTER_FINISHED, read=516, written=273 */
+		switch( result ){
+			case G_CONVERTER_ERROR:
+				g_warning( "%s: result=G_CONVERTER_ERROR, error=%s", thisfn, error->message );
+				g_error_free( error );
+				abort = TRUE;
+				break;
+			case G_CONVERTER_CONVERTED:
+				g_debug( "%s: result=G_CONVERTER_CONVERTED, read=%lu, written=%lu", thisfn, bytes_read, bytes_written );
+				break;
+			case G_CONVERTER_FINISHED:
+				g_debug( "%s: result=G_CONVERTER_FINISHED, read=%lu, written=%lu", thisfn, bytes_read, bytes_written );
+				input_stream = g_memory_input_stream_new_from_data( outbuf, outsize, NULL );
+				g_output_stream_splice( output_stream, input_stream, G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE, NULL, NULL );
+				g_object_unref( input_stream );
+				finished = TRUE;
+				break;
+			case G_CONVERTER_FLUSHED:
+				g_debug( "%s: result=G_CONVERTER_FLUSHED, read=%lu, written=%lu", thisfn, bytes_read, bytes_written );
+				finished = TRUE;
+				break;
+		}
+	}
+
+	g_free( outbuf );
+	g_object_unref( compressor );
+
+	return( finished );
 }
 
 /**
@@ -931,61 +1093,6 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'restore()' method",
 			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( FALSE );
-}
-
-static ofaJsonHeader *
-get_json_header( ofaIDBBackup *self, ofaHub *hub, const gchar *comment )
-{
-	ofaJsonHeader *header;
-	ofoDossier *dossier;
-	ofaExtenderCollection *extenders;
-	ofaExtenderModule *plugin;
-	const GList *modules, *itm;
-	GList *dbmodels, *itb;
-	gchar *canon, *display, *id, *version;
-	const ofaIDBConnect *connect;
-
-	header = ofa_json_header_new();
-
-	dossier = ofa_hub_get_dossier( hub );
-	ofa_json_header_set_is_current( header, ofo_dossier_is_current( dossier ));
-	ofa_json_header_set_begin_date( header, ofo_dossier_get_exe_begin( dossier ));
-	ofa_json_header_set_end_date( header, ofo_dossier_get_exe_end( dossier ));
-
-	extenders = ofa_hub_get_extender_collection( hub );
-	modules = ofa_extender_collection_get_modules( extenders );
-
-	for( itm=modules ; itm ; itm=itm->next ){
-		plugin = OFA_EXTENDER_MODULE( itm->data );
-		canon = ofa_extender_module_get_canon_name( plugin );
-		display = ofa_extender_module_get_display_name( plugin );
-		version = ofa_extender_module_get_version( plugin );
-		ofa_json_header_set_plugin( header, canon, display, version );
-		g_free( version );
-		g_free( display );
-		g_free( canon );
-	}
-
-	dbmodels = ofa_hub_get_for_type( hub, OFA_TYPE_IDBMODEL );
-
-	for( itb=dbmodels ; itb ; itb=itb->next ){
-		if( MY_IS_IIDENT( itb->data )){
-			id = my_iident_get_canon_name( MY_IIDENT( itb->data ), NULL );
-			version = my_iident_get_version( MY_IIDENT( itb->data ), NULL );
-			ofa_json_header_set_dbmodel( header, id, version );
-			g_free( version );
-			g_free( id );
-		}
-	}
-
-	g_list_free_full( dbmodels, ( GDestroyNotify ) g_object_unref );
-
-	ofa_json_header_set_comment( header, comment );
-
-	connect = ofa_hub_get_connect( hub );
-	ofa_json_header_set_current_user( header, ofa_idbconnect_get_account( connect ));
-
-	return( header );
 }
 
 /**

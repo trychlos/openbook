@@ -107,6 +107,8 @@ const gchar    *ofa_json_header_get_current_user    ( ofaJsonHeader *header );
 void            ofa_json_header_set_current_user    ( ofaJsonHeader *header,
 														const gchar *userid );
 
+gchar          *ofa_json_header_get_string          ( ofaJsonHeader *header );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_JSON_HEADER_H__ */

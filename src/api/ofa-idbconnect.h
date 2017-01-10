@@ -416,9 +416,9 @@ gboolean            ofa_idbconnect_backup                   ( const ofaIDBConnec
 																	const gchar *uri );
 
 gboolean            ofa_idbconnect_backup_db                ( const ofaIDBConnect *connect,
-																	ofaHub *hub,
 																	const gchar *comment,
-																	const gchar *uri );
+																	const gchar *uri,
+																	GtkWindow *parent );
 
 gboolean            ofa_idbconnect_restore                  ( const ofaIDBConnect *connect,
 																	const ofaIDBExerciceMeta *period,

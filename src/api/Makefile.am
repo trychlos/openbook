@@ -45,7 +45,6 @@ api_include_HEADERS = \
 	ofa-iactioner.h										\
 	ofa-icontext.h										\
 	ofa-idate-filter.h									\
-	ofa-idbbackup.h										\
 	ofa-idbconnect.h									\
 	ofa-idbconnect-def.h								\
 	ofa-idbdossier-editor.h								\

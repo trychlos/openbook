@@ -65,6 +65,7 @@ static gboolean idbconnect_query( const ofaIDBConnect *instance, const gchar *qu
 static gboolean idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList **result );
 static gchar   *idbconnect_get_last_error( const ofaIDBConnect *instance );
 static gboolean idbconnect_backup( const ofaIDBConnect *instance, const gchar *uri );
+static gboolean idbconnect_backup_db( const ofaIDBConnect *instance, GOutputStream *msgst, GOutputStream *datast, GCallback cb );
 static gboolean idbconnect_restore( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *uri );
 static gboolean idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next );
 static gboolean idbconnect_period_new( const ofaIDBConnect *instance, gchar **msgerr );
@@ -166,6 +167,7 @@ idbconnect_iface_init( ofaIDBConnectInterface *iface )
 	iface->query_ex = idbconnect_query_ex;
 	iface->get_last_error = idbconnect_get_last_error;
 	iface->backup = idbconnect_backup;
+	iface->backup_db = idbconnect_backup_db;
 	iface->restore = idbconnect_restore;
 	iface->archive_and_new = idbconnect_archive_and_new;
 	iface->period_new = idbconnect_period_new;
@@ -540,6 +542,12 @@ idbconnect_backup( const ofaIDBConnect *instance, const gchar *uri )
 {
 	return( ofa_mysql_cmdline_backup_run(
 					OFA_MYSQL_CONNECT( instance ), uri ));
+}
+
+static gboolean
+idbconnect_backup_db( const ofaIDBConnect *instance, GOutputStream *msgst, GOutputStream *datast, GCallback cb )
+{
+	return( FALSE );
 }
 
 static gboolean
