@@ -31,12 +31,17 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-extender-collection.h"
+#include "api/ofa-extender-module.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
+#include "api/ofa-idbmodel.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-json-header.h"
+#include "api/ofo-dossier.h"
 
 /* some data attached to each IDBConnect instance
  * we store here the data provided by the application
@@ -55,16 +60,17 @@ typedef struct {
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-static GType        register_type( void );
-static void         interface_base_init( ofaIDBConnectInterface *klass );
-static void         interface_base_finalize( ofaIDBConnectInterface *klass );
-static gboolean     idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error );
-static void         audit_query( const ofaIDBConnect *connect, const gchar *query );
-static gchar       *quote_query( const gchar *query );
-static void         error_query( const ofaIDBConnect *connect, const gchar *query );
-static gboolean     set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr );
-static sIDBConnect *get_instance_data( const ofaIDBConnect *connect );
-static void         on_instance_finalized( sIDBConnect *sdata, GObject *finalized_dbconnect );
+static GType          register_type( void );
+static void           interface_base_init( ofaIDBConnectInterface *klass );
+static void           interface_base_finalize( ofaIDBConnectInterface *klass );
+static gboolean       idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error );
+static void           audit_query( const ofaIDBConnect *connect, const gchar *query );
+static gchar         *quote_query( const gchar *query );
+static void           error_query( const ofaIDBConnect *connect, const gchar *query );
+static ofaJsonHeader *get_json_header( ofaIDBBackup *self, ofaHub *hub, const gchar *comment );
+static gboolean       set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr );
+static sIDBConnect   *get_instance_data( const ofaIDBConnect *connect );
+static void           on_instance_finalized( sIDBConnect *sdata, GObject *finalized_dbconnect );
 
 /**
  * ofa_idbconnect_get_type:
@@ -829,6 +835,41 @@ ofa_idbconnect_backup( const ofaIDBConnect *connect, const gchar *uri )
 }
 
 /**
+ * ofa_idbconnect_backup_db:
+ * @connect: a #ofaIDBConnect instance which handles a user
+ *  connection on the dossier/exercice to be backuped.
+ * @hub: the #ofaHub object of the application.
+ * @comment: [allow-none]: a user comment.
+ * @uri: the target file.
+ *
+ * Backup the current period to the @uri file.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_backup_db( const ofaIDBConnect *connect, ofaHub *hub, const gchar *comment, const gchar *uri )
+{
+	static const gchar *thisfn = "ofa_idbconnect_backup_db";
+	gboolean ok;
+	ofaJsonHeader *header;
+
+	g_debug( "%s: connect=%p, uri=%s", thisfn, ( void * ) connect, uri );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( my_strlen( uri ), FALSE );
+
+	header = get_json_header( connect, hub, comment );
+
+
+	g_object_unref( header );
+
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'backup()' method",
+			thisfn, G_OBJECT_TYPE_NAME( connect ));
+	return( FALSE );
+}
+
+/**
  * ofa_idbconnect_restore:
  * @connect: a #ofaIDBConnect instance which handles a superuser
  *  connection on the DBMS at server-level. It is expected this
@@ -890,6 +931,61 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'restore()' method",
 			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( FALSE );
+}
+
+static ofaJsonHeader *
+get_json_header( ofaIDBBackup *self, ofaHub *hub, const gchar *comment )
+{
+	ofaJsonHeader *header;
+	ofoDossier *dossier;
+	ofaExtenderCollection *extenders;
+	ofaExtenderModule *plugin;
+	const GList *modules, *itm;
+	GList *dbmodels, *itb;
+	gchar *canon, *display, *id, *version;
+	const ofaIDBConnect *connect;
+
+	header = ofa_json_header_new();
+
+	dossier = ofa_hub_get_dossier( hub );
+	ofa_json_header_set_is_current( header, ofo_dossier_is_current( dossier ));
+	ofa_json_header_set_begin_date( header, ofo_dossier_get_exe_begin( dossier ));
+	ofa_json_header_set_end_date( header, ofo_dossier_get_exe_end( dossier ));
+
+	extenders = ofa_hub_get_extender_collection( hub );
+	modules = ofa_extender_collection_get_modules( extenders );
+
+	for( itm=modules ; itm ; itm=itm->next ){
+		plugin = OFA_EXTENDER_MODULE( itm->data );
+		canon = ofa_extender_module_get_canon_name( plugin );
+		display = ofa_extender_module_get_display_name( plugin );
+		version = ofa_extender_module_get_version( plugin );
+		ofa_json_header_set_plugin( header, canon, display, version );
+		g_free( version );
+		g_free( display );
+		g_free( canon );
+	}
+
+	dbmodels = ofa_hub_get_for_type( hub, OFA_TYPE_IDBMODEL );
+
+	for( itb=dbmodels ; itb ; itb=itb->next ){
+		if( MY_IS_IIDENT( itb->data )){
+			id = my_iident_get_canon_name( MY_IIDENT( itb->data ), NULL );
+			version = my_iident_get_version( MY_IIDENT( itb->data ), NULL );
+			ofa_json_header_set_dbmodel( header, id, version );
+			g_free( version );
+			g_free( id );
+		}
+	}
+
+	g_list_free_full( dbmodels, ( GDestroyNotify ) g_object_unref );
+
+	ofa_json_header_set_comment( header, comment );
+
+	connect = ofa_hub_get_connect( hub );
+	ofa_json_header_set_current_user( header, ofa_idbconnect_get_account( connect ));
+
+	return( header );
 }
 
 /**

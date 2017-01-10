@@ -274,7 +274,9 @@ do_backup( ofaBackup *self )
 	group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 	my_isettings_set_string( settings, group, st_backup_folder, folder );
 
-	ok = ofa_idbconnect_backup( priv->connect, uri );
+	ofa_idbconnect_backup_db( priv->connect, priv->hub, NULL, NULL );
+	//ok = ofa_idbconnect_backup( priv->connect, uri );
+	ok = FALSE;
 
 	g_free( folder );
 	g_free( uri );

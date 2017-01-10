@@ -66,6 +66,7 @@ typedef struct _ofaIDBConnectInterface           ofaIDBConnectInterface;
  * @query_ex: [should]: executes a select query.
  * @get_last_error: [should]: returns the last error.
  * @backup: [should]: backups the currently opened dossier.
+ * @backup_db: [should]: backups the currently opened dossier.
  * @restore: [should]: restore a file to a dossier.
  * @archive_and_new: [should]: archives the current and defines a new exercice.
  * @period_new: [should]: creates a new financial period.
@@ -191,6 +192,24 @@ struct _ofaIDBConnectInterface {
 	 */
 	gboolean ( *backup )               ( const ofaIDBConnect *instance,
 											const gchar *uri );
+
+	/**
+	 * backup_db:
+	 * @instance: a #ofaIDBConnect user connection on the period.
+	 * @msgst: a #GOutputStream for output messages.
+	 * @datast: a #GOutputStream for output data flow.
+	 * @endcb: a callback to be called at the end of the backup.
+	 *
+	 * Backup the currently opened period.
+	 *
+	 * Returns: %TRUE if successful, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *backup_db )            ( const ofaIDBConnect *instance,
+											GOutputStream *msgst,
+											GOutputStream *datast,
+											GCallback endcb );
 
 	/**
 	 * restore:
@@ -394,6 +413,11 @@ gboolean            ofa_idbconnect_table_restore            ( const ofaIDBConnec
 gchar              *ofa_idbconnect_get_last_error           ( const ofaIDBConnect *connect );
 
 gboolean            ofa_idbconnect_backup                   ( const ofaIDBConnect *connect,
+																	const gchar *uri );
+
+gboolean            ofa_idbconnect_backup_db                ( const ofaIDBConnect *connect,
+																	ofaHub *hub,
+																	const gchar *comment,
 																	const gchar *uri );
 
 gboolean            ofa_idbconnect_restore                  ( const ofaIDBConnect *connect,

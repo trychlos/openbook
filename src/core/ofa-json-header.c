@@ -356,8 +356,12 @@ ofa_json_header_set_openbook_version( ofaJsonHeader *header, const gchar *versio
 void
 ofa_json_header_set_plugin( ofaJsonHeader *header, const gchar *canon_name, const gchar *display_name, const gchar *version )
 {
+	static const gchar *thisfn = "ofa_json_header_set_plugin";
 	ofaJsonHeaderPrivate *priv;
 	sPlugin *sdata;
+
+	g_debug( "%s: header=%p, canon_name=%s, display_name=%s, version=%s",
+			thisfn, ( void * ) header, canon_name, display_name, version );
 
 	g_return_if_fail( header && OFA_IS_JSON_HEADER( header ));
 
@@ -387,8 +391,12 @@ ofa_json_header_set_plugin( ofaJsonHeader *header, const gchar *canon_name, cons
 void
 ofa_json_header_set_dbmodel( ofaJsonHeader *header, const gchar *id, const gchar *version )
 {
+	static const gchar *thisfn = "ofa_json_header_set_dbmodel";
 	ofaJsonHeaderPrivate *priv;
 	sDBModel *sdata;
+
+	g_debug( "%s: header=%p, id=%s, version=%s",
+			thisfn, ( void * ) header, id, version );
 
 	g_return_if_fail( header && OFA_IS_JSON_HEADER( header ));
 
