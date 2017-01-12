@@ -23,6 +23,8 @@
 
  Other changes:
 
+   DBModel Core v34.
+
    - ofa_idbconnect_backup_db(): new function.
    - ofaDossierProps: new class.
 

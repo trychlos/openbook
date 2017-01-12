@@ -90,6 +90,11 @@ const GDate     *ofa_dossier_props_get_end_date        ( ofaDossierProps *props 
 void             ofa_dossier_props_set_end_date        ( ofaDossierProps *props,
 																const GDate *date );
 
+const gchar     *ofa_dossier_props_get_rpid            ( ofaDossierProps *props );
+
+void             ofa_dossier_props_set_rpid            ( ofaDossierProps *props,
+																const gchar *rpid );
+
 const gchar     *ofa_dossier_props_get_openbook_version( ofaDossierProps *props );
 
 void             ofa_dossier_props_set_openbook_version( ofaDossierProps *props,

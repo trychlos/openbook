@@ -52,6 +52,7 @@ typedef struct {
 	gboolean  is_current;
 	GDate     begin_date;
 	GDate     end_date;
+	gchar    *rpid;
 	gchar    *openbook_version;
 	GList    *plugins;
 	GList    *dbmodels;
@@ -85,6 +86,7 @@ typedef struct {
 static const gchar *st_current          = "current";
 static const gchar *st_begin            = "begin";
 static const gchar *st_end              = "end";
+static const gchar *st_rpid             = "rpid";
 static const gchar *st_openbook         = "openbook";
 static const gchar *st_plugins          = "plugins";
 static const gchar *st_dbms             = "dbms";
@@ -122,6 +124,7 @@ dossier_props_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_dossier_props_get_instance_private( OFA_DOSSIER_PROPS( instance ));
 
+	g_free( priv->rpid );
 	g_free( priv->openbook_version );
 	g_free( priv->comment );
 	g_free( priv->userid );
@@ -424,6 +427,9 @@ new_from_node( JsonNode *root )
 							my_date_set_from_str( &date, cvalue, MY_DATE_YYMD );
 							ofa_dossier_props_set_end_date( props, &date );
 
+						} else if( !my_collate( cname, st_rpid )){
+							ofa_dossier_props_set_rpid( props, cvalue );
+
 						} else if( !my_collate( cname, st_openbook )){
 							ofa_dossier_props_set_openbook_version( props, cvalue );
 
@@ -711,6 +717,51 @@ ofa_dossier_props_set_end_date( ofaDossierProps *props, const GDate *date )
 }
 
 /**
+ * ofa_dossier_props_get_rpid:
+ * @props: this #ofaDossierProps object.
+ *
+ * Returns: the rpid of the archived dossier.
+ *
+ * The returned string is owned by the @props object, and should not
+ * be released by the caller.
+ */
+const gchar *
+ofa_dossier_props_get_rpid( ofaDossierProps *props )
+{
+	ofaDossierPropsPrivate *priv;
+
+	g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
+
+	priv = ofa_dossier_props_get_instance_private( props );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return(( const gchar * ) priv->rpid );
+}
+
+/**
+ * ofa_dossier_props_set_rpid:
+ * @props: this #ofaDossierProps object.
+ * @rpid: [allow-none]: the rpid of the dossier.
+ *
+ * Set the rpid.
+ */
+void
+ofa_dossier_props_set_rpid( ofaDossierProps *props, const gchar *rpid )
+{
+	ofaDossierPropsPrivate *priv;
+
+	g_return_if_fail( props && OFA_IS_DOSSIER_PROPS( props ));
+
+	priv = ofa_dossier_props_get_instance_private( props );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->rpid );
+	priv->rpid = g_strdup( rpid );
+}
+
+/**
  * ofa_dossier_props_get_openbook_version:
  * @props: this #ofaDossierProps object.
  *
@@ -730,7 +781,7 @@ ofa_dossier_props_get_openbook_version( ofaDossierProps *props )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( priv->openbook_version );
+	return(( const gchar * ) priv->openbook_version );
 }
 
 /**
@@ -847,7 +898,7 @@ ofa_dossier_props_get_comment( ofaDossierProps *props )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( priv->comment );
+	return(( const gchar * ) priv->comment );
 }
 
 /**
@@ -936,7 +987,7 @@ ofa_dossier_props_get_current_user( ofaDossierProps *props )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( priv->userid );
+	return(( const gchar * ) priv->userid );
 }
 
 /**

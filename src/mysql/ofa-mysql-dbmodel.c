@@ -124,6 +124,8 @@ static gboolean dbmodel_v32( ofaMysqlDBModel *self, gint version );
 static gulong   count_v32( ofaMysqlDBModel *self );
 static gboolean dbmodel_v33( ofaMysqlDBModel *self, gint version );
 static gulong   count_v33( ofaMysqlDBModel *self );
+static gboolean dbmodel_v34( ofaMysqlDBModel *self, gint version );
+static gulong   count_v34( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -140,6 +142,7 @@ static sMigration st_migrates[] = {
 		{ 31, dbmodel_v31, count_v31 },
 		{ 32, dbmodel_v32, count_v32 },
 		{ 33, dbmodel_v33, count_v33 },
+		{ 34, dbmodel_v34, count_v34 },
 		{ 0 }
 };
 
@@ -1953,4 +1956,45 @@ static gulong
 count_v33( ofaMysqlDBModel *self )
 {
 	return( 9 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v34:
+ *
+ * - OFA_T_DOSSIER: add DOS_RID random pseudo identifier
+ * - OFA_T_OPE_TEMPLATES: remove OTE_LED_LOCKED2 and OTE_REF_LOCKED2
+ */
+static gboolean
+dbmodel_v34( ofaMysqlDBModel *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v34";
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	/* alter dossier */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	ADD COLUMN DOS_RPID        VARCHAR(64)                COMMENT 'Random Pseudo Identifier'" )){
+		return( FALSE );
+	}
+
+	/* 2 - alter ope-templates */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_OPE_TEMPLATES "
+			"	DROP COLUMN OTE_LED_LOCKED2,"
+			"	DROP COLUMN OTE_REF_LOCKED2" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v34( ofaMysqlDBModel *self )
+{
+	return( 2 );
 }

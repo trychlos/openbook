@@ -78,6 +78,7 @@ enum {
 	DOS_PREVEXE_END,
 	DOS_CURRENCY,
 	DOS_SLD_ACCOUNT,
+	DOS_RPID,
 };
 
 /*
@@ -141,6 +142,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( DOS_CURRENT ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_RPID ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -217,6 +222,7 @@ static void        dossier_set_last_entry( ofoDossier *dossier, ofxCounter count
 static void        dossier_set_last_ope( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter );
+static void        dossier_setup_rpid( ofoDossier *self );
 static void        dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter counter );
 static ofoDossier *dossier_do_read( ofaHub *hub );
 static gboolean    dossier_do_update( ofoDossier *dossier );
@@ -776,6 +782,21 @@ ofo_dossier_get_prevexe_end( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_get_rpid:
+ * @dossier: this #ofoDossier instance.
+ *
+ * Returns: the random pseudo identifier of the dossier.
+ *
+ * Use case: refuse to overwrite an archive with another which would
+ * come from another dossier.
+ */
+const gchar *
+ofo_dossier_get_rpid( const ofoDossier *dossier )
+{
+	ofo_base_getter( DOSSIER, dossier, string, NULL, DOS_RPID );
+}
+
+/**
  * ofo_dossier_get_min_deffect:
  * @dossier: this #ofoDossier instance.
  * @ledger: [allow-none]: the imputed ledger.
@@ -1257,6 +1278,44 @@ ofo_dossier_set_current( ofoDossier *dossier, gboolean current )
 }
 
 /**
+ * ofo_dossier_set_rpid:
+ * @dossier: this #ofoDossier instance.
+ * @rpid: the random pseudo identifier.
+ *
+ * Set the rpid of the dossier.
+ */
+void
+ofo_dossier_set_rpid( ofoDossier *dossier, const gchar *rpid )
+{
+	ofo_base_setter( DOSSIER, dossier, string, DOS_RPID, rpid );
+}
+
+/*
+ * our random pseudo identifier is :
+ * - 32 lowest bits from timestamp
+ * - 32 bits from random
+ * - 32 lowest bits from MAC address
+ *   -> replaced by 32 highest bits from timestamp
+ */
+static void
+dossier_setup_rpid( ofoDossier *dossier )
+{
+	GTimeVal stamp;
+	gchar *rpid;
+
+	guint32 random32 = g_random_int();
+	my_utils_stamp_set_now( &stamp );
+	guint32 stamp_a = stamp.tv_sec & 0x00000000ffffffff;
+	/* this is nul
+	guint32 stamp_b = stamp.tv_usec & 0xffffffff00000000; */
+	guint32 stamp_b = stamp.tv_usec & 0x00000000ffffffff;
+
+	rpid = g_strdup_printf( "%8.8x-%8.8x-%8.8x", stamp_a, random32, stamp_b );
+	ofo_dossier_set_rpid( dossier, rpid );
+	g_free( rpid );
+}
+
+/**
  * ofo_dossier_set_last_closing_date:
  * @dossier:
  * @last_closing: the last period closing date.
@@ -1373,6 +1432,13 @@ dossier_do_read( ofaHub *hub )
 	priv->cur_details =
 				ofo_base_load_rows( st_currency_defs, ofa_hub_get_connect( hub ), where );
 	g_free( where );
+
+	/* Starting with 0.65 where RPID is added, check that a RPID is defined
+	 * for each dossier, and set it up if not already done */
+	if( !my_strlen( ofo_dossier_get_rpid( dossier ))){
+		dossier_setup_rpid( dossier );
+		ofo_dossier_update( dossier );
+	}
 
 	return( dossier );
 }
@@ -1535,6 +1601,9 @@ do_update_properties( ofoDossier *dossier )
 
 	current = ofo_dossier_is_current( dossier );
 	g_string_append_printf( query, "DOS_CURRENT='%s',", current ? "Y":"N" );
+
+	cstr = ofo_dossier_get_rpid( dossier );
+	g_string_append_printf( query, "DOS_RPID='%s',", cstr );
 
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );

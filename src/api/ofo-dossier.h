@@ -109,6 +109,7 @@ ofxCounter           ofo_dossier_get_last_concil           ( const ofoDossier *d
 const GDate         *ofo_dossier_get_last_closing_date     ( const ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_prevexe_last_entry    ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_prevexe_end           ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_rpid                  ( const ofoDossier *dossier );
 
 ofxCounter           ofo_dossier_get_next_bat              ( ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_next_batline          ( ofoDossier *dossier );
@@ -152,6 +153,7 @@ void                 ofo_dossier_set_last_closing_date     ( ofoDossier *dossier
 void                 ofo_dossier_set_prevexe_last_entry    ( ofoDossier *dossier );
 void                 ofo_dossier_set_prevexe_end           ( ofoDossier *dossier, const GDate *date );
 void                 ofo_dossier_set_current               ( ofoDossier *dossier, gboolean current );
+void                 ofo_dossier_set_rpid                  ( ofoDossier *dossier, const gchar *rpid );
 
 void                 ofo_dossier_reset_currencies          ( ofoDossier *dossier );
 void                 ofo_dossier_set_sld_account           ( ofoDossier *dossier, const gchar *currency, const gchar *account );
