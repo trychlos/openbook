@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "my/my-date.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -382,14 +383,14 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 
 	cstr = ofo_entry_get_settlement_user( entry );
 	csetuser = cstr ? cstr : "";
-	ssetstamp = my_utils_stamp_to_str( ofo_entry_get_settlement_stamp( entry ), MY_STAMP_DMYYHM );
+	ssetstamp = my_stamp_to_str( ofo_entry_get_settlement_stamp( entry ), MY_STAMP_DMYYHM );
 
 	entnum = ofo_entry_get_number( entry );
 	sentnum = g_strdup_printf( "%lu", entnum );
 
 	cstr = ofo_entry_get_upd_user( entry );
 	cupduser = cstr ? cstr : "";
-	supdstamp = my_utils_stamp_to_str( ofo_entry_get_upd_stamp( entry ), MY_STAMP_DMYYHM );
+	supdstamp = my_stamp_to_str( ofo_entry_get_upd_stamp( entry ), MY_STAMP_DMYYHM );
 
 
 	gtk_tree_store_set(

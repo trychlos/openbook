@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -249,7 +250,7 @@ set_row_by_iter( ofaClassStore *self, GtkTreeIter *iter, ofoClass *class )
 	GdkPixbuf *notes_png;
 
 	sid = g_strdup_printf( "%u", ofo_class_get_number( class ));
-	stamp  = my_utils_stamp_to_str( ofo_class_get_upd_stamp( class ), MY_STAMP_DMYYHM );
+	stamp  = my_stamp_to_str( ofo_class_get_upd_stamp( class ), MY_STAMP_DMYYHM );
 
 	error = NULL;
 	notes = ofo_class_get_notes( class );

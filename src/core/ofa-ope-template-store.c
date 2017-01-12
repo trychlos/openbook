@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -278,7 +279,7 @@ set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIt
 	GError *error;
 	GdkPixbuf *notes_png;
 
-	stamp  = my_utils_stamp_to_str( ofo_ope_template_get_upd_stamp( ope ), MY_STAMP_DMYYHM );
+	stamp  = my_stamp_to_str( ofo_ope_template_get_upd_stamp( ope ), MY_STAMP_DMYYHM );
 
 	pamrow = ofo_ope_template_get_pam_row( ope );
 	spamrow = pamrow >= 0 ? g_strdup_printf( "%d", pamrow ) : g_strdup( "" );

@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -247,7 +248,7 @@ set_row_by_iter( ofaCurrencyStore *self, const ofoCurrency *currency, GtkTreeIte
 	GdkPixbuf *notes_png;
 
 	str = g_strdup_printf( "%d", ofo_currency_get_digits( currency ));
-	stamp  = my_utils_stamp_to_str( ofo_currency_get_upd_stamp( currency ), MY_STAMP_DMYYHM );
+	stamp  = my_stamp_to_str( ofo_currency_get_upd_stamp( currency ), MY_STAMP_DMYYHM );
 
 	notes = ofo_currency_get_notes( currency );
 	error = NULL;

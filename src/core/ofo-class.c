@@ -32,6 +32,7 @@
 
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
@@ -480,8 +481,8 @@ class_do_insert( ofoClass *class, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	g_string_append_printf( query, "'%s','%s')", userid, stamp_str );
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
@@ -539,8 +540,8 @@ class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect )
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_class_get_label( class ));
 	notes = my_utils_quote_sql( ofo_class_get_notes( class ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_CLASSES SET " );
 

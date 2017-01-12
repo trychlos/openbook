@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"

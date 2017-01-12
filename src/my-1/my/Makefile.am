@@ -53,6 +53,7 @@ my_include_HEADERS = \
 	my-progress-bar.h									\
 	my-settings.h										\
 	my-signal.h											\
+	my-stamp.h											\
 	my-style.h											\
 	my-tab.h											\
 	my-thousand-combo.h									\

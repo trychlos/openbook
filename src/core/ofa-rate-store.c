@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -244,7 +245,7 @@ set_row_by_iter( ofaRateStore *self, const ofoRate *rate, GtkTreeIter *iter )
 	GError *error;
 	GdkPixbuf *notes_png;
 
-	stamp  = my_utils_stamp_to_str( ofo_rate_get_upd_stamp( rate ), MY_STAMP_DMYYHM );
+	stamp  = my_stamp_to_str( ofo_rate_get_upd_stamp( rate ), MY_STAMP_DMYYHM );
 
 	notes = ofo_rate_get_notes( rate );
 	error = NULL;

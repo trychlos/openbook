@@ -34,6 +34,7 @@
 #include "my/my-double.h"
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -918,7 +919,7 @@ bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
 
 	priv = ofo_bat_get_instance_private( bat );
 
-	my_utils_stamp_set_from_stamp( &priv->upd_stamp, upd_stamp );
+	my_stamp_set_from_stamp( &priv->upd_stamp, upd_stamp );
 }
 
 /**
@@ -986,9 +987,9 @@ bat_insert_main( ofoBat *bat, ofaHub *hub )
 	connect = ofa_hub_get_connect( hub );
 
 	ok = FALSE;
-	my_utils_stamp_set_now( &stamp );
+	my_stamp_set_now( &stamp );
 	suri = my_utils_quote_sql( ofo_bat_get_uri( bat ));
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	userid = ofa_idbconnect_get_account( connect );
 
 	query = g_string_new( "INSERT INTO OFA_T_BAT" );
@@ -1119,8 +1120,8 @@ bat_do_update( ofoBat *bat, const ofaIDBConnect *connect )
 
 	ok = FALSE;
 	notes = my_utils_quote_sql( ofo_bat_get_notes( bat ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	userid = ofa_idbconnect_get_account( connect );
 
 	query = g_string_new( "UPDATE OFA_T_BAT SET " );
@@ -1368,7 +1369,7 @@ icollectionable_load_collection( void *user_data )
 			bat_set_upd_user( bat, ( gchar * ) icol->data );
 			icol = icol->next;
 			bat_set_upd_stamp( bat,
-					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+					my_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 			ofo_base_set_hub( OFO_BASE( bat ), OFA_HUB( user_data ));
 			dataset = g_list_prepend( dataset, bat );

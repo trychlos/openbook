@@ -31,6 +31,7 @@
 
 #include "my/my-date.h"
 #include "my/my-double.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
@@ -416,7 +417,7 @@ timestamp_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 
 	if( my_strlen( str )){
 		box->is_null = FALSE;
-		my_utils_stamp_set_from_sql( &box->timestamp, str );
+		my_stamp_set_from_sql( &box->timestamp, str );
 	}
 
 	return( box );
@@ -432,7 +433,7 @@ timestamp_to_string( const ofsBoxData *box, ofaStreamFormat *format )
 	if( box->is_null ){
 		str = g_strdup( "" );
 	} else {
-		str = my_utils_stamp_to_str( &box->timestamp, MY_STAMP_YYMDHMS );
+		str = my_stamp_to_str( &box->timestamp, MY_STAMP_YYMDHMS );
 		if( !str ){
 			str = g_strdup( "" );
 		}

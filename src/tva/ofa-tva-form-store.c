@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -245,7 +246,7 @@ set_row_by_iter( ofaTVAFormStore *self, const ofoTVAForm *form, GtkTreeIter *ite
 	GError *error;
 	GdkPixbuf *notes_png;
 
-	stamp  = my_utils_stamp_to_str( ofo_tva_form_get_upd_stamp( form ), MY_STAMP_DMYYHM );
+	stamp  = my_stamp_to_str( ofo_tva_form_get_upd_stamp( form ), MY_STAMP_DMYYHM );
 
 	chascorresp = ofo_tva_form_get_has_correspondence( form ) ? _( "C" ) : "";
 

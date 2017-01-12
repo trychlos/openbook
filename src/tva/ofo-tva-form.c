@@ -31,6 +31,7 @@
 
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
@@ -1137,8 +1138,8 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_tva_form_get_label( form ));
 	notes = my_utils_quote_sql( ofo_tva_form_get_notes( form ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO TVA_T_FORMS" );
 
@@ -1365,8 +1366,8 @@ form_update_main( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *p
 	label = my_utils_quote_sql( ofo_tva_form_get_label( form ));
 	notes = my_utils_quote_sql( ofo_tva_form_get_notes( form ));
 	new_mnemo = ofo_tva_form_get_mnemo( form );
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE TVA_T_FORMS SET " );
 

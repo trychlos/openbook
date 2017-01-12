@@ -32,6 +32,7 @@
 
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
@@ -1139,8 +1140,8 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	label = my_utils_quote_sql( ofo_ope_template_get_label( model ));
 	ref = my_utils_quote_sql( ofo_ope_template_get_ref( model ));
 	notes = my_utils_quote_sql( ofo_ope_template_get_notes( model ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_OPE_TEMPLATES" );
 
@@ -1358,8 +1359,8 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 	ref = my_utils_quote_sql( ofo_ope_template_get_ref( model ));
 	notes = my_utils_quote_sql( ofo_ope_template_get_notes( model ));
 	new_mnemo = ofo_ope_template_get_mnemo( model );
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_OPE_TEMPLATES SET " );
 

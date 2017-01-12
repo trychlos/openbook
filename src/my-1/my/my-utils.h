@@ -37,17 +37,6 @@
 
 G_BEGIN_DECLS
 
-/**
- * myStampFormat:
- *
- * @MY_STAMP_YYMDHMS: display the timestamp as 'yyyy-mm-dd hh:mi:ss'
- */
-typedef enum {
-	MY_STAMP_YYMDHMS = 1,
-	MY_STAMP_DMYYHM
-}
-	myStampFormat;
-
 gint          my_collate                              ( const gchar *a, const gchar *b );
 glong         my_strlen                               ( const gchar *str );
 
@@ -58,12 +47,6 @@ gchar        *my_utils_quote_sql                      ( const gchar *str );
 gchar        *my_utils_quote_single                   ( const gchar *str );
 gchar        *my_utils_quote_regexp                   ( const gchar *str, const gchar *regexp );
 gchar        *my_utils_unquote_regexp                 ( const gchar *str, const gchar *regexp );
-
-GTimeVal     *my_utils_stamp_set_now                  ( GTimeVal *stamp );
-GTimeVal     *my_utils_stamp_set_from_sql             ( GTimeVal *timeval, const gchar *str );
-GTimeVal     *my_utils_stamp_set_from_str             ( GTimeVal *timeval, const gchar *str );
-GTimeVal     *my_utils_stamp_set_from_stamp           ( GTimeVal *timeval, const GTimeVal *orig );
-gchar        *my_utils_stamp_to_str                   ( const GTimeVal *stamp, myStampFormat format );
 
 gchar        *my_utils_export_multi_lines             ( const gchar *str );
 gchar        *my_utils_import_multi_lines             ( const gchar *str );

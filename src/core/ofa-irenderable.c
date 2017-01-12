@@ -30,6 +30,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-irenderable.h"
@@ -1112,8 +1113,8 @@ irenderable_draw_page_footer( ofaIRenderable *instance, gint page_num )
 	height = ofa_irenderable_set_text( instance, st_page_margin, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
 
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_DMYYHM );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_DMYYHM );
 	str = g_strdup_printf(
 			_( "Printed on %s - Page %d/%d" ), stamp_str, 1+page_num, sdata->pages_count );
 	g_free( stamp_str );

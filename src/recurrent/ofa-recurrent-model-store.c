@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -262,7 +263,7 @@ set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, G
 
 	priv = ofa_recurrent_model_store_get_instance_private( self );
 
-	stamp  = my_utils_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
+	stamp  = my_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
 
 	csper = ofo_recurrent_model_get_periodicity( model );
 	period = ofo_rec_period_get_by_id( priv->hub, csper );

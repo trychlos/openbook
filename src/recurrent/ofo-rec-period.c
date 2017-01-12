@@ -33,6 +33,7 @@
 #include "my/my-date.h"
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
@@ -881,8 +882,8 @@ rec_period_insert_main( ofoRecPeriod *period, ofaHub *hub )
 	connect = ofa_hub_get_connect( hub );
 
 	userid = ofa_idbconnect_get_account( connect );
-	my_utils_stamp_set_now( &stamp );
-	sstamp = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	sstamp = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO REC_T_PERIODS " );
 
@@ -1016,8 +1017,8 @@ rec_period_update_main( ofoRecPeriod *period, ofaHub *hub )
 	connect = ofa_hub_get_connect( hub );
 
 	userid = ofa_idbconnect_get_account( connect );
-	my_utils_stamp_set_now( &stamp );
-	sstamp = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	sstamp = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE REC_T_PERIODS SET " );
 

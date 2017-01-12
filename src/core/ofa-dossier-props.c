@@ -32,6 +32,7 @@
 
 #include "my/my-date.h"
 #include "my/my-iident.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-dossier-props.h"
@@ -171,7 +172,7 @@ ofa_dossier_props_init( ofaDossierProps *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->openbook_version = g_strdup( PACKAGE_VERSION );
-	my_utils_stamp_set_now( &priv->stamp );
+	my_stamp_set_now( &priv->stamp );
 }
 
 static void
@@ -437,7 +438,7 @@ new_from_node( JsonNode *root )
 							ofa_dossier_props_set_comment( props, cvalue );
 
 						} else if( !my_collate( cname, st_stamp )){
-							my_utils_stamp_set_from_sql( &stamp, cvalue );
+							my_stamp_set_from_sql( &stamp, cvalue );
 							ofa_dossier_props_set_current_stamp( props, &stamp );
 
 						} else if( !my_collate( cname, st_userid )){
@@ -964,7 +965,7 @@ ofa_dossier_props_set_current_stamp( ofaDossierProps *props, const GTimeVal *sta
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	my_utils_stamp_set_from_stamp( &priv->stamp, stamp );
+	my_stamp_set_from_stamp( &priv->stamp, stamp );
 }
 
 /**
@@ -1087,7 +1088,7 @@ g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
 	json_builder_set_member_name( builder, st_comment );
 	json_builder_add_string_value( builder, priv->comment ? priv->comment : "" );
 
-	sdate = my_utils_stamp_to_str( &priv->stamp, MY_STAMP_YYMDHMS );
+	sdate = my_stamp_to_str( &priv->stamp, MY_STAMP_YYMDHMS );
 	json_builder_set_member_name( builder, st_stamp );
 	json_builder_add_string_value( builder, sdate );
 	g_free( sdate );

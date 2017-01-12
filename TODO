@@ -348,8 +348,6 @@
      2016-12-18 note that updating dossier settings triggers a reload
                 of dossier_collection (due to file monitoring)
 
-1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
-
 1239 2016-10-19 export from EntryPage
 
 1243 2016-10-22 have a command-line tool which displays the version of
@@ -412,23 +410,20 @@
 1313 2017- 1- 5 generalize my_idialog_click_to_update_ex() in replacement
                 of my_idialog_click_to_update()
 
-1314 2017- 1- 6 DB: OFA_T_DOSSIER: add a unique id to identify the dossier
-     2017- 1-12 use case: be able to identify that an archive comes from
-                this particular dossier (and maybe refuse to overwrite an
-                archive)
-
 1316 2017- 1- 9 DossierManager: implement call to ofa_dossier_collection_delete_period()
                 (requires a superuser connection on the dbms)
 
 1317 2017- 1-10 move ofaBackup to myIDialog, including a comment
-
-1318 2017- 1-12 review my_utils_stamp_set_from_xxx to have a format (like my_date)
+     2017- 1-12 actually move to an assistant
 
 1319
 
 -----------------------------------------------------------------------
  DONE
  ====
+
+1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
+     2017- 1-12 done in CORE v34
 
 1276 2016-12-10 review the way the exercices are written in dossier settings
                 so that this may be managed by the application instead of
@@ -468,8 +463,17 @@
 1312 2017- 1- 5 obsolete ofaIDBDossierMeta::remove_period method
      2017- 1- 9 done
 
+1314 2017- 1- 6 DB: OFA_T_DOSSIER: add a unique id to identify the dossier
+     2017- 1-12 use case: be able to identify that an archive comes from
+                this particular dossier (and maybe refuse to overwrite an
+                archive)
+     2017- 1-12 done in CORE v34
+
 1315 2017- 1- 9 ofa_dossier_collection_delete_period(): to be written
      2017- 1- 9 done
+
+1318 2017- 1-12 review my_utils_stamp_set_from_xxx to have a format (like my_date)
+     2017- 1-12 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -35,6 +35,7 @@
 #include "my/my-double.h"
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -523,8 +524,8 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect )
 	label = my_utils_quote_sql( ofo_currency_get_label( currency ));
 	symbol = ofo_currency_get_symbol( currency );
 	notes = my_utils_quote_sql( ofo_currency_get_notes( currency ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "" );
 	g_string_append_printf( query,
@@ -601,8 +602,8 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBC
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_currency_get_label( currency ));
 	notes = my_utils_quote_sql( ofo_currency_get_notes( currency ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_CURRENCIES SET " );
 

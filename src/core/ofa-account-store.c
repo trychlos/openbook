@@ -29,6 +29,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib/gi18n.h>
 
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -358,7 +359,7 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 		sesol = g_strdup( "" );
 	}
 
-	stamp = my_utils_stamp_to_str( ofo_account_get_upd_stamp( account ), MY_STAMP_DMYYHM );
+	stamp = my_stamp_to_str( ofo_account_get_upd_stamp( account ), MY_STAMP_DMYYHM );
 	notes = ofo_account_get_notes( account );
 	error = NULL;
 	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );

@@ -27,6 +27,7 @@
 #endif
 
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -240,7 +241,7 @@ ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval )
 	concil = ofo_concil_new();
 	ofo_concil_set_dval( concil, dval );
 	ofo_concil_set_user( concil, userid );
-	ofo_concil_set_stamp( concil, my_utils_stamp_set_now( &stamp ));
+	ofo_concil_set_stamp( concil, my_stamp_set_now( &stamp ));
 
 	ofa_iconcil_new_concil_ex( instance, concil );
 

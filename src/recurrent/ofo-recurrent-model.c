@@ -32,6 +32,7 @@
 
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
@@ -764,8 +765,8 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	def_amount2 = ofo_recurrent_model_get_def_amount2( model );
 	def_amount3 = ofo_recurrent_model_get_def_amount3( model );
 	notes = my_utils_quote_sql( ofo_recurrent_model_get_notes( model ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO REC_T_MODELS " );
 
@@ -895,8 +896,8 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	label = my_utils_quote_sql( ofo_recurrent_model_get_label( model ));
 	notes = my_utils_quote_sql( ofo_recurrent_model_get_notes( model ));
 	new_mnemo = ofo_recurrent_model_get_mnemo( model );
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE REC_T_MODELS SET " );
 

@@ -33,6 +33,7 @@
 
 #include "my/my-date.h"
 #include "my/my-double.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -1776,8 +1777,8 @@ entry_do_insert( ofoEntry *entry, ofaHub *hub )
 	ref = my_utils_quote_sql( ofo_entry_get_ref( entry ));
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_ENTRIES " );
 
@@ -2004,8 +2005,8 @@ entry_do_update( ofoEntry *entry, ofaHub *hub )
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	sdeb = ofa_amount_to_sql( ofo_entry_get_debit( entry ), cur_obj );
 	scre = ofa_amount_to_sql( ofo_entry_get_credit( entry ), cur_obj );
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
 
@@ -2105,9 +2106,9 @@ do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter 
 	if( number > 0 ){
 		ofo_entry_set_settlement_number( entry, number );
 		entry_set_settlement_user( entry, userid );
-		entry_set_settlement_stamp( entry, my_utils_stamp_set_now( &stamp ));
+		entry_set_settlement_stamp( entry, my_stamp_set_now( &stamp ));
 
-		stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+		stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 		g_string_append_printf( query,
 				"ENT_STLMT_NUMBER=%ld,ENT_STLMT_USER='%s',ENT_STLMT_STAMP='%s' ",
 				number, userid, stamp_str );
@@ -2382,7 +2383,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHu
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ));
 		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
 		suser = g_strdup( concil ? ofo_concil_get_user( concil ) : "" );
-		sstamp = concil ? my_utils_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS ) : g_strdup( "" );
+		sstamp = concil ? my_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS ) : g_strdup( "" );
 
 		str2 = g_strdup_printf( "%u%c%s%c%s%c%s%c%s",
 				ENTRY_IE_FORMAT, field_sep,
@@ -2936,14 +2937,15 @@ iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoE
 		g_debug( "%s: new concil user=%s", thisfn, userid );
 	}
 
-	/* exported reconciliation timestamp (defaults to now) */
+	/* exported reconciliation timestamp (defaults to now)
+	 * the timestamp is exported (and expected) as MY_STAMP_YYMDHMS */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( concil ){
 		if( !my_strlen( cstr )){
-			my_utils_stamp_set_now( &stamp );
+			my_stamp_set_now( &stamp );
 		} else {
-			my_utils_stamp_set_from_str( &stamp, cstr );
+			my_stamp_set_from_sql( &stamp, cstr );
 		}
 		ofo_concil_set_stamp( concil, &stamp );
 		g_debug( "%s: new concil stamp=%s", thisfn, cstr );

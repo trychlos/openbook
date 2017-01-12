@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "my/my-date.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -280,7 +281,7 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 		g_error_free( error );
 	}
 
-	stamp  = my_utils_stamp_to_str( ofo_tva_form_get_upd_stamp( form ), MY_STAMP_DMYYHM );
+	stamp  = my_stamp_to_str( ofo_tva_form_get_upd_stamp( form ), MY_STAMP_DMYYHM );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),

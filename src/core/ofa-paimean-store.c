@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -247,7 +248,7 @@ set_row_by_iter( ofaPaimeanStore *self, const ofoPaimean *paimean, GtkTreeIter *
 	GError *error;
 	GdkPixbuf *notes_png;
 
-	stamp  = my_utils_stamp_to_str( ofo_paimean_get_upd_stamp( paimean ), MY_STAMP_DMYYHM );
+	stamp  = my_stamp_to_str( ofo_paimean_get_upd_stamp( paimean ), MY_STAMP_DMYYHM );
 	label = ofo_paimean_get_label( paimean );
 	account = ofo_paimean_get_account( paimean );
 

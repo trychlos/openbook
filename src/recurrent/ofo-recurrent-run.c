@@ -32,6 +32,7 @@
 
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -545,8 +546,8 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaHub *hub )
 	connect = ofa_hub_get_connect( hub );
 
 	userid = ofa_idbconnect_get_account( connect );
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	mnemo = ofo_recurrent_run_get_mnemo( recrun );
 	model = ofo_recurrent_model_get_by_mnemo( hub, mnemo );
@@ -678,8 +679,8 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaHub *hub )
 	connect = ofa_hub_get_connect( hub );
 
 	userid = ofa_idbconnect_get_account( connect );
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE REC_T_RUN SET " );
 

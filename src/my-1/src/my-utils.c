@@ -32,6 +32,7 @@
 #include <stdarg.h>
 
 #include "my/my-isettings.h"
+#include "my/my-stamp.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
@@ -325,136 +326,6 @@ utils_unquote_cb( const GMatchInfo *info, GString *res, gpointer data )
 	g_string_append_printf( res, "%s", match );
 
 	return( FALSE );
-}
-
-/**
- * my_utils_stamp_set_now:
- *
- * Set the provided #GTimeVal to the current timestamp.
- */
-GTimeVal *
-my_utils_stamp_set_now( GTimeVal *timeval )
-{
-	GDateTime *dt;
-
-	dt = g_date_time_new_now_local();
-	g_date_time_to_timeval( dt, timeval );
-	g_date_time_unref( dt );
-
-	return( timeval );
-}
-
-/**
- * my_utils_stamp_set_from_sql:
- * @timeval: a pointer to a GTimeVal structure
- * @str: [allow-none]:
- *
- * SQL timestamp is returned as a string '2014-05-24 20:05:46'
- */
-GTimeVal *
-my_utils_stamp_set_from_sql( GTimeVal *timeval, const gchar *str )
-{
-	gint y, m, d, H, M, S;
-	struct tm broken;
-
-	sscanf( str, "%d-%d-%d %d:%d:%d", &y, &m, &d, &H, &M, &S );
-
-	memset( &broken, '\0', sizeof( broken ));
-	broken.tm_year = y - 1900;
-	broken.tm_mon = m-1;	/* 0 to 11 */
-	broken.tm_mday = d;
-	broken.tm_hour = H;
-	broken.tm_min = M;
-	broken.tm_sec = S;
-	broken.tm_isdst = -1;
-
-	timeval->tv_sec = mktime( &broken );
-	timeval->tv_usec = 0;
-
-	return( timeval );
-}
-
-/**
- * my_utils_stamp_set_from_str:
- * @timeval: a pointer to a GTimeVal structure
- * @str: [allow-none]:
- *
- * This function is used when sorting by timestamp.
- * The string is expected to be 'dd/mm/yyyy hh:mi'
- */
-GTimeVal *
-my_utils_stamp_set_from_str( GTimeVal *timeval, const gchar *str )
-{
-	gint y, m, d, H, M, S;
-	struct tm broken;
-
-	S = 0;
-	sscanf( str, "%d/%d/%d %d:%d", &d, &m, &y, &H, &M );
-
-	memset( &broken, '\0', sizeof( broken ));
-	broken.tm_year = y - 1900;
-	broken.tm_mon = m-1;	/* 0 to 11 */
-	broken.tm_mday = d;
-	broken.tm_hour = H;
-	broken.tm_min = M;
-	broken.tm_sec = S;
-	broken.tm_isdst = -1;
-
-	timeval->tv_sec = mktime( &broken );
-	timeval->tv_usec = 0;
-
-	return( timeval );
-}
-
-/**
- * my_utils_stamp_set_from_stamp:
- * @timeval: a pointer to a GTimeVal structure
- * @orig: [allow-none]:
- *
- * Returns a pointer to the destination @timeval.
- */
-GTimeVal *
-my_utils_stamp_set_from_stamp( GTimeVal *timeval, const GTimeVal *orig )
-{
-	if( orig ){
-		memcpy( timeval, orig, sizeof( GTimeVal ));
-	} else {
-		memset( timeval, '\0', sizeof( GTimeVal ));
-	}
-
-	return( timeval );
-}
-
-/**
- * my_utils_stamp_to_str:
- */
-gchar *
-my_utils_stamp_to_str( const GTimeVal *stamp, myStampFormat format )
-{
-	GDateTime *dt;
-	gchar *str;
-
-	str = NULL;
-
-	if( stamp ){
-		dt = g_date_time_new_from_timeval_local( stamp );
-		if( dt ){
-			switch( format ){
-				/* this is SQL format */
-				case MY_STAMP_YYMDHMS:
-					str = g_date_time_format( dt, "%Y-%m-%d %H:%M:%S" );
-					break;
-
-				/* this is a display format */
-				case MY_STAMP_DMYYHM:
-					str = g_date_time_format( dt, "%d/%m/%Y %H:%M" );
-					break;
-			}
-			g_date_time_unref( dt );
-		}
-	}
-
-	return( str );
 }
 
 /**
@@ -1263,7 +1134,7 @@ my_utils_container_updstamp_setup_full( GtkContainer *container,
 	label = my_utils_container_get_child_by_name( container, label_name );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	str_stamp = my_utils_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
+	str_stamp = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 	str = g_strdup_printf( "%s (%s)", str_stamp, user );
 
 	gtk_label_set_text( GTK_LABEL( label ), str );

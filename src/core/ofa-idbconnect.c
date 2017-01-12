@@ -31,6 +31,7 @@
 #include <archive_entry.h>
 #include <stdlib.h>
 
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-dossier-props.h"
@@ -1012,7 +1013,7 @@ backup_json_header( const ofaIDBConnect *self, const gchar *comment, sAsyncOpe *
     archive_entry_set_pathname( entry, ofa_dossier_props_get_title());
     archive_entry_set_filetype( entry, AE_IFREG );
     archive_entry_set_perm( entry, 0644 );
-	my_utils_stamp_set_now( &stamp );
+	my_stamp_set_now( &stamp );
     archive_entry_set_mtime( entry, stamp.tv_sec, 0 );
 
     if( archive_write_header( sope->archive, entry) != ARCHIVE_OK ){
@@ -1065,7 +1066,7 @@ backup_create_entry( const ofaIDBConnect *self, GFile *file, sAsyncOpe *sope )
 
     archive_entry_set_filetype( sope->entry, AE_IFREG );
     archive_entry_set_perm( sope->entry, 0644 );
-	my_utils_stamp_set_now( &stamp );
+	my_stamp_set_now( &stamp );
     archive_entry_set_mtime( sope->entry, stamp.tv_sec, 0 );
 
     if( archive_write_header( sope->archive, sope->entry) != ARCHIVE_OK ){

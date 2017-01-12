@@ -34,6 +34,7 @@
 #include "my/my-double.h"
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
@@ -798,8 +799,8 @@ rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect )
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_rate_get_label( rate ));
 	notes = my_utils_quote_sql( ofo_rate_get_notes( rate ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_RATES" );
 
@@ -973,8 +974,8 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *c
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_rate_get_label( rate ));
 	notes = my_utils_quote_sql( ofo_rate_get_notes( rate ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_RATES SET " );
 

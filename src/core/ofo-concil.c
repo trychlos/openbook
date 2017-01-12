@@ -31,6 +31,7 @@
 #include "my/my-date.h"
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -254,7 +255,7 @@ concil_get_by_query( const gchar *query, ofaHub *hub )
 			ofo_concil_set_user( concil, ( const gchar * ) icol->data );
 			icol = icol->next;
 			ofo_concil_set_stamp( concil,
-					my_utils_stamp_set_from_sql( &stamp, ( const gchar * ) icol->data ));
+					my_stamp_set_from_sql( &stamp, ( const gchar * ) icol->data ));
 			ofo_base_set_hub( OFO_BASE( concil ), hub );
 		}
 		ofa_idbconnect_free_results( result );
@@ -509,7 +510,7 @@ ofo_concil_set_stamp( ofoConcil *concil, const GTimeVal *stamp )
 
 	priv = ofo_concil_get_instance_private( concil );
 
-	my_utils_stamp_set_from_stamp( &priv->stamp, stamp );
+	my_stamp_set_from_stamp( &priv->stamp, stamp );
 }
 
 static void
@@ -571,7 +572,7 @@ concil_do_insert( ofoConcil *concil, const ofaIDBConnect *connect )
 	gboolean ok;
 
 	sdate = my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL );
-	stamp = my_utils_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS );
+	stamp = my_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS );
 
 	query = g_strdup_printf(
 			"INSERT INTO OFA_T_CONCIL "

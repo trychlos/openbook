@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -478,7 +479,7 @@ store_batline( ofaBatlineTreeview *self, ofoBatLine *line )
 	if( concil ){
 		sconcilid = g_strdup_printf( "%lu", ofo_concil_get_id( concil ));
 		cuser = ofo_concil_get_user( concil );
-		stamp = my_utils_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS );
+		stamp = my_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS );
 		ids = ofo_concil_get_ids( concil );
 		for( it=ids ; it ; it=it->next ){
 			scid = ( ofsConcilId * ) it->data;

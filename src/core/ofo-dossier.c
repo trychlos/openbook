@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -1304,7 +1305,7 @@ dossier_setup_rpid( ofoDossier *dossier )
 	gchar *rpid;
 
 	guint32 random32 = g_random_int();
-	my_utils_stamp_set_now( &stamp );
+	my_stamp_set_now( &stamp );
 	guint32 stamp_a = stamp.tv_sec & 0x00000000ffffffff;
 	/* this is nul
 	guint32 stamp_b = stamp.tv_usec & 0xffffffff00000000; */
@@ -1605,8 +1606,8 @@ do_update_properties( ofoDossier *dossier )
 	cstr = ofo_dossier_get_rpid( dossier );
 	g_string_append_printf( query, "DOS_RPID='%s',", cstr );
 
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	g_string_append_printf( query,
 			"DOS_UPD_USER='%s',DOS_UPD_STAMP='%s' ", userid, stamp_str );
 	g_free( stamp_str );
@@ -1685,8 +1686,8 @@ do_update_currency_properties( ofoDossier *dossier )
 		}
 
 		if( ok && count ){
-			my_utils_stamp_set_now( &stamp );
-			stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+			my_stamp_set_now( &stamp );
+			stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 			query = g_strdup_printf(
 					"UPDATE OFA_T_DOSSIER SET "
 					"	DOS_UPD_USER='%s',DOS_UPD_STAMP='%s' "

@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -265,7 +266,7 @@ set_row_by_iter( ofaRecPeriodStore *self, ofoRecPeriod *period, GtkTreeIter *ite
 	count = ofo_rec_period_get_details_count( period );
 	scount = g_strdup_printf( "%u", count );
 
-	stamp  = my_utils_stamp_to_str( ofo_rec_period_get_upd_stamp( period ), MY_STAMP_DMYYHM );
+	stamp  = my_stamp_to_str( ofo_rec_period_get_upd_stamp( period ), MY_STAMP_DMYYHM );
 
 	notes = ofo_rec_period_get_notes( period );
 	error = NULL;

@@ -25,6 +25,7 @@
 
    DBModel Core v34.
 
+   - my_stamp_xxx() functions now accept a display format (todo #1318).
    - ofa_idbconnect_backup_db(): new function.
    - ofaDossierProps: new class.
 

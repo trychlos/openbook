@@ -32,6 +32,7 @@
 
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
@@ -450,8 +451,8 @@ paimean_insert_main( ofoPaimean *paimean, const ofaIDBConnect *connect )
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_paimean_get_label( paimean ));
 	notes = my_utils_quote_sql( ofo_paimean_get_notes( paimean ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_PAIMEANS" );
 
@@ -538,8 +539,8 @@ paimean_update_main( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBCo
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_paimean_get_label( paimean ));
 	notes = my_utils_quote_sql( ofo_paimean_get_notes( paimean ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_PAIMEANS SET " );
 

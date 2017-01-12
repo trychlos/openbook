@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -314,7 +315,7 @@ set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat )
 	scount = g_strdup_printf( "%u", count );
 	used = ofo_bat_get_used_count( bat );
 	sunused = g_strdup_printf( "%u", count-used );
-	stamp  = my_utils_stamp_to_str( ofo_bat_get_upd_stamp( bat ), MY_STAMP_DMYYHM );
+	stamp  = my_stamp_to_str( ofo_bat_get_upd_stamp( bat ), MY_STAMP_DMYYHM );
 
 	error = NULL;
 	notes = ofo_bat_get_notes( bat );

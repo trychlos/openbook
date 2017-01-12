@@ -27,6 +27,7 @@
 #endif
 
 #include "my/my-date.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -259,7 +260,7 @@ set_row_by_iter( ofaLedgerStore *self, const ofoLedger *ledger, GtkTreeIter *ite
 	sdentry = my_date_to_str( &dentry, ofa_prefs_date_display( priv->hub ));
 	dclose = ofo_ledger_get_last_close( ledger );
 	sdclose = my_date_to_str( dclose, ofa_prefs_date_display( priv->hub ));
-	stamp  = my_utils_stamp_to_str( ofo_ledger_get_upd_stamp( ledger ), MY_STAMP_DMYYHM );
+	stamp  = my_stamp_to_str( ofo_ledger_get_upd_stamp( ledger ), MY_STAMP_DMYYHM );
 
 	notes = ofo_ledger_get_notes( ledger );
 	error = NULL;

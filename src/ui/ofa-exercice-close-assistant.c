@@ -35,6 +35,7 @@
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
 #include "my/my-style.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
@@ -1063,7 +1064,7 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->hub, ENT_STATUS_ROUGH );
 	count = g_list_length( entries );
 	i = 0;
-	my_utils_stamp_set_now( &stamp_start );
+	my_stamp_set_now( &stamp_start );
 	bar = get_new_bar( self, "p6-validating" );
 	gtk_widget_show_all( priv->p6_page );
 
@@ -1077,9 +1078,9 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 
 	ofo_entry_free_dataset( entries );
 
-	my_utils_stamp_set_now( &stamp_end );
-	sstart = my_utils_stamp_to_str( &stamp_start, MY_STAMP_YYMDHMS );
-	send = my_utils_stamp_to_str( &stamp_end, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp_end );
+	sstart = my_stamp_to_str( &stamp_start, MY_STAMP_YYMDHMS );
+	send = my_stamp_to_str( &stamp_end, MY_STAMP_YYMDHMS );
 	udelay = 1000000*(stamp_end.tv_sec-stamp_start.tv_sec)+stamp_end.tv_usec-stamp_start.tv_usec;
 
 	g_debug( "%s: stamp_start=%s, stamp_end=%s, count=%u: average is %'.5lf s",

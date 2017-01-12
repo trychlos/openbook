@@ -34,6 +34,7 @@
 #include "my/my-double.h"
 #include "my/my-icollectionable.h"
 #include "my/my-icollector.h"
+#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
@@ -1134,8 +1135,8 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), MY_DATE_SQL );
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
 	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), MY_DATE_SQL );
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO TVA_T_RECORDS" );
 
@@ -1388,8 +1389,8 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	corresp = my_utils_quote_sql( ofo_tva_record_get_correspondence( record ));
 	notes = my_utils_quote_sql( ofo_tva_record_get_notes( record ));
 	mnemo = ofo_tva_record_get_mnemo( record );
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), MY_DATE_SQL );
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
 	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), MY_DATE_SQL );
