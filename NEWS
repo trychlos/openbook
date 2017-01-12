@@ -14,7 +14,8 @@
 
  New features and improvements:
 
-   - 
+   - Backups now manage several data streams.
+   - Add to backup archives a JSON header.
 
  Bug fixes:
 
@@ -23,9 +24,10 @@
  Other changes:
 
    - ofa_idbconnect_backup_db(): new function.
-   - ofaJsonHeader: new class.
+   - ofaDossierProps: new class.
 
    + Add a prequisite on JSON-GLib library.
+   + Add a prequisite on libarchive library.
 
 -----------------------------------------------------------------------
  Version 0.64

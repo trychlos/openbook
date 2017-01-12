@@ -93,6 +93,7 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
 	ofa-dossier-prefs.c									\
+	ofa-dossier-props.c									\
 	ofa-entry-store.c									\
 	ofa-entry-store.h									\
 	ofa-extender-collection.c							\
@@ -135,7 +136,6 @@ libofa_core_la_SOURCES = \
 	ofa-itvcolumnable.c									\
 	ofa-itvfilterable.c									\
 	ofa-itvsortable.c									\
-	ofa-json-header.c									\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\
 	ofa-ledger-store.c									\

@@ -61,15 +61,18 @@
 #define BUFSIZE 4096
 
 typedef struct {
-	GtkWidget   *window;
-	GtkWidget   *textview;
-	GtkWidget   *close_btn;
-	gboolean     command_ok;
-	gulong       out_line;
-	gulong       err_line;
-	gboolean     verbose;
-	myISettings *settings;
-	GMainLoop   *loop;
+	GtkWidget    *window;
+	GtkWidget    *textview;
+	GtkWidget    *close_btn;
+	gboolean      command_ok;
+	gulong        out_line;
+	gulong        err_line;
+	gboolean      verbose;
+	myISettings  *settings;
+	GMainLoop    *loop;
+	ofaAsyncOpeCb msg_cb;
+	ofaAsyncOpeCb data_cb;
+	void         *user_data;
 }
 	sExecuteInfos;
 
@@ -79,15 +82,20 @@ static gchar      *cmdline_build_from_connect( const gchar *template, const ofaM
 static gchar      *cmdline_build_from_args( const gchar *template, const gchar *host, const gchar *socket, guint port, const gchar *account, const gchar *password, const gchar *dbname, const gchar *fname, const gchar *new_dbname );
 static gboolean    do_execute_sync( const gchar *template, const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, const gchar *fname, const gchar *newdb );
 static gboolean    do_execute_async( const gchar *template, const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
+static gboolean    do_execute_async2( const gchar *template, const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, ofaAsyncOpeCb msg_cb, ofaAsyncOpeCb data_cb, void *user_data );
 static void        async_create_window( sExecuteInfos *infos, const gchar *window_title );
 static GPid        async_exec_command( const gchar *cmdline, sExecuteInfos *infos );
+static GPid        async_exec_command2( const gchar *cmdline, sExecuteInfos *infos );
 static GIOChannel *async_setup_io_channel( gint fd, GIOFunc func, sExecuteInfos *infos );
 static gboolean    async_stdout_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos );
+static gboolean    async_stdout_fn2( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos );
 static gboolean    async_stdout_done( GIOChannel *ioc );
 static gboolean    async_stderr_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos );
+static gboolean    async_stderr_fn2( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos );
 static gboolean    async_stderr_done( GIOChannel *ioc );
 static void        async_display_output( const gchar *str, sExecuteInfos *infos );
 static void        backup_exit_cb( GPid child_pid, gint status, sExecuteInfos *infos );
+static void        backup_exit_cb2( GPid child_pid, gint status, sExecuteInfos *infos );
 static void        restore_exit_cb( GPid child_pid, gint status, sExecuteInfos *infos );
 static gboolean    do_duplicate_grants( ofaIDBConnect *cnx, const gchar *host, const gchar *user_account, const gchar *prev_dbname, const gchar *new_dbname );
 
@@ -148,6 +156,58 @@ ofa_mysql_cmdline_backup_run( ofaMysqlConnect *connect, const gchar *uri )
 				TRUE );
 
 	g_free( fname );
+	g_free( template );
+
+	ofa_mysql_connect_query( connect, "UNLOCK TABLES" );
+
+	return( ok );
+}
+
+/**
+ * ofa_mysql_cmdline_backup_db_run:
+ * @connect: a #ofaIDBConnect object which handles a user connection
+ *  on the dossier/exercice to be backuped.
+ * @msg_cb: a callback for messages to be displayed.
+ * @data_cb: a callback for datas to be archived.
+ * @user_data: user data to be provided to the callbacks.
+ *
+ * Backup the currently connected database.
+ *
+ * The outputed SQL file doesn't contain any CREATE DATABASE nor USE,
+ * so that we will be able to reload the data to any database name.
+ *
+ * Returns: %TRUE if the database has been successfully backuped,
+ * %FALSE else.
+ */
+gboolean
+ofa_mysql_cmdline_backup_db_run( ofaMysqlConnect *connect, ofaAsyncOpeCb msg_cb, ofaAsyncOpeCb data_cb, void *user_data )
+{
+	gchar *template;
+	ofaIDBDossierMeta *dossier_meta;
+	ofaIDBExerciceMeta *exercice_meta;
+	ofaIDBProvider *provider;
+	ofaHub *hub;
+	gboolean ok;
+
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
+
+	ofa_mysql_connect_query( connect, "FLUSH TABLES WITH READ LOCK" );
+
+	dossier_meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
+	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
+	hub = ofa_idbprovider_get_hub( provider );
+	template = ofa_mysql_user_prefs_get_backup_command( hub );
+	template = g_strdup( "mysqldump --verbose %O -u%U -p%P %B" );
+	exercice_meta = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
+
+	ok = do_execute_async2(
+				template,
+				connect,
+				OFA_MYSQL_EXERCICE_META( exercice_meta ),
+				msg_cb,
+				data_cb,
+				user_data );
+
 	g_free( template );
 
 	ofa_mysql_connect_query( connect, "UNLOCK TABLES" );
@@ -549,6 +609,50 @@ do_execute_async( const gchar *template,
 	return( ok );
 }
 
+static gboolean
+do_execute_async2( const gchar *template,
+					const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period,
+					ofaAsyncOpeCb msg_cb, ofaAsyncOpeCb data_cb, void *user_data )
+{
+	static const gchar *thisfn = "ofa_mysql_cmdline_do_execute_async2";
+	gchar *cmdline;
+	sExecuteInfos *infos;
+	GPid child_pid;
+	gboolean ok;
+	guint source_id;
+
+	cmdline = cmdline_build_from_connect( template, connect, period, NULL, NULL );
+	g_debug( "%s: cmdline=%s", thisfn, cmdline );
+
+	infos = g_new0( sExecuteInfos, 1 );
+	infos->command_ok = FALSE;
+	infos->out_line = 0;
+	infos->err_line = 0;
+	infos->msg_cb = msg_cb;
+	infos->data_cb = data_cb;
+	infos->user_data = user_data;
+
+	child_pid = async_exec_command2( cmdline, infos );
+	g_debug("%s: child_pid=%lu", thisfn, ( gulong ) child_pid );
+
+	if( child_pid != ( GPid ) 0 ){
+		infos->loop = g_main_loop_new( NULL, FALSE );
+		/* Watch the child, so we get the exit status */
+		source_id = g_child_watch_add( child_pid, ( GChildWatchFunc ) backup_exit_cb2, infos );
+		g_debug( "%s: returning from g_child_watch_add, source_id=%u", thisfn, source_id );
+		g_main_loop_run( infos->loop );
+		g_main_loop_unref( infos->loop );
+	}
+
+	ok = infos->command_ok;
+
+	g_free( infos );
+	g_free( cmdline );
+
+	g_debug( "%s: returning %s", thisfn, ok ? "True":"False" );
+	return( ok );
+}
+
 /*
  * the dialog is only created when running verbosely
  */
@@ -643,6 +747,61 @@ async_exec_command( const gchar *cmdline, sExecuteInfos *infos )
 	return( ok ? child_pid : ( GPid ) 0 );
 }
 
+static GPid
+async_exec_command2( const gchar *cmdline, sExecuteInfos *infos )
+{
+	static const gchar *thisfn = "ofa_mysql_cmdline_async_exec_command2";
+	gboolean ok;
+	gchar *cmd;
+	gint argc;
+	gchar **argv;
+	GError *error;
+	GPid child_pid;
+	gint stdout_fd;
+	gint stderr_fd;
+	GIOChannel *ioc;
+
+	ok = FALSE;
+	error = NULL;
+	child_pid = ( GPid ) 0;
+
+	cmd = g_strdup_printf( "/bin/sh -c \"%s\"", cmdline );
+
+	if( !g_shell_parse_argv( cmd, &argc, &argv, &error )){
+		g_warning( "%s: g_shell_parse_argv: %s", thisfn, error->message );
+		g_error_free( error );
+
+	} else if( !g_spawn_async_with_pipes(
+						NULL,
+						argv,
+						NULL,
+						G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD,
+						NULL,
+						NULL,
+						&child_pid,
+						NULL,
+						&stdout_fd,
+						&stderr_fd,
+						&error )){
+		g_warning( "%s: g_spawn_async_with_pipes: %s", thisfn, error->message );
+		g_error_free( error );
+	} else {
+		ok = TRUE;
+	}
+
+	g_strfreev( argv );
+	g_free( cmd );
+
+	if( ok ){
+		/* Now use GIOChannels to monitor stdout and stderr */
+		ioc = async_setup_io_channel( stdout_fd, ( GIOFunc ) async_stdout_fn2, infos );
+		g_io_channel_set_buffer_size( ioc, 16384 );	// have a 16k buffer on stdout for data stream
+		async_setup_io_channel( stderr_fd, ( GIOFunc ) async_stderr_fn2, infos );
+	}
+
+	return( ok ? child_pid : ( GPid ) 0 );
+}
+
 /*
  * sets up callback to call whenever something interesting
  *   happens on a pipe
@@ -657,10 +816,10 @@ async_setup_io_channel( gint fd, GIOFunc func, sExecuteInfos *infos )
 
 	/* Set IOChannel encoding to none to make
 	 *  it fit for binary data */
-	/*g_io_channel_set_encoding( ioc, NULL, NULL );*/
+	g_io_channel_set_encoding( ioc, NULL, NULL );
 	/* GLib-WARNING **: Need to have NULL encoding to set
 	 * the buffering state of the channel. */
-	/*g_io_channel_set_buffered( ioc, FALSE );*/
+	g_io_channel_set_buffered( ioc, FALSE );
 
 	/* Tell the io channel to close the file descriptor
 	 *  when the io channel gets destroyed */
@@ -677,7 +836,7 @@ async_setup_io_channel( gint fd, GIOFunc func, sExecuteInfos *infos )
 }
 
 /*
- * called when there's data to read from the stderr pipe
+ * called when there's data to read from the stdout pipe
  *   or when the pipe is closed (ie. the program terminated)
  */
 static gboolean
@@ -711,6 +870,43 @@ async_stdout_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
 }
 
 /*
+ * called when there's data to read from the stdout pipe
+ *   or when the pipe is closed (ie. the program terminated)
+ * => transfer the available data to the output data_stream
+ *
+ * return FALSE if the event source should be removed
+ */
+static gboolean
+async_stdout_fn2( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
+{
+	static const gchar *thisfn = "ofa_mysql_cmdline_async_stdout_fn";
+	GIOStatus ret;
+	gsize bufsize, read;
+	gchar *iobuf;
+
+	/* data for us to read? */
+	if( cond & (G_IO_IN | G_IO_PRI )){
+		bufsize = g_io_channel_get_buffer_size( ioc );
+		iobuf = g_new0( gchar, bufsize );
+		ret = g_io_channel_read_chars( ioc, iobuf, bufsize, &read, NULL );
+		//g_debug( "%s: read=%lu", thisfn, read );
+		if( read <= 0 || ret != G_IO_STATUS_NORMAL ){
+			g_warning( "%s: aborting with read=%ld, ret=%d", thisfn, read, ( gint ) ret );
+			return( async_stdout_done( ioc ));	/* = return FALSE */
+		}
+
+		/* the buffer is released by the callback */
+		infos->data_cb( iobuf, read, infos->user_data );
+	}
+
+	if( cond & ( G_IO_ERR | G_IO_HUP | G_IO_NVAL )){
+		return( async_stdout_done( ioc ));		/* = return FALSE */
+	}
+
+	return( TRUE );
+}
+
+/*
  * Called when the pipe is closed (ie. command terminated)
  *  Always returns FALSE (to make it nicer to use in the callback)
  */
@@ -730,17 +926,49 @@ async_stderr_fn( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
 
 	/* data for us to read? */
 	if( cond & (G_IO_IN | G_IO_PRI )){
-		if( infos->verbose ){
-			len = 0;
-			memset( buf, 0x00, BUFSIZE );
-			ret = g_io_channel_read_chars( ioc, buf, BUFSIZE, &len, NULL );
-			if( len <= 0 || ret != G_IO_STATUS_NORMAL ){
-				return( async_stderr_done( ioc )); /* = return FALSE */
-			}
-			str = g_strdup_printf( "[stderr %lu] %s\n", ++infos->err_line, buf );
-			async_display_output( str, infos );
-			g_free( str );
+		len = 0;
+		memset( buf, 0x00, BUFSIZE );
+		ret = g_io_channel_read_chars( ioc, buf, BUFSIZE, &len, NULL );
+		if( len <= 0 || ret != G_IO_STATUS_NORMAL ){
+			return( async_stderr_done( ioc )); /* = return FALSE */
 		}
+		str = g_strdup_printf( "[stderr %lu] %s\n", ++infos->err_line, buf );
+		if( infos->verbose ){
+			async_display_output( str, infos );
+		} else {
+			g_debug( "async_stderr_fn: str=%s", str );
+		}
+		g_free( str );
+	}
+
+	if( cond & ( G_IO_ERR | G_IO_HUP | G_IO_NVAL )){
+		return( async_stderr_done( ioc )); /* = return FALSE */
+	}
+
+	return( TRUE );
+}
+
+static gboolean
+async_stderr_fn2( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
+{
+	static const gchar *thisfn = "ofa_mysql_cmdline_async_stderr_fn2";
+	GIOStatus ret;
+	gsize bufsize, read;
+	gchar *iobuf;
+
+	/* data for us to read? */
+	if( cond & (G_IO_IN | G_IO_PRI )){
+		bufsize = g_io_channel_get_buffer_size( ioc );
+		iobuf = g_new0( gchar, bufsize );
+		ret = g_io_channel_read_chars( ioc, iobuf, bufsize, &read, NULL );
+		//g_debug( "%s: read=%lu", thisfn, read );
+		if( read <= 0 || ret != G_IO_STATUS_NORMAL ){
+			g_warning( "%s: aborting with read=%ld, ret=%d", thisfn, read, ( gint ) ret );
+			return( async_stdout_done( ioc ));	/* = return FALSE */
+		}
+
+		/* the buffer is released by the callback */
+		infos->msg_cb( iobuf, read, infos->user_data );
 	}
 
 	if( cond & ( G_IO_ERR | G_IO_HUP | G_IO_NVAL )){
@@ -865,6 +1093,51 @@ backup_exit_cb( GPid child_pid, gint status, sExecuteInfos *infos )
 	}
 
 	g_free( msg );
+}
+
+static void
+backup_exit_cb2( GPid child_pid, gint status, sExecuteInfos *infos )
+{
+	static const gchar *thisfn = "ofa_mysql_cmdline_backup_exit_cb2";
+	gchar *msg;
+
+	g_debug("%s: child_pid=%lu, exit status=%d", thisfn, ( gulong ) child_pid, status );
+	msg = NULL;
+
+	/* Not sure how the exit status works on win32. Unix code follows */
+#ifdef G_OS_UNIX
+	if( WIFEXITED( status )){			/* did child terminate in a normal way? */
+
+		if( WEXITSTATUS( status ) == EXIT_SUCCESS ){
+			msg = g_strdup( _( "Backup has successfully run" ));
+			infos->command_ok = TRUE;
+			g_debug( "%s: setting command_ok to TRUE", thisfn );
+
+		} else {
+			msg = g_strdup_printf(
+						_( "Backup has exited with error code=%d" ), WEXITSTATUS( status ));
+		}
+	} else if( WIFSIGNALED( status )){	/* was it terminated by a signal ? */
+		msg = g_strdup_printf(
+						_( "Backup has exited with signal %d" ), WTERMSIG( status ));
+	} else {
+		msg = g_strdup( _( "Backup was terminated with errors" ));
+	}
+#endif /* G_OS_UNIX */
+
+	g_spawn_close_pid( child_pid );		/* does nothing on unix, needed on win32 */
+
+	if( !msg ){
+		if( infos->command_ok ){
+			msg = g_strdup( _( "Dossier successfully backuped" ));
+		} else {
+			msg = g_strdup( _( "An error occured while backuping the dossier" ));
+		}
+	}
+	g_info( "%s: msg=%s", thisfn, msg );
+	g_free( msg );
+
+	g_main_loop_quit( infos->loop );
 }
 
 static void

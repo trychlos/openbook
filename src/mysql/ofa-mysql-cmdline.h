@@ -30,8 +30,10 @@
  * @short_description: #ofaMysql class definition.
  */
 
-#include "ofa-mysql-connect.h"
-#include "ofa-mysql-exercice-meta.h"
+#include "api/ofa-idbconnect.h"
+
+#include "mysql/ofa-mysql-connect.h"
+#include "mysql/ofa-mysql-exercice-meta.h"
 
 G_BEGIN_DECLS
 
@@ -39,6 +41,11 @@ const gchar *ofa_mysql_cmdline_backup_get_default_command ( void );
 
 gboolean     ofa_mysql_cmdline_backup_run                 ( ofaMysqlConnect *connect,
 																const gchar *uri );
+
+gboolean     ofa_mysql_cmdline_backup_db_run              ( ofaMysqlConnect *connect,
+																ofaAsyncOpeCb msg_cb,
+																ofaAsyncOpeCb data_cb,
+																void *user_data );
 
 const gchar *ofa_mysql_cmdline_restore_get_default_command( void );
 

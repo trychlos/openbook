@@ -275,9 +275,12 @@ do_backup( ofaBackup *self )
 	my_isettings_set_string( settings, group, st_backup_folder, folder );
 	g_free( folder );
 
-	toplevel = my_utils_widget_get_toplevel( priv->dialog );
-	ok = ofa_idbconnect_backup_db( priv->connect, NULL, uri, toplevel );
-	//ok = ofa_idbconnect_backup( priv->connect, uri );
+	if( 1 ){
+		toplevel = my_utils_widget_get_toplevel( priv->dialog );
+		ok = ofa_idbconnect_backup_db( priv->connect, NULL, uri, toplevel );
+	} else {
+		ok = ofa_idbconnect_backup( priv->connect, uri );
+	}
 
 	g_free( uri );
 

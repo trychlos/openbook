@@ -35,6 +35,7 @@ api_include_HEADERS = \
 	ofa-date-filter-hv-bin.h							\
 	ofa-dossier-collection.h							\
 	ofa-dossier-prefs.h									\
+	ofa-dossier-props.h									\
 	ofa-extender-collection.h							\
 	ofa-extender-module.h								\
 	ofa-formula-engine.h								\
@@ -78,7 +79,6 @@ api_include_HEADERS = \
 	ofa-itvfilterable.h									\
 	ofa-itvsortable.h									\
 	ofa-itree-adder.h									\
-	ofa-json-header.h									\
 	ofa-list-store.h									\
 	ofa-ope-template-editable.h							\
 	ofa-ope-template-store.h							\

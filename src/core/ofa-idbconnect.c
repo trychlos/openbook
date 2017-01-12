@@ -27,13 +27,13 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <archive.h>
+#include <archive_entry.h>
 #include <stdlib.h>
 
-#include "my/my-iident.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-extender-collection.h"
-#include "api/ofa-extender-module.h"
+#include "api/ofa-dossier-props.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-editor.h"
@@ -41,8 +41,6 @@
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-json-header.h"
-#include "api/ofo-dossier.h"
 
 /* some data attached to each IDBConnect instance
  * we store here the data provided by the application
@@ -56,23 +54,53 @@ typedef struct {
 }
 	sIDBConnect;
 
-#define IDBCONNECT_LAST_VERSION           1
-#define IDBCONNECT_DATA                  "idbconnect-data"
+/* a data structure used to manage async messages
+ * and data compression
+ * (cf. e.g. backup_db() and restore_db())
+ */
+typedef struct {
+
+	/* verbose mode
+	 */
+	GtkWidget            *window;
+	GtkWidget            *textview;
+	GtkWidget            *close_btn;
+	myISettings          *settings_iface;
+	const gchar          *settings_name;
+
+	/* output
+	 */
+	struct archive       *archive;
+	struct archive_entry *entry;
+}
+	sAsyncOpe;
+
+#define IDBCONNECT_LAST_VERSION            1
+#define IDBCONNECT_DATA                   "idbconnect-data"
+
+static const gchar *st_props_header     = "DossierPropsHeader";
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-static GType          register_type( void );
-static void           interface_base_init( ofaIDBConnectInterface *klass );
-static void           interface_base_finalize( ofaIDBConnectInterface *klass );
-static gboolean       idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error );
-static void           audit_query( const ofaIDBConnect *connect, const gchar *query );
-static gchar         *quote_query( const gchar *query );
-static void           error_query( const ofaIDBConnect *connect, const gchar *query );
-static ofaJsonHeader *build_json_header( const ofaIDBConnect *self, const gchar *comment );
-static gboolean       backup_json_header( const ofaIDBConnect *connect, GOutputStream *output_stream, const gchar *json );
-static gboolean       set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr );
-static sIDBConnect   *get_instance_data( const ofaIDBConnect *connect );
-static void           on_instance_finalized( sIDBConnect *sdata, GObject *finalized_dbconnect );
+static GType           register_type( void );
+static void            interface_base_init( ofaIDBConnectInterface *klass );
+static void            interface_base_finalize( ofaIDBConnectInterface *klass );
+static gboolean        idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error );
+static void            audit_query( const ofaIDBConnect *connect, const gchar *query );
+static gchar          *quote_query( const gchar *query );
+static void            error_query( const ofaIDBConnect *connect, const gchar *query );
+static gboolean        backup_create_archive( const ofaIDBConnect *self, GFile *file, sAsyncOpe *sope );
+static struct archive *backup_new_archive( const gchar *filename );
+static gboolean        backup_json_header( const ofaIDBConnect *self, const gchar *comment, sAsyncOpe *sope );
+static gboolean        backup_create_entry( const ofaIDBConnect *self, GFile *file, sAsyncOpe *sope );
+static void            backup_data_cb( gchar *buffer, gsize bufsize, void *user_data );
+static void            backup_end_msg( const ofaIDBConnect *self, GtkWindow *parent, gboolean ok, sAsyncOpe *sope );
+static void            msg_window_setup( const ofaIDBConnect *self, GtkWindow *parent, const gchar *title, sAsyncOpe *sope );
+static void            msg_window_on_close( GtkWidget *button, sAsyncOpe *sope );
+static void            msg_window_cb( gchar *buffer, gsize bufsize, void *user_data );
+static gboolean        set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr );
+static sIDBConnect    *get_instance_data( const ofaIDBConnect *connect );
+static void            on_instance_finalized( sIDBConnect *sdata, GObject *finalized_dbconnect );
 
 /**
  * ofa_idbconnect_get_type:
@@ -857,12 +885,9 @@ gboolean
 ofa_idbconnect_backup_db( const ofaIDBConnect *connect, const gchar *comment, const gchar *uri, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_db";
+	sAsyncOpe *sope;
 	gboolean ok;
 	GFile *file;
-	GError *error;
-	GFileOutputStream *output_stream;
-	ofaJsonHeader *json_header;
-	gchar *str;
 
 	g_debug( "%s: connect=%p, comment=%s, uri=%s, parent=%p",
 			thisfn, ( void * ) connect, comment, uri, ( void * ) parent );
@@ -871,164 +896,347 @@ ofa_idbconnect_backup_db( const ofaIDBConnect *connect, const gchar *comment, co
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
 
-	ok = TRUE;
+	ok = FALSE;
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->backup_db ){
 
-		/* create an output stream for the output file */
-		error = NULL;
 		file = g_file_new_for_uri( uri );
-		output_stream = g_file_replace( file, NULL, FALSE, G_FILE_CREATE_REPLACE_DESTINATION, NULL, &error );
-		if( !output_stream ){
-			my_utils_msg_dialog( parent, GTK_MESSAGE_ERROR, error->message );
-			g_error_free( error );
+		sope = g_new0( sAsyncOpe, 1 );
 
-		} else {
-			/* write the JSON header to the output stream */
-			json_header = build_json_header( connect, comment );
-			str = ofa_json_header_get_string( json_header );
-			ok = backup_json_header( connect, G_OUTPUT_STREAM( output_stream ), str );
-			g_free( str );
-			g_object_unref( json_header );
+		ok = backup_create_archive( connect, file, sope ) &&
+				backup_json_header( connect, comment, sope ) &&
+				backup_create_entry( connect, file, sope );
 
-			/* write the DBMS backup to the output stream */
-
-			g_output_stream_close( G_OUTPUT_STREAM( output_stream ), NULL, NULL );
-			g_object_unref( output_stream );
+		/* ask the DBMS plugin to provide its datas and messages streams */
+		/* define intermediate streams */
+		if( parent ){
+			sope->settings_name = "ofaIDBConnectBackup";
+			msg_window_setup( connect, parent, ( "Openbook backup" ), sope );
 		}
 
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->backup_db( connect, msg_window_cb, backup_data_cb, sope );
+
+		/* end of backup stream */
+	    archive_write_finish_entry( sope->archive );
+
+		if( parent ){
+			backup_end_msg( connect, parent, ok, sope );
+		}
+
+	    /* release DBMS backup resources */
+	    g_debug( "%s: closing streams and releasing resources", thisfn );
+		archive_entry_free( sope->entry );
+		archive_write_close( sope->archive );
+		archive_write_free( sope->archive );
+		g_free( sope );
 		g_object_unref( file );
 
 	} else {
 		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'backup_db()' method",
 				thisfn, G_OBJECT_TYPE_NAME( connect ));
-		ok = FALSE;
 	}
 
 	return( ok );
 }
 
-static ofaJsonHeader *
-build_json_header( const ofaIDBConnect *self, const gchar *comment )
+/*
+ * create the output archive file, forcing a .zip extension
+ */
+static gboolean
+backup_create_archive( const ofaIDBConnect *self, GFile *file, sAsyncOpe *sope )
 {
-	ofaJsonHeader *header;
-	sIDBConnect *sdata;
-	ofaIDBDossierMeta *dossier_meta;
-	ofaIDBProvider *provider;
-	ofaHub *hub;
-	ofoDossier *dossier;
-	ofaExtenderCollection *extenders;
-	ofaExtenderModule *plugin;
-	const GList *modules, *itm;
-	GList *dbmodels, *itb;
-	gchar *canon, *display, *id, *version;
+	static const gchar *thisfn = "ofa_idbconnect_backup_create_archive";
+	gchar *pathname, *filename;
 
-	dossier_meta = ofa_idbconnect_get_dossier_meta( self );
-	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
-	hub = ofa_idbprovider_get_hub( provider );
+	pathname = g_file_get_path( file );
+	filename = my_utils_str_replace( pathname, "\\..*$", ".zip" );
+	g_debug( "%s: filename=%s", thisfn, filename );
 
-	header = ofa_json_header_new();
+	sope->archive = backup_new_archive( filename );
 
-	dossier = ofa_hub_get_dossier( hub );
-	ofa_json_header_set_is_current( header, ofo_dossier_is_current( dossier ));
-	ofa_json_header_set_begin_date( header, ofo_dossier_get_exe_begin( dossier ));
-	ofa_json_header_set_end_date( header, ofo_dossier_get_exe_end( dossier ));
+	g_free( filename );
+	g_free( pathname );
 
-	extenders = ofa_hub_get_extender_collection( hub );
-	modules = ofa_extender_collection_get_modules( extenders );
-
-	for( itm=modules ; itm ; itm=itm->next ){
-		plugin = OFA_EXTENDER_MODULE( itm->data );
-		canon = ofa_extender_module_get_canon_name( plugin );
-		display = ofa_extender_module_get_display_name( plugin );
-		version = ofa_extender_module_get_version( plugin );
-		ofa_json_header_set_plugin( header, canon, display, version );
-		g_free( version );
-		g_free( display );
-		g_free( canon );
-	}
-
-	dbmodels = ofa_hub_get_for_type( hub, OFA_TYPE_IDBMODEL );
-
-	for( itb=dbmodels ; itb ; itb=itb->next ){
-		if( MY_IS_IIDENT( itb->data )){
-			id = my_iident_get_canon_name( MY_IIDENT( itb->data ), NULL );
-			version = my_iident_get_version( MY_IIDENT( itb->data ), NULL );
-			ofa_json_header_set_dbmodel( header, id, version );
-			g_free( version );
-			g_free( id );
-		}
-	}
-
-	g_list_free_full( dbmodels, ( GDestroyNotify ) g_object_unref );
-
-	ofa_json_header_set_comment( header, comment );
-
-	sdata = get_instance_data( self );
-	ofa_json_header_set_current_user( header, sdata->account );
-
-	return( header );
+	return( sope->archive != NULL );
 }
 
+/*
+ * Returns: a new output archive file, configured for ZIP compression
+ */
+static struct archive *
+backup_new_archive( const gchar *filename )
+{
+	static const gchar *thisfn = "ofa_idbconnect_backup_new_archive";
+	struct archive *a;
+
+	a = archive_write_new();
+	if( !a ){
+		g_warning( "%s: unable to allocate new archive object", thisfn );
+		return( FALSE );
+	}
+
+	if( archive_write_set_format_zip( a ) !=  ARCHIVE_OK ){
+		g_warning( "%s: archive_write_set_format_zip: %s", thisfn, archive_error_string( a ));
+		archive_write_free( a );
+		return( NULL );
+	}
+
+	if( archive_write_open_filename( a, filename ) != ARCHIVE_OK ){
+		g_warning( "%s: archive_write_open_filename: %s", thisfn, archive_error_string( a ));
+		archive_write_free( a );
+		return( NULL );
+	}
+
+	return( a );
+}
+
+/*
+ * Write the DossierProps to the archive file as a JSON string
+ */
 static gboolean
-backup_json_header( const ofaIDBConnect *connect, GOutputStream *output_stream, const gchar *json )
+backup_json_header( const ofaIDBConnect *self, const gchar *comment, sAsyncOpe *sope )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_json_header";
-	GZlibCompressor *compressor;
-	gboolean finished, abort;
-	GConverterResult result;
-	GError *error;
-	gsize insize, outsize, bytes_read, bytes_written;
-	void *outbuf;
-	GInputStream *input_stream;
-	GFileInfo *info;
+	sIDBConnect *sdata;
+	ofaIDBProvider *provider;
+	ofaHub *hub;
+	gchar *json;
+	struct archive_entry *entry;
+	gsize written;
+	GTimeVal stamp;
 
-	/* create a compressor */
-	compressor = g_zlib_compressor_new( G_ZLIB_COMPRESSOR_FORMAT_GZIP, -1 );
-	info = g_file_info_new();
-	g_file_info_set_name( info, "JSON_Header" );
-	g_zlib_compressor_set_file_info( compressor, info );
-	g_object_unref( info );
+	entry = archive_entry_new();
+	if( !entry ){
+		g_warning( "%s: unable to allocate new archive_entry object", thisfn );
+		return( FALSE );
+	}
 
-	finished = FALSE;
-	abort = FALSE;
-	error = NULL;
-	insize = my_strlen( json );
-	outsize = 2*insize;					// hope this is enough
-	outbuf = g_new0( gchar, outsize );
+    archive_entry_set_pathname( entry, st_props_header );
+    archive_entry_set_filetype( entry, AE_IFREG );
+    archive_entry_set_perm( entry, 0644 );
+	my_utils_stamp_set_now( &stamp );
+    archive_entry_set_mtime( entry, stamp.tv_sec, 0 );
 
-	while( !finished && !abort ){
-		result = g_converter_convert(
-				G_CONVERTER( compressor ), json, insize, outbuf, outsize, G_CONVERTER_INPUT_AT_END, &bytes_read, &bytes_written, &error );
-		/* when writing the json header
-		 * result=G_CONVERTER_FINISHED, read=516, written=273 */
-		switch( result ){
-			case G_CONVERTER_ERROR:
-				g_warning( "%s: result=G_CONVERTER_ERROR, error=%s", thisfn, error->message );
-				g_error_free( error );
-				abort = TRUE;
-				break;
-			case G_CONVERTER_CONVERTED:
-				g_debug( "%s: result=G_CONVERTER_CONVERTED, read=%lu, written=%lu", thisfn, bytes_read, bytes_written );
-				break;
-			case G_CONVERTER_FINISHED:
-				g_debug( "%s: result=G_CONVERTER_FINISHED, read=%lu, written=%lu", thisfn, bytes_read, bytes_written );
-				input_stream = g_memory_input_stream_new_from_data( outbuf, outsize, NULL );
-				g_output_stream_splice( output_stream, input_stream, G_OUTPUT_STREAM_SPLICE_CLOSE_SOURCE, NULL, NULL );
-				g_object_unref( input_stream );
-				finished = TRUE;
-				break;
-			case G_CONVERTER_FLUSHED:
-				g_debug( "%s: result=G_CONVERTER_FLUSHED, read=%lu, written=%lu", thisfn, bytes_read, bytes_written );
-				finished = TRUE;
-				break;
+    if( archive_write_header( sope->archive, entry) != ARCHIVE_OK ){
+    	g_warning( "%s: archive_write_header: %s", thisfn, archive_error_string( sope->archive ));
+    	archive_entry_free( entry );
+    	return( FALSE );
+    }
+
+	sdata = get_instance_data( self );
+	provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
+	hub = ofa_idbprovider_get_hub( provider );
+	json = ofa_dossier_props_get_json_string_ex( hub, comment );
+
+	written = archive_write_data( sope->archive, json, my_strlen( json ));
+	archive_write_finish_entry( sope->archive );
+	archive_entry_free( entry );
+
+	if( written < 0 ){
+		g_warning( "%s: archive_write_data: %s", thisfn, archive_error_string( sope->archive ));
+	} else {
+		g_debug( "%s: json=%s, written=%lu", thisfn, json, written );
+    }
+
+	g_free( json );
+
+	return( written > 0 );
+}
+
+/*
+ * Create a new entry for hosting backup datas
+ */
+static gboolean
+backup_create_entry( const ofaIDBConnect *self, GFile *file, sAsyncOpe *sope )
+{
+	static const gchar *thisfn = "ofa_idbconnect_backup_create_entry";
+	gchar *basename, *name;
+	GTimeVal stamp;
+
+	sope->entry = archive_entry_new();
+	if( !sope->entry ){
+		g_warning( "%s: unable to allocate new archive_entry object", thisfn );
+		return( FALSE );
+	}
+
+	basename = g_file_get_basename( file );
+	name = my_utils_str_replace( basename, "\\..*$", "" );
+    archive_entry_set_pathname( sope->entry, name );
+    g_free( name );
+    g_free( basename );
+
+    archive_entry_set_filetype( sope->entry, AE_IFREG );
+    archive_entry_set_perm( sope->entry, 0644 );
+	my_utils_stamp_set_now( &stamp );
+    archive_entry_set_mtime( sope->entry, stamp.tv_sec, 0 );
+
+    if( archive_write_header( sope->archive, sope->entry) != ARCHIVE_OK ){
+    	g_warning( "%s: archive_write_header: %s", thisfn, archive_error_string( sope->archive ));
+    	archive_entry_free( sope->entry );
+    	sope->entry = NULL;
+    	return( FALSE );
+    }
+
+	return( TRUE );
+}
+
+/*
+ * This callback is called each time the backup process has written
+ * something in its output stream
+ *
+ * @res: may be %NULL to signal the end of the operation.
+ */
+static void
+backup_data_cb( gchar *buffer, gsize bufsize, void *user_data )
+{
+	static const gchar *thisfn = "ofa_idbconnect_backup_data_cb";
+	sAsyncOpe *sope = ( sAsyncOpe * ) user_data;
+	gsize written;
+
+	/* get the binary data from the output stream from the plugin */
+	written = archive_write_data( sope->archive, buffer, bufsize );
+	if( written < 0 ){
+		g_debug( "%s: %s", thisfn, archive_error_string( sope->archive ));
+	} else {
+		g_debug( "%s: insize=%lu, written=%lu", thisfn, bufsize, written );
+	}
+
+	g_free( buffer );
+}
+
+static void
+backup_end_msg( const ofaIDBConnect *self, GtkWindow *parent, gboolean ok, sAsyncOpe *sope )
+{
+	gchar *msg;
+	GtkWidget *dlg;
+
+	if( ok ){
+		msg = g_strdup( _( "Dossier successfully backuped" ));
+	} else {
+		msg = g_strdup( _( "An error occured while backuping the dossier" ));
+	}
+
+	dlg = gtk_message_dialog_new(
+				parent,
+				GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_INFO,
+				GTK_BUTTONS_CLOSE,
+				"%s", msg );
+
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( dlg );
+
+	gtk_widget_set_sensitive( sope->close_btn, TRUE );
+	gtk_dialog_run( GTK_DIALOG( sope->window ));
+}
+
+static void
+msg_window_setup( const ofaIDBConnect *self, GtkWindow *parent, const gchar *title, sAsyncOpe *sope )
+{
+	sIDBConnect *sdata;
+	ofaIDBProvider *provider;
+	ofaHub *hub;
+	GtkWidget *content, *grid, *scrolled;
+
+	sope->window = gtk_dialog_new_with_buttons(
+							title,
+							parent,
+							GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+							_( "_Close" ), GTK_RESPONSE_CLOSE,
+							NULL );
+
+	content = gtk_dialog_get_content_area( GTK_DIALOG( sope->window ));
+
+	grid = gtk_grid_new();
+	gtk_container_add( GTK_CONTAINER( content ), grid );
+
+	scrolled = gtk_scrolled_window_new( NULL, NULL );
+	my_utils_widget_set_margins( scrolled, 4, 6, 4, 4 );
+	gtk_scrolled_window_set_shadow_type( GTK_SCROLLED_WINDOW( scrolled ), GTK_SHADOW_IN );
+	gtk_grid_attach( GTK_GRID( grid ), scrolled, 0, 0, 1, 1 );
+
+	sope->textview = gtk_text_view_new();
+	gtk_widget_set_hexpand( sope->textview, TRUE );
+	gtk_widget_set_vexpand( sope->textview, TRUE );
+	my_utils_widget_set_margins( sope->textview, 2, 2, 2, 2 );
+	gtk_text_view_set_editable( GTK_TEXT_VIEW( sope->textview ), FALSE );
+	gtk_container_add( GTK_CONTAINER( scrolled ), sope->textview );
+
+	sope->close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( sope->window ), GTK_RESPONSE_CLOSE );
+	my_utils_widget_set_margins( sope->close_btn, 4, 4, 0, 8 );
+	gtk_widget_set_sensitive( sope->close_btn, FALSE );
+	g_signal_connect( sope->close_btn, "clicked", G_CALLBACK( msg_window_on_close ), sope );
+
+	sdata = get_instance_data( self );
+	provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
+	hub = ofa_idbprovider_get_hub( provider );
+	sope->settings_iface = ofa_hub_get_user_settings( hub );
+	my_utils_window_position_restore( GTK_WINDOW( sope->window ), sope->settings_iface, sope->settings_name );
+
+	gtk_widget_show_all( sope->window );
+
+	/* let Gtk update the display */
+	while( gtk_events_pending()){
+		gtk_main_iteration();
+	}
+}
+
+static void
+msg_window_on_close( GtkWidget *button, sAsyncOpe *sope )
+{
+	my_utils_window_position_save( GTK_WINDOW( sope->window ), sope->settings_iface, sope->settings_name );
+	gtk_widget_destroy( sope->window );
+}
+
+static void
+msg_window_cb( gchar *buffer, gsize bufsize, void *user_data )
+{
+	static const gchar *thisfn = "ofa_idbconnect_msg_window_cb";
+	sAsyncOpe *sope = ( sAsyncOpe * ) user_data;
+	GtkTextBuffer *textbuf;
+	GtkTextIter enditer;
+	const gchar *charset;
+	gchar *utf8;
+
+	g_debug( "%s: buffer=%p, bufsize=%lu, user_data=%p",
+			thisfn, ( void * ) buffer, bufsize, ( void * ) user_data );
+
+	textbuf = gtk_text_view_get_buffer( GTK_TEXT_VIEW( sope->textview ));
+	gtk_text_buffer_get_end_iter( textbuf, &enditer );
+
+	/* Check if messages are in UTF-8. If not, assume
+	 *  they are in current locale and try to convert.
+	 *  We assume we're getting the stream in a 1-byte
+	 *   encoding here, ie. that we do not have cut-off
+	 *   characters at the end of our buffer (=BAD)
+	 */
+	if( g_utf8_validate( buffer, -1, NULL )){
+		gtk_text_buffer_insert( textbuf, &enditer, buffer, -1 );
+
+	} else {
+		g_get_charset( &charset );
+		utf8 = g_convert_with_fallback( buffer, -1, "UTF-8", charset, NULL, NULL, NULL, NULL );
+		if( utf8 ){
+			gtk_text_buffer_insert( textbuf, &enditer, utf8, -1 );
+			g_free(utf8);
+
+		} else {
+			g_debug( "%s: message output is not in UTF-8 nor in locale charset", thisfn );
 		}
 	}
 
-	g_free( outbuf );
-	g_object_unref( compressor );
+	/* A bit awkward, but better than nothing. Scroll text view to end */
+	gtk_text_buffer_get_end_iter( textbuf, &enditer );
+	gtk_text_buffer_move_mark_by_name( textbuf, "insert", &enditer );
+	gtk_text_view_scroll_to_mark(
+			GTK_TEXT_VIEW( sope->textview),
+			gtk_text_buffer_get_mark( textbuf, "insert" ),
+			0.0, FALSE, 0.0, 0.0 );
 
-	return( finished );
+	/* let Gtk update the display */
+	while( gtk_events_pending()){
+		gtk_main_iteration();
+	}
 }
 
 /**

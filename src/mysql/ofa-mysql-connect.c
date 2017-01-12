@@ -65,7 +65,7 @@ static gboolean idbconnect_query( const ofaIDBConnect *instance, const gchar *qu
 static gboolean idbconnect_query_ex( const ofaIDBConnect *instance, const gchar *query, GSList **result );
 static gchar   *idbconnect_get_last_error( const ofaIDBConnect *instance );
 static gboolean idbconnect_backup( const ofaIDBConnect *instance, const gchar *uri );
-static gboolean idbconnect_backup_db( const ofaIDBConnect *instance, GOutputStream *msgst, GOutputStream *datast, GCallback cb );
+static gboolean idbconnect_backup_db( const ofaIDBConnect *instance, ofaAsyncOpeCb msg_cb, ofaAsyncOpeCb data_cb, void *user_data );
 static gboolean idbconnect_restore( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *uri );
 static gboolean idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next );
 static gboolean idbconnect_period_new( const ofaIDBConnect *instance, gchar **msgerr );
@@ -545,9 +545,15 @@ idbconnect_backup( const ofaIDBConnect *instance, const gchar *uri )
 }
 
 static gboolean
-idbconnect_backup_db( const ofaIDBConnect *instance, GOutputStream *msgst, GOutputStream *datast, GCallback cb )
+idbconnect_backup_db( const ofaIDBConnect *instance, ofaAsyncOpeCb msg_cb, ofaAsyncOpeCb data_cb, void *user_data )
 {
-	return( FALSE );
+	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_backup_db";
+
+	g_debug( "%s: instance=%p (%s), msg_cb=%p, data_cb=%p, user_data=%p",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			( void * ) msg_cb, ( void * ) data_cb, ( void * ) user_data );
+
+	return( ofa_mysql_cmdline_backup_db_run( OFA_MYSQL_CONNECT( instance ), msg_cb, data_cb, user_data ));
 }
 
 static gboolean

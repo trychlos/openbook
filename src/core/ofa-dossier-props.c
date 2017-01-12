@@ -29,16 +29,23 @@
 #include <json-glib/json-glib.h>
 
 #include "my/my-date.h"
+#include "my/my-iident.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-json-header.h"
+#include "api/ofa-dossier-props.h"
+#include "api/ofa-extender-collection.h"
+#include "api/ofa-extender-module.h"
+#include "api/ofa-hub.h"
+#include "api/ofa-idbconnect.h"
+#include "api/ofa-idbmodel.h"
+#include "api/ofo-dossier.h"
 
 /* private instance data
  */
 typedef struct {
 	gboolean  dispose_has_run;
 
-	/* header's data
+	/* props's data
 	 */
 	gboolean  is_current;
 	GDate     begin_date;
@@ -50,7 +57,7 @@ typedef struct {
 	GTimeVal  stamp;
 	gchar    *userid;
 }
-	ofaJsonHeaderPrivate;
+	ofaDossierPropsPrivate;
 
 /* plugins data
  */
@@ -86,22 +93,22 @@ static const gchar *st_id               = "id";
 static void free_plugin( sPlugin *sdata );
 static void free_dbmodel( sDBModel *sdata );
 
-G_DEFINE_TYPE_EXTENDED( ofaJsonHeader, ofa_json_header, G_TYPE_OBJECT, 0,
-		G_ADD_PRIVATE( ofaJsonHeader ))
+G_DEFINE_TYPE_EXTENDED( ofaDossierProps, ofa_dossier_props, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaDossierProps ))
 
 static void
-json_header_finalize( GObject *instance )
+dossier_props_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_json_header_finalize";
-	ofaJsonHeaderPrivate *priv;
+	static const gchar *thisfn = "ofa_dossier_props_finalize";
+	ofaDossierPropsPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_JSON_HEADER( instance ));
+	g_return_if_fail( instance && OFA_IS_DOSSIER_PROPS( instance ));
 
 	/* free data members here */
-	priv = ofa_json_header_get_instance_private( OFA_JSON_HEADER( instance ));
+	priv = ofa_dossier_props_get_instance_private( OFA_DOSSIER_PROPS( instance ));
 
 	g_free( priv->openbook_version );
 	g_free( priv->comment );
@@ -111,17 +118,17 @@ json_header_finalize( GObject *instance )
 	g_list_free_full( priv->dbmodels, ( GDestroyNotify ) free_dbmodel );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_json_header_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_dossier_props_parent_class )->finalize( instance );
 }
 
 static void
-json_header_dispose( GObject *instance )
+dossier_props_dispose( GObject *instance )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_JSON_HEADER( instance ));
+	g_return_if_fail( instance && OFA_IS_DOSSIER_PROPS( instance ));
 
-	priv = ofa_json_header_get_instance_private( OFA_JSON_HEADER( instance ));
+	priv = ofa_dossier_props_get_instance_private( OFA_DOSSIER_PROPS( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -130,21 +137,21 @@ json_header_dispose( GObject *instance )
 		/* unref object members here */
 	}
 
-	G_OBJECT_CLASS( ofa_json_header_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_dossier_props_parent_class )->dispose( instance );
 }
 
 static void
-ofa_json_header_init( ofaJsonHeader *self )
+ofa_dossier_props_init( ofaDossierProps *self )
 {
-	static const gchar *thisfn = "ofa_json_header_init";
-	ofaJsonHeaderPrivate *priv;
+	static const gchar *thisfn = "ofa_dossier_props_init";
+	ofaDossierPropsPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_JSON_HEADER( self ));
+	g_return_if_fail( self && OFA_IS_DOSSIER_PROPS( self ));
 
-	priv = ofa_json_header_get_instance_private( self );
+	priv = ofa_dossier_props_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 	priv->openbook_version = g_strdup( PACKAGE_VERSION );
@@ -152,47 +159,117 @@ ofa_json_header_init( ofaJsonHeader *self )
 }
 
 static void
-ofa_json_header_class_init( ofaJsonHeaderClass *klass )
+ofa_dossier_props_class_init( ofaDossierPropsClass *klass )
 {
-	static const gchar *thisfn = "ofa_json_header_class_init";
+	static const gchar *thisfn = "ofa_dossier_props_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = json_header_dispose;
-	G_OBJECT_CLASS( klass )->finalize = json_header_finalize;
+	G_OBJECT_CLASS( klass )->dispose = dossier_props_dispose;
+	G_OBJECT_CLASS( klass )->finalize = dossier_props_finalize;
 }
 
 /**
- * ofa_json_header_new:
+ * ofa_dossier_props_get_json_string_ex:
+ * @hub: the @ofaHub object of the application.
+ * @comment: [allow-none]: a user comment.
  *
- * Allocates and initializes a #ofaJsonHeader object.
- *
- * Returns: a new #ofaJsonHeader object.
+ * Returns: the current properties as a newly allocated JSON string
+ * which should be #g_free() by the caller.
  */
-ofaJsonHeader *
-ofa_json_header_new( void )
+gchar *
+ofa_dossier_props_get_json_string_ex( ofaHub *hub, const gchar *comment )
 {
-	ofaJsonHeader *header;
+	static const gchar *thisfn = "ofa_dossier_props_get_json_string_ex";
+	ofaDossierProps *props;
+	ofoDossier *dossier;
+	ofaExtenderCollection *extenders;
+	ofaExtenderModule *plugin;
+	const GList *modules, *itm;
+	GList *dbmodels, *itb;
+	gchar *canon, *display, *version, *id, *json;
+	const ofaIDBConnect *connect;
 
-	header = g_object_new( OFA_TYPE_JSON_HEADER, NULL );
+	g_debug( "%s: hub=%p, comment=%s", thisfn, ( void * ) hub, comment );
 
-	return( header );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	props = ofa_dossier_props_new();
+	dossier = ofa_hub_get_dossier( hub );
+	ofa_dossier_props_set_is_current( props, ofo_dossier_is_current( dossier ));
+	ofa_dossier_props_set_begin_date( props, ofo_dossier_get_exe_begin( dossier ));
+	ofa_dossier_props_set_end_date( props, ofo_dossier_get_exe_end( dossier ));
+
+	extenders = ofa_hub_get_extender_collection( hub );
+	modules = ofa_extender_collection_get_modules( extenders );
+
+	for( itm=modules ; itm ; itm=itm->next ){
+		plugin = OFA_EXTENDER_MODULE( itm->data );
+		canon = ofa_extender_module_get_canon_name( plugin );
+		display = ofa_extender_module_get_display_name( plugin );
+		version = ofa_extender_module_get_version( plugin );
+		ofa_dossier_props_set_plugin( props, canon, display, version );
+		g_free( version );
+		g_free( display );
+		g_free( canon );
+	}
+
+	dbmodels = ofa_hub_get_for_type( hub, OFA_TYPE_IDBMODEL );
+
+	for( itb=dbmodels ; itb ; itb=itb->next ){
+		if( MY_IS_IIDENT( itb->data )){
+			id = my_iident_get_canon_name( MY_IIDENT( itb->data ), NULL );
+			version = my_iident_get_version( MY_IIDENT( itb->data ), NULL );
+			ofa_dossier_props_set_dbmodel( props, id, version );
+			g_free( version );
+			g_free( id );
+		}
+	}
+
+	g_list_free_full( dbmodels, ( GDestroyNotify ) g_object_unref );
+
+	ofa_dossier_props_set_comment( props, comment );
+	connect = ofa_hub_get_connect( hub );
+	ofa_dossier_props_set_current_user( props, ofa_idbconnect_get_account( connect ));
+
+	/* get JSON data string */
+	json = ofa_dossier_props_get_json_string( props );
+	g_object_unref( props );
+
+	return( json );
 }
 
 /**
- * ofa_json_header_get_is_current:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_new:
+ *
+ * Allocates and initializes a #ofaDossierProps object.
+ *
+ * Returns: a new #ofaDossierProps object.
+ */
+ofaDossierProps *
+ofa_dossier_props_new( void )
+{
+	ofaDossierProps *props;
+
+	props = g_object_new( OFA_TYPE_DOSSIER_PROPS, NULL );
+
+	return( props );
+}
+
+/**
+ * ofa_dossier_props_get_is_current:
+ * @props: this #ofaDossierProps object.
  *
  * Returns: %TRUE if the backup contains a current dossier.
  */
 gboolean
-ofa_json_header_get_is_current( ofaJsonHeader *header )
+ofa_dossier_props_get_is_current( ofaDossierProps *props )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_val_if_fail( header && OFA_IS_JSON_HEADER( header ), FALSE );
+	g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), FALSE );
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -200,20 +277,20 @@ ofa_json_header_get_is_current( ofaJsonHeader *header )
 }
 
 /**
- * ofa_json_header_set_is_current:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_set_is_current:
+ * @props: this #ofaDossierProps object.
  * @is_current: whether the dossier is current.
  *
  * Set the @is_current flag.
  */
 void
-ofa_json_header_set_is_current( ofaJsonHeader *header, gboolean is_current )
+ofa_dossier_props_set_is_current( ofaDossierProps *props, gboolean is_current )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_if_fail( header && OFA_IS_JSON_HEADER( header ));
+	g_return_if_fail( props && OFA_IS_DOSSIER_PROPS( props ));
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -221,20 +298,20 @@ ofa_json_header_set_is_current( ofaJsonHeader *header, gboolean is_current )
 }
 
 /**
- * ofa_json_header_get_begin_date:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_get_begin_date:
+ * @props: this #ofaDossierProps object.
  *
  * Returns: the beginning date from the backup'ed exercice, as a valid
  * date, or %NULL.
  */
 const GDate *
-ofa_json_header_get_begin_date( ofaJsonHeader *header )
+ofa_dossier_props_get_begin_date( ofaDossierProps *props )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_val_if_fail( header && OFA_IS_JSON_HEADER( header ), NULL );
+	g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -242,20 +319,20 @@ ofa_json_header_get_begin_date( ofaJsonHeader *header )
 }
 
 /**
- * ofa_json_header_set_begin_date:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_set_begin_date:
+ * @props: this #ofaDossierProps object.
  * @date: [allow-none]: the beginning date of the exercice.
  *
  * Set the beginning @date.
  */
 void
-ofa_json_header_set_begin_date( ofaJsonHeader *header, const GDate *date )
+ofa_dossier_props_set_begin_date( ofaDossierProps *props, const GDate *date )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_if_fail( header && OFA_IS_JSON_HEADER( header ));
+	g_return_if_fail( props && OFA_IS_DOSSIER_PROPS( props ));
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -265,20 +342,20 @@ ofa_json_header_set_begin_date( ofaJsonHeader *header, const GDate *date )
 }
 
 /**
- * ofa_json_header_get_end_date:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_get_end_date:
+ * @props: this #ofaDossierProps object.
  *
  * Returns: the ending date from the backup'ed exercice, as a valid
  * date, or %NULL.
  */
 const GDate *
-ofa_json_header_get_end_date( ofaJsonHeader *header )
+ofa_dossier_props_get_end_date( ofaDossierProps *props )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_val_if_fail( header && OFA_IS_JSON_HEADER( header ), NULL );
+	g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -286,20 +363,20 @@ ofa_json_header_get_end_date( ofaJsonHeader *header )
 }
 
 /**
- * ofa_json_header_set_end_date:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_set_end_date:
+ * @props: this #ofaDossierProps object.
  * @date: [allow-none]: the ending date of the exercice.
  *
  * Set the ending @date.
  */
 void
-ofa_json_header_set_end_date( ofaJsonHeader *header, const GDate *date )
+ofa_dossier_props_set_end_date( ofaDossierProps *props, const GDate *date )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_if_fail( header && OFA_IS_JSON_HEADER( header ));
+	g_return_if_fail( props && OFA_IS_DOSSIER_PROPS( props ));
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -309,22 +386,22 @@ ofa_json_header_set_end_date( ofaJsonHeader *header, const GDate *date )
 }
 
 /**
- * ofa_json_header_get_openbook_version:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_get_openbook_version:
+ * @props: this #ofaDossierProps object.
  *
  * Returns: the openbook version at time of the backup.
  *
- * The returned string is owned by the @header object, and should not
+ * The returned string is owned by the @props object, and should not
  * be released by the caller.
  */
 const gchar *
-ofa_json_header_get_openbook_version( ofaJsonHeader *header )
+ofa_dossier_props_get_openbook_version( ofaDossierProps *props )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_val_if_fail( header && OFA_IS_JSON_HEADER( header ), NULL );
+	g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -332,8 +409,8 @@ ofa_json_header_get_openbook_version( ofaJsonHeader *header )
 }
 
 /**
- * ofa_json_header_set_openbook_version:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_set_openbook_version:
+ * @props: this #ofaDossierProps object.
  * @version: [allow-none]: the openbook version at time of the backup.
  *
  * Set the openbook version.
@@ -341,13 +418,13 @@ ofa_json_header_get_openbook_version( ofaJsonHeader *header )
  * The Openbook version defaults to the current version of the software.
  */
 void
-ofa_json_header_set_openbook_version( ofaJsonHeader *header, const gchar *version )
+ofa_dossier_props_set_openbook_version( ofaDossierProps *props, const gchar *version )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_if_fail( header && OFA_IS_JSON_HEADER( header ));
+	g_return_if_fail( props && OFA_IS_DOSSIER_PROPS( props ));
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -356,8 +433,8 @@ ofa_json_header_set_openbook_version( ofaJsonHeader *header, const gchar *versio
 }
 
 /**
- * ofa_json_header_set_plugin:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_set_plugin:
+ * @props: this #ofaDossierProps object.
  * @canon_name: [allow-none]: the canonical name of the plugin.
  * @display_name: [allow-none]: the display name of the plugin.
  * @version: [allow-none]: the version of the plugin.
@@ -368,18 +445,18 @@ ofa_json_header_set_openbook_version( ofaJsonHeader *header, const gchar *versio
  * added.
  */
 void
-ofa_json_header_set_plugin( ofaJsonHeader *header, const gchar *canon_name, const gchar *display_name, const gchar *version )
+ofa_dossier_props_set_plugin( ofaDossierProps *props, const gchar *canon_name, const gchar *display_name, const gchar *version )
 {
-	static const gchar *thisfn = "ofa_json_header_set_plugin";
-	ofaJsonHeaderPrivate *priv;
+	static const gchar *thisfn = "ofa_dossier_props_set_plugin";
+	ofaDossierPropsPrivate *priv;
 	sPlugin *sdata;
 
-	g_debug( "%s: header=%p, canon_name=%s, display_name=%s, version=%s",
-			thisfn, ( void * ) header, canon_name, display_name, version );
+	g_debug( "%s: props=%p, canon_name=%s, display_name=%s, version=%s",
+			thisfn, ( void * ) props, canon_name, display_name, version );
 
-	g_return_if_fail( header && OFA_IS_JSON_HEADER( header ));
+	g_return_if_fail( props && OFA_IS_DOSSIER_PROPS( props ));
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -392,8 +469,8 @@ ofa_json_header_set_plugin( ofaJsonHeader *header, const gchar *canon_name, cons
 }
 
 /**
- * ofa_json_header_set_dbmodel:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_set_dbmodel:
+ * @props: this #ofaDossierProps object.
  * @id: [allow-none]: the identifier of the dbmodel.
  * @version: [allow-none]: the version of the dbmodel.
  *
@@ -403,18 +480,18 @@ ofa_json_header_set_plugin( ofaJsonHeader *header, const gchar *canon_name, cons
  * added.
  */
 void
-ofa_json_header_set_dbmodel( ofaJsonHeader *header, const gchar *id, const gchar *version )
+ofa_dossier_props_set_dbmodel( ofaDossierProps *props, const gchar *id, const gchar *version )
 {
-	static const gchar *thisfn = "ofa_json_header_set_dbmodel";
-	ofaJsonHeaderPrivate *priv;
+	static const gchar *thisfn = "ofa_dossier_props_set_dbmodel";
+	ofaDossierPropsPrivate *priv;
 	sDBModel *sdata;
 
-	g_debug( "%s: header=%p, id=%s, version=%s",
-			thisfn, ( void * ) header, id, version );
+	g_debug( "%s: props=%p, id=%s, version=%s",
+			thisfn, ( void * ) props, id, version );
 
-	g_return_if_fail( header && OFA_IS_JSON_HEADER( header ));
+	g_return_if_fail( props && OFA_IS_DOSSIER_PROPS( props ));
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -426,22 +503,22 @@ ofa_json_header_set_dbmodel( ofaJsonHeader *header, const gchar *id, const gchar
 }
 
 /**
- * ofa_json_header_get_comment:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_get_comment:
+ * @props: this #ofaDossierProps object.
  *
  * Returns: the user comment for this backup.
  *
- * The returned string is owned by the @header object, and should not
+ * The returned string is owned by the @props object, and should not
  * be released by the caller.
  */
 const gchar *
-ofa_json_header_get_comment( ofaJsonHeader *header )
+ofa_dossier_props_get_comment( ofaDossierProps *props )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_val_if_fail( header && OFA_IS_JSON_HEADER( header ), NULL );
+	g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -449,20 +526,20 @@ ofa_json_header_get_comment( ofaJsonHeader *header )
 }
 
 /**
- * ofa_json_header_set_comment:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_set_comment:
+ * @props: this #ofaDossierProps object.
  * @comment: [allow-none]: the user comment for this backup.
  *
  * Set the user comment.
  */
 void
-ofa_json_header_set_comment( ofaJsonHeader *header, const gchar *comment )
+ofa_dossier_props_set_comment( ofaDossierProps *props, const gchar *comment )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_if_fail( header && OFA_IS_JSON_HEADER( header ));
+	g_return_if_fail( props && OFA_IS_DOSSIER_PROPS( props ));
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -471,19 +548,19 @@ ofa_json_header_set_comment( ofaJsonHeader *header, const gchar *comment )
 }
 
 /**
- * ofa_json_header_get_current_stamp:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_get_current_stamp:
+ * @props: this #ofaDossierProps object.
  *
  * Returns: the current timestamp at backup time.
  */
 const GTimeVal *
-ofa_json_header_get_current_stamp( ofaJsonHeader *header )
+ofa_dossier_props_get_current_stamp( ofaDossierProps *props )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_val_if_fail( header && OFA_IS_JSON_HEADER( header ), NULL );
+	g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -491,23 +568,23 @@ ofa_json_header_get_current_stamp( ofaJsonHeader *header )
 }
 
 /**
- * ofa_json_header_set_current_stamp:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_set_current_stamp:
+ * @props: this #ofaDossierProps object.
  * @stamp: [allow-none]: a timestamp.
  *
  * Set the current timestamp.
  *
- * The current timestamp defaults to the timestamp at @header
+ * The current timestamp defaults to the timestamp at @props
  * instanciation time.
  */
 void
-ofa_json_header_set_current_stamp( ofaJsonHeader *header, const GTimeVal *stamp )
+ofa_dossier_props_set_current_stamp( ofaDossierProps *props, const GTimeVal *stamp )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_if_fail( header && OFA_IS_JSON_HEADER( header ));
+	g_return_if_fail( props && OFA_IS_DOSSIER_PROPS( props ));
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -515,22 +592,22 @@ ofa_json_header_set_current_stamp( ofaJsonHeader *header, const GTimeVal *stamp 
 }
 
 /**
- * ofa_json_header_get_current_user:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_get_current_user:
+ * @props: this #ofaDossierProps object.
  *
  * Returns: the connected user identifier at time of the backup.
  *
- * The returned string is owned by the @header object, and should not
+ * The returned string is owned by the @props object, and should not
  * be released by the caller.
  */
 const gchar *
-ofa_json_header_get_current_user( ofaJsonHeader *header )
+ofa_dossier_props_get_current_user( ofaDossierProps *props )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_val_if_fail( header && OFA_IS_JSON_HEADER( header ), NULL );
+	g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -538,20 +615,20 @@ ofa_json_header_get_current_user( ofaJsonHeader *header )
 }
 
 /**
- * ofa_json_header_set_current_user:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_set_current_user:
+ * @props: this #ofaDossierProps object.
  * @userid: [allow-none]: a user identifier.
  *
  * Set the currently connected user.
  */
 void
-ofa_json_header_set_current_user( ofaJsonHeader *header, const gchar *userid )
+ofa_dossier_props_set_current_user( ofaDossierProps *props, const gchar *userid )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 
-	g_return_if_fail( header && OFA_IS_JSON_HEADER( header ));
+	g_return_if_fail( props && OFA_IS_DOSSIER_PROPS( props ));
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -560,16 +637,16 @@ ofa_json_header_set_current_user( ofaJsonHeader *header, const gchar *userid )
 }
 
 /**
- * ofa_json_header_get_string:
- * @header: this #ofaJsonHeader object.
+ * ofa_dossier_props_get_json_string:
+ * @props: this #ofaDossierProps object.
  *
  * Returns: the JSON datas as a null-terminated string, in a newly
  * allocated buffer which should be #g_free() by the caller.
  */
 gchar *
-ofa_json_header_get_string( ofaJsonHeader *header )
+ofa_dossier_props_get_json_string( ofaDossierProps *props )
 {
-	ofaJsonHeaderPrivate *priv;
+	ofaDossierPropsPrivate *priv;
 	JsonBuilder *builder;
 	JsonGenerator *generator;
 	gchar *sdate;
@@ -578,9 +655,9 @@ ofa_json_header_get_string( ofaJsonHeader *header )
 	GList *it;
 	gchar *str;
 
-	g_return_val_if_fail( header && OFA_IS_JSON_HEADER( header ), NULL );
+g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
 
-	priv = ofa_json_header_get_instance_private( header );
+	priv = ofa_dossier_props_get_instance_private( props );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
