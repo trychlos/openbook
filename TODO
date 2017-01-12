@@ -413,13 +413,18 @@
                 of my_idialog_click_to_update()
 
 1314 2017- 1- 6 DB: OFA_T_DOSSIER: add a unique id to identify the dossier
+     2017- 1-12 use case: be able to identify that an archive comes from
+                this particular dossier (and maybe refuse to overwrite an
+                archive)
 
 1316 2017- 1- 9 DossierManager: implement call to ofa_dossier_collection_delete_period()
                 (requires a superuser connection on the dbms)
 
-1317 2017- 1-10 move ofaBackup to myIDialog
+1317 2017- 1-10 move ofaBackup to myIDialog, including a comment
 
-1318
+1318 2017- 1-12 review my_utils_stamp_set_from_xxx to have a format (like my_date)
+
+1319
 
 -----------------------------------------------------------------------
  DONE

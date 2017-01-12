@@ -78,8 +78,6 @@ typedef struct {
 #define IDBCONNECT_LAST_VERSION            1
 #define IDBCONNECT_DATA                   "idbconnect-data"
 
-static const gchar *st_props_header     = "DossierPropsHeader";
-
 static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType           register_type( void );
@@ -1011,7 +1009,7 @@ backup_json_header( const ofaIDBConnect *self, const gchar *comment, sAsyncOpe *
 		return( FALSE );
 	}
 
-    archive_entry_set_pathname( entry, st_props_header );
+    archive_entry_set_pathname( entry, ofa_dossier_props_get_title());
     archive_entry_set_filetype( entry, AE_IFREG );
     archive_entry_set_perm( entry, 0644 );
 	my_utils_stamp_set_now( &stamp );
@@ -1260,6 +1258,72 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 							const gchar *adm_account, const gchar *adm_password )
 {
 	static const gchar *thisfn = "ofa_idbconnect_restore";
+	sIDBConnect *sdata;
+	ofaIDBExerciceMeta *target_period;
+	ofaIDBProvider *provider;
+	ofaIDBConnect *target_connect;
+	gboolean ok;
+
+	g_debug( "%s: connect=%p, period=%p, uri=%s, adm_account=%s, adm_password=%s",
+			thisfn, ( void * ) connect, ( void * ) period, uri,
+			adm_account, adm_password ? "******" : adm_password );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ), FALSE );
+	g_return_val_if_fail( my_strlen( uri ), FALSE );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore ){
+		ok = FALSE;
+		sdata = get_instance_data( connect );
+		g_return_val_if_fail( sdata->dossier_meta && OFA_IS_IDBDOSSIER_META( sdata->dossier_meta ), FALSE );
+
+		if( period ){
+			target_period = ( ofaIDBExerciceMeta * ) period;
+		} else {
+			target_period = ofa_idbdossier_meta_get_current_period( sdata->dossier_meta );
+		}
+		g_return_val_if_fail( target_period && OFA_IS_IDBEXERCICE_META( target_period ), FALSE );
+
+		if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore( connect, target_period, uri )){
+			provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
+			target_connect = ofa_idbprovider_new_connect(
+					provider, sdata->account, sdata->password, sdata->dossier_meta, target_period );
+			set_admin_credentials( target_connect, adm_account, adm_password, NULL );
+			g_object_unref( target_connect );
+			ok = TRUE;
+		}
+
+		return( ok );
+	}
+
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'restore()' method",
+			thisfn, G_OBJECT_TYPE_NAME( connect ));
+	return( FALSE );
+}
+
+/**
+ * ofa_idbconnect_restore_db:
+ * @connect: a #ofaIDBConnect instance which handles a superuser
+ *  connection on the DBMS at server-level. It is expected this
+ *  @connect object holds a valid #ofaIDBDossierMeta object which describes
+ *  the target dossier.
+ * @period: [allow-none]: a #ofaIDBExerciceMeta object which describes the
+ *  target exercice; if %NULL, the file is restored on the current
+ *  exercice.
+ * @uri: the source file to be restored.
+ * @adm_account: the new administrative account to be set.
+ * @adm_account: the new administrative password to be set.
+ *
+ * Restore the file on the specified period.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
+							const ofaIDBExerciceMeta *period, const gchar *uri,
+							const gchar *adm_account, const gchar *adm_password )
+{
+	static const gchar *thisfn = "ofa_idbconnect_restore_db";
 	sIDBConnect *sdata;
 	ofaIDBExerciceMeta *target_period;
 	ofaIDBProvider *provider;

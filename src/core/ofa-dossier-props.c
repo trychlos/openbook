@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <archive.h>
+#include <archive_entry.h>
 #include <json-glib/json-glib.h>
 
 #include "my/my-date.h"
@@ -56,6 +58,10 @@ typedef struct {
 	gchar    *comment;
 	GTimeVal  stamp;
 	gchar    *userid;
+
+	/* read from archived JSON header
+	 */
+	gchar    *name;
 }
 	ofaDossierPropsPrivate;
 
@@ -90,8 +96,14 @@ static const gchar *st_display          = "display";
 static const gchar *st_version          = "version";
 static const gchar *st_id               = "id";
 
-static void free_plugin( sPlugin *sdata );
-static void free_dbmodel( sDBModel *sdata );
+static const gchar *st_props_header     = "DossierPropsHeader";
+
+static ofaDossierProps *new_from_string( const gchar *str );
+static ofaDossierProps *new_from_node( JsonNode *node );
+static void             set_plugins_from_array( ofaDossierProps *self, JsonArray *array );
+static void             set_dbms_from_array( ofaDossierProps *self, JsonArray *array );
+static void             free_plugin( sPlugin *sdata );
+static void             free_dbmodel( sDBModel *sdata );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierProps, ofa_dossier_props, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaDossierProps ))
@@ -113,6 +125,7 @@ dossier_props_finalize( GObject *instance )
 	g_free( priv->openbook_version );
 	g_free( priv->comment );
 	g_free( priv->userid );
+	g_free( priv->name );
 
 	g_list_free_full( priv->plugins, ( GDestroyNotify ) free_plugin );
 	g_list_free_full( priv->dbmodels, ( GDestroyNotify ) free_dbmodel );
@@ -167,6 +180,19 @@ ofa_dossier_props_class_init( ofaDossierPropsClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = dossier_props_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_props_finalize;
+}
+
+/**
+ * ofa_dossier_props_get_title:
+ *
+ * Returns: a name for these dossier properties.
+ *
+ * This name is in particular used as a header in archive files.
+ */
+const gchar *
+ofa_dossier_props_get_title( void )
+{
+	return( st_props_header );
 }
 
 /**
@@ -254,6 +280,305 @@ ofa_dossier_props_new( void )
 	props = g_object_new( OFA_TYPE_DOSSIER_PROPS, NULL );
 
 	return( props );
+}
+
+/**
+ * ofa_dossier_props_new_from_uri:
+ *
+ * Try to extract a DossierProperties JSON string from the provided
+ * archive.
+ *
+ * Returns: a new #ofaDossierProps object if the header has been found,
+ * or %NULL.
+ */
+ofaDossierProps *
+ofa_dossier_props_new_from_uri( const gchar *uri )
+{
+	static const gchar *thisfn = "ofa_dossier_props_new_from_uri";
+	ofaDossierProps *props;
+	GFile *file;
+	struct archive *a;
+	struct archive_entry *entry;
+	gchar *pathname, *buf, *name;
+	gsize size, read;
+
+	props = NULL;
+	name = NULL;
+	a = archive_read_new();
+	archive_read_support_filter_all( a );
+	archive_read_support_format_all( a );
+	file = g_file_new_for_uri( uri );
+	pathname = g_file_get_path( file );
+
+	if( archive_read_open_filename( a, pathname, 16384 ) != ARCHIVE_OK ){
+		g_warning( "%s: archive_read_open_filename: %s", thisfn, archive_error_string( a ));
+		archive_read_free( a );
+		g_free( pathname );
+		g_object_unref( file );
+		return( NULL );
+	}
+
+	while( archive_read_next_header( a, &entry ) == ARCHIVE_OK ){
+		if( !my_collate( archive_entry_pathname( entry ), st_props_header )){
+			size = archive_entry_size( entry );
+			buf = g_new0( gchar, 1+size );
+			read = archive_read_data( a, buf, size );
+			g_debug( "%s: size=%lu, read=%lu", thisfn, size, read );
+			props = new_from_string( buf );
+			g_free( buf );
+		} else {
+			name = g_strdup( archive_entry_pathname( entry ));
+			g_debug( "%s: name=%s", thisfn, name );
+		}
+	}
+
+	if( props ){
+		ofa_dossier_props_set_name( props, name );
+	}
+
+	g_free( name );
+	g_free( pathname );
+	g_object_unref( file );
+	archive_read_close( a );
+	archive_read_free( a );
+
+	return( props );
+}
+
+static ofaDossierProps *
+new_from_string( const gchar *str )
+{
+	static const gchar *thisfn = "ofa_dossier_props_new_from_string";
+	ofaDossierProps *props;
+	JsonParser *parser;
+	JsonNode *root;
+	GError *error;
+
+	error = NULL;
+	parser = json_parser_new();
+
+	if( !json_parser_load_from_data( parser, str, -1, &error )){
+		g_warning( "%s: json_parser_load_from_data: %s", thisfn, error->message );
+		return( NULL );
+	}
+
+	root = json_parser_get_root( parser );
+	props = new_from_node( root );
+	g_object_unref( parser );
+
+	return( props );
+}
+
+static ofaDossierProps *
+new_from_node( JsonNode *root )
+{
+	static const gchar *thisfn = "ofa_dossier_props_new_from_node";
+	ofaDossierProps *props;
+	JsonNodeType root_type, node_type;
+	JsonObject *object;
+	JsonNode *node;
+	JsonArray *array;
+	GList *members, *itm;
+	const gchar *cname, *cvalue;
+	GDate date;
+	GTimeVal stamp;
+
+	props = ofa_dossier_props_new();
+	root_type = json_node_get_node_type( root );
+
+	switch( root_type ){
+		case JSON_NODE_OBJECT:
+			object = json_node_get_object( root );
+			members = json_object_get_members( object );
+			for( itm=members ; itm ; itm=itm->next ){
+				cname = ( const gchar * ) itm->data;
+				node = json_object_get_member( object, cname );
+				node_type = json_node_get_node_type( node );
+
+				switch( node_type ){
+					case JSON_NODE_ARRAY:
+						array = json_node_get_array( node );
+
+						if( !my_collate( cname, st_plugins )){
+							set_plugins_from_array( props, array );
+
+						} else if( !my_collate( cname, st_dbms )){
+							set_dbms_from_array( props, array );
+
+						} else {
+							g_warning( "%s: unexpected member name %s", thisfn, cname );
+						}
+						break;
+
+					case JSON_NODE_VALUE:
+						cvalue = json_node_get_string( node );
+
+						if( !my_collate( cname, st_current )){
+							ofa_dossier_props_set_is_current( props, my_utils_boolean_from_str( cvalue ));
+
+						} else if( !my_collate( cname, st_begin )){
+							my_date_set_from_str( &date, cvalue, MY_DATE_YYMD );
+							ofa_dossier_props_set_begin_date( props, &date );
+
+						} else if( !my_collate( cname, st_end )){
+							my_date_set_from_str( &date, cvalue, MY_DATE_YYMD );
+							ofa_dossier_props_set_end_date( props, &date );
+
+						} else if( !my_collate( cname, st_openbook )){
+							ofa_dossier_props_set_openbook_version( props, cvalue );
+
+						} else if( !my_collate( cname, st_comment )){
+							ofa_dossier_props_set_comment( props, cvalue );
+
+						} else if( !my_collate( cname, st_stamp )){
+							my_utils_stamp_set_from_sql( &stamp, cvalue );
+							ofa_dossier_props_set_current_stamp( props, &stamp );
+
+						} else if( !my_collate( cname, st_userid )){
+							ofa_dossier_props_set_current_user( props, cvalue );
+
+						} else {
+							g_warning( "%s: unexpected member name %s", thisfn, cname );
+						}
+						break;
+
+					default:
+						g_warning( "%s: unexpected node type %d", thisfn, ( gint ) node_type );
+						break;
+				}
+			}
+			g_list_free( members );
+			break;
+
+		default:
+			g_warning( "%s: unexpected root node type %d", thisfn, ( gint ) root_type );
+			break;
+	}
+
+	return( props );
+}
+
+static void
+set_plugins_from_array( ofaDossierProps *self, JsonArray *array )
+{
+	static const gchar *thisfn = "ofa_dossier_props_set_plugins_from_array";
+	GList *elements, *ite, *members, *itm;
+	JsonNode *node, *member_node;
+	JsonNodeType node_type, member_type;
+	JsonObject *object;
+	const gchar *cname, *cvalue;
+	gchar *canon, *display, *version;
+
+	elements = json_array_get_elements( array );
+	for( ite=elements ; ite ; ite=ite->next ){
+		node = ( JsonNode * ) ite->data;
+		node_type = json_node_get_node_type( node );
+		canon = NULL;
+		display = NULL;
+		version = NULL;
+		switch( node_type ){
+			case JSON_NODE_OBJECT:
+				object = json_node_get_object( node );
+				members = json_object_get_members( object );
+				for( itm=members ; itm ; itm=itm->next ){
+					cname = ( const gchar * ) itm->data;
+					member_node = json_object_get_member( object, cname );
+					member_type = json_node_get_node_type( member_node );
+
+					switch( member_type ){
+						case JSON_NODE_VALUE:
+							cvalue = json_node_get_string( member_node );
+
+							if( !my_collate( cname, st_canon )){
+								canon = g_strdup( cvalue );
+
+							} else if( !my_collate( cname, st_display )){
+								display = g_strdup( cvalue );
+
+							} else if( !my_collate( cname, st_version )){
+								version = g_strdup( cvalue );
+
+							} else {
+								g_warning( "%s: unexpected member name %s", thisfn, cname );
+							}
+							break;
+
+						default:
+							g_warning( "%s: unexpected member node type %d", thisfn, ( gint ) member_type );
+							break;
+					}
+				}
+				g_list_free( members );
+				break;
+
+			default:
+				g_warning( "%s: unexpected element node type %d", thisfn, ( gint ) node_type );
+				break;
+		}
+		ofa_dossier_props_set_plugin( self, canon, display, version );
+		g_free( canon );
+		g_free( display );
+		g_free( version );
+	}
+}
+
+static void
+set_dbms_from_array( ofaDossierProps *self, JsonArray *array )
+{
+	static const gchar *thisfn = "ofa_dossier_props_set_dbms_from_array";
+	GList *elements, *ite, *members, *itm;
+	JsonNode *node, *member_node;
+	JsonNodeType node_type, member_type;
+	JsonObject *object;
+	const gchar *cname, *cvalue;
+	gchar *id, *version;
+
+	elements = json_array_get_elements( array );
+	for( ite=elements ; ite ; ite=ite->next ){
+		node = ( JsonNode * ) ite->data;
+		node_type = json_node_get_node_type( node );
+		id = NULL;
+		version = NULL;
+		switch( node_type ){
+			case JSON_NODE_OBJECT:
+				object = json_node_get_object( node );
+				members = json_object_get_members( object );
+				for( itm=members ; itm ; itm=itm->next ){
+					cname = ( const gchar * ) itm->data;
+					member_node = json_object_get_member( object, cname );
+					member_type = json_node_get_node_type( member_node );
+
+					switch( member_type ){
+						case JSON_NODE_VALUE:
+							cvalue = json_node_get_string( member_node );
+
+							if( !my_collate( cname, st_id )){
+								id = g_strdup( cvalue );
+
+							} else if( !my_collate( cname, st_version )){
+								version = g_strdup( cvalue );
+
+							} else {
+								g_warning( "%s: unexpected member name %s", thisfn, cname );
+							}
+							break;
+
+						default:
+							g_warning( "%s: unexpected member node type %d", thisfn, ( gint ) member_type );
+							break;
+					}
+				}
+				g_list_free( members );
+				break;
+
+			default:
+				g_warning( "%s: unexpected element node type %d", thisfn, ( gint ) node_type );
+				break;
+		}
+		ofa_dossier_props_set_dbmodel( self, id, version );
+		g_free( id );
+		g_free( version );
+	}
 }
 
 /**
@@ -729,6 +1054,63 @@ g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
 	g_object_unref( builder );
 
 	return( str );
+}
+
+/**
+ * ofa_dossier_props_get_name:
+ * @props: this #ofaDossierProps object.
+ *
+ * Returns: the name found in the header of the archive.
+ *
+ * This name is only set when reading an archive, and is expected to be
+ * the pathname of the second data stream (the DBMS itself).
+ *
+ * Even if set, it is not written to the DossierProps header when
+ * writing an archive.
+ *
+ * The returned string is owned by the @props object, and should not
+ * be released by the caller.
+ */
+const gchar *
+ofa_dossier_props_get_name( ofaDossierProps *props )
+{
+	ofaDossierPropsPrivate *priv;
+
+	g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
+
+	priv = ofa_dossier_props_get_instance_private( props );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->name );
+}
+
+/**
+ * ofa_dossier_props_set_name:
+ * @props: this #ofaDossierProps object.
+ * @name: [allow-none]: the name of the second datas stream.
+ *
+ * Set the name.
+ *
+ * This name is only set when reading an archive, and is expected to be
+ * the pathname of the second data stream (the DBMS itself).
+ *
+ * Even if set, it is not written to the DossierProps header when
+ * writing an archive.
+ */
+void
+ofa_dossier_props_set_name( ofaDossierProps *props, const gchar *name )
+{
+	ofaDossierPropsPrivate *priv;
+
+	g_return_if_fail( props && OFA_IS_DOSSIER_PROPS( props ));
+
+	priv = ofa_dossier_props_get_instance_private( props );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->name );
+	priv->name = g_strdup( name );
 }
 
 static void

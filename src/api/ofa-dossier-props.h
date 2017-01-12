@@ -64,12 +64,16 @@ typedef struct {
 }
 	ofaDossierPropsClass;
 
+const gchar     *ofa_dossier_props_get_title           ( void );
+
 gchar           *ofa_dossier_props_get_json_string_ex  ( ofaHub *hub,
 																const gchar *comment );
 
 GType            ofa_dossier_props_get_type            ( void ) G_GNUC_CONST;
 
 ofaDossierProps *ofa_dossier_props_new                 ( void );
+
+ofaDossierProps *ofa_dossier_props_new_from_uri        ( const gchar *uri );
 
 gboolean         ofa_dossier_props_get_is_current      ( ofaDossierProps *props );
 
@@ -116,6 +120,11 @@ void             ofa_dossier_props_set_current_user    ( ofaDossierProps *props,
 																const gchar *userid );
 
 gchar           *ofa_dossier_props_get_json_string     ( ofaDossierProps *props );
+
+const gchar     *ofa_dossier_props_get_name            ( ofaDossierProps *props );
+
+void             ofa_dossier_props_set_name            ( ofaDossierProps *props,
+																const gchar *name );
 
 G_END_DECLS
 

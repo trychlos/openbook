@@ -453,6 +453,12 @@ gboolean            ofa_idbconnect_restore                  ( const ofaIDBConnec
 																	const gchar *adm_account,
 																	const gchar *adm_password );
 
+gboolean            ofa_idbconnect_restore_db               ( const ofaIDBConnect *connect,
+																	const ofaIDBExerciceMeta *period,
+																	const gchar *uri,
+																	const gchar *adm_account,
+																	const gchar *adm_password );
+
 gboolean            ofa_idbconnect_archive_and_new          ( const ofaIDBConnect *connect,
 																	const gchar *root_account,
 																	const gchar *root_password,
