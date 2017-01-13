@@ -72,6 +72,7 @@ typedef struct {
 	GList                 *core_objects;
 	mySettings            *dossier_settings;
 	mySettings            *user_settings;
+	ofaOpenbookProps      *openbook_props;
 
 	/* dossier
 	 */
@@ -154,6 +155,7 @@ hub_dispose( GObject *instance )
 		g_clear_object( &priv->user_settings );
 		g_clear_object( &priv->dossier_collection );
 		g_clear_object( &priv->extenders );
+		g_clear_object( &priv->openbook_props );
 
 		g_list_free_full( priv->core_objects, ( GDestroyNotify ) g_object_unref );
 	}
@@ -543,6 +545,7 @@ ofa_hub_new( ofaIGetter *getter )
 	hub_setup_settings( hub );
 
 	priv->dossier_collection = ofa_dossier_collection_new( hub );
+	priv->openbook_props = ofa_openbook_props_new( hub );
 
 	return( hub );
 }
@@ -826,6 +829,30 @@ ofa_hub_get_user_settings( ofaHub *hub )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( MY_ISETTINGS( priv->user_settings ));
+}
+
+/*
+ * ofa_hub_get_openbook_props:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the #ofaOpenbookProps which has been initialized at startup
+ * time.
+ *
+ * The returned reference is owned by the @hub object, and should
+ * not be released by the caller.
+ */
+ofaOpenbookProps *
+ofa_hub_get_openbook_props( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->openbook_props );
 }
 
 /*

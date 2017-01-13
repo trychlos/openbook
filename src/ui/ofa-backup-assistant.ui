@@ -269,7 +269,7 @@ Press Continue.</property>
       </object>
       <packing>
         <property name="page_type">summary</property>
-        <property name="title" translatable="yes">Result of the restore</property>
+        <property name="title" translatable="yes">Result of the backup</property>
       </packing>
     </child>
     <child internal-child="action_area">

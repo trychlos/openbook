@@ -28,6 +28,8 @@ api_include_HEADERS = \
 	ofa-account-editable.h								\
 	ofa-action-page.h									\
 	ofa-amount.h										\
+	ofa-backup-header.h									\
+	ofa-backup-props.h									\
 	ofa-box.h											\
 	ofa-buttons-box.h									\
 	ofa-core.h											\
@@ -66,6 +68,7 @@ api_include_HEADERS = \
 	ofa-igetter-def.h									\
 	ofa-iimportable.h									\
 	ofa-iimporter.h										\
+	ofa-ijson.h											\
 	ofa-import-duplicate.h								\
 	ofa-ipage-manager.h									\
 	ofa-ipage-manager-def.h								\
@@ -82,6 +85,7 @@ api_include_HEADERS = \
 	ofa-list-store.h									\
 	ofa-ope-template-editable.h							\
 	ofa-ope-template-store.h							\
+	ofa-openbook-props.h								\
 	ofa-paned-page.h									\
 	ofa-page.h											\
 	ofa-page-def.h										\

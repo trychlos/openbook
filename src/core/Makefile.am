@@ -78,6 +78,8 @@ libofa_core_la_SOURCES = \
 	ofa-account-treeview.h								\
 	ofa-action-page.c									\
 	ofa-amount.c										\
+	ofa-backup-header.c									\
+	ofa-backup-props.c									\
 	ofa-box.c											\
 	ofa-buttons-box.c									\
 	ofa-core.c											\
@@ -124,6 +126,7 @@ libofa_core_la_SOURCES = \
 	ofa-igetter.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
+	ofa-ijson.c											\
 	ofa-import-duplicate.c								\
 	ofa-ipage-manager.c									\
 	ofa-iprintable.c									\
@@ -155,6 +158,7 @@ libofa_core_la_SOURCES = \
 	ofa-ope-template-treeview.h							\
 	ofa-open-prefs-bin.c								\
 	ofa-open-prefs-bin.h								\
+	ofa-openbook-props.c								\
 	ofa-paimean-editable.c								\
 	ofa-paimean-frame-bin.c								\
 	ofa-paimean-frame-bin.h								\

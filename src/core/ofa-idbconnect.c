@@ -34,7 +34,7 @@
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-dossier-props.h"
+#include "api/ofa-backup-header.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-editor.h"
@@ -80,7 +80,7 @@ static gchar          *quote_query( const gchar *query );
 static void            error_query( const ofaIDBConnect *connect, const gchar *query );
 static gboolean        backup_create_archive( const ofaIDBConnect *self, GFile *file, sBackup *sope );
 static struct archive *backup_new_archive( const gchar *filename );
-static gboolean        backup_json_header( const ofaIDBConnect *self, const gchar *comment, sBackup *sope );
+static gboolean        backup_write_headers( const ofaIDBConnect *self, const gchar *comment, sBackup *sope );
 static gboolean        backup_create_entry( const ofaIDBConnect *self, GFile *file, sBackup *sope );
 static void            backup_data_cb( const void *buffer, gsize bufsize, void *user_data );
 static void            backup_msg_cb( const gchar *string, void *user_data );
@@ -858,7 +858,7 @@ ofa_idbconnect_backup_db( const ofaIDBConnect *connect,
 		sope = g_new0( sBackup, 1 );
 
 		ok = backup_create_archive( connect, file, sope ) &&
-				backup_json_header( connect, comment, sope ) &&
+				backup_write_headers( connect, comment, sope ) &&
 				backup_create_entry( connect, file, sope );
 
 		/* ask the DBMS plugin to provide its datas and messages streams */
@@ -940,56 +940,20 @@ backup_new_archive( const gchar *filename )
 }
 
 /*
- * Write the DossierProps to the archive file as a JSON string
+ * Write the headers to the archive file as JSON strings
  */
 static gboolean
-backup_json_header( const ofaIDBConnect *self, const gchar *comment, sBackup *sope )
+backup_write_headers( const ofaIDBConnect *self, const gchar *comment, sBackup *sope )
 {
-	static const gchar *thisfn = "ofa_idbconnect_backup_json_header";
 	sIDBConnect *sdata;
 	ofaIDBProvider *provider;
 	ofaHub *hub;
-	gchar *json;
-	struct archive_entry *entry;
-	gsize written;
-	GTimeVal stamp;
-
-	entry = archive_entry_new();
-	if( !entry ){
-		g_warning( "%s: unable to allocate new archive_entry object", thisfn );
-		return( FALSE );
-	}
-
-    archive_entry_set_pathname( entry, ofa_dossier_props_get_title());
-    archive_entry_set_filetype( entry, AE_IFREG );
-    archive_entry_set_perm( entry, 0644 );
-	my_stamp_set_now( &stamp );
-    archive_entry_set_mtime( entry, stamp.tv_sec, 0 );
-
-    if( archive_write_header( sope->archive, entry) != ARCHIVE_OK ){
-    	g_warning( "%s: archive_write_header: %s", thisfn, archive_error_string( sope->archive ));
-    	archive_entry_free( entry );
-    	return( FALSE );
-    }
 
 	sdata = get_instance_data( self );
 	provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
 	hub = ofa_idbprovider_get_hub( provider );
-	json = ofa_dossier_props_get_json_string_ex( hub, comment );
 
-	written = archive_write_data( sope->archive, json, my_strlen( json ));
-	archive_write_finish_entry( sope->archive );
-	archive_entry_free( entry );
-
-	if( written < 0 ){
-		g_warning( "%s: archive_write_data: %s", thisfn, archive_error_string( sope->archive ));
-	} else {
-		g_debug( "%s: json=%s, written=%lu", thisfn, json, written );
-    }
-
-	g_free( json );
-
-	return( written > 0 );
+	return( ofa_backup_header_write_headers( hub, comment, sope->archive ));
 }
 
 /*
@@ -999,7 +963,7 @@ static gboolean
 backup_create_entry( const ofaIDBConnect *self, GFile *file, sBackup *sope )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_create_entry";
-	gchar *basename, *name;
+	gchar *basename, *name, *header_name;
 	GTimeVal stamp;
 
 	sope->entry = archive_entry_new();
@@ -1010,7 +974,9 @@ backup_create_entry( const ofaIDBConnect *self, GFile *file, sBackup *sope )
 
 	basename = g_file_get_basename( file );
 	name = my_utils_str_replace( basename, "\\..*$", "" );
-    archive_entry_set_pathname( sope->entry, name );
+	header_name = g_strdup_printf( "%s%s", OFA_BACKUP_HEADER_DATA, name );
+    archive_entry_set_pathname( sope->entry, header_name );
+    g_free( header_name );
     g_free( name );
     g_free( basename );
 

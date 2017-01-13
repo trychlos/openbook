@@ -32,15 +32,16 @@
  * @include: openbook/ofa-dossier-props.h
  *
  * The #ofaDossierProps class manages the current properties of the
- * dossier and of the Openbook software build and runtime at time it
- * is built.
+ * dossier.
  *
- * The #ofaDossierProps object can then be exported as a JSON string.
+ * The #ofaDossierProps class implements the ofaIJson interface, and
+ * can thus be exported as a JSON string.
  */
 
 #include <glib-object.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofo-dossier.h"
 
 G_BEGIN_DECLS
 
@@ -64,16 +65,13 @@ typedef struct {
 }
 	ofaDossierPropsClass;
 
-const gchar     *ofa_dossier_props_get_title           ( void );
-
-gchar           *ofa_dossier_props_get_json_string_ex  ( ofaHub *hub,
-																const gchar *comment );
-
 GType            ofa_dossier_props_get_type            ( void ) G_GNUC_CONST;
 
 ofaDossierProps *ofa_dossier_props_new                 ( void );
 
-ofaDossierProps *ofa_dossier_props_new_from_uri        ( const gchar *uri );
+ofaDossierProps *ofa_dossier_props_new_from_dossier    ( ofoDossier *dossier );
+
+ofaDossierProps *ofa_dossier_props_new_from_string     ( const gchar *string );
 
 gboolean         ofa_dossier_props_get_is_current      ( ofaDossierProps *props );
 
@@ -94,42 +92,6 @@ const gchar     *ofa_dossier_props_get_rpid            ( ofaDossierProps *props 
 
 void             ofa_dossier_props_set_rpid            ( ofaDossierProps *props,
 																const gchar *rpid );
-
-const gchar     *ofa_dossier_props_get_openbook_version( ofaDossierProps *props );
-
-void             ofa_dossier_props_set_openbook_version( ofaDossierProps *props,
-																const gchar *version );
-
-void             ofa_dossier_props_set_plugin          ( ofaDossierProps *props,
-																const gchar *canon_name,
-																const gchar *display_name,
-																const gchar *version );
-
-void             ofa_dossier_props_set_dbmodel         ( ofaDossierProps *props,
-																const gchar *id,
-																const gchar *version );
-
-const gchar     *ofa_dossier_props_get_comment         ( ofaDossierProps *props );
-
-void             ofa_dossier_props_set_comment         ( ofaDossierProps *props,
-																const gchar *comment );
-
-const GTimeVal  *ofa_dossier_props_get_current_stamp   ( ofaDossierProps *props );
-
-void             ofa_dossier_props_set_current_stamp   ( ofaDossierProps *props,
-																const GTimeVal *stamp );
-
-const gchar     *ofa_dossier_props_get_current_user    ( ofaDossierProps *props );
-
-void             ofa_dossier_props_set_current_user    ( ofaDossierProps *props,
-																const gchar *userid );
-
-gchar           *ofa_dossier_props_get_json_string     ( ofaDossierProps *props );
-
-const gchar     *ofa_dossier_props_get_name            ( ofaDossierProps *props );
-
-void             ofa_dossier_props_set_name            ( ofaDossierProps *props,
-																const gchar *name );
 
 G_END_DECLS
 

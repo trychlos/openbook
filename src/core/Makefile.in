@@ -167,7 +167,8 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-account-frame-bin.lo ofa-account-properties.lo \
 	ofa-account-select.lo ofa-account-store.lo \
 	ofa-account-treeview.lo ofa-action-page.lo ofa-amount.lo \
-	ofa-box.lo ofa-buttons-box.lo ofa-core.lo ofa-counter.lo \
+	ofa-backup-header.lo ofa-backup-props.lo ofa-box.lo \
+	ofa-buttons-box.lo ofa-core.lo ofa-counter.lo \
 	ofa-currency-combo.lo ofa-currency-store.lo \
 	ofa-date-filter-hv-bin.lo ofa-dbms-root-bin.lo \
 	ofa-dossier-collection.lo ofa-dossier-delete-prefs-bin.lo \
@@ -181,7 +182,7 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-idbeditor.lo ofa-idbexercice-meta.lo ofa-idbmodel.lo \
 	ofa-idbprovider.lo ofa-iexe-close.lo ofa-idbexercice-editor.lo \
 	ofa-iexportable.lo ofa-igetter.lo ofa-iimporter.lo \
-	ofa-iimportable.lo ofa-import-duplicate.lo \
+	ofa-iimportable.lo ofa-ijson.lo ofa-import-duplicate.lo \
 	ofa-ipage-manager.lo ofa-iprintable.lo ofa-iproperties.lo \
 	ofa-irenderable.lo ofa-isetter.lo ofa-isignal-hub.lo \
 	ofa-istore.lo ofa-itree-adder.lo ofa-itvcolumnable.lo \
@@ -191,18 +192,18 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
 	ofa-ope-template-select.lo ofa-ope-template-store.lo \
 	ofa-ope-template-treeview.lo ofa-open-prefs-bin.lo \
-	ofa-paimean-editable.lo ofa-paimean-frame-bin.lo \
-	ofa-paimean-properties.lo ofa-paimean-select.lo \
-	ofa-paimean-store.lo ofa-paimean-treeview.lo ofa-paned-page.lo \
-	ofa-page.lo ofa-preferences.lo ofa-rate-store.lo \
-	ofa-render-page.lo ofa-stream-format.lo \
-	ofa-stream-format-bin.lo ofa-stream-format-disp.lo \
-	ofa-tree-store.lo ofa-tvbin.lo ofo-account.lo ofo-base.lo \
-	ofo-bat.lo ofo-bat-line.lo ofo-class.lo ofo-concil.lo \
-	ofo-currency.lo ofo-dossier.lo ofo-entry.lo ofo-ledger.lo \
-	ofo-ope-template.lo ofo-paimean.lo ofo-rate.lo \
-	ofs-account-balance.lo ofs-concil-id.lo ofs-currency.lo \
-	ofs-ledger-balance.lo ofs-ope.lo
+	ofa-openbook-props.lo ofa-paimean-editable.lo \
+	ofa-paimean-frame-bin.lo ofa-paimean-properties.lo \
+	ofa-paimean-select.lo ofa-paimean-store.lo \
+	ofa-paimean-treeview.lo ofa-paned-page.lo ofa-page.lo \
+	ofa-preferences.lo ofa-rate-store.lo ofa-render-page.lo \
+	ofa-stream-format.lo ofa-stream-format-bin.lo \
+	ofa-stream-format-disp.lo ofa-tree-store.lo ofa-tvbin.lo \
+	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
+	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
+	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-paimean.lo \
+	ofo-rate.lo ofs-account-balance.lo ofs-concil-id.lo \
+	ofs-currency.lo ofs-ledger-balance.lo ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
@@ -502,6 +503,8 @@ libofa_core_la_SOURCES = \
 	ofa-account-treeview.h								\
 	ofa-action-page.c									\
 	ofa-amount.c										\
+	ofa-backup-header.c									\
+	ofa-backup-props.c									\
 	ofa-box.c											\
 	ofa-buttons-box.c									\
 	ofa-core.c											\
@@ -548,6 +551,7 @@ libofa_core_la_SOURCES = \
 	ofa-igetter.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
+	ofa-ijson.c											\
 	ofa-import-duplicate.c								\
 	ofa-ipage-manager.c									\
 	ofa-iprintable.c									\
@@ -579,6 +583,7 @@ libofa_core_la_SOURCES = \
 	ofa-ope-template-treeview.h							\
 	ofa-open-prefs-bin.c								\
 	ofa-open-prefs-bin.h								\
+	ofa-openbook-props.c								\
 	ofa-paimean-editable.c								\
 	ofa-paimean-frame-bin.c								\
 	ofa-paimean-frame-bin.h								\
@@ -733,6 +738,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-action-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-amount.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-backup-header.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-backup-props.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-box.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-buttons-box.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-core.Plo@am__quote@
@@ -771,6 +778,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-igetter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimportable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimporter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ijson.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-duplicate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ipage-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Plo@am__quote@
@@ -794,6 +802,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-open-prefs-bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-openbook-props.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paimean-editable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paimean-frame-bin.Plo@am__quote@

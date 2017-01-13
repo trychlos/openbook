@@ -56,6 +56,7 @@
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-openbook-props.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-dossier-def.h"
 
@@ -134,6 +135,8 @@ ofaDossierCollection  *ofa_hub_get_dossier_collection    ( ofaHub *hub );
 myISettings           *ofa_hub_get_dossier_settings      ( ofaHub *hub );
 
 myISettings           *ofa_hub_get_user_settings         ( ofaHub *hub );
+
+ofaOpenbookProps      *ofa_hub_get_openbook_props        ( ofaHub *hub );
 
 const ofaIDBConnect   *ofa_hub_get_connect               ( ofaHub *hub );
 

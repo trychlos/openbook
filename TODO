@@ -411,7 +411,9 @@
 1316 2017- 1- 9 DossierManager: implement call to ofa_dossier_collection_delete_period()
                 (requires a superuser connection on the dbms)
 
-1319
+1319 2017- 1-13 remove ofaHub dependancy from my-icollectionable.c
+
+1320
 
 -----------------------------------------------------------------------
  DONE
