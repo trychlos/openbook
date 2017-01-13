@@ -34,6 +34,13 @@ G_BEGIN_DECLS
 
 typedef struct _ofaHub                  ofaHub;
 
+/**
+ * @ofaDataCb: a general usage callback to pass some datas.
+ * @ofaMsgCb: a general usage callback to display a message.
+ */
+typedef void ( *ofaDataCb )( const void *, gsize, void * );
+typedef void ( *ofaMsgCb )( const gchar *, void * );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_HUB_DEF_H__ */

@@ -58,17 +58,6 @@ typedef struct _ofaIDBConnectInterface           ofaIDBConnectInterface;
 #endif
 
 /**
- * ofaSyncOpeCb:
- * @buffer: a buffer which contains the data to be managed by the callback;
- *  this buffer will be #g_free() by the callback after use.
- * @size: the size of the buffer.
- * @user_data: user datas.
- *
- * A callback provided to backup_db() and restore_db() methods.
- */
-typedef void ( *ofaAsyncOpeCb )( gchar *buffer, gsize size, void *user_data );
-
-/**
  * ofaIDBConnectInterface:
  * @get_interface_version: [should]: returns the implemented version number.
  * @open_with_editor: [should]: open a connection with ofaIDBEditor informations.
@@ -207,35 +196,27 @@ struct _ofaIDBConnectInterface {
 	/**
 	 * backup_db:
 	 * @instance: a #ofaIDBConnect user connection on the period.
-	 * @msg_stream: [allow-none]: a #GOutputStream for output messages
-	 *  if verbose mode has been set (by providing a #GtkWindow parent
-	 *  to the caller function).
-	 * @msg_cb: [allow-none]: the #GAsyncReadyCallback callback function;
-	 *  may be %NULL if #GtkWindow parent has been provided to the caller
-	 *  function.
-	 * @data_stream: a #GOutputStream for output data flow.
-	 * @data_cb: the #GAsyncReadyCallback callback function.
+	 * @msg_cb: [allow-none]: a #ofaMsgCb callback function;
+	 *  the data passed to the callback is expected to be a null-
+	 *  terminated string; the callee is expected to provide this data
+	 *  in a newly allocated buffer as the caller will release it;
+	 *  may be %NULL if the caller does not wish this sort of display.
+	 * @data_cb: a #ofaDataMsg callback function;
+	 *  the callee is expected to provide the data in a newly allocated
+	 *  buffer as the caller will release it.
 	 * @user_data: will be passed to both @msg_cb and @data_cb.
 	 *
 	 * Backup the currently opened period.
 	 *
-	 * It is expected that the DBMS plugin backups the desired datas by
-	 * asynchronously sending:
-	 * - uncompressed backup datas to @data_stream, with @data_cb callback
-	 *   and @user_data user data;
-	 * - messages to @msg_stream, with @msg_cb callback and @user_data
-	 *   user data.
-	 *
-	 * The method is expected to return only when the backup is finished
-	 * as all output streams are closed on return.
+	 * The method is expected to return only when the backup is finished.
 	 *
 	 * Returns: %TRUE if successful, %FALSE else.
 	 *
 	 * Since: version 1
 	 */
 	gboolean ( *backup_db )            ( const ofaIDBConnect *instance,
-											ofaAsyncOpeCb msg_cb,
-											ofaAsyncOpeCb data_cb,
+											ofaMsgCb msg_cb,
+											ofaDataCb data_cb,
 											void *user_data );
 
 	/**
@@ -445,7 +426,8 @@ gboolean            ofa_idbconnect_backup                   ( const ofaIDBConnec
 gboolean            ofa_idbconnect_backup_db                ( const ofaIDBConnect *connect,
 																	const gchar *comment,
 																	const gchar *uri,
-																	GtkWindow *parent );
+																	ofaMsgCb msg_cb,
+																	void *user_data);
 
 gboolean            ofa_idbconnect_restore                  ( const ofaIDBConnect *connect,
 																	const ofaIDBExerciceMeta *period,

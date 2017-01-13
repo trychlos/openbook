@@ -229,6 +229,7 @@ ofa_dossier_props_get_json_string_ex( ofaHub *hub, const gchar *comment )
 	ofa_dossier_props_set_is_current( props, ofo_dossier_is_current( dossier ));
 	ofa_dossier_props_set_begin_date( props, ofo_dossier_get_exe_begin( dossier ));
 	ofa_dossier_props_set_end_date( props, ofo_dossier_get_exe_end( dossier ));
+	ofa_dossier_props_set_rpid( props, ofo_dossier_get_rpid( dossier ));
 
 	extenders = ofa_hub_get_extender_collection( hub );
 	modules = ofa_extender_collection_get_modules( extenders );
@@ -1053,6 +1054,9 @@ g_return_val_if_fail( props && OFA_IS_DOSSIER_PROPS( props ), NULL );
 	json_builder_set_member_name( builder, st_end );
 	json_builder_add_string_value( builder, sdate );
 	g_free( sdate );
+
+	json_builder_set_member_name( builder, st_rpid );
+	json_builder_add_string_value( builder, priv->rpid );
 
 	json_builder_set_member_name( builder, st_openbook );
 	json_builder_add_string_value( builder, priv->openbook_version );

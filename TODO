@@ -179,8 +179,6 @@
 
  790 2015- 4- 6 DISP GuidedInputEx: replace the treeview by a revealer ?
 
- 792 2015- 4- 6 FEAT have a comment in the backup
-
  796 2015- 4-13 FEAT IRenderable: have a second level of grouping
                      (subgroup) use case: when printing accounts book,
                      have a subtotal per class
@@ -413,14 +411,14 @@
 1316 2017- 1- 9 DossierManager: implement call to ofa_dossier_collection_delete_period()
                 (requires a superuser connection on the dbms)
 
-1317 2017- 1-10 move ofaBackup to myIDialog, including a comment
-     2017- 1-12 actually move to an assistant
-
 1319
 
 -----------------------------------------------------------------------
  DONE
  ====
+
+ 792 2015- 4- 6 FEAT have a comment in the backup
+     2017- 1-13 done
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
      2017- 1-12 done in CORE v34
@@ -471,6 +469,10 @@
 
 1315 2017- 1- 9 ofa_dossier_collection_delete_period(): to be written
      2017- 1- 9 done
+
+1317 2017- 1-10 move ofaBackup to myIDialog, including a comment
+     2017- 1-12 actually move to an assistant
+     2017- 1-13 done
 
 1318 2017- 1-12 review my_utils_stamp_set_from_xxx to have a format (like my_date)
      2017- 1-12 done

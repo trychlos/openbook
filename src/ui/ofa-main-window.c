@@ -56,7 +56,7 @@
 #include "ui/ofa-account-book-render.h"
 #include "ui/ofa-account-page.h"
 #include "ui/ofa-application.h"
-#include "ui/ofa-backup.h"
+#include "ui/ofa-backup-assistant.h"
 #include "ui/ofa-balance-render.h"
 #include "ui/ofa-bat-page.h"
 #include "ui/ofa-check-balances.h"
@@ -1249,7 +1249,7 @@ static void
 do_backup( ofaMainWindow *self )
 {
 	close_all_pages( self );
-	ofa_backup_run( OFA_IGETTER( self ), GTK_WINDOW( self ));
+	ofa_backup_assistant_run( OFA_IGETTER( self ), GTK_WINDOW( self ));
 }
 
 /**

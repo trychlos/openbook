@@ -36,6 +36,7 @@ src/ui/ofa-account-book-args.ui
 src/ui/ofa-account-filter-vv-bin.ui
 src/ui/ofa-admin-credentials-bin.ui
 src/ui/ofa-app-menubar.ui
+src/ui/ofa-backup-assistant.ui
 src/ui/ofa-balance-args.ui
 src/ui/ofa-bat-properties.ui
 src/ui/ofa-bat-properties-bin.ui

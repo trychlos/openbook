@@ -43,8 +43,8 @@ gboolean     ofa_mysql_cmdline_backup_run                 ( ofaMysqlConnect *con
 																const gchar *uri );
 
 gboolean     ofa_mysql_cmdline_backup_db_run              ( ofaMysqlConnect *connect,
-																ofaAsyncOpeCb msg_cb,
-																ofaAsyncOpeCb data_cb,
+																ofaMsgCb msg_cb,
+																ofaDataCb data_cb,
 																void *user_data );
 
 const gchar *ofa_mysql_cmdline_restore_get_default_command( void );

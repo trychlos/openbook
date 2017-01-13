@@ -14,7 +14,9 @@
 
  New features and improvements:
 
-   - Backups now manage several data streams.
+   - Backups now manage several data streams, of which a Dossier+Openbook header.
+   - Backups now have a comment (todo #792).
+   - Replace Backup standard dialog box with an assistant (todo #1317).
    - Add to backup archives a JSON header.
 
  Bug fixes:

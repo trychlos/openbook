@@ -70,8 +70,8 @@ typedef struct {
 	gboolean      verbose;
 	myISettings  *settings;
 	GMainLoop    *loop;
-	ofaAsyncOpeCb msg_cb;
-	ofaAsyncOpeCb data_cb;
+	ofaMsgCb      msg_cb;
+	ofaDataCb     data_cb;
 	void         *user_data;
 }
 	sExecuteInfos;
@@ -82,7 +82,7 @@ static gchar      *cmdline_build_from_connect( const gchar *template, const ofaM
 static gchar      *cmdline_build_from_args( const gchar *template, const gchar *host, const gchar *socket, guint port, const gchar *account, const gchar *password, const gchar *dbname, const gchar *fname, const gchar *new_dbname );
 static gboolean    do_execute_sync( const gchar *template, const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, const gchar *fname, const gchar *newdb );
 static gboolean    do_execute_async( const gchar *template, const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
-static gboolean    do_execute_async2( const gchar *template, const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, ofaAsyncOpeCb msg_cb, ofaAsyncOpeCb data_cb, void *user_data );
+static gboolean    do_execute_async2( const gchar *template, const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data );
 static void        async_create_window( sExecuteInfos *infos, const gchar *window_title );
 static GPid        async_exec_command( const gchar *cmdline, sExecuteInfos *infos );
 static GPid        async_exec_command2( const gchar *cmdline, sExecuteInfos *infos );
@@ -180,7 +180,7 @@ ofa_mysql_cmdline_backup_run( ofaMysqlConnect *connect, const gchar *uri )
  * %FALSE else.
  */
 gboolean
-ofa_mysql_cmdline_backup_db_run( ofaMysqlConnect *connect, ofaAsyncOpeCb msg_cb, ofaAsyncOpeCb data_cb, void *user_data )
+ofa_mysql_cmdline_backup_db_run( ofaMysqlConnect *connect, ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data )
 {
 	gchar *template;
 	ofaIDBDossierMeta *dossier_meta;
@@ -612,7 +612,7 @@ do_execute_async( const gchar *template,
 static gboolean
 do_execute_async2( const gchar *template,
 					const ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period,
-					ofaAsyncOpeCb msg_cb, ofaAsyncOpeCb data_cb, void *user_data )
+					ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_do_execute_async2";
 	gchar *cmdline;
@@ -959,7 +959,7 @@ async_stderr_fn2( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
 	/* data for us to read? */
 	if( cond & (G_IO_IN | G_IO_PRI )){
 		bufsize = g_io_channel_get_buffer_size( ioc );
-		iobuf = g_new0( gchar, bufsize );
+		iobuf = g_new0( gchar, 1+bufsize );
 		ret = g_io_channel_read_chars( ioc, iobuf, bufsize, &read, NULL );
 		//g_debug( "%s: read=%lu", thisfn, read );
 		if( read <= 0 || ret != G_IO_STATUS_NORMAL ){
@@ -968,7 +968,7 @@ async_stderr_fn2( GIOChannel *ioc, GIOCondition cond, sExecuteInfos *infos )
 		}
 
 		/* the buffer is released by the callback */
-		infos->msg_cb( iobuf, read, infos->user_data );
+		infos->msg_cb( iobuf, infos->user_data );
 	}
 
 	if( cond & ( G_IO_ERR | G_IO_HUP | G_IO_NVAL )){

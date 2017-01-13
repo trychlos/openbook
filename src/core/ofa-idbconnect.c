@@ -57,24 +57,14 @@ typedef struct {
 
 /* a data structure used to manage async messages
  * and data compression
- * (cf. e.g. backup_db() and restore_db())
  */
 typedef struct {
-
-	/* verbose mode
-	 */
-	GtkWidget            *window;
-	GtkWidget            *textview;
-	GtkWidget            *close_btn;
-	myISettings          *settings_iface;
-	const gchar          *settings_name;
-
-	/* output
-	 */
+	ofaMsgCb              msg_cb;
+	void                 *user_data;
 	struct archive       *archive;
 	struct archive_entry *entry;
 }
-	sAsyncOpe;
+	sBackup;
 
 #define IDBCONNECT_LAST_VERSION            1
 #define IDBCONNECT_DATA                   "idbconnect-data"
@@ -88,15 +78,18 @@ static gboolean        idbconnect_query( const ofaIDBConnect *connect, const gch
 static void            audit_query( const ofaIDBConnect *connect, const gchar *query );
 static gchar          *quote_query( const gchar *query );
 static void            error_query( const ofaIDBConnect *connect, const gchar *query );
-static gboolean        backup_create_archive( const ofaIDBConnect *self, GFile *file, sAsyncOpe *sope );
+static gboolean        backup_create_archive( const ofaIDBConnect *self, GFile *file, sBackup *sope );
 static struct archive *backup_new_archive( const gchar *filename );
-static gboolean        backup_json_header( const ofaIDBConnect *self, const gchar *comment, sAsyncOpe *sope );
-static gboolean        backup_create_entry( const ofaIDBConnect *self, GFile *file, sAsyncOpe *sope );
-static void            backup_data_cb( gchar *buffer, gsize bufsize, void *user_data );
-static void            backup_end_msg( const ofaIDBConnect *self, GtkWindow *parent, gboolean ok, sAsyncOpe *sope );
-static void            msg_window_setup( const ofaIDBConnect *self, GtkWindow *parent, const gchar *title, sAsyncOpe *sope );
-static void            msg_window_on_close( GtkWidget *button, sAsyncOpe *sope );
+static gboolean        backup_json_header( const ofaIDBConnect *self, const gchar *comment, sBackup *sope );
+static gboolean        backup_create_entry( const ofaIDBConnect *self, GFile *file, sBackup *sope );
+static void            backup_data_cb( const void *buffer, gsize bufsize, void *user_data );
+static void            backup_msg_cb( const gchar *string, void *user_data );
+#if 0
+static void            backup_end_msg( const ofaIDBConnect *self, GtkWindow *parent, gboolean ok, sBackup *sope );
+static void            msg_window_setup( const ofaIDBConnect *self, GtkWindow *parent, const gchar *title, sBackup *sope );
+static void            msg_window_on_close( GtkWidget *button, sBackup *sope );
 static void            msg_window_cb( gchar *buffer, gsize bufsize, void *user_data );
+#endif
 static gboolean        set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr );
 static sIDBConnect    *get_instance_data( const ofaIDBConnect *connect );
 static void            on_instance_finalized( sIDBConnect *sdata, GObject *finalized_dbconnect );
@@ -869,9 +862,8 @@ ofa_idbconnect_backup( const ofaIDBConnect *connect, const gchar *uri )
  *  connection on the dossier/exercice to be backuped.
  * @comment: [allow-none]: a user comment.
  * @uri: the target file.
- * @parent: [allow-none]: in verbose mode, the parent #GtkWindow.
- *  If %NULL, then no message is outputed.
- *  If set, messages are displayed in a dedicated window.
+ * @msg_cb: [allow-none]: if set, a callback to display backup messages.
+ * @user_data: callback user data.
  *
  * Backup the current period to the @uri file.
  *
@@ -881,26 +873,26 @@ ofa_idbconnect_backup( const ofaIDBConnect *connect, const gchar *uri )
  * Returns: %TRUE if successful.
  */
 gboolean
-ofa_idbconnect_backup_db( const ofaIDBConnect *connect, const gchar *comment, const gchar *uri, GtkWindow *parent )
+ofa_idbconnect_backup_db( const ofaIDBConnect *connect,
+							const gchar *comment, const gchar *uri, ofaMsgCb msg_cb, void *user_data )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_db";
-	sAsyncOpe *sope;
+	sBackup *sope;
 	gboolean ok;
 	GFile *file;
 
-	g_debug( "%s: connect=%p, comment=%s, uri=%s, parent=%p",
-			thisfn, ( void * ) connect, comment, uri, ( void * ) parent );
+	g_debug( "%s: connect=%p, comment=%s, uri=%s, msg_cb=%p, user_data=%p",
+			thisfn, ( void * ) connect, comment, uri, ( void * ) msg_cb, user_data );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
-	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
 
 	ok = FALSE;
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->backup_db ){
 
 		file = g_file_new_for_uri( uri );
-		sope = g_new0( sAsyncOpe, 1 );
+		sope = g_new0( sBackup, 1 );
 
 		ok = backup_create_archive( connect, file, sope ) &&
 				backup_json_header( connect, comment, sope ) &&
@@ -908,19 +900,14 @@ ofa_idbconnect_backup_db( const ofaIDBConnect *connect, const gchar *comment, co
 
 		/* ask the DBMS plugin to provide its datas and messages streams */
 		/* define intermediate streams */
-		if( parent ){
-			sope->settings_name = "ofaIDBConnectBackup";
-			msg_window_setup( connect, parent, ( "Openbook backup" ), sope );
-		}
 
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->backup_db( connect, msg_window_cb, backup_data_cb, sope );
+		sope->msg_cb = msg_cb;
+		sope->user_data = user_data;
+
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->backup_db( connect, backup_msg_cb, backup_data_cb, sope );
 
 		/* end of backup stream */
 	    archive_write_finish_entry( sope->archive );
-
-		if( parent ){
-			backup_end_msg( connect, parent, ok, sope );
-		}
 
 	    /* release DBMS backup resources */
 	    g_debug( "%s: closing streams and releasing resources", thisfn );
@@ -942,7 +929,7 @@ ofa_idbconnect_backup_db( const ofaIDBConnect *connect, const gchar *comment, co
  * create the output archive file, forcing a .zip extension
  */
 static gboolean
-backup_create_archive( const ofaIDBConnect *self, GFile *file, sAsyncOpe *sope )
+backup_create_archive( const ofaIDBConnect *self, GFile *file, sBackup *sope )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_create_archive";
 	gchar *pathname, *filename;
@@ -993,7 +980,7 @@ backup_new_archive( const gchar *filename )
  * Write the DossierProps to the archive file as a JSON string
  */
 static gboolean
-backup_json_header( const ofaIDBConnect *self, const gchar *comment, sAsyncOpe *sope )
+backup_json_header( const ofaIDBConnect *self, const gchar *comment, sBackup *sope )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_json_header";
 	sIDBConnect *sdata;
@@ -1046,7 +1033,7 @@ backup_json_header( const ofaIDBConnect *self, const gchar *comment, sAsyncOpe *
  * Create a new entry for hosting backup datas
  */
 static gboolean
-backup_create_entry( const ofaIDBConnect *self, GFile *file, sAsyncOpe *sope )
+backup_create_entry( const ofaIDBConnect *self, GFile *file, sBackup *sope )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_create_entry";
 	gchar *basename, *name;
@@ -1086,10 +1073,10 @@ backup_create_entry( const ofaIDBConnect *self, GFile *file, sAsyncOpe *sope )
  * @res: may be %NULL to signal the end of the operation.
  */
 static void
-backup_data_cb( gchar *buffer, gsize bufsize, void *user_data )
+backup_data_cb( const void *buffer, gsize bufsize, void *user_data )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_data_cb";
-	sAsyncOpe *sope = ( sAsyncOpe * ) user_data;
+	sBackup *sope = ( sBackup * ) user_data;
 	gsize written;
 
 	/* get the binary data from the output stream from the plugin */
@@ -1100,11 +1087,20 @@ backup_data_cb( gchar *buffer, gsize bufsize, void *user_data )
 		g_debug( "%s: insize=%lu, written=%lu", thisfn, bufsize, written );
 	}
 
-	g_free( buffer );
+	g_free(( void * ) buffer );
 }
 
 static void
-backup_end_msg( const ofaIDBConnect *self, GtkWindow *parent, gboolean ok, sAsyncOpe *sope )
+backup_msg_cb( const gchar *string, void *user_data )
+{
+	sBackup *sope = ( sBackup * ) user_data;
+	sope->msg_cb( string, sope->user_data );
+	g_free(( void * ) string );
+}
+
+#if 0
+static void
+backup_end_msg( const ofaIDBConnect *self, GtkWindow *parent, gboolean ok, sBackup *sope )
 {
 	gchar *msg;
 	GtkWidget *dlg;
@@ -1130,7 +1126,7 @@ backup_end_msg( const ofaIDBConnect *self, GtkWindow *parent, gboolean ok, sAsyn
 }
 
 static void
-msg_window_setup( const ofaIDBConnect *self, GtkWindow *parent, const gchar *title, sAsyncOpe *sope )
+msg_window_setup( const ofaIDBConnect *self, GtkWindow *parent, const gchar *title, sBackup *sope )
 {
 	sIDBConnect *sdata;
 	ofaIDBProvider *provider;
@@ -1181,7 +1177,7 @@ msg_window_setup( const ofaIDBConnect *self, GtkWindow *parent, const gchar *tit
 }
 
 static void
-msg_window_on_close( GtkWidget *button, sAsyncOpe *sope )
+msg_window_on_close( GtkWidget *button, sBackup *sope )
 {
 	my_utils_window_position_save( GTK_WINDOW( sope->window ), sope->settings_iface, sope->settings_name );
 	gtk_widget_destroy( sope->window );
@@ -1191,7 +1187,7 @@ static void
 msg_window_cb( gchar *buffer, gsize bufsize, void *user_data )
 {
 	static const gchar *thisfn = "ofa_idbconnect_msg_window_cb";
-	sAsyncOpe *sope = ( sAsyncOpe * ) user_data;
+	sBackup *sope = ( sBackup * ) user_data;
 	GtkTextBuffer *textbuf;
 	GtkTextIter enditer;
 	const gchar *charset;
@@ -1237,6 +1233,7 @@ msg_window_cb( gchar *buffer, gsize bufsize, void *user_data )
 		gtk_main_iteration();
 	}
 }
+#endif
 
 /**
  * ofa_idbconnect_restore:
