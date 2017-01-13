@@ -179,6 +179,16 @@ struct _ofaIDBExerciceMetaInterface {
 	void     ( *dump )                 ( const ofaIDBExerciceMeta *instance );
 };
 
+/**
+ * Restorable codes
+ */
+enum {
+	OFA_RESTORABLE_OK = 0,
+	OFA_RESTORABLE_RPID,
+	OFA_RESTORABLE_DATE,
+	OFA_RESTORABLE_HEADER
+};
+
 /*
  * Interface-wide
  */
@@ -246,6 +256,9 @@ gint               ofa_idbexercice_meta_compare                   ( const ofaIDB
 gboolean           ofa_idbexercice_meta_is_suitable               ( const ofaIDBExerciceMeta *exercice_meta,
 																		const GDate *begin,
 																		const GDate *end );
+
+guint              ofa_idbexercice_meta_is_restorable             ( const ofaIDBExerciceMeta *exercice_meta,
+																		const gchar *uri );
 
 void               ofa_idbexercice_meta_update_settings           ( const ofaIDBExerciceMeta *exercice_meta );
 

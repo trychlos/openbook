@@ -696,6 +696,29 @@ ofa_idbexercice_meta_is_suitable( const ofaIDBExerciceMeta *period, const GDate 
 }
 
 /**
+ * ofa_idbexercice_meta_is_restorable:
+ * @period: a #ofaIDBExerciceMeta instance.
+ * @uri: a file containing an archive.
+ *
+ * Returns:
+ * - %OFA_RESTORABLE_OK if @uri actually contains an archived exercice
+ *    restorable on @period;
+ *
+ * - %OFA_RESTORABLE_RPID if the target @period is an archive and the
+ *   @uri archive file does not contain an archive of this same dossier;
+ *
+ * - %OFA_RESTORABLE_DATE if the target @period exercice dates are not
+ *   compatible with those contained in @uri archive;
+ *
+ * - %OFA_RESTORABLE_HEADER if the @uri does not contain a suitable header.
+ */
+guint
+ofa_idbexercice_meta_is_restorable( const ofaIDBExerciceMeta *period, const gchar *uri )
+{
+	return( OFA_RESTORABLE_HEADER );
+}
+
+/**
  * ofa_idbexercice_meta_update_settings:
  * @period: this #ofaIDBExerciceMeta instance.
  *

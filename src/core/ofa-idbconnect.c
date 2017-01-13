@@ -84,12 +84,6 @@ static gboolean        backup_json_header( const ofaIDBConnect *self, const gcha
 static gboolean        backup_create_entry( const ofaIDBConnect *self, GFile *file, sBackup *sope );
 static void            backup_data_cb( const void *buffer, gsize bufsize, void *user_data );
 static void            backup_msg_cb( const gchar *string, void *user_data );
-#if 0
-static void            backup_end_msg( const ofaIDBConnect *self, GtkWindow *parent, gboolean ok, sBackup *sope );
-static void            msg_window_setup( const ofaIDBConnect *self, GtkWindow *parent, const gchar *title, sBackup *sope );
-static void            msg_window_on_close( GtkWidget *button, sBackup *sope );
-static void            msg_window_cb( gchar *buffer, gsize bufsize, void *user_data );
-#endif
 static gboolean        set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr );
 static sIDBConnect    *get_instance_data( const ofaIDBConnect *connect );
 static void            on_instance_finalized( sIDBConnect *sdata, GObject *finalized_dbconnect );
@@ -826,37 +820,6 @@ ofa_idbconnect_get_last_error( const ofaIDBConnect *connect )
 }
 
 /**
- * ofa_idbconnect_backup:
- * @connect: a #ofaIDBConnect instance which handles a user
- *  connection on the dossier/exercice to be backuped.
- * @uri: the target file.
- *
- * Backup the current period to the @uri file.
- *
- * Returns: %TRUE if successful.
- */
-gboolean
-ofa_idbconnect_backup( const ofaIDBConnect *connect, const gchar *uri )
-{
-	static const gchar *thisfn = "ofa_idbconnect_backup";
-	gboolean ok;
-
-	g_debug( "%s: connect=%p, uri=%s", thisfn, ( void * ) connect, uri );
-
-	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-	g_return_val_if_fail( my_strlen( uri ), FALSE );
-
-	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->backup ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->backup( connect, uri );
-		return( ok );
-	}
-
-	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'backup()' method",
-			thisfn, G_OBJECT_TYPE_NAME( connect ));
-	return( FALSE );
-}
-
-/**
  * ofa_idbconnect_backup_db:
  * @connect: a #ofaIDBConnect instance which handles a user
  *  connection on the dossier/exercice to be backuped.
@@ -1098,207 +1061,6 @@ backup_msg_cb( const gchar *string, void *user_data )
 	g_free(( void * ) string );
 }
 
-#if 0
-static void
-backup_end_msg( const ofaIDBConnect *self, GtkWindow *parent, gboolean ok, sBackup *sope )
-{
-	gchar *msg;
-	GtkWidget *dlg;
-
-	if( ok ){
-		msg = g_strdup( _( "Dossier successfully backuped" ));
-	} else {
-		msg = g_strdup( _( "An error occured while backuping the dossier" ));
-	}
-
-	dlg = gtk_message_dialog_new(
-				parent,
-				GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_INFO,
-				GTK_BUTTONS_CLOSE,
-				"%s", msg );
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( dlg );
-
-	gtk_widget_set_sensitive( sope->close_btn, TRUE );
-	gtk_dialog_run( GTK_DIALOG( sope->window ));
-}
-
-static void
-msg_window_setup( const ofaIDBConnect *self, GtkWindow *parent, const gchar *title, sBackup *sope )
-{
-	sIDBConnect *sdata;
-	ofaIDBProvider *provider;
-	ofaHub *hub;
-	GtkWidget *content, *grid, *scrolled;
-
-	sope->window = gtk_dialog_new_with_buttons(
-							title,
-							parent,
-							GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-							_( "_Close" ), GTK_RESPONSE_CLOSE,
-							NULL );
-
-	content = gtk_dialog_get_content_area( GTK_DIALOG( sope->window ));
-
-	grid = gtk_grid_new();
-	gtk_container_add( GTK_CONTAINER( content ), grid );
-
-	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	my_utils_widget_set_margins( scrolled, 4, 6, 4, 4 );
-	gtk_scrolled_window_set_shadow_type( GTK_SCROLLED_WINDOW( scrolled ), GTK_SHADOW_IN );
-	gtk_grid_attach( GTK_GRID( grid ), scrolled, 0, 0, 1, 1 );
-
-	sope->textview = gtk_text_view_new();
-	gtk_widget_set_hexpand( sope->textview, TRUE );
-	gtk_widget_set_vexpand( sope->textview, TRUE );
-	my_utils_widget_set_margins( sope->textview, 2, 2, 2, 2 );
-	gtk_text_view_set_editable( GTK_TEXT_VIEW( sope->textview ), FALSE );
-	gtk_container_add( GTK_CONTAINER( scrolled ), sope->textview );
-
-	sope->close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( sope->window ), GTK_RESPONSE_CLOSE );
-	my_utils_widget_set_margins( sope->close_btn, 4, 4, 0, 8 );
-	gtk_widget_set_sensitive( sope->close_btn, FALSE );
-	g_signal_connect( sope->close_btn, "clicked", G_CALLBACK( msg_window_on_close ), sope );
-
-	sdata = get_instance_data( self );
-	provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
-	hub = ofa_idbprovider_get_hub( provider );
-	sope->settings_iface = ofa_hub_get_user_settings( hub );
-	my_utils_window_position_restore( GTK_WINDOW( sope->window ), sope->settings_iface, sope->settings_name );
-
-	gtk_widget_show_all( sope->window );
-
-	/* let Gtk update the display */
-	while( gtk_events_pending()){
-		gtk_main_iteration();
-	}
-}
-
-static void
-msg_window_on_close( GtkWidget *button, sBackup *sope )
-{
-	my_utils_window_position_save( GTK_WINDOW( sope->window ), sope->settings_iface, sope->settings_name );
-	gtk_widget_destroy( sope->window );
-}
-
-static void
-msg_window_cb( gchar *buffer, gsize bufsize, void *user_data )
-{
-	static const gchar *thisfn = "ofa_idbconnect_msg_window_cb";
-	sBackup *sope = ( sBackup * ) user_data;
-	GtkTextBuffer *textbuf;
-	GtkTextIter enditer;
-	const gchar *charset;
-	gchar *utf8;
-
-	g_debug( "%s: buffer=%p, bufsize=%lu, user_data=%p",
-			thisfn, ( void * ) buffer, bufsize, ( void * ) user_data );
-
-	textbuf = gtk_text_view_get_buffer( GTK_TEXT_VIEW( sope->textview ));
-	gtk_text_buffer_get_end_iter( textbuf, &enditer );
-
-	/* Check if messages are in UTF-8. If not, assume
-	 *  they are in current locale and try to convert.
-	 *  We assume we're getting the stream in a 1-byte
-	 *   encoding here, ie. that we do not have cut-off
-	 *   characters at the end of our buffer (=BAD)
-	 */
-	if( g_utf8_validate( buffer, -1, NULL )){
-		gtk_text_buffer_insert( textbuf, &enditer, buffer, -1 );
-
-	} else {
-		g_get_charset( &charset );
-		utf8 = g_convert_with_fallback( buffer, -1, "UTF-8", charset, NULL, NULL, NULL, NULL );
-		if( utf8 ){
-			gtk_text_buffer_insert( textbuf, &enditer, utf8, -1 );
-			g_free(utf8);
-
-		} else {
-			g_debug( "%s: message output is not in UTF-8 nor in locale charset", thisfn );
-		}
-	}
-
-	/* A bit awkward, but better than nothing. Scroll text view to end */
-	gtk_text_buffer_get_end_iter( textbuf, &enditer );
-	gtk_text_buffer_move_mark_by_name( textbuf, "insert", &enditer );
-	gtk_text_view_scroll_to_mark(
-			GTK_TEXT_VIEW( sope->textview),
-			gtk_text_buffer_get_mark( textbuf, "insert" ),
-			0.0, FALSE, 0.0, 0.0 );
-
-	/* let Gtk update the display */
-	while( gtk_events_pending()){
-		gtk_main_iteration();
-	}
-}
-#endif
-
-/**
- * ofa_idbconnect_restore:
- * @connect: a #ofaIDBConnect instance which handles a superuser
- *  connection on the DBMS at server-level. It is expected this
- *  @connect object holds a valid #ofaIDBDossierMeta object which describes
- *  the target dossier.
- * @period: [allow-none]: a #ofaIDBExerciceMeta object which describes the
- *  target exercice; if %NULL, the file is restored on the current
- *  exercice.
- * @uri: the source file to be restored.
- *
- * Restore the file on the specified period.
- *
- * Returns: %TRUE if successful.
- */
-gboolean
-ofa_idbconnect_restore( const ofaIDBConnect *connect,
-							const ofaIDBExerciceMeta *period, const gchar *uri,
-							const gchar *adm_account, const gchar *adm_password )
-{
-	static const gchar *thisfn = "ofa_idbconnect_restore";
-	sIDBConnect *sdata;
-	ofaIDBExerciceMeta *target_period;
-	ofaIDBProvider *provider;
-	ofaIDBConnect *target_connect;
-	gboolean ok;
-
-	g_debug( "%s: connect=%p, period=%p, uri=%s, adm_account=%s, adm_password=%s",
-			thisfn, ( void * ) connect, ( void * ) period, uri,
-			adm_account, adm_password ? "******" : adm_password );
-
-	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-	g_return_val_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ), FALSE );
-	g_return_val_if_fail( my_strlen( uri ), FALSE );
-
-	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore ){
-		ok = FALSE;
-		sdata = get_instance_data( connect );
-		g_return_val_if_fail( sdata->dossier_meta && OFA_IS_IDBDOSSIER_META( sdata->dossier_meta ), FALSE );
-
-		if( period ){
-			target_period = ( ofaIDBExerciceMeta * ) period;
-		} else {
-			target_period = ofa_idbdossier_meta_get_current_period( sdata->dossier_meta );
-		}
-		g_return_val_if_fail( target_period && OFA_IS_IDBEXERCICE_META( target_period ), FALSE );
-
-		if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore( connect, target_period, uri )){
-			provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
-			target_connect = ofa_idbprovider_new_connect(
-					provider, sdata->account, sdata->password, sdata->dossier_meta, target_period );
-			set_admin_credentials( target_connect, adm_account, adm_password, NULL );
-			g_object_unref( target_connect );
-			ok = TRUE;
-		}
-
-		return( ok );
-	}
-
-	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'restore()' method",
-			thisfn, G_OBJECT_TYPE_NAME( connect ));
-	return( FALSE );
-}
-
 /**
  * ofa_idbconnect_restore_db:
  * @connect: a #ofaIDBConnect instance which handles a superuser
@@ -1309,8 +1071,10 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
  *  target exercice; if %NULL, the file is restored on the current
  *  exercice.
  * @uri: the source file to be restored.
- * @adm_account: the new administrative account to be set.
- * @adm_account: the new administrative password to be set.
+ * @adm_account: the administrative account of the restored exercice.
+ * @adm_password: the administrative password of the restored exercice.
+ * @msg_cb: [allow-none]: if set, a callback to display the messages.
+ * @user_data: callback user data.
  *
  * Restore the file on the specified period.
  *
@@ -1319,7 +1083,8 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 gboolean
 ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 							const ofaIDBExerciceMeta *period, const gchar *uri,
-							const gchar *adm_account, const gchar *adm_password )
+							const gchar *adm_account, const gchar *adm_password,
+							ofaMsgCb msg_cb, void *user_data )
 {
 	static const gchar *thisfn = "ofa_idbconnect_restore_db";
 	sIDBConnect *sdata;
@@ -1328,15 +1093,17 @@ ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 	ofaIDBConnect *target_connect;
 	gboolean ok;
 
-	g_debug( "%s: connect=%p, period=%p, uri=%s, adm_account=%s, adm_password=%s",
+	g_debug( "%s: connect=%p, period=%p, uri=%s, adm_account=%s, adm_password=%s, msg_cb=%p, user_data=%p",
 			thisfn, ( void * ) connect, ( void * ) period, uri,
-			adm_account, adm_password ? "******" : adm_password );
+			adm_account, adm_password ? "******" : adm_password,
+			( void * ) msg_cb, user_data );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 	g_return_val_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ), FALSE );
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
 
-	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore ){
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore_db ){
+
 		ok = FALSE;
 		sdata = get_instance_data( connect );
 		g_return_val_if_fail( sdata->dossier_meta && OFA_IS_IDBDOSSIER_META( sdata->dossier_meta ), FALSE );
@@ -1348,7 +1115,7 @@ ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 		}
 		g_return_val_if_fail( target_period && OFA_IS_IDBEXERCICE_META( target_period ), FALSE );
 
-		if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore( connect, target_period, uri )){
+		if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore_db( connect, target_period, uri, msg_cb, NULL, NULL )){
 			provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
 			target_connect = ofa_idbprovider_new_connect(
 					provider, sdata->account, sdata->password, sdata->dossier_meta, target_period );
@@ -1360,7 +1127,7 @@ ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 		return( ok );
 	}
 
-	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'restore()' method",
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'restore_db()' method",
 			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( FALSE );
 }

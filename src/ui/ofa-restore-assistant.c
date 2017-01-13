@@ -151,6 +151,7 @@ typedef struct {
 	/* p6: restore the file, display the result
 	 */
 	GtkWidget              *p6_page;
+	GtkWidget              *p6_textview;
 	GtkWidget              *p6_label1;
 	GtkWidget              *p6_label2;
 	gboolean                is_destroy_allowed;
@@ -219,6 +220,7 @@ static void     p6_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget 
 static void     p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static gboolean p6_restore_confirmed( ofaRestoreAssistant *self );
 static gboolean p6_do_restore( ofaRestoreAssistant *self );
+static void     p6_msg_cb( const gchar *buffer, ofaRestoreAssistant *self );
 static gboolean p6_do_open( ofaRestoreAssistant *self );
 static void     read_settings( ofaRestoreAssistant *self );
 static void     write_settings( ofaRestoreAssistant *self );
@@ -1257,8 +1259,10 @@ p6_do_restore( ofaRestoreAssistant *self )
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 
 	/* restore the backup */
-	ok = ofa_idbconnect_restore(
-				priv->p3_connect, NULL, priv->p1_furi, priv->p4_account, priv->p4_password );
+	/*ok = ofa_idbconnect_restore(
+				priv->p3_connect, NULL, priv->p1_furi, priv->p4_account, priv->p4_password );*/
+	ok = ofa_idbconnect_restore_db(
+				priv->p3_connect, NULL, priv->p1_furi, priv->p4_account, priv->p4_password, ( ofaMsgCb ) p6_msg_cb, self );
 
 	if( ok ){
 		style = "labelnormal";
@@ -1284,6 +1288,59 @@ p6_do_restore( ofaRestoreAssistant *self )
 	}
 
 	return( G_SOURCE_REMOVE );
+}
+
+static void
+p6_msg_cb( const gchar *buffer, ofaRestoreAssistant *self )
+{
+	static const gchar *thisfn = "ofa_restore_assistant_p6_msg_cb";
+	ofaRestoreAssistantPrivate *priv;
+	GtkTextBuffer *textbuf;
+	GtkTextIter enditer;
+	const gchar *charset;
+	gchar *utf8;
+
+	g_debug( "%s: buffer=%p, self=%p",
+			thisfn, ( void * ) buffer, ( void * ) self );
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	textbuf = gtk_text_view_get_buffer( GTK_TEXT_VIEW( priv->p6_textview ));
+	gtk_text_buffer_get_end_iter( textbuf, &enditer );
+
+	/* Check if messages are in UTF-8. If not, assume
+	 *  they are in current locale and try to convert.
+	 *  We assume we're getting the stream in a 1-byte
+	 *   encoding here, ie. that we do not have cut-off
+	 *   characters at the end of our buffer (=BAD)
+	 */
+	if( g_utf8_validate( buffer, -1, NULL )){
+		gtk_text_buffer_insert( textbuf, &enditer, buffer, -1 );
+
+	} else {
+		g_get_charset( &charset );
+		utf8 = g_convert_with_fallback( buffer, -1, "UTF-8", charset, NULL, NULL, NULL, NULL );
+		if( utf8 ){
+			gtk_text_buffer_insert( textbuf, &enditer, utf8, -1 );
+			g_free(utf8);
+
+		} else {
+			g_warning( "%s: message output is not in UTF-8 nor in locale charset", thisfn );
+		}
+	}
+
+	/* A bit awkward, but better than nothing. Scroll text view to end */
+	gtk_text_buffer_get_end_iter( textbuf, &enditer );
+	gtk_text_buffer_move_mark_by_name( textbuf, "insert", &enditer );
+	gtk_text_view_scroll_to_mark(
+			GTK_TEXT_VIEW( priv->p6_textview),
+			gtk_text_buffer_get_mark( textbuf, "insert" ),
+			0.0, FALSE, 0.0, 0.0 );
+
+	/* let Gtk update the display */
+	while( gtk_events_pending()){
+		gtk_main_iteration();
+	}
 }
 
 /*

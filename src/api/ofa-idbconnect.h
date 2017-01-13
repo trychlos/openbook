@@ -65,9 +65,8 @@ typedef struct _ofaIDBConnectInterface           ofaIDBConnectInterface;
  * @query: [should]: executes an insert/update/delete query.
  * @query_ex: [should]: executes a select query.
  * @get_last_error: [should]: returns the last error.
- * @backup: [should]: backups the currently opened dossier.
  * @backup_db: [should]: backups the currently opened dossier.
- * @restore: [should]: restore a file to a dossier.
+ * @restore_db: [should]: restore a file to a dossier.
  * @archive_and_new: [should]: archives the current and defines a new exercice.
  * @period_new: [should]: creates a new financial period.
  * @grant_user: [should]: grant permissions on a dossier to a user.
@@ -180,20 +179,6 @@ struct _ofaIDBConnectInterface {
 	gchar *  ( *get_last_error )       ( const ofaIDBConnect *instance );
 
 	/**
-	 * backup:
-	 * @instance: a #ofaIDBConnect user connection on the period.
-	 * @uri: the target file.
-	 *
-	 * Backup the currently opened period to the @uri file.
-	 *
-	 * Returns: %TRUE if successful, %FALSE else.
-	 *
-	 * Since: version 1
-	 */
-	gboolean ( *backup )               ( const ofaIDBConnect *instance,
-											const gchar *uri );
-
-	/**
 	 * backup_db:
 	 * @instance: a #ofaIDBConnect user connection on the period.
 	 * @msg_cb: [allow-none]: a #ofaMsgCb callback function;
@@ -220,12 +205,21 @@ struct _ofaIDBConnectInterface {
 											void *user_data );
 
 	/**
-	 * restore:
+	 * restore_db:
 	 * @instance: a #ofaIDBConnect superuser connection on the DBMS
 	 *  at server-level. The embedded #ofaIDBDossierMeta object describes
 	 *  the target dossier.
 	 * @period: the target financial period.
 	 * @uri: the file to be restored.
+	 * @msg_cb: [allow-none]: a #ofaMsgCb callback function;
+	 *  the data passed to the callback is expected to be a null-
+	 *  terminated string; the callee is expected to provide this data
+	 *  in a newly allocated buffer as the caller will release it;
+	 *  may be %NULL if the caller does not wish this sort of display.
+	 * @data_cb: a #ofaDataMsg callback function;
+	 *  the callee is expected to provide the data in a newly allocated
+	 *  buffer as the caller will release it.
+	 * @user_data: will be passed to both @msg_cb and @data_cb.
 	 *
 	 * Restore the specified @uri file to the target @period.
 	 *
@@ -233,9 +227,12 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *restore )              ( const ofaIDBConnect *instance,
+	gboolean ( *restore_db )           ( const ofaIDBConnect *instance,
 											const ofaIDBExerciceMeta *period,
-											const gchar *uri );
+											const gchar *uri,
+											ofaMsgCb msg_cb,
+											ofaDataCb data_cb,
+											void *user_data );
 
 	/**
 	 * archive_and_new:
@@ -420,26 +417,19 @@ gboolean            ofa_idbconnect_table_restore            ( const ofaIDBConnec
 
 gchar              *ofa_idbconnect_get_last_error           ( const ofaIDBConnect *connect );
 
-gboolean            ofa_idbconnect_backup                   ( const ofaIDBConnect *connect,
-																	const gchar *uri );
-
 gboolean            ofa_idbconnect_backup_db                ( const ofaIDBConnect *connect,
 																	const gchar *comment,
 																	const gchar *uri,
 																	ofaMsgCb msg_cb,
-																	void *user_data);
-
-gboolean            ofa_idbconnect_restore                  ( const ofaIDBConnect *connect,
-																	const ofaIDBExerciceMeta *period,
-																	const gchar *uri,
-																	const gchar *adm_account,
-																	const gchar *adm_password );
+																	void *user_data );
 
 gboolean            ofa_idbconnect_restore_db               ( const ofaIDBConnect *connect,
 																	const ofaIDBExerciceMeta *period,
 																	const gchar *uri,
 																	const gchar *adm_account,
-																	const gchar *adm_password );
+																	const gchar *adm_password,
+																	ofaMsgCb msg_cb,
+																	void *user_data );
 
 gboolean            ofa_idbconnect_archive_and_new          ( const ofaIDBConnect *connect,
 																	const gchar *root_account,

@@ -95,7 +95,6 @@ static gboolean    async_stderr_fn2( GIOChannel *ioc, GIOCondition cond, sExecut
 static gboolean    async_stderr_done( GIOChannel *ioc );
 static void        async_display_output( const gchar *str, sExecuteInfos *infos );
 static void        backup_exit_cb( GPid child_pid, gint status, sExecuteInfos *infos );
-static void        backup_exit_cb2( GPid child_pid, gint status, sExecuteInfos *infos );
 static void        restore_exit_cb( GPid child_pid, gint status, sExecuteInfos *infos );
 static gboolean    do_duplicate_grants( ofaIDBConnect *cnx, const gchar *host, const gchar *user_account, const gchar *prev_dbname, const gchar *new_dbname );
 
@@ -108,59 +107,6 @@ const gchar *
 ofa_mysql_cmdline_backup_get_default_command( void )
 {
 	return( "mysqldump --verbose %O -u%U -p%P %B | gzip -c > %F" );
-}
-
-/**
- * ofa_mysql_cmdline_backup_run:
- * @connect: a #ofaIDBConnect object which handles a user connection
- *  on the dossier/exercice to be backuped.
- * @uri: the URI of the destination file.
- *
- * Backup the currently connected database.
- *
- * The outputed SQL file doesn't contain any CREATE DATABASE nor USE,
- * so that we will be able to reload the data to any database name.
- *
- * Returns: %TRUE if the database has been successfully backuped,
- * %FALSE else.
- */
-gboolean
-ofa_mysql_cmdline_backup_run( ofaMysqlConnect *connect, const gchar *uri )
-{
-	gchar *template, *fname;
-	ofaIDBDossierMeta *dossier_meta;
-	ofaIDBExerciceMeta *exercice_meta;
-	ofaIDBProvider *provider;
-	ofaHub *hub;
-	gboolean ok;
-
-	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
-	g_return_val_if_fail( my_strlen( uri ), FALSE );
-
-	ofa_mysql_connect_query( connect, "FLUSH TABLES WITH READ LOCK" );
-
-	dossier_meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
-	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
-	hub = ofa_idbprovider_get_hub( provider );
-	template = ofa_mysql_user_prefs_get_backup_command( hub );
-	fname = g_filename_from_uri( uri, NULL, NULL );
-	exercice_meta = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
-
-	ok = do_execute_async(
-				template,
-				connect,
-				OFA_MYSQL_EXERCICE_META( exercice_meta ),
-				fname,
-				_( "Openbook backup" ),
-				( GChildWatchFunc ) backup_exit_cb,
-				TRUE );
-
-	g_free( fname );
-	g_free( template );
-
-	ofa_mysql_connect_query( connect, "UNLOCK TABLES" );
-
-	return( ok );
 }
 
 /**
@@ -229,7 +175,7 @@ ofa_mysql_cmdline_restore_get_default_command( void )
 }
 
 /**
- * ofa_mysql_cmdline_restore_run:
+ * ofa_mysql_cmdline_restore_db_run:
  * @connect: a #ofaIDBConnect object which handles an opened superuser
  *  connection on the DBMS server. This object is expected to hold root
  *  account and password, and a non-%NULL #ofaIDBDossierMeta which
@@ -244,8 +190,9 @@ ofa_mysql_cmdline_restore_get_default_command( void )
  * else.
  */
 gboolean
-ofa_mysql_cmdline_restore_run( ofaMysqlConnect *connect,
-									ofaMysqlExerciceMeta *period, const gchar *uri )
+ofa_mysql_cmdline_restore_db_run( ofaMysqlConnect *connect,
+									ofaMysqlExerciceMeta *period, const gchar *uri,
+									ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_restore";
 	gboolean ok;
@@ -638,7 +585,7 @@ do_execute_async2( const gchar *template,
 	if( child_pid != ( GPid ) 0 ){
 		infos->loop = g_main_loop_new( NULL, FALSE );
 		/* Watch the child, so we get the exit status */
-		source_id = g_child_watch_add( child_pid, ( GChildWatchFunc ) backup_exit_cb2, infos );
+		source_id = g_child_watch_add( child_pid, ( GChildWatchFunc ) backup_exit_cb, infos );
 		g_debug( "%s: returning from g_child_watch_add, source_id=%u", thisfn, source_id );
 		g_main_loop_run( infos->loop );
 		g_main_loop_unref( infos->loop );
@@ -1038,67 +985,6 @@ static void
 backup_exit_cb( GPid child_pid, gint status, sExecuteInfos *infos )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_backup_exit_cb";
-	GtkWidget *dlg;
-	gchar *msg;
-
-	g_debug("%s: child_pid=%lu, exit status=%d", thisfn, ( gulong ) child_pid, status );
-	msg = NULL;
-
-	/* Not sure how the exit status works on win32. Unix code follows */
-#ifdef G_OS_UNIX
-	if( WIFEXITED( status )){			/* did child terminate in a normal way? */
-
-		if( WEXITSTATUS( status ) == EXIT_SUCCESS ){
-			msg = g_strdup( _( "Backup has successfully run" ));
-			infos->command_ok = TRUE;
-			g_debug( "%s: setting command_ok to TRUE", thisfn );
-
-		} else {
-			msg = g_strdup_printf(
-						_( "Backup has exited with error code=%d" ), WEXITSTATUS( status ));
-		}
-	} else if( WIFSIGNALED( status )){	/* was it terminated by a signal ? */
-		msg = g_strdup_printf(
-						_( "Backup has exited with signal %d" ), WTERMSIG( status ));
-	} else {
-		msg = g_strdup( _( "Backup was terminated with errors" ));
-	}
-#endif /* G_OS_UNIX */
-
-	g_spawn_close_pid( child_pid );		/* does nothing on unix, needed on win32 */
-
-	if( infos->verbose ){
-		if( !my_strlen( msg )){
-			if( infos->command_ok ){
-				msg = g_strdup( _( "Dossier successfully backuped" ));
-			} else {
-				msg = g_strdup( _( "An error occured while backuping the dossier" ));
-			}
-		}
-
-		dlg = gtk_message_dialog_new(
-					NULL,
-					GTK_DIALOG_DESTROY_WITH_PARENT,
-					GTK_MESSAGE_INFO,
-					GTK_BUTTONS_CLOSE,
-					"%s", msg );
-
-		gtk_dialog_run( GTK_DIALOG( dlg ));
-		gtk_widget_destroy( dlg );
-
-		gtk_widget_set_sensitive( infos->close_btn, TRUE );
-
-	} else {
-		g_main_loop_quit( infos->loop );
-	}
-
-	g_free( msg );
-}
-
-static void
-backup_exit_cb2( GPid child_pid, gint status, sExecuteInfos *infos )
-{
-	static const gchar *thisfn = "ofa_mysql_cmdline_backup_exit_cb2";
 	gchar *msg;
 
 	g_debug("%s: child_pid=%lu, exit status=%d", thisfn, ( gulong ) child_pid, status );

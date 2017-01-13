@@ -14,7 +14,7 @@
 
  New features and improvements:
 
-   - Backups now manage several data streams, of which a Dossier+Openbook header.
+   - Backups now manage several data streams, of which dossier and Openbook headers.
    - Backups now have a comment (todo #792).
    - Replace Backup standard dialog box with an assistant (todo #1317).
    - Add to backup archives a JSON header.
@@ -28,8 +28,9 @@
    DBModel Core v34.
 
    - my_stamp_xxx() functions now accept a display format (todo #1318).
-   - ofa_idbconnect_backup_db(): new function.
+   - ofaBackupAssistant: new class.
    - ofaDossierProps: new class.
+   - ofa_idbconnect_backup_db(): new function.
 
    + Add a prequisite on JSON-GLib library.
    + Add a prequisite on libarchive library.
