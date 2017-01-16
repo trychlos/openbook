@@ -1436,7 +1436,7 @@ dossier_do_read( ofaHub *hub )
 
 	/* Starting with 0.65 where RPID is added, check that a RPID is defined
 	 * for each dossier, and set it up if not already done */
-	if( !my_strlen( ofo_dossier_get_rpid( dossier ))){
+	if( !my_strlen( ofo_dossier_get_rpid( dossier )) && ofo_dossier_is_current( dossier )){
 		dossier_setup_rpid( dossier );
 		ofo_dossier_update( dossier );
 	}

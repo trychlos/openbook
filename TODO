@@ -411,11 +411,16 @@
 
 1319 2017- 1-13 remove ofaHub dependancy from my-icollectionable.c
 
-1320 2017- 1-13 RestoreAssistant:
+1320 2017- 1-16 RestoreAssistant:
                 choose target dossier/exercice
                 use new superuser account bin (from the provider)
                 admin credentials should save the account
                 use actions bin
+
+1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
+                read-only (unset when current if not set by the user) 
+
+1322
 
 -----------------------------------------------------------------------
  DONE
