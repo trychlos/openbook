@@ -57,6 +57,20 @@ typedef struct {
 }
 	ofaDossierActionsBinPrivate;
 
+/* The label of the UI
+ */
+typedef struct {
+	guint        rule;
+	const gchar *label;
+}
+	sLabel;
+
+static sLabel st_label[] = {
+		{ HUB_RULE_DOSSIER_NEW,     N_( "O_pen the dossier right after having created it " )},
+		{ HUB_RULE_DOSSIER_RESTORE, N_( "O_pen the dossier right after having restored the archive " )},
+		{ 0 }
+};
+
 /* signals defined here
  */
 enum {
@@ -178,8 +192,9 @@ ofa_dossier_actions_bin_class_init( ofaDossierActionsBinClass *klass )
  * @settings_prefix: the prefix of the key in user settings.
  * @rule: the usage of this widget.
  *
- * Returns: a newly defined composite widget which aggregates dossier
- * name, DBMS provider, connection informations and root credentials.
+ * Returns: a newly defined composite widget which let the user decide
+ * if he wants open the newly created (resp. restored) dossier, and
+ * whether to apply standard actions.
  */
 ofaDossierActionsBin *
 ofa_dossier_actions_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule )
@@ -217,6 +232,7 @@ setup_bin( ofaDossierActionsBin *self )
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *btn;
+	gint i;
 
 	priv = ofa_dossier_actions_bin_get_instance_private( self );
 
@@ -244,6 +260,14 @@ setup_bin( ofaDossierActionsBin *self )
 	priv->open_btn = btn;
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), FALSE );
 	on_open_toggled( GTK_TOGGLE_BUTTON( btn ), self );
+
+	/* setup the label of the button depending of the current rule */
+	for( i=0 ; st_label[i].rule ; ++i ){
+		if( st_label[i].rule == priv->rule ){
+			gtk_button_set_label( GTK_BUTTON( priv->open_btn ), st_label[i].label );
+			break;
+		}
+	}
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );

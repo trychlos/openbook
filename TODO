@@ -412,10 +412,12 @@
 1320 2017- 1-16 RestoreAssistant:
                 choose target dossier/exercice
                 use new superuser account bin (from the provider)
-                admin credentials should save the account
-                use actions bin
+                admin credentials should save the account: ok
+                use actions bin: ok
 
-1322
+1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
+
+1323
 
 -----------------------------------------------------------------------
  DONE

@@ -54,6 +54,7 @@
 
 #include "ui/ofa-admin-credentials-bin.h"
 #include "ui/ofa-application.h"
+#include "ui/ofa-dossier-actions-bin.h"
 #include "ui/ofa-dossier-new-mini.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-treeview.h"
@@ -133,10 +134,9 @@ typedef struct {
 	GtkWidget              *p4_dossier;
 	GtkWidget              *p4_database;
 	ofaAdminCredentialsBin *p4_admin_credentials;
+	ofaDossierActionsBin   *p4_actions;
 	gchar                  *p4_account;
 	gchar                  *p4_password;
-	GtkWidget              *p4_open_btn;
-	gboolean                p4_open;
 	GtkWidget              *p4_message;
 
 	/* p5: display operations to be done and ask for confirmation
@@ -148,7 +148,10 @@ typedef struct {
 	GtkWidget              *p5_root_password;
 	GtkWidget              *p5_admin_account;
 	GtkWidget              *p5_admin_password;
-	GtkWidget              *p5_open;
+	GtkWidget              *p5_open_label;
+	gboolean                p5_open;
+	GtkWidget              *p5_apply_label;
+	gboolean                p5_apply;
 
 	/* p6: restore the file, display the result
 	 */
@@ -214,7 +217,7 @@ static void     p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidg
 static void     p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p4_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
-static void     p4_on_open_toggled( GtkToggleButton *button, ofaRestoreAssistant *self );
+static void     p4_on_actions_changed( ofaDossierActionsBin *bin, ofaRestoreAssistant *self );
 static void     p4_check_for_complete( ofaRestoreAssistant *self );
 static void     p4_set_message( ofaRestoreAssistant *self, const gchar *message );
 static void     p4_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -1009,10 +1012,11 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_signal_connect( priv->p4_admin_credentials,
 			"ofa-changed", G_CALLBACK( p4_on_admin_credentials_changed ), self );
 
-	priv->p4_open_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-open" );
-	g_return_if_fail( priv->p4_open_btn && GTK_IS_CHECK_BUTTON( priv->p4_open_btn ));
-
-	g_signal_connect( priv->p4_open_btn, "toggled", G_CALLBACK( p4_on_open_toggled ), self );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-actions" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->p4_actions = ofa_dossier_actions_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_RESTORE );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_actions ));
+	g_signal_connect( priv->p4_actions, "ofa-changed", G_CALLBACK( p4_on_actions_changed ), self );
 
 	priv->p4_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-message" );
 	g_return_if_fail( priv->p4_message && GTK_IS_LABEL( priv->p4_message ));
@@ -1043,9 +1047,6 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	gtk_label_set_text( GTK_LABEL( priv->p4_database ), priv->p2_dbname );
 
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), priv->p4_open );
-	p4_on_open_toggled( GTK_TOGGLE_BUTTON( priv->p4_open_btn ), self );
-
 	p4_check_for_complete( self );
 }
 
@@ -1066,13 +1067,9 @@ p4_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *accou
 }
 
 static void
-p4_on_open_toggled( GtkToggleButton *button, ofaRestoreAssistant *self )
+p4_on_actions_changed( ofaDossierActionsBin *bin, ofaRestoreAssistant *self )
 {
-	ofaRestoreAssistantPrivate *priv;
-
-	priv = ofa_restore_assistant_get_instance_private( self );
-
-	priv->p4_open = gtk_toggle_button_get_active( button );
+	/* nothing to do here */
 }
 
 static void
@@ -1086,7 +1083,9 @@ p4_check_for_complete( ofaRestoreAssistant *self )
 
 	p4_set_message( self, "" );
 
-	ok = ofa_admin_credentials_bin_is_valid( priv->p4_admin_credentials, &message );
+	ok = ofa_admin_credentials_bin_is_valid( priv->p4_admin_credentials, &message ) &&
+			ofa_dossier_actions_bin_is_valid( priv->p4_actions, &message );
+
 	if( !ok ){
 		p4_set_message( self, message );
 		g_free( message );
@@ -1161,9 +1160,13 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( priv->p5_admin_password && GTK_IS_LABEL( priv->p5_admin_password ));
 	my_style_add( priv->p5_admin_password, "labelinfo" );
 
-	priv->p5_open = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-open" );
-	g_return_if_fail( priv->p5_open && GTK_IS_LABEL( priv->p5_open ));
-	my_style_add( priv->p5_open, "labelinfo" );
+	priv->p5_open_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-open-label" );
+	g_return_if_fail( priv->p5_open_label && GTK_IS_LABEL( priv->p5_open_label ));
+	my_style_add( priv->p5_open_label, "labelinfo" );
+
+	priv->p5_apply_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-apply-label" );
+	g_return_if_fail( priv->p5_apply_label && GTK_IS_LABEL( priv->p5_apply_label ));
+	my_style_add( priv->p5_apply_label, "labelinfo" );
 }
 
 static void
@@ -1189,7 +1192,11 @@ p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( priv->p5_root_password ), "******" );
 	gtk_label_set_text( GTK_LABEL( priv->p5_admin_account ), priv->p4_account );
 	gtk_label_set_text( GTK_LABEL( priv->p5_admin_password ), "******" );
-	gtk_label_set_text( GTK_LABEL( priv->p5_open ), priv->p4_open ? _( "True" ): _( "False" ));
+
+	priv->p5_open = ofa_dossier_actions_bin_get_open_on_create( priv->p4_actions );
+	gtk_label_set_text( GTK_LABEL( priv->p5_open_label ), priv->p5_open ? "True":"False" );
+	priv->p5_apply = ofa_dossier_actions_bin_get_apply_actions( priv->p4_actions );
+	gtk_label_set_text( GTK_LABEL( priv->p5_apply_label ), priv->p5_apply ? "True":"False" );
 }
 
 /*
@@ -1410,7 +1417,7 @@ p6_do_open( ofaRestoreAssistant *self )
 	g_debug( "%s: self=%p, meta=%p, period=%p, account=%s",
 			thisfn, ( void * ) self, ( void * ) priv->p2_dossier_meta, ( void * ) priv->p2_exercice_meta, priv->p4_account );
 
-	if( priv->p4_open ){
+	if( priv->p5_open ){
 		ofa_dossier_open_run(
 				priv->getter, GTK_WINDOW( self ),
 				priv->p2_dossier_meta, priv->p2_exercice_meta, priv->p4_account, priv->p4_password );
@@ -1424,7 +1431,7 @@ p6_do_open( ofaRestoreAssistant *self )
 }
 
 /*
- * settings is "folder;open;filter_type;"
+ * settings is "folder;filter_type;"
  */
 static void
 read_settings( ofaRestoreAssistant *self )
@@ -1451,12 +1458,6 @@ read_settings( ofaRestoreAssistant *self )
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
-		priv->p4_open = my_utils_boolean_from_str( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
 		priv->p1_filter = atoi( cstr );
 	}
 
@@ -1476,8 +1477,8 @@ write_settings( ofaRestoreAssistant *self )
 	settings = ofa_hub_get_user_settings( priv->hub );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 
-	str = g_strdup_printf( "%s;%s;%d;",
-				priv->p1_folder, priv->p4_open ? "True":"False", priv->p1_filter );
+	str = g_strdup_printf( "%s;%d;",
+				priv->p1_folder, priv->p1_filter );
 
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

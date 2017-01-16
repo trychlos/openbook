@@ -100,7 +100,8 @@ typedef struct {
  * Rules when defining a new dossier and/or a new exercice:
  */
 enum {
-	HUB_RULE_DOSSIER_NEW = 0,
+	HUB_RULE_DOSSIER_NEW = 1,
+	HUB_RULE_DOSSIER_RESTORE
 };
 
 /**
