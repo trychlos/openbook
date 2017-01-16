@@ -181,13 +181,13 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-idbdossier-editor.lo ofa-idbdossier-meta.lo \
 	ofa-idbeditor.lo ofa-idbexercice-meta.lo ofa-idbmodel.lo \
 	ofa-idbprovider.lo ofa-iexe-close.lo ofa-idbexercice-editor.lo \
-	ofa-iexportable.lo ofa-igetter.lo ofa-iimporter.lo \
-	ofa-iimportable.lo ofa-ijson.lo ofa-import-duplicate.lo \
-	ofa-ipage-manager.lo ofa-iprintable.lo ofa-iproperties.lo \
-	ofa-irenderable.lo ofa-isetter.lo ofa-isignal-hub.lo \
-	ofa-istore.lo ofa-itree-adder.lo ofa-itvcolumnable.lo \
-	ofa-itvfilterable.lo ofa-itvsortable.lo ofa-ledger-combo.lo \
-	ofa-ledger-store.lo ofa-list-store.lo \
+	ofa-idbsuperuser.lo ofa-iexportable.lo ofa-igetter.lo \
+	ofa-iimporter.lo ofa-iimportable.lo ofa-ijson.lo \
+	ofa-import-duplicate.lo ofa-ipage-manager.lo ofa-iprintable.lo \
+	ofa-iproperties.lo ofa-irenderable.lo ofa-isetter.lo \
+	ofa-isignal-hub.lo ofa-istore.lo ofa-itree-adder.lo \
+	ofa-itvcolumnable.lo ofa-itvfilterable.lo ofa-itvsortable.lo \
+	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
 	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
 	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
 	ofa-ope-template-select.lo ofa-ope-template-store.lo \
@@ -547,6 +547,7 @@ libofa_core_la_SOURCES = \
 	ofa-idbprovider.c									\
 	ofa-iexe-close.c									\
 	ofa-idbexercice-editor.c							\
+	ofa-idbsuperuser.c									\
 	ofa-iexportable.c									\
 	ofa-igetter.c										\
 	ofa-iimporter.c										\
@@ -773,6 +774,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbexercice-meta.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbmodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbprovider.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbsuperuser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexe-close.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-igetter.Plo@am__quote@

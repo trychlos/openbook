@@ -437,6 +437,63 @@ ofa_idbprovider_new_connect( ofaIDBProvider *provider, const gchar *account, con
 }
 
 /**
+ * ofa_idbprovider_restore_needs_superuser:
+ * @provider: this #ofaIDBProvider provider.
+ *
+ * Returns: %TRUE if restore operation requires superuser privileges.
+ *
+ * Defaults to %TRUE.
+ */
+gboolean
+ofa_idbprovider_restore_needs_superuser( const ofaIDBProvider *provider )
+{
+	static const gchar *thisfn = "ofa_idbprovider_restore_needs_superuser";
+
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), FALSE );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->restore_needs_superuser ){
+		return( OFA_IDBPROVIDER_GET_INTERFACE( provider )->restore_needs_superuser( provider ));
+	}
+
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'restore_needs_superuser()' method",
+			thisfn, G_OBJECT_TYPE_NAME( provider ));
+	return( TRUE );
+}
+
+/**
+ * ofa_idbprovider_new_superuser_bin:
+ * @provider: this #ofaIDBProvider provider.
+ *
+ * Returns: a composite GTK container widget intended to hold the
+ * informations needed to fully identify the super-user privileges.
+ *
+ * The returned container will be added to a GtkWindow and must be
+ * destroyable with this same window. In other words, the DBMS provider
+ * should not keep any reference on this container.
+ */
+ofaIDBSuperuser *
+ofa_idbprovider_new_superuser_bin( ofaIDBProvider *provider )
+{
+	static const gchar *thisfn = "ofa_idbprovider_new_superuser_bin";
+	ofaIDBSuperuser *bin;
+
+	g_debug( "%s: provider=%p",
+			thisfn,( void * ) provider );
+
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
+
+	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_superuser_bin ){
+		bin = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_superuser_bin( provider );
+		ofa_idbsuperuser_set_provider( bin, provider );
+		return( bin );
+	}
+
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_superuser_bin()' method",
+			thisfn, G_OBJECT_TYPE_NAME( provider ));
+	return( NULL );
+}
+
+/**
  * ofa_idbprovider_new_editor:
  * @provider: this #ofaIDBProvider provider.
  * @editable: whether the informations in the container have to be

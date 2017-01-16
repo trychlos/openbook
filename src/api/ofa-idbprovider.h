@@ -62,6 +62,7 @@
 #include "ofa-idbdossier-editor-def.h"
 #include "ofa-idbeditor.h"
 #include "ofa-idbprovider-def.h"
+#include "ofa-idbsuperuser.h"
 
 G_BEGIN_DECLS
 
@@ -101,7 +102,7 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1.
 	 */
-	guint                  ( *get_interface_version )( void );
+	guint                  ( *get_interface_version )  ( void );
 
 	/*** instance-wide ***/
 	/**
@@ -112,7 +113,7 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBDossierMeta *    ( *new_dossier_meta )     ( ofaIDBProvider *instance );
+	ofaIDBDossierMeta *    ( *new_dossier_meta )       ( ofaIDBProvider *instance );
 
 	/**
 	 * new_dossier_editor:
@@ -126,7 +127,7 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBDossierEditor *  ( *new_dossier_editor )   ( ofaIDBProvider *instance,
+	ofaIDBDossierEditor *  ( *new_dossier_editor )     ( ofaIDBProvider *instance,
 															const gchar *settings_prefix,
 															guint rule );
 
@@ -144,11 +145,35 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBConnect *        ( *new_connect )          ( ofaIDBProvider *instance,
+	ofaIDBConnect *        ( *new_connect )            ( ofaIDBProvider *instance,
 															const gchar *account,
 															const gchar *password,
 															ofaIDBDossierMeta *dossier_meta,
 															ofaIDBExerciceMeta *exercice_meta );
+
+	/**
+	 * restore_needs_superuser:
+	 * @instance: this #ofaIDBProvider instance.
+	 *
+	 * Returns: %TRUE if restoration operation requires superuser
+	 * privilege.
+	 *
+	 * Defaults to %TRUE.
+	 *
+	 * Since: version 1
+	 */
+	gboolean               ( *restore_needs_superuser )( const ofaIDBProvider *instance );
+
+	/**
+	 * new_superuser_bin:
+	 * @instance: this #ofaIDBProvider instance.
+	 *
+	 * Returns: a #GtkWidget which implements the #ofaIDBSuperuser
+	 * interface.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBSuperuser *      ( *new_superuser_bin )      ( ofaIDBProvider *instance );
 
 	/**
 	 * new_editor:
@@ -162,7 +187,7 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBEditor *         ( *new_editor )           ( ofaIDBProvider *instance,
+	ofaIDBEditor *         ( *new_editor )             ( ofaIDBProvider *instance,
 															gboolean editable );
 };
 
@@ -204,6 +229,10 @@ ofaIDBConnect        *ofa_idbprovider_new_connect               ( ofaIDBProvider
 																		const gchar *password,
 																		ofaIDBDossierMeta *dossier_meta,
 																		ofaIDBExerciceMeta *exercice_meta );
+
+gboolean              ofa_idbprovider_restore_needs_superuser   ( const ofaIDBProvider *provider );
+
+ofaIDBSuperuser      *ofa_idbprovider_new_superuser_bin         ( ofaIDBProvider *provider );
 
 ofaIDBEditor         *ofa_idbprovider_new_editor                ( ofaIDBProvider *provider,
 																		gboolean editable );

@@ -116,6 +116,7 @@ typedef struct {
 	gchar                  *p2_dbname;
 	gboolean                p2_is_new_dossier;
 	GSimpleAction          *p2_new_action;
+	gboolean                p2_need_superuser;
 
 	/* p3: DBMS root account
 	 */
@@ -781,6 +782,13 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 static void
 p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 {
+	ofaRestoreAssistantPrivate *priv;
+	ofaIDBProvider *provider;
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	provider = ofa_idbdossier_meta_get_provider( priv->p2_dossier_meta );
+	priv->p2_need_superuser = ofa_idbprovider_restore_needs_superuser( provider );
 }
 
 /*

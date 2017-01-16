@@ -62,6 +62,7 @@ api_include_HEADERS = \
 	ofa-idbmodel.h										\
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
+	ofa-idbsuperuser.h									\
 	ofa-iexe-close.h									\
 	ofa-iexportable.h									\
 	ofa-igetter.h										\
