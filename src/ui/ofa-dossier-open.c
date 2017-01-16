@@ -72,6 +72,7 @@ typedef struct {
 	ofaIDBConnect         *connect;				/* the DB connection */
 	gboolean               opened;
 	gboolean               read_only;
+	gboolean               prev_readonly;
 
 	/* UI
 	 */
@@ -96,6 +97,7 @@ static void     idialog_init_credentials( ofaDossierOpen *self, GtkSizeGroup *gr
 static void     idialog_init_menu( ofaDossierOpen *self );
 static void     on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
 static void     on_exercice_changed( ofaExerciceCombo *combo, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
+static void     on_read_only_toggled( GtkToggleButton *button, ofaDossierOpen *self );
 static void     on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
 static void     check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean are_data_set( ofaDossierOpen *self, gchar **msg );
@@ -364,6 +366,7 @@ idialog_init( myIDialog *instance )
 	/* get read-only mode */
 	priv->readonly_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "read-only-btn" );
 	g_return_if_fail( priv->readonly_btn && GTK_IS_CHECK_BUTTON( priv->readonly_btn ));
+	g_signal_connect( priv->readonly_btn, "toggled", G_CALLBACK( on_read_only_toggled ), instance );
 
 	idialog_init_menu( OFA_DOSSIER_OPEN( instance ));
 
@@ -463,7 +466,12 @@ idialog_init_menu( ofaDossierOpen *self )
 static void
 on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *period, ofaDossierOpen *self )
 {
+	static const gchar *thisfn = "ofa_dossier_open_on_dossier_changed";
 	ofaDossierOpenPrivate *priv;
+
+	if( 0 ){
+		g_debug( "%s", thisfn );
+	}
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
@@ -472,17 +480,26 @@ on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, 
 	if( dossier_meta ){
 		priv->dossier_meta = g_object_ref( dossier_meta );
 		ofa_exercice_combo_set_dossier( priv->exercice_combo, dossier_meta );
+
+	/* If dossier_meta is set, then the #ofa_exercice_combo_set_dossier()
+	 * will itself call #check_for_enable_dlg(), so there is no reason to
+	 * call it again here
+	 * So call it here only if dossier_meta is not set */
+
+	} else {
+		check_for_enable_dlg( self );
 	}
-
-	gtk_widget_set_sensitive( GTK_WIDGET( priv->exercice_combo ), dossier_meta != NULL );
-
-	check_for_enable_dlg( self );
 }
 
 static void
 on_exercice_changed( ofaExerciceCombo *combo, ofaIDBExerciceMeta *period, ofaDossierOpen *self )
 {
+	static const gchar *thisfn = "ofa_dossier_open_on_exercice_changed";
 	ofaDossierOpenPrivate *priv;
+
+	if( 0 ){
+		g_debug( "%s", thisfn );
+	}
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
@@ -495,9 +512,27 @@ on_exercice_changed( ofaExerciceCombo *combo, ofaIDBExerciceMeta *period, ofaDos
 }
 
 static void
-on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self )
+on_read_only_toggled( GtkToggleButton *button, ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
+
+	priv = ofa_dossier_open_get_instance_private( self );
+
+	priv->read_only = gtk_toggle_button_get_active( button );
+
+	/* do not call #check_for_enable_dlg() as the read-only button
+	 * does not change the status of the dialog nor of the buttons */
+}
+
+static void
+on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self )
+{
+	static const gchar *thisfn = "ofa_dossier_open_on_user_credentials_changed";
+	ofaDossierOpenPrivate *priv;
+
+	if( 0 ){
+		g_debug( "%s", thisfn );
+	}
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
@@ -519,7 +554,7 @@ static void
 check_for_enable_dlg( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
-	gboolean ok_enable, ro_enable;
+	gboolean ok_enable, ro_enable, ro_forced;
 	gchar *msg;
 
 	priv = ofa_dossier_open_get_instance_private( self );
@@ -528,13 +563,26 @@ check_for_enable_dlg( ofaDossierOpen *self )
 
 	ok_enable = are_data_set( self, &msg );
 	ro_enable = priv->dossier_meta && priv->exercice_meta && ofa_idbexercice_meta_get_current( priv->exercice_meta );
-
-	if( priv->readonly_btn ){
-		gtk_widget_set_sensitive( priv->readonly_btn, ro_enable );
-	}
+	ro_forced = priv->dossier_meta && priv->exercice_meta && !ofa_idbexercice_meta_get_current( priv->exercice_meta );
 
 	set_message( self, msg );
 	g_free( msg );
+
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->exercice_combo ), priv->dossier_meta != NULL );
+
+	if( priv->readonly_btn ){
+		gtk_widget_set_sensitive( priv->readonly_btn, ro_enable );
+
+		if( ro_forced ){
+			priv->prev_readonly = priv->read_only;
+			//g_debug( "check_for_enable_dlg: ro_forced: set prev_readonly to %s", priv->prev_readonly ? "True":"False" );
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->readonly_btn ), TRUE );
+
+		} else {
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->readonly_btn ), priv->prev_readonly );
+			//g_debug( "check_for_enable_dlg: ro not forced: reset to prev_readonly=%s", priv->prev_readonly ? "True":"False" );
+		}
+	}
 
 	if( priv->ok_btn ){
 		gtk_widget_set_sensitive( priv->ok_btn, ok_enable );
@@ -594,7 +642,6 @@ idialog_quit_on_ok( myIDialog *instance )
 	msg = NULL;
 
 	if( is_connection_valid( OFA_DOSSIER_OPEN( instance ), &msg )){
-		priv->read_only = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->readonly_btn ));
 		priv->opened = do_open_dossier( OFA_DOSSIER_OPEN( instance ));
 		return( priv->opened );
 	}

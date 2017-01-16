@@ -417,9 +417,6 @@
                 admin credentials should save the account
                 use actions bin
 
-1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
-                read-only (unset when current if was not set by the user) 
-
 1322
 
 -----------------------------------------------------------------------
@@ -489,6 +486,10 @@
 
 1318 2017- 1-12 review my_utils_stamp_set_from_xxx to have a format (like my_date)
      2017- 1-12 done
+
+1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
+                read-only (unset when current if was not set by the user) 
+     2017- 1-16 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

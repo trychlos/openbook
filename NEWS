@@ -14,11 +14,13 @@
 
  New features and improvements:
 
-   - Dossiers are identified by a Random Pseudo Identifier (RPID); this
-     identifier is automatically generated - if not already set - when
-     opening a current exercice.
+   Dossiers are identified by a Random Pseudo Identifier (RPID); this
+   identifier is automatically generated - if not already set - when
+   opening a current exercice.
+
    - Backups now manage several data streams, of which dossier and Openbook headers.
    - Backups now have a comment (todo #792).
+   - DossierOpen: set the read-only flag when selecting a closed exercice (todo #1321).
    - Replace Backup standard dialog box with an assistant (todo #1317).
    - Add to backup archives a JSON header.
 
