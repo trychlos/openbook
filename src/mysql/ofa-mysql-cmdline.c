@@ -108,7 +108,7 @@ static gboolean    do_duplicate_grants( ofaIDBConnect *cnx, const gchar *host, c
 const gchar *
 ofa_mysql_cmdline_backup_get_default_command( void )
 {
-	return( "mysqldump --verbose %O -u%U -p%P %B" );
+	return( "mysqldump --verbose %O -u%Ca -p%Cp %Db" );
 }
 
 /**
@@ -175,7 +175,7 @@ ofa_mysql_cmdline_backup_db_run( ofaMysqlConnect *connect, ofaMsgCb msg_cb, ofaD
 const gchar *
 ofa_mysql_cmdline_restore_get_default_command( void )
 {
-	return( "%x/ofa_unzip %u | mysql --verbose --comments %O -u%U -p%P %B" );
+	return( "unzip -qc %Ap | mysql --verbose --comments %O -u%Ca -p%Cp %Db" );
 }
 
 /**
@@ -294,9 +294,9 @@ ofa_mysql_cmdline_archive_and_new( ofaMysqlConnect *connect,
 	port = ofa_mysql_dossier_meta_get_port( OFA_MYSQL_DOSSIER_META( dossier_meta ));
 
 	cmdline = cmdline_build_from_args(
-					"mysql %O -u%U -p%P -e 'drop database if exists %N'; "
-					"mysql %O -u%U -p%P -e 'create database %N character set utf8'; "
-					"mysqldump %O -u%U -p%P %B | mysql %O -u%U -p%P %N",
+					"mysql %O -u%Ca -p%Cp -e 'drop database if exists %Dn'; "
+					"mysql %O -u%Ca -p%Cp -e 'create database %Dn character set utf8'; "
+					"mysqldump %O -u%Ca -p%Cp %Db | mysql %O -u%Ca -p%Cp %Dn",
 					host, socket, port, root_account, root_password, prev_dbname,
 					NULL, NULL, new_db );
 
@@ -348,8 +348,8 @@ do_create_database( ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period )
 {
 	static const gchar *template =
 			"/bin/sh -c \""
-			"	mysql -u%U -p%P -e 'drop database %B';"
-			"	mysql -u%U -p%P -e 'create database %B character set utf8'"
+			"	mysql -u%Ca -p%Cp -e 'drop database %Db';"
+			"	mysql -u%Ca -p%Cp -e 'create database %Db character set utf8'"
 			"\"";
 
 	gchar *command = cmdline_build_from_connect( template, connect, period, NULL, NULL );
@@ -417,19 +417,12 @@ cmdline_build_from_args( const gchar *template,
 
 	cmdline = g_strdup( template );
 
-	/* %B: the database name which comes from the ExerciceMeta */
-	regex = g_regex_new( "%B", 0, 0, NULL );
-	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, dbname ? dbname : "", 0, NULL );
-	g_regex_unref( regex );
-	g_free( cmdline );
-	cmdline = newcmd;
-
-	/* %F: the source filename */
+	/* %Ap: the archive full pathname */
 	file = my_strlen( uri ) ? g_file_new_for_uri( uri ) : NULL;
 	pathname = file ? g_file_get_path( file ) : NULL;
 	sysfname = pathname ? my_utils_filename_from_utf8( pathname ) : NULL;
 	quoted = sysfname ? g_shell_quote( sysfname ) : g_strdup( "" );
-	regex = g_regex_new( "%F", 0, 0, NULL );
+	regex = g_regex_new( "%Ap", 0, 0, NULL );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, quoted, 0, NULL );
 	g_regex_unref( regex );
 	g_free( quoted );
@@ -439,8 +432,36 @@ cmdline_build_from_args( const gchar *template,
 	g_free( cmdline );
 	cmdline = newcmd;
 
-	/* %N: the new DB name */
-	regex = g_regex_new( "%N", 0, 0, NULL );
+	/* %Au: the archive uri */
+	regex = g_regex_new( "%Au", 0, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, uri ? uri : "", 0, NULL );
+	g_regex_unref( regex );
+	g_free( cmdline );
+	cmdline = newcmd;
+
+	/* %Ca: the connection account */
+	regex = g_regex_new( "%Ca", 0, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, account ? account : "", 0, NULL );
+	g_regex_unref( regex );
+	g_free( cmdline );
+	cmdline = newcmd;
+
+	/* %Cp: the connection password */
+	regex = g_regex_new( "%Cp", 0, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, password ? password : "", 0, NULL );
+	g_regex_unref( regex );
+	g_free( cmdline );
+	cmdline = newcmd;
+
+	/* %Db: the database name which comes from the ExerciceMeta */
+	regex = g_regex_new( "%Db", 0, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, dbname ? dbname : "", 0, NULL );
+	g_regex_unref( regex );
+	g_free( cmdline );
+	cmdline = newcmd;
+
+	/* %Dn: the new DB name */
+	regex = g_regex_new( "%Dn", 0, 0, NULL );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, new_dbname ? new_dbname : "", 0, NULL );
 	g_regex_unref( regex );
 	g_free( cmdline );
@@ -465,29 +486,8 @@ cmdline_build_from_args( const gchar *template,
 	cmdline = newcmd;
 	g_string_free( options, TRUE );
 
-	/* %P: connection password */
-	regex = g_regex_new( "%P", 0, 0, NULL );
-	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, password ? password : "", 0, NULL );
-	g_regex_unref( regex );
-	g_free( cmdline );
-	cmdline = newcmd;
-
-	/* %U: connection user */
-	regex = g_regex_new( "%U", 0, 0, NULL );
-	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, account ? account : "", 0, NULL );
-	g_regex_unref( regex );
-	g_free( cmdline );
-	cmdline = newcmd;
-
-	/* %u: uri */
-	regex = g_regex_new( "%u", 0, 0, NULL );
-	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, uri ? uri : "", 0, NULL );
-	g_regex_unref( regex );
-	g_free( cmdline );
-	cmdline = newcmd;
-
-	/* %x: directory where Openbook binaries are executed from */
-	regex = g_regex_new( "%x", 0, 0, NULL );
+	/* %Xd: directory where Openbook binaries are executed from */
+	regex = g_regex_new( "%Xd", 0, 0, NULL );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, runtime_dir ? runtime_dir : "", 0, NULL );
 	g_regex_unref( regex );
 	g_free( cmdline );
