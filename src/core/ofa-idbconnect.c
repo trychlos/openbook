@@ -71,6 +71,7 @@ typedef struct {
  * and data input on restore
  */
 typedef struct {
+	guint                 format;
 	ofaMsgCb              msg_cb;
 	void                 *user_data;
 	struct archive       *archive;
@@ -1067,7 +1068,7 @@ backup_msg_cb( const gchar *string, void *user_data )
  */
 gboolean
 ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
-							const ofaIDBExerciceMeta *period, const gchar *uri,
+							const ofaIDBExerciceMeta *period, const gchar *uri, guint format,
 							const gchar *adm_account, const gchar *adm_password,
 							ofaMsgCb msg_cb, void *user_data )
 {
@@ -1080,8 +1081,8 @@ ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 	GFile *file;
 	sRestore *sope;
 
-	g_debug( "%s: connect=%p, period=%p, uri=%s, adm_account=%s, adm_password=%s, msg_cb=%p, user_data=%p",
-			thisfn, ( void * ) connect, ( void * ) period, uri,
+	g_debug( "%s: connect=%p, period=%p, uri=%s, format=%u, adm_account=%s, adm_password=%s, msg_cb=%p, user_data=%p",
+			thisfn, ( void * ) connect, ( void * ) period, uri, format,
 			adm_account, adm_password ? "******" : adm_password,
 			( void * ) msg_cb, user_data );
 
@@ -1104,12 +1105,13 @@ ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 
 		file = g_file_new_for_uri( uri );
 		sope = g_new0( sRestore, 1 );
+		sope->format = format;
 		sope->msg_cb = msg_cb;
 		sope->user_data = user_data;
 
 		ok = restore_open_archive( connect, file, sope ) &&
 				OFA_IDBCONNECT_GET_INTERFACE( connect )->restore_db(
-						connect, target_period, uri, ( ofaMsgCb ) restore_msg_cb, ( ofaDataCb ) restore_data_cb, sope );
+						connect, target_period, uri, format, ( ofaMsgCb ) restore_msg_cb, ( ofaDataCb ) restore_data_cb, sope );
 
 		if( ok ){
 			provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
@@ -1143,30 +1145,35 @@ restore_open_archive( const ofaIDBConnect *self, GFile *file, sRestore *sope )
 	const gchar *cname;
 	gboolean found;
 
-	found = FALSE;
-	sope->archive = archive_read_new();
-	archive_read_support_filter_all( sope->archive );
-	archive_read_support_format_all( sope->archive );
-
-	pathname = g_file_get_path( file );
-	if( archive_read_open_filename( sope->archive, pathname, 16384 ) != ARCHIVE_OK ){
-		g_warning( "%s: archive_read_open_filename: path=%s, %s", thisfn, pathname, archive_error_string( sope->archive ));
+	if( sope->format != OFA_BACKUP_HEADER_ZIP ){
+		found = TRUE;
 
 	} else {
-		while( archive_read_next_header( sope->archive, &entry ) == ARCHIVE_OK ){
-			cname = archive_entry_pathname( entry );
-			if( g_str_has_prefix( cname, OFA_BACKUP_HEADER_DATA )){
-				found = TRUE;
-				break;
-			}
-			archive_read_data_skip( sope->archive );
-		}
-	}
+		found = FALSE;
+		sope->archive = archive_read_new();
+		archive_read_support_filter_all( sope->archive );
+		archive_read_support_format_all( sope->archive );
 
-	if( !found ){
-		archive_read_close( sope->archive );
-		archive_read_free( sope->archive );
-		sope->archive = NULL;
+		pathname = g_file_get_path( file );
+		if( archive_read_open_filename( sope->archive, pathname, 16384 ) != ARCHIVE_OK ){
+			g_warning( "%s: archive_read_open_filename: path=%s, %s", thisfn, pathname, archive_error_string( sope->archive ));
+
+		} else {
+			while( archive_read_next_header( sope->archive, &entry ) == ARCHIVE_OK ){
+				cname = archive_entry_pathname( entry );
+				if( g_str_has_prefix( cname, OFA_BACKUP_HEADER_DATA )){
+					found = TRUE;
+					break;
+				}
+				archive_read_data_skip( sope->archive );
+			}
+		}
+
+		if( !found ){
+			archive_read_close( sope->archive );
+			archive_read_free( sope->archive );
+			sope->archive = NULL;
+		}
 	}
 
 	return( found );

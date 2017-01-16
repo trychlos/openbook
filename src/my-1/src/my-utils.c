@@ -2067,6 +2067,39 @@ is_readable_gfile( GFile *file )
 }
 
 /**
+ * my_utils_uri_get_extension:
+ * @uri: an URI.
+ * @make_lower: whether to force the result to lowercase.
+ *
+ * Returns: the extension of the URI as a newly allocated string which
+ * should be #g_free() by the caller.
+ */
+gchar *
+my_utils_uri_get_extension( const gchar *uri, gboolean make_lower )
+{
+	gchar *extension, *reverse;
+
+	extension = NULL;
+
+	if( my_strlen( uri )){
+		reverse = g_utf8_strreverse( uri, -1 );
+		extension = my_utils_str_replace( reverse, "\\..*$", "." );
+		g_free( reverse );
+		reverse = g_utf8_strreverse( extension, -1 );
+		g_free( extension );
+		extension = reverse;
+
+		if( make_lower ){
+			reverse = g_utf8_strdown( extension, -1 );
+			g_free( extension );
+			extension = reverse;
+		}
+	}
+
+	return( extension );
+}
+
+/**
  * my_utils_action_enable:
  * @map: the #GActionMap (main window or application)
  * @action: [allow-none]: a pointer to a #GSimpleAction pointer which may

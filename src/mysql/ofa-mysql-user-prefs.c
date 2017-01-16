@@ -29,6 +29,7 @@
 #include "my/my-isettings.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-backup-header.h"
 #include "api/ofa-hub.h"
 
 #include "ofa-mysql-cmdline.h"
@@ -36,7 +37,10 @@
 
 #define PREFS_GROUP                     "MySQL"
 #define PREFS_BACKUP_CMDLINE            "BackupCommand"
-#define PREFS_RESTORE_CMDLINE           "RestoreCommand"
+#define PREFS_RESTORE_CMDLINE_GZ        "RestoreCommandGz"
+#define PREFS_RESTORE_CMDLINE_ZIP       "RestoreCommandZip"
+
+static const gchar *get_restore_key( guint format );
 
 /**
  * ofa_mysql_user_prefs_get_backup_command:
@@ -79,20 +83,28 @@ ofa_mysql_user_prefs_set_backup_command( ofaHub *hub, const gchar *command )
 
 /**
  * ofa_mysql_user_prefs_get_restore_command:
+ * @hub: the #ofaHub object of the application.
+ * @format: the archive format (from #ofaBackupHeader header).
  *
  * Returns: the restore command from the user settings, as a newly
  * allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_mysql_user_prefs_get_restore_command( ofaHub *hub )
+ofa_mysql_user_prefs_get_restore_command( ofaHub *hub, guint format )
 {
 	myISettings *settings;
+	const gchar *key;
 	gchar *cmdline;
 
-	settings = ofa_hub_get_user_settings( hub );
-	cmdline = my_isettings_get_string( settings, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
-	if( !my_strlen( cmdline )){
-		cmdline = g_strdup( ofa_mysql_cmdline_restore_get_default_command());
+	cmdline = NULL;
+
+	key = get_restore_key( format );
+	if( my_strlen( key )){
+		settings = ofa_hub_get_user_settings( hub );
+		cmdline = my_isettings_get_string( settings, PREFS_GROUP, key );
+		if( !my_strlen( cmdline )){
+			cmdline = g_strdup( ofa_mysql_cmdline_restore_get_default_command());
+		}
 	}
 
 	return( cmdline );
@@ -105,10 +117,37 @@ ofa_mysql_user_prefs_get_restore_command( ofaHub *hub )
  * Records the restore command @command in the user settings.
  */
 void
-ofa_mysql_user_prefs_set_restore_command( ofaHub *hub, const gchar *command )
+ofa_mysql_user_prefs_set_restore_command( ofaHub *hub, guint format, const gchar *command )
 {
 	myISettings *settings;
+	const gchar *key;
 
-	settings = ofa_hub_get_user_settings( hub );
-	my_isettings_set_string( settings, PREFS_GROUP, PREFS_RESTORE_CMDLINE, command );
+	key = get_restore_key( format );
+	if( my_strlen( key )){
+		settings = ofa_hub_get_user_settings( hub );
+		my_isettings_set_string( settings, PREFS_GROUP, key, command );
+	}
+}
+
+static const gchar *
+get_restore_key( guint format )
+{
+	static const gchar *thisfn = "ofa_mysql_user_prefs_get_restore_key";
+	const gchar *key;
+
+	key = NULL;
+
+	switch( format ){
+		case OFA_BACKUP_HEADER_GZ:
+			key = PREFS_RESTORE_CMDLINE_GZ;
+			break;
+		case OFA_BACKUP_HEADER_ZIP:
+			key = PREFS_RESTORE_CMDLINE_ZIP;
+			break;
+		default:
+			g_warning( "%s: unknown or invalid archive format=%u", thisfn, format );
+			break;
+	}
+
+	return( key );
 }

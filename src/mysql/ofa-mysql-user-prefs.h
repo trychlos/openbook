@@ -40,11 +40,15 @@ G_BEGIN_DECLS
 
 gchar *ofa_mysql_user_prefs_get_backup_command ( ofaHub *hub );
 
-void   ofa_mysql_user_prefs_set_backup_command ( ofaHub *hub, const gchar *command );
+void   ofa_mysql_user_prefs_set_backup_command ( ofaHub *hub,
+													const gchar *command );
 
-gchar *ofa_mysql_user_prefs_get_restore_command( ofaHub *hub );
+gchar *ofa_mysql_user_prefs_get_restore_command( ofaHub *hub,
+													guint format );
 
-void   ofa_mysql_user_prefs_set_restore_command( ofaHub *hub, const gchar *command );
+void   ofa_mysql_user_prefs_set_restore_command( ofaHub *hub,
+													guint format,
+													const gchar *command );
 
 G_END_DECLS
 

@@ -209,6 +209,7 @@ struct _ofaIDBConnectInterface {
 	 *  the target dossier.
 	 * @period: the target financial period.
 	 * @uri: the source URI.
+	 * @format: the format of the archive (from #ofaBackupHeader header).
 	 * @msg_cb: [allow-none]: a #ofaMsgCb callback function;
 	 *  the data passed to the callback is expected to be a null-
 	 *  terminated string;
@@ -227,6 +228,7 @@ struct _ofaIDBConnectInterface {
 	gboolean ( *restore_db )           ( const ofaIDBConnect *instance,
 											const ofaIDBExerciceMeta *period,
 											const gchar *uri,
+											guint format,
 											ofaMsgCb msg_cb,
 											ofaDataCb data_cb,
 											void *user_data );
@@ -423,6 +425,7 @@ gboolean            ofa_idbconnect_backup_db                ( const ofaIDBConnec
 gboolean            ofa_idbconnect_restore_db               ( const ofaIDBConnect *connect,
 																	const ofaIDBExerciceMeta *period,
 																	const gchar *uri,
+																	guint format,
 																	const gchar *adm_account,
 																	const gchar *adm_password,
 																	ofaMsgCb msg_cb,

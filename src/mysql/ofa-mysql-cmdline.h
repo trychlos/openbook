@@ -49,6 +49,7 @@ const gchar *ofa_mysql_cmdline_restore_get_default_command( void );
 gboolean     ofa_mysql_cmdline_restore_db_run             ( ofaMysqlConnect *connect,
 																ofaMysqlExerciceMeta *period,
 																const gchar *uri,
+																guint format,
 																ofaMsgCb msg_cb,
 																ofaDataCb data_cb,
 																void *user_data );

@@ -58,6 +58,14 @@
 G_BEGIN_DECLS
 
 /*
+ * The managed archive formats (in the order of their appearance)
+ */
+enum {
+	OFA_BACKUP_HEADER_GZ = 1,
+	OFA_BACKUP_HEADER_ZIP
+};
+
+/*
  * The prefix of the headers in the .zip archive (starting with 0.65)
  */
 #define OFA_BACKUP_HEADER_HEADER        "[HDR] "

@@ -418,7 +418,7 @@
                 use actions bin
 
 1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
-                read-only (unset when current if not set by the user) 
+                read-only (unset when current if was not set by the user) 
 
 1322
 

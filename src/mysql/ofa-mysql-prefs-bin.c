@@ -32,6 +32,7 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-backup-header.h"
 #include "api/ofa-hub.h"
 
 #include "ofa-mysql-prefs-bin.h"
@@ -53,7 +54,8 @@ typedef struct {
 	/* runtime data
 	 */
 	gchar        *backup_cmdline;
-	gchar        *restore_cmdline;
+	gchar        *restore_gz;
+	gchar        *restore_zip;
 }
 	ofaMySQLPrefsBinPrivate;
 
@@ -70,7 +72,8 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysq
 
 static void       setup_bin( ofaMySQLPrefsBin *self );
 static void       on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
-static void       on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
+static void       on_restore_gz_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
+static void       on_restore_zip_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
 static gboolean   get_is_valid( ofaMySQLPrefsBin *self, gchar **message );
 static void       do_apply( ofaMySQLPrefsBin *self );
 
@@ -92,7 +95,8 @@ mysql_prefs_bin_finalize( GObject *instance )
 	priv = ofa_mysql_prefs_bin_get_instance_private( OFA_MYSQL_PREFS_BIN( instance ));
 
 	g_free( priv->backup_cmdline );
-	g_free( priv->restore_cmdline );
+	g_free( priv->restore_gz );
+	g_free( priv->restore_zip );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_mysql_prefs_bin_parent_class )->finalize( instance );
@@ -226,13 +230,23 @@ setup_bin( ofaMySQLPrefsBin *self )
 	gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	g_free( cmdline );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-gz-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_restore_changed ), self );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-label" );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_restore_gz_changed ), self );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-gz-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-	cmdline = ofa_mysql_user_prefs_get_restore_command( priv->hub );
+	cmdline = ofa_mysql_user_prefs_get_restore_command( priv->hub, OFA_BACKUP_HEADER_GZ );
+	gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
+	g_free( cmdline );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-zip-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_restore_zip_changed ), self );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-zip-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	cmdline = ofa_mysql_user_prefs_get_restore_command( priv->hub, OFA_BACKUP_HEADER_ZIP );
 	gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	g_free( cmdline );
 
@@ -254,14 +268,27 @@ on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *self )
 }
 
 static void
-on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *self )
+on_restore_gz_changed( GtkEntry *entry, ofaMySQLPrefsBin *self )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 
 	priv = ofa_mysql_prefs_bin_get_instance_private( self );
 
-	g_free( priv->restore_cmdline );
-	priv->restore_cmdline = g_strdup( gtk_entry_get_text( entry ));
+	g_free( priv->restore_gz );
+	priv->restore_gz = g_strdup( gtk_entry_get_text( entry ));
+
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+static void
+on_restore_zip_changed( GtkEntry *entry, ofaMySQLPrefsBin *self )
+{
+	ofaMySQLPrefsBinPrivate *priv;
+
+	priv = ofa_mysql_prefs_bin_get_instance_private( self );
+
+	g_free( priv->restore_zip );
+	priv->restore_zip = g_strdup( gtk_entry_get_text( entry ));
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -290,26 +317,12 @@ ofa_mysql_prefs_bin_get_valid( ofaMySQLPrefsBin *bin, gchar **message )
 static gboolean
 get_is_valid( ofaMySQLPrefsBin *self, gchar **message )
 {
-	ofaMySQLPrefsBinPrivate *priv;
-
-	priv = ofa_mysql_prefs_bin_get_instance_private( self );
-
 	if( message ){
 		*message = NULL;
 	}
 
-	if( !my_strlen( priv->backup_cmdline )){
-		if( message ){
-			*message = g_strdup( _( "Empty backup command-line" ));
-		}
-		return( FALSE );
-	}
-	if( !my_strlen( priv->restore_cmdline )){
-		if( message ){
-			*message = g_strdup( _( "Empty restore command-line" ));
-		}
-		return( FALSE );
-	}
+	/* this dialog is always valid, as MySQL provides nonetheless
+	 * suitable default values */
 
 	return( TRUE );
 }
@@ -338,15 +351,10 @@ static void
 do_apply( ofaMySQLPrefsBin *self )
 {
 	ofaMySQLPrefsBinPrivate *priv;
-	GtkWidget *entry;
 
 	priv = ofa_mysql_prefs_bin_get_instance_private( self );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-backup-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	ofa_mysql_user_prefs_set_backup_command( priv->hub, gtk_entry_get_text( GTK_ENTRY( entry )));
-
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	ofa_mysql_user_prefs_set_restore_command( priv->hub, gtk_entry_get_text( GTK_ENTRY( entry )));
+	ofa_mysql_user_prefs_set_backup_command( priv->hub, priv->backup_cmdline );
+	ofa_mysql_user_prefs_set_restore_command( priv->hub, OFA_BACKUP_HEADER_GZ, priv->restore_gz );
+	ofa_mysql_user_prefs_set_restore_command( priv->hub, OFA_BACKUP_HEADER_ZIP, priv->restore_zip );
 }

@@ -35,6 +35,7 @@
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-backup-header.h"
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
@@ -103,6 +104,7 @@ typedef struct {
 	gchar                  *p1_folder;
 	gchar                  *p1_uri;		/* the utf-8 to be restored file uri */
 	gint                    p1_filter;
+	guint                   p1_format;
 
 	/* p2: select the dossier target
 	 */
@@ -174,8 +176,8 @@ typedef struct {
 
 static sFilter st_filters[] = {
 		{ FILE_CHOOSER_ALL, "*",     N_( "All files (*)" )},
-		{ FILE_CHOOSER_GZ,  "*.gz",  N_( "Backup files (*.gz)" )},
-		{ FILE_CHOOSER_ZIP, "*.zip", N_( "ZIP files (*.zip)" )},
+		{ FILE_CHOOSER_GZ,  "*.gz",  N_( "First archive format (*.gz)" )},
+		{ FILE_CHOOSER_ZIP, "*.zip", N_( "Most recent archive format (*.zip)" )},
 		{ 0 }
 };
 
@@ -194,6 +196,7 @@ static void     p1_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidg
 static void     p1_on_selection_changed( GtkFileChooser *chooser, ofaRestoreAssistant *self );
 static void     p1_on_file_activated( GtkFileChooser *chooser, ofaRestoreAssistant *self );
 static gboolean p1_check_for_complete( ofaRestoreAssistant *self );
+static guint    p1_get_archive_format( ofaRestoreAssistant *self );
 static void     p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -549,14 +552,47 @@ p1_check_for_complete( ofaRestoreAssistant *self )
 
 	g_free( priv->p1_uri );
 	priv->p1_uri = gtk_file_chooser_get_uri( priv->p1_chooser );
-	g_debug( "p1_check_for_complete: furi=%s", priv->p1_uri );
+	g_debug( "p1_check_for_complete: uri=%s", priv->p1_uri );
 
 	ok = my_strlen( priv->p1_uri ) > 0 &&
 			my_utils_uri_is_readable_file( priv->p1_uri );
 
+	if( ok ){
+		priv->p1_format = p1_get_archive_format( self );
+		ok = ( priv->p1_format > 0 );
+	}
+
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 
 	return( ok );
+}
+
+/*
+ * Detect the format (.gz vs .zip) of the selected uri.
+ * Relies on the file extension.
+ */
+static guint
+p1_get_archive_format( ofaRestoreAssistant *self )
+{
+	ofaRestoreAssistantPrivate *priv;
+	guint format;
+	gchar *extension;
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	format = 0;
+	extension = my_utils_uri_get_extension( priv->p1_uri, TRUE );
+	//g_debug( "p1_get_archive_format: extension=%s", extension );
+
+	if( !my_collate( extension, ".gz" )){
+		format = OFA_BACKUP_HEADER_GZ;
+	} else if( !my_collate( extension, ".zip" )){
+		format = OFA_BACKUP_HEADER_ZIP;
+	}
+
+	g_free( extension );
+
+	return( format );
 }
 
 static void
@@ -1262,7 +1298,8 @@ p6_do_restore( ofaRestoreAssistant *self )
 
 	/* restore the backup */
 	ok = ofa_idbconnect_restore_db(
-				priv->p3_connect, NULL, priv->p1_uri, priv->p4_account, priv->p4_password, ( ofaMsgCb ) p6_msg_cb, self );
+				priv->p3_connect, NULL, priv->p1_uri, priv->p1_format,
+				priv->p4_account, priv->p4_password, ( ofaMsgCb ) p6_msg_cb, self );
 
 	if( ok ){
 		style = "labelinfo";

@@ -194,7 +194,7 @@ ofa_mysql_cmdline_restore_get_default_command( void )
  * else.
  */
 gboolean
-ofa_mysql_cmdline_restore_db_run( ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, const gchar *uri,
+ofa_mysql_cmdline_restore_db_run( ofaMysqlConnect *connect, ofaMysqlExerciceMeta *period, const gchar *uri, guint format,
 									ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_restore_db_run";
@@ -204,8 +204,9 @@ ofa_mysql_cmdline_restore_db_run( ofaMysqlConnect *connect, ofaMysqlExerciceMeta
 	ofaIDBProvider *provider;
 	ofaHub *hub;
 
-	g_debug( "%s: connect=%p, period=%p, uri=%s, msg_cb=%p, data_cb=%p, user_data=%p",
-			thisfn, ( void * ) connect, ( void * ) period, uri, ( void * ) msg_cb, ( void * ) data_cb, user_data );
+	g_debug( "%s: connect=%p, period=%p, uri=%s, format=%u, msg_cb=%p, data_cb=%p, user_data=%p",
+			thisfn, ( void * ) connect, ( void * ) period,
+			uri, format, ( void * ) msg_cb, ( void * ) data_cb, user_data );
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
 	g_return_val_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ), FALSE );
@@ -215,7 +216,7 @@ ofa_mysql_cmdline_restore_db_run( ofaMysqlConnect *connect, ofaMysqlExerciceMeta
 	dossier_meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
 	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 	hub = ofa_idbprovider_get_hub( provider );
-	template = ofa_mysql_user_prefs_get_restore_command( hub );
+	template = ofa_mysql_user_prefs_get_restore_command( hub, format );
 
 	/* the command we are executing here takes its input from stdin
 	 * we get messages to be displayed both in stdout and stderr
