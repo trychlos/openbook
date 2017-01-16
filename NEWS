@@ -36,6 +36,7 @@
 
    - my_stamp_xxx() functions now accept a display format (todo #1318).
    - my_utils_file_is_readable_file(): renamed to my_utils_file_is_readable().
+   - my_utils_uri_is_readable_file(): renamed to my_utils_uri_is_readable().
    - ofaBackupAssistant: new class.
    - ofaDossierProps: new class.
    - ofa_idbconnect_backup_db(): new function.

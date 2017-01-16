@@ -555,7 +555,7 @@ p1_check_for_complete( ofaRestoreAssistant *self )
 	g_debug( "p1_check_for_complete: uri=%s", priv->p1_uri );
 
 	ok = my_strlen( priv->p1_uri ) > 0 &&
-			my_utils_uri_is_readable_file( priv->p1_uri );
+			my_utils_uri_is_readable( priv->p1_uri );
 
 	if( ok ){
 		priv->p1_format = p1_get_archive_format( self );

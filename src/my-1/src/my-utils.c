@@ -2012,7 +2012,7 @@ is_dir( GFile *file )
 }
 
 /**
- * my_utils_uri_is_readable_file:
+ * my_utils_uri_is_readable:
  * @uri: a file URI
  *
  * Returns: %TRUE if the specified file exists, is a file and is readable,
@@ -2023,7 +2023,7 @@ is_dir( GFile *file )
  * use of its result...
  */
 gboolean
-my_utils_uri_is_readable_file( const gchar *uri )
+my_utils_uri_is_readable( const gchar *uri )
 {
 	GFile *file;
 	gboolean ok;
@@ -2039,7 +2039,7 @@ my_utils_uri_is_readable_file( const gchar *uri )
 	}
 	g_free( sysfname );
 
-	g_debug( "my_utils_uri_is_readable_file: uri=%s, ok=%s", uri, ok ? "True":"False" );
+	g_debug( "my_utils_uri_is_readable: uri=%s, ok=%s", uri, ok ? "True":"False" );
 	return( ok );
 }
 

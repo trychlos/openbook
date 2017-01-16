@@ -565,7 +565,7 @@ p1_check_for_complete( ofaImportAssistant *self )
 	priv->p1_furi = gtk_file_chooser_get_uri( priv->p1_chooser );
 
 	ok = my_strlen( priv->p1_furi ) &&
-			my_utils_uri_is_readable_file( priv->p1_furi );
+			my_utils_uri_is_readable( priv->p1_furi );
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 
