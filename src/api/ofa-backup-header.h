@@ -44,10 +44,10 @@
  * Data archives so contains:
  *
  * - 1..n headers, each containing various reference informations;
- *   each header is named in the archive file as "[HEADER] <name>",
+ *   each header is named in the archive file as "[HDR] <name>",
  *   where <name> identifies the header content.
  *
- * - exactly one (should!) data stream named "[DATA] <name>".
+ * - exactly one (should!) data stream named "[DAT] <name>".
  */
 
 #include <archive.h>
@@ -58,7 +58,7 @@
 G_BEGIN_DECLS
 
 /*
- * The prefix of the headers in the archive
+ * The prefix of the headers in the .zip archive (starting with 0.65)
  */
 #define OFA_BACKUP_HEADER_HEADER        "[HDR] "
 #define OFA_BACKUP_HEADER_DATA          "[DAT] "
