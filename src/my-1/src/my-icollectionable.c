@@ -28,8 +28,6 @@
 
 #include "my/my-icollectionable.h"
 
-#include "api/ofa-hub.h"
-
 #define ICOLLECTIONABLE_LAST_VERSION    1
 
 #define ICOLLECTIONABLE_DATA            "my-icollectionable-data"

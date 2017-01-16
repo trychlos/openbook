@@ -409,8 +409,6 @@
 1316 2017- 1- 9 DossierManager: implement call to ofa_dossier_collection_delete_period()
                 (requires a superuser connection on the dbms)
 
-1319 2017- 1-13 remove ofaHub dependancy from my-icollectionable.c
-
 1320 2017- 1-16 RestoreAssistant:
                 choose target dossier/exercice
                 use new superuser account bin (from the provider)
@@ -486,6 +484,9 @@
 
 1318 2017- 1-12 review my_utils_stamp_set_from_xxx to have a format (like my_date)
      2017- 1-12 done
+
+1319 2017- 1-13 remove ofaHub dependancy from my-icollectionable.c
+     2017- 1-16 done
 
 1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
                 read-only (unset when current if was not set by the user) 
