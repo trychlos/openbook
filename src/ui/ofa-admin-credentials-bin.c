@@ -450,7 +450,7 @@ ofa_admin_credentials_bin_get_credentials( ofaAdminCredentialsBin *bin, gchar **
 }
 
 /*
- * settings are: remember_admin_account(b);
+ * settings are: remember_admin_account(b); admin_account(s);
  */
 static void
 read_settings( ofaAdminCredentialsBin *self )
@@ -460,6 +460,7 @@ read_settings( ofaAdminCredentialsBin *self )
 	GList *strlist, *it;
 	const gchar *cstr;
 	gchar *key;
+	gboolean save_account;
 
 	priv = ofa_admin_credentials_bin_get_instance_private( self );
 
@@ -467,10 +468,19 @@ read_settings( ofaAdminCredentialsBin *self )
 	key = g_strdup_printf( "%s-admin-credentials", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
+	save_account = FALSE;
+
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->remember_btn ), my_utils_boolean_from_str( cstr ));
+		save_account = my_utils_boolean_from_str( cstr );
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->remember_btn ), save_account );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr ) && save_account ){
+		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
 	}
 
 	my_isettings_free_string_list( settings, strlist );
@@ -483,11 +493,15 @@ write_settings( ofaAdminCredentialsBin *self )
 	ofaAdminCredentialsBinPrivate *priv;
 	myISettings *settings;
 	gchar *key, *str;
+	gboolean save_account;
 
 	priv = ofa_admin_credentials_bin_get_instance_private( self );
 
-	str = g_strdup_printf( "%s;",
-				gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->remember_btn )) ? "True":"False" );
+	save_account = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->remember_btn ));
+
+	str = g_strdup_printf( "%s;%s;",
+				save_account ? "True":"False",
+				save_account ? gtk_entry_get_text( GTK_ENTRY( priv->account_entry )) : "" );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
 	key = g_strdup_printf( "%s-admin-credentials", priv->settings_prefix );
