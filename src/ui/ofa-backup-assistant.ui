@@ -8,9 +8,9 @@
       <object class="GtkLabel" id="label0">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">This assistant will guide you through the process of  backuping exercice of a dossier.
+        <property name="label" translatable="yes">This assistant will guide you through the process of archiving the datas of an financial period.
 You will be able to choose the target file, and to add a comment to this archive.
-Press Continue.</property>
+Press Next.</property>
         <property name="wrap">True</property>
       </object>
       <packing>
@@ -39,7 +39,7 @@ Press Continue.</property>
         </child>
       </object>
       <packing>
-        <property name="title" translatable="yes">Select the file to be restored</property>
+        <property name="title" translatable="yes">Select the target file</property>
       </packing>
     </child>
     <child>
@@ -157,7 +157,7 @@ Press Continue.</property>
         </child>
       </object>
       <packing>
-        <property name="title" translatable="yes">Select the target dossier</property>
+        <property name="title" translatable="yes">Add a comment</property>
       </packing>
     </child>
     <child>
@@ -264,6 +264,20 @@ Press Continue.</property>
           <packing>
             <property name="left_attach">0</property>
             <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="p4-label">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_top">8</property>
+            <property name="margin_bottom">8</property>
+            <property name="wrap">True</property>
+            <property name="xalign">0</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">1</property>
           </packing>
         </child>
       </object>

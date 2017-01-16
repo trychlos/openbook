@@ -35,11 +35,16 @@ G_BEGIN_DECLS
 typedef struct _ofaHub                  ofaHub;
 
 /**
- * @ofaDataCb: a general usage callback to pass some datas.
+ * @ofaDataCb: a general usage callback to pass some datas;
+ *  on input, the #ofaDataCb callback function should return the actual
+ *  size of data available in the buffer, 0 at end, <0 for an error;
+ *  on output, the #ofaDataCb should return the actual size the callback
+ *  has been successfully dealt with.
  * @ofaMsgCb: a general usage callback to display a message.
+ *  this callback in only used on output.
  */
-typedef void ( *ofaDataCb )( const void *, gsize, void * );
-typedef void ( *ofaMsgCb )( const gchar *, void * );
+typedef gsize ( *ofaDataCb )( void *, gsize, void * );
+typedef void  ( *ofaMsgCb ) ( const gchar *, void * );
 
 G_END_DECLS
 

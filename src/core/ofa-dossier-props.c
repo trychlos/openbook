@@ -31,6 +31,7 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-backup-header.h"
 #include "api/ofa-dossier-props.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ijson.h"
@@ -170,6 +171,52 @@ ofa_dossier_props_new_from_dossier( ofoDossier *dossier )
 	ofa_dossier_props_set_begin_date( props, ofo_dossier_get_exe_begin( dossier ));
 	ofa_dossier_props_set_end_date( props, ofo_dossier_get_exe_end( dossier ));
 	ofa_dossier_props_set_rpid( props, ofo_dossier_get_rpid( dossier ));
+
+	return( props );
+}
+
+/**
+ * ofa_dossier_props_new_from_archive:
+ * @uri: the URI of an archive file.
+ *
+ * Extract the DossierProps header from @archive.
+ *
+ * Returns: a new #ofaDossierProps object if the header has been
+ * successfully parsed, or %NULL.
+ */
+ofaDossierProps *
+ofa_dossier_props_new_from_archive( const gchar *uri )
+{
+	static const gchar *thisfn = "ofa_dossier_props_new_from_archive";
+	ofaDossierProps *props;
+	struct archive *archive;
+	GFile *file;
+	gchar *path, *string;
+
+	props = NULL;
+
+	archive = archive_read_new();
+	archive_read_support_filter_all( archive );
+	archive_read_support_format_all( archive );
+
+	file = g_file_new_for_uri( uri );
+	path = g_file_get_path( file );
+
+	if( archive_read_open_filename( archive, path, 16384 ) != ARCHIVE_OK ){
+		g_warning( "%s: archive_read_open_filename: path=%s, %s", thisfn, path, archive_error_string( archive ));
+
+	} else {
+		string = ofa_backup_header_read_header( archive, st_props_title );
+		if( string ){
+			props = ofa_dossier_props_new_from_string( string );
+			g_free( string );
+		}
+	}
+
+	g_free( path );
+	g_object_unref( file );
+	archive_read_close( archive );
+	archive_read_free( archive );
 
 	return( props );
 }

@@ -48,7 +48,7 @@ static gboolean write_header( struct archive *archive, struct archive_entry *ent
  * ofa_backup_header_write_headers:
  * @hub: the #ofaHub object of the application.
  * @comment: a user comment.
- * @archive: an archive file opened in writing mode.
+ * @archive: an archive file opened in write mode.
  *
  * Writes currently opened dossier, Openbook software and this backup
  * properties as headers in the @archive file.
@@ -185,4 +185,90 @@ write_header( struct archive *archive, struct archive_entry *entry, const gchar 
     }
 
 	return( written > 0 );
+}
+
+/**
+ * ofa_backup_header_read_header:
+ * @archive: an archive file opened in read mode.
+ * @name: the (unprefixed) name of the searched header.
+ *
+ * Returns: a header as a newly allocated null-terminated string which
+ * should be #g_free() by the caller.
+ */
+gchar *
+ofa_backup_header_read_header( struct archive *archive, const gchar *name )
+{
+	static const gchar *thisfn = "ofa_backup_header_read_header";
+	struct archive_entry *entry;
+	gchar *string, *searched_name;
+	const gchar *read_name;
+	glong data_size;
+
+	g_debug( "%s: archive=%p, name=%s", thisfn, ( void * ) archive, name );
+
+	string = NULL;
+	if( my_strlen( name )){
+		searched_name = g_strdup_printf( "%s%s", OFA_BACKUP_HEADER_HEADER, name );
+		while( archive_read_next_header( archive, &entry ) == ARCHIVE_OK ){
+			read_name = archive_entry_pathname( entry );
+			if( my_collate( read_name, searched_name ) == 0 ){
+				data_size = archive_entry_size( entry );
+				string = g_new0( gchar, 1+data_size );
+				archive_read_data( archive, string, data_size );
+				break;
+			}
+			archive_read_data_skip( archive );
+		}
+		g_free( searched_name );
+	}
+
+	return( string );
+}
+
+/**
+ * ofa_backup_header_read_data:
+ * @archive: an archive file opened in read mode.
+ * @data_cb: a #ofaDataCb callback.
+ * @user_data: user data to be passed to the callback.
+ *
+ * Read the data stream, passing it to the @data_cb callback.
+ *
+ * Returns: %TRUE if the read has terminated successfully.
+ *
+ * Please note that the data buffer provided to the @data_cb
+ * callback is owned by this #ofaBackupHeader, and should not be
+ * released by the callback.
+ */
+gboolean
+ofa_backup_header_read_data( struct archive *archive, ofaDataCb data_cb, void *user_data )
+{
+	static const gchar *thisfn = "ofa_backup_header_read_data";
+	struct archive_entry *entry;
+	void *buffer;
+	static gulong bufsize = 16384;
+	glong bytes_read;
+	const gchar *cname;
+	gboolean found;
+
+	g_debug( "%s: archive=%p ,data_cb=%p, user_data=%p",
+			thisfn, ( void * ) archive, ( void * ) data_cb, user_data );
+
+	found = FALSE;
+	buffer = g_new0( gchar, bufsize );
+
+	while( archive_read_next_header( archive, &entry ) == ARCHIVE_OK ){
+		cname = archive_entry_pathname( entry );
+		if( g_str_has_prefix( cname, OFA_BACKUP_HEADER_DATA )){
+			found = TRUE;
+			while(( bytes_read = archive_read_data( archive, buffer, bufsize )) > 0 ){
+				data_cb( buffer, bytes_read, user_data );
+			}
+			break;
+		}
+		archive_read_data_skip( archive );
+	}
+
+	g_free( buffer );
+
+	return( found );
 }

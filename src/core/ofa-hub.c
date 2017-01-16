@@ -73,6 +73,7 @@ typedef struct {
 	mySettings            *dossier_settings;
 	mySettings            *user_settings;
 	ofaOpenbookProps      *openbook_props;
+	gchar                 *runtime_dir;
 
 	/* dossier
 	 */
@@ -103,8 +104,6 @@ enum {
 
 static gint st_signals[ N_SIGNALS ]     = { 0 };
 
-static void     icollector_iface_init( myICollectorInterface *iface );
-static guint    icollector_get_interface_version( void );
 static void     hub_register_types( ofaHub *self );
 static void     hub_init_signaling_system( ofaHub *self );
 static void     init_signaling_system_connect_to( ofaHub *self, GType type );
@@ -112,6 +111,8 @@ static void     hub_setup_settings( ofaHub *self );
 static gboolean on_deletable_default_handler( ofaHub *self, GObject *object );
 static void     dossier_do_close( ofaHub *self );
 static gboolean check_db_vs_settings( ofaHub *self );
+static void     icollector_iface_init( myICollectorInterface *iface );
+static guint    icollector_get_interface_version( void );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
@@ -121,6 +122,7 @@ static void
 hub_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_hub_finalize";
+	ofaHubPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -128,6 +130,9 @@ hub_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_HUB( instance ));
 
 	/* free data members here */
+	priv = ofa_hub_get_instance_private( OFA_HUB( instance ));
+
+	g_free( priv->runtime_dir );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_hub_parent_class )->finalize( instance );
@@ -496,25 +501,6 @@ ofa_hub_class_init( ofaHubClass *klass )
 				G_TYPE_POINTER, G_TYPE_POINTER );
 }
 
-/*
- * myICollector interface management
- */
-static void
-icollector_iface_init( myICollectorInterface *iface )
-{
-	static const gchar *thisfn = "ofa_hub_icollector_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = icollector_get_interface_version;
-}
-
-static guint
-icollector_get_interface_version( void )
-{
-	return( 1 );
-}
-
 /**
  * ofa_hub_new:
  * @getter: a #ofaIGetter instance which will be passed to dynamically
@@ -785,7 +771,7 @@ ofa_hub_get_dossier_collection( ofaHub *hub )
 	return( priv->dossier_collection );
 }
 
-/*
+/**
  * ofa_hub_get_dossier_settings:
  * @hub: this #ofaHub instance.
  *
@@ -808,7 +794,7 @@ ofa_hub_get_dossier_settings( ofaHub *hub )
 	return( MY_ISETTINGS( priv->dossier_settings ));
 }
 
-/*
+/**
  * ofa_hub_get_user_settings:
  * @hub: this #ofaHub instance.
  *
@@ -831,7 +817,7 @@ ofa_hub_get_user_settings( ofaHub *hub )
 	return( MY_ISETTINGS( priv->user_settings ));
 }
 
-/*
+/**
  * ofa_hub_get_openbook_props:
  * @hub: this #ofaHub instance.
  *
@@ -853,6 +839,50 @@ ofa_hub_get_openbook_props( ofaHub *hub )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->openbook_props );
+}
+
+/**
+ * ofa_hub_get_runtime_dir:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the directory where Openbook is executed from.
+ */
+const gchar *
+ofa_hub_get_runtime_dir( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return(( const gchar * ) priv->runtime_dir );
+}
+
+/**
+ * ofa_hub_set_runtime_dir:
+ * @hub: this #ofaHub instance.
+ * @dir: the directory where Openbook is executed from.
+ *
+ * Set the runtime directory.
+ */
+void
+ofa_hub_set_runtime_dir( ofaHub *hub, const gchar *dir )
+{
+	static const gchar *thisfn = "ofa_hub_set_runtime_dir";
+	ofaHubPrivate *priv;
+
+	g_debug( "%s: hub=%p, dir=%s", thisfn, ( void * ) hub, dir );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->runtime_dir = g_strdup( dir );
 }
 
 /*
@@ -1205,4 +1235,23 @@ ofa_hub_disconnect_handlers( ofaHub *hub, GList **handlers )
 		g_list_free( *handlers );
 		*handlers = NULL;
 	}
+}
+
+/*
+ * myICollector interface management
+ */
+static void
+icollector_iface_init( myICollectorInterface *iface )
+{
+	static const gchar *thisfn = "ofa_hub_icollector_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = icollector_get_interface_version;
+}
+
+static guint
+icollector_get_interface_version( void )
+{
+	return( 1 );
 }

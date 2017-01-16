@@ -549,7 +549,7 @@ idbconnect_backup_db( const ofaIDBConnect *instance, ofaMsgCb msg_cb, ofaDataCb 
 
 static gboolean
 idbconnect_restore_db( const ofaIDBConnect *instance,
-		const ofaIDBExerciceMeta *period, const gchar *uri, ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data )
+				const ofaIDBExerciceMeta *period, const gchar *uri, ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data )
 {
 	return( ofa_mysql_cmdline_restore_db_run(
 					OFA_MYSQL_CONNECT( instance ), OFA_MYSQL_EXERCICE_META( period ), uri, msg_cb, data_cb, user_data ));

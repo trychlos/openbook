@@ -71,6 +71,8 @@ ofaDossierProps *ofa_dossier_props_new                 ( void );
 
 ofaDossierProps *ofa_dossier_props_new_from_dossier    ( ofoDossier *dossier );
 
+ofaDossierProps *ofa_dossier_props_new_from_archive    ( const gchar *uri );
+
 ofaDossierProps *ofa_dossier_props_new_from_string     ( const gchar *string );
 
 gboolean         ofa_dossier_props_get_is_current      ( ofaDossierProps *props );

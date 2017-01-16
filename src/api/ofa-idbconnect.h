@@ -183,12 +183,10 @@ struct _ofaIDBConnectInterface {
 	 * @instance: a #ofaIDBConnect user connection on the period.
 	 * @msg_cb: [allow-none]: a #ofaMsgCb callback function;
 	 *  the data passed to the callback is expected to be a null-
-	 *  terminated string; the callee is expected to provide this data
-	 *  in a newly allocated buffer as the caller will release it;
+	 *  terminated string;
 	 *  may be %NULL if the caller does not wish this sort of display.
 	 * @data_cb: a #ofaDataMsg callback function;
-	 *  the callee is expected to provide the data in a newly allocated
-	 *  buffer as the caller will release it.
+	 *  the callee is expected to provide its datas to this callback.
 	 * @user_data: will be passed to both @msg_cb and @data_cb.
 	 *
 	 * Backup the currently opened period.
@@ -210,15 +208,14 @@ struct _ofaIDBConnectInterface {
 	 *  at server-level. The embedded #ofaIDBDossierMeta object describes
 	 *  the target dossier.
 	 * @period: the target financial period.
-	 * @uri: the file to be restored.
+	 * @uri: the source URI.
 	 * @msg_cb: [allow-none]: a #ofaMsgCb callback function;
 	 *  the data passed to the callback is expected to be a null-
-	 *  terminated string; the callee is expected to provide this data
-	 *  in a newly allocated buffer as the caller will release it;
+	 *  terminated string;
 	 *  may be %NULL if the caller does not wish this sort of display.
 	 * @data_cb: a #ofaDataMsg callback function;
-	 *  the callee is expected to provide the data in a newly allocated
-	 *  buffer as the caller will release it.
+	 *  the callee is expected to get its datas from this callback;
+	 *  its has to provide its own buffer.
 	 * @user_data: will be passed to both @msg_cb and @data_cb.
 	 *
 	 * Restore the specified @uri file to the target @period.

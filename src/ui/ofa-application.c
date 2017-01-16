@@ -681,6 +681,7 @@ application_startup( GApplication *application )
 	GtkBuilder *builder;
 	GMenuModel *menu;
 	ofaDossierCollection *collection;
+	gchar *dir;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
@@ -696,6 +697,11 @@ application_startup( GApplication *application )
 
 	/* instanciates and initializes the #ofaHub object of the application */
 	priv->hub = ofa_hub_new( OFA_IGETTER( application ));
+
+	/* setup runtime dir */
+	dir = g_path_get_dirname( priv->argv[0] );
+	ofa_hub_set_runtime_dir( priv->hub, dir );
+	g_free( dir );
 
 	ofa_misc_audit_item_signal_connect( OFA_IGETTER( application ));
 	ofa_misc_collector_item_signal_connect( OFA_IGETTER( application ));

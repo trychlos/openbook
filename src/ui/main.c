@@ -37,6 +37,9 @@ main( int argc, char *argv[] )
 	int ret;
 	ofaApplication *appli;
 
+	/* main: argv[0]=/home/pierre/data/eclipse/openbook/_install/bin/openbook */
+	g_debug( "main: argv[0]=%s", argv[0] );
+
 	ret = -1;
 	appli = ofa_application_new();
 

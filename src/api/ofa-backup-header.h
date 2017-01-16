@@ -60,18 +60,19 @@ G_BEGIN_DECLS
 /*
  * The prefix of the headers in the archive
  */
-#define OFA_BACKUP_HEADER_HEADER        "[HEADER] "
-#define OFA_BACKUP_HEADER_DATA          "[DATA] "
+#define OFA_BACKUP_HEADER_HEADER        "[HDR] "
+#define OFA_BACKUP_HEADER_DATA          "[DAT] "
 
 gboolean  ofa_backup_header_write_headers   ( ofaHub *hub,
 													const gchar *comment,
 													struct archive *archive );
 
-GList    *ofa_backup_header_get_headers_list( const gchar *uri );
+gchar    *ofa_backup_header_read_header     ( struct archive *archive,
+													const gchar *header_name );
 
-void     *ofa_backup_header_get_data        ( const gchar *uri,
-													const gchar *header_name,
-													glong *size );
+gboolean  ofa_backup_header_read_data       ( struct archive *archive,
+													ofaDataCb data_cb,
+													void *user_data );
 
 G_END_DECLS
 

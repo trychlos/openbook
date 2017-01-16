@@ -22,13 +22,14 @@
 
 bin_PROGRAMS = \
 	ofa_cmdline											\
+	ofa_unzip											\
 	$(NULL)
 
 ui_datadir = $(pkgdatadir)/ui
 
 AM_CPPFLAGS += \
 	-I $(top_srcdir)									\
-	-I $(top_srcdir)/misc								\
+	-I $(top_srcdir)/src								\
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"			\
 	-DG_LOG_DOMAIN=\"OFA\"								\
 	-DPKGUIDIR=\"$(ui_datadir)\"						\
@@ -45,6 +46,15 @@ ofa_cmdline_SOURCES = \
 	$(NULL)
 
 ofa_cmdline_LDADD = \
+	$(OPENBOOK_LIBS)									\
+	$(NULL)
+
+ofa_unzip_SOURCES = \
+	ofa-unzip.c											\
+	$(BUILT_SOURCES)									\
+	$(NULL)
+
+ofa_unzip_LDADD = \
 	$(OPENBOOK_LIBS)									\
 	$(NULL)
 

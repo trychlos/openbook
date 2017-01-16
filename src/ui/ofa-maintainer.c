@@ -54,8 +54,8 @@ ofa_maintainer_run_by_application( ofaApplication *application )
 	if( 0 ){
 		old_functions();
 		test_compressor( OFA_IGETTER( application ));
+		test_libarchive( OFA_IGETTER( application ));
 	}
-	test_libarchive( OFA_IGETTER( application ));
 }
 
 static void

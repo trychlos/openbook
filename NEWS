@@ -19,6 +19,8 @@
    - Replace Backup standard dialog box with an assistant (todo #1317).
    - Add to backup archives a JSON header.
 
+   + ofa-unzip: command-line utility to unarchive a data flow on stdout.
+
  Bug fixes:
 
    - 

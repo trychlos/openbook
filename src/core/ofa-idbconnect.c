@@ -56,15 +56,26 @@ typedef struct {
 	sIDBConnect;
 
 /* a data structure used to manage async messages
- * and data compression
+ * and data compression on backup
  */
 typedef struct {
 	ofaMsgCb              msg_cb;
 	void                 *user_data;
 	struct archive       *archive;
 	struct archive_entry *entry;
+	gsize                 total_written;
 }
 	sBackup;
+
+/* a data structure used to manage async messages
+ * and data input on restore
+ */
+typedef struct {
+	ofaMsgCb              msg_cb;
+	void                 *user_data;
+	struct archive       *archive;
+}
+	sRestore;
 
 #define IDBCONNECT_LAST_VERSION            1
 #define IDBCONNECT_DATA                   "idbconnect-data"
@@ -82,8 +93,11 @@ static gboolean        backup_create_archive( const ofaIDBConnect *self, GFile *
 static struct archive *backup_new_archive( const gchar *filename );
 static gboolean        backup_write_headers( const ofaIDBConnect *self, const gchar *comment, sBackup *sope );
 static gboolean        backup_create_entry( const ofaIDBConnect *self, GFile *file, sBackup *sope );
-static void            backup_data_cb( const void *buffer, gsize bufsize, void *user_data );
+static gsize           backup_data_cb( const void *buffer, gsize bufsize, void *user_data );
 static void            backup_msg_cb( const gchar *string, void *user_data );
+static gboolean        restore_open_archive( const ofaIDBConnect *self, GFile *file, sRestore *sope );
+static gsize           restore_data_cb( void *buffer, gsize bufsize, void *user_data );
+static void            restore_msg_cb( const gchar *string, void *user_data );
 static gboolean        set_admin_credentials( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr );
 static sIDBConnect    *get_instance_data( const ofaIDBConnect *connect );
 static void            on_instance_finalized( sIDBConnect *sdata, GObject *finalized_dbconnect );
@@ -867,15 +881,17 @@ ofa_idbconnect_backup_db( const ofaIDBConnect *connect,
 		sope->msg_cb = msg_cb;
 		sope->user_data = user_data;
 
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->backup_db( connect, backup_msg_cb, backup_data_cb, sope );
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->backup_db(
+							connect, ( ofaMsgCb ) backup_msg_cb, ( ofaDataCb ) backup_data_cb, sope );
 
 		/* end of backup stream */
+		g_debug( "%s: total_written=%lu", thisfn, sope->total_written );
 	    archive_write_finish_entry( sope->archive );
 
 	    /* release DBMS backup resources */
-	    g_debug( "%s: closing streams and releasing resources", thisfn );
-		archive_entry_free( sope->entry );
+	    /* g_debug( "%s: closing streams and releasing resources", thisfn ); */
 		archive_write_close( sope->archive );
+		archive_entry_free( sope->entry );
 		archive_write_free( sope->archive );
 		g_free( sope );
 		g_object_unref( file );
@@ -1001,7 +1017,7 @@ backup_create_entry( const ofaIDBConnect *self, GFile *file, sBackup *sope )
  *
  * @res: may be %NULL to signal the end of the operation.
  */
-static void
+static gsize
 backup_data_cb( const void *buffer, gsize bufsize, void *user_data )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_data_cb";
@@ -1011,12 +1027,16 @@ backup_data_cb( const void *buffer, gsize bufsize, void *user_data )
 	/* get the binary data from the output stream from the plugin */
 	written = archive_write_data( sope->archive, buffer, bufsize );
 	if( written < 0 ){
-		g_debug( "%s: %s", thisfn, archive_error_string( sope->archive ));
+		g_warning( "%s: %s", thisfn, archive_error_string( sope->archive ));
 	} else {
-		g_debug( "%s: insize=%lu, written=%lu", thisfn, bufsize, written );
+		sope->total_written += written;
+		if( 0 ){
+			g_debug( "%s: insize=%lu, written=%lu, total_written=%lu",
+					thisfn, bufsize, written, sope->total_written );
+		}
 	}
 
-	g_free(( void * ) buffer );
+	return( written );
 }
 
 static void
@@ -1024,7 +1044,6 @@ backup_msg_cb( const gchar *string, void *user_data )
 {
 	sBackup *sope = ( sBackup * ) user_data;
 	sope->msg_cb( string, sope->user_data );
-	g_free(( void * ) string );
 }
 
 /**
@@ -1058,6 +1077,8 @@ ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 	ofaIDBProvider *provider;
 	ofaIDBConnect *target_connect;
 	gboolean ok;
+	GFile *file;
+	sRestore *sope;
 
 	g_debug( "%s: connect=%p, period=%p, uri=%s, adm_account=%s, adm_password=%s, msg_cb=%p, user_data=%p",
 			thisfn, ( void * ) connect, ( void * ) period, uri,
@@ -1081,14 +1102,29 @@ ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 		}
 		g_return_val_if_fail( target_period && OFA_IS_IDBEXERCICE_META( target_period ), FALSE );
 
-		if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore_db( connect, target_period, uri, msg_cb, NULL, NULL )){
+		file = g_file_new_for_uri( uri );
+		sope = g_new0( sRestore, 1 );
+		sope->msg_cb = msg_cb;
+		sope->user_data = user_data;
+
+		ok = restore_open_archive( connect, file, sope ) &&
+				OFA_IDBCONNECT_GET_INTERFACE( connect )->restore_db(
+						connect, target_period, uri, ( ofaMsgCb ) restore_msg_cb, ( ofaDataCb ) restore_data_cb, sope );
+
+		if( ok ){
 			provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
 			target_connect = ofa_idbprovider_new_connect(
 					provider, sdata->account, sdata->password, sdata->dossier_meta, target_period );
 			set_admin_credentials( target_connect, adm_account, adm_password, NULL );
 			g_object_unref( target_connect );
-			ok = TRUE;
 		}
+
+		if( sope->archive ){
+			archive_read_close( sope->archive );
+			archive_read_free( sope->archive );
+		}
+
+		g_free( sope );
 
 		return( ok );
 	}
@@ -1096,6 +1132,63 @@ ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'restore_db()' method",
 			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( FALSE );
+}
+
+static gboolean
+restore_open_archive( const ofaIDBConnect *self, GFile *file, sRestore *sope )
+{
+	static const gchar *thisfn = "ofa_idbconnect_restore_open_archive";
+	gchar *pathname;
+	struct archive_entry *entry;
+	const gchar *cname;
+	gboolean found;
+
+	found = FALSE;
+	sope->archive = archive_read_new();
+	archive_read_support_filter_all( sope->archive );
+	archive_read_support_format_all( sope->archive );
+
+	pathname = g_file_get_path( file );
+	if( archive_read_open_filename( sope->archive, pathname, 16384 ) != ARCHIVE_OK ){
+		g_warning( "%s: archive_read_open_filename: path=%s, %s", thisfn, pathname, archive_error_string( sope->archive ));
+
+	} else {
+		while( archive_read_next_header( sope->archive, &entry ) == ARCHIVE_OK ){
+			cname = archive_entry_pathname( entry );
+			if( g_str_has_prefix( cname, OFA_BACKUP_HEADER_DATA )){
+				found = TRUE;
+				break;
+			}
+			archive_read_data_skip( sope->archive );
+		}
+	}
+
+	if( !found ){
+		archive_read_close( sope->archive );
+		archive_read_free( sope->archive );
+		sope->archive = NULL;
+	}
+
+	return( found );
+}
+
+/*
+ * This callback is called each time the restore process wants to read
+ * some datas
+ */
+static gsize
+restore_data_cb( void *buffer, gsize bufsize, void *user_data )
+{
+	sRestore *sope = ( sRestore * ) user_data;
+
+	return( archive_read_data( sope->archive, buffer, bufsize ));
+}
+
+static void
+restore_msg_cb( const gchar *string, void *user_data )
+{
+	sRestore *sope = ( sRestore * ) user_data;
+	sope->msg_cb( string, sope->user_data );
 }
 
 /**

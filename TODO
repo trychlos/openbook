@@ -276,8 +276,6 @@
 
 1053 2016- 3-26 CODE review the menu distribution
 
-1073 2016- 4-14 ofaIDBConnect::restore: returns an error message
-
 1075 2016- 4-14 have a message bar
      2016- 4-20 describe a use case
 
@@ -413,7 +411,11 @@
 
 1319 2017- 1-13 remove ofaHub dependancy from my-icollectionable.c
 
-1320
+1320 2017- 1-13 RestoreAssistant:
+                choose target dossier/exercice
+                use new superuser account bin (from the provider)
+                admin credentials should save the account
+                use actions bin
 
 -----------------------------------------------------------------------
  DONE
@@ -421,6 +423,10 @@
 
  792 2015- 4- 6 FEAT have a comment in the backup
      2017- 1-13 done
+
+1073 2016- 4-14 ofaIDBConnect::restore: returns an error message
+     2017- 1-16 cancelled as an error message may be sent through the
+                msg_cb callback
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
      2017- 1-12 done in CORE v34

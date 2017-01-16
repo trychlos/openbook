@@ -138,6 +138,11 @@ myISettings           *ofa_hub_get_user_settings         ( ofaHub *hub );
 
 ofaOpenbookProps      *ofa_hub_get_openbook_props        ( ofaHub *hub );
 
+const gchar           *ofa_hub_get_runtime_dir           ( ofaHub *hub );
+
+void                   ofa_hub_set_runtime_dir           ( ofaHub *hub,
+																const gchar *dir );
+
 const ofaIDBConnect   *ofa_hub_get_connect               ( ofaHub *hub );
 
 ofoDossier            *ofa_hub_get_dossier               ( ofaHub *hub );

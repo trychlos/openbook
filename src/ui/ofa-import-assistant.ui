@@ -9,7 +9,7 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="label" translatable="yes">This assistant will guide you through the process of importing external datas.
-Press Continue.</property>
+Press Next.</property>
         <property name="wrap">True</property>
       </object>
       <packing>

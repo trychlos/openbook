@@ -112,7 +112,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = ofa_cmdline$(EXEEXT)
+bin_PROGRAMS = ofa_cmdline$(EXEEXT) ofa_unzip$(EXEEXT)
 subdir = src/cmdline
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_code_coverage.m4 \
@@ -145,6 +145,9 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am_ofa_unzip_OBJECTS = ofa-unzip.$(OBJEXT) $(am__objects_1)
+ofa_unzip_OBJECTS = $(am_ofa_unzip_OBJECTS)
+ofa_unzip_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -179,8 +182,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(ofa_cmdline_SOURCES)
-DIST_SOURCES = $(ofa_cmdline_SOURCES)
+SOURCES = $(ofa_cmdline_SOURCES) $(ofa_unzip_SOURCES)
+DIST_SOURCES = $(ofa_cmdline_SOURCES) $(ofa_unzip_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -239,7 +242,7 @@ ACLOCAL = @ACLOCAL@
 ALL_LINGUAS = @ALL_LINGUAS@
 AMTAR = @AMTAR@
 AM_CFLAGS = @AM_CFLAGS@
-AM_CPPFLAGS = @AM_CPPFLAGS@ -I $(top_srcdir) -I $(top_srcdir)/misc \
+AM_CPPFLAGS = @AM_CPPFLAGS@ -I $(top_srcdir) -I $(top_srcdir)/src \
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\" \
 	-DG_LOG_DOMAIN=\"OFA\" -DPKGUIDIR=\"$(ui_datadir)\" \
 	-DSYSCONFDIR=\"$(sysconfdir)\" $(OPENBOOK_CFLAGS) $(NULL)
@@ -432,6 +435,15 @@ ofa_cmdline_LDADD = \
 	$(OPENBOOK_LIBS)									\
 	$(NULL)
 
+ofa_unzip_SOURCES = \
+	ofa-unzip.c											\
+	$(BUILT_SOURCES)									\
+	$(NULL)
+
+ofa_unzip_LDADD = \
+	$(OPENBOOK_LIBS)									\
+	$(NULL)
+
 actions_files = \
 	$(NULL)
 
@@ -553,6 +565,10 @@ ofa_cmdline$(EXEEXT): $(ofa_cmdline_OBJECTS) $(ofa_cmdline_DEPENDENCIES) $(EXTRA
 	@rm -f ofa_cmdline$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(ofa_cmdline_OBJECTS) $(ofa_cmdline_LDADD) $(LIBS)
 
+ofa_unzip$(EXEEXT): $(ofa_unzip_OBJECTS) $(ofa_unzip_DEPENDENCIES) $(EXTRA_ofa_unzip_DEPENDENCIES) 
+	@rm -f ofa_unzip$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(ofa_unzip_OBJECTS) $(ofa_unzip_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -560,6 +576,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-unzip.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

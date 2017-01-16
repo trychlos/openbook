@@ -100,6 +100,7 @@ typedef struct {
 	/* p4: backup estore the file, display the result
 	 */
 	GtkWidget           *p4_textview;
+	GtkWidget           *p4_label;
 }
 	ofaBackupAssistantPrivate;
 
@@ -688,7 +689,10 @@ p4_do_init( ofaBackupAssistant *self, gint page_num, GtkWidget *page )
 	priv = ofa_backup_assistant_get_instance_private( self );
 
 	priv->p4_textview = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-textview" );
-	g_return_if_fail( priv->p2_textview && GTK_IS_TEXT_VIEW( priv->p4_textview ));
+	g_return_if_fail( priv->p4_textview && GTK_IS_TEXT_VIEW( priv->p4_textview ));
+
+	priv->p4_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-label" );
+	g_return_if_fail( priv->p4_label && GTK_IS_LABEL( priv->p4_label ));
 }
 
 static void
@@ -717,15 +721,22 @@ p4_do_backup( ofaBackupAssistant *self )
 	gboolean ok;
 	gchar *msg;
 	GtkWidget *dlg;
+	const gchar *style, *dossier_name;
 
 	priv = ofa_backup_assistant_get_instance_private( self );
 
 	ok = ofa_idbconnect_backup_db( priv->connect, priv->p2_comment, priv->p1_uri, ( ofaMsgCb ) p4_msg_cb, self );
 
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->dossier_meta );
+
 	if( ok ){
-		msg = g_strdup( _( "Dossier has been successfully backuped" ));
+		style = "labelinfo";
+		msg = g_strdup_printf( _( "Dossier '%s' has been successfully archived into '%s' URI" ),
+				dossier_name, priv->p1_uri );
 	} else {
-		msg = g_strdup( _( "An error occured while backuping the dossier" ));
+		style = "labelerror";
+		msg = g_strdup_printf( _( "An error occured while archiving the '%s' dossier" ),
+				dossier_name );
 	}
 
 	dlg = gtk_message_dialog_new(
@@ -737,6 +748,9 @@ p4_do_backup( ofaBackupAssistant *self )
 
 	gtk_dialog_run( GTK_DIALOG( dlg ));
 	gtk_widget_destroy( dlg );
+
+	gtk_label_set_text( GTK_LABEL( priv->p4_label ), msg );
+	my_style_add( priv->p4_label, style );
 
 	g_free( msg );
 
@@ -755,8 +769,9 @@ p4_msg_cb( const gchar *buffer, ofaBackupAssistant *self )
 	const gchar *charset;
 	gchar *utf8;
 
-	g_debug( "%s: buffer=%p, self=%p",
-			thisfn, ( void * ) buffer, ( void * ) self );
+	if( 0 ){
+		g_debug( "%s: buffer=%p, self=%p", thisfn, ( void * ) buffer, ( void * ) self );
+	}
 
 	priv = ofa_backup_assistant_get_instance_private( self );
 

@@ -101,7 +101,7 @@ typedef struct {
 	 */
 	GtkFileChooser         *p1_chooser;
 	gchar                  *p1_folder;
-	gchar                  *p1_furi;		/* the utf-8 to be restored file uri */
+	gchar                  *p1_uri;		/* the utf-8 to be restored file uri */
 	gint                    p1_filter;
 
 	/* p2: select the dossier target
@@ -152,8 +152,7 @@ typedef struct {
 	 */
 	GtkWidget              *p6_page;
 	GtkWidget              *p6_textview;
-	GtkWidget              *p6_label1;
-	GtkWidget              *p6_label2;
+	GtkWidget              *p6_label;
 	gboolean                is_destroy_allowed;
 }
 	ofaRestoreAssistantPrivate;
@@ -162,7 +161,8 @@ typedef struct {
  */
 enum {
 	FILE_CHOOSER_ALL = 1,
-	FILE_CHOOSER_GZ
+	FILE_CHOOSER_GZ,
+	FILE_CHOOSER_ZIP
 };
 
 typedef struct {
@@ -173,8 +173,9 @@ typedef struct {
 	sFilter;
 
 static sFilter st_filters[] = {
-		{ FILE_CHOOSER_ALL, "*",    N_( "All files (*)" )},
-		{ FILE_CHOOSER_GZ,  "*.gz", N_( "Backup files (*.gz)" )},
+		{ FILE_CHOOSER_ALL, "*",     N_( "All files (*)" )},
+		{ FILE_CHOOSER_GZ,  "*.gz",  N_( "Backup files (*.gz)" )},
+		{ FILE_CHOOSER_ZIP, "*.zip", N_( "ZIP files (*.zip)" )},
 		{ 0 }
 };
 
@@ -281,7 +282,7 @@ restore_assistant_finalize( GObject *instance )
 
 	g_free( priv->settings_prefix );
 	g_free( priv->p1_folder );
-	g_free( priv->p1_furi );
+	g_free( priv->p1_uri );
 	g_free( priv->p2_dbname );
 	g_free( priv->p3_account );
 	g_free( priv->p3_password );
@@ -546,12 +547,12 @@ p1_check_for_complete( ofaRestoreAssistant *self )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	g_free( priv->p1_furi );
-	priv->p1_furi = gtk_file_chooser_get_uri( priv->p1_chooser );
-	g_debug( "p1_check_for_complete: furi=%s", priv->p1_furi );
+	g_free( priv->p1_uri );
+	priv->p1_uri = gtk_file_chooser_get_uri( priv->p1_chooser );
+	g_debug( "p1_check_for_complete: furi=%s", priv->p1_uri );
 
-	ok = my_strlen( priv->p1_furi ) > 0 &&
-			my_utils_uri_is_readable_file( priv->p1_furi );
+	ok = my_strlen( priv->p1_uri ) > 0 &&
+			my_utils_uri_is_readable_file( priv->p1_uri );
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 
@@ -655,7 +656,7 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	gtk_label_set_text( GTK_LABEL( priv->p2_furi ), priv->p1_furi );
+	gtk_label_set_text( GTK_LABEL( priv->p2_furi ), priv->p1_uri );
 
 	p2_check_for_complete( self );
 
@@ -807,7 +808,7 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_furi );
+	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_uri );
 
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 	gtk_label_set_text( GTK_LABEL( priv->p3_dossier ), dossier_name );
@@ -999,7 +1000,7 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	gtk_label_set_text( GTK_LABEL( priv->p4_furi ), priv->p1_furi );
+	gtk_label_set_text( GTK_LABEL( priv->p4_furi ), priv->p1_uri );
 
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 	gtk_label_set_text( GTK_LABEL( priv->p4_dossier ), dossier_name );
@@ -1145,7 +1146,7 @@ p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 
-	gtk_label_set_text( GTK_LABEL( priv->p5_furi ), priv->p1_furi );
+	gtk_label_set_text( GTK_LABEL( priv->p5_furi ), priv->p1_uri );
 	gtk_label_set_text( GTK_LABEL( priv->p5_dossier ), dossier_name );
 	gtk_label_set_text( GTK_LABEL( priv->p5_database ), priv->p2_dbname );
 	gtk_label_set_text( GTK_LABEL( priv->p5_root_account ), priv->p3_account );
@@ -1174,11 +1175,11 @@ p6_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p6_page = page;
 
-	priv->p6_label1 = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-label61" );
-	g_return_if_fail( priv->p6_label1 && GTK_IS_LABEL( priv->p6_label1 ));
+	priv->p6_textview = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-textview" );
+	g_return_if_fail( priv->p6_textview && GTK_IS_TEXT_VIEW( priv->p6_textview ));
 
-	priv->p6_label2 = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-label62" );
-	g_return_if_fail( priv->p6_label1 && GTK_IS_LABEL( priv->p6_label1 ));
+	priv->p6_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-label" );
+	g_return_if_fail( priv->p6_label && GTK_IS_LABEL( priv->p6_label ));
 }
 
 static void
@@ -1202,7 +1203,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 			ofa_dossier_collection_delete_period( collection, priv->p3_connect, NULL, TRUE, NULL );
 		}
 		gtk_label_set_text(
-				GTK_LABEL( priv->p6_label1 ),
+				GTK_LABEL( priv->p6_label ),
 				_( "The restore operation has been cancelled by the user." ));
 
 	} else {
@@ -1251,35 +1252,44 @@ p6_do_restore( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 	gboolean ok;
-	gchar *str;
+	gchar *msg;
 	const gchar *dossier_name, *style;
+	GtkWidget *dlg;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 
 	/* restore the backup */
-	/*ok = ofa_idbconnect_restore(
-				priv->p3_connect, NULL, priv->p1_furi, priv->p4_account, priv->p4_password );*/
 	ok = ofa_idbconnect_restore_db(
-				priv->p3_connect, NULL, priv->p1_furi, priv->p4_account, priv->p4_password, ( ofaMsgCb ) p6_msg_cb, self );
+				priv->p3_connect, NULL, priv->p1_uri, priv->p4_account, priv->p4_password, ( ofaMsgCb ) p6_msg_cb, self );
 
 	if( ok ){
-		style = "labelnormal";
-		str = g_strdup_printf(
-				_( "The '%s' backup file has been successfully restored "
-					"into the '%s' dossier." ), priv->p1_furi, dossier_name );
+		style = "labelinfo";
+		msg = g_strdup_printf(
+				_( "The '%s' archive URI has been successfully restored "
+					"into the '%s' dossier." ), priv->p1_uri, dossier_name );
 	} else {
 		style = "labelerror";
-		str = g_strdup_printf(
-				_( "Unable to restore the '%s' backup file.\n"
-					"Please fix the errors and retry." ), priv->p1_furi );
+		msg = g_strdup_printf(
+				_( "Unable to restore the '%s' archive URI.\n"
+					"Please fix the errors and retry." ), priv->p1_uri );
 	}
 
-	gtk_label_set_text( GTK_LABEL( priv->p6_label1 ), str );
-	my_style_add( priv->p6_label1, style );
+	dlg = gtk_message_dialog_new(
+				GTK_WINDOW( self ),
+				GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_INFO,
+				GTK_BUTTONS_CLOSE,
+				"%s", msg );
 
-	g_free( str );
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( dlg );
+
+	gtk_label_set_text( GTK_LABEL( priv->p6_label ), msg );
+	my_style_add( priv->p6_label, style );
+
+	g_free( msg );
 
 	if( ok ){
 		g_idle_add(( GSourceFunc ) p6_do_open, self );
@@ -1300,8 +1310,10 @@ p6_msg_cb( const gchar *buffer, ofaRestoreAssistant *self )
 	const gchar *charset;
 	gchar *utf8;
 
-	g_debug( "%s: buffer=%p, self=%p",
-			thisfn, ( void * ) buffer, ( void * ) self );
+	if( 0 ){
+		g_debug( "%s: buffer=%p, self=%p", thisfn, ( void * ) buffer, ( void * ) self );
+		g_debug( "%s: buffer=%s, self=%p", thisfn, buffer, ( void * ) self );
+	}
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
@@ -1318,6 +1330,7 @@ p6_msg_cb( const gchar *buffer, ofaRestoreAssistant *self )
 		gtk_text_buffer_insert( textbuf, &enditer, buffer, -1 );
 
 	} else {
+		g_debug( "%s: message is not in UTF-8 charset, converting it", thisfn );
 		g_get_charset( &charset );
 		utf8 = g_convert_with_fallback( buffer, -1, "UTF-8", charset, NULL, NULL, NULL, NULL );
 		if( utf8 ){
