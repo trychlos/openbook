@@ -1660,7 +1660,7 @@ my_utils_file_exists( const gchar *filename )
 }
 
 /**
- * my_utils_file_is_readable_file:
+ * my_utils_file_is_readable:
  * @filename: a file pathname
  *
  * Returns: %TRUE if the specified file exists, is a file and is readable,
@@ -1671,7 +1671,7 @@ my_utils_file_exists( const gchar *filename )
  * use of its result...
  */
 gboolean
-my_utils_file_is_readable_file( const gchar *filename )
+my_utils_file_is_readable( const gchar *filename )
 {
 	GFile *file;
 	gboolean ok;
@@ -1687,7 +1687,7 @@ my_utils_file_is_readable_file( const gchar *filename )
 	}
 	g_free( sysfname );
 
-	g_debug( "my_utils_file_is_readable_file: filename=%s, ok=%s", filename, ok ? "True":"False" );
+	g_debug( "my_utils_file_is_readable: filename=%s, ok=%s", filename, ok ? "True":"False" );
 	return( ok );
 }
 

@@ -126,7 +126,7 @@ void          my_utils_window_position_save           ( GtkWindow *window, myISe
 gboolean      my_utils_window_position_get_has_pos    ( myISettings *settings, const gchar *name );
 
 gboolean      my_utils_file_exists                    ( const gchar *filename );
-gboolean      my_utils_file_is_readable_file          ( const gchar *filename );
+gboolean      my_utils_file_is_readable               ( const gchar *filename );
 
 gchar        *my_utils_filename_from_utf8             ( const gchar *filename );
 
