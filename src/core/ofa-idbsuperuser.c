@@ -26,15 +26,17 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-idbsuperuser.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-idbsuperuser.h"
 
 /* some data attached to each IDBSuperuser instance
  * we store here the data provided by the application
  * which do not depend of a specific implementation
  */
 typedef struct {
-	ofaIDBProvider *provider;
+	ofaIDBProvider    *provider;
+	ofaIDBDossierMeta *dossier_meta;
 }
 	sIDBSUser;
 
@@ -213,7 +215,7 @@ ofa_idbsuperuser_get_interface_version( GType type )
  * The returned reference is owned by the @instance, and should not be
  * released by the caller.
  */
-ofaIDBProvider*
+ofaIDBProvider *
 ofa_idbsuperuser_get_provider( const ofaIDBSuperuser *instance )
 {
 	sIDBSUser *data;
@@ -246,6 +248,56 @@ ofa_idbsuperuser_set_provider( ofaIDBSuperuser *instance, ofaIDBProvider *provid
 }
 
 /**
+ * ofa_idbsuperuser_get_dossier_meta:
+ * @instance: this #ofaIDBSuperuser instance.
+ *
+ * Returns: the #ofaIDBDossierMeta attached to this @instance.
+ *
+ * The returned reference is owned by the @instance, and should not be
+ * released by the caller.
+ */
+ofaIDBDossierMeta *
+ofa_idbsuperuser_get_dossier_meta( const ofaIDBSuperuser *instance )
+{
+	sIDBSUser *data;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBSUPERUSER( instance ), NULL );
+
+	data = get_instance_data( instance );
+
+	return( data->dossier_meta );
+}
+
+/**
+ * ofa_idbsuperuser_set_dossier_meta:
+ * @instance: this #ofaIDBSuperuser instance.
+ * @dossier_meta: a #ofaIDBDossierMeta to be attached to @instance.
+ *
+ * Set the @dossier_meta.
+ */
+void
+ofa_idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dossier_meta )
+{
+	static const gchar *thisfn = "ofa_idbsuperuser_set_dossier_meta";
+	sIDBSUser *data;
+
+	g_return_if_fail( instance && OFA_IS_IDBSUPERUSER( instance ));
+	g_return_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ));
+
+	data = get_instance_data( instance );
+
+	data->dossier_meta = dossier_meta;
+
+	if( OFA_IDBSUPERUSER_GET_INTERFACE( instance )->set_dossier_meta ){
+		OFA_IDBSUPERUSER_GET_INTERFACE( instance )->set_dossier_meta( instance, dossier_meta );
+
+	} else {
+		g_info( "%s: ofaIDBSuperuser's %s implementation does not provide 'set_dossier_meta()' method",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
+	}
+}
+
+/**
  * ofa_idbsuperuser_get_size_group:
  * @instance: this #ofaIDBSuperuser instance.
  * @column: the desired column.
@@ -271,26 +323,26 @@ ofa_idbsuperuser_get_size_group( const ofaIDBSuperuser *instance, guint column )
 }
 
 /**
- * ofa_idbsuperuser_get_valid:
+ * ofa_idbsuperuser_is_valid:
  * @instance: this #ofaIDBSuperuser instance.
  * @message: [allow-none][out]: a message to be set.
  *
  * Returns: %TRUE if the entered connection informations are valid.
  */
 gboolean
-ofa_idbsuperuser_get_valid( const ofaIDBSuperuser *instance, gchar **message )
+ofa_idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message )
 {
-	static const gchar *thisfn = "ofa_idbsuperuser_get_valid";
+	static const gchar *thisfn = "ofa_idbsuperuser_is_valid";
 
 	g_debug( "%s: instance=%p, message=%p", thisfn, ( void * ) instance, ( void * ) message );
 
 	g_return_val_if_fail( instance && OFA_IS_IDBSUPERUSER( instance ), FALSE );
 
-	if( OFA_IDBSUPERUSER_GET_INTERFACE( instance )->get_valid ){
-		return( OFA_IDBSUPERUSER_GET_INTERFACE( instance )->get_valid( instance, message ));
+	if( OFA_IDBSUPERUSER_GET_INTERFACE( instance )->is_valid ){
+		return( OFA_IDBSUPERUSER_GET_INTERFACE( instance )->is_valid( instance, message ));
 	}
 
-	g_info( "%s: ofaIDBSuperuser's %s implementation does not provide 'get_valid()' method",
+	g_info( "%s: ofaIDBSuperuser's %s implementation does not provide 'is_valid()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( FALSE );
 }

@@ -152,28 +152,17 @@ struct _ofaIDBProviderInterface {
 															ofaIDBExerciceMeta *exercice_meta );
 
 	/**
-	 * restore_needs_superuser:
-	 * @instance: this #ofaIDBProvider instance.
-	 *
-	 * Returns: %TRUE if restoration operation requires superuser
-	 * privilege.
-	 *
-	 * Defaults to %TRUE.
-	 *
-	 * Since: version 1
-	 */
-	gboolean               ( *restore_needs_superuser )( const ofaIDBProvider *instance );
-
-	/**
 	 * new_superuser_bin:
 	 * @instance: this #ofaIDBProvider instance.
+	 * @rule: the usage of this widget.
 	 *
 	 * Returns: a #GtkWidget which implements the #ofaIDBSuperuser
 	 * interface.
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBSuperuser *      ( *new_superuser_bin )      ( ofaIDBProvider *instance );
+	ofaIDBSuperuser *      ( *new_superuser_bin )      ( ofaIDBProvider *instance,
+															guint rule );
 
 	/**
 	 * new_editor:
@@ -230,9 +219,8 @@ ofaIDBConnect        *ofa_idbprovider_new_connect               ( ofaIDBProvider
 																		ofaIDBDossierMeta *dossier_meta,
 																		ofaIDBExerciceMeta *exercice_meta );
 
-gboolean              ofa_idbprovider_restore_needs_superuser   ( const ofaIDBProvider *provider );
-
-ofaIDBSuperuser      *ofa_idbprovider_new_superuser_bin         ( ofaIDBProvider *provider );
+ofaIDBSuperuser      *ofa_idbprovider_new_superuser_bin         ( ofaIDBProvider *provider,
+																		guint rule );
 
 ofaIDBEditor         *ofa_idbprovider_new_editor                ( ofaIDBProvider *provider,
 																		gboolean editable );

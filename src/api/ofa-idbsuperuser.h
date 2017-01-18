@@ -52,6 +52,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
@@ -103,7 +104,7 @@ typedef struct {
 													guint column );
 
 	/**
-	 * get_valid:
+	 * is_valid:
 	 * @instance: the #ofaIDBSuperuser instance.
 	 * @message: [allow-none][out]: a message to be set.
 	 *
@@ -114,35 +115,57 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean        ( *get_valid )            ( const ofaIDBSuperuser *instance,
+	gboolean        ( *is_valid )            ( const ofaIDBSuperuser *instance,
 													gchar **message );
+
+	/**
+	 * set_dossier_meta:
+	 * @instance: the #ofaIDBSuperuser instance.
+	 * @dossier_meta: a #ofaIDBDossierMeta.
+	 *
+	 * Set the @dossier_meta.
+	 *
+	 * The interface code maintains itself this data, and it is thus
+	 * not really needed for the implementation to also maintain it.
+	 * This method is more thought to advertize the implementation of
+	 * the availability of the data as soon as it is set.
+	 *
+	 * Since: version 1
+	 */
+	void            ( *set_dossier_meta )    ( ofaIDBSuperuser *instance,
+													ofaIDBDossierMeta *dossier_meta );
 }
 	ofaIDBSuperuserInterface;
 
 /*
  * Interface-wide
  */
-GType           ofa_idbsuperuser_get_type                  ( void );
+GType              ofa_idbsuperuser_get_type                  ( void );
 
-guint           ofa_idbsuperuser_get_interface_last_version( void );
+guint              ofa_idbsuperuser_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint           ofa_idbsuperuser_get_interface_version     ( GType type );
+guint              ofa_idbsuperuser_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-ofaIDBProvider *ofa_idbsuperuser_get_provider              ( const ofaIDBSuperuser *instance );
+ofaIDBProvider    *ofa_idbsuperuser_get_provider              ( const ofaIDBSuperuser *instance );
 
-void            ofa_idbsuperuser_set_provider              ( ofaIDBSuperuser *instance,
+void               ofa_idbsuperuser_set_provider              ( ofaIDBSuperuser *instance,
 																	ofaIDBProvider *provider );
 
-GtkSizeGroup   *ofa_idbsuperuser_get_size_group            ( const ofaIDBSuperuser *instance,
+ofaIDBDossierMeta *ofa_idbsuperuser_get_dossier_meta          ( const ofaIDBSuperuser *instance );
+
+void               ofa_idbsuperuser_set_dossier_meta          ( ofaIDBSuperuser *instance,
+																	ofaIDBDossierMeta *dossier_meta );
+
+GtkSizeGroup      *ofa_idbsuperuser_get_size_group            ( const ofaIDBSuperuser *instance,
 																	guint column );
 
-gboolean        ofa_idbsuperuser_get_valid                 ( const ofaIDBSuperuser *instance,
+gboolean           ofa_idbsuperuser_is_valid                  ( const ofaIDBSuperuser *instance,
 																	gchar **message );
 
 G_END_DECLS

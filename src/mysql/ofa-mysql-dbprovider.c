@@ -32,6 +32,7 @@
 #include "my/my-iident.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
@@ -47,6 +48,7 @@
 #include "mysql/ofa-mysql-dossier-meta.h"
 #include "mysql/ofa-mysql-editor-display.h"
 #include "mysql/ofa-mysql-editor-enter.h"
+#include "mysql/ofa-mysql-root-bin.h"
 
 /* private instance data
  */
@@ -69,6 +71,7 @@ static void                  idbprovider_iface_init( ofaIDBProviderInterface *if
 static ofaIDBDossierMeta    *idbprovider_new_dossier_meta( ofaIDBProvider *instance );
 static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
 static ofaIDBConnect        *idbprovider_new_connect( ofaIDBProvider *instance, const gchar *account, const gchar *password, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta );
+static ofaIDBSuperuser      *idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule );
 static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
 static void                  isetter_iface_init( ofaISetterInterface *iface );
 static ofaIGetter           *isetter_get_getter( ofaISetter *instance );
@@ -185,9 +188,10 @@ idbprovider_iface_init( ofaIDBProviderInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->new_dossier_meta = idbprovider_new_dossier_meta;
-	iface->new_connect = idbprovider_new_connect;
-	iface->new_editor = idbprovider_new_editor;
 	iface->new_dossier_editor = idbprovider_new_dossier_editor;
+	iface->new_connect = idbprovider_new_connect;
+	iface->new_superuser_bin = idbprovider_new_superuser_bin;
+	iface->new_editor = idbprovider_new_editor;
 }
 
 /*
@@ -232,6 +236,25 @@ idbprovider_new_connect( ofaIDBProvider *instance,
 	}
 
 	return( connect ? OFA_IDBCONNECT( connect ) : NULL );
+}
+
+static ofaIDBSuperuser *
+idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule )
+{
+	ofaMysqlRootBin *bin;
+
+	switch( rule ){
+		case HUB_RULE_DOSSIER_NEW:
+		case HUB_RULE_DOSSIER_RESTORE:
+			bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( instance ), rule );
+			break;
+
+		default:
+			bin = NULL;
+			break;
+	}
+
+	return( bin ? OFA_IDBSUPERUSER( bin ) : NULL );
 }
 
 static ofaIDBEditor *

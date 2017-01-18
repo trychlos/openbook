@@ -45,12 +45,11 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-idbsuperuser.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-dbms-root-bin.h"
 
 #include "ui/ofa-admin-credentials-bin.h"
 #include "ui/ofa-application.h"
@@ -109,29 +108,29 @@ typedef struct {
 
 	/* p2: select the dossier target
 	 */
-	GtkWidget              *p2_furi;
+	GtkWidget              *p2_uri_label;
 	ofaDossierTreeview     *p2_dossier_tview;
 	ofaIDBDossierMeta      *p2_dossier_meta;
 	ofaIDBExerciceMeta     *p2_exercice_meta;
 	gchar                  *p2_dbname;
 	gboolean                p2_is_new_dossier;
 	GSimpleAction          *p2_new_action;
-	gboolean                p2_need_superuser;
+	ofaIDBProvider         *p2_provider;
 
-	/* p3: DBMS root account
+	/* p3: super-user credentials
 	 */
 	GtkSizeGroup           *p3_hgroup;
-	GtkWidget              *p3_furi;
+	GtkWidget              *p3_uri_label;
 	GtkWidget              *p3_dossier;
-	ofaDBMSRootBin         *p3_dbms_credentials;
-	gchar                  *p3_account;
-	gchar                  *p3_password;
+	GtkWidget              *p3_connect_parent;
+	GtkWidget              *p3_dra_parent;
+	ofaIDBSuperuser        *p3_dbms_credentials;
 	GtkWidget              *p3_message;
 	ofaIDBConnect          *p3_connect;
 
 	/* p4: dossier administrative credentials
 	 */
-	GtkWidget              *p4_furi;
+	GtkWidget              *p4_uri_label;
 	GtkWidget              *p4_dossier;
 	GtkWidget              *p4_database;
 	ofaAdminCredentialsBin *p4_admin_credentials;
@@ -142,7 +141,7 @@ typedef struct {
 
 	/* p5: display operations to be done and ask for confirmation
 	 */
-	GtkWidget              *p5_furi;
+	GtkWidget              *p5_uri_label;
 	GtkWidget              *p5_dossier;
 	GtkWidget              *p5_database;
 	GtkWidget              *p5_root_account;
@@ -211,7 +210,7 @@ static gboolean p2_check_for_complete( ofaRestoreAssistant *self );
 static void     p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void     p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
+static void     p3_on_dbms_root_changed( ofaIDBSuperuser *bin, ofaRestoreAssistant *self );
 static void     p3_check_for_complete( ofaRestoreAssistant *self );
 static void     p3_set_message( ofaRestoreAssistant *self, const gchar *message );
 static void     p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -291,8 +290,6 @@ restore_assistant_finalize( GObject *instance )
 	g_free( priv->p1_folder );
 	g_free( priv->p1_uri );
 	g_free( priv->p2_dbname );
-	g_free( priv->p3_account );
-	g_free( priv->p3_password );
 	g_free( priv->p4_account );
 	g_free( priv->p4_password );
 
@@ -633,9 +630,9 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	priv->p2_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-furi" );
-	g_return_if_fail( priv->p2_furi && GTK_IS_LABEL( priv->p2_furi ));
-	my_style_add( priv->p2_furi, "labelinfo" );
+	priv->p2_uri_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-furi" );
+	g_return_if_fail( priv->p2_uri_label && GTK_IS_LABEL( priv->p2_uri_label ));
+	my_style_add( priv->p2_uri_label, "labelinfo" );
 
 	priv->p2_dossier_tview = ofa_dossier_treeview_new( priv->hub );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-dossier-parent" );
@@ -696,7 +693,7 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	gtk_label_set_text( GTK_LABEL( priv->p2_furi ), priv->p1_uri );
+	gtk_label_set_text( GTK_LABEL( priv->p2_uri_label ), priv->p1_uri );
 
 	p2_check_for_complete( self );
 
@@ -783,12 +780,10 @@ static void
 p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 {
 	ofaRestoreAssistantPrivate *priv;
-	ofaIDBProvider *provider;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	provider = ofa_idbdossier_meta_get_provider( priv->p2_dossier_meta );
-	priv->p2_need_superuser = ofa_idbprovider_restore_needs_superuser( provider );
+	priv->p2_provider = ofa_idbdossier_meta_get_provider( priv->p2_dossier_meta );
 }
 
 /*
@@ -806,9 +801,9 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	priv->p3_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-furi" );
-	g_return_if_fail( priv->p3_furi && GTK_IS_LABEL( priv->p3_furi ));
-	my_style_add( priv->p3_furi, "labelinfo" );
+	priv->p3_uri_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-furi" );
+	g_return_if_fail( priv->p3_uri_label && GTK_IS_LABEL( priv->p3_uri_label ));
+	my_style_add( priv->p3_uri_label, "labelinfo" );
 
 	priv->p3_dossier = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-dossier" );
 	g_return_if_fail( priv->p3_dossier && GTK_IS_LABEL( priv->p3_dossier ));
@@ -824,16 +819,22 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_size_group_add_widget( priv->p3_hgroup, label );
 
+	/* connection informations
+	 * the actual UI depends of the selected target => just get the
+	 * parent here */
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-connect-infos" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->p3_connect_parent = parent;
+
+	/* super user interface
+	 * the actual UI depends of the provider, which itself depends of
+	 * selected dossier meta => just get the parent here */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-dra-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p3_dbms_credentials = ofa_dbms_root_bin_new( priv->hub );
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_dbms_credentials ));
-	my_utils_size_group_add_size_group(
-			priv->p3_hgroup, ofa_dbms_root_bin_get_size_group( priv->p3_dbms_credentials, 0 ));
+	priv->p3_dbms_credentials = NULL;
+	priv->p3_dra_parent = parent;
 
-	g_signal_connect(
-			priv->p3_dbms_credentials, "ofa-changed", G_CALLBACK( p3_on_dbms_root_changed ), self );
-
+	/* message */
 	priv->p3_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-message" );
 	g_return_if_fail( priv->p3_message && GTK_IS_LABEL( priv->p3_message ));
 	my_style_add( priv->p3_message, "labelerror" );
@@ -844,70 +845,69 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p3_do_display";
 	ofaRestoreAssistantPrivate *priv;
-	GtkWidget *parent, *child;
-	GList *children;
-	ofaIDBProvider *provider;
+	GtkWidget *label;
 	ofaIDBEditor *editor;
 	const gchar *dossier_name;
+	GtkSizeGroup *group;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_uri );
+	gtk_label_set_text( GTK_LABEL( priv->p3_uri_label ), priv->p1_uri );
 
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 	gtk_label_set_text( GTK_LABEL( priv->p3_dossier ), dossier_name );
 
 	/* as the dossier may have changed since the initialization,
 	 * the ofaIDBEditor used to display connection informations
-	 * must be set here */
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-connect-infos" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	children = gtk_container_get_children( GTK_CONTAINER( parent ));
-	if( children ){
-		child = ( GtkWidget * ) children->data;
-		if( child && GTK_IS_WIDGET( child )){
-			gtk_widget_destroy( child );
-		}
-		g_list_free( children );
-	}
-
-	provider = ofa_idbdossier_meta_get_provider( priv->p2_dossier_meta );
-	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
-	editor = ofa_idbprovider_new_editor( provider, FALSE );
-
+	 * is set here */
+	gtk_container_foreach( GTK_CONTAINER( priv->p3_connect_parent ), ( GtkCallback ) gtk_widget_destroy, NULL );
+	editor = ofa_idbprovider_new_editor( priv->p2_provider, FALSE );
 	ofa_idbeditor_set_meta( editor, priv->p2_dossier_meta, priv->p2_exercice_meta );
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( editor ));
+	gtk_container_add( GTK_CONTAINER( priv->p3_connect_parent ), GTK_WIDGET( editor ));
 	my_utils_size_group_add_size_group(
 			priv->p3_hgroup, ofa_idbeditor_get_size_group( editor, 0 ));
 
-	ofa_dbms_root_bin_set_meta( priv->p3_dbms_credentials, priv->p2_dossier_meta );
+	/* setup superuser UI */
+	gtk_container_foreach( GTK_CONTAINER( priv->p3_dra_parent ), ( GtkCallback ) gtk_widget_destroy, NULL );
+	priv->p3_dbms_credentials = ofa_idbprovider_new_superuser_bin( priv->p2_provider, HUB_RULE_DOSSIER_RESTORE );
 
+	if( priv->p3_dbms_credentials ){
+		gtk_container_add( GTK_CONTAINER( priv->p3_dra_parent ), GTK_WIDGET( priv->p3_dbms_credentials ));
+		ofa_idbsuperuser_set_dossier_meta( priv->p3_dbms_credentials, priv->p2_dossier_meta );
+		group = ofa_idbsuperuser_get_size_group( priv->p3_dbms_credentials, 0 );
+		if( group ){
+			my_utils_size_group_add_size_group( priv->p3_hgroup, group );
+		}
+		g_signal_connect( priv->p3_dbms_credentials, "ofa-changed", G_CALLBACK( p3_on_dbms_root_changed ), self );
+
+	} else {
+		label = gtk_label_new( _(
+				"The selected DBMS provider does not need super-user credentials for restore operations.\n"
+				"Just press Next to continue." ));
+		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+		gtk_label_set_line_wrap( GTK_LABEL( label ), TRUE );
+		gtk_label_set_line_wrap_mode( GTK_LABEL( label ), PANGO_WRAP_WORD );
+		gtk_container_add( GTK_CONTAINER( priv->p3_dra_parent ), label );
+	}
+
+#if 0
 	/* setup the dbms root credentials */
 	if( priv->p3_account ){
 		ofa_dbms_root_bin_set_credentials(
 				priv->p3_dbms_credentials, priv->p3_account, priv->p3_password );
 	}
+#endif
 
 	gtk_widget_show_all( page );
 	p3_check_for_complete( self );
 }
 
 static void
-p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self )
+p3_on_dbms_root_changed( ofaIDBSuperuser *bin, ofaRestoreAssistant *self )
 {
-	ofaRestoreAssistantPrivate *priv;
-
-	priv = ofa_restore_assistant_get_instance_private( self );
-
-	g_free( priv->p3_account );
-	priv->p3_account = g_strdup( account );
-
-	g_free( priv->p3_password );
-	priv->p3_password = g_strdup( password );
-
 	p3_check_for_complete( self );
 }
 
@@ -922,7 +922,8 @@ p3_check_for_complete( ofaRestoreAssistant *self )
 
 	p3_set_message( self, "" );
 
-	ok = ofa_dbms_root_bin_is_valid( priv->p3_dbms_credentials, &message );
+	ok = ofa_idbsuperuser_is_valid( priv->p3_dbms_credentials, &message );
+
 	if( !ok ){
 		p3_set_message( self, message );
 		g_free( message );
@@ -951,6 +952,7 @@ p3_set_message( ofaRestoreAssistant *self, const gchar *message )
 static void
 p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
+#if 0
 	static const gchar *thisfn = "ofa_restore_assistant_p3_do_forward";
 	ofaRestoreAssistantPrivate *priv;
 	ofaIDBProvider *provider;
@@ -966,6 +968,7 @@ p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	if( !priv->p3_connect ){
 		g_warning( "%s: unable to open a new '%s' connection on DBMS", thisfn, priv->p3_account );
 	}
+#endif
 }
 
 /*
@@ -984,9 +987,9 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	priv->p4_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-furi" );
-	g_return_if_fail( priv->p4_furi && GTK_IS_LABEL( priv->p4_furi ));
-	my_style_add( priv->p4_furi, "labelinfo" );
+	priv->p4_uri_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-furi" );
+	g_return_if_fail( priv->p4_uri_label && GTK_IS_LABEL( priv->p4_uri_label ));
+	my_style_add( priv->p4_uri_label, "labelinfo" );
 
 	priv->p4_dossier = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-dossier" );
 	g_return_if_fail( priv->p4_dossier && GTK_IS_LABEL( priv->p4_dossier ));
@@ -1048,7 +1051,7 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	gtk_label_set_text( GTK_LABEL( priv->p4_furi ), priv->p1_uri );
+	gtk_label_set_text( GTK_LABEL( priv->p4_uri_label ), priv->p1_uri );
 
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 	gtk_label_set_text( GTK_LABEL( priv->p4_dossier ), dossier_name );
@@ -1140,9 +1143,9 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	priv->p5_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-furi" );
-	g_return_if_fail( priv->p5_furi && GTK_IS_LABEL( priv->p5_furi ));
-	my_style_add( priv->p5_furi, "labelinfo" );
+	priv->p5_uri_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-furi" );
+	g_return_if_fail( priv->p5_uri_label && GTK_IS_LABEL( priv->p5_uri_label ));
+	my_style_add( priv->p5_uri_label, "labelinfo" );
 
 	priv->p5_dossier = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-dossier" );
 	g_return_if_fail( priv->p5_dossier && GTK_IS_LABEL( priv->p5_dossier ));
@@ -1193,11 +1196,11 @@ p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 
-	gtk_label_set_text( GTK_LABEL( priv->p5_furi ), priv->p1_uri );
+	gtk_label_set_text( GTK_LABEL( priv->p5_uri_label ), priv->p1_uri );
 	gtk_label_set_text( GTK_LABEL( priv->p5_dossier ), dossier_name );
 	gtk_label_set_text( GTK_LABEL( priv->p5_database ), priv->p2_dbname );
-	gtk_label_set_text( GTK_LABEL( priv->p5_root_account ), priv->p3_account );
-	gtk_label_set_text( GTK_LABEL( priv->p5_root_password ), "******" );
+	//gtk_label_set_text( GTK_LABEL( priv->p5_root_account ), priv->p3_account );
+	//gtk_label_set_text( GTK_LABEL( priv->p5_root_password ), "******" );
 	gtk_label_set_text( GTK_LABEL( priv->p5_admin_account ), priv->p4_account );
 	gtk_label_set_text( GTK_LABEL( priv->p5_admin_password ), "******" );
 

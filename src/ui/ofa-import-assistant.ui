@@ -9,14 +9,14 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="label" translatable="yes">This assistant will guide you through the process of importing external datas.
-Press Next.</property>
+
+Press Next to begin.</property>
         <property name="wrap">True</property>
       </object>
       <packing>
         <property name="page_type">intro</property>
         <property name="title" translatable="yes">Introduction</property>
         <property name="complete">True</property>
-        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
@@ -39,7 +39,6 @@ Press Next.</property>
       </object>
       <packing>
         <property name="title" translatable="yes">Select the file to be imported</property>
-        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
@@ -183,7 +182,6 @@ Press Next.</property>
       </object>
       <packing>
         <property name="title" translatable="yes">Select the type of data</property>
-        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
@@ -373,7 +371,6 @@ Press Next.</property>
       </object>
       <packing>
         <property name="title" translatable="yes">Select the importer</property>
-        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
@@ -607,7 +604,6 @@ Press Next.</property>
       </object>
       <packing>
         <property name="title" translatable="yes">Configure import behavior</property>
-        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
@@ -841,7 +837,6 @@ Press Next.</property>
       </object>
       <packing>
         <property name="title" translatable="yes">Configure the stream format</property>
-        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
@@ -1050,7 +1045,6 @@ Press Next.</property>
         <property name="page_type">confirm</property>
         <property name="title" translatable="yes">Summary of the informations</property>
         <property name="complete">True</property>
-        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
@@ -1177,7 +1171,6 @@ Press Next.</property>
       <packing>
         <property name="page_type">summary</property>
         <property name="title" translatable="yes">Result of the import</property>
-        <property name="has_padding">False</property>
       </packing>
     </child>
     <child internal-child="action_area">
@@ -1187,7 +1180,6 @@ Press Next.</property>
         <property name="spacing">6</property>
       </object>
       <packing>
-        <property name="has_padding">False</property>
       </packing>
     </child>
   </template>

@@ -220,7 +220,7 @@ setup_bin( ofaMysqlDossierEditor *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mde-root-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->root_bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->settings_prefix, priv->rule );
+	priv->root_bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->rule );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->root_bin ));
 	g_signal_connect( priv->root_bin, "ofa-changed", G_CALLBACK( on_root_bin_changed ), self );
 	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_root_bin_get_size_group( priv->root_bin, 0 ));

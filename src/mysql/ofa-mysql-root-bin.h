@@ -35,7 +35,18 @@
  *
  * The widget is considered valid here if account and password are both
  * set, and - if the dossier is set - valid to connect to an unnamed
- * database.
+ * database (at the DBMS server level).
+ *
+ * The widget implements the #ofaIDBSuperuser interface.
+ *
+ * The widget is used in three cases:
+ * - when creating a new dossier/exercice
+ * - when restoring an archive file to an exercice
+ * - when closing an exercice and opening a new one.
+ *
+ * Settings are only read/written when this widget is used in association
+ * with a #ofaIDBDossierMeta instance. This is in particular not the case
+ * when creating a new dossier/exercice.
  *
  * Development rules:
  * - type:       bin (parent='top')
@@ -74,8 +85,10 @@ typedef struct {
 GType            ofa_mysql_root_bin_get_type              ( void ) G_GNUC_CONST;
 
 ofaMysqlRootBin *ofa_mysql_root_bin_new                   ( ofaMysqlDBProvider *provider,
-																const gchar *settings_prefix,
 																guint rule );
+
+void             ofa_mysql_root_bin_set_dossier_meta      ( ofaMysqlRootBin *bin,
+																ofaIDBDossierMeta *dossier_meta );
 
 GtkSizeGroup    *ofa_mysql_root_bin_get_size_group        ( ofaMysqlRootBin *bin,
 																guint column );
@@ -100,9 +113,6 @@ void             ofa_mysql_root_bin_get_credentials       ( ofaMysqlRootBin *bin
 void             ofa_mysql_root_bin_set_credentials       ( ofaMysqlRootBin *bin,
 																const gchar *account,
 																const gchar *password );
-
-void             ofa_mysql_root_bin_set_dossier_meta      ( ofaMysqlRootBin *bin,
-																ofaIDBDossierMeta *dossier_meta );
 #endif
 
 G_END_DECLS

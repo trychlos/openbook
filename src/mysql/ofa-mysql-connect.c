@@ -345,7 +345,8 @@ ofa_mysql_connect_open_with_meta( ofaMysqlConnect *connect,
  * Returns: %TRUE if the connection has been successfully opened.
  */
 static gboolean
-connect_open( ofaMysqlConnect *connect, const gchar *account, const gchar *password,
+connect_open( ofaMysqlConnect *connect,
+						const gchar *account, const gchar *password,
 							const gchar *host, const gchar *socket, guint port, const gchar *database,
 							gchar **msg )
 {

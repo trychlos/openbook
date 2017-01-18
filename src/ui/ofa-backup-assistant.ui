@@ -9,8 +9,10 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="label" translatable="yes">This assistant will guide you through the process of archiving the datas of an financial period.
+
 You will be able to choose the target file, and to add a comment to this archive.
-Press Next.</property>
+
+Press Next to begin.</property>
         <property name="wrap">True</property>
       </object>
       <packing>

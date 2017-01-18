@@ -31,12 +31,10 @@
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-igetter.h"
-#include "api/ofa-isetter.h"
+#include "api/ofa-idbsuperuser.h"
 
 #include "mysql/ofa-mysql-dossier-meta.h"
 #include "mysql/ofa-mysql-root-bin.h"
@@ -70,28 +68,24 @@ typedef struct {
 }
 	ofaMysqlRootBinPrivate;
 
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-root-bin.ui";
 
-static void     setup_bin( ofaMysqlRootBin *bin );
-static void     on_account_changed( GtkEditable *entry, ofaMysqlRootBin *self );
-static void     on_remember_toggled( GtkToggleButton *button, ofaMysqlRootBin *self );
-static void     on_password_changed( GtkEditable *entry, ofaMysqlRootBin *self );
-static void     changed_composite( ofaMysqlRootBin *self );
-static gboolean is_valid( ofaMysqlRootBin *self, gchar **str );
-static void     read_settings( ofaMysqlRootBin *self );
-static void     write_settings( ofaMysqlRootBin *self );
+static void          setup_bin( ofaMysqlRootBin *bin );
+static void          on_account_changed( GtkEditable *entry, ofaMysqlRootBin *self );
+static void          on_remember_toggled( GtkToggleButton *button, ofaMysqlRootBin *self );
+static void          on_password_changed( GtkEditable *entry, ofaMysqlRootBin *self );
+static void          changed_composite( ofaMysqlRootBin *self );
+static gboolean      is_valid( ofaMysqlRootBin *self, gchar **str );
+static void          read_settings( ofaMysqlRootBin *self );
+static void          write_settings( ofaMysqlRootBin *self );
+static void          idbsuperuser_iface_init( ofaIDBSuperuserInterface *iface );
+static GtkSizeGroup *idbsuperuser_get_size_group( const ofaIDBSuperuser *instance, guint column );
+static gboolean      idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message );
+static void          idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dossier_meta );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlRootBin, ofa_mysql_root_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaMysqlRootBin ))
+		G_ADD_PRIVATE( ofaMysqlRootBin )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBSUPERUSER, idbsuperuser_iface_init ))
 
 static void
 mysql_root_bin_finalize( GObject *instance )
@@ -166,49 +160,24 @@ ofa_mysql_root_bin_class_init( ofaMysqlRootBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_root_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_root_bin_finalize;
-
-	/**
-	 * ofaMysqlRootBin::changed:
-	 *
-	 * This signal is sent on the #ofaMysqlRootBin when the account or
-	 * the password are changed.
-	 *
-	 * There is no argument.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaMysqlRootBin *bin,
-	 * 						gpointer       user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
-				OFA_TYPE_MYSQL_ROOT_BIN,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
 }
 
 /**
- * ofa_mysql_root_bin_new:
+ * ofa_mysql_root_bin_new_ex:
  * @provider: the #ofaMysqlDBProvider instance.
- * @settings_prefix: the prefix of a user preference key.
  * @rule: the usage of this widget.
  *
  * Returns: a new #ofaMysqlRootBin widget.
  */
 ofaMysqlRootBin *
-ofa_mysql_root_bin_new( ofaMysqlDBProvider *provider, const gchar *settings_prefix, guint rule )
+ofa_mysql_root_bin_new( ofaMysqlDBProvider *provider, guint rule )
 {
 	static const gchar *thisfn = "ofa_mysql_root_bin_new";
 	ofaMysqlRootBin *bin;
 	ofaMysqlRootBinPrivate *priv;
 
-	g_debug( "%s: provider=%p (%s), settings_prefix=%s, rule=%u",
-			thisfn, ( void * ) provider, G_OBJECT_TYPE_NAME( provider ), settings_prefix, rule );
+	g_debug( "%s: provider=%p (%s), rule=%u",
+			thisfn, ( void * ) provider, G_OBJECT_TYPE_NAME( provider ), rule );
 
 	g_return_val_if_fail( provider && OFA_IS_MYSQL_DBPROVIDER( provider ), NULL );
 
@@ -217,14 +186,9 @@ ofa_mysql_root_bin_new( ofaMysqlDBProvider *provider, const gchar *settings_pref
 	priv = ofa_mysql_root_bin_get_instance_private( bin );
 
 	priv->provider = provider;
-
-	g_free( priv->settings_prefix );
-	priv->settings_prefix = g_strdup( settings_prefix );
-
 	priv->rule = rule;
 
 	setup_bin( bin );
-	read_settings( bin );
 
 	return( bin );
 }
@@ -286,6 +250,36 @@ setup_bin( ofaMysqlRootBin *self )
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
+}
+
+/**
+ * ofa_mysql_root_bin_set_dossier_meta:
+ * @bin: this #ofaMysqlRootBin instance.
+ * @dossier_meta: [allow-none]: the #ofaIDBDossierMeta object which
+ *  holds dossier meta datas.
+ *
+ * When set, this let the composite widget validate the account and the
+ * password against the actual MYSQL which manages this dossier.
+ * Else, we only check if account and password are set.
+ *
+ * Settings are read as soon as (and every time that) this @dossier_meta
+ * is set.
+ */
+void
+ofa_mysql_root_bin_set_dossier_meta( ofaMysqlRootBin *bin, ofaIDBDossierMeta *dossier_meta )
+{
+	ofaMysqlRootBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_MYSQL_ROOT_BIN( bin ));
+	g_return_if_fail( !dossier_meta || OFA_IS_IDBDOSSIER_META( dossier_meta ));
+
+	priv = ofa_mysql_root_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->dossier_meta = dossier_meta;
+
+	read_settings( bin );
 }
 
 /**
@@ -378,8 +372,10 @@ changed_composite( ofaMysqlRootBin *self )
  * @error_message: [allow-none]: set to the error message as a newly
  *  allocated string which should be g_free() by the caller.
  *
- * Returns: %TRUE if both account and password are set without actually
- * validating these credentials againt the MYSQL.
+ * Returns: %TRUE if both account and password are set.
+ *
+ * If a #ofaIDBDossierMeta is set, then check a connection against the
+ * DBMS server (at DBMS server level).
  */
 gboolean
 ofa_mysql_root_bin_is_valid( ofaMysqlRootBin *bin, gchar **error_message )
@@ -406,8 +402,9 @@ ofa_mysql_root_bin_is_valid( ofaMysqlRootBin *bin, gchar **error_message )
 }
 
 /*
- * we only check here for the presence of an account
+ * We only check here for the presence of an account
  * as we don't know if it really has a password (though it should for sure)
+ * But we force the exigence of a password.
  */
 static gboolean
 is_valid( ofaMysqlRootBin *self, gchar **str )
@@ -424,6 +421,13 @@ is_valid( ofaMysqlRootBin *self, gchar **str )
 		if( !my_strlen( priv->account )){
 			ok = FALSE;
 			*str = g_strdup( _( "DBMS root account is not set" ));
+		}
+	}
+
+	if( ok ){
+		if( !my_strlen( priv->password )){
+			ok = FALSE;
+			*str = g_strdup( _( "DBMS root password is not set" ));
 		}
 	}
 
@@ -563,88 +567,110 @@ ofa_mysql_root_bin_set_credentials( ofaMysqlRootBin *bin, const gchar *account, 
 	gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), account );
 	gtk_entry_set_text( GTK_ENTRY( priv->password_entry ), password );
 }
-
-/**
- * ofa_mysql_root_bin_set_dossier_meta:
- * @bin: this #ofaMysqlRootBin instance.
- * @dossier_meta: [allow-none]: the #ofaIDBDossierMeta object which
- *  holds dossier meta datas.
- *
- * When set, this let the composite widget validate the account and the
- * password against the actual MYSQL which manages this dossier.
- * Else, we only check if account and password are set.
- *
- * The composite widget takes a reference on the provided @meta object.
- * This reference will be released on widget destroy.
- */
-void
-ofa_mysql_root_bin_set_dossier_meta( ofaMysqlRootBin *bin, ofaIDBDossierMeta *dossier_meta )
-{
-	ofaMysqlRootBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_MYSQL_ROOT_BIN( bin ));
-	g_return_if_fail( !dossier_meta || OFA_IS_IDBDOSSIER_META( dossier_meta ));
-
-	priv = ofa_mysql_root_bin_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->dossier_meta = dossier_meta;
-}
 #endif
 
 /*
- * settings are: remember_root_account(b);
+ * settings are: remember_root_account(b); root_account(s);
+ *
+ * They are written in the dossier settings for the specifically set
+ * dossier. So no settings are read while the #ofa_mysql_root_bin_set_dossier_meta()
+ * function has not been called.
  */
 static void
 read_settings( ofaMysqlRootBin *self )
 {
 	ofaMysqlRootBinPrivate *priv;
-	ofaIGetter *getter;
-	ofaHub *hub;
 	myISettings *settings;
+	const gchar *group, *cstr;
 	GList *strlist, *it;
-	const gchar *cstr;
-	gchar *key;
+	gboolean remember;
 
 	priv = ofa_mysql_root_bin_get_instance_private( self );
 
-	getter = ofa_isetter_get_getter( OFA_ISETTER( priv->provider ));
-	hub = ofa_igetter_get_hub( getter );
-	settings = ofa_hub_get_user_settings( hub );
-	key = g_strdup_printf( "%s-mysql-root", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
+	if( priv->dossier_meta ){
+		settings = ofa_idbdossier_meta_get_settings_iface( priv->dossier_meta );
+		group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
-	it = strlist;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->remember_btn ), my_utils_boolean_from_str( cstr ));
+		if( settings && group ){
+			strlist = my_isettings_get_string_list( settings, group, priv->settings_prefix );
+			remember = FALSE;
+
+			it = strlist;
+			cstr = it ? ( const gchar * ) it->data : NULL;
+			if( my_strlen( cstr )){
+				remember = my_utils_boolean_from_str( cstr );
+				if( priv->remember_btn ){
+					gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->remember_btn ), remember );
+				}
+			}
+
+			it = it ? it->next : NULL;
+			cstr = it ? ( const gchar * ) it->data : NULL;
+			if( my_strlen( cstr ) && remember ){
+				gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
+			}
+
+			my_isettings_free_string_list( settings, strlist );
+		}
 	}
-
-	my_isettings_free_string_list( settings, strlist );
-	g_free( key );
 }
 
 static void
 write_settings( ofaMysqlRootBin *self )
 {
 	ofaMysqlRootBinPrivate *priv;
-	ofaIGetter *getter;
-	ofaHub *hub;
 	myISettings *settings;
-	gchar *key, *str;
+	const gchar *group;
+	gchar *str;
 
 	priv = ofa_mysql_root_bin_get_instance_private( self );
 
-	str = g_strdup_printf( "%s;",
-				gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->remember_btn )) ? "True":"False" );
+	if( priv->dossier_meta ){
+		settings = ofa_idbdossier_meta_get_settings_iface( priv->dossier_meta );
+		group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
-	getter = ofa_isetter_get_getter( OFA_ISETTER( priv->provider ));
-	hub = ofa_igetter_get_hub( getter );
-	settings = ofa_hub_get_user_settings( hub );
-	key = g_strdup_printf( "%s-mysql-root", priv->settings_prefix );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
+		if( settings && group ){
+			str = g_strdup_printf( "%s;%s;",
+						priv->remember ? "True":"False",
+						priv->remember ? ( priv->account ? priv->account : "" ) : "" );
 
-	g_free( key );
-	g_free( str );
+			my_isettings_set_string( settings, group, priv->settings_prefix, str );
+
+			g_free( str );
+		}
+	}
+}
+
+/*
+ * #ofaIDBSuperuser interface setup
+ */
+static void
+idbsuperuser_iface_init( ofaIDBSuperuserInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_root_bin_idbsuperuser_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_size_group = idbsuperuser_get_size_group;
+	iface->is_valid = idbsuperuser_is_valid;
+	iface->set_dossier_meta = idbsuperuser_set_dossier_meta;
+}
+
+static GtkSizeGroup *
+idbsuperuser_get_size_group( const ofaIDBSuperuser *instance, guint column )
+{
+	return( ofa_mysql_root_bin_get_size_group( OFA_MYSQL_ROOT_BIN( instance ), column ));
+}
+
+
+static gboolean
+idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message )
+{
+	return( ofa_mysql_root_bin_is_valid( OFA_MYSQL_ROOT_BIN( instance ), message ));
+}
+
+static void
+idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dossier_meta )
+{
+	ofa_mysql_root_bin_set_dossier_meta( OFA_MYSQL_ROOT_BIN( instance ), dossier_meta );
 }
