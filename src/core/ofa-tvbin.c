@@ -1762,7 +1762,8 @@ ofa_tvbin_set_store( ofaTVBin *bin, GtkTreeModel *store )
 	ofaTVBinPrivate *priv;
 	GtkTreeModel *sort_model, *filter_model;
 
-	g_debug( "%s: bin=%p, store=%p", thisfn, ( void * ) bin, ( void * ) store );
+	g_debug( "%s: bin=%p, store=%p, count=%d",
+			thisfn, ( void * ) bin, ( void * ) store, gtk_tree_model_iter_n_children( store, NULL ));
 
 	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
 	g_return_if_fail( store && GTK_IS_TREE_MODEL( store ));
@@ -1867,7 +1868,7 @@ iactionable_get_interface_version( void )
 static void
 icontext_iface_init( ofaIContextInterface *iface )
 {
-	static const gchar *thisfn = "ofa_bat_treeview_icontext_iface_init";
+	static const gchar *thisfn = "ofa_tvbin_icontext_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 

@@ -33,6 +33,8 @@
  * Let the user select a dossier or create a new one.
  * Let the user select a period, or create a new one.
  *
+ * The class sends the 'ofa-changed' signal on any change.
+ *
  * Development rules:
  * - type:       bin (parent='top')
  * - validation: yes
@@ -71,10 +73,6 @@ GType                ofa_target_chooser_bin_get_type    ( void ) G_GNUC_CONST;
 
 ofaTargetChooserBin *ofa_target_chooser_bin_new         ( ofaHub *hub,
 																const gchar *settings_prefix );
-
-gboolean             ofa_target_chooser_bin_get_selected( ofaTargetChooserBin *bin,
-																ofaIDBDossierMeta **meta,
-																ofaIDBExerciceMeta **period );
 
 G_END_DECLS
 

@@ -49,6 +49,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaHub          *hub;
+	gchar           *settings_prefix;
 
 	/* runtime
 	 */
@@ -87,6 +88,7 @@ static void
 dossier_treeview_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_treeview_finalize";
+	ofaDossierTreeviewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -94,6 +96,9 @@ dossier_treeview_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_DOSSIER_TREEVIEW( instance ));
 
 	/* free data members here */
+	priv = ofa_dossier_treeview_get_instance_private( OFA_DOSSIER_TREEVIEW( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_treeview_parent_class )->finalize( instance );
@@ -134,6 +139,7 @@ ofa_dossier_treeview_init( ofaDossierTreeview *self )
 	priv = ofa_dossier_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->store = NULL;
 }
 
@@ -294,7 +300,9 @@ ofa_dossier_treeview_set_settings_key( ofaDossierTreeview *view, const gchar *ke
 
 	/* we do not manage any settings here, so directly pass it to the
 	 * base class */
-	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( key );
+	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 }
 
 /**
@@ -522,15 +530,10 @@ ofa_dossier_treeview_set_show_all( ofaDossierTreeview *view, gboolean show_all )
 	priv->show_all = show_all;
 
 	if( show_all ){
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_PERNAME, TRUE );
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_END,     TRUE );
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_BEGIN,   TRUE );
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_STATUS,  TRUE );
-	} else {
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_PERNAME, FALSE );
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_END,     FALSE );
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_BEGIN,   FALSE );
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_STATUS,  FALSE );
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_PERNAME, show_all );
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_END,     show_all );
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_BEGIN,   show_all );
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_STATUS,  show_all );
 	}
 
 	ofa_tvbin_refilter( OFA_TVBIN( view ));

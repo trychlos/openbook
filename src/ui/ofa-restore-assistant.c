@@ -52,13 +52,11 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-admin-credentials-bin.h"
-#include "ui/ofa-application.h"
 #include "ui/ofa-dossier-actions-bin.h"
-#include "ui/ofa-dossier-new-mini.h"
 #include "ui/ofa-dossier-open.h"
-#include "ui/ofa-dossier-treeview.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-restore-assistant.h"
+#include "ui/ofa-target-chooser-bin.h"
 
 /* Restore Assistant
  *
@@ -98,7 +96,7 @@ typedef struct {
 	gchar                  *settings_prefix;
 	ofaHub                 *hub;
 
-	/* p1: select file to be imported
+	/* p1: select file to be restored
 	 */
 	GtkFileChooser         *p1_chooser;
 	gchar                  *p1_folder;
@@ -109,11 +107,9 @@ typedef struct {
 	/* p2: select the dossier target
 	 */
 	GtkWidget              *p2_uri_label;
-	ofaDossierTreeview     *p2_dossier_tview;
+	ofaTargetChooserBin    *p2_chooser;
 	ofaIDBDossierMeta      *p2_dossier_meta;
 	ofaIDBExerciceMeta     *p2_exercice_meta;
-	gboolean                p2_is_new_dossier;
-	GSimpleAction          *p2_new_action;
 	ofaIDBProvider         *p2_provider;
 	ofaIDBConnect          *p2_connect;
 	gchar                  *p2_dossier_name;
@@ -207,9 +203,6 @@ static guint    p1_get_archive_format( ofaRestoreAssistant *self );
 static void     p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static gboolean p2_on_dossier_changed( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaRestoreAssistant *assistant );
-static void     p2_on_dossier_activated( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaRestoreAssistant *assistant );
-static void     p2_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRestoreAssistant *assistant );
 static gboolean p2_check_for_complete( ofaRestoreAssistant *self );
 static void     p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -624,8 +617,6 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p2_do_init";
 	ofaRestoreAssistantPrivate *priv;
 	GtkWidget *parent;
-	ofaButtonsBox *buttons_box;
-	GMenu *menu;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -638,50 +629,10 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( priv->p2_uri_label && GTK_IS_LABEL( priv->p2_uri_label ));
 	my_style_add( priv->p2_uri_label, "labelinfo" );
 
-	priv->p2_dossier_tview = ofa_dossier_treeview_new( priv->hub );
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-dossier-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-chooser-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dossier_tview ));
-	ofa_dossier_treeview_set_settings_key( priv->p2_dossier_tview, priv->settings_prefix );
-	ofa_dossier_treeview_setup_columns( priv->p2_dossier_tview );
-	ofa_dossier_treeview_set_show_all( priv->p2_dossier_tview, FALSE );
-
-	g_signal_connect( priv->p2_dossier_tview, "ofa-doschanged", G_CALLBACK( p2_on_dossier_changed ), self );
-	g_signal_connect( priv->p2_dossier_tview, "ofa-dosactivated", G_CALLBACK( p2_on_dossier_activated ), self );
-
-	ofa_dossier_treeview_setup_store( priv->p2_dossier_tview );
-
-	priv->p2_is_new_dossier = FALSE;
-
-	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 0, 0, 2, 2 );
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-buttons-box" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( buttons_box ));
-
-	/* new action */
-	priv->p2_new_action = g_simple_action_new( "new", NULL );
-	g_signal_connect( priv->p2_new_action, "activate", G_CALLBACK( p2_on_new_activated ), self );
-	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->p2_new_action ),
-			OFA_IACTIONABLE_NEW_ITEM );
-	ofa_buttons_box_append_button(
-			buttons_box,
-			ofa_iactionable_new_button(
-					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->p2_new_action ),
-					_( "Ne_w..." )));
-	g_simple_action_set_enabled( priv->p2_new_action, TRUE );
-
-	/* contextual menu */
-	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
-	ofa_icontext_set_menu(
-			OFA_ICONTEXT( priv->p2_dossier_tview ), OFA_IACTIONABLE( self ),
-			menu );
-
-	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->p2_dossier_tview ));
-	ofa_icontext_append_submenu(
-			OFA_ICONTEXT( priv->p2_dossier_tview ), OFA_IACTIONABLE( priv->p2_dossier_tview ),
-			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
+	priv->p2_chooser = ofa_target_chooser_bin_new( priv->hub, priv->settings_prefix );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_chooser ));
 }
 
 static void
@@ -701,62 +652,7 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	p2_check_for_complete( self );
 
-	gtk_widget_grab_focus( GTK_WIDGET( priv->p2_dossier_tview ));
-}
-
-/*
- * Returns %TRUE if the page is validable after the change
- * (i.e. a target dossier+exercice are selected)
- */
-static gboolean
-p2_on_dossier_changed( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaRestoreAssistant *assistant )
-{
-	ofaRestoreAssistantPrivate *priv;
-
-	priv = ofa_restore_assistant_get_instance_private( assistant );
-
-	g_clear_object( &priv->p2_dossier_meta );
-	g_clear_object( &priv->p2_exercice_meta );
-
-	if( meta && period ){
-		priv->p2_dossier_meta = g_object_ref( meta );
-		priv->p2_exercice_meta = g_object_ref( period );
-	}
-
-	return( p2_check_for_complete( assistant ));
-}
-
-static void
-p2_on_dossier_activated( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaRestoreAssistant *assistant )
-{
-	if( p2_on_dossier_changed( view, meta, period, assistant )){
-		gtk_assistant_next_page( GTK_ASSISTANT( assistant ));
-	}
-}
-
-static void
-p2_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRestoreAssistant *assistant )
-{
-	ofaRestoreAssistantPrivate *priv;
-	const gchar *dossier_name;
-	ofaIDBDossierMeta *meta;
-
-	priv = ofa_restore_assistant_get_instance_private( assistant );
-
-	meta = NULL;
-
-	if( ofa_dossier_new_mini_run( priv->getter, GTK_WINDOW( assistant ), &meta )){
-
-		g_clear_object( &priv->p2_dossier_meta );
-		priv->p2_dossier_meta = meta;
-
-		priv->p2_is_new_dossier = TRUE;
-
-		dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
-		ofa_dossier_treeview_set_selected( priv->p2_dossier_tview, dossier_name );
-
-		gtk_widget_grab_focus( GTK_WIDGET( priv->p2_dossier_tview ));
-	}
+	gtk_widget_show_all( page );
 }
 
 static gboolean
@@ -1255,7 +1151,6 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_display";
 	ofaRestoreAssistantPrivate *priv;
-	ofaDossierCollection *collection;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
@@ -1266,10 +1161,13 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 
 	if( !p6_restore_confirmed( self )){
+#if 0
+		ofaDossierCollection *collection;
 		if( priv->p2_is_new_dossier ){
 			collection = ofa_hub_get_dossier_collection( priv->hub );
 			ofa_dossier_collection_delete_period( collection, priv->p2_connect, NULL, TRUE, NULL );
 		}
+#endif
 		gtk_label_set_text(
 				GTK_LABEL( priv->p6_label ),
 				_( "The restore operation has been cancelled by the user." ));

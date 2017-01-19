@@ -54,12 +54,21 @@ typedef struct {
 
 	/* UI
 	 */
-	ofaDossierTreeview  *dossier_treeview;
+	ofaDossierTreeview  *dossier_tview;
 	GtkWidget           *dossier_new_btn;
-	ofaExerciceTreeview *period_treeview;
-	GtkWidget           *period_new_btn;
+	ofaExerciceTreeview *exercice_tview;
+	GtkWidget           *exercice_new_btn;
 }
 	ofaTargetChooserBinPrivate;
+
+/* signals defined here
+ */
+enum {
+	CHANGED = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-target-chooser-bin.ui";
 
@@ -137,6 +146,32 @@ ofa_target_chooser_bin_class_init( ofaTargetChooserBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = target_chooser_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = target_chooser_bin_finalize;
+
+	/**
+	 * ofaTargetChooserBin::ofa-changed:
+	 *
+	 * This signal is sent on the #ofaTargetChooserBin when any of the
+	 * underlying information is changed.
+	 *
+	 * Arguments are currently selected dossier and exercices.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaTargetChooserBin *bin,
+	 * 						ofaDossierMeta    *dossier_meta;
+	 * 						ofaExerciceMeta   *exercice_meta,
+	 * 						gpointer           user_data );
+	 */
+	st_signals[ CHANGED ] = g_signal_new_class_handler(
+				"ofa-changed",
+				OFA_TYPE_TARGET_CHOOSER_BIN,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_POINTER, G_TYPE_POINTER );
 }
 
 /**
@@ -175,6 +210,7 @@ setup_bin( ofaTargetChooserBin *self )
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *parent, *btn;
+	gchar *settings_prefix;
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
@@ -188,12 +224,14 @@ setup_bin( ofaTargetChooserBin *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->dossier_treeview = ofa_dossier_treeview_new( priv->hub );
-	ofa_dossier_treeview_set_settings_key( priv->dossier_treeview, priv->settings_prefix );
-	ofa_dossier_treeview_setup_columns( priv->dossier_treeview );
-	ofa_dossier_treeview_set_show_all( priv->dossier_treeview, FALSE );
-	ofa_dossier_treeview_setup_store( priv->dossier_treeview );
-	g_signal_connect( priv->dossier_treeview, "ofa-doschanged", G_CALLBACK( dossier_on_selection_changed ), self );
+	priv->dossier_tview = ofa_dossier_treeview_new( priv->hub );
+	settings_prefix = g_strdup_printf( "%s-%s", priv->settings_prefix, G_OBJECT_TYPE_NAME( priv->dossier_tview ));
+	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, settings_prefix );
+	g_free( settings_prefix );
+	ofa_dossier_treeview_setup_columns( priv->dossier_tview );
+	ofa_dossier_treeview_set_show_all( priv->dossier_tview, FALSE );
+	ofa_dossier_treeview_setup_store( priv->dossier_tview );
+	g_signal_connect( priv->dossier_tview, "ofa-doschanged", G_CALLBACK( dossier_on_selection_changed ), self );
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-new-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
@@ -202,12 +240,14 @@ setup_bin( ofaTargetChooserBin *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-period-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->period_treeview = ofa_exercice_treeview_new( priv->hub, priv->settings_prefix );
+	settings_prefix = g_strdup_printf( "%s-%s", priv->settings_prefix, g_type_name( OFA_TYPE_EXERCICE_TREEVIEW ));
+	priv->exercice_tview = ofa_exercice_treeview_new( priv->hub, settings_prefix );
+	g_free( settings_prefix );
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-new-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	g_signal_connect( btn, "clicked", G_CALLBACK( period_on_new ), self );
-	priv->period_new_btn = btn;
+	priv->exercice_new_btn = btn;
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -221,7 +261,7 @@ dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *m
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
 	priv->meta = meta;
-	ofa_exercice_treeview_set_dossier( priv->period_treeview, meta );
+	ofa_exercice_treeview_set_dossier( priv->exercice_tview, meta );
 }
 
 static void
@@ -236,6 +276,7 @@ period_on_new( GtkButton *button, ofaTargetChooserBin *self )
 
 }
 
+#if 0
 /**
  * ofa_target_chooser_bin_get_selected:
  * @view: this #ofaTargetChooserBin instance.
@@ -258,7 +299,8 @@ ofa_target_chooser_bin_get_selected( ofaTargetChooserBin *bin, ofaIDBDossierMeta
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
 	*meta = priv->meta;
-	ofa_exercice_treeview_get_selected( priv->period_treeview, period );
+	ofa_exercice_treeview_get_selected( priv->exercice_tview, period );
 
 	return( *meta && *period );
 }
+#endif
