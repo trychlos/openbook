@@ -33,20 +33,18 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-idbsuperuser.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isetter.h"
 
-#include "mysql/ofa-mysql-connect.h"
 #include "mysql/ofa-mysql-dbprovider.h"
 #include "mysql/ofa-mysql-dossier-editor.h"
 #include "mysql/ofa-mysql-dossier-meta.h"
-#include "mysql/ofa-mysql-editor-display.h"
 #include "mysql/ofa-mysql-editor-enter.h"
 #include "mysql/ofa-mysql-root-bin.h"
 
@@ -63,19 +61,18 @@ typedef struct {
 #define DBPROVIDER_DISPLAY_NAME          "MySQL DBMS Provider"
 #define DBPROVIDER_VERSION                PACKAGE_VERSION
 
-static void                  iident_iface_init( myIIdentInterface *iface );
-static gchar                *iident_get_canon_name( const myIIdent *instance, void *user_data );
-static gchar                *iident_get_display_name( const myIIdent *instance, void *user_data );
-static gchar                *iident_get_version( const myIIdent *instance, void *user_data );
-static void                  idbprovider_iface_init( ofaIDBProviderInterface *iface );
-static ofaIDBDossierMeta    *idbprovider_new_dossier_meta( ofaIDBProvider *instance );
-static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
-static ofaIDBConnect        *idbprovider_new_connect( ofaIDBProvider *instance, const gchar *account, const gchar *password, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta );
-static ofaIDBSuperuser      *idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule );
-static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
-static void                  isetter_iface_init( ofaISetterInterface *iface );
-static ofaIGetter           *isetter_get_getter( ofaISetter *instance );
-static void                  isetter_set_getter( ofaISetter *instance, ofaIGetter *getter );
+static void                 iident_iface_init( myIIdentInterface *iface );
+static gchar               *iident_get_canon_name( const myIIdent *instance, void *user_data );
+static gchar               *iident_get_display_name( const myIIdent *instance, void *user_data );
+static gchar               *iident_get_version( const myIIdent *instance, void *user_data );
+static void                 idbprovider_iface_init( ofaIDBProviderInterface *iface );
+static ofaIDBDossierMeta   *idbprovider_new_dossier_meta( ofaIDBProvider *instance );
+static ofaIDBDossierEditor *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
+static ofaIDBSuperuser     *idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule );
+static ofaIDBEditor        *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
+static void                 isetter_iface_init( ofaISetterInterface *iface );
+static ofaIGetter          *isetter_get_getter( ofaISetter *instance );
+static void                 isetter_set_getter( ofaISetter *instance, ofaIGetter *getter );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDBProvider, ofa_mysql_dbprovider, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlDBProvider )
@@ -189,7 +186,6 @@ idbprovider_iface_init( ofaIDBProviderInterface *iface )
 
 	iface->new_dossier_meta = idbprovider_new_dossier_meta;
 	iface->new_dossier_editor = idbprovider_new_dossier_editor;
-	iface->new_connect = idbprovider_new_connect;
 	iface->new_superuser_bin = idbprovider_new_superuser_bin;
 	iface->new_editor = idbprovider_new_editor;
 }
@@ -217,27 +213,6 @@ idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_
 	return( OFA_IDBDOSSIER_EDITOR( widget ));
 }
 
-/*
- * instanciates a new ofaIDBConnect object
- */
-static ofaIDBConnect *
-idbprovider_new_connect( ofaIDBProvider *instance,
-		const gchar *account, const gchar *password, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta )
-{
-	ofaMysqlConnect *connect;
-
-	connect = ofa_mysql_connect_new();
-
-	if( !ofa_mysql_connect_open_with_meta(
-			connect, account, password,
-			OFA_MYSQL_DOSSIER_META( dossier_meta ), OFA_MYSQL_EXERCICE_META( exercice_meta ))){
-
-		g_clear_object( &connect );
-	}
-
-	return( connect ? OFA_IDBCONNECT( connect ) : NULL );
-}
-
 static ofaIDBSuperuser *
 idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule )
 {
@@ -262,7 +237,7 @@ idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable )
 {
 	GtkWidget *widget;
 
-	widget = editable ? ofa_mysql_editor_enter_new() : ofa_mysql_editor_display_new();
+	widget = ofa_mysql_editor_enter_new();
 
 	return( OFA_IDBEDITOR( widget ));
 }

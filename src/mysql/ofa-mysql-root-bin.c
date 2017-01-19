@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-isizegroup.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
@@ -80,12 +81,18 @@ static void          read_settings( ofaMysqlRootBin *self );
 static void          write_settings( ofaMysqlRootBin *self );
 static void          idbsuperuser_iface_init( ofaIDBSuperuserInterface *iface );
 static GtkSizeGroup *idbsuperuser_get_size_group( const ofaIDBSuperuser *instance, guint column );
-static gboolean      idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message );
 static void          idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dossier_meta );
+static gboolean      idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message );
+static void          idbsuperuser_set_valid( ofaIDBSuperuser *instance, gboolean valid );
+static void          idbsuperuser_set_credentials_from_connect( ofaIDBSuperuser *instance, ofaIDBConnect *connect );
+static void          isizegroup_iface_init( myISizegroupInterface *iface );
+static guint         isizegroup_get_interface_version( void );
+static GtkSizeGroup *isizegroup_get_size_group( const myISizegroup *instance, guint column );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlRootBin, ofa_mysql_root_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlRootBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBSUPERUSER, idbsuperuser_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBSUPERUSER, idbsuperuser_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ISIZEGROUP, isizegroup_iface_init ))
 
 static void
 mysql_root_bin_finalize( GObject *instance )
@@ -357,12 +364,13 @@ on_password_changed( GtkEditable *entry, ofaMysqlRootBin *self )
 }
 
 /*
- * The signal 'ofa-changed' is intercepted by ofaMysqlDossierEditor::changed_composite()
- * which sets ofa_mysql_root_bin_set_valid() to FALSE.
+ * If something has changed, then default to be invalid
  */
 static void
 changed_composite( ofaMysqlRootBin *self )
 {
+	ofa_mysql_root_bin_set_valid( self, FALSE );
+
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
@@ -652,8 +660,10 @@ idbsuperuser_iface_init( ofaIDBSuperuserInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_size_group = idbsuperuser_get_size_group;
-	iface->is_valid = idbsuperuser_is_valid;
 	iface->set_dossier_meta = idbsuperuser_set_dossier_meta;
+	iface->is_valid = idbsuperuser_is_valid;
+	iface->set_valid = idbsuperuser_set_valid;
+	iface->set_credentials_from_connect = idbsuperuser_set_credentials_from_connect;
 }
 
 static GtkSizeGroup *
@@ -662,6 +672,11 @@ idbsuperuser_get_size_group( const ofaIDBSuperuser *instance, guint column )
 	return( ofa_mysql_root_bin_get_size_group( OFA_MYSQL_ROOT_BIN( instance ), column ));
 }
 
+static void
+idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dossier_meta )
+{
+	ofa_mysql_root_bin_set_dossier_meta( OFA_MYSQL_ROOT_BIN( instance ), dossier_meta );
+}
 
 static gboolean
 idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message )
@@ -670,7 +685,51 @@ idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message )
 }
 
 static void
-idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dossier_meta )
+idbsuperuser_set_valid( ofaIDBSuperuser *instance, gboolean valid )
 {
-	ofa_mysql_root_bin_set_dossier_meta( OFA_MYSQL_ROOT_BIN( instance ), dossier_meta );
+	ofa_mysql_root_bin_set_valid( OFA_MYSQL_ROOT_BIN( instance ), valid );
+}
+
+static void
+idbsuperuser_set_credentials_from_connect( ofaIDBSuperuser *instance, ofaIDBConnect *connect )
+{
+	ofaMysqlRootBinPrivate *priv;
+	const gchar *cstr;
+
+	priv = ofa_mysql_root_bin_get_instance_private( OFA_MYSQL_ROOT_BIN( instance ));
+
+	cstr = ofa_idbconnect_get_account( connect );
+	if( my_strlen( cstr )){
+		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
+	}
+	cstr = ofa_idbconnect_get_password( connect );
+	if( my_strlen( cstr )){
+		gtk_entry_set_text( GTK_ENTRY( priv->password_entry ), cstr );
+	}
+}
+
+/*
+ * myISizegroup interface management
+ */
+static void
+isizegroup_iface_init( myISizegroupInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_connect_display_isizegroup_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = isizegroup_get_interface_version;
+	iface->get_size_group = isizegroup_get_size_group;
+}
+
+static guint
+isizegroup_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+isizegroup_get_size_group( const myISizegroup *instance, guint column )
+{
+	return( ofa_mysql_root_bin_get_size_group( OFA_MYSQL_ROOT_BIN( instance ), column ));
 }

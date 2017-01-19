@@ -22,32 +22,19 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_HUB_DEF_H__
-#define __OPENBOOK_API_OFA_HUB_DEF_H__
+#ifndef __OPENBOOK_API_OFA_IDBSUPERUSER_DEF_H__
+#define __OPENBOOK_API_OFA_IDBSUPERUSER_DEF_H__
 
 /**
- * SECTION: ofahub
- * @include: openbook/ofa-hub-def.h
+ * SECTION: idbsuperuser
+ * @title: ofaIDBSuperuser
+ * @include: openbook/ofa-idbsuperuser-def.h
  */
-
-#include <glib.h>
 
 G_BEGIN_DECLS
 
-typedef struct _ofaHub                  ofaHub;
-
-/**
- * @ofaDataCb: a general usage callback to pass some datas;
- *  on input, the #ofaDataCb callback function should return the actual
- *  size of data available in the buffer, 0 at end, <0 for an error;
- *  on output, the #ofaDataCb should return the actual size the callback
- *  has been successfully dealt with.
- * @ofaMsgCb: a general usage callback to display a message.
- *  this callback in only used on output.
- */
-typedef gsize ( *ofaDataCb )( void *, gsize, void * );
-typedef void  ( *ofaMsgCb ) ( const gchar *, void * );
+typedef struct _ofaIDBSuperuser                    ofaIDBSuperuser;
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_HUB_DEF_H__ */
+#endif /* __OPENBOOK_API_OFA_IDBSUPERUSER_DEF_H__ */

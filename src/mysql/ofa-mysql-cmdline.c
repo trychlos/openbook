@@ -115,6 +115,7 @@ ofa_mysql_cmdline_backup_get_default_command( void )
  * ofa_mysql_cmdline_backup_db_run:
  * @connect: a #ofaIDBConnect object which handles a user connection
  *  on the dossier/exercice to be backuped.
+ * @uri: the target uri.
  * @msg_cb: a callback for messages to be displayed.
  * @data_cb: a callback for datas to be archived.
  * @user_data: user data to be provided to the callbacks.
@@ -128,7 +129,7 @@ ofa_mysql_cmdline_backup_get_default_command( void )
  * %FALSE else.
  */
 gboolean
-ofa_mysql_cmdline_backup_db_run( ofaMysqlConnect *connect, ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data )
+ofa_mysql_cmdline_backup_db_run( ofaMysqlConnect *connect, const gchar *uri, ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data )
 {
 	gchar *template;
 	ofaIDBDossierMeta *dossier_meta;
@@ -154,7 +155,7 @@ ofa_mysql_cmdline_backup_db_run( ofaMysqlConnect *connect, ofaMsgCb msg_cb, ofaD
 				template,
 				connect,
 				OFA_MYSQL_EXERCICE_META( exercice_meta ),
-				NULL,
+				uri,
 				RUN_BACKUP,
 				msg_cb,
 				data_cb,
@@ -255,7 +256,7 @@ ofa_mysql_cmdline_archive_and_new( ofaMysqlConnect *connect,
 						const GDate *begin_next, const GDate *end_next )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_archive_and_new";
-	ofaMysqlConnect *server_cnx;
+	ofaIDBConnect *server_cnx;
 	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBExerciceMeta *exercice_meta;
 	const gchar *host, *socket, *prev_dbname, *prev_account;
@@ -270,19 +271,21 @@ ofa_mysql_cmdline_archive_and_new( ofaMysqlConnect *connect,
 	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_DOSSIER_META( dossier_meta ), FALSE );
 
 	/* open a superuser new connection at DBMS server level */
-	server_cnx = ofa_mysql_connect_new();
-	if( !ofa_mysql_connect_open_with_meta(
-				server_cnx, root_account, root_password, OFA_MYSQL_DOSSIER_META( dossier_meta ), NULL )){
+	server_cnx = ofa_idbdossier_meta_new_connect( dossier_meta, NULL );
+#if 0
+	if( !ofa_mysql_connect_open_with_meta( OFA_MYSQL_CONNECT( server_cnx ),
+			root_account, root_password, OFA_MYSQL_DOSSIER_META( dossier_meta ), NULL )){
 		g_warning( "%s: unable to get a root connection on the DB server", thisfn );
 		return( FALSE );
 	}
+#endif
 
 	/* get previous database from current connection on closed exercice */
 	exercice_meta = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
 	g_return_val_if_fail( exercice_meta && OFA_IS_MYSQL_EXERCICE_META( exercice_meta ), FALSE );
 
 	prev_dbname = ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( exercice_meta ));
-	new_db = ofa_mysql_connect_get_new_database( server_cnx, prev_dbname );
+	new_db = ofa_mysql_connect_get_new_database( OFA_MYSQL_CONNECT( server_cnx ), prev_dbname );
 
 	if( !my_strlen( new_db )){
 		g_warning( "%s: unable to get a new database name", thisfn );
@@ -332,7 +335,7 @@ ofa_mysql_cmdline_archive_and_new( ofaMysqlConnect *connect,
 		ofa_mysql_exercice_meta_set_database( OFA_MYSQL_EXERCICE_META( exercice_meta ), new_db );
 		ofa_idbexercice_meta_update_settings( exercice_meta );
 		prev_account = ofa_idbconnect_get_account( OFA_IDBCONNECT( connect ));
-		do_duplicate_grants( OFA_IDBCONNECT( server_cnx ), host, prev_account, prev_dbname, new_db );
+		do_duplicate_grants( server_cnx, host, prev_account, prev_dbname, new_db );
 	}
 
 	g_free( new_db );

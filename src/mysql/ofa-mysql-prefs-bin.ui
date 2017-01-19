@@ -340,7 +340,7 @@ Please note that these macros are case sensitive.</property>
           <object class="GtkLabel" id="label1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes"> Database backup </property>
+            <property name="label" translatable="yes"> MySQL database backup </property>
             <property name="use_markup">True</property>
           </object>
         </child>

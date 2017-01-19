@@ -52,8 +52,10 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbprovider-def.h"
+#include "api/ofa-idbsuperuser-def.h"
 
 G_BEGIN_DECLS
 
@@ -62,13 +64,17 @@ G_BEGIN_DECLS
 #define OFA_IS_IDBSUPERUSER( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IDBSUPERUSER ))
 #define OFA_IDBSUPERUSER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IDBSUPERUSER, ofaIDBSuperuserInterface ))
 
+#if 0
 typedef struct _ofaIDBSuperuser                    ofaIDBSuperuser;
+#endif
 
 /**
  * ofaIDBSuperuserInterface:
  * @get_interface_version: [should]: returns the interface version number.
  * @get_size_group: [may]: returns the #GtkSizeGroup of the column.
- * @get_valid: [may]: returns %TRUE if the entered informations are valid.
+ * @set_dossier_meta: [may]: set the #ofaIDBDossierMeta.
+ * @is_valid: [may]: returns %TRUE if the entered informations are valid.
+ * @set_valid: [may]: set the validity status.
  *
  * This defines the interface that an #ofaIDBSuperuser should implement.
  */
@@ -88,7 +94,7 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint           ( *get_interface_version )( void );
+	guint           ( *get_interface_version )       ( void );
 
 	/*** instance-wide ***/
 	/**
@@ -100,23 +106,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GtkSizeGroup *  ( *get_size_group )       ( const ofaIDBSuperuser *instance,
-													guint column );
-
-	/**
-	 * is_valid:
-	 * @instance: the #ofaIDBSuperuser instance.
-	 * @message: [allow-none][out]: a message to be set.
-	 *
-	 * Returns: %TRUE if the entered connection informations are valid.
-	 *
-	 * Note that we only do here an intrinsic check as we do not have
-	 * any credentials to test for a real server connection.
-	 *
-	 * Since: version 1
-	 */
-	gboolean        ( *is_valid )            ( const ofaIDBSuperuser *instance,
-													gchar **message );
+	GtkSizeGroup *  ( *get_size_group )              ( const ofaIDBSuperuser *instance,
+															guint column );
 
 	/**
 	 * set_dossier_meta:
@@ -132,41 +123,86 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void            ( *set_dossier_meta )    ( ofaIDBSuperuser *instance,
-													ofaIDBDossierMeta *dossier_meta );
+	void            ( *set_dossier_meta )            ( ofaIDBSuperuser *instance,
+															ofaIDBDossierMeta *dossier_meta );
+
+	/**
+	 * is_valid:
+	 * @instance: the #ofaIDBSuperuser instance.
+	 * @message: [allow-none][out]: a message to be set.
+	 *
+	 * Returns: %TRUE if the entered connection informations are valid.
+	 *
+	 * Note that we only do here an intrinsic check as we do not have
+	 * any credentials to test for a real server connection.
+	 *
+	 * Since: version 1
+	 */
+	gboolean        ( *is_valid )                    ( const ofaIDBSuperuser *instance,
+															gchar **message );
+
+	/**
+	 * set_valid:
+	 * @instance: the #ofaIDBSuperuser instance.
+	 * @valid: the validity status.
+	 *
+	 * Set the validity status.
+	 *
+	 * Since: version 1
+	 */
+	void             ( *set_valid )                  ( ofaIDBSuperuser *instance,
+															gboolean valid );
+
+	/**
+	 * set_credentials_from_connect:
+	 * @instance: the #ofaIDBSuperuser instance.
+	 * @connect: an #ofaIDBConnect.
+	 *
+	 * Set credentials from @connect.
+	 *
+	 * Since: version 1
+	 */
+	void             ( *set_credentials_from_connect)( ofaIDBSuperuser *instance,
+															ofaIDBConnect *connect );
 }
 	ofaIDBSuperuserInterface;
 
 /*
  * Interface-wide
  */
-GType              ofa_idbsuperuser_get_type                  ( void );
+GType              ofa_idbsuperuser_get_type                    ( void );
 
-guint              ofa_idbsuperuser_get_interface_last_version( void );
+guint              ofa_idbsuperuser_get_interface_last_version  ( void );
 
 /*
  * Implementation-wide
  */
-guint              ofa_idbsuperuser_get_interface_version     ( GType type );
+guint              ofa_idbsuperuser_get_interface_version       ( GType type );
 
 /*
  * Instance-wide
  */
-ofaIDBProvider    *ofa_idbsuperuser_get_provider              ( const ofaIDBSuperuser *instance );
+ofaIDBProvider    *ofa_idbsuperuser_get_provider                ( const ofaIDBSuperuser *instance );
 
-void               ofa_idbsuperuser_set_provider              ( ofaIDBSuperuser *instance,
-																	ofaIDBProvider *provider );
+void               ofa_idbsuperuser_set_provider                ( ofaIDBSuperuser *instance,
+																		ofaIDBProvider *provider );
 
-ofaIDBDossierMeta *ofa_idbsuperuser_get_dossier_meta          ( const ofaIDBSuperuser *instance );
+ofaIDBDossierMeta *ofa_idbsuperuser_get_dossier_meta            ( const ofaIDBSuperuser *instance );
 
-void               ofa_idbsuperuser_set_dossier_meta          ( ofaIDBSuperuser *instance,
-																	ofaIDBDossierMeta *dossier_meta );
+void               ofa_idbsuperuser_set_dossier_meta            ( ofaIDBSuperuser *instance,
+																		ofaIDBDossierMeta *dossier_meta );
 
-GtkSizeGroup      *ofa_idbsuperuser_get_size_group            ( const ofaIDBSuperuser *instance,
-																	guint column );
+GtkSizeGroup      *ofa_idbsuperuser_get_size_group              ( const ofaIDBSuperuser *instance,
+																		guint column );
 
-gboolean           ofa_idbsuperuser_is_valid                  ( const ofaIDBSuperuser *instance,
-																	gchar **message );
+gboolean           ofa_idbsuperuser_is_valid                    ( const ofaIDBSuperuser *instance,
+																		gchar **message );
+
+void               ofa_idbsuperuser_set_valid                   ( ofaIDBSuperuser *instance,
+																		gboolean valid );
+
+void               ofa_idbsuperuser_set_credentials_from_connect( ofaIDBSuperuser *instance,
+																		ofaIDBConnect *connect );
 
 G_END_DECLS
 

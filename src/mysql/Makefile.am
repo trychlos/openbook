@@ -71,6 +71,8 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-cmdline.h									\
 	ofa-mysql-connect.c									\
 	ofa-mysql-connect.h									\
+	ofa-mysql-connect-display.c							\
+	ofa-mysql-connect-display.h							\
 	ofa-mysql-dbmodel.c									\
 	ofa-mysql-dbmodel.h									\
 	ofa-mysql-dossier-bin.c								\
@@ -81,8 +83,6 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-dossier-meta.h							\
 	ofa-mysql-dbprovider.c								\
 	ofa-mysql-dbprovider.h								\
-	ofa-mysql-editor-display.c							\
-	ofa-mysql-editor-display.h							\
 	ofa-mysql-editor-enter.c							\
 	ofa-mysql-editor-enter.h							\
 	ofa-mysql-exercice-bin.c							\

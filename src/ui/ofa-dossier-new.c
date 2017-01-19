@@ -314,7 +314,6 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	gboolean open, apply_actions;
 	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBExerciceMeta *exercice_meta;
-	ofaIDBProvider *provider;
 	ofaIDBConnect *connect;
 	ofaIDBDossierEditor *dossier_editor;
 	gchar *adm_account, *adm_password;
@@ -357,12 +356,12 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	} else {
 		open = ofa_dossier_edit_bin_get_open_on_create( priv->edit_bin );
 		if( open ){
-			provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 			exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
-			connect = ofa_idbprovider_new_connect( provider, adm_account, adm_password, dossier_meta, exercice_meta );
-			if( !connect ){
+			connect = ofa_idbdossier_meta_new_connect( dossier_meta, exercice_meta );
+			if( !ofa_idbconnect_open_with_account( connect, adm_account, adm_password )){
 				*msgerr = g_strdup( _( "Unable to connect to newly created dossier" ));
 				ret = IDIALOG_UPDATE_ERROR;
+				g_object_unref( connect );
 			} else {
 				apply_actions = ofa_dossier_edit_bin_get_apply_actions( priv->edit_bin );
 				if( ofa_hub_dossier_open( priv->hub, priv->parent, connect, apply_actions, FALSE )){
@@ -370,6 +369,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 				} else {
 					*msgerr = g_strdup( _( "Unable to open the newly created dossier" ));
 					ret = IDIALOG_UPDATE_ERROR;
+					g_object_unref( connect );
 				}
 			}
 		}

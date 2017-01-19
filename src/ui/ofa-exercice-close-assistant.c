@@ -1414,8 +1414,6 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	gboolean ok;
 	const GDate *begin_old, *end_old;
 	const GDate *begin_next, *end_next;
-	ofaIDBProvider *provider;
-	const gchar *cur_account, *cur_password;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1453,11 +1451,11 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 		ofa_idbexercice_meta_dump( period );
 
-		provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
-		cur_account = ofa_idbconnect_get_account( priv->connect );
-		cur_password = ofa_idbconnect_get_password( priv->connect );
+		//cur_account = ofa_idbconnect_get_account( priv->connect );
+		//cur_password = ofa_idbconnect_get_password( priv->connect );
 
-		cnx = ofa_idbprovider_new_connect( provider, cur_account, cur_password, priv->dossier_meta, period );
+		//cnx = ofa_idbprovider_new_connect( provider, cur_account, cur_password, priv->dossier_meta, period );
+		cnx = ofa_idbdossier_meta_new_connect( priv->dossier_meta, period );
 		ok = ( cnx != NULL );
 
 		if( !ok ){

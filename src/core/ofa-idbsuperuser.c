@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbsuperuser.h"
@@ -345,6 +346,59 @@ ofa_idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message )
 	g_info( "%s: ofaIDBSuperuser's %s implementation does not provide 'is_valid()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( FALSE );
+}
+
+/**
+ * ofa_idbsuperuser_set_valid:
+ * @instance: this #ofaIDBSuperuser instance.
+ * @valid: the validity status.
+ *
+ * Set the validity status.
+ */
+void
+ofa_idbsuperuser_set_valid( ofaIDBSuperuser *instance, gboolean valid )
+{
+	static const gchar *thisfn = "ofa_idbsuperuser_set_valid";
+
+	g_debug( "%s: instance=%p, valid=%s",
+			thisfn, ( void * ) instance, valid ? "True":"False" );
+
+	g_return_if_fail( instance && OFA_IS_IDBSUPERUSER( instance ));
+
+	if( OFA_IDBSUPERUSER_GET_INTERFACE( instance )->set_valid ){
+		OFA_IDBSUPERUSER_GET_INTERFACE( instance )->set_valid( instance, valid );
+		return;
+	}
+
+	g_info( "%s: ofaIDBSuperuser's %s implementation does not provide 'set_valid()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+}
+
+/**
+ * ofa_idbsuperuser_set_credentials_from_connect:
+ * @instance: this #ofaIDBSuperuser instance.
+ * @connect: an #ofaIDBConnect.
+ *
+ * Set the credentials from @connect.
+ */
+void
+ofa_idbsuperuser_set_credentials_from_connect( ofaIDBSuperuser *instance, ofaIDBConnect *connect )
+{
+	static const gchar *thisfn = "ofa_idbsuperuser_set_credentials_from_connect";
+
+	g_debug( "%s: instance=%p, connect=%p",
+			thisfn, ( void * ) instance, ( void * ) connect );
+
+	g_return_if_fail( instance && OFA_IS_IDBSUPERUSER( instance ));
+	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
+
+	if( OFA_IDBSUPERUSER_GET_INTERFACE( instance )->set_credentials_from_connect ){
+		OFA_IDBSUPERUSER_GET_INTERFACE( instance )->set_credentials_from_connect( instance, connect );
+		return;
+	}
+
+	g_info( "%s: ofaIDBSuperuser's %s implementation does not provide 'set_credentials_from_connect()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 static sIDBSUser *

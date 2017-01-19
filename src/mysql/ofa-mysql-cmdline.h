@@ -40,6 +40,7 @@ G_BEGIN_DECLS
 const gchar *ofa_mysql_cmdline_backup_get_default_command ( void );
 
 gboolean     ofa_mysql_cmdline_backup_db_run              ( ofaMysqlConnect *connect,
+																const gchar *uri,
 																ofaMsgCb msg_cb,
 																ofaDataCb data_cb,
 																void *user_data );

@@ -483,6 +483,38 @@ ofa_idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, ofaIDBDossierEdito
 }
 
 /**
+ * ofa_idbdossier_meta_new_connect:
+ * @dossier_meta: this #ofaIDBDossierMeta instance.
+ * @exercice_meta: [allow-none]: the #ofaIDBEXerciceMeta object;
+ *  if %NULL, the connection will be established at server level.
+ *
+ * Returns: a newly defined #ofaIDBConnect object.
+ */
+ofaIDBConnect *
+ofa_idbdossier_meta_new_connect( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period )
+{
+	static const gchar *thisfn = "ofa_idbdossier_meta_new_connect";
+	ofaIDBConnect *connect;
+
+	g_debug( "%s: meta=%p, period=%p",
+			thisfn, ( void * ) meta, ( void * ) period );
+
+	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
+	g_return_val_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ), NULL );
+
+	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->new_connect ){
+		connect = OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->new_connect( meta );
+		ofa_idbconnect_set_dossier_meta( connect, meta );
+		ofa_idbconnect_set_exercice_meta( connect, period );
+		return( connect );
+	}
+
+	g_info( "%s: ofaIDBDossierMeta's %s implementation does not provide 'new_connect()' method",
+			thisfn, G_OBJECT_TYPE_NAME( meta ));
+	return( NULL );
+}
+
+/**
  * ofa_idbdossier_meta_get_periods:
  * @meta: this #ofaIDBDossierMeta instance.
  *

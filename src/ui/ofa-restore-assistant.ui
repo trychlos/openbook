@@ -240,6 +240,29 @@ Press Next to begin.</property>
                     <property name="top_attach">0</property>
                   </packing>
                 </child>
+                <child>
+                  <object class="GtkLabel" id="p3-label1">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Target name :</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p3-dbname">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">0</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
               </object>
             </child>
             <child type="label">
@@ -271,7 +294,7 @@ Press Next to begin.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkBox" id="p3-dra-parent">
+          <object class="GtkBox" id="p3-dbsu-parent">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
@@ -346,29 +369,6 @@ Press Next to begin.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="p4-label412">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Target period name :</property>
-                    <property name="xalign">1</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="p4-database">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="xalign">0</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">2</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkLabel" id="p4-label413">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
@@ -390,6 +390,29 @@ Press Next to begin.</property>
                   <packing>
                     <property name="left_attach">1</property>
                     <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p4-label412">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Target name :</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p4-dbname">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">0</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">2</property>
                   </packing>
                 </child>
               </object>
@@ -416,7 +439,7 @@ Press Next to begin.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">3</property>
+            <property name="top_attach">4</property>
           </packing>
         </child>
         <child>
@@ -430,7 +453,7 @@ Press Next to begin.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">1</property>
+            <property name="top_attach">2</property>
           </packing>
         </child>
         <child>
@@ -444,7 +467,21 @@ Press Next to begin.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">2</property>
+            <property name="top_attach">3</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="p4-connect-infos">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <placeholder/>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">1</property>
           </packing>
         </child>
       </object>
@@ -583,7 +620,7 @@ Press Next to begin.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-dbms-account">
+          <object class="GtkLabel" id="p5-su-account">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -620,7 +657,7 @@ Press Next to begin.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-dbms-password">
+          <object class="GtkLabel" id="p5-su-password">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -694,7 +731,7 @@ Press Next to begin.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-database">
+          <object class="GtkLabel" id="p5-dbname">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>

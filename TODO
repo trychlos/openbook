@@ -417,7 +417,17 @@
 
 1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
 
-1323
+1323 2017- 1-18 propagate myISizegroup interface
+
+1324 2017- 1-18 BatPage: lacks of an horizontal scrollbar (and vertical ?)
+
+1325 2017- 1-19 RestoreAssistant: p3->p4->p3: page should be complete,
+                but is not.
+
+1326 2017- 1-19 RestoreAssistant: p3->p4->p3->p4: p2_dossier_meta is NULL
+                but should not
+
+1327
 
 -----------------------------------------------------------------------
  DONE

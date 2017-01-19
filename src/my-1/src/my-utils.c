@@ -2072,18 +2072,21 @@ is_readable_gfile( GFile *file )
  * @make_lower: whether to force the result to lowercase.
  *
  * Returns: the extension of the URI as a newly allocated string which
- * should be #g_free() by the caller.
+ * should be #g_free() by the caller (e.g. ".gz")
  */
 gchar *
 my_utils_uri_get_extension( const gchar *uri, gboolean make_lower )
 {
+	GRegex *regex;
 	gchar *extension, *reverse;
 
 	extension = NULL;
 
 	if( my_strlen( uri )){
 		reverse = g_utf8_strreverse( uri, -1 );
-		extension = my_utils_str_replace( reverse, "\\..*$", "." );
+		regex = g_regex_new( "\\..*$", 0, 0, NULL );
+		extension = g_regex_replace( regex, reverse, -1, 0, ".", 0, NULL );
+		g_regex_unref( regex );
 		g_free( reverse );
 		reverse = g_utf8_strreverse( extension, -1 );
 		g_free( extension );

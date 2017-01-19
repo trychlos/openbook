@@ -31,13 +31,14 @@
 #include "my/my-isettings.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 
-#include "ofa-mysql-dossier-editor.h"
-#include "ofa-mysql-dossier-meta.h"
-#include "ofa-mysql-editor-enter.h"
-#include "ofa-mysql-exercice-meta.h"
+#include "mysql/ofa-mysql-dossier-editor.h"
+#include "mysql/ofa-mysql-dossier-meta.h"
+#include "mysql/ofa-mysql-editor-enter.h"
+#include "mysql/ofa-mysql-exercice-meta.h"
 
 /* priv instance data
  */
@@ -63,6 +64,7 @@ static void                idbdossier_meta_iface_init( ofaIDBDossierMetaInterfac
 static guint               idbdossier_meta_get_interface_version( void );
 static void                idbdossier_meta_set_from_settings( ofaIDBDossierMeta *instance );
 static void                idbdossier_meta_set_from_editor( ofaIDBDossierMeta *instance, ofaIDBDossierEditor *editor );
+static ofaIDBConnect      *idbdossier_meta_new_connect( ofaIDBDossierMeta *instance );
 static ofaIDBExerciceMeta *idbdossier_meta_new_period( ofaIDBDossierMeta *instance );
 static void                idbdossier_meta_dump( const ofaIDBDossierMeta *instance );
 
@@ -385,6 +387,7 @@ idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface )
 	iface->get_interface_version = idbdossier_meta_get_interface_version;
 	iface->set_from_settings = idbdossier_meta_set_from_settings;
 	iface->set_from_editor = idbdossier_meta_set_from_editor;
+	iface->new_connect = idbdossier_meta_new_connect;
 	iface->new_period = idbdossier_meta_new_period;
 	iface->dump = idbdossier_meta_dump;
 }
@@ -434,6 +437,19 @@ idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, ofaIDBDossierEditor *e
 	priv->root_account = g_strdup( ofa_mysql_dossier_editor_get_remembered_account( OFA_MYSQL_DOSSIER_EDITOR( editor )));
 
 	write_settings( OFA_MYSQL_DOSSIER_META( meta ));
+}
+
+/*
+ * instanciates a new ofaIDBConnect object
+ */
+static ofaIDBConnect *
+idbdossier_meta_new_connect( ofaIDBDossierMeta *instance )
+{
+	ofaMysqlConnect *connect;
+
+	connect = ofa_mysql_connect_new();
+
+	return( OFA_IDBCONNECT( connect ));
 }
 
 /*

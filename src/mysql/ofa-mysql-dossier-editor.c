@@ -249,7 +249,6 @@ changed_composite( ofaMysqlDossierEditor *self )
 	priv = ofa_mysql_dossier_editor_get_instance_private( self );
 
 	ofa_mysql_connect_close( priv->connect );
-	ofa_mysql_root_bin_set_valid( priv->root_bin, FALSE );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -275,8 +274,8 @@ check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr )
 	if( my_strlen( password )){
 		ok = ofa_mysql_connect_open_with_details( priv->connect,
 					ofa_mysql_dossier_bin_get_host( priv->dossier_bin ),
-					ofa_mysql_dossier_bin_get_socket( priv->dossier_bin ),
 					ofa_mysql_dossier_bin_get_port( priv->dossier_bin ),
+					ofa_mysql_dossier_bin_get_socket( priv->dossier_bin ),
 					NULL,													// database
 					ofa_mysql_root_bin_get_account( priv->root_bin ),
 					password );
@@ -456,9 +455,11 @@ idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDB
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	ofa_idbconnect_set_account( OFA_IDBCONNECT( priv->connect ), ofa_mysql_root_bin_get_account( priv->root_bin ));
-	ofa_idbconnect_set_password( OFA_IDBCONNECT( priv->connect ), ofa_mysql_root_bin_get_password( priv->root_bin ));
-	ofa_idbconnect_set_dossier_meta( OFA_IDBCONNECT( priv->connect ), dossier_meta );
+	ofa_idbconnect_set_dossier_meta(
+			OFA_IDBCONNECT( priv->connect ), dossier_meta );
+	ofa_idbconnect_set_account(
+			OFA_IDBCONNECT( priv->connect ),
+			ofa_mysql_root_bin_get_account( priv->root_bin ), ofa_mysql_root_bin_get_password( priv->root_bin ));
 
 	return( OFA_IDBCONNECT( priv->connect ));
 }

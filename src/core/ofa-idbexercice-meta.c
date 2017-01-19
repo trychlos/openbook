@@ -633,20 +633,26 @@ ofa_idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceM
 	static const gchar *thisfn = "ofa_idbexercice_meta_compare";
 	gint cmp;
 	const GDate *a_begin, *a_end, *b_begin, *b_end;
+	gboolean a_status, b_status;
 
 	cmp = 0;
 
 	if( a ){
 		a_begin = ofa_idbexercice_meta_get_begin_date( a );
 		a_end = ofa_idbexercice_meta_get_end_date( a );
+		a_status = ofa_idbexercice_meta_get_current( a );
 
 		if( b ){
 			b_begin = ofa_idbexercice_meta_get_begin_date( b );
 			b_end = ofa_idbexercice_meta_get_end_date( b );
+			b_status = ofa_idbexercice_meta_get_current( b );
 
 			cmp = my_date_compare_ex( a_begin, b_begin, TRUE );
 			if( cmp == 0 ){
 				cmp = my_date_compare_ex( a_end, b_end, FALSE );
+			}
+			if( cmp == 0 ){
+				cmp = ( a_status == b_status ? 0 : ( a_status ? +1 : -1 ));
 			}
 			if( cmp == 0 ){
 				if( OFA_IDBEXERCICE_META_GET_INTERFACE( a )->compare ){

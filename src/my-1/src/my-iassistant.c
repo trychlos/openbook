@@ -56,7 +56,7 @@ typedef struct {
 	 */
 	gboolean             escape_key_pressed;
 }
-	sIAssistantInstance;
+	sInstance;
 
 /* a data structure set against each #GtkWidget page
  */
@@ -64,25 +64,25 @@ typedef struct {
 	gint                 page_num;
 	gboolean             initialized;
 }
-	sIAssistantPage;
+	sPage;
 
 static GType                register_type( void );
 static void                 interface_base_init( myIAssistantInterface *klass );
 static void                 interface_base_finalize( myIAssistantInterface *klass );
-static void                 do_setup_once( myIAssistant *instance, sIAssistantInstance *sdata );
+static void                 do_setup_once( myIAssistant *instance, sInstance *sdata );
 static void                 on_prepare( myIAssistant *instance, GtkWidget *page, void *empty );
-static void                 do_page_init( myIAssistant *instance, GtkWidget *page, sIAssistantInstance *inst_data, sIAssistantPage *page_data );
-static void                 do_page_display( myIAssistant *instance, GtkWidget *page, sIAssistantInstance *inst_data, sIAssistantPage *page_data );
-static void                 do_page_forward( myIAssistant *instance, GtkWidget *page, sIAssistantInstance *inst_data );
+static void                 do_page_init( myIAssistant *instance, GtkWidget *page, sInstance *inst_data, sPage *page_data );
+static void                 do_page_display( myIAssistant *instance, GtkWidget *page, sInstance *inst_data, sPage *page_data );
+static void                 do_page_forward( myIAssistant *instance, GtkWidget *page, sInstance *inst_data );
 static void                 on_cancel( myIAssistant *instance, void *empty );
 static void                 on_close( myIAssistant *instance, void *empty );
 static gboolean             on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, myIAssistant *instance );
 static gboolean             is_willing_to_quit( myIAssistant *instance, guint keyval );
 static void                 do_close( myIAssistant *instance );
-static sIAssistantInstance *get_iassistant_instance_data( myIAssistant *instance );
-static void                 on_iassistant_finalized( sIAssistantInstance *sdata, gpointer finalized_iassistant );
-static sIAssistantPage     *get_iassistant_page_data( const myIAssistant *instance, GtkWidget *page );
-static void                 on_page_finalized( sIAssistantPage *sdata, gpointer finalized_page );
+static sInstance *get_instance_data( myIAssistant *instance );
+static void                 on_instance_finalized( sInstance *sdata, gpointer finalized_iassistant );
+static sPage     *get_page_data( const myIAssistant *instance, GtkWidget *page );
+static void                 on_page_finalized( sPage *sdata, gpointer finalized_page );
 
 /**
  * my_iassistant_get_type:
@@ -223,11 +223,11 @@ my_iassistant_get_interface_version( GType type )
 void
 my_iassistant_set_callbacks( myIAssistant *instance, const ofsIAssistant *cbs )
 {
-	sIAssistantInstance *inst_data;
+	sInstance *inst_data;
 
 	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
 
-	inst_data = get_iassistant_instance_data( instance );
+	inst_data = get_instance_data( instance );
 
 	inst_data->cbs = cbs;
 }
@@ -236,7 +236,7 @@ my_iassistant_set_callbacks( myIAssistant *instance, const ofsIAssistant *cbs )
  * called when the sIAssistant is first initialized
  */
 static void
-do_setup_once( myIAssistant *instance, sIAssistantInstance *sdata )
+do_setup_once( myIAssistant *instance, sInstance *sdata )
 {
 	/* GtkAssistant signal */
 	g_signal_connect( instance, "prepare", G_CALLBACK( on_prepare ), NULL );
@@ -262,8 +262,8 @@ static void
 on_prepare( myIAssistant *instance, GtkWidget *page, void *empty )
 {
 	static const gchar *thisfn = "my_iassistant_on_prepare";
-	sIAssistantInstance *inst_data;
-	sIAssistantPage *page_data;
+	sInstance *inst_data;
+	sPage *page_data;
 
 	g_debug( "%s: instance=%p, page=%p, empty=%p",
 			thisfn, ( void * ) instance, ( void * ) page, ( void * ) empty );
@@ -271,10 +271,10 @@ on_prepare( myIAssistant *instance, GtkWidget *page, void *empty )
 	g_return_if_fail( instance && GTK_IS_ASSISTANT( instance ));
 	g_return_if_fail( page && GTK_IS_WIDGET( page ));
 
-	inst_data = get_iassistant_instance_data( instance );
+	inst_data = get_instance_data( instance );
 	g_return_if_fail( inst_data );
 
-	page_data = get_iassistant_page_data( instance, page );
+	page_data = get_page_data( instance, page );
 	g_return_if_fail( page_data );
 
 	inst_data->cur_page_widget = page;
@@ -295,7 +295,7 @@ on_prepare( myIAssistant *instance, GtkWidget *page, void *empty )
 }
 
 static void
-do_page_init( myIAssistant *instance, GtkWidget *page, sIAssistantInstance *inst_data, sIAssistantPage *page_data )
+do_page_init( myIAssistant *instance, GtkWidget *page, sInstance *inst_data, sPage *page_data )
 {
 	static const gchar *thisfn = "my_iassistant_do_page_init";
 	gint i;
@@ -317,7 +317,7 @@ do_page_init( myIAssistant *instance, GtkWidget *page, sIAssistantInstance *inst
 }
 
 static void
-do_page_display( myIAssistant *instance, GtkWidget *page, sIAssistantInstance *inst_data, sIAssistantPage *page_data )
+do_page_display( myIAssistant *instance, GtkWidget *page, sInstance *inst_data, sPage *page_data )
 {
 	static const gchar *thisfn = "my_iassistant_do_page_display";
 	gint i;
@@ -341,13 +341,13 @@ do_page_display( myIAssistant *instance, GtkWidget *page, sIAssistantInstance *i
 }
 
 static void
-do_page_forward( myIAssistant *instance, GtkWidget *page, sIAssistantInstance *inst_data )
+do_page_forward( myIAssistant *instance, GtkWidget *page, sInstance *inst_data )
 {
 	static const gchar *thisfn = "my_iassistant_do_page_forward";
-	sIAssistantPage *page_data;
+	sPage *page_data;
 	gint i;
 
-	page_data = get_iassistant_page_data( instance, page );
+	page_data = get_page_data( instance, page );
 	g_return_if_fail( page_data );
 
 	g_debug( "%s: instance=%p, page=%p, inst_data=%p, page_data=%p, page_num=%d",
@@ -454,11 +454,11 @@ do_close( myIAssistant *instance )
 gboolean
 my_iassistant_is_page_initialized( const myIAssistant *instance, GtkWidget *page )
 {
-	sIAssistantPage *page_data;
+	sPage *page_data;
 
 	g_return_val_if_fail( instance && MY_IS_IASSISTANT( instance ), FALSE );
 
-	page_data = get_iassistant_page_data( instance, page );
+	page_data = get_page_data( instance, page );
 	g_return_val_if_fail( page_data, FALSE );
 
 	return( page_data->initialized );
@@ -475,11 +475,11 @@ my_iassistant_is_page_initialized( const myIAssistant *instance, GtkWidget *page
 void
 my_iassistant_set_page_initialized( myIAssistant *instance, GtkWidget *page, gboolean initialized )
 {
-	sIAssistantPage *page_data;
+	sPage *page_data;
 
 	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
 
-	page_data = get_iassistant_page_data( instance, page );
+	page_data = get_page_data( instance, page );
 	g_return_if_fail( page_data );
 
 	page_data->initialized = initialized;
@@ -496,11 +496,11 @@ void
 my_iassistant_set_current_page_complete( myIAssistant *instance, gboolean complete )
 {
 	static const gchar *thisfn = "my_iassistant_set_current_page_complete";
-	sIAssistantInstance *inst_data;
+	sInstance *inst_data;
 
 	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
 
-	inst_data = get_iassistant_instance_data( instance );
+	inst_data = get_instance_data( instance );
 	g_return_if_fail( inst_data );
 
 	if( inst_data->cur_page_widget ){
@@ -522,11 +522,11 @@ my_iassistant_set_current_page_complete( myIAssistant *instance, gboolean comple
 void
 my_iassistant_set_current_page_type( myIAssistant *instance, GtkAssistantPageType type )
 {
-	sIAssistantInstance *inst_data;
+	sInstance *inst_data;
 
 	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
 
-	inst_data = get_iassistant_instance_data( instance );
+	inst_data = get_instance_data( instance );
 	g_return_if_fail( inst_data );
 
 	if( inst_data->cur_page_widget ){
@@ -535,17 +535,17 @@ my_iassistant_set_current_page_type( myIAssistant *instance, GtkAssistantPageTyp
 	}
 }
 
-static sIAssistantInstance *
-get_iassistant_instance_data( myIAssistant *instance )
+static sInstance *
+get_instance_data( myIAssistant *instance )
 {
-	sIAssistantInstance *sdata;
+	sInstance *sdata;
 
-	sdata = ( sIAssistantInstance * ) g_object_get_data( G_OBJECT( instance ), IASSISTANT_INSTANCE_DATA );
+	sdata = ( sInstance * ) g_object_get_data( G_OBJECT( instance ), IASSISTANT_INSTANCE_DATA );
 
 	if( !sdata ){
-		sdata = g_new0( sIAssistantInstance, 1 );
+		sdata = g_new0( sInstance, 1 );
 		g_object_set_data( G_OBJECT( instance ), IASSISTANT_INSTANCE_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_iassistant_finalized, sdata );
+		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
 		do_setup_once( instance, sdata );
 	}
 
@@ -553,9 +553,9 @@ get_iassistant_instance_data( myIAssistant *instance )
 }
 
 static void
-on_iassistant_finalized( sIAssistantInstance *sdata, gpointer finalized_iassistant )
+on_instance_finalized( sInstance *sdata, gpointer finalized_iassistant )
 {
-	static const gchar *thisfn = "my_iassistant_on_iassistant_finalized";
+	static const gchar *thisfn = "my_iassistant_on_instance_finalized";
 
 	g_debug( "%s: sdata=%p, finalized_iassistant=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_iassistant );
@@ -563,15 +563,15 @@ on_iassistant_finalized( sIAssistantInstance *sdata, gpointer finalized_iassista
 	g_free( sdata );
 }
 
-static sIAssistantPage *
-get_iassistant_page_data( const myIAssistant *instance, GtkWidget *page )
+static sPage *
+get_page_data( const myIAssistant *instance, GtkWidget *page )
 {
-	sIAssistantPage *sdata;
+	sPage *sdata;
 
-	sdata = ( sIAssistantPage * ) g_object_get_data( G_OBJECT( page ), IASSISTANT_PAGE_DATA );
+	sdata = ( sPage * ) g_object_get_data( G_OBJECT( page ), IASSISTANT_PAGE_DATA );
 
 	if( !sdata ){
-		sdata = g_new0( sIAssistantPage, 1 );
+		sdata = g_new0( sPage, 1 );
 		sdata->initialized = FALSE;
 		sdata->page_num = gtk_assistant_get_current_page( GTK_ASSISTANT( instance ));
 		g_object_set_data( G_OBJECT( page ), IASSISTANT_PAGE_DATA, sdata );
@@ -582,7 +582,7 @@ get_iassistant_page_data( const myIAssistant *instance, GtkWidget *page )
 }
 
 static void
-on_page_finalized( sIAssistantPage *sdata, gpointer finalized_page )
+on_page_finalized( sPage *sdata, gpointer finalized_page )
 {
 	static const gchar *thisfn = "my_iassistant_on_page_finalized";
 

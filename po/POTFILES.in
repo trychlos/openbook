@@ -17,9 +17,10 @@ src/core/ofa-preferences.ui
 src/core/ofa-render-page.ui
 src/core/ofa-stream-format-bin.ui
 src/core/ofa-stream-format-disp.ui
+src/mysql/ofa-mysql-about.ui
+src/mysql/ofa-mysql-connect-display.ui
 src/mysql/ofa-mysql-dossier-bin.ui
 src/mysql/ofa-mysql-dossier-editor.ui
-src/mysql/ofa-mysql-editor-display.ui
 src/mysql/ofa-mysql-editor-enter.ui
 src/mysql/ofa-mysql-exercice-bin.ui
 src/mysql/ofa-mysql-exercice-editor.ui

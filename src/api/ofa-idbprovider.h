@@ -62,7 +62,7 @@
 #include "ofa-idbdossier-editor-def.h"
 #include "ofa-idbeditor.h"
 #include "ofa-idbprovider-def.h"
-#include "ofa-idbsuperuser.h"
+#include "ofa-idbsuperuser-def.h"
 
 G_BEGIN_DECLS
 
@@ -81,7 +81,7 @@ typedef struct _ofaIDBProviderInterface           ofaIDBProviderInterface;
  * @get_interface_version: [should]: returns the implemented version number.
  * @new_dossier_meta: [should]: returns a new ofaIDBDossierMeta object.
  * @new_dossier_editor: [should]: returns a new ofaIDBDossierEditor object.
- * @new_connect: [should]: returns a new ofaIDBConnect object.
+ * @new_superuser_bin: [should]: returns a new ofaIDBSuperuser widget.
  * @new_editor: [should]: returns a new ofaIDBEditor object.
  *
  * This defines the interface that an #ofaIDBProvider should implement.
@@ -130,26 +130,6 @@ struct _ofaIDBProviderInterface {
 	ofaIDBDossierEditor *  ( *new_dossier_editor )     ( ofaIDBProvider *instance,
 															const gchar *settings_prefix,
 															guint rule );
-
-	/**
-	 * new_connect:
-	 * @instance: this #ofaIDBProvider instance.
-	 * @account: the account of the connection.
-	 * @password: the password of the connection.
-	 * @dossier_meta: the #ofaIDBDossierMeta object.
-	 * @exercice_meta: [allow-none]: the #ofaIDBEXerciceMeta object;
-	 *  if %NULL, the connection is established at server level.
-	 *
-	 * Returns: a newly defined #ofaIDBConnect object, or %NULL if the
-	 * connection could not be established.
-	 *
-	 * Since: version 1
-	 */
-	ofaIDBConnect *        ( *new_connect )            ( ofaIDBProvider *instance,
-															const gchar *account,
-															const gchar *password,
-															ofaIDBDossierMeta *dossier_meta,
-															ofaIDBExerciceMeta *exercice_meta );
 
 	/**
 	 * new_superuser_bin:
@@ -212,12 +192,6 @@ ofaIDBDossierMeta    *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider
 ofaIDBDossierEditor  *ofa_idbprovider_new_dossier_editor        ( ofaIDBProvider *provider,
 																		const gchar *settings_prefix,
 																		guint rule );
-
-ofaIDBConnect        *ofa_idbprovider_new_connect               ( ofaIDBProvider *provider,
-																		const gchar *account,
-																		const gchar *password,
-																		ofaIDBDossierMeta *dossier_meta,
-																		ofaIDBExerciceMeta *exercice_meta );
 
 ofaIDBSuperuser      *ofa_idbprovider_new_superuser_bin         ( ofaIDBProvider *provider,
 																		guint rule );

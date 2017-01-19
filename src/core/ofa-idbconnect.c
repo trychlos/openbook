@@ -46,14 +46,28 @@
 /* some data attached to each IDBConnect instance
  * we store here the data provided by the application
  * which do not depend of a specific implementation
+ *
+ * ofaIDBConnect does not maintain its own reference to the ofaIDBProvider
+ * instance; see ofaIDBDossierMeta.
  */
 typedef struct {
-	gchar              *account;
-	gchar              *password;
+
+	/* initialization
+	 */
 	ofaIDBDossierMeta  *dossier_meta;
 	ofaIDBExerciceMeta *exercice_meta;
+
+	/* connection account
+	 */
+	gchar              *account;
+	gchar              *password;
 }
 	sIDBConnect;
+
+enum {
+	CONNECT_WITH_ACCOUNT = 1,
+	CONNECT_WITH_SU
+};
 
 /* a data structure used to manage async messages
  * and data compression on backup
@@ -231,7 +245,7 @@ ofa_idbconnect_get_interface_version( GType type )
  * ofa_idbconnect_get_account:
  * @connect: this #ofaIDBConnect instance.
  *
- * Returns: the account used to open the connection.
+ * Returns: the account of the connection.
  */
 const gchar *
 ofa_idbconnect_get_account( const ofaIDBConnect *connect )
@@ -242,35 +256,14 @@ ofa_idbconnect_get_account( const ofaIDBConnect *connect )
 
 	sdata = get_instance_data( connect );
 
-	return( sdata->account );
-}
-
-/**
- * ofa_idbconnect_set_account:
- * @connect: this #ofaIDBConnect instance.
- * @account: the account used to open the connection.
- *
- * Set the @account.
- */
-void
-ofa_idbconnect_set_account( ofaIDBConnect *connect, const gchar *account )
-{
-	sIDBConnect *sdata;
-
-	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
-	g_return_if_fail( my_strlen( account ));
-
-	sdata = get_instance_data( connect );
-
-	g_free( sdata->account );
-	sdata->account = g_strdup( account );
+	return(( const gchar * ) sdata->account );
 }
 
 /**
  * ofa_idbconnect_get_password:
  * @connect: this #ofaIDBConnect instance.
  *
- * Returns: the password used to open the connection.
+ * Returns: the password of the connection.
  */
 const gchar *
 ofa_idbconnect_get_password( const ofaIDBConnect *connect )
@@ -281,23 +274,33 @@ ofa_idbconnect_get_password( const ofaIDBConnect *connect )
 
 	sdata = get_instance_data( connect );
 
-	return( sdata->password );
+	return(( const gchar * ) sdata->password );
 }
 
 /**
- * ofa_idbconnect_set_password:
+ * ofa_idbconnect_set_account:
  * @connect: this #ofaIDBConnect instance.
- * @password: the password used to open the connection.
+ * @account: the account used to open the connection.
+ * @password: the password.
+ *
+ * Set the @account and the @password.
  */
 void
-ofa_idbconnect_set_password( ofaIDBConnect *connect, const gchar *password )
+ofa_idbconnect_set_account( ofaIDBConnect *connect, const gchar *account, const gchar *password )
 {
+	static const gchar *thisfn = "ofa_idbconnect_set_account";
 	sIDBConnect *sdata;
 
+	g_debug( "%s: connect=%p, account=%s, password=%s",
+			thisfn, ( void * ) connect, account, password ? "******":"(null)" );
+
 	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
-	g_return_if_fail( my_strlen( password ));
+	g_return_if_fail( my_strlen( account ));
 
 	sdata = get_instance_data( connect );
+
+	g_free( sdata->account );
+	sdata->account = g_strdup( account );
 
 	g_free( sdata->password );
 	sdata->password = g_strdup( password );
@@ -394,91 +397,120 @@ ofa_idbconnect_set_exercice_meta( ofaIDBConnect *connect, ofaIDBExerciceMeta *ex
 }
 
 /**
- * ofa_idbconnect_open_with_editor:
+ * ofa_idbconnect_open_with_account:
  * @connect: this #ofaIDBConnect instance.
- * @editor: a #ofaIDBDossierEditor object which handles needed connection
- *  informations.
+ * @account: the user account identifier.
+ * @password: the user account password.
  *
- * Establishes a (root) connection to the DBMS at server level.
+ * Establish a connection for the specified user account.
  *
  * Returns: %TRUE if the connection has been successfully established,
  * %FALSE else.
  */
 gboolean
-ofa_idbconnect_open_with_editor( ofaIDBConnect *connect, const ofaIDBDossierEditor *editor )
+ofa_idbconnect_open_with_account( ofaIDBConnect *connect, const gchar *account, const gchar *password )
 {
-	static const gchar *thisfn = "ofa_idbconnect_open_with_editor";
+	static const gchar *thisfn = "ofa_idbconnect_open_with_account";
 	gboolean ok;
 
-	g_debug( "%s: connect=%p, editor=%p",
-			thisfn, ( void * ) connect, ( void * ) editor );
+	g_debug( "%s: connect=%p, account=%s, password=%s",
+			thisfn, ( void * ) connect, account, password ? "******":"(null)" );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), FALSE );
 
-	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_editor ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_editor( connect, editor );
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_account ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_account( connect, account, password );
+		if( ok ){
+			ofa_idbconnect_set_account( connect, account, password );
+		}
 		return( ok );
 	}
 
-	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'open_with_editor()' method",
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'open_with_account()' method",
 			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( FALSE );
 }
 
 /**
- * ofa_idbconnect_open_with_meta:
+ * ofa_idbconnect_open_with_superuser:
  * @connect: this #ofaIDBConnect instance.
- * @account: the user account.
- * @password: [allow-none]: the user password.
- * @dossier_meta: the #ofaIDBDossierMeta which identifies the dossier.
- * @period: [allow-none]: the #ofaIDBExerciceMeta which identifies the
- *  exercice, or %NULL to establish a connection at server-level
- *  to the host of @meta.
+ * @su: a #ofaIDBSuperuser credentials object.
  *
- * Establish a connection to the specified dossier and exercice.
+ * Establish a connection for the specified credentials.
  *
  * Returns: %TRUE if the connection has been successfully established,
  * %FALSE else.
  */
 gboolean
-ofa_idbconnect_open_with_meta( ofaIDBConnect *connect, const gchar *account, const gchar *password, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period )
+ofa_idbconnect_open_with_superuser( ofaIDBConnect *connect, ofaIDBSuperuser *su )
 {
-	static const gchar *thisfn = "ofa_idbconnect_open_with_meta";
+	static const gchar *thisfn = "ofa_idbconnect_open_with_superuser";
 	gboolean ok;
 
-	g_debug( "%s: connect=%p, account=%s, password=%s, dossier_meta=%p (%s), period=%p",
-			thisfn, ( void * ) connect,
-			account, password ? "******":password,
-			( void * ) dossier_meta, G_OBJECT_TYPE_NAME( dossier_meta ), ( void * ) period );
+	g_debug( "%s: connect=%p, su=%p",
+			thisfn, ( void * ) connect, ( void * ) su );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), FALSE );
-	g_return_val_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ), FALSE );
 
-	if( 1 ){
-		ofa_idbdossier_meta_dump( dossier_meta );
-		if( period ){
-			ofa_idbexercice_meta_dump( period );
-		}
-	}
-
-	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_meta ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_meta( connect, account, password, dossier_meta, period );
-#if 0
-		if( ok ){
-			ofa_idbconnect_set_account( connect, account );
-			ofa_idbconnect_set_password( connect, password );
-			ofa_idbconnect_set_dossier_meta( connect, dossier_meta );
-			ofa_idbconnect_set_exercice_meta( connect, period );
-		}
-#endif
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_superuser ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->open_with_superuser( connect, su );
 		return( ok );
 	}
 
-	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'open_with_meta()' method",
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'open_with_superuser()' method",
 			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( FALSE );
+}
+
+/**
+ * ofa_idbconnect_is_opened:
+ * @connect: this #ofaIDBConnect instance.
+ *
+ * Returns: %TRUE if the connection is opened, %FALSE else.
+ */
+gboolean
+ofa_idbconnect_is_opened( const ofaIDBConnect *connect )
+{
+	static const gchar *thisfn = "ofa_idbconnect_is_opened";
+	gboolean ok;
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->is_opened ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->is_opened( connect );
+		return( ok );
+	}
+
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'is_opened()' method",
+			thisfn, G_OBJECT_TYPE_NAME( connect ));
+	return( FALSE );
+}
+
+/**
+ * ofa_idbconnect_get_display:
+ * @connect: this #ofaIDBConnect instance.
+ * @style: [allow-none]: the display style name.
+ *
+ * Returns: a #GtkWidget which displays connection informations.
+ */
+GtkWidget *
+ofa_idbconnect_get_display( ofaIDBConnect *connect, const gchar *style )
+{
+	static const gchar *thisfn = "ofa_idbconnect_get_display";
+	GtkWidget *widget;
+
+	g_debug( "%s: connect=%p, style=%s", thisfn, ( void * ) connect, style );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->get_display ){
+		widget = OFA_IDBCONNECT_GET_INTERFACE( connect )->get_display( connect, style );
+		return( widget );
+	}
+
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'get_display()' method",
+			thisfn, G_OBJECT_TYPE_NAME( connect ));
+	return( NULL );
 }
 
 /**
@@ -871,29 +903,31 @@ ofa_idbconnect_backup_db( const ofaIDBConnect *connect,
 
 		file = g_file_new_for_uri( uri );
 		sope = g_new0( sBackup, 1 );
-
-		ok = backup_create_archive( connect, file, sope ) &&
-				backup_write_headers( connect, comment, sope ) &&
-				backup_create_entry( connect, file, sope );
+		sope->msg_cb = msg_cb;
+		sope->user_data = user_data;
 
 		/* ask the DBMS plugin to provide its datas and messages streams */
 		/* define intermediate streams */
 
-		sope->msg_cb = msg_cb;
-		sope->user_data = user_data;
-
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->backup_db(
-							connect, ( ofaMsgCb ) backup_msg_cb, ( ofaDataCb ) backup_data_cb, sope );
+		ok = backup_create_archive( connect, file, sope ) &&
+				backup_write_headers( connect, comment, sope ) &&
+				backup_create_entry( connect, file, sope ) &&
+				OFA_IDBCONNECT_GET_INTERFACE( connect )->backup_db(
+							connect, uri, ( ofaMsgCb ) backup_msg_cb, ( ofaDataCb ) backup_data_cb, sope );
 
 		/* end of backup stream */
-		g_debug( "%s: total_written=%lu", thisfn, sope->total_written );
-	    archive_write_finish_entry( sope->archive );
-
 	    /* release DBMS backup resources */
-	    /* g_debug( "%s: closing streams and releasing resources", thisfn ); */
-		archive_write_close( sope->archive );
-		archive_entry_free( sope->entry );
-		archive_write_free( sope->archive );
+		g_debug( "%s: total_written=%lu", thisfn, sope->total_written );
+		if( sope->archive ){
+			archive_write_finish_entry( sope->archive );
+			archive_write_close( sope->archive );
+		}
+		if( sope->entry ){
+			archive_entry_free( sope->entry );
+		}
+		if( sope->archive ){
+			archive_write_free( sope->archive );
+		}
 		g_free( sope );
 		g_object_unref( file );
 
@@ -912,14 +946,20 @@ static gboolean
 backup_create_archive( const ofaIDBConnect *self, GFile *file, sBackup *sope )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_create_archive";
-	gchar *pathname, *filename;
+	gchar *pathname, *extension, *filename;
 
 	pathname = g_file_get_path( file );
-	filename = my_utils_str_replace( pathname, "\\..*$", ".zip" );
-	g_debug( "%s: filename=%s", thisfn, filename );
+	extension = my_utils_uri_get_extension( pathname, TRUE );
+	if( my_collate( extension, ".zip" )){
+		filename = g_strdup_printf( "%s.zip", pathname );
+	} else {
+		filename = g_strdup( pathname );
+	}
+	g_debug( "%s: extension=%s, filename=%s", thisfn, extension, filename );
 
 	sope->archive = backup_new_archive( filename );
 
+	g_free( extension );
 	g_free( filename );
 	g_free( pathname );
 
@@ -1075,7 +1115,6 @@ ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 	static const gchar *thisfn = "ofa_idbconnect_restore_db";
 	sIDBConnect *sdata;
 	ofaIDBExerciceMeta *target_period;
-	ofaIDBProvider *provider;
 	ofaIDBConnect *target_connect;
 	gboolean ok;
 	GFile *file;
@@ -1114,10 +1153,10 @@ ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 						connect, target_period, uri, format, ( ofaMsgCb ) restore_msg_cb, ( ofaDataCb ) restore_data_cb, sope );
 
 		if( ok ){
-			provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
-			target_connect = ofa_idbprovider_new_connect(
-					provider, sdata->account, sdata->password, sdata->dossier_meta, target_period );
-			set_admin_credentials( target_connect, adm_account, adm_password, NULL );
+			target_connect = ofa_idbdossier_meta_new_connect( sdata->dossier_meta, target_period );
+			if( ofa_idbconnect_open_with_account( target_connect, sdata->account, sdata->password )){
+				set_admin_credentials( target_connect, adm_account, adm_password, NULL );
+			}
 			g_object_unref( target_connect );
 		}
 
@@ -1260,7 +1299,6 @@ ofa_idbconnect_period_new( const ofaIDBConnect *connect, const gchar *adm_accoun
 	sIDBConnect *sdata;
 	gboolean ok;
 	GString *query;
-	ofaIDBProvider *provider;
 	ofaIDBExerciceMeta *period;
 	ofaIDBConnect *db_connection;
 
@@ -1284,16 +1322,14 @@ ofa_idbconnect_period_new( const ofaIDBConnect *connect, const gchar *adm_accoun
 
 	db_connection = NULL;
 	period = NULL;
-	provider = NULL;
 	query = g_string_new( "" );
 
 	/* define the dossier administrative account
 	 * requires another superuser connection, on the exercice at this time */
 	if( ok ){
 		period = ofa_idbdossier_meta_get_current_period( sdata->dossier_meta );
-		provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
-		db_connection = ofa_idbprovider_new_connect( provider, sdata->account, sdata->password, sdata->dossier_meta, period );
-		ok = ( db_connection != NULL );
+		db_connection = ofa_idbdossier_meta_new_connect( sdata->dossier_meta, period );
+		ok = ofa_idbconnect_open_with_account( db_connection, sdata->account, sdata->password );
 	}
 	if( ok ){
 		/* initialize the newly created database */

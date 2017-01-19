@@ -72,6 +72,7 @@ typedef struct _ofaIDBDossierMetaInterface            ofaIDBDossierMetaInterface
  *                         interface that the plugin implements.
  * @set_from_settings: [should]: set datas from settings.
  * @set_from_editor: [should]: set datas from ofaIDBEditor.
+ * @new_connect: [should]: returns a new ofaIDBConnect object.
  * @new_period: [should]: instanciates a new #ofaIDBExerciceMeta instance.
  * @delete_period: [should]: deletes a period from dbms and settings.
  * @dump: [should]: dump data.
@@ -121,6 +122,19 @@ struct _ofaIDBDossierMetaInterface {
 	 */
 	void                 ( *set_from_editor )      ( ofaIDBDossierMeta *instance,
 														ofaIDBDossierEditor *editor );
+
+	/**
+	 * new_connect:
+	 * @dossier_meta: this #ofaIDBDossierMeta instance.
+	 *
+	 * Returns: a newly defined #ofaIDBConnect object.
+	 *
+	 * Due to the lack of a user account at this time, the connection
+	 * to the DBMS is known to not be established.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBConnect *      ( *new_connect )           ( ofaIDBDossierMeta *instance );
 
 	/**
 	 * new_exercice_meta:
@@ -203,6 +217,9 @@ void                ofa_idbdossier_meta_set_from_settings         ( ofaIDBDossie
 
 void                ofa_idbdossier_meta_set_from_editor           ( ofaIDBDossierMeta *meta,
 																		ofaIDBDossierEditor *editor );
+
+ofaIDBConnect      *ofa_idbdossier_meta_new_connect               ( ofaIDBDossierMeta *meta,
+																		ofaIDBExerciceMeta *period );
 
 const GList        *ofa_idbdossier_meta_get_periods               ( const ofaIDBDossierMeta *meta );
 

@@ -49,6 +49,7 @@ my_include_HEADERS = \
 	my-igridlist.h										\
 	my-iprogress.h										\
 	my-isettings.h										\
+	my-isizegroup.h										\
 	my-iwindow.h										\
 	my-progress-bar.h									\
 	my-settings.h										\

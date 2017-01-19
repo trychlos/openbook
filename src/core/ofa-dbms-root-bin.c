@@ -407,7 +407,6 @@ static gboolean
 is_valid_composite( ofaDBMSRootBin *self )
 {
 	ofaDBMSRootBinPrivate *priv;
-	ofaIDBProvider *provider;
 	ofaIDBConnect *connect;
 	gboolean ok;
 
@@ -420,12 +419,10 @@ is_valid_composite( ofaDBMSRootBin *self )
 		/* this only works if the dossier is already registered */
 		if( priv->meta ){
 			ok = FALSE;
-			provider = ofa_idbdossier_meta_get_provider( priv->meta );
-			if( provider ){
-				connect = ofa_idbprovider_new_connect( provider, priv->account, priv->password, priv->meta, NULL );
-				ok = ( connect != NULL );
-				g_clear_object( &connect );
-			}
+			//connect = ofa_idbprovider_new_connect( provider, priv->account, priv->password, priv->meta, NULL );
+			connect = ofa_idbdossier_meta_new_connect( priv->meta, NULL );
+			ok = ( connect != NULL );
+			g_object_unref( connect );
 			ofa_dbms_root_bin_set_valid( self, ok );
 		}
 	}

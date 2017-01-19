@@ -22,15 +22,14 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_MYSQL_EDITOR_DISPLAY_H__
-#define __OFA_MYSQL_EDITOR_DISPLAY_H__
+#ifndef __OFA_MYSQL_CONNECT_DISPLAY_H__
+#define __OFA_MYSQL_CONNECT_DISPLAY_H__
 
 /**
  * SECTION: ofa_mysql_idbms
  * @short_description: #ofaMysql class definition.
  *
- * Display the connection informations read for the named dossier
- * from the settings.
+ * Display the connection informations.
  *
  * Development rules:
  * - type:       bin (parent='top')
@@ -41,31 +40,34 @@
 
 #include <gtk/gtk.h>
 
+#include "mysql/ofa-mysql-connect.h"
+
 G_BEGIN_DECLS
 
-#define OFA_TYPE_MYSQL_EDITOR_DISPLAY                ( ofa_mysql_editor_display_get_type())
-#define OFA_MYSQL_EDITOR_DISPLAY( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_EDITOR_DISPLAY, ofaMySQLEditorDisplay ))
-#define OFA_MYSQL_EDITOR_DISPLAY_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_EDITOR_DISPLAY, ofaMySQLEditorDisplayClass ))
-#define OFA_IS_MYSQL_EDITOR_DISPLAY( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_EDITOR_DISPLAY ))
-#define OFA_IS_MYSQL_EDITOR_DISPLAY_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_EDITOR_DISPLAY ))
-#define OFA_MYSQL_EDITOR_DISPLAY_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_EDITOR_DISPLAY, ofaMySQLEditorDisplayClass ))
+#define OFA_TYPE_MYSQL_CONNECT_DISPLAY                ( ofa_mysql_connect_display_get_type())
+#define OFA_MYSQL_CONNECT_DISPLAY( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_CONNECT_DISPLAY, ofaMysqlConnectDisplay ))
+#define OFA_MYSQL_CONNECT_DISPLAY_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_CONNECT_DISPLAY, ofaMysqlConnectDisplayClass ))
+#define OFA_IS_MYSQL_CONNECT_DISPLAY( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_CONNECT_DISPLAY ))
+#define OFA_IS_MYSQL_CONNECT_DISPLAY_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_CONNECT_DISPLAY ))
+#define OFA_MYSQL_CONNECT_DISPLAY_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_CONNECT_DISPLAY, ofaMysqlConnectDisplayClass ))
 
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;
 }
-	ofaMySQLEditorDisplay;
+	ofaMysqlConnectDisplay;
 
 typedef struct {
 	/*< public members >*/
 	GtkBinClass parent;
 }
-	ofaMySQLEditorDisplayClass;
+	ofaMysqlConnectDisplayClass;
 
-GType         ofa_mysql_editor_display_get_type( void ) G_GNUC_CONST;
+GType                   ofa_mysql_connect_display_get_type( void ) G_GNUC_CONST;
 
-GtkWidget    *ofa_mysql_editor_display_new     ( void );
+ofaMysqlConnectDisplay *ofa_mysql_connect_display_new     ( ofaMysqlConnect *connect,
+																const gchar *style );
 
 G_END_DECLS
 
-#endif /* __OFA_MYSQL_EDITOR_DISPLAY_H__ */
+#endif /* __OFA_MYSQL_CONNECT_DISPLAY_H__ */

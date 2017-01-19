@@ -38,6 +38,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-idbsuperuser.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isetter.h"
 
@@ -388,50 +389,6 @@ ofa_idbprovider_new_dossier_editor( ofaIDBProvider *provider, const gchar *setti
 	}
 
 	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_dossier_editor()' method",
-			thisfn, G_OBJECT_TYPE_NAME( provider ));
-	return( NULL );
-}
-
-/**
- * ofa_idbprovider_new_connect:
- * @provider: this #ofaIDBProvider provider.
- * @account: the account of the connection.
- * @password: the password of the connection.
- * @dossier_meta: the #ofaIDBDossierMeta object.
- * @exercice_meta: [allow-none]: the #ofaIDBEXerciceMeta object;
- *  if %NULL, the connection is established at server level.
- *
- * Returns: a newly defined #ofaIDBConnect object, or %NULL if the
- * connection could not be established.
- */
-ofaIDBConnect *
-ofa_idbprovider_new_connect( ofaIDBProvider *provider, const gchar *account, const gchar *password,
-									ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta )
-{
-	static const gchar *thisfn = "ofa_idbprovider_new_connect";
-	ofaIDBConnect *connect;
-
-	g_debug( "%s: provider=%p, account=%s, password=%s, dossier_meta=%p, exercice_meta=%p",
-			thisfn, ( void * ) provider, account, "******", ( void * ) dossier_meta, ( void * ) exercice_meta );
-
-	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
-	g_return_val_if_fail( my_strlen( account ), NULL );
-	g_return_val_if_fail( my_strlen( password ), NULL );
-	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), NULL );
-	g_return_val_if_fail( !exercice_meta || OFA_IS_IDBEXERCICE_META( exercice_meta ), NULL );
-
-	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect ){
-		connect = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect( provider, account, password, dossier_meta, exercice_meta );
-		if( connect ){
-			ofa_idbconnect_set_account( connect, account );
-			ofa_idbconnect_set_password( connect, password );
-			ofa_idbconnect_set_dossier_meta( connect, dossier_meta );
-			ofa_idbconnect_set_exercice_meta( connect, exercice_meta );
-		}
-		return( connect );
-	}
-
-	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_connect()' method",
 			thisfn, G_OBJECT_TYPE_NAME( provider ));
 	return( NULL );
 }

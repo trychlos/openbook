@@ -657,7 +657,6 @@ is_connection_valid( ofaDossierOpen *self, gchar **msg )
 {
 	static const gchar *thisfn = "ofa_dossier_open_is_connection_valid";
 	ofaDossierOpenPrivate *priv;
-	ofaIDBProvider *provider;
 	gboolean valid;
 
 	priv = ofa_dossier_open_get_instance_private( self );
@@ -665,9 +664,8 @@ is_connection_valid( ofaDossierOpen *self, gchar **msg )
 	g_clear_object( &priv->connect );
 	valid = FALSE;
 
-	provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
-	priv->connect = ofa_idbprovider_new_connect( provider, priv->account, priv->password, priv->dossier_meta, priv->exercice_meta );
-	valid = ( priv->connect != NULL );
+	priv->connect = ofa_idbdossier_meta_new_connect( priv->dossier_meta, priv->exercice_meta );
+	valid = ofa_idbconnect_open_with_account( priv->connect, priv->account, priv->password );
 
 	if( msg ){
 		if( valid ){

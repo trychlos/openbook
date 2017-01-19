@@ -38,12 +38,15 @@
  * by a DBMS backend should implement for the needs of the application.
  */
 
+#include <gtk/gtk.h>
+
 #include "ofa-hub-def.h"
 #include "ofa-idbconnect-def.h"
 #include "ofa-idbdossier-meta-def.h"
 #include "ofa-idbdossier-editor-def.h"
 #include "ofa-idbexercice-meta-def.h"
 #include "ofa-idbprovider-def.h"
+#include "ofa-idbsuperuser-def.h"
 
 G_BEGIN_DECLS
 
@@ -60,8 +63,10 @@ typedef struct _ofaIDBConnectInterface           ofaIDBConnectInterface;
 /**
  * ofaIDBConnectInterface:
  * @get_interface_version: [should]: returns the implemented version number.
- * @open_with_editor: [should]: open a connection with ofaIDBEditor informations.
- * @open_with_meta: [should]: open a connection with ofaIDBDossierMeta informations.
+ * @open_with_account: [should]: open a connection with a user account.
+ * @open_with_superuser: [should]: open a connection with super-user credentials.
+ * @is_opened: [should]: tests if a connection is opened.
+ * @get_display: [should]: returns a widget which displays connection infos.
  * @query: [should]: executes an insert/update/delete query.
  * @query_ex: [should]: executes a select query.
  * @get_last_error: [should]: returns the last error.
@@ -92,45 +97,60 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1.
 	 */
-	guint    ( *get_interface_version )( void );
+	guint       ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 	/**
-	 * open_with_editor:
-	 * @instance: this #ofaIDBConnect connection.
-	 * @editor: a #ofaIDBDossierEditor object which handles connection
-	 *  informations.
-	 *
-	 * Establishes a (root) connection to the DBMS at server level.
-	 *
-	 * Returns: %TRUE if the connection has been successfully
-	 * established, %FALSE else.
-	 *
-	 * Since: version 1
-	 */
-	gboolean ( *open_with_editor )     ( ofaIDBConnect *instance,
-											const ofaIDBDossierEditor *editor );
-
-	/**
-	 * open_with_meta:
+	 * open_with_account:
 	 * @instance: this #ofaIDBConnect connection.
 	 * @account: the user account.
-	 * @password: [allow-none]: the user password.
-	 * @dossier_meta: the #ofaIDBDossierMeta which identifies the dossier.
-	 * @exercice_meta: [allow-none]: the #ofaIDBExerciceMeta which
-	 *  identifies the exercice, or %NULL to establish a connection to
-	 *  the server which holds the @dossier_meta dossier.
+	 * @password: the user password.
 	 *
 	 * Returns: %TRUE if the connection has been successfully
 	 * established, %FALSE else.
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *open_with_meta )       ( ofaIDBConnect *instance,
-											const gchar *account,
-											const gchar *password,
-											const ofaIDBDossierMeta *dossier_meta,
-											const ofaIDBExerciceMeta *exercice_meta );
+	gboolean    ( *open_with_account )    ( ofaIDBConnect *instance,
+												const gchar *account,
+												const gchar *password );
+
+	/**
+	 * open_with_superuser:
+	 * @instance: this #ofaIDBConnect connection.
+	 * @su: a #ofaIDBSuperuser object.
+	 *
+	 * Returns: %TRUE if the connection has been successfully
+	 * established, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean    ( *open_with_superuser )  ( ofaIDBConnect *instance,
+												ofaIDBSuperuser *su );
+
+	/**
+	 * is_opened:
+	 * @instance: this #ofaIDBConnect connection.
+	 *
+	 * Returns: %TRUE if the connection is opened, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean    ( *is_opened )            ( const ofaIDBConnect *instance );
+
+	/**
+	 * get_display:
+	 * @instance: the #ofaIDBConnect user connection.
+	 * @style: [allow-none]: the display style name.
+	 *
+	 * Returns: a widget which displays connection informations.
+	 *
+	 * The returned widget may implement the #myISizegroup interface.
+	 *
+	 * Since: version 1
+	 */
+	GtkWidget * ( *get_display )          ( ofaIDBConnect *instance,
+												const gchar *style );
 
 	/**
 	 * query:
@@ -145,8 +165,8 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *query )                ( const ofaIDBConnect *instance,
-											const gchar *query );
+	gboolean    ( *query )                ( const ofaIDBConnect *instance,
+												const gchar *query );
 
 	/**
 	 * query_ex:
@@ -163,9 +183,9 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *query_ex )             ( const ofaIDBConnect *instance,
-											const gchar *query,
-											GSList **result );
+	gboolean    ( *query_ex )             ( const ofaIDBConnect *instance,
+												const gchar *query,
+												GSList **result );
 
 	/**
 	 * get_last_error:
@@ -176,11 +196,12 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gchar *  ( *get_last_error )       ( const ofaIDBConnect *instance );
+	gchar *     ( *get_last_error )       ( const ofaIDBConnect *instance );
 
 	/**
 	 * backup_db:
 	 * @instance: a #ofaIDBConnect user connection on the period.
+	 * @uri: the target uri.
 	 * @msg_cb: [allow-none]: a #ofaMsgCb callback function;
 	 *  the data passed to the callback is expected to be a null-
 	 *  terminated string;
@@ -197,10 +218,11 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *backup_db )            ( const ofaIDBConnect *instance,
-											ofaMsgCb msg_cb,
-											ofaDataCb data_cb,
-											void *user_data );
+	gboolean    ( *backup_db )            ( const ofaIDBConnect *instance,
+												const gchar *uri,
+												ofaMsgCb msg_cb,
+												ofaDataCb data_cb,
+												void *user_data );
 
 	/**
 	 * restore_db:
@@ -225,13 +247,13 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *restore_db )           ( const ofaIDBConnect *instance,
-											const ofaIDBExerciceMeta *period,
-											const gchar *uri,
-											guint format,
-											ofaMsgCb msg_cb,
-											ofaDataCb data_cb,
-											void *user_data );
+	gboolean    ( *restore_db )           ( const ofaIDBConnect *instance,
+												const ofaIDBExerciceMeta *period,
+												const gchar *uri,
+												guint format,
+												ofaMsgCb msg_cb,
+												ofaDataCb data_cb,
+												void *user_data );
 
 	/**
 	 * archive_and_new:
@@ -253,11 +275,11 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *archive_and_new )      ( const ofaIDBConnect *instance,
-											const gchar *root_account,
-											const gchar *root_password,
-											const GDate *begin_next,
-											const GDate *end_next );
+	gboolean    ( *archive_and_new )      ( const ofaIDBConnect *instance,
+												const gchar *root_account,
+												const gchar *root_password,
+												const GDate *begin_next,
+												const GDate *end_next );
 
 	/**
 	 * period_new:
@@ -272,8 +294,8 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *period_new )           ( const ofaIDBConnect *instance,
-											gchar **msgerr );
+	gboolean    ( *period_new )           ( const ofaIDBConnect *instance,
+												gchar **msgerr );
 
 	/**
 	 * grant_user:
@@ -299,11 +321,11 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *grant_user )           ( const ofaIDBConnect *instance,
-											const ofaIDBExerciceMeta *period,
-											const gchar *user_account,
-											const gchar *user_password,
-											gchar **msgerr );
+	gboolean    ( *grant_user )           ( const ofaIDBConnect *instance,
+												const ofaIDBExerciceMeta *period,
+												const gchar *user_account,
+												const gchar *user_password,
+												gchar **msgerr );
 
 	/**
 	 * transaction_start:
@@ -315,7 +337,7 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *transaction_start )    ( const ofaIDBConnect *instance );
+	gboolean    ( *transaction_start )    ( const ofaIDBConnect *instance );
 
 	/**
 	 * transaction_cancel:
@@ -327,7 +349,7 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *transaction_cancel )   ( const ofaIDBConnect *instance );
+	gboolean    ( *transaction_cancel )   ( const ofaIDBConnect *instance );
 
 	/**
 	 * transaction_commit:
@@ -339,7 +361,7 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *transaction_commit )   ( const ofaIDBConnect *instance );
+	gboolean    ( *transaction_commit )   ( const ofaIDBConnect *instance );
 };
 
 /*
@@ -359,12 +381,10 @@ guint               ofa_idbconnect_get_interface_version     ( GType type );
  */
 const gchar        *ofa_idbconnect_get_account              ( const ofaIDBConnect *connect );
 
-void                ofa_idbconnect_set_account              ( ofaIDBConnect *connect,
-																	const gchar *account );
-
 const gchar        *ofa_idbconnect_get_password             ( const ofaIDBConnect *connect );
 
-void                ofa_idbconnect_set_password             ( ofaIDBConnect *connect,
+void                ofa_idbconnect_set_account              ( ofaIDBConnect *connect,
+																	const gchar *account,
 																	const gchar *password );
 
 ofaIDBDossierMeta  *ofa_idbconnect_get_dossier_meta         ( const ofaIDBConnect *connect );
@@ -377,14 +397,17 @@ ofaIDBExerciceMeta *ofa_idbconnect_get_exercice_meta        ( const ofaIDBConnec
 void                ofa_idbconnect_set_exercice_meta        ( ofaIDBConnect *connect,
 																	ofaIDBExerciceMeta *exercice_meta );
 
-gboolean            ofa_idbconnect_open_with_editor         ( ofaIDBConnect *connect,
-																	const ofaIDBDossierEditor *editor );
-
-gboolean            ofa_idbconnect_open_with_meta           ( ofaIDBConnect *connect,
+gboolean            ofa_idbconnect_open_with_account        ( ofaIDBConnect *connect,
 																	const gchar *account,
-																	const gchar *password,
-																	const ofaIDBDossierMeta *dossier_meta,
-																	const ofaIDBExerciceMeta *period );
+																	const gchar *password );
+
+gboolean            ofa_idbconnect_open_with_superuser      ( ofaIDBConnect *connect,
+																	ofaIDBSuperuser *su );
+
+gboolean            ofa_idbconnect_is_opened                ( const ofaIDBConnect *connect );
+
+GtkWidget          *ofa_idbconnect_get_display              ( ofaIDBConnect *connect,
+																	const gchar *style );
 
 gboolean            ofa_idbconnect_query                    ( const ofaIDBConnect *connect,
 																	const gchar *query,
