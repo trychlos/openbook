@@ -96,7 +96,7 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1.
 	 */
-	guint                ( *get_interface_version )( void );
+	guint                  ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 	/**
@@ -108,7 +108,7 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1
 	 */
-	void                 ( *set_from_settings )    ( ofaIDBDossierMeta *instance );
+	void                   ( *set_from_settings )    ( ofaIDBDossierMeta *instance );
 
 	/**
 	 * set_from_editor:
@@ -120,8 +120,8 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1
 	 */
-	void                 ( *set_from_editor )      ( ofaIDBDossierMeta *instance,
-														ofaIDBDossierEditor *editor );
+	void                   ( *set_from_editor )      ( ofaIDBDossierMeta *instance,
+															ofaIDBDossierEditor *editor );
 
 	/**
 	 * new_connect:
@@ -134,7 +134,7 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBConnect *      ( *new_connect )           ( ofaIDBDossierMeta *instance );
+	ofaIDBConnect *        ( *new_connect )          ( ofaIDBDossierMeta *instance );
 
 	/**
 	 * new_exercice_meta:
@@ -144,7 +144,7 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBExerciceMeta * ( *new_period )           ( ofaIDBDossierMeta *instance );
+	ofaIDBExerciceMeta *   ( *new_period )           ( ofaIDBDossierMeta *instance );
 
 	/**
 	 * delete_period:
@@ -162,10 +162,10 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean             ( *delete_period )        ( ofaIDBDossierMeta *instance,
-														ofaIDBConnect *connect,
-														ofaIDBExerciceMeta *exercice_meta,
-														gchar **msgerr );
+	gboolean               ( *delete_period )        ( ofaIDBDossierMeta *instance,
+															ofaIDBConnect *connect,
+															ofaIDBExerciceMeta *exercice_meta,
+															gchar **msgerr );
 
 	/**
 	 * dump:
@@ -175,80 +175,80 @@ struct _ofaIDBDossierMetaInterface {
 	 *
 	 * Since: version 1
 	 */
-	void                 ( *dump )                 ( const ofaIDBDossierMeta *instance );
+	void                   ( *dump )                 ( const ofaIDBDossierMeta *instance );
 };
 
 /*
  * Interface-wide
  */
-GType               ofa_idbdossier_meta_get_type                  ( void );
+GType                 ofa_idbdossier_meta_get_type                  ( void );
 
-guint               ofa_idbdossier_meta_get_interface_last_version( void );
+guint                 ofa_idbdossier_meta_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint               ofa_idbdossier_meta_get_interface_version     ( GType type );
+guint                 ofa_idbdossier_meta_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-ofaIDBProvider     *ofa_idbdossier_meta_get_provider              ( const ofaIDBDossierMeta *meta );
+ofaIDBProvider       *ofa_idbdossier_meta_get_provider              ( const ofaIDBDossierMeta *meta );
 
-void                ofa_idbdossier_meta_set_provider              ( ofaIDBDossierMeta *meta,
-																		const ofaIDBProvider *instance );
+void                  ofa_idbdossier_meta_set_provider              ( ofaIDBDossierMeta *meta,
+																			const ofaIDBProvider *instance );
 
-const gchar        *ofa_idbdossier_meta_get_dossier_name          ( const ofaIDBDossierMeta *meta );
+const gchar          *ofa_idbdossier_meta_get_dossier_name          ( const ofaIDBDossierMeta *meta );
 
-void                ofa_idbdossier_meta_set_dossier_name          ( ofaIDBDossierMeta *meta,
-																		const gchar *dossier_name );
+void                  ofa_idbdossier_meta_set_dossier_name          ( ofaIDBDossierMeta *meta,
+																			const gchar *dossier_name );
 
-myISettings        *ofa_idbdossier_meta_get_settings_iface        ( const ofaIDBDossierMeta *meta );
+myISettings          *ofa_idbdossier_meta_get_settings_iface        ( const ofaIDBDossierMeta *meta );
 
-void                ofa_idbdossier_meta_set_settings_iface        ( ofaIDBDossierMeta *meta,
-																		myISettings *settings );
+void                  ofa_idbdossier_meta_set_settings_iface        ( ofaIDBDossierMeta *meta,
+																			myISettings *settings );
 
-const gchar        *ofa_idbdossier_meta_get_settings_group        ( const ofaIDBDossierMeta *meta );
+const gchar          *ofa_idbdossier_meta_get_settings_group        ( const ofaIDBDossierMeta *meta );
 
-void                ofa_idbdossier_meta_set_settings_group        ( ofaIDBDossierMeta *meta,
-																		const gchar *group_name );
+void                  ofa_idbdossier_meta_set_settings_group        ( ofaIDBDossierMeta *meta,
+																			const gchar *group_name );
 
-void                ofa_idbdossier_meta_set_from_settings         ( ofaIDBDossierMeta *meta );
+void                  ofa_idbdossier_meta_set_from_settings         ( ofaIDBDossierMeta *meta );
 
-void                ofa_idbdossier_meta_set_from_editor           ( ofaIDBDossierMeta *meta,
-																		ofaIDBDossierEditor *editor );
+void                  ofa_idbdossier_meta_set_from_editor           ( ofaIDBDossierMeta *meta,
+																			ofaIDBDossierEditor *editor );
 
-ofaIDBConnect      *ofa_idbdossier_meta_new_connect               ( ofaIDBDossierMeta *meta,
-																		ofaIDBExerciceMeta *period );
+ofaIDBConnect        *ofa_idbdossier_meta_new_connect               ( ofaIDBDossierMeta *meta,
+																			ofaIDBExerciceMeta *period );
 
-const GList        *ofa_idbdossier_meta_get_periods               ( const ofaIDBDossierMeta *meta );
+const GList          *ofa_idbdossier_meta_get_periods               ( const ofaIDBDossierMeta *meta );
 
-guint               ofa_idbdossier_meta_get_periods_count         ( const ofaIDBDossierMeta *meta );
+guint                 ofa_idbdossier_meta_get_periods_count         ( const ofaIDBDossierMeta *meta );
 
-ofaIDBExerciceMeta *ofa_idbdossier_meta_new_period                ( ofaIDBDossierMeta *meta,
-																		gboolean attach );
+ofaIDBExerciceMeta   *ofa_idbdossier_meta_new_period                ( ofaIDBDossierMeta *meta,
+																			gboolean attach );
 
-ofaIDBExerciceMeta *ofa_idbdossier_meta_get_current_period        ( const ofaIDBDossierMeta *meta );
+ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_current_period        ( const ofaIDBDossierMeta *meta );
 
-ofaIDBExerciceMeta *ofa_idbdossier_meta_get_period                ( const ofaIDBDossierMeta *meta,
-																		const GDate *begin,
-																		const GDate *end );
+ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_period                ( const ofaIDBDossierMeta *meta,
+																			const GDate *begin,
+																			const GDate *end );
 
-gint                ofa_idbdossier_meta_compare                   ( const ofaIDBDossierMeta *a,
-																		const ofaIDBDossierMeta *b );
+gint                  ofa_idbdossier_meta_compare                   ( const ofaIDBDossierMeta *a,
+																			const ofaIDBDossierMeta *b );
 
-gint                ofa_idbdossier_meta_compare_by_name           ( const ofaIDBDossierMeta *a,
-																		const gchar *name );
+gint                  ofa_idbdossier_meta_compare_by_name           ( const ofaIDBDossierMeta *a,
+																			const gchar *name );
 
-gboolean            ofa_idbdossier_meta_delete_period             ( ofaIDBDossierMeta *meta,
-																		ofaIDBConnect *connect,
-																		ofaIDBExerciceMeta *period,
-																		gboolean delete_dossier_on_last,
-																		gchar **msgerr );
+gboolean              ofa_idbdossier_meta_delete_period             ( ofaIDBDossierMeta *meta,
+																			ofaIDBConnect *connect,
+																			ofaIDBExerciceMeta *period,
+																			gboolean delete_dossier_on_last,
+																			gchar **msgerr );
 
-void                ofa_idbdossier_meta_dump                      ( const ofaIDBDossierMeta *meta );
+void                  ofa_idbdossier_meta_dump                      ( const ofaIDBDossierMeta *meta );
 
-void                ofa_idbdossier_meta_dump_full                 ( const ofaIDBDossierMeta *meta );
+void                  ofa_idbdossier_meta_dump_full                 ( const ofaIDBDossierMeta *meta );
 
 G_END_DECLS
 

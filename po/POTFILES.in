@@ -64,7 +64,9 @@ src/ui/ofa-dossier-properties.ui
 src/ui/ofa-entry-page.ui
 src/ui/ofa-entry-properties.ui
 src/ui/ofa-exercice-close-assistant.ui
+src/ui/ofa-exercice-edit-bin.ui
 src/ui/ofa-exercice-meta-bin.ui
+src/ui/ofa-exercice-new.ui
 src/ui/ofa-export-assistant.ui
 src/ui/ofa-guided-ex.ui
 src/ui/ofa-import-assistant.ui

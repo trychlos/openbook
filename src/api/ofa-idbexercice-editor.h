@@ -139,33 +139,30 @@ struct _ofaIDBExerciceEditorInterface {
 /*
  * Interface-wide
  */
-GType                ofa_idbexercice_editor_get_type                  ( void );
+GType              ofa_idbexercice_editor_get_type                  ( void );
 
-guint                ofa_idbexercice_editor_get_interface_last_version( void );
+guint              ofa_idbexercice_editor_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint                ofa_idbexercice_editor_get_interface_version     ( GType type );
+guint              ofa_idbexercice_editor_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-void                 ofa_idbexercice_editor_set_provider              ( ofaIDBExerciceEditor *instance,
+ofaIDBProvider    *ofa_idbexercice_editor_get_provider             ( const ofaIDBExerciceEditor *instance );
+
+void               ofa_idbexercice_editor_set_provider             ( ofaIDBExerciceEditor *instance,
 																			ofaIDBProvider *provider );
 
-ofaIDBDossierEditor *ofa_idbexercice_editor_get_dossier_editor        ( ofaIDBExerciceEditor *instance );
-
-void                 ofa_idbexercice_editor_set_dossier_editor        ( ofaIDBExerciceEditor *instance,
-																			ofaIDBDossierEditor *editor );
-
-GtkSizeGroup        *ofa_idbexercice_editor_get_size_group            ( const ofaIDBExerciceEditor *instance,
+GtkSizeGroup      *ofa_idbexercice_editor_get_size_group            ( const ofaIDBExerciceEditor *instance,
 																			guint column );
 
-gboolean             ofa_idbexercice_editor_is_valid                  ( const ofaIDBExerciceEditor *instance,
+gboolean           ofa_idbexercice_editor_is_valid                  ( const ofaIDBExerciceEditor *instance,
 																			gchar **message );
 
-gboolean             ofa_idbexercice_editor_apply                     ( const ofaIDBExerciceEditor *instance );
+gboolean           ofa_idbexercice_editor_apply                     ( const ofaIDBExerciceEditor *instance );
 
 G_END_DECLS
 

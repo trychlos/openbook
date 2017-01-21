@@ -58,7 +58,6 @@
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-editor-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
-#include "api/ofa-idbexercice-editor-def.h"
 #include "api/ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
@@ -79,7 +78,6 @@ typedef struct _ofaIDBDossierEditorInterface            ofaIDBDossierEditorInter
  * @get_size_group: [may]: returns the #GtkSizeGroup of the column.
  * @is_valid: [may]: returns %TRUE if the entered informations are valid.
  * @get_valid_connect: [may]: returns the valid connection.
- * @new_exercice_editor: [should]: returns a new ofaIDBExerciceEditor object.
  *
  * This defines the interface that an #ofaIDBDossierEditor should implement.
  */
@@ -142,22 +140,6 @@ struct _ofaIDBDossierEditorInterface {
 	 */
 	ofaIDBConnect *        ( *get_valid_connect )    ( const ofaIDBDossierEditor *instance,
 															ofaIDBDossierMeta *dossier_meta );
-
-	/**
-	 * new_exercice_editor:
-	 * @instance: this #ofaIDBDossierEditor instance.
-	 * @settings_prefix: the prefix of a user preference key.
-	 * @rule: the usage of the editor.
-	 *
-	 * Returns: a #GtkWidget which implements the #ofaIDBExerciceEditor
-	 * interface, and handles the informations needed to qualify a
-	 * DB server and the storage space required for a dossier.
-	 *
-	 * Since: version 1
-	 */
-	ofaIDBExerciceEditor * ( *new_exercice_editor )  ( ofaIDBDossierEditor *instance,
-															const gchar *settings_prefix,
-															guint rule );
 };
 
 /*
@@ -188,10 +170,6 @@ gboolean              ofa_idbdossier_editor_is_valid                  ( const of
 
 ofaIDBConnect        *ofa_idbdossier_editor_get_valid_connect         ( const ofaIDBDossierEditor *editor,
 																			ofaIDBDossierMeta *dossier_meta );
-
-ofaIDBExerciceEditor *ofa_idbdossier_editor_new_exercice_editor       ( ofaIDBDossierEditor *editor,
-																			const gchar *settings_prefix,
-																			guint rule );
 
 G_END_DECLS
 

@@ -168,8 +168,12 @@ openbook_SOURCES = \
 	ofa-exercice-combo.h								\
 	ofa-exercice-close-assistant.c						\
 	ofa-exercice-close-assistant.h						\
+	ofa-exercice-edit-bin.c								\
+	ofa-exercice-edit-bin.h								\
 	ofa-exercice-meta-bin.c								\
 	ofa-exercice-meta-bin.h								\
+	ofa-exercice-new.c									\
+	ofa-exercice-new.h									\
 	ofa-exercice-store.c								\
 	ofa-exercice-store.h								\
 	ofa-exercice-treeview.c								\

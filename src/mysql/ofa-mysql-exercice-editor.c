@@ -49,7 +49,6 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaIDBDossierEditor *editor;
 	gchar               *settings_prefix;
 	guint                rule;
 
@@ -146,25 +145,23 @@ ofa_mysql_exercice_editor_class_init( ofaMysqlExerciceEditorClass *klass )
 
 /**
  * ofa_mysql_exercice_editor_new:
- * @editor: the #ofaIDBDOssierEditor.
+ * @provider: the #ofaMysqlProvider for which the exercice is to be created.
  * @settings_prefix: the prefix of a user preference key.
  * @rule: the usage of the widget.
  *
  * Returns: a new #ofaMysqlExerciceEditor widget.
  */
 ofaMysqlExerciceEditor *
-ofa_mysql_exercice_editor_new( ofaIDBDossierEditor *editor, const gchar *settings_prefix, guint rule )
+ofa_mysql_exercice_editor_new( ofaMysqlDBProvider *provider, const gchar *settings_prefix, guint rule )
 {
 	ofaMysqlExerciceEditor *bin;
 	ofaMysqlExerciceEditorPrivate *priv;
 
-	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), NULL );
+	g_return_val_if_fail( provider && OFA_IS_MYSQL_DBPROVIDER( provider ), NULL );
 
 	bin = g_object_new( OFA_TYPE_MYSQL_EXERCICE_EDITOR, NULL );
 
 	priv = ofa_mysql_exercice_editor_get_instance_private( bin );
-
-	priv->editor = editor;
 
 	g_free( priv->settings_prefix );
 	priv->settings_prefix = g_strdup( settings_prefix );

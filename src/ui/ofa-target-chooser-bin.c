@@ -33,9 +33,12 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
+#include "api/ofa-igetter.h"
 
 #include "ui/ofa-dossier-treeview.h"
+#include "ui/ofa-dossier-new.h"
 #include "ui/ofa-exercice-treeview.h"
+#include "ui/ofa-exercice-new.h"
 #include "ui/ofa-target-chooser-bin.h"
 
 /* private instance data
@@ -45,12 +48,14 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub              *hub;
+	ofaIGetter          *getter;
+	gchar               *settings_prefix;
 
 	/* runtime data
 	 */
-	gchar               *settings_prefix;
-	ofaIDBDossierMeta   *meta;
+	ofaHub              *hub;
+	ofaIDBDossierMeta   *dossier_meta;
+	ofaIDBExerciceMeta  *exercice_meta;
 
 	/* UI
 	 */
@@ -75,6 +80,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-target-
 static void setup_bin( ofaTargetChooserBin *self );
 static void dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *empty, ofaTargetChooserBin *self );
 static void dossier_on_new( GtkButton *button, ofaTargetChooserBin *self );
+static void exercice_on_selection_changed( ofaExerciceTreeview *treeview, ofaIDBExerciceMeta *meta, ofaTargetChooserBin *self );
 static void period_on_new( GtkButton *button, ofaTargetChooserBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaTargetChooserBin, ofa_target_chooser_bin, GTK_TYPE_BIN, 0,
@@ -176,24 +182,24 @@ ofa_target_chooser_bin_class_init( ofaTargetChooserBinClass *klass )
 
 /**
  * ofa_target_chooser_bin_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: an #ofaIGetter.
  * @settings_prefix: the prefix of the user preferences in settings.
  *
  * Returns: a new #ofaTargetChooserBin instance.
  */
 ofaTargetChooserBin *
-ofa_target_chooser_bin_new( ofaHub *hub, const gchar *settings_prefix )
+ofa_target_chooser_bin_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
 	ofaTargetChooserBin *bin;
 	ofaTargetChooserBinPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	bin = g_object_new( OFA_TYPE_TARGET_CHOOSER_BIN, NULL );
 
 	priv = ofa_target_chooser_bin_get_instance_private( bin );
 
-	priv->hub = hub;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
 
 	g_free( priv->settings_prefix );
 	priv->settings_prefix = g_strdup( settings_prefix );
@@ -214,6 +220,9 @@ setup_bin( ofaTargetChooserBin *self )
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "TargetChooserWindow" );
@@ -225,6 +234,7 @@ setup_bin( ofaTargetChooserBin *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->dossier_tview = ofa_dossier_treeview_new( priv->hub );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_tview ));
 	settings_prefix = g_strdup_printf( "%s-%s", priv->settings_prefix, G_OBJECT_TYPE_NAME( priv->dossier_tview ));
 	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, settings_prefix );
 	g_free( settings_prefix );
@@ -243,6 +253,8 @@ setup_bin( ofaTargetChooserBin *self )
 	settings_prefix = g_strdup_printf( "%s-%s", priv->settings_prefix, g_type_name( OFA_TYPE_EXERCICE_TREEVIEW ));
 	priv->exercice_tview = ofa_exercice_treeview_new( priv->hub, settings_prefix );
 	g_free( settings_prefix );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_tview ));
+	g_signal_connect( priv->exercice_tview, "ofa-exechanged", G_CALLBACK( exercice_on_selection_changed ), self );
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-new-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
@@ -260,20 +272,60 @@ dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *m
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
-	priv->meta = meta;
+	priv->dossier_meta = meta;
+	priv->exercice_meta = NULL;
 	ofa_exercice_treeview_set_dossier( priv->exercice_tview, meta );
+
+	g_signal_emit_by_name( self, "ofa-changed", priv->dossier_meta, priv->exercice_meta );
 }
 
 static void
 dossier_on_new( GtkButton *button, ofaTargetChooserBin *self )
 {
+	ofaTargetChooserBinPrivate *priv;
+	GtkWindow *toplevel;
+	gchar *dossier_name;
 
+	priv = ofa_target_chooser_bin_get_instance_private( self );
+
+	dossier_name = NULL;
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+
+	if( ofa_dossier_new_run_modal( priv->getter, toplevel, FALSE, &dossier_name )){
+		ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
+		g_free( dossier_name );
+	}
+}
+
+static void
+exercice_on_selection_changed( ofaExerciceTreeview *treeview, ofaIDBExerciceMeta *meta, ofaTargetChooserBin *self )
+{
+	ofaTargetChooserBinPrivate *priv;
+
+	priv = ofa_target_chooser_bin_get_instance_private( self );
+
+	priv->exercice_meta = meta;
+
+	g_signal_emit_by_name( self, "ofa-changed", priv->dossier_meta, priv->exercice_meta );
 }
 
 static void
 period_on_new( GtkButton *button, ofaTargetChooserBin *self )
 {
+	ofaTargetChooserBinPrivate *priv;
+	GtkWindow *toplevel;
+	ofaIDBExerciceMeta *meta;
+	ofaIDBProvider *provider;
 
+	priv = ofa_target_chooser_bin_get_instance_private( self );
+
+	meta = NULL;
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
+
+	if( ofa_exercice_new_run_modal( priv->getter, toplevel, provider, FALSE, &meta )){
+		ofa_exercice_treeview_set_selected( priv->exercice_tview, meta );
+	}
 }
 
 #if 0
@@ -298,7 +350,7 @@ ofa_target_chooser_bin_get_selected( ofaTargetChooserBin *bin, ofaIDBDossierMeta
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	*meta = priv->meta;
+	*meta = priv->dossier_meta;
 	ofa_exercice_treeview_get_selected( priv->exercice_tview, period );
 
 	return( *meta && *period );

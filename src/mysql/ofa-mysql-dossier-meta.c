@@ -58,15 +58,15 @@ typedef struct {
 #define MYSQL_SOCKET_KEY                "mysql-socket"
 #define MYSQL_PORT_KEY                  "mysql-port"
 
-static void                read_settings( ofaMysqlDossierMeta *self );
-static void                write_settings( ofaMysqlDossierMeta *self );
-static void                idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface );
-static guint               idbdossier_meta_get_interface_version( void );
-static void                idbdossier_meta_set_from_settings( ofaIDBDossierMeta *instance );
-static void                idbdossier_meta_set_from_editor( ofaIDBDossierMeta *instance, ofaIDBDossierEditor *editor );
-static ofaIDBConnect      *idbdossier_meta_new_connect( ofaIDBDossierMeta *instance );
-static ofaIDBExerciceMeta *idbdossier_meta_new_period( ofaIDBDossierMeta *instance );
-static void                idbdossier_meta_dump( const ofaIDBDossierMeta *instance );
+static void                  read_settings( ofaMysqlDossierMeta *self );
+static void                  write_settings( ofaMysqlDossierMeta *self );
+static void                  idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface );
+static guint                 idbdossier_meta_get_interface_version( void );
+static void                  idbdossier_meta_set_from_settings( ofaIDBDossierMeta *instance );
+static void                  idbdossier_meta_set_from_editor( ofaIDBDossierMeta *instance, ofaIDBDossierEditor *editor );
+static ofaIDBConnect        *idbdossier_meta_new_connect( ofaIDBDossierMeta *instance );
+static ofaIDBExerciceMeta   *idbdossier_meta_new_period( ofaIDBDossierMeta *instance );
+static void                  idbdossier_meta_dump( const ofaIDBDossierMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierMeta, ofa_mysql_dossier_meta, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlDossierMeta )

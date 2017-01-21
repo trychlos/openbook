@@ -81,8 +81,10 @@ ofaExerciceTreeview *ofa_exercice_treeview_new         ( ofaHub *hub,
 void                 ofa_exercice_treeview_set_dossier ( ofaExerciceTreeview *view,
 																ofaIDBDossierMeta *meta );
 
-gboolean             ofa_exercice_treeview_get_selected( ofaExerciceTreeview *view,
-																ofaIDBExerciceMeta **period );
+ofaIDBExerciceMeta  *ofa_exercice_treeview_get_selected( ofaExerciceTreeview *view );
+
+void                 ofa_exercice_treeview_set_selected( ofaExerciceTreeview *view,
+																ofaIDBExerciceMeta *period );
 
 G_END_DECLS
 

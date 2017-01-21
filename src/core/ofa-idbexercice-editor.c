@@ -31,6 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbdossier-editor.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-editor.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
@@ -40,8 +41,7 @@
  * which do not depend of a specific implementation
  */
 typedef struct {
-	ofaIDBProvider      *provider;
-	ofaIDBDossierEditor *dossier_editor;
+	ofaIDBProvider *provider;
 }
 	sEditor;
 
@@ -210,33 +210,30 @@ ofa_idbexercice_editor_get_interface_version( GType type )
 	return( version );
 }
 
-#if 0
 /**
  * ofa_idbexercice_editor_get_provider:
- * @instance: this #ofaIDBExerciceEditor instance.
+ * @instance: this #ofaIDBExerciceMeta instance.
  *
- * Returns: a new reference to the #ofaIDBProvider instance, which
- * manages this #ofaIDBExerciceEditor, which should be g_object_unref() by
- * the caller.
+ * Returns: the attached #ofaIDBProvider.
  */
-ofaIDBProvider*
+ofaIDBProvider *
 ofa_idbexercice_editor_get_provider( const ofaIDBExerciceEditor *instance )
 {
-	sEditor *data;
+	sEditor *sdata;
 
 	g_return_val_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ), NULL );
 
-	data = get_instance_data( instance );
-	return( g_object_ref( data->provider ));
+	sdata = get_instance_data( instance );
+
+	return( sdata->provider );
 }
-#endif
 
 /**
  * ofa_idbexercice_editor_set_provider:
- * @instance: this #ofaIDBExerciceEditor instance.
- * @provider: the #ofaIDBProvider instance which manages this editor.
+ * @instance: this #ofaIDBExerciceMeta instance.
+ * @provider: the corresponding #ofaIDBProvider.
  *
- * Attach the @provider to the @instance.
+ * Attach the @meta to the @instance.
  */
 void
 ofa_idbexercice_editor_set_provider( ofaIDBExerciceEditor *instance, ofaIDBProvider *provider )
@@ -249,44 +246,6 @@ ofa_idbexercice_editor_set_provider( ofaIDBExerciceEditor *instance, ofaIDBProvi
 	sdata = get_instance_data( instance );
 
 	sdata->provider = provider;
-}
-
-/**
- * ofa_idbexercice_editor_get_dossier_editor:
- * @instance: this #ofaIDBExerciceEditor instance.
- *
- * Returns: the attached #ofaIDBDossierEditor.
- */
-ofaIDBDossierEditor *
-ofa_idbexercice_editor_get_dossier_editor( ofaIDBExerciceEditor *instance )
-{
-	sEditor *sdata;
-
-	g_return_val_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ), NULL );
-
-	sdata = get_instance_data( instance );
-
-	return( sdata->dossier_editor );
-}
-
-/**
- * ofa_idbexercice_editor_set_dossier_editor:
- * @instance: this #ofaIDBExerciceEditor instance.
- * @editor: the corresponding #ofaIDBDossierEditor.
- *
- * Attach the @editor to the @instance.
- */
-void
-ofa_idbexercice_editor_set_dossier_editor( ofaIDBExerciceEditor *instance, ofaIDBDossierEditor *editor )
-{
-	sEditor *sdata;
-
-	g_return_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ));
-	g_return_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ));
-
-	sdata = get_instance_data( instance );
-
-	sdata->dossier_editor = editor;
 }
 
 /**

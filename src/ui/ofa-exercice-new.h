@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_DOSSIER_NEW_H__
-#define __OFA_DOSSIER_NEW_H__
+#ifndef __OFA_EXERCICE_NEW_H__
+#define __OFA_EXERCICE_NEW_H__
 
 /**
- * SECTION: ofa_dossier_new
- * @short_description: #ofaDossierNew class definition.
+ * SECTION: ofa_exercice_new
+ * @short_description: #ofaExerciceNew class definition.
  * @include: ui/ofa-dossier-new.h
  *
  * Create a new dossier.
@@ -55,39 +55,39 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-idbexercice-meta-def.h"
+#include "api/ofa-idbprovider-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_DOSSIER_NEW                ( ofa_dossier_new_get_type())
-#define OFA_DOSSIER_NEW( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_DOSSIER_NEW, ofaDossierNew ))
-#define OFA_DOSSIER_NEW_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_DOSSIER_NEW, ofaDossierNewClass ))
-#define OFA_IS_DOSSIER_NEW( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_DOSSIER_NEW ))
-#define OFA_IS_DOSSIER_NEW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DOSSIER_NEW ))
-#define OFA_DOSSIER_NEW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DOSSIER_NEW, ofaDossierNewClass ))
+#define OFA_TYPE_EXERCICE_NEW                ( ofa_exercice_new_get_type())
+#define OFA_EXERCICE_NEW( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_EXERCICE_NEW, ofaExerciceNew ))
+#define OFA_EXERCICE_NEW_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_EXERCICE_NEW, ofaExerciceNewClass ))
+#define OFA_IS_EXERCICE_NEW( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_EXERCICE_NEW ))
+#define OFA_IS_EXERCICE_NEW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_EXERCICE_NEW ))
+#define OFA_EXERCICE_NEW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_EXERCICE_NEW, ofaExerciceNewClass ))
 
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;
 }
-	ofaDossierNew;
+	ofaExerciceNew;
 
 typedef struct {
 	/*< public members >*/
 	GtkDialogClass parent;
 }
-	ofaDossierNewClass;
+	ofaExerciceNewClass;
 
-GType    ofa_dossier_new_get_type ( void ) G_GNUC_CONST;
+GType    ofa_exercice_new_get_type ( void ) G_GNUC_CONST;
 
-void     ofa_dossier_new_run      ( ofaIGetter *getter,
-										GtkWindow *parent );
-
-gboolean ofa_dossier_new_run_modal( ofaIGetter *getter,
+gboolean ofa_exercice_new_run_modal( ofaIGetter *getter,
 										GtkWindow *parent,
+										ofaIDBProvider *provider,
 										gboolean allow_open,
-										gchar **dossier_name );
+										ofaIDBExerciceMeta **exercice_meta );
 
 G_END_DECLS
 
-#endif /* __OFA_DOSSIER_NEW_H__ */
+#endif /* __OFA_EXERCICE_NEW_H__ */

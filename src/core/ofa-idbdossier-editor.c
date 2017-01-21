@@ -33,7 +33,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
-#include "api/ofa-idbexercice-editor.h"
 #include "api/ofa-idbprovider.h"
 
 /* some data attached to each IDBDossierEditor instance
@@ -331,42 +330,6 @@ ofa_idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *editor, ofaI
 	}
 
 	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'get_valid_connect()' method",
-			thisfn, G_OBJECT_TYPE_NAME( editor ));
-	return( NULL );
-}
-
-/**
- * ofa_idbdossier_editor_new_exercice_editor:
- * @editor: this #ofaIDBDossierEditor provider.
- * @settings_prefix: the prefix of a user preference key.
- * @rule: the usage of the editor.
- *
- * Returns: a composite GTK container widget intended to hold the
- * informations needed to fully identify the DBMS server which manages
- * a exercice.
- *
- * The returned container will be added to a GtkWindow and must be
- * destroyable with this same window. In other words, the DBMS provider
- * should not keep any reference on this container.
- */
-ofaIDBExerciceEditor *
-ofa_idbdossier_editor_new_exercice_editor( ofaIDBDossierEditor *editor, const gchar *settings_prefix, guint rule )
-{
-	static const gchar *thisfn = "ofa_idbdossier_editor_new_exercice_editor";
-	ofaIDBExerciceEditor *exercice_editor;
-
-	g_debug( "%s: editor=%p, settings_prefix=%s, rule=%u",
-			thisfn,( void * ) editor, settings_prefix, rule );
-
-	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), NULL );
-
-	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->new_exercice_editor ){
-		exercice_editor = OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->new_exercice_editor( editor, settings_prefix, rule );
-		ofa_idbexercice_editor_set_dossier_editor( exercice_editor, editor );
-		return( exercice_editor );
-	}
-
-	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'new_exercice_editor()' method",
 			thisfn, G_OBJECT_TYPE_NAME( editor ));
 	return( NULL );
 }

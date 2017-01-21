@@ -30,7 +30,9 @@
     <file>ofa-entry-page.ui</file>
     <file>ofa-entry-properties.ui</file>
     <file>ofa-exercice-close-assistant.ui</file>
+    <file>ofa-exercice-edit-bin.ui</file>
     <file>ofa-exercice-meta-bin.ui</file>
+    <file>ofa-exercice-new.ui</file>
     <file>ofa-export-assistant.ui</file>
     <file>ofa-guided-ex.ui</file>
     <file>ofa-import-assistant.ui</file>

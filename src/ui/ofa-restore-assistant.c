@@ -617,6 +617,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p2_do_init";
 	ofaRestoreAssistantPrivate *priv;
 	GtkWidget *parent;
+	gchar *settings_prefix;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -631,7 +632,9 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-chooser-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p2_chooser = ofa_target_chooser_bin_new( priv->hub, priv->settings_prefix );
+	settings_prefix = g_strdup_printf( "%s-p2", priv->settings_prefix );
+	priv->p2_chooser = ofa_target_chooser_bin_new( priv->getter, settings_prefix );
+	g_free( settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_chooser ));
 }
 
@@ -651,8 +654,6 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( priv->p2_uri_label ), priv->p1_uri );
 
 	p2_check_for_complete( self );
-
-	gtk_widget_show_all( page );
 }
 
 static gboolean

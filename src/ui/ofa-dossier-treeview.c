@@ -166,10 +166,10 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * they may be %NULL
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaDossierTreeview  *view,
-	 * 						ofaIDBDossierMeta *meta,
-	 * 						ofaIDBExerciceMeta      *period,
-	 * 						gpointer           user_data );
+	 * void ( *handler )( ofaDossierTreeview   *view,
+	 * 						ofaIDBDossierMeta  *meta,
+	 * 						ofaIDBExerciceMeta *period,
+	 * 						gpointer            user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-doschanged",
@@ -192,10 +192,10 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * Arguments are the selected ofaIDBDossierMeta and ofaIDBExerciceMeta objects.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaDossierTreeview  *view,
-	 * 						ofaIDBDossierMeta *meta,
-	 * 						ofaIDBExerciceMeta      *period,
-	 * 						gpointer           user_data );
+	 * void ( *handler )( ofaDossierTreeview   *view,
+	 * 						ofaIDBDossierMeta  *meta,
+	 * 						ofaIDBExerciceMeta *period,
+	 * 						gpointer            user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
 				"ofa-dosactivated",
@@ -220,10 +220,10 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * Arguments are the selected ofaIDBDossierMeta and ofaIDBExerciceMeta objects.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaDossierTreeview  *view,
-	 * 						ofaIDBDossierMeta *meta,
-	 * 						ofaIDBExerciceMeta      *period,
-	 * 						gpointer           user_data );
+	 * void ( *handler )( ofaDossierTreeview   *view,
+	 * 						ofaIDBDossierMeta  *meta,
+	 * 						ofaIDBExerciceMeta *period,
+	 * 						gpointer            user_data );
 	 */
 	st_signals[ DELETE ] = g_signal_new_class_handler(
 				"ofa-dosdelete",

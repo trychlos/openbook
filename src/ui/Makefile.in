@@ -163,10 +163,12 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-entry-page.$(OBJEXT) ofa-entry-properties.$(OBJEXT) \
 	ofa-entry-treeview.$(OBJEXT) ofa-exercice-combo.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
-	ofa-exercice-meta-bin.$(OBJEXT) ofa-exercice-store.$(OBJEXT) \
-	ofa-exercice-treeview.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
-	ofa-guided-ex.$(OBJEXT) ofa-iaccount-filter.$(OBJEXT) \
-	ofa-import-assistant.$(OBJEXT) ofa-ledger-arc-store.$(OBJEXT) \
+	ofa-exercice-edit-bin.$(OBJEXT) \
+	ofa-exercice-meta-bin.$(OBJEXT) ofa-exercice-new.$(OBJEXT) \
+	ofa-exercice-store.$(OBJEXT) ofa-exercice-treeview.$(OBJEXT) \
+	ofa-export-assistant.$(OBJEXT) ofa-guided-ex.$(OBJEXT) \
+	ofa-iaccount-filter.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
+	ofa-ledger-arc-store.$(OBJEXT) \
 	ofa-ledger-arc-treeview.$(OBJEXT) \
 	ofa-ledger-book-args.$(OBJEXT) \
 	ofa-ledger-book-render.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
@@ -600,8 +602,12 @@ openbook_SOURCES = \
 	ofa-exercice-combo.h								\
 	ofa-exercice-close-assistant.c						\
 	ofa-exercice-close-assistant.h						\
+	ofa-exercice-edit-bin.c								\
+	ofa-exercice-edit-bin.h								\
 	ofa-exercice-meta-bin.c								\
 	ofa-exercice-meta-bin.h								\
+	ofa-exercice-new.c									\
+	ofa-exercice-new.h									\
 	ofa-exercice-store.c								\
 	ofa-exercice-store.h								\
 	ofa-exercice-treeview.c								\
@@ -857,7 +863,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-close-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-combo.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-edit-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-meta-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-new.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-export-assistant.Po@am__quote@

@@ -37,92 +37,93 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-idbdossier-editor.h"
-#include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-editor.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 
-#include "ui/ofa-dossier-edit-bin.h"
-#include "ui/ofa-dossier-new.h"
+#include "ui/ofa-exercice-edit-bin.h"
+#include "ui/ofa-exercice-new.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean           dispose_has_run;
+	gboolean             dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter        *getter;
-	GtkWindow         *parent;
+	ofaIGetter          *getter;
+	GtkWindow           *parent;
+	ofaIDBProvider      *provider;
 		/* when run as modal */
-	gboolean           allow_open;
-	gchar            **dossier_name;
+	gboolean             allow_open;
+	ofaIDBExerciceMeta **exercice_meta;
 
 	/* runtime
 	 */
-	gchar             *settings_prefix;
-	ofaHub            *hub;
-	gboolean           dossier_created;
+	gchar               *settings_prefix;
+	ofaHub              *hub;
+	gboolean             exercice_created;
 
 	/* UI
 	 */
-	ofaDossierEditBin *edit_bin;
-	GtkWidget         *ok_btn;
-	GtkWidget         *msg_label;
+	ofaExerciceEditBin  *edit_bin;
+	GtkWidget           *ok_btn;
+	GtkWidget           *msg_label;
 }
-	ofaDossierNewPrivate;
+	ofaExerciceNewPrivate;
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-new.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-exercice-new.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
-static void     on_edit_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self );
-static void     check_for_enable_dlg( ofaDossierNew *self );
-static guint    do_create( ofaDossierNew *self, gchar **msgerr );
-static gboolean create_confirmed( const ofaDossierNew *self );
-static void     set_message( ofaDossierNew *self, const gchar *message );
-static void     read_settings( ofaDossierNew *self );
-static void     write_settings( ofaDossierNew *self );
+static void     on_edit_bin_changed( ofaExerciceEditBin *bin, ofaExerciceNew *self );
+static void     check_for_enable_dlg( ofaExerciceNew *self );
+static guint    do_create( ofaExerciceNew *self, gchar **msgerr );
+//static gboolean create_confirmed( const ofaExerciceNew *self );
+static void     set_message( ofaExerciceNew *self, const gchar *message );
+static void     read_settings( ofaExerciceNew *self );
+static void     write_settings( ofaExerciceNew *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaDossierNew, ofa_dossier_new, GTK_TYPE_DIALOG, 0,
-		G_ADD_PRIVATE( ofaDossierNew )
+G_DEFINE_TYPE_EXTENDED( ofaExerciceNew, ofa_exercice_new, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaExerciceNew )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
-dossier_new_finalize( GObject *instance )
+exercice_new_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_dossier_new_finalize";
-	ofaDossierNewPrivate *priv;
+	static const gchar *thisfn = "ofa_exercice_new_finalize";
+	ofaExerciceNewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW( instance ));
+	g_return_if_fail( instance && OFA_IS_EXERCICE_NEW( instance ));
 
 	/* free data members here */
-	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
+	priv = ofa_exercice_new_get_instance_private( OFA_EXERCICE_NEW( instance ));
 
 	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_dossier_new_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_exercice_new_parent_class )->finalize( instance );
 }
 
 static void
-dossier_new_dispose( GObject *instance )
+exercice_new_dispose( GObject *instance )
 {
-	ofaDossierNewPrivate *priv;
+	ofaExerciceNewPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW( instance ));
+	g_return_if_fail( instance && OFA_IS_EXERCICE_NEW( instance ));
 
-	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
+	priv = ofa_exercice_new_get_instance_private( OFA_EXERCICE_NEW( instance ));
 
 	if( !priv->dispose_has_run ){
 
-		write_settings( OFA_DOSSIER_NEW( instance ));
+		write_settings( OFA_EXERCICE_NEW( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -130,118 +131,92 @@ dossier_new_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_dossier_new_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_exercice_new_parent_class )->dispose( instance );
 }
 
 static void
-ofa_dossier_new_init( ofaDossierNew *self )
+ofa_exercice_new_init( ofaExerciceNew *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_init";
-	ofaDossierNewPrivate *priv;
+	static const gchar *thisfn = "ofa_exercice_new_init";
+	ofaExerciceNewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_DOSSIER_NEW( self ));
+	g_return_if_fail( self && OFA_IS_EXERCICE_NEW( self ));
 
-	priv = ofa_dossier_new_get_instance_private( self );
+	priv = ofa_exercice_new_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->allow_open = TRUE;
-	priv->dossier_created = FALSE;
+	priv->exercice_created = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
-ofa_dossier_new_class_init( ofaDossierNewClass *klass )
+ofa_exercice_new_class_init( ofaExerciceNewClass *klass )
 {
-	static const gchar *thisfn = "ofa_dossier_new_class_init";
+	static const gchar *thisfn = "ofa_exercice_new_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = dossier_new_dispose;
-	G_OBJECT_CLASS( klass )->finalize = dossier_new_finalize;
+	G_OBJECT_CLASS( klass )->dispose = exercice_new_dispose;
+	G_OBJECT_CLASS( klass )->finalize = exercice_new_finalize;
 
 	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
- * ofa_dossier_new_run:
+ * ofa_exercice_new_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: the parent window.
- *
- * Run the DossierNew non-modal dialog.
- */
-void
-ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
-{
-	static const gchar *thisfn = "ofa_dossier_new_run";
-	ofaDossierNew *self;
-	ofaDossierNewPrivate *priv;
-
-	g_debug( "%s: getter=%p, parent=%p",
-			thisfn, ( void * ) getter, ( void * ) parent );
-
-	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
-	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
-
-	self = g_object_new( OFA_TYPE_DOSSIER_NEW, NULL );
-
-	priv = ofa_dossier_new_get_instance_private( self );
-
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
-	priv->parent = parent;
-
-	/* after this call, @self may be invalid */
-	my_iwindow_present( MY_IWINDOW( self ));
-}
-
-/**
- * ofa_dossier_new_run_modal:
- * @getter: a #ofaIGetter instance.
- * @parent: the parent window.
+ * @provider: the #ofaIDBProvider to be attached to.
  * @allow_open: whether this dialog should be allowed to open the newly
  *  created dossier (if any).
- * @dossier_name: [out][allow-none]: a placeholder for the name of the
- *  newly created dossier.
+ * @exercice_meta: [out][allow-none]: a placeholder for the newly created
+ *  #ofaIDBExerciceMeta.
  *
- * Run the DossierNew as a modal dialog.
+ * Run the ExerciceNew as a modal dialog.
  *
- * Returns: %TRUE if a dossier has actually been created, %FALSE on
+ * Returns: %TRUE if an exercice has actually been created, %FALSE on
  * cancel.
  */
 gboolean
-ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, gboolean allow_open, gchar **dossier_name )
+ofa_exercice_new_run_modal( ofaIGetter *getter, GtkWindow *parent, ofaIDBProvider *provider,
+									gboolean allow_open, ofaIDBExerciceMeta **exercice_meta )
 {
-	static const gchar *thisfn = "ofa_dossier_new_run_modal";
-	ofaDossierNew *self;
-	ofaDossierNewPrivate *priv;
-	gboolean dossier_created;
+	static const gchar *thisfn = "ofa_exercice_new_run_modal";
+	ofaExerciceNew *self;
+	ofaExerciceNewPrivate *priv;
+	gboolean exercice_created;
 
-	g_debug( "%s: getter=%p, parent=%p, allow_open=%s, dossier_name=%p",
-			thisfn, ( void * ) getter, ( void * ) parent, allow_open ? "True":"False", ( void * ) dossier_name );
+	g_debug( "%s: getter=%p, parent=%p, provider=%p, allow_open=%s, exercice_meta=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) provider,
+			allow_open ? "True":"False", ( void * ) exercice_meta );
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), FALSE );
 
-	self = g_object_new( OFA_TYPE_DOSSIER_NEW, NULL );
+	self = g_object_new( OFA_TYPE_EXERCICE_NEW, NULL );
 
-	priv = ofa_dossier_new_get_instance_private( self );
+	priv = ofa_exercice_new_get_instance_private( self );
 
 	priv->getter = ofa_igetter_get_permanent_getter( getter );
 	priv->parent = parent;
+	priv->provider = provider;
 	priv->allow_open = allow_open;
-	priv->dossier_name = dossier_name;
+	priv->exercice_meta = exercice_meta;
 
 	my_idialog_run( MY_IDIALOG( self ));
 
-	dossier_created = priv->dossier_created;
+	exercice_created = priv->exercice_created;
 
 	g_object_unref( self );
 
-	return( dossier_created );
+	return( exercice_created );
 }
 
 /*
@@ -250,7 +225,7 @@ ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, gboolean allow
 static void
 iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "ofa_dossier_new_iwindow_iface_init";
+	static const gchar *thisfn = "ofa_exercice_new_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -260,12 +235,12 @@ iwindow_iface_init( myIWindowInterface *iface )
 static void
 iwindow_init( myIWindow *instance )
 {
-	static const gchar *thisfn = "ofa_dossier_new_iwindow_init";
-	ofaDossierNewPrivate *priv;
+	static const gchar *thisfn = "ofa_exercice_new_iwindow_init";
+	ofaExerciceNewPrivate *priv;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
+	priv = ofa_exercice_new_get_instance_private( OFA_EXERCICE_NEW( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
 
@@ -281,7 +256,7 @@ iwindow_init( myIWindow *instance )
 static void
 idialog_iface_init( myIDialogInterface *iface )
 {
-	static const gchar *thisfn = "ofa_dossier_new_idialog_iface_init";
+	static const gchar *thisfn = "ofa_exercice_new_idialog_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -291,28 +266,28 @@ idialog_iface_init( myIDialogInterface *iface )
 /*
  * the dialog is composed with:
  *
- * - DossierEditBin composite widget
- *   which includes dossier name, provider selection, connection
- *   informations and dbms root credentials
+ * - ExerciceEditBin composite widget
+ *   which includes ExerciceMeta + provider-specific informations
  *
  * - toggle buttons for actions on opening
  */
 static void
 idialog_init( myIDialog *instance )
 {
-	static const gchar *thisfn = "ofa_dossier_new_idialog_init";
-	ofaDossierNewPrivate *priv;
+	static const gchar *thisfn = "ofa_exercice_new_idialog_init";
+	ofaExerciceNewPrivate *priv;
 	GtkWidget *parent, *label;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
+	priv = ofa_exercice_new_get_instance_private( OFA_EXERCICE_NEW( instance ));
 
 	/* create the composite widget and attach it to the dialog */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "edit-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->edit_bin = ofa_dossier_edit_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->allow_open );
+	priv->edit_bin = ofa_exercice_edit_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_EXERCICE_NEW, priv->allow_open );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->edit_bin ));
+	ofa_exercice_edit_bin_set_provider( priv->edit_bin, priv->provider );
 	g_signal_connect( priv->edit_bin, "ofa-changed", G_CALLBACK( on_edit_bin_changed ), instance );
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
@@ -324,28 +299,28 @@ idialog_init( myIDialog *instance )
 	my_style_add( label, "labelerror" );
 	priv->msg_label = label;
 
-	read_settings( OFA_DOSSIER_NEW( instance ));
+	read_settings( OFA_EXERCICE_NEW( instance ));
 
-	check_for_enable_dlg( OFA_DOSSIER_NEW( instance ));
+	check_for_enable_dlg( OFA_EXERCICE_NEW( instance ));
 }
 
 static void
-on_edit_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self )
+on_edit_bin_changed( ofaExerciceEditBin *bin, ofaExerciceNew *self )
 {
 	check_for_enable_dlg( self );
 }
 
 static void
-check_for_enable_dlg( ofaDossierNew *self )
+check_for_enable_dlg( ofaExerciceNew *self )
 {
-	ofaDossierNewPrivate *priv;
+	ofaExerciceNewPrivate *priv;
 	gboolean ok;
 	gchar *message;
 
-	priv = ofa_dossier_new_get_instance_private( self );
+	priv = ofa_exercice_new_get_instance_private( self );
 
 	message = NULL;
-	ok = ofa_dossier_edit_bin_is_valid( priv->edit_bin, &message );
+	ok = ofa_exercice_edit_bin_is_valid( priv->edit_bin, &message );
 	set_message( self, message );
 	g_free( message );
 
@@ -359,10 +334,11 @@ check_for_enable_dlg( ofaDossierNew *self )
  * and register the new dossier in dossier settings
  */
 static guint
-do_create( ofaDossierNew *self, gchar **msgerr )
+do_create( ofaExerciceNew *self, gchar **msgerr )
 {
-	static const gchar *thisfn = "ofa_dossier_new_do_create";
-	ofaDossierNewPrivate *priv;
+#if 0
+	static const gchar *thisfn = "ofa_exercice_new_do_create";
+	ofaExerciceNewPrivate *priv;
 	gboolean open, apply_actions;
 	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBExerciceMeta *exercice_meta;
@@ -374,7 +350,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 
 	g_debug( "%s: self=%p, msgerr=%p", thisfn, ( void * ) self, ( void * ) msgerr );
 
-	priv = ofa_dossier_new_get_instance_private( self );
+	priv = ofa_exercice_new_get_instance_private( self );
 
 	ret = IDIALOG_UPDATE_OK;
 	open = FALSE;
@@ -435,10 +411,13 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	g_free( adm_account );
 
 	return( ret );
+#endif
+	return( IDIALOG_UPDATE_OK );
 }
 
+#if 0
 static gboolean
-create_confirmed( const ofaDossierNew *self )
+create_confirmed( const ofaExerciceNew *self )
 {
 	gboolean ok;
 	gchar *str;
@@ -454,13 +433,14 @@ create_confirmed( const ofaDossierNew *self )
 
 	return( ok );
 }
+#endif
 
 static void
-set_message( ofaDossierNew *self, const gchar *message )
+set_message( ofaExerciceNew *self, const gchar *message )
 {
-	ofaDossierNewPrivate *priv;
+	ofaExerciceNewPrivate *priv;
 
-	priv = ofa_dossier_new_get_instance_private( self );
+	priv = ofa_exercice_new_get_instance_private( self );
 
 	if( priv->msg_label ){
 		gtk_label_set_text( GTK_LABEL( priv->msg_label ), my_strlen( message ) ? message : "" );
@@ -471,11 +451,11 @@ set_message( ofaDossierNew *self, const gchar *message )
  * settings are: <none>
  */
 static void
-read_settings( ofaDossierNew *self )
+read_settings( ofaExerciceNew *self )
 {
 }
 
 static void
-write_settings( ofaDossierNew *self )
+write_settings( ofaExerciceNew *self )
 {
 }

@@ -61,6 +61,7 @@
 #include "ofa-idbdossier-meta-def.h"
 #include "ofa-idbdossier-editor-def.h"
 #include "ofa-idbeditor.h"
+#include "api/ofa-idbexercice-editor-def.h"
 #include "ofa-idbprovider-def.h"
 #include "ofa-idbsuperuser-def.h"
 
@@ -81,6 +82,7 @@ typedef struct _ofaIDBProviderInterface           ofaIDBProviderInterface;
  * @get_interface_version: [should]: returns the implemented version number.
  * @new_dossier_meta: [should]: returns a new ofaIDBDossierMeta object.
  * @new_dossier_editor: [should]: returns a new ofaIDBDossierEditor object.
+ * @new_exercice_editor: [should]: returns a new ofaIDBExerciceEditor object.
  * @new_superuser_bin: [should]: returns a new ofaIDBSuperuser widget.
  * @new_editor: [should]: returns a new ofaIDBEditor object.
  *
@@ -128,6 +130,22 @@ struct _ofaIDBProviderInterface {
 	 * Since: version 1
 	 */
 	ofaIDBDossierEditor *  ( *new_dossier_editor )     ( ofaIDBProvider *instance,
+															const gchar *settings_prefix,
+															guint rule );
+
+	/**
+	 * new_exercice_editor:
+	 * @instance: this #ofaIDBProvider instance.
+	 * @settings_prefix: the prefix of a user preference key.
+	 * @rule: the usage of the editor.
+	 *
+	 * Returns: a #GtkWidget which implements the #ofaIDBExerciceEditor
+	 * interface, and handles the informations needed to qualify a
+	 * DB server and the storage space required for a dossier.
+	 *
+	 * Since: version 1
+	 */
+	ofaIDBExerciceEditor * ( *new_exercice_editor )  ( ofaIDBProvider *instance,
 															const gchar *settings_prefix,
 															guint rule );
 
@@ -192,6 +210,10 @@ ofaIDBDossierMeta    *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider
 ofaIDBDossierEditor  *ofa_idbprovider_new_dossier_editor        ( ofaIDBProvider *provider,
 																		const gchar *settings_prefix,
 																		guint rule );
+
+ofaIDBExerciceEditor *ofa_idbprovider_new_exercice_editor       ( ofaIDBProvider *provider,
+																			const gchar *settings_prefix,
+																			guint rule );
 
 ofaIDBSuperuser      *ofa_idbprovider_new_superuser_bin         ( ofaIDBProvider *provider,
 																		guint rule );

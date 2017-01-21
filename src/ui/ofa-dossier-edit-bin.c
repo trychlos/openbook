@@ -54,6 +54,7 @@ typedef struct {
 	ofaHub                 *hub;
 	gchar                  *settings_prefix;
 	guint                   rule;
+	gboolean                allow_open;
 
 	/* UI
 	 */
@@ -207,18 +208,19 @@ ofa_dossier_edit_bin_class_init( ofaDossierEditBinClass *klass )
  * @hub: the #ofaHub object of the application.
  * @settings_prefix: the prefix of the key in user settings.
  * @rule: the usage of this widget.
+ * @allow_open: whether we should display the DossierActions widget.
  *
  * Returns: a newly defined composite widget.
  */
 ofaDossierEditBin *
-ofa_dossier_edit_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule )
+ofa_dossier_edit_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule, gboolean allow_open )
 {
 	static const gchar *thisfn = "ofa_dossier_edit_bin_new";
 	ofaDossierEditBin *bin;
 	ofaDossierEditBinPrivate *priv;
 
-	g_debug( "%s: hub=%p, settings_prefix=%s, guint=%u",
-			thisfn, ( void * ) hub, settings_prefix, rule );
+	g_debug( "%s: hub=%p, settings_prefix=%s, guint=%u, allow_open=%s",
+			thisfn, ( void * ) hub, settings_prefix, rule, allow_open ? "True":"False" );
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( my_strlen( settings_prefix ), NULL );
@@ -229,6 +231,7 @@ ofa_dossier_edit_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule 
 
 	priv->hub = hub;
 	priv->rule = rule;
+	priv->allow_open = allow_open;
 
 	g_free( priv->settings_prefix );
 	priv->settings_prefix = g_strdup( settings_prefix );
@@ -298,6 +301,9 @@ setup_bin( ofaDossierEditBin *self )
 	g_signal_connect( priv->actions_bin, "ofa-changed", G_CALLBACK( on_actions_bin_changed ), self );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->actions_bin ));
 	//my_utils_size_group_add_size_group( priv->group1, ofa_dossier_actions_bin_get_size_group( priv->actions_bin, 0 ));
+	if( !priv->allow_open ){
+		gtk_container_foreach( GTK_CONTAINER( priv->actions_bin ), ( GtkCallback ) gtk_widget_set_sensitive, NULL );
+	}
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -329,7 +335,7 @@ on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self )
 		if( priv->exercice_editor_bin ){
 			gtk_container_remove( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
 		}
-		priv->exercice_editor_bin = ofa_idbdossier_editor_new_exercice_editor( priv->dossier_editor_bin, priv->settings_prefix, priv->rule );
+		priv->exercice_editor_bin = ofa_idbprovider_new_exercice_editor( priv->provider, priv->settings_prefix, priv->rule );
 		gtk_container_add( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
 		g_signal_connect( priv->exercice_editor_bin, "ofa-changed", G_CALLBACK( on_exercice_editor_changed ), self );
 		my_utils_size_group_add_size_group( priv->group1, ofa_idbexercice_editor_get_size_group( priv->exercice_editor_bin, 0 ));

@@ -48,7 +48,6 @@ typedef struct {
 	/* initialization
 	 */
 	ofaMysqlDBProvider *provider;
-	gchar              *settings_prefix;
 	guint               rule;
 
 	/* UI
@@ -69,6 +68,7 @@ typedef struct {
 }
 	ofaMysqlRootBinPrivate;
 
+static const gchar *st_settings_prefix  = "mysql-su";
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-root-bin.ui";
 
 static void          setup_bin( ofaMysqlRootBin *bin );
@@ -108,7 +108,6 @@ mysql_root_bin_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_mysql_root_bin_get_instance_private( OFA_MYSQL_ROOT_BIN( instance ));
 
-	g_free( priv->settings_prefix );
 	g_free( priv->account );
 	g_free( priv->password );
 
@@ -153,7 +152,6 @@ ofa_mysql_root_bin_init( ofaMysqlRootBin *self )
 	priv = ofa_mysql_root_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->account = NULL;
 	priv->password = NULL;
 }
@@ -600,7 +598,7 @@ read_settings( ofaMysqlRootBin *self )
 		group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
 		if( settings && group ){
-			strlist = my_isettings_get_string_list( settings, group, priv->settings_prefix );
+			strlist = my_isettings_get_string_list( settings, group, st_settings_prefix );
 			remember = FALSE;
 
 			it = strlist;
@@ -642,7 +640,7 @@ write_settings( ofaMysqlRootBin *self )
 						priv->remember ? "True":"False",
 						priv->remember ? ( priv->account ? priv->account : "" ) : "" );
 
-			my_isettings_set_string( settings, group, priv->settings_prefix, str );
+			my_isettings_set_string( settings, group, st_settings_prefix, str );
 
 			g_free( str );
 		}

@@ -40,7 +40,6 @@
 #include "mysql/ofa-mysql-connect.h"
 #include "mysql/ofa-mysql-dossier-bin.h"
 #include "mysql/ofa-mysql-dossier-editor.h"
-#include "mysql/ofa-mysql-exercice-editor.h"
 #include "mysql/ofa-mysql-root-bin.h"
 
 /* private instance data
@@ -68,17 +67,16 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-dossier-editor.ui";
 
-static void                  setup_bin( ofaMysqlDossierEditor *self );
-static void                  on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlDossierEditor *self );
-static void                  on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self );
-static void                  changed_composite( ofaMysqlDossierEditor *self );
-static gboolean              check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr );
-static void                  idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface );
-static guint                 idbdossier_editor_get_interface_version( void );
-static GtkSizeGroup         *idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint column );
-static gboolean              idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message );
-static ofaIDBConnect        *idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta );
-static ofaIDBExerciceEditor *idbdossier_editor_new_exercice_editor( ofaIDBDossierEditor *instance, const gchar *settings_prefix, guint rule );
+static void           setup_bin( ofaMysqlDossierEditor *self );
+static void           on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlDossierEditor *self );
+static void           on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self );
+static void           changed_composite( ofaMysqlDossierEditor *self );
+static gboolean       check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr );
+static void           idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface );
+static guint          idbdossier_editor_get_interface_version( void );
+static GtkSizeGroup  *idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint column );
+static gboolean       idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message );
+static ofaIDBConnect *idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierEditor, ofa_mysql_dossier_editor, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlDossierEditor )
@@ -395,7 +393,6 @@ idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface )
 	iface->get_size_group = idbdossier_editor_get_size_group;
 	iface->is_valid = idbdossier_editor_is_valid;
 	iface->get_valid_connect = idbdossier_editor_get_valid_connect;
-	iface->new_exercice_editor = idbdossier_editor_new_exercice_editor;
 }
 
 static guint
@@ -462,14 +459,4 @@ idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDB
 			ofa_mysql_root_bin_get_account( priv->root_bin ), ofa_mysql_root_bin_get_password( priv->root_bin ));
 
 	return( OFA_IDBCONNECT( priv->connect ));
-}
-
-static ofaIDBExerciceEditor *
-idbdossier_editor_new_exercice_editor( ofaIDBDossierEditor *instance, const gchar *settings_prefix, guint rule )
-{
-	ofaMysqlExerciceEditor *widget;
-
-	widget = ofa_mysql_exercice_editor_new( instance, settings_prefix, rule );
-
-	return( OFA_IDBEXERCICE_EDITOR( widget ));
 }

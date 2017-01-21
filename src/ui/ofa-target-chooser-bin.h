@@ -44,9 +44,9 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -69,10 +69,10 @@ typedef struct {
 }
 	ofaTargetChooserBinClass;
 
-GType                ofa_target_chooser_bin_get_type    ( void ) G_GNUC_CONST;
+GType                ofa_target_chooser_bin_get_type( void ) G_GNUC_CONST;
 
-ofaTargetChooserBin *ofa_target_chooser_bin_new         ( ofaHub *hub,
-																const gchar *settings_prefix );
+ofaTargetChooserBin *ofa_target_chooser_bin_new     ( ofaIGetter *getter,
+															const gchar *settings_prefix );
 
 G_END_DECLS
 

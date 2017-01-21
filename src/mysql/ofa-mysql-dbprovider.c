@@ -36,6 +36,7 @@
 #include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbeditor.h"
+#include "api/ofa-idbexercice-editor.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbsuperuser.h"
@@ -46,6 +47,7 @@
 #include "mysql/ofa-mysql-dossier-editor.h"
 #include "mysql/ofa-mysql-dossier-meta.h"
 #include "mysql/ofa-mysql-editor-enter.h"
+#include "mysql/ofa-mysql-exercice-editor.h"
 #include "mysql/ofa-mysql-root-bin.h"
 
 /* private instance data
@@ -61,18 +63,19 @@ typedef struct {
 #define DBPROVIDER_DISPLAY_NAME          "MySQL DBMS Provider"
 #define DBPROVIDER_VERSION                PACKAGE_VERSION
 
-static void                 iident_iface_init( myIIdentInterface *iface );
-static gchar               *iident_get_canon_name( const myIIdent *instance, void *user_data );
-static gchar               *iident_get_display_name( const myIIdent *instance, void *user_data );
-static gchar               *iident_get_version( const myIIdent *instance, void *user_data );
-static void                 idbprovider_iface_init( ofaIDBProviderInterface *iface );
-static ofaIDBDossierMeta   *idbprovider_new_dossier_meta( ofaIDBProvider *instance );
-static ofaIDBDossierEditor *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
-static ofaIDBSuperuser     *idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule );
-static ofaIDBEditor        *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
-static void                 isetter_iface_init( ofaISetterInterface *iface );
-static ofaIGetter          *isetter_get_getter( ofaISetter *instance );
-static void                 isetter_set_getter( ofaISetter *instance, ofaIGetter *getter );
+static void                  iident_iface_init( myIIdentInterface *iface );
+static gchar                *iident_get_canon_name( const myIIdent *instance, void *user_data );
+static gchar                *iident_get_display_name( const myIIdent *instance, void *user_data );
+static gchar                *iident_get_version( const myIIdent *instance, void *user_data );
+static void                  idbprovider_iface_init( ofaIDBProviderInterface *iface );
+static ofaIDBDossierMeta    *idbprovider_new_dossier_meta( ofaIDBProvider *instance );
+static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
+static ofaIDBExerciceEditor *idbprovider_new_exercice_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
+static ofaIDBSuperuser      *idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule );
+static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
+static void                  isetter_iface_init( ofaISetterInterface *iface );
+static ofaIGetter           *isetter_get_getter( ofaISetter *instance );
+static void                  isetter_set_getter( ofaISetter *instance, ofaIGetter *getter );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDBProvider, ofa_mysql_dbprovider, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlDBProvider )
@@ -186,6 +189,7 @@ idbprovider_iface_init( ofaIDBProviderInterface *iface )
 
 	iface->new_dossier_meta = idbprovider_new_dossier_meta;
 	iface->new_dossier_editor = idbprovider_new_dossier_editor;
+	iface->new_exercice_editor = idbprovider_new_exercice_editor;
 	iface->new_superuser_bin = idbprovider_new_superuser_bin;
 	iface->new_editor = idbprovider_new_editor;
 }
@@ -211,6 +215,16 @@ idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_
 	widget = ofa_mysql_dossier_editor_new( instance, settings_prefix, rule );
 
 	return( OFA_IDBDOSSIER_EDITOR( widget ));
+}
+
+static ofaIDBExerciceEditor *
+idbprovider_new_exercice_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule )
+{
+	ofaMysqlExerciceEditor *widget;
+
+	widget = ofa_mysql_exercice_editor_new( OFA_MYSQL_DBPROVIDER( instance ), settings_prefix, rule );
+
+	return( OFA_IDBEXERCICE_EDITOR( widget ));
 }
 
 static ofaIDBSuperuser *

@@ -74,6 +74,7 @@ static void     on_selection_activated( ofaExerciceTreeview *self, GtkTreeSelect
 static void     on_selection_delete( ofaExerciceTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     get_and_send( ofaExerciceTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static gboolean get_selected_with_selection( ofaExerciceTreeview *self, GtkTreeSelection *selection, ofaIDBExerciceMeta **period );
+static void     set_selected_with_selection( ofaExerciceTreeview *self, GtkTreeSelection *selection, ofaIDBExerciceMeta *meta );
 static gint     tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaExerciceTreeview, ofa_exercice_treeview, OFA_TYPE_TVBIN, 0,
@@ -361,18 +362,18 @@ get_and_send( ofaExerciceTreeview *self, GtkTreeSelection *selection, const gcha
 /**
  * ofa_exercice_treeview_get_selected:
  * @view: this #ofaExerciceTreeview instance.
- * @period: [allow-none][out]: the currently selected #ofaIDBExerciceMeta row;
- *  this reference is owned by the underlying #GtkTreeModel and should
- *  not be unreffed by the caller.
  *
- * Returns: %TRUE if a selection exists, %FALSE else.
+ * Returns: the currently selected #ofaIDBExerciceMeta row, or %NULL.
+ *
+ * When exists, the returned reference is owned by the @view and should
+ *  not be releawed by the caller.
  */
-gboolean
-ofa_exercice_treeview_get_selected( ofaExerciceTreeview *view, ofaIDBExerciceMeta **period )
+ofaIDBExerciceMeta *
+ofa_exercice_treeview_get_selected( ofaExerciceTreeview *view )
 {
 	ofaExerciceTreeviewPrivate *priv;
-	gboolean ok;
 	GtkTreeSelection *selection;
+	ofaIDBExerciceMeta *meta;
 
 	g_return_val_if_fail( view && OFA_IS_EXERCICE_TREEVIEW( view ), FALSE );
 
@@ -381,9 +382,9 @@ ofa_exercice_treeview_get_selected( ofaExerciceTreeview *view, ofaIDBExerciceMet
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
 	selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
-	ok = get_selected_with_selection( view, selection, period );
+	get_selected_with_selection( view, selection, &meta );
 
-	return( ok );
+	return( meta );
 }
 
 /*
@@ -403,6 +404,9 @@ get_selected_with_selection( ofaExerciceTreeview *self, GtkTreeSelection *select
 	ofaIDBExerciceMeta *row_period = NULL;
 
 	ok = FALSE;
+	if( period ){
+		*period = NULL;
+	}
 
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 		ok = TRUE;
@@ -414,6 +418,58 @@ get_selected_with_selection( ofaExerciceTreeview *self, GtkTreeSelection *select
 	}
 
 	return( ok );
+}
+
+/**
+ * ofa_exercice_treeview_set_selected:
+ * @view: this #ofaExerciceTreeview instance.
+ * @meta: [allow-none]: the #ofaIDBExerciceMeta to select;
+ *  if %NULL, then unselect all.
+ *
+ * Select the @meta row.
+ */
+void
+ofa_exercice_treeview_set_selected( ofaExerciceTreeview *view, ofaIDBExerciceMeta *meta )
+{
+	ofaExerciceTreeviewPrivate *priv;
+	GtkTreeSelection *selection;
+
+	g_return_if_fail( view && OFA_IS_EXERCICE_TREEVIEW( view ));
+	g_return_if_fail( !meta || OFA_IS_IDBEXERCICE_META( meta ));
+
+	priv = ofa_exercice_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
+	set_selected_with_selection( view, selection, meta );
+}
+
+static void
+set_selected_with_selection( ofaExerciceTreeview *self, GtkTreeSelection *selection, ofaIDBExerciceMeta *meta )
+{
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofaIDBExerciceMeta *row_period;
+
+	gtk_tree_selection_unselect_all( selection );
+
+	if( meta ){
+		tmodel = ofa_tvbin_get_tree_model( OFA_TVBIN( self ));
+		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+			while( TRUE ){
+				gtk_tree_model_get( tmodel, &iter, EXERCICE_COL_EXE_META, &row_period, -1 );
+				g_object_unref( row_period );
+				if( ofa_idbexercice_meta_compare( meta, row_period ) == 0 ){
+					gtk_tree_selection_select_iter( selection, &iter );
+					break;
+				}
+				if( !gtk_tree_model_iter_next( tmodel, &iter )){
+					break;
+				}
+			}
+		}
+	}
 }
 
 static gint

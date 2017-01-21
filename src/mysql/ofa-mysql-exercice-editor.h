@@ -40,7 +40,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-idbdossier-editor-def.h"
+#include "mysql/ofa-mysql-dbprovider.h"
 
 G_BEGIN_DECLS
 
@@ -65,7 +65,7 @@ typedef struct {
 
 GType                   ofa_mysql_exercice_editor_get_type    ( void ) G_GNUC_CONST;
 
-ofaMysqlExerciceEditor *ofa_mysql_exercice_editor_new         ( ofaIDBDossierEditor *editor,
+ofaMysqlExerciceEditor *ofa_mysql_exercice_editor_new         ( ofaMysqlDBProvider *provider,
 																	const gchar *settings_prefix,
 																	guint rule );
 

@@ -43,6 +43,8 @@
    - ofa_idbconnect_backup(): renamed to ofa_idbconnect_backup_db().
    - ofa_idbconnect_restore(): renamed to ofa_idbconnect_restore_db().
    - ofaIDBSuperuser: new interface.
+   - ofaExerciceEditBin: new class.
+   - ofaExerciceNew: new class.
 
    + Add a prequisite on JSON-GLib library.
    + Add a prequisite on libarchive library.
