@@ -1301,7 +1301,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	if( errors ){
 		msg = g_strdup_printf(
 				_( "%d errors have been found while computing accounts soldes" ), errors );
-		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_WARNING, msg );
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msg );
 		g_free( msg );
 		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
 		my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
@@ -1440,8 +1440,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				priv->connect, priv->p2_account, priv->p2_password, begin_next, end_next );
 
 	if( !ok ){
-		my_iwindow_msg_dialog(
-				MY_IWINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to archive the dossier" ));
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to archive the dossier" ));
 		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
 		my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 
@@ -1459,8 +1458,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		ok = ( cnx != NULL );
 
 		if( !ok ){
-			my_iwindow_msg_dialog(
-					MY_IWINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to open a connection on the new exercice" ));
+			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to open a connection on the new exercice" ));
 			my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
 			my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 

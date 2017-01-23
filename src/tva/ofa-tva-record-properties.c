@@ -1265,14 +1265,14 @@ on_generate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 	if( do_generate_opes( self, &msgerr, &ope_count, &ent_count )){
 		msg = g_strdup_printf(
 				_( "%u operations successfully generated (%u entries)" ), ope_count, ent_count );
-		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, msg );
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO, msg );
 		g_free( msg );
 
 		priv->opes_generated += ope_count;
 		on_generated_opes_changed( self );
 
 	} else {
-		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
 		g_free( msgerr );
 	}
 }
@@ -1397,7 +1397,7 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 
 		if( do_update_dbms( self, &msgerr )){
 
-			my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO,
+			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO,
 					_( "The VAT declaration has been successfully validated." ));
 
 			/* close the Properties dialog box
@@ -1405,7 +1405,7 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 			my_iwindow_close( MY_IWINDOW( self ));
 
 		} else {
-			my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
 			g_free( msgerr );
 		}
 	}

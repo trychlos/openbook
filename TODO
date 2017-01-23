@@ -445,9 +445,9 @@
 
 1332 2017- 1-23 rename my_date_editable_set_label() to my_date_editable_set_label_format()
 
-1333 2017- 1-23 deprecate my_iwindow_msg_dialog()
+1334 2017- 1-23 ofaDossierNew: makes use of ofaExerciceEditBin
 
-1334
+1335
 
 -----------------------------------------------------------------------
  DONE
@@ -523,6 +523,9 @@
 1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
                 read-only (unset when current if was not set by the user) 
      2017- 1-16 done
+
+1333 2017- 1-23 deprecate my_iwindow_msg_dialog()
+     2017- 1-23 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

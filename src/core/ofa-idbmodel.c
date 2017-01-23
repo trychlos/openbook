@@ -736,7 +736,7 @@ do_run( ofaDBModelWindow *self )
 		type = GTK_MESSAGE_WARNING;
 	}
 
-	my_iwindow_msg_dialog( MY_IWINDOW( self ), type, str );
+	my_utils_msg_dialog( GTK_WINDOW( self ), type, str );
 	g_free( str );
 
 	gtk_widget_set_sensitive( priv->close_btn, TRUE );

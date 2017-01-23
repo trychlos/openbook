@@ -647,23 +647,6 @@ set_iwindow_default_size( myIWindow *instance, sIWindow *sdata )
 	}
 }
 
-/**
- * my_iwindow_msg_dialog:
- * @instance: this #myIWindow instance.
- * @type: the type of the displayed #GtkMessageDialog.
- * @msg: the message to be displayed.
- *
- * Display a message dialog.
- */
-void
-my_iwindow_msg_dialog( myIWindow *instance, GtkMessageType type, const gchar *msg )
-{
-	g_return_if_fail( instance && MY_IWINDOW( instance ));
-	g_return_if_fail( my_strlen( msg ));
-
-	my_utils_msg_dialog( GTK_WINDOW( instance ), type, msg );
-}
-
 /*
  * Save/restore the size and position for each identified myIWindow.
  * Have a default to ClassName

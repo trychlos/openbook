@@ -635,7 +635,7 @@ generate_do( ofaRecurrentGenerate *self )
 		} else {
 			str = g_strdup_printf( _( "%d generated operations" ), count );
 		}
-		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, str );
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO, str );
 		g_free( str );
 	}
 
@@ -834,7 +834,7 @@ display_error_messages( ofaRecurrentGenerate *self, GList *messages )
 		first = FALSE;
 	}
 
-	my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_ERROR, str->str );
+	my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_ERROR, str->str );
 
 	g_string_free( str, TRUE );
 }
@@ -874,7 +874,7 @@ do_record( ofaRecurrentGenerate *self, gchar **msgerr )
 	} else {
 		str = g_strdup_printf( _( "%d successfully inserted operations" ), count );
 	}
-	my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, str );
+	my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO, str );
 	g_free( str );
 
 	return( TRUE );

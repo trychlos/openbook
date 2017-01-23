@@ -646,7 +646,7 @@ idialog_quit_on_ok( myIDialog *instance )
 		return( priv->opened );
 	}
 
-	my_iwindow_msg_dialog( MY_IWINDOW( instance ), GTK_MESSAGE_WARNING, msg );
+	my_utils_msg_dialog( GTK_WINDOW( instance ), GTK_MESSAGE_WARNING, msg );
 	g_free( msg );
 
 	return( FALSE );

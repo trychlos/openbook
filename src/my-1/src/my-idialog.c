@@ -596,7 +596,7 @@ do_update_error( myIDialog *instance, sIDialog *sdata, const gchar *msgerr )
 	gtk_button_set_label( GTK_BUTTON( sdata->cancel_btn ), _( "Close" ));
 
 	msg = g_strdup( my_strlen( msgerr ) ? msgerr : _( "Undefined error on update" ));
-	my_iwindow_msg_dialog( MY_IWINDOW( instance ), GTK_MESSAGE_WARNING, msg );
+	my_utils_msg_dialog( GTK_WINDOW( instance ), GTK_MESSAGE_WARNING, msg );
 	g_free( msg );
 }
 
