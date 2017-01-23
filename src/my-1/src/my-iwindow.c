@@ -42,10 +42,17 @@ static GList   *st_live_list            = NULL;		/* list of IWindow instances */
 /* a data structure attached to each instance
  */
 typedef struct {
+
+	/* properties
+	 */
 	GtkWindow   *parent;				/* the set parent of the window */
 	myISettings *settings;
 	gboolean     does_restore_pos;
 	gboolean     does_restore_size;
+	gboolean     close_allowed;
+
+	/* runtime
+	 */
 	gboolean     initialized;
 	gboolean     closed;
 }
@@ -58,15 +65,14 @@ static void       iwindow_init_window( myIWindow *instance );
 static void       iwindow_init_set_transient_for( myIWindow *instance, sIWindow *sdata );
 static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
 static void       do_close( myIWindow *instance );
-static gboolean   is_destroy_allowed( const myIWindow *instance );
 static gchar     *get_iwindow_identifier( const myIWindow *instance );
 static gchar     *get_default_identifier( const myIWindow *instance );
 static gchar     *get_iwindow_key_prefix( const myIWindow *instance );
 static void       set_iwindow_default_size( myIWindow *instance, sIWindow *sdata );
 static void       position_restore( myIWindow *instance, sIWindow *sdata );
 static void       position_save( myIWindow *instance, sIWindow *sdata );
-static sIWindow  *get_iwindow_data( const myIWindow *instance );
-static void       on_iwindow_finalized( sIWindow *sdata, GObject *finalized_iwindow );
+static sIWindow  *get_instance_data( const myIWindow *instance );
+static void       on_instance_finalized( sIWindow *sdata, GObject *finalized_iwindow );
 static void       dump_live_list( void );
 
 /**
@@ -210,7 +216,7 @@ my_iwindow_get_parent( const myIWindow *instance )
 
 	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
 
-	sdata = get_iwindow_data( instance );
+	sdata = get_instance_data( instance );
 
 	return( sdata->parent );
 }
@@ -230,9 +236,29 @@ my_iwindow_set_parent( myIWindow *instance, GtkWindow *parent )
 	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
-	sdata = get_iwindow_data( instance );
+	sdata = get_instance_data( instance );
 
 	sdata->parent = parent;
+}
+
+/**
+ * my_iwindow_set_geometry_settings:
+ * @instance: this #myIWindow instance.
+ * @settings: [allow-none]: the #myISettings implementation to be used.
+ *
+ * Sets the settings.
+ */
+void
+my_iwindow_set_geometry_settings( myIWindow *instance, myISettings *settings )
+{
+	sIWindow *sdata;
+
+	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
+	g_return_if_fail( !settings || MY_IS_ISETTINGS( settings ));
+
+	sdata = get_instance_data( instance );
+
+	sdata->settings = settings;
 }
 
 /**
@@ -254,7 +280,8 @@ my_iwindow_set_restore_pos( myIWindow *instance, gboolean restore_pos )
 
 	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
 
-	sdata = get_iwindow_data( instance );
+	sdata = get_instance_data( instance );
+
 	sdata->does_restore_pos = restore_pos;
 }
 
@@ -273,27 +300,34 @@ my_iwindow_set_restore_size( myIWindow *instance, gboolean restore_size )
 
 	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
 
-	sdata = get_iwindow_data( instance );
+	sdata = get_instance_data( instance );
+
 	sdata->does_restore_size = restore_size;
 }
 
 /**
- * my_iwindow_set_geometry_settings:
+ * my_iwindow_set_close_allowed:
  * @instance: this #myIWindow instance.
- * @settings: [allow-none]: the #myISettings implementation to be used.
+ * @allowed: whether destroying this window is allowed.
  *
- * Sets the settings.
+ * Sets the @allowed indicator.
+ *
+ * The @allowed indicator prevents the @instance to be closed by the
+ * #my_iwindow_close() function.
+ *
+ * When this indicator is set, only a direct call to #gtk_widget_destroy()
+ * is able to close the window.
  */
 void
-my_iwindow_set_geometry_settings( myIWindow *instance, myISettings *settings )
+my_iwindow_set_close_allowed( myIWindow *instance, gboolean allowed )
 {
 	sIWindow *sdata;
 
 	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
-	g_return_if_fail( !settings || MY_IS_ISETTINGS( settings ));
 
-	sdata = get_iwindow_data( instance );
-	sdata->settings = settings;
+	sdata = get_instance_data( instance );
+
+	sdata->close_allowed = allowed;
 }
 
 /**
@@ -310,7 +344,7 @@ my_iwindow_init( myIWindow *instance )
 
 	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
 
-	sdata = get_iwindow_data( instance );
+	sdata = get_instance_data( instance );
 
 	if( !sdata->initialized ){
 
@@ -476,7 +510,7 @@ my_iwindow_close_all( void )
 
 	/* first reset the closing indicator */
 	for( it=st_live_list ; it ; it=it->next ){
-		sdata = get_iwindow_data( MY_IWINDOW( it->data ));
+		sdata = get_instance_data( MY_IWINDOW( it->data ));
 		sdata->closed = FALSE;
 	}
 
@@ -486,7 +520,7 @@ my_iwindow_close_all( void )
 		has_closed_something = FALSE;
 
 		for( it=st_live_list ; it ; it=it->next ){
-			sdata = get_iwindow_data( MY_IWINDOW( it->data ));
+			sdata = get_instance_data( MY_IWINDOW( it->data ));
 			if( !sdata->closed ){
 				sdata->closed = TRUE;
 				do_close( MY_IWINDOW( it->data ));
@@ -518,7 +552,7 @@ on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance )
  * - hiding it (eg. ofaAccountSelect, ofaOpeTemplateSelect);
  * - doing nothing (eg. ofaExerciceCloseAssistant, ofaRestoreAssistant).
  *
- * The #is_destroy_allowed() method only manages the first and last
+ * The 'close_allowed' indicator only manages the first and last
  * items. Hding a window must be explicitely done in the actual
  * application code.
  */
@@ -528,46 +562,14 @@ do_close( myIWindow *instance )
 	static const gchar *thisfn = "my_iwindow_do_close";
 	sIWindow *sdata;
 
-	sdata = get_iwindow_data( instance );
+	sdata = get_instance_data( instance );
 
 	position_save( instance, sdata );
 
-	if( is_destroy_allowed( instance )){
+	if( sdata->close_allowed ){
 		g_debug( "%s: destroying instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 		gtk_widget_destroy( GTK_WIDGET( instance ));
 	}
-}
-
-/*
- * is_destroy_allowed:
- * @instance: this #myIWindow instance.
- *
- * This should only be used when a window is sure to want to keep being
- * displayed while another window wants close it (or wants close all).
- *
- * Returns: %TRUE if the @instance accepts to be destroyed.
- *
- * Defaults to %TRUE.
- */
-static gboolean
-is_destroy_allowed( const myIWindow *instance )
-{
-	static const gchar *thisfn = "my_iwindow_is_destroy_allowed";
-	gboolean allowed;
-
-	if( MY_IWINDOW_GET_INTERFACE( instance )->is_destroy_allowed ){
-		allowed = MY_IWINDOW_GET_INTERFACE( instance )->is_destroy_allowed( instance );
-		if( !allowed ){
-			g_debug( "%s: instance=%p (%s) does not allow its destruction",
-					thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-		}
-		return( allowed );
-	}
-
-	g_info( "%s: myIWindow's %s implementation does not provide 'is_destroy_allowed()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-
-	return( TRUE );
 }
 
 /*
@@ -693,7 +695,7 @@ position_save( myIWindow *instance, sIWindow *sdata )
 }
 
 static sIWindow *
-get_iwindow_data( const myIWindow *instance )
+get_instance_data( const myIWindow *instance )
 {
 	sIWindow *sdata;
 
@@ -702,11 +704,12 @@ get_iwindow_data( const myIWindow *instance )
 	if( !sdata ){
 		sdata = g_new0( sIWindow, 1 );
 		g_object_set_data( G_OBJECT( instance ), IWINDOW_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_iwindow_finalized, sdata );
+		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
 
 		sdata->parent = NULL;
 		sdata->does_restore_pos = TRUE;
 		sdata->does_restore_size = TRUE;
+		sdata->close_allowed = TRUE;
 		sdata->initialized = FALSE;
 	}
 
@@ -714,9 +717,9 @@ get_iwindow_data( const myIWindow *instance )
 }
 
 static void
-on_iwindow_finalized( sIWindow *sdata, GObject *finalized_iwindow )
+on_instance_finalized( sIWindow *sdata, GObject *finalized_iwindow )
 {
-	static const gchar *thisfn = "my_iwindow_on_iwindow_finalized";
+	static const gchar *thisfn = "my_iwindow_on_instance_finalized";
 
 	g_debug( "%s: sdata=%p, finalized_iwindow=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_iwindow );

@@ -382,9 +382,6 @@
 1285 2016-12-13 myIWindow: deprecate ::get_identifier() method
                 when several windows of same name are opened, just shift them 
 
-1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
-                by a my_iwindow_set_is_destroy_allowed() method
-
 1292 2016-12-17 optimize reconciliation loading
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
@@ -467,6 +464,10 @@
                 so that this may be managed by the application instead of
                 by the dbms plugin
      2017- 1- 9 done
+
+1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
+                by a my_iwindow_set_is_destroy_allowed() method
+     2017- 1-23 done
 
 1304 2016-12-28 ofa_idbdossier_meta_get_provider(): should not return 
                 a new reference

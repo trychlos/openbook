@@ -158,7 +158,6 @@ typedef struct {
 	GtkWidget              *p6_page;
 	GtkWidget              *p6_textview;
 	GtkWidget              *p6_label;
-	gboolean                is_destroy_allowed;
 }
 	ofaRestoreAssistantPrivate;
 
@@ -190,7 +189,6 @@ static const gchar *st_resource_ui       = "/org/trychlos/openbook/ui/ofa-restor
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
-static gboolean iwindow_is_destroy_allowed( const myIWindow *instance );
 static void     iassistant_iface_init( myIAssistantInterface *iface );
 static gboolean iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
 static void     p1_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -334,7 +332,6 @@ ofa_restore_assistant_init( ofaRestoreAssistant *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
-	priv->is_destroy_allowed = TRUE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -393,7 +390,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
-	iface->is_destroy_allowed = iwindow_is_destroy_allowed;
 }
 
 static void
@@ -416,19 +412,6 @@ iwindow_init( myIWindow *instance )
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 
 	read_settings( OFA_RESTORE_ASSISTANT( instance ));
-}
-
-static gboolean
-iwindow_is_destroy_allowed( const myIWindow *instance )
-{
-	static const gchar *thisfn = "ofa_restore_assistant_iwindow_is_destroy_allowed";
-	ofaRestoreAssistantPrivate *priv;
-
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
-
-	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
-
-	return( priv->is_destroy_allowed );
 }
 
 /*
@@ -1177,9 +1160,9 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 		my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), FALSE );
 
 		/* prevent the window manager to close this assistant */
-		priv->is_destroy_allowed = FALSE;
+		my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
 		ofa_hub_dossier_close( priv->hub );
-		priv->is_destroy_allowed = TRUE;
+		my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
 
 		g_idle_add(( GSourceFunc ) p6_do_restore, self );
 	}

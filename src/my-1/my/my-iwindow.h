@@ -51,18 +51,10 @@
  * The key of the size/position settings defaults to the #myIWindow
  * identifier, plus a '-pos' suffix added by my_utils.
  *
- * Note on 'hide_on_close' indicator:
- * Some windows do not want to be destroyed when user closes them, but
- * just be hidden (most of time because of a big initialization and a
- * layout which would gain to be re-used).
- * When the 'hide_on_close' indicator is set, these windows are hidden
- * instead of being destroyed at close time.
- *
- * Note on non-modal windows.
- * 1/ They cannot have a return code
- * 2/ this myIWindow interface takes care of having at most one instance
- *    of each IWindow identifier (usually the dialog class name + object
- *    identifier)
+ * Note on #my_iwindow_close().
+ * The application should call #my_iwindow_close() to close a #myIWindow
+ * instance. Its default behavior is to #gtk_widget_destroy() the window
+ * unless the 'close_allowed' indicator has been previously cleared.
  */
 
 #include <gtk/gtk.h>
@@ -168,16 +160,6 @@ typedef struct {
 												gint *y,
 												gint *cx,
 												gint *cy );
-
-	/**
-	 * is_destroy_allowed:
-	 * @instance: the #myIWindow instance.
-	 *
-	 * Returns: %TRUE if the @instance accepts to be destroyed.
-	 *
-	 * Since: version 1.
-	 */
-	gboolean ( *is_destroy_allowed )   ( const myIWindow *instance );
 }
 	myIWindowInterface;
 
@@ -209,6 +191,9 @@ void         my_iwindow_set_restore_pos           ( myIWindow *instance,
 
 void         my_iwindow_set_restore_size          ( myIWindow *instance,
 														gboolean restore_size );
+
+void         my_iwindow_set_close_allowed         ( myIWindow *instance,
+														gboolean allowed );
 
 void         my_iwindow_init                      ( myIWindow *instance );
 

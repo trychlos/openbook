@@ -36,6 +36,7 @@
 
    - myICollectionable: remove ofaHub dependancy (todo #1319).
    - my_iwindow_msg_dialog(): deprecated (todo #1333).
+   - my_iwindow_set_close_allowed(): new function replacing is_destroy_allowed() method (todo #1287).
    - my_stamp_xxx() functions now accept a display format (todo #1318).
    - my_utils_file_is_readable_file(): renamed to my_utils_file_is_readable().
    - my_utils_uri_is_readable_file(): renamed to my_utils_uri_is_readable().
