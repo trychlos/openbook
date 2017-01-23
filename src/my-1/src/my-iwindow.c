@@ -419,6 +419,30 @@ iwindow_init_set_transient_for( myIWindow *instance, sIWindow *sdata )
  * After the call, the @instance may so be invalid.
  *
  * Returns: the actually shown instance.
+ *
+ * As a reminder, application should not used a non-modal window when:
+ * - it wants to wait for its termination
+ * - or it wants the called function return a meaningful value.
+ * Instead, non-modal window should:
+ * - either be only used to display informations,
+ * - or be self-contained, updating themselves their datas.
+ *
+ * A #myIWindow running as non-modal should have at least one button to
+ * let the user terminate it:
+ * - if it is a #GtkDialog, the probably most simple way is to
+ *   #g_signal_connect( dialog, "response", G_CALLBACK( my_iwindow_close ), NULL );
+ * - if this is not a #GtkDialog, an alternative may probably be
+ *   #g_signal_connect_swapped( button, "clicked", G_CALLBACK( my_iwindow_close ), window ).
+ *
+ * A non-modal #myIWindow may want validate its content, and update its
+ * repository accordingly (while still not returning any value to its
+ * caller). The behavior is so:
+ * - on cancel, close the window (most often)
+ * - on ok, try to update and
+ *   > close always
+ *   > or close only if successful.
+ * It is recommanded that the caller implements itself this behavior so
+ * that it will be visually explicit to the maintainer.
  */
 myIWindow *
 my_iwindow_present( myIWindow *instance )
@@ -445,7 +469,7 @@ my_iwindow_present( myIWindow *instance )
 			break;
 		}
 		other_id = get_iwindow_identifier( other );
-		cmp = g_utf8_collate( instance_id, other_id );
+		cmp = my_collate( instance_id, other_id );
 		g_free( other_id );
 		if( cmp == 0 ){
 			found = other;

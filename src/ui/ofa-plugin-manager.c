@@ -273,6 +273,9 @@ idialog_init( myIDialog *instance )
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
+	/* terminate the dialog when clicking on the unique button */
+	g_signal_connect( instance, "response", G_CALLBACK( my_iwindow_close ), NULL );
+
 	priv = ofa_plugin_manager_get_instance_private( OFA_PLUGIN_MANAGER( instance ));
 
 	priv->plugin_pane = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "plugin-paned" );

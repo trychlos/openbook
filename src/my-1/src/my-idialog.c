@@ -65,8 +65,8 @@ static void      do_update( myIDialog *instance );
 static void      do_update_ok( myIDialog *instance, sIDialog *sdata );
 static void      do_update_error( myIDialog *instance, sIDialog *sdata, const gchar *msgerr );
 static void      do_update_redo( myIDialog *instance, sIDialog *sdata );
-static sIDialog *get_idialog_data( const myIDialog *instance );
-static void      on_idialog_finalized( sIDialog *sdata, GObject *finalized_idialog );
+static sIDialog *get_instance_data( const myIDialog *instance );
+static void      on_instance_finalized( sIDialog *sdata, GObject *finalized_idialog );
 
 /**
  * my_idialog_get_type:
@@ -115,7 +115,7 @@ register_type( void )
 	g_type_interface_add_prerequisite( type, GTK_TYPE_DIALOG );
 	/*
 	An interface can have at most one instantiatable prerequisite type
-	g_type_interface_add_prerequisite( type, MY_TYYPE_IWINDOW );
+	g_type_interface_add_prerequisite( type, MY_TYPE_IWINDOW );
 	*/
 
 	return( type );
@@ -217,8 +217,9 @@ my_idialog_init( myIDialog *instance )
 
 	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
 	g_return_if_fail( GTK_IS_DIALOG( instance ));
+	g_return_if_fail( MY_IS_IWINDOW( instance ));
 
-	sdata = get_idialog_data( instance );
+	sdata = get_instance_data( instance );
 
 	if( !sdata->initialized ){
 		g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -226,9 +227,11 @@ my_idialog_init( myIDialog *instance )
 
 		idialog_init_application( instance );
 
-		button_connect( instance, "Cancel", GTK_RESPONSE_CANCEL, G_CALLBACK( on_cancel_clicked ));
-		button_connect( instance, "Close", GTK_RESPONSE_CLOSE, G_CALLBACK( on_close_clicked ));
-		button_connect( instance, "OK", GTK_RESPONSE_OK, G_CALLBACK( on_ok_clicked ));
+		if( 0 ){
+			button_connect( instance, "Cancel", GTK_RESPONSE_CANCEL, G_CALLBACK( on_cancel_clicked ));
+			button_connect( instance, "Close", GTK_RESPONSE_CLOSE, G_CALLBACK( on_close_clicked ));
+			button_connect( instance, "OK", GTK_RESPONSE_OK, G_CALLBACK( on_ok_clicked ));
+		}
 
 		gtk_widget_show_all( GTK_WIDGET( instance ));
 	}
@@ -261,7 +264,7 @@ button_connect( myIDialog *instance, const gchar *label, gint response_code, GCa
 		g_signal_connect( btn, "clicked", cb, instance );
 
 		if( response_code == GTK_RESPONSE_CANCEL ){
-			sdata = get_idialog_data( instance );
+			sdata = get_instance_data( instance );
 			sdata->cancel_btn = btn;
 		}
 	} else {
@@ -285,6 +288,7 @@ my_idialog_set_close_button( myIDialog *instance )
 
 	g_return_val_if_fail( instance && MY_IS_IDIALOG( instance ), NULL );
 	g_return_val_if_fail( GTK_IS_DIALOG( instance ), NULL );
+	g_return_val_if_fail( MY_IS_IWINDOW( instance ), NULL );
 
 	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_OK );
 	if( button ){
@@ -364,6 +368,7 @@ my_idialog_run( myIDialog *instance )
 
 	g_return_val_if_fail( instance && MY_IS_IDIALOG( instance ), 0 );
 	g_return_val_if_fail( GTK_IS_DIALOG( instance ), 0 );
+	g_return_val_if_fail( MY_IS_IWINDOW( instance ), 0 );
 
 	my_iwindow_init( MY_IWINDOW( instance ));
 	gtk_window_set_modal( GTK_WINDOW( instance ), TRUE );
@@ -399,6 +404,7 @@ my_idialog_run_maybe_modal( myIDialog *instance )
 
 	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
 	g_return_if_fail( GTK_IS_DIALOG( instance ));
+	g_return_if_fail( MY_IS_IWINDOW( instance ));
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -492,9 +498,10 @@ my_idialog_click_to_update( myIDialog *instance, GtkWidget *button, myIDialogUpd
 
 	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
 	g_return_if_fail( GTK_IS_DIALOG( instance ));
+	g_return_if_fail( MY_IS_IWINDOW( instance ));
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 
-	sdata = get_idialog_data( instance );
+	sdata = get_instance_data( instance );
 	g_return_if_fail( !sdata->update_cb && !sdata->update_ex_cb );
 
 	sdata->update_btn = button;
@@ -520,9 +527,10 @@ my_idialog_click_to_update_ex( myIDialog *instance, GtkWidget *button, myIDialog
 
 	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
 	g_return_if_fail( GTK_IS_DIALOG( instance ));
+	g_return_if_fail( MY_IS_IWINDOW( instance ));
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 
-	sdata = get_idialog_data( instance );
+	sdata = get_instance_data( instance );
 	g_return_if_fail( !sdata->update_cb && !sdata->update_ex_cb );
 
 	sdata->update_btn = button;
@@ -547,7 +555,7 @@ do_update( myIDialog *instance )
 	guint response;
 	gchar *msgerr;
 
-	sdata = get_idialog_data( instance );
+	sdata = get_instance_data( instance );
 	msgerr = NULL;
 
 	/* an update function which only returns a boolean
@@ -606,7 +614,7 @@ do_update_redo( myIDialog *instance, sIDialog *sdata )
 }
 
 static sIDialog *
-get_idialog_data( const myIDialog *instance )
+get_instance_data( const myIDialog *instance )
 {
 	sIDialog *sdata;
 
@@ -615,7 +623,7 @@ get_idialog_data( const myIDialog *instance )
 	if( !sdata ){
 		sdata = g_new0( sIDialog, 1 );
 		g_object_set_data( G_OBJECT( instance ), IDIALOG_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_idialog_finalized, sdata );
+		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
 
 		sdata->initialized = FALSE;
 		sdata->update_btn = NULL;
@@ -626,9 +634,9 @@ get_idialog_data( const myIDialog *instance )
 }
 
 static void
-on_idialog_finalized( sIDialog *sdata, GObject *finalized_idialog )
+on_instance_finalized( sIDialog *sdata, GObject *finalized_idialog )
 {
-	static const gchar *thisfn = "my_idialog_on_idialog_finalized";
+	static const gchar *thisfn = "my_idialog_on_instance_finalized";
 
 	g_debug( "%s: sdata=%p, finalized_idialog=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_idialog );

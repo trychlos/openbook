@@ -226,6 +226,7 @@ my_iassistant_set_callbacks( myIAssistant *instance, const ofsIAssistant *cbs )
 	sInstance *inst_data;
 
 	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
+	g_return_if_fail( MY_IS_IWINDOW( instance ));
 
 	inst_data = get_instance_data( instance );
 
@@ -436,10 +437,14 @@ is_willing_to_quit( myIAssistant *instance, guint keyval )
 static void
 do_close( myIAssistant *instance )
 {
+	static const gchar *thisfn = "my_iassistant_do_close";
+
 	if( MY_IS_IWINDOW(( instance ))){
 		my_iwindow_close( MY_IWINDOW( instance ));
 
 	} else {
+		g_warning( "%s: class %s does not implement the myIWindow interface (but should)",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
 		g_object_unref( instance );
 	}
 }
@@ -457,6 +462,7 @@ my_iassistant_is_page_initialized( const myIAssistant *instance, GtkWidget *page
 	sPage *page_data;
 
 	g_return_val_if_fail( instance && MY_IS_IASSISTANT( instance ), FALSE );
+	g_return_val_if_fail( MY_IS_IWINDOW( instance ), FALSE );
 
 	page_data = get_page_data( instance, page );
 	g_return_val_if_fail( page_data, FALSE );
@@ -478,6 +484,7 @@ my_iassistant_set_page_initialized( myIAssistant *instance, GtkWidget *page, gbo
 	sPage *page_data;
 
 	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
+	g_return_if_fail( MY_IS_IWINDOW( instance ));
 
 	page_data = get_page_data( instance, page );
 	g_return_if_fail( page_data );
@@ -499,6 +506,7 @@ my_iassistant_set_current_page_complete( myIAssistant *instance, gboolean comple
 	sInstance *inst_data;
 
 	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
+	g_return_if_fail( MY_IS_IWINDOW( instance ));
 
 	inst_data = get_instance_data( instance );
 	g_return_if_fail( inst_data );
@@ -525,6 +533,7 @@ my_iassistant_set_current_page_type( myIAssistant *instance, GtkAssistantPageTyp
 	sInstance *inst_data;
 
 	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
+	g_return_if_fail( MY_IS_IWINDOW( instance ));
 
 	inst_data = get_instance_data( instance );
 	g_return_if_fail( inst_data );

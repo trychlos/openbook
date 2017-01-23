@@ -62,6 +62,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-ope-t
 static void iwindow_iface_init( myIWindowInterface *iface );
 static void iwindow_init( myIWindow *instance );
 static void idialog_iface_init( myIDialogInterface *iface );
+static void idialog_init( myIDialog *instance );
 static void add_parent( ofaOpeTemplateHelp *self, GtkWindow *parent );
 static void on_parent_finalized( ofaOpeTemplateHelp *self, GObject *finalized_parent );
 
@@ -214,6 +215,19 @@ idialog_iface_init( myIDialogInterface *iface )
 	static const gchar *thisfn = "ofa_ope_template_help_idialog_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+}
+
+static void
+idialog_init( myIDialog *instance )
+{
+	static const gchar *thisfn = "ofa_ope_template_help_idialog_init";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	/* terminate the dialog when clicking on the unique button */
+	g_signal_connect( instance, "response", G_CALLBACK( my_iwindow_close ), NULL );
 }
 
 /*

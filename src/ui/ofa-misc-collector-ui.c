@@ -238,6 +238,9 @@ idialog_init( myIDialog *instance )
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
+	/* terminate the dialog when clicking on the unique button */
+	g_signal_connect( instance, "response", G_CALLBACK( my_iwindow_close ), NULL );
+
 	collection_setup_treeview( OFA_MISC_COLLECTOR_UI( instance ));
 	single_setup_treeview( OFA_MISC_COLLECTOR_UI( instance ));
 

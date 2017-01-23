@@ -33,7 +33,8 @@
  *
  * This is a GtkAssistant extension:
  * - the implementation must derives from GtkAssistant
- * - it is expected that the implementation also implements myIWindow.
+ * - it is expected that the implementation also implements myIWindow
+ *   (though this cannot be forced by the code).
  *
  * This interface provides to the implementation a callback for each
  * state of each page:

@@ -33,7 +33,8 @@
  *
  * This is a GtkDialog extension:
  * - the implementation must derives from GtkDialog
- * - it is expected that the implementation also implements myIWindow.
+ * - it is expected that the implementation also implements myIWindow
+ *   (though this cannot be forced by the code).
  *
  * This interface manages for the application:
  * - the dialog buttons
@@ -45,6 +46,17 @@
  *   GTK_RESPONSE_OK           = -5,
  *   GTK_RESPONSE_CANCEL       = -6,
  *   GTK_RESPONSE_CLOSE        = -7
+ *
+ * A #myIDialog dialog may be run under three modes:
+ * - as a non-modal dialog: see #my_iwindow_present()
+ * - as a modal dialog: see #my_idialog_run()
+ * - as a modal or non-modal dialog depending of the parent modality:
+ *   > if the parent is modal, then run modal,
+ *   > if the parent is non-modal (or not set), run non modal
+ *   see #my_idialog_run_maybe_modal().
+ *
+ * As a reminder, only a modal dialog (i.e. called with #my_idialog_run())
+ * is able to return some valuable and meaningful information.
  */
 
 #include <gtk/gtk.h>
