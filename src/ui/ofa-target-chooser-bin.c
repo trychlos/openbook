@@ -80,6 +80,8 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-target-
 static void setup_bin( ofaTargetChooserBin *self );
 static void dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *empty, ofaTargetChooserBin *self );
 static void dossier_on_new( GtkButton *button, ofaTargetChooserBin *self );
+static void exercice_set_sensitive( ofaTargetChooserBin *self );
+static void exercice_set_sensitive_widget( GtkWidget *widget, ofaTargetChooserBin *self );
 static void exercice_on_selection_changed( ofaExerciceTreeview *treeview, ofaIDBExerciceMeta *meta, ofaTargetChooserBin *self );
 static void period_on_new( GtkButton *button, ofaTargetChooserBin *self );
 
@@ -205,6 +207,7 @@ ofa_target_chooser_bin_new( ofaIGetter *getter, const gchar *settings_prefix )
 	priv->settings_prefix = g_strdup( settings_prefix );
 
 	setup_bin( bin );
+	exercice_set_sensitive( bin );
 
 	return( bin );
 }
@@ -276,6 +279,8 @@ dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *m
 	priv->exercice_meta = NULL;
 	ofa_exercice_treeview_set_dossier( priv->exercice_tview, meta );
 
+	exercice_set_sensitive( self );
+
 	g_signal_emit_by_name( self, "ofa-changed", priv->dossier_meta, priv->exercice_meta );
 }
 
@@ -298,6 +303,29 @@ dossier_on_new( GtkButton *button, ofaTargetChooserBin *self )
 }
 
 static void
+exercice_set_sensitive( ofaTargetChooserBin *self )
+{
+	ofaTargetChooserBinPrivate *priv;
+
+	priv = ofa_target_chooser_bin_get_instance_private( self );
+
+	gtk_container_foreach( GTK_CONTAINER( priv->exercice_tview ), ( GtkCallback ) exercice_set_sensitive_widget, self );
+	exercice_set_sensitive_widget( priv->exercice_new_btn, self );
+}
+
+static void
+exercice_set_sensitive_widget( GtkWidget *widget, ofaTargetChooserBin *self )
+{
+	ofaTargetChooserBinPrivate *priv;
+	gboolean have_dossier;
+
+	priv = ofa_target_chooser_bin_get_instance_private( self );
+
+	have_dossier = priv->dossier_meta && OFA_IS_IDBDOSSIER_META( priv->dossier_meta );
+	gtk_widget_set_sensitive( widget, have_dossier );
+}
+
+static void
 exercice_on_selection_changed( ofaExerciceTreeview *treeview, ofaIDBExerciceMeta *meta, ofaTargetChooserBin *self )
 {
 	ofaTargetChooserBinPrivate *priv;
@@ -315,15 +343,13 @@ period_on_new( GtkButton *button, ofaTargetChooserBin *self )
 	ofaTargetChooserBinPrivate *priv;
 	GtkWindow *toplevel;
 	ofaIDBExerciceMeta *meta;
-	ofaIDBProvider *provider;
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
 	meta = NULL;
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
 
-	if( ofa_exercice_new_run_modal( priv->getter, toplevel, provider, FALSE, &meta )){
+	if( ofa_exercice_new_run_modal( priv->getter, toplevel, priv->dossier_meta, FALSE, &meta )){
 		ofa_exercice_treeview_set_selected( priv->exercice_tview, meta );
 	}
 }

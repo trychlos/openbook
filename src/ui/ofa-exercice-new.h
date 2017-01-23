@@ -55,8 +55,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
-#include "api/ofa-idbprovider-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -84,7 +84,7 @@ GType    ofa_exercice_new_get_type ( void ) G_GNUC_CONST;
 
 gboolean ofa_exercice_new_run_modal( ofaIGetter *getter,
 										GtkWindow *parent,
-										ofaIDBProvider *provider,
+										ofaIDBDossierMeta *dossier_meta,
 										gboolean allow_open,
 										ofaIDBExerciceMeta **exercice_meta );
 

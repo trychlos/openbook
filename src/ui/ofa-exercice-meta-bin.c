@@ -58,6 +58,7 @@ typedef struct {
 
 	/* runtime data
 	 */
+	ofaIDBDossierMeta  *dossier_meta;
 	GDate               begin;
 	GDate               end;
 	gboolean            is_current;
@@ -79,11 +80,12 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-exercice-meta-bin.ui";
 
-static void setup_bin( ofaExerciceMetaBin *self );
-static void on_begin_changed( GtkEditable *editable, ofaExerciceMetaBin *self );
-static void on_end_changed( GtkEditable *editable, ofaExerciceMetaBin *self );
-static void on_current_toggled( GtkToggleButton *button, ofaExerciceMetaBin *self );
-static void changed_composite( ofaExerciceMetaBin *self );
+static void     setup_bin( ofaExerciceMetaBin *self );
+static void     on_begin_changed( GtkEditable *editable, ofaExerciceMetaBin *self );
+static void     on_end_changed( GtkEditable *editable, ofaExerciceMetaBin *self );
+static void     on_archive_toggled( GtkToggleButton *button, ofaExerciceMetaBin *self );
+static void     changed_composite( ofaExerciceMetaBin *self );
+static gboolean is_valid( ofaExerciceMetaBin *self, gchar **msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaExerciceMetaBin, ofa_exercice_meta_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaExerciceMetaBin ))
@@ -246,12 +248,12 @@ setup_bin( ofaExerciceMetaBin *self )
 	/* beginning date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-begin-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-begin-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-begin-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -260,30 +262,29 @@ setup_bin( ofaExerciceMetaBin *self )
 	/* ending date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-end-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-end-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	/* current flag
-	 * depending of the specified rule, the flag may be initially set */
+	/* archive flag
+	 * defaults to be initially cleared */
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-current-btn" );
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
-	g_signal_connect( btn, "toggled", G_CALLBACK( on_current_toggled ), self );
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_archive_toggled ), self );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), FALSE );
+	on_archive_toggled( GTK_TOGGLE_BUTTON( btn ), self );
 
 	switch( priv->rule ){
-
 		/* when defining a new dossier, the new exercice is current
 		 * and this is mandatory */
 		case HUB_RULE_DOSSIER_NEW:
-			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), TRUE );
 			gtk_widget_set_sensitive( btn, FALSE );
 			break;
 	}
@@ -319,6 +320,28 @@ ofa_exercice_meta_bin_get_size_group( ofaExerciceMetaBin *bin, guint column )
 	return( NULL );
 }
 
+/**
+ * ofa_exercice_meta_bin_set_dossier_meta:
+ * @bin: this #ofaExerciceEditBin instance.
+ * @dossier_meta: [allow-none]: the #ofaIDBDossierMeta to be attached to.
+ *
+ * Set the #ofaIDBDossierMeta dossier.
+ */
+void
+ofa_exercice_meta_bin_set_dossier_meta( ofaExerciceMetaBin *bin, ofaIDBDossierMeta *dossier_meta )
+{
+	ofaExerciceMetaBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ));
+	g_return_if_fail( !dossier_meta || OFA_IS_IDBDOSSIER_META( dossier_meta ));
+
+	priv = ofa_exercice_meta_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->dossier_meta = dossier_meta;
+}
+
 static void
 on_begin_changed( GtkEditable *editable, ofaExerciceMetaBin *self )
 {
@@ -344,13 +367,13 @@ on_end_changed( GtkEditable *editable, ofaExerciceMetaBin *self )
 }
 
 static void
-on_current_toggled( GtkToggleButton *button, ofaExerciceMetaBin *self )
+on_archive_toggled( GtkToggleButton *button, ofaExerciceMetaBin *self )
 {
 	ofaExerciceMetaBinPrivate *priv;
 
 	priv = ofa_exercice_meta_bin_get_instance_private( self );
 
-	priv->is_current = gtk_toggle_button_get_active( button );
+	priv->is_current = !gtk_toggle_button_get_active( button );
 
 	changed_composite( self );
 }
@@ -364,70 +387,133 @@ changed_composite( ofaExerciceMetaBin *self )
 /**
  * ofa_exercice_meta_bin_is_valid:
  * @bin: this #ofaExerciceMetaBin instance.
- * @error_message: [allow-none]: the error message to be displayed.
+ * @message: [out][allow-none]: a placeholder for an output message.
  *
- * The dialog is always valid.
+ * Both beginning and ending dates must be set when defining an archive.
  */
 gboolean
-ofa_exercice_meta_bin_is_valid( ofaExerciceMetaBin *bin, gchar **error_message )
+ofa_exercice_meta_bin_is_valid( ofaExerciceMetaBin *bin, gchar **message )
 {
-	return( TRUE );
-}
-
-/**
- * ofa_exercice_meta_bin_apply:
- * @bin: this #ofaExerciceMetaBin instance.
- * @dossier_meta: the #ofaIDBDossierMeta dossier.
- *
- * Returns: %TRUE.
- */
-gboolean
-ofa_exercice_meta_bin_apply( ofaExerciceMetaBin *bin, ofaIDBDossierMeta *dossier_meta )
-{
-	static const gchar *thisfn = "ofa_exercice_meta_bin_apply";
 	ofaExerciceMetaBinPrivate *priv;
-
-	g_debug( "%s: bin=%p, dossier_meta=%p", thisfn, ( void * ) bin, ( void * ) dossier_meta );
+	gboolean valid;
+	gchar *msg;
 
 	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), FALSE );
-	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), FALSE );
 
 	priv = ofa_exercice_meta_bin_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	switch( priv->rule ){
-		case HUB_RULE_DOSSIER_NEW:
-			priv->exercice_meta = ofa_idbdossier_meta_new_period( dossier_meta, TRUE );
-			ofa_idbexercice_meta_set_begin_date( priv->exercice_meta, &priv->begin );
-			ofa_idbexercice_meta_set_end_date( priv->exercice_meta, &priv->end );
-			ofa_idbexercice_meta_set_current( priv->exercice_meta, priv->is_current );
-			break;
+	msg = NULL;
+	if( message ){
+		*message = NULL;
 	}
 
-	return( TRUE );
+	valid = is_valid( bin, &msg );
+	if( !valid && message ){
+		*message = g_strdup( msg );
+	}
+
+	g_free( msg );
+
+	return( valid );
+}
+
+/*
+ * if date are set, beginning must be less or equal than ending
+ * both dates are mandatory when defining an archive
+ */
+static gboolean
+is_valid( ofaExerciceMetaBin *self, gchar **msg )
+{
+	ofaExerciceMetaBinPrivate *priv;
+	gboolean valid, begin_set, end_set;
+
+	priv = ofa_exercice_meta_bin_get_instance_private( self );
+
+	valid = TRUE;
+	begin_set = my_date_is_valid( &priv->begin );
+	end_set = my_date_is_valid( &priv->end );
+
+	if( begin_set && end_set ){
+		if( my_date_compare( &priv->begin, &priv->end ) > 0 ){
+			valid = FALSE;
+			*msg = g_strdup( _( "Beginning date is greater than ending date" ));
+		}
+	}
+
+	if( valid && !priv->is_current ){
+		if( !begin_set ){
+			valid = FALSE;
+			*msg = g_strdup( _( "Beginning date must be set when defining an archive" ));
+		}
+		else if( !end_set ){
+			valid = FALSE;
+			*msg = g_strdup( _( "Ending date must be set when defining an archive" ));
+		}
+	}
+
+	if( valid && priv->dossier_meta ){
+		if( priv->is_current ){
+			if( ofa_idbdossier_meta_get_current_period( priv->dossier_meta ) != NULL ){
+				valid = FALSE;
+				*msg = g_strdup( _( "A current exercice is already defined, refusing to define another" ));
+			}
+		} else {
+			if( ofa_idbdossier_meta_get_archived_period( priv->dossier_meta, &priv->begin ) != NULL ||
+					ofa_idbdossier_meta_get_archived_period( priv->dossier_meta, &priv->end ) != NULL ){
+				valid = FALSE;
+				*msg = g_strdup( _( "An archived exercice is already defined on these dates, refusing to define another" ));
+			}
+		}
+	}
+
+	return( valid );
 }
 
 /**
- * ofa_exercice_meta_bin_get_exercice_meta:
+ * ofa_exercice_meta_bin_apply:
  * @bin: this #ofaExerciceMetaBin instance.
  *
- * Returns: the #ofaIDBExerciceMeta instance allocated on apply.
+ * Returns: a newly created #ofaIDBExerciceMeta attached to the @dossier_meta.
+ *
+ * Note that this widget cannot be eventually valid while a dossier has
+ * not been set. This is a programming error to not have set a dossier
+ * at validation time.
  */
 ofaIDBExerciceMeta *
-ofa_exercice_meta_bin_get_exercice_meta( ofaExerciceMetaBin *bin )
+ofa_exercice_meta_bin_apply( ofaExerciceMetaBin *bin )
 {
+	static const gchar *thisfn = "ofa_exercice_meta_bin_apply";
 	ofaExerciceMetaBinPrivate *priv;
+	ofaIDBExerciceMeta *exercice_meta;
+
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
 	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), NULL );
+	g_return_val_if_fail( ofa_exercice_meta_bin_is_valid( bin, NULL ), NULL );
 
 	priv = ofa_exercice_meta_bin_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+	g_return_val_if_fail( priv->dossier_meta && OFA_IS_IDBDOSSIER_META( priv->dossier_meta ), NULL );
 
-	return( priv->exercice_meta );
+	exercice_meta = NULL;
+
+	switch( priv->rule ){
+		case HUB_RULE_DOSSIER_NEW:
+		case HUB_RULE_EXERCICE_NEW:
+			exercice_meta = ofa_idbdossier_meta_new_period( priv->dossier_meta, TRUE );
+			ofa_idbexercice_meta_set_begin_date( exercice_meta, &priv->begin );
+			ofa_idbexercice_meta_set_end_date( exercice_meta, &priv->end );
+			ofa_idbexercice_meta_set_current( exercice_meta, priv->is_current );
+			break;
+	}
+
+	return( exercice_meta );
 }
 
+#if 0
 /**
  * ofa_exercice_meta_bin_get_begin_date:
  * @bin: this #ofaExerciceMetaBin instance.
@@ -487,3 +573,4 @@ ofa_exercice_meta_bin_get_is_current( ofaExerciceMetaBin *bin )
 
 	return( priv->is_current );
 }
+#endif

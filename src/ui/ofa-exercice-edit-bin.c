@@ -66,7 +66,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaIDBProvider         *provider;
+	ofaIDBDossierMeta      *dossier_meta;
 
 	/* result
 	 */
@@ -155,7 +155,7 @@ ofa_exercice_edit_bin_init( ofaExerciceEditBin *self )
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	priv->group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
-	priv->provider = NULL;
+	priv->dossier_meta = NULL;
 	priv->exercice_meta = NULL;
 }
 
@@ -246,14 +246,14 @@ setup_bin( ofaExerciceEditBin *self )
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
-	object = gtk_builder_get_object( builder, "deb-window" );
+	object = gtk_builder_get_object( builder, "eeb-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
 	/* exercice meta datas */
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "deb-exercice-meta-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "eeb-exercice-meta-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->exercice_meta_bin = ofa_exercice_meta_bin_new( priv->hub, priv->settings_prefix, priv->rule );
 	g_signal_connect( priv->exercice_meta_bin, "ofa-changed", G_CALLBACK( on_exercice_meta_changed ), self );
@@ -261,12 +261,12 @@ setup_bin( ofaExerciceEditBin *self )
 	my_utils_size_group_add_size_group( priv->group0, ofa_exercice_meta_bin_get_size_group( priv->exercice_meta_bin, 0 ));
 
 	/* exercice dbeditor */
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "deb-exercice-editor-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "eeb-exercice-editor-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->exercice_editor_parent = parent;
 
 	/* administrative credentials */
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "deb-admin-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "eeb-admin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->admin_bin = ofa_admin_credentials_bin_new( priv->hub, priv->settings_prefix );
 	g_signal_connect( priv->admin_bin, "ofa-changed", G_CALLBACK( on_admin_credentials_changed ), self );
@@ -275,7 +275,7 @@ setup_bin( ofaExerciceEditBin *self )
 
 	/* actions on creation */
 	if( priv->allow_open ){
-		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "deb-actions-parent" );
+		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "eeb-actions-parent" );
 		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 		priv->actions_bin = ofa_dossier_actions_bin_new( priv->hub, priv->settings_prefix, priv->rule );
 		g_signal_connect( priv->actions_bin, "ofa-changed", G_CALLBACK( on_actions_bin_changed ), self );
@@ -294,19 +294,21 @@ on_exercice_meta_changed( ofaExerciceMetaBin *bin, ofaExerciceEditBin *self )
 }
 
 /**
- * ofa_exercice_edit_bin_set_provider:
+ * ofa_exercice_edit_bin_set_dossier_meta:
  * @bin: this #ofaExerciceEditBin instance.
- * @provider: [allow-none]: the #ofaIDBProvider to be attached to.
+ * @dossier_meta: [allow-none]: the #ofaIDBDossierMeta to be attached to.
  *
- * Set the  ofaIDBProvider, initializing the specific part of the
- * exercice editor
+ * Set the #ofaIDBDossierMeta dossier, initializing the specific part
+ * of the exercice editor.
  */
 void
-ofa_exercice_edit_bin_set_provider( ofaExerciceEditBin *bin, ofaIDBProvider *provider )
+ofa_exercice_edit_bin_set_dossier_meta( ofaExerciceEditBin *bin, ofaIDBDossierMeta *dossier_meta )
 {
 	ofaExerciceEditBinPrivate *priv;
+	ofaIDBProvider *provider;
 
 	g_return_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ));
+	g_return_if_fail( !dossier_meta || OFA_IS_IDBDOSSIER_META( dossier_meta ));
 
 	priv = ofa_exercice_edit_bin_get_instance_private( bin );
 
@@ -314,10 +316,14 @@ ofa_exercice_edit_bin_set_provider( ofaExerciceEditBin *bin, ofaIDBProvider *pro
 
 	if( priv->exercice_editor_bin ){
 		gtk_container_remove( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
-		priv->provider = NULL;
+		priv->dossier_meta = NULL;
 	}
 
-	if( priv->provider != provider ){
+	ofa_exercice_meta_bin_set_dossier_meta( priv->exercice_meta_bin, dossier_meta );
+
+	if( priv->dossier_meta != dossier_meta ){
+		priv->dossier_meta = dossier_meta;
+		provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 		priv->exercice_editor_bin = ofa_idbprovider_new_exercice_editor( provider, priv->settings_prefix, priv->rule );
 		gtk_container_add( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
 		g_signal_connect( priv->exercice_editor_bin, "ofa-changed", G_CALLBACK( on_exercice_editor_changed ), bin );
@@ -355,6 +361,8 @@ changed_composite( ofaExerciceEditBin *self )
  * @message: [out][allow-none]: a placeholder for the output error message.
  *
  * Returns: %TRUE if the dialog is valid.
+ *
+ * Note that checks may be better if an #ofaIDBDossierMeta has been set.
  */
 gboolean
 ofa_exercice_edit_bin_is_valid( ofaExerciceEditBin *bin, gchar **message )
@@ -388,39 +396,37 @@ ofa_exercice_edit_bin_is_valid( ofaExerciceEditBin *bin, gchar **message )
  * ofa_exercice_edit_bin_apply:
  * @bin: this #ofaExerciceEditBin instance.
  *
- * Define the dossier in dossier settings.
- * The caller is responsible for actually creating the database.
+ * Returns: a new #ofaIDBExerciceMeta object attached to the dossier.
  *
- * Returns: %TRUE if the new dossier has been successfully registered.
+ * This is an error to not have set a dossier at apply time (because we
+ * cannot actually define an exercice if we do not know for which dossier).
  */
-gboolean
+ofaIDBExerciceMeta *
 ofa_exercice_edit_bin_apply( ofaExerciceEditBin *bin )
 {
 	static const gchar *thisfn = "ofa_exercice_edit_bin_apply";
 	ofaExerciceEditBinPrivate *priv;
-	gboolean ok = TRUE;
 	ofaIDBExerciceMeta *exercice_meta;
 	const gchar *account;
 
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
-	g_return_val_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ), NULL );
 
 	priv = ofa_exercice_edit_bin_get_instance_private( bin );
 
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+	g_return_val_if_fail( priv->dossier_meta && OFA_IS_IDBDOSSIER_META( priv->dossier_meta ), NULL );
 
-	if( ok ){
-		//ok = ofa_exercice_meta_bin_apply( priv->exercice_meta_bin, priv->dossier_meta );
-		exercice_meta = ofa_exercice_meta_bin_get_exercice_meta( priv->exercice_meta_bin );
-		account = ofa_admin_credentials_bin_get_remembered_account( priv->admin_bin );
-		ofa_idbexercice_meta_set_remembered_account( exercice_meta, account );
-		ofa_idbexercice_meta_set_from_editor( exercice_meta, priv->exercice_editor_bin );
-	}
+	exercice_meta = ofa_exercice_meta_bin_apply( priv->exercice_meta_bin );
+	account = ofa_admin_credentials_bin_get_remembered_account( priv->admin_bin );
+	ofa_idbexercice_meta_set_remembered_account( exercice_meta, account );
+	ofa_idbexercice_meta_set_from_editor( exercice_meta, priv->exercice_editor_bin );
 
-	return( ok );
+	return( exercice_meta );
 }
 
+#if 0
 /**
  * ofa_exercice_edit_bin_get_exercice_editor:
  * @bin: this #ofaExerciceEditBin instance.
@@ -504,3 +510,4 @@ ofa_exercice_edit_bin_get_apply_actions( ofaExerciceEditBin *bin )
 
 	return( ofa_dossier_actions_bin_get_apply_actions( priv->actions_bin ));
 }
+#endif

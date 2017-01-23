@@ -515,46 +515,6 @@ ofa_idbdossier_meta_new_connect( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *pe
 }
 
 /**
- * ofa_idbdossier_meta_get_periods:
- * @meta: this #ofaIDBDossierMeta instance.
- *
- * Returns: the #GList of defined financial periods (exercices) for this
- * file (dossier).
- *
- * The returned #GList is owned by @meta, and should not be released by
- * the caller.
- */
-const GList *
-ofa_idbdossier_meta_get_periods( const ofaIDBDossierMeta *meta )
-{
-	sIDBMeta *sdata;
-
-	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
-
-	sdata = get_instance_data( meta );
-
-	return(( const GList * ) sdata->periods );
-}
-
-/**
- * ofa_idbdossier_meta_get_periods_count:
- * @meta: this #ofaIDBDossierMeta instance.
- *
- * Returns: the of defined periods.
- */
-guint
-ofa_idbdossier_meta_get_periods_count( const ofaIDBDossierMeta *meta )
-{
-	sIDBMeta *sdata;
-
-	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), 0 );
-
-	sdata = get_instance_data( meta );
-
-	return( g_list_length( sdata->periods ));
-}
-
-/**
  * ofa_idbdossier_meta_new_period:
  * @meta: this #ofaIDBDossierMeta dossier.
  * @attach: whether to attach the newly created period to the dossier.
@@ -563,8 +523,7 @@ ofa_idbdossier_meta_get_periods_count( const ofaIDBDossierMeta *meta )
  * g_object_unref() by the caller.
  *
  * At this time, the new #ofaIDBExerciceMeta is initialized with @meta
- * and a unique random key identifier, but not yet attached to the @meta
- * (see #ofa_idbdossier_meta_attach_period() for that).
+ * and a unique random key identifier.
  *
  * If @attach is %TRUE, then the period is attached to the dossier. This
  * is required when creating a new period, because we cannot rely on the
@@ -608,6 +567,46 @@ ofa_idbdossier_meta_new_period( ofaIDBDossierMeta *meta, gboolean attach )
 	g_info( "%s: ofaIDBDossierMeta's %s implementation does not provide 'new_period()' method",
 			thisfn, G_OBJECT_TYPE_NAME( meta ));
 	return( NULL );
+}
+
+/**
+ * ofa_idbdossier_meta_get_periods:
+ * @meta: this #ofaIDBDossierMeta instance.
+ *
+ * Returns: the #GList of defined financial periods (exercices) for this
+ * file (dossier).
+ *
+ * The returned #GList is owned by @meta, and should not be released by
+ * the caller.
+ */
+const GList *
+ofa_idbdossier_meta_get_periods( const ofaIDBDossierMeta *meta )
+{
+	sIDBMeta *sdata;
+
+	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
+
+	sdata = get_instance_data( meta );
+
+	return(( const GList * ) sdata->periods );
+}
+
+/**
+ * ofa_idbdossier_meta_get_suitable_periods_count:
+ * @meta: this #ofaIDBDossierMeta instance.
+ *
+ * Returns: the of defined periods.
+ */
+guint
+ofa_idbdossier_meta_get_periods_count( const ofaIDBDossierMeta *meta )
+{
+	sIDBMeta *sdata;
+
+	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), 0 );
+
+	sdata = get_instance_data( meta );
+
+	return( g_list_length( sdata->periods ));
 }
 
 /*
@@ -667,7 +666,64 @@ ofa_idbdossier_meta_get_current_period( const ofaIDBDossierMeta *meta )
 }
 
 /**
- * ofa_idbdossier_meta_get_period:
+ * ofa_idbdossier_meta_get_archived_period:
+ * @meta: this #ofaIDBDossierMeta instance.
+ * @date: a valid date.
+ *
+ * Returns: the #ofaIDBExerciceMeta archive the @date is part of, or %NULL.
+ */
+ofaIDBExerciceMeta *
+ofa_idbdossier_meta_get_archived_period( const ofaIDBDossierMeta *meta, const GDate *date )
+{
+	static const gchar *thisfn = "ofa_idbdossier_meta_get_archived_period";
+	sIDBMeta *sdata;
+	GList *it;
+	ofaIDBExerciceMeta *period;
+	GDate period_begin, period_end;
+	gint cmp_begin, cmp_end;
+
+	if( 0 ){
+		g_debug( "%s: meta=%p, date=%p",
+				thisfn, ( void * ) meta, ( void * ) date );
+	}
+
+	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
+	g_return_val_if_fail( my_date_is_valid( date ), NULL );
+
+	sdata = get_instance_data( meta );
+
+	for( it=sdata->periods ; it ; it=it->next ){
+		period = ( ofaIDBExerciceMeta * ) it->data;
+
+		if( !ofa_idbexercice_meta_get_current( period )){
+			my_date_set_from_date( &period_begin, ofa_idbexercice_meta_get_begin_date( period ));
+			cmp_begin = my_date_compare( date, &period_begin );
+
+			my_date_set_from_date( &period_end, ofa_idbexercice_meta_get_end_date( period ));
+			cmp_end = my_date_compare( date, &period_end );
+
+			if( cmp_begin >= 0 && cmp_end <= 0 ){
+
+				if( 1 ){
+					gchar *sdate = my_date_to_str( date, MY_DATE_SQL );
+					gchar *sperbegin = my_date_to_str( &period_begin, MY_DATE_SQL );
+					gchar *sperend = my_date_to_str( &period_end, MY_DATE_SQL );
+					g_debug( "%s: sdate=%s, found period begin=%s, end=%s", thisfn, sdate, sperbegin, sperend );
+					g_free( sdate );
+					g_free( sperbegin );
+					g_free( sperend );
+				}
+
+				return( period );
+			}
+		}
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_idbdossier_meta_get_suitable_period:
  * @meta: this #ofaIDBDossierMeta instance.
  * @begin: [allow-none]: the beginning date.
  * @end: [allow-none]: the ending date.
@@ -676,15 +732,17 @@ ofa_idbdossier_meta_get_current_period( const ofaIDBDossierMeta *meta )
  * and @end dates.
  */
 ofaIDBExerciceMeta *
-ofa_idbdossier_meta_get_period( const ofaIDBDossierMeta *meta, const GDate *begin, const GDate *end )
+ofa_idbdossier_meta_get_suitable_period( const ofaIDBDossierMeta *meta, const GDate *begin, const GDate *end )
 {
-	static const gchar *thisfn = "ofa_idbdossier_meta_get_period";
+	static const gchar *thisfn = "ofa_idbdossier_meta_get_suitable_period";
 	sIDBMeta *sdata;
 	GList *it;
 	ofaIDBExerciceMeta *period;
 
-	g_debug( "%s: meta=%p, begin=%p, end=%p",
-			thisfn, ( void * ) meta, ( void * ) begin, ( void * ) end );
+	if( 0 ){
+		g_debug( "%s: meta=%p, begin=%p, end=%p",
+				thisfn, ( void * ) meta, ( void * ) begin, ( void * ) end );
+	}
 
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 

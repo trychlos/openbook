@@ -37,9 +37,9 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-editor.h"
 #include "api/ofa-idbexercice-meta.h"
-#include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 
 #include "ui/ofa-exercice-edit-bin.h"
@@ -54,7 +54,7 @@ typedef struct {
 	 */
 	ofaIGetter          *getter;
 	GtkWindow           *parent;
-	ofaIDBProvider      *provider;
+	ofaIDBDossierMeta   *dossier_meta;
 		/* when run as modal */
 	gboolean             allow_open;
 	ofaIDBExerciceMeta **exercice_meta;
@@ -81,8 +81,7 @@ static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     on_edit_bin_changed( ofaExerciceEditBin *bin, ofaExerciceNew *self );
 static void     check_for_enable_dlg( ofaExerciceNew *self );
-static guint    do_create( ofaExerciceNew *self, gchar **msgerr );
-//static gboolean create_confirmed( const ofaExerciceNew *self );
+static gboolean idialog_quit_on_ok( myIDialog *instance );
 static void     set_message( ofaExerciceNew *self, const gchar *message );
 static void     read_settings( ofaExerciceNew *self );
 static void     write_settings( ofaExerciceNew *self );
@@ -172,7 +171,7 @@ ofa_exercice_new_class_init( ofaExerciceNewClass *klass )
  * ofa_exercice_new_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: the parent window.
- * @provider: the #ofaIDBProvider to be attached to.
+ * @dossier_meta: the #ofaIDBDossierMeta to be attached to.
  * @allow_open: whether this dialog should be allowed to open the newly
  *  created dossier (if any).
  * @exercice_meta: [out][allow-none]: a placeholder for the newly created
@@ -184,7 +183,7 @@ ofa_exercice_new_class_init( ofaExerciceNewClass *klass )
  * cancel.
  */
 gboolean
-ofa_exercice_new_run_modal( ofaIGetter *getter, GtkWindow *parent, ofaIDBProvider *provider,
+ofa_exercice_new_run_modal( ofaIGetter *getter, GtkWindow *parent, ofaIDBDossierMeta *dossier_meta,
 									gboolean allow_open, ofaIDBExerciceMeta **exercice_meta )
 {
 	static const gchar *thisfn = "ofa_exercice_new_run_modal";
@@ -192,13 +191,13 @@ ofa_exercice_new_run_modal( ofaIGetter *getter, GtkWindow *parent, ofaIDBProvide
 	ofaExerciceNewPrivate *priv;
 	gboolean exercice_created;
 
-	g_debug( "%s: getter=%p, parent=%p, provider=%p, allow_open=%s, exercice_meta=%p",
-			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) provider,
+	g_debug( "%s: getter=%p, parent=%p, dossier_meta=%p, allow_open=%s, exercice_meta=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) dossier_meta,
 			allow_open ? "True":"False", ( void * ) exercice_meta );
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
-	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), FALSE );
+	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), FALSE );
 
 	self = g_object_new( OFA_TYPE_EXERCICE_NEW, NULL );
 
@@ -206,15 +205,20 @@ ofa_exercice_new_run_modal( ofaIGetter *getter, GtkWindow *parent, ofaIDBProvide
 
 	priv->getter = ofa_igetter_get_permanent_getter( getter );
 	priv->parent = parent;
-	priv->provider = provider;
+	priv->dossier_meta = dossier_meta;
 	priv->allow_open = allow_open;
 	priv->exercice_meta = exercice_meta;
 
-	my_idialog_run( MY_IDIALOG( self ));
+	exercice_created = FALSE;
+	if( priv->exercice_meta ){
+		*priv->exercice_meta = NULL;
+	}
 
-	exercice_created = priv->exercice_created;
-
-	g_object_unref( self );
+	if( my_idialog_run( MY_IDIALOG( self )) == GTK_RESPONSE_OK ){
+		g_debug( "%s: exercice_created=%s", thisfn, priv->exercice_created ? "True":"False" );
+		exercice_created = priv->exercice_created;
+		my_iwindow_close( MY_IWINDOW( self ));
+	}
 
 	return( exercice_created );
 }
@@ -261,6 +265,7 @@ idialog_iface_init( myIDialogInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = idialog_init;
+	iface->quit_on_ok = idialog_quit_on_ok;
 }
 
 /*
@@ -287,12 +292,11 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->edit_bin = ofa_exercice_edit_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_EXERCICE_NEW, priv->allow_open );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->edit_bin ));
-	ofa_exercice_edit_bin_set_provider( priv->edit_bin, priv->provider );
+	ofa_exercice_edit_bin_set_dossier_meta( priv->edit_bin, priv->dossier_meta );
 	g_signal_connect( priv->edit_bin, "ofa-changed", G_CALLBACK( on_edit_bin_changed ), instance );
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update_ex( instance, priv->ok_btn, ( myIDialogUpdateExCb ) do_create );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dn-msg" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -330,110 +334,30 @@ check_for_enable_dlg( ofaExerciceNew *self )
 }
 
 /*
- * Create the database
- * and register the new dossier in dossier settings
+ * returns %TRUE if we accept to terminate the dialog
+ * (whether a new #ofaIDBExerciceMeta has been actually created or not)
  */
-static guint
-do_create( ofaExerciceNew *self, gchar **msgerr )
-{
-#if 0
-	static const gchar *thisfn = "ofa_exercice_new_do_create";
-	ofaExerciceNewPrivate *priv;
-	gboolean open, apply_actions;
-	ofaIDBDossierMeta *dossier_meta;
-	ofaIDBExerciceMeta *exercice_meta;
-	ofaIDBConnect *connect;
-	ofaIDBDossierEditor *dossier_editor;
-	gchar *adm_account, *adm_password;
-	ofaDossierCollection *collection;
-	guint ret;
-
-	g_debug( "%s: self=%p, msgerr=%p", thisfn, ( void * ) self, ( void * ) msgerr );
-
-	priv = ofa_exercice_new_get_instance_private( self );
-
-	ret = IDIALOG_UPDATE_OK;
-	open = FALSE;
-
-	/* ask for user confirmation */
-	if( !create_confirmed( self )){
-		return( IDIALOG_UPDATE_REDO );
-	}
-
-	/* register the new dossier in dossier settings */
-	if( !ofa_dossier_edit_bin_apply( priv->edit_bin )){
-		*msgerr = g_strdup( _( "Unable to register the new dossier in settings" ));
-		return( IDIALOG_UPDATE_ERROR );
-	}
-
-	/* create the new dossier */
-	dossier_meta = ofa_dossier_edit_bin_get_dossier_meta( priv->edit_bin );
-	dossier_editor = ofa_dossier_edit_bin_get_dossier_editor( priv->edit_bin );
-	connect = ofa_idbdossier_editor_get_valid_connect( dossier_editor, dossier_meta );
-	ofa_dossier_edit_bin_get_admin_credentials( priv->edit_bin, &adm_account, &adm_password );
-
-	if( !ofa_idbconnect_period_new( connect, adm_account, adm_password, msgerr )){
-		collection = ofa_hub_get_dossier_collection( priv->hub );
-		ofa_dossier_collection_delete_period( collection, connect, NULL, TRUE, NULL );
-		if( !my_strlen( *msgerr )){
-			*msgerr = g_strdup( _( "Unable to create the new dossier" ));
-		}
-		g_object_unref( dossier_meta );
-
-	/* open the newly created dossier if asked for */
-	} else {
-		priv->dossier_created = TRUE;
-		if( priv->dossier_name ){
-			*( priv->dossier_name ) = g_strdup( ofa_idbdossier_meta_get_dossier_name( dossier_meta ));
-		}
-		open = ofa_dossier_edit_bin_get_open_on_create( priv->edit_bin );
-		if( open ){
-			exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
-			connect = ofa_idbdossier_meta_new_connect( dossier_meta, exercice_meta );
-			if( !ofa_idbconnect_open_with_account( connect, adm_account, adm_password )){
-				*msgerr = g_strdup( _( "Unable to connect to newly created dossier" ));
-				ret = IDIALOG_UPDATE_ERROR;
-				g_object_unref( connect );
-			} else {
-				apply_actions = ofa_dossier_edit_bin_get_apply_actions( priv->edit_bin );
-				if( ofa_hub_dossier_open( priv->hub, priv->parent, connect, apply_actions, FALSE )){
-					ofa_hub_dossier_remediate_settings( priv->hub );
-				} else {
-					*msgerr = g_strdup( _( "Unable to open the newly created dossier" ));
-					ret = IDIALOG_UPDATE_ERROR;
-					g_object_unref( connect );
-				}
-			}
-		}
-	}
-
-	g_free( adm_password );
-	g_free( adm_account );
-
-	return( ret );
-#endif
-	return( IDIALOG_UPDATE_OK );
-}
-
-#if 0
 static gboolean
-create_confirmed( const ofaExerciceNew *self )
+idialog_quit_on_ok( myIDialog *instance )
 {
-	gboolean ok;
-	gchar *str;
+	static const gchar *thisfn = "ofa_exercice_idialog_quit_on_ok";
+	ofaExerciceNewPrivate *priv;
+	ofaIDBExerciceMeta *meta;
 
-	str = g_strdup_printf(
-				_( "The create operation will drop and fully reset the target database.\n"
-					"This may not be what you actually want !\n"
-					"Are you sure you want to create into this database ?" ));
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	ok = my_utils_dialog_question( str, _( "C_reate" ));
+	priv = ofa_exercice_new_get_instance_private( OFA_EXERCICE_NEW( instance ));
 
-	g_free( str );
+	meta = ofa_exercice_edit_bin_apply( priv->edit_bin );
 
-	return( ok );
+	priv->exercice_created = ( meta != NULL );
+
+	if( priv->exercice_meta ){
+		*priv->exercice_meta = meta;
+	}
+
+	return( TRUE );
 }
-#endif
 
 static void
 set_message( ofaExerciceNew *self, const gchar *message )

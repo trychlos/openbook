@@ -181,7 +181,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaExercice
 /**
  * ofa_exercice_store_set_dossier:
  * @store: this #ofaExerciceStore instance.
- * @meta: the #ofaIDBDossierMeta dossier.
+ * @meta: [allow-none]: the #ofaIDBDossierMeta dossier.
  *
  * Set the store with defined financial periods for the @meta dossier.
  */
@@ -195,41 +195,44 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBDossierMeta *meta
 	gchar *begin, *end, *status, *label;
 
 	g_return_if_fail( store && OFA_IS_EXERCICE_STORE( store ));
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
+	g_return_if_fail( !meta || OFA_IS_IDBDOSSIER_META( meta ));
 
 	priv = ofa_exercice_store_get_instance_private( store );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
 	gtk_list_store_clear( GTK_LIST_STORE( store ));
-	period_list = ofa_idbdossier_meta_get_periods( meta );
 
-	for( it=period_list; it ; it=it->next ){
-		period = ( ofaIDBExerciceMeta * ) it->data;
+	if( meta ){
+		period_list = ofa_idbdossier_meta_get_periods( meta );
 
-		label = ofa_idbexercice_meta_get_label( period );
-		status = ofa_idbexercice_meta_get_status( period );
-		begin = my_date_to_str(
-						ofa_idbexercice_meta_get_begin_date( period ),
-						ofa_prefs_date_display( priv->hub ));
-		end = my_date_to_str(
-						ofa_idbexercice_meta_get_end_date( period ),
-						ofa_prefs_date_display( priv->hub ));
+		for( it=period_list; it ; it=it->next ){
+			period = ( ofaIDBExerciceMeta * ) it->data;
 
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( store ),
-				&iter,
-				-1,
-				EXERCICE_COL_LABEL,  label,
-				EXERCICE_COL_BEGIN,  begin,
-				EXERCICE_COL_END,    end,
-				EXERCICE_COL_STATUS, status,
-				EXERCICE_COL_EXE_META, period,
-				-1 );
+			label = ofa_idbexercice_meta_get_label( period );
+			status = ofa_idbexercice_meta_get_status( period );
+			begin = my_date_to_str(
+							ofa_idbexercice_meta_get_begin_date( period ),
+							ofa_prefs_date_display( priv->hub ));
+			end = my_date_to_str(
+							ofa_idbexercice_meta_get_end_date( period ),
+							ofa_prefs_date_display( priv->hub ));
 
-		g_free( begin );
-		g_free( end );
-		g_free( status );
-		g_free( label );
+			gtk_list_store_insert_with_values(
+					GTK_LIST_STORE( store ),
+					&iter,
+					-1,
+					EXERCICE_COL_LABEL,  label,
+					EXERCICE_COL_BEGIN,  begin,
+					EXERCICE_COL_END,    end,
+					EXERCICE_COL_STATUS, status,
+					EXERCICE_COL_EXE_META, period,
+					-1 );
+
+			g_free( begin );
+			g_free( end );
+			g_free( status );
+			g_free( label );
+		}
 	}
 }

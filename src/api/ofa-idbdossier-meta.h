@@ -221,16 +221,19 @@ void                  ofa_idbdossier_meta_set_from_editor           ( ofaIDBDoss
 ofaIDBConnect        *ofa_idbdossier_meta_new_connect               ( ofaIDBDossierMeta *meta,
 																			ofaIDBExerciceMeta *period );
 
+ofaIDBExerciceMeta   *ofa_idbdossier_meta_new_period                ( ofaIDBDossierMeta *meta,
+																			gboolean attach );
+
 const GList          *ofa_idbdossier_meta_get_periods               ( const ofaIDBDossierMeta *meta );
 
 guint                 ofa_idbdossier_meta_get_periods_count         ( const ofaIDBDossierMeta *meta );
 
-ofaIDBExerciceMeta   *ofa_idbdossier_meta_new_period                ( ofaIDBDossierMeta *meta,
-																			gboolean attach );
-
 ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_current_period        ( const ofaIDBDossierMeta *meta );
 
-ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_period                ( const ofaIDBDossierMeta *meta,
+ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_archived_period       ( const ofaIDBDossierMeta *meta,
+																			const GDate *date );
+
+ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_suitable_period       ( const ofaIDBDossierMeta *meta,
 																			const GDate *begin,
 																			const GDate *end );
 

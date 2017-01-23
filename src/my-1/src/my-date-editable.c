@@ -96,6 +96,11 @@ static void               editable_date_render( GtkEditable *editable );
  *
  * Initialize the GtkEditable to enter a date. Is supposed to be
  * called each time the edition is started.
+ *
+ * If the caller wants monitor the @editable entry for its own usage,
+ * it should only connect after this #my_date_editable_init() function
+ * has been called, so that its handler is itself called after this
+ * function's one.
  */
 void
 my_date_editable_init( GtkEditable *editable )

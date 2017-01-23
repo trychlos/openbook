@@ -450,6 +450,7 @@ ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
 	ok = TRUE;
+	exercice_meta = NULL;
 
 	if( ok ){
 		ok = ofa_dossier_meta_bin_apply( priv->dossier_meta_bin );
@@ -457,11 +458,15 @@ ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 		ofa_idbdossier_meta_set_from_editor( priv->dossier_meta, priv->dossier_editor_bin );
 	}
 	if( ok ){
-		ok = ofa_exercice_meta_bin_apply( priv->exercice_meta_bin, priv->dossier_meta );
-		exercice_meta = ofa_exercice_meta_bin_get_exercice_meta( priv->exercice_meta_bin );
+		ofa_exercice_meta_bin_set_dossier_meta( priv->exercice_meta_bin, priv->dossier_meta );
+		exercice_meta = ofa_exercice_meta_bin_apply( priv->exercice_meta_bin );
+	}
+	if( exercice_meta ){
 		account = ofa_admin_credentials_bin_get_remembered_account( priv->admin_bin );
 		ofa_idbexercice_meta_set_remembered_account( exercice_meta, account );
 		ofa_idbexercice_meta_set_from_editor( exercice_meta, priv->exercice_editor_bin );
+	} else {
+		ok = FALSE;
 	}
 
 	return( ok );

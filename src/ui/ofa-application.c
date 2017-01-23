@@ -831,7 +831,7 @@ application_activate( GApplication *application )
 			} else {
 				my_date_set_from_str( &dbegin, st_dossier_begin_opt, MY_DATE_YYMD );
 				my_date_set_from_str( &dend, st_dossier_end_opt, MY_DATE_YYMD );
-				period = ofa_idbdossier_meta_get_period( meta, &dbegin, &dend );
+				period = ofa_idbdossier_meta_get_suitable_period( meta, &dbegin, &dend );
 				if( !period ){
 					str = g_strdup_printf(
 							_( "Unable to find a financial period "

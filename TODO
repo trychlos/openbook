@@ -418,6 +418,7 @@
 1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
 
 1323 2017- 1-18 propagate myISizegroup interface
+     2017- 1-22 rename and include is_valid/apply
 
 1324 2017- 1-18 BatPage: lacks of an horizontal scrollbar (and vertical ?)
 
@@ -427,7 +428,26 @@
 1326 2017- 1-19 RestoreAssistant: p3->p4->p3->p4: p2_dossier_meta is NULL
                 but should not
 
-1327
+1327 2017- 1-22 deprecate DbmsRootBin
+
+1328 2017- 1-22 deprecate IDBEditor
+
+1329 2017- 1-22 deprecate DossierNewMini
+
+1330 2017- 1-22 review the dialog closing: today, this is automatic without
+                being clear if this is in all cases or in *most* cases;
+                it would be probably more clear if the dialog would be
+                explicitely closed from the caller
+     2017- 1-23 this may lead to deprecate my_idialog_click_to_update() and
+                my_idialog_click_to_update_ex()
+
+1331 2017- 1-23 rename my_date_editable_set_format() to my_date_editable_set_entry_format()
+
+1332 2017- 1-23 rename my_date_editable_set_label() to my_date_editable_set_label_format()
+
+1333 2017- 1-23 deprecate my_iwindow_msg_dialog()
+
+1334
 
 -----------------------------------------------------------------------
  DONE

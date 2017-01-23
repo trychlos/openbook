@@ -299,7 +299,7 @@ setup_columns( ofaExerciceTreeview *self )
 /**
  * ofa_exercice_treeview_set_dossier:
  * @view: this #ofaExerciceTreeview instance.
- * @meta: the #ofaIDBDossierMeta which describes the dossier.
+ * @meta: [allow-none]: the #ofaIDBDossierMeta which describes the dossier.
  *
  * Create the store which automatically loads the available exercices
  * for this dossier.
@@ -313,7 +313,7 @@ ofa_exercice_treeview_set_dossier( ofaExerciceTreeview *view, ofaIDBDossierMeta 
 	g_debug( "%s: view=%p, meta=%p", thisfn, ( void * ) view, ( void * ) meta );
 
 	g_return_if_fail( view && OFA_IS_EXERCICE_TREEVIEW( view ));
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
+	g_return_if_fail( !meta || OFA_IS_IDBDOSSIER_META( meta ));
 
 	priv = ofa_exercice_treeview_get_instance_private( view );
 

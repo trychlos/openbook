@@ -2,10 +2,10 @@
 <!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <template class="ofaDossierNew" parent="GtkDialog">
+  <template class="ofaExerciceNew" parent="GtkDialog">
     <property name="can_focus">False</property>
     <property name="border_width">4</property>
-    <property name="title" translatable="yes">Define a new dossier</property>
+    <property name="title" translatable="yes">Define a new exercice</property>
     <property name="type_hint">dialog</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox1">

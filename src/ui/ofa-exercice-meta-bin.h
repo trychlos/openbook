@@ -74,19 +74,21 @@ ofaExerciceMetaBin *ofa_exercice_meta_bin_new              ( ofaHub *hub,
 GtkSizeGroup       *ofa_exercice_meta_bin_get_size_group   ( ofaExerciceMetaBin *bin,
 																	guint column );
 
-gboolean            ofa_exercice_meta_bin_is_valid         ( ofaExerciceMetaBin *bin,
-																	gchar **error_message );
-
-gboolean            ofa_exercice_meta_bin_apply            ( ofaExerciceMetaBin *bin,
+void                ofa_exercice_meta_bin_set_dossier_meta ( ofaExerciceMetaBin *bin,
 																	ofaIDBDossierMeta *dossier_meta );
 
-ofaIDBExerciceMeta *ofa_exercice_meta_bin_get_exercice_meta( ofaExerciceMetaBin *bin );
+gboolean            ofa_exercice_meta_bin_is_valid         ( ofaExerciceMetaBin *bin,
+																	gchar **message );
 
+ofaIDBExerciceMeta *ofa_exercice_meta_bin_apply            ( ofaExerciceMetaBin *bin );
+
+#if 0
 const GDate        *ofa_exercice_meta_bin_get_begin_date   ( ofaExerciceMetaBin *bin );
 
 const GDate        *ofa_exercice_meta_bin_get_end_date     ( ofaExerciceMetaBin *bin );
 
 gboolean            ofa_exercice_meta_bin_get_is_current   ( ofaExerciceMetaBin *bin );
+#endif
 
 G_END_DECLS
 
