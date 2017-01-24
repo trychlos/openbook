@@ -36,9 +36,10 @@
  * See api/ofo-ope-template.h for a full description of the model language.
  *
  * Development rules:
- * - type:       modal dialog
- * - settings:   yes
- * - current:    no
+ * - type:         modal dialog
+ * - settings:     yes
+ * - current:      no
+ * - on terminate: hide
  */
 
 #include <gtk/gtk.h>

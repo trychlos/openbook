@@ -33,9 +33,10 @@
  * Display the means of paiement, letting the user select one.
  *
  * Development rules:
- * - type:       modal dialog
- * - settings:   yes
- * - current:    no
+ * - type:         modal dialog
+ * - settings:     yes
+ * - current:      no
+ * - on terminate: hide
  */
 
 #include <gtk/gtk.h>

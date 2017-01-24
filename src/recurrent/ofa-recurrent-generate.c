@@ -124,7 +124,7 @@ static gboolean confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date
 static GList   *generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages );
 static void     generate_enum_dates_cb( const GDate *date, sEnumBetween *data );
 static void     display_error_messages( ofaRecurrentGenerate *self, GList *messages );
-static gboolean do_record( ofaRecurrentGenerate *self, gchar **msgerr );
+static void     on_ok_clicked( ofaRecurrentGenerate *self );
 static void     read_settings( ofaRecurrentGenerate *self );
 static void     write_settings( ofaRecurrentGenerate *self );
 static void     set_msgerr( ofaRecurrentGenerate *self, const gchar *msg );
@@ -317,6 +317,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_recurrent_generate_idialog_init";
 	ofaRecurrentGeneratePrivate *priv;
+	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -325,9 +326,11 @@ idialog_init( myIDialog *instance )
 	priv->top_paned = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "paned" );
 	g_return_if_fail( priv->top_paned && GTK_IS_PANED( priv->top_paned ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_record );
+	/* record the generated operations on OK + always terminates */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->ok_btn = btn;
 	gtk_widget_set_sensitive( priv->ok_btn, FALSE );
 
 	init_treeview( OFA_RECURRENT_GENERATE( instance ));
@@ -843,41 +846,45 @@ display_error_messages( ofaRecurrentGenerate *self, GList *messages )
  * at user validation, record newly generated recurrent operations
  *  in the DBMS with 'waiting' status
  */
-static gboolean
-do_record( ofaRecurrentGenerate *self, gchar **msgerr )
+static void
+on_ok_clicked( ofaRecurrentGenerate *self )
 {
 	ofaRecurrentGeneratePrivate *priv;
 	ofoRecurrentRun *object;
 	GList *it;
 	gchar *str;
 	gint count;
+	gboolean ok;
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
+
+	ok = TRUE;
 
 	for( it=priv->dataset ; it ; it=it->next ){
 		object = OFO_RECURRENT_RUN( it->data );
 		if( !ofo_recurrent_run_insert( object, priv->hub )){
-			if( msgerr ){
-				*msgerr = g_strdup( _( "Unable to insert a new operation" ));
-			}
-			return( FALSE );
+			ok = FALSE;
+			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to insert a new operation" ));
+			break;
 		}
 		/* this is the reference we just give to the collection dataset */
 		g_object_ref( object );
 	}
 
-	count = g_list_length( priv->dataset );
-	ofo_recurrent_gen_set_last_run_date( priv->hub, &priv->end_date );
+	if( ok ){
+		count = g_list_length( priv->dataset );
+		ofo_recurrent_gen_set_last_run_date( priv->hub, &priv->end_date );
 
-	if( count == 1 ){
-		str = g_strdup( _( "One successfully inserted operation" ));
-	} else {
-		str = g_strdup_printf( _( "%d successfully inserted operations" ), count );
+		if( count == 1 ){
+			str = g_strdup( _( "One successfully inserted operation" ));
+		} else {
+			str = g_strdup_printf( _( "%d successfully inserted operations" ), count );
+		}
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO, str );
+		g_free( str );
 	}
-	my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO, str );
-	g_free( str );
 
-	return( TRUE );
+	my_iwindow_close( MY_IWINDOW( self ));
 }
 
 /*

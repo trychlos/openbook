@@ -113,7 +113,17 @@ typedef struct {
 	 * quit_on_ok:
 	 * @instance: the #myIDialog instance.
 	 *
-	 * Returns: %TRUE if the implementation is OK to terminate the dialog.
+	 * Returns: %TRUE if the implementation is OK to terminate the
+	 * dialog loop.
+	 *
+	 * This method is only used for modal dialogs which are run from
+	 * #my_idialog_run() function.
+	 *
+	 * Note that returning from the dialog loop does not mean
+	 * terminating the window. The caller has still to explicitely
+	 * close the #myIWindow himself after having got the needed datas.
+	 *
+	 * Defaults to %TRUE.
 	 *
 	 * Since: version 1.
 	 */
@@ -134,35 +144,6 @@ typedef struct {
 	myIDialogInterface;
 
 /*
- * A three-state response code for #myIDialogUpdateExCb callback.
- *
- * @IDIALOG_UPDATE_OK: the dialog returns this code if all is ok;
- *  the interface will close the dialog.
- *
- * @IDIALOG_UPDATE_ERROR: the dialog returns this code if an error has
- *  been detected on update; the interface leaves the dialog opened,
- *  disabling the "OK" button, displaying a "Close" button.
- *
- * @IDIALOG_UPDATE_REDO: the update has been cancelled by the used,
- *  but the dialog wants be kept opened.
- */
-enum {
-	IDIALOG_UPDATE_OK = 0,
-	IDIALOG_UPDATE_ERROR,
-	IDIALOG_UPDATE_REDO
-};
-
-/**
- * myIDialogUpdateCb:
- *
- * A callback called when the user clicks on specified button.
- * If the callback returns %TRUE, then the #myIWindow is closed.
- * Else, an error message is displayed.
- */
-typedef gboolean ( *myIDialogUpdateCb )  ( myIDialog *instance, gchar **msgerr );
-typedef guint    ( *myIDialogUpdateExCb )( myIDialog *instance, gchar **msgerr );
-
-/*
  * Interface-wide
  */
 GType      my_idialog_get_type                  ( void );
@@ -180,14 +161,6 @@ guint      my_idialog_get_interface_version     ( GType type );
 void       my_idialog_init                      ( myIDialog *instance );
 
 GtkWidget *my_idialog_set_close_button          ( myIDialog *instance );
-
-void       my_idialog_click_to_update           ( myIDialog *instance,
-														GtkWidget *button,
-														myIDialogUpdateCb cb );
-
-void       my_idialog_click_to_update_ex        ( myIDialog *instance,
-														GtkWidget *button,
-														myIDialogUpdateExCb cb );
 
 gint       my_idialog_run                       ( myIDialog *instance );
 

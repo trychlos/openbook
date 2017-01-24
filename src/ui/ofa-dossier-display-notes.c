@@ -219,9 +219,6 @@ idialog_init( myIDialog *instance )
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	/* terminate the dialog when clicking on the unique button */
-	g_signal_connect( instance, "response", G_CALLBACK( my_iwindow_close ), NULL );
-
 	priv = ofa_dossier_display_notes_get_instance_private( OFA_DOSSIER_DISPLAY_NOTES( instance ));
 
 	set_notes( OFA_DOSSIER_DISPLAY_NOTES( instance ), "main-label", "main-text", priv->main_notes );

@@ -32,10 +32,15 @@
  *
  * Delete a dossier.
  *
+ * Whether an error be detected or not at recording time, the dialog
+ * terminates on OK, after having displayed a success or an error message
+ * box.
+ *
  * Development rules:
- * - type:       non-modal dialog
- * - settings:   no
- * - current:    no
+ * - type:               non-modal dialog
+ * - message on success: yes
+ * - settings:           no
+ * - current:            no
  */
 
 #include <gtk/gtk.h>

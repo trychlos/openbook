@@ -84,6 +84,7 @@ static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     on_credentials_changed( ofaDBMSRootBin *bin, gchar *account, gchar *password, ofaDossierDelete *dialog );
 static void     check_for_enable_dlg( ofaDossierDelete *self );
+static void     on_ok_clicked( ofaDossierDelete *self );
 static gboolean do_delete_dossier( ofaDossierDelete *self, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierDelete, ofa_dossier_delete, GTK_TYPE_DIALOG, 0,
@@ -251,7 +252,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_delete_idialog_init";
 	ofaDossierDeletePrivate *priv;
-	GtkWidget *label, *parent;
+	GtkWidget *label, *parent, *btn;
 	gchar *msg;
 	GtkSizeGroup *group;
 	const gchar *dossier_name;
@@ -260,6 +261,12 @@ idialog_init( myIDialog *instance )
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_dossier_delete_get_instance_private( OFA_DOSSIER_DELETE( instance ));
+
+	/* update properties on OK + always terminates */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->delete_btn = btn;
 
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
@@ -307,10 +314,6 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->err_msg && GTK_IS_LABEL( priv->err_msg ));
 	my_style_add( priv->err_msg, "labelerror" );
 
-	priv->delete_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( priv->delete_btn && GTK_IS_BUTTON( priv->delete_btn ));
-	my_idialog_click_to_update( instance, priv->delete_btn, ( myIDialogUpdateCb ) do_delete_dossier );
-
 	g_object_unref( group );
 }
 
@@ -345,11 +348,27 @@ check_for_enable_dlg( ofaDossierDelete *self )
 	gtk_widget_set_sensitive( priv->delete_btn, enabled );
 }
 
+static void
+on_ok_clicked( ofaDossierDelete *self )
+{
+	gchar *msgerr = NULL;
+
+	do_delete_dossier( self, &msgerr );
+
+	if( my_strlen( msgerr )){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+		g_free( msgerr );
+	}
+
+	my_iwindow_close( MY_IWINDOW( self ));
+}
+
 static gboolean
 do_delete_dossier( ofaDossierDelete *self, gchar **msgerr )
 {
-#if 0
 	static const gchar *thisfn = "ofa_dossier_delete_do_delete_dossier";
+
+#if 0
 	ofaDossierDeletePrivate *priv;
 	gint db_mode;
 	gboolean drop_db, drop_accounts;
@@ -365,6 +384,10 @@ do_delete_dossier( ofaDossierDelete *self, gchar **msgerr )
 			priv->idbms,
 			priv->dname, priv->root_account, priv->root_password,
 			drop_db, drop_accounts, FALSE );
-#endif
 	return( TRUE );
+#endif
+
+	*msgerr = g_strdup_printf( "%s: TO BE IMPLEMENTED", thisfn );
+
+	return( FALSE );
 }

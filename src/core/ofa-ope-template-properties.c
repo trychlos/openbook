@@ -150,6 +150,7 @@ static void     on_account_changed( GtkEntry *entry, ofaOpeTemplateProperties *s
 static void     on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self );
 static void     check_for_enable_dlg( ofaOpeTemplateProperties *self );
 static gboolean is_dialog_validable( ofaOpeTemplateProperties *self );
+static void     on_ok_clicked( ofaOpeTemplateProperties *self );
 static gboolean do_update( ofaOpeTemplateProperties *self, gchar **msgerr );
 static void     get_detail_list( ofaOpeTemplateProperties *self, gint row, gboolean update );
 static void     set_msgerr( ofaOpeTemplateProperties *self, const gchar *msg );
@@ -341,15 +342,17 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_ope_template_properties_idialog_init";
 	ofaOpeTemplatePropertiesPrivate *priv;
-	GtkWidget *button;
+	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_ope_template_properties_get_instance_private( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
+	/* validate and record the properties on OK + always terminates */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->ok_btn = btn;
 
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
@@ -363,16 +366,16 @@ idialog_init( myIDialog *instance )
 	my_utils_container_notes_init( instance, ope_template );
 	my_utils_container_updstamp_init( instance, ope_template );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "help-btn" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( button, "clicked", G_CALLBACK( on_help_clicked ), instance );
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "help-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect( btn, "clicked", G_CALLBACK( on_help_clicked ), instance );
 
 	if( priv->is_writable ){
 		gtk_widget_grab_focus(
 				my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-mnemo-entry" ));
 	}
 
-	/* if not the current exercice, then only have a 'Close' button */
+	/* if not the current exercice, then only have a 'Close' btn */
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
 	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
@@ -919,6 +922,21 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 	g_free( msgerr );
 
 	return( ok );
+}
+
+static void
+on_ok_clicked( ofaOpeTemplateProperties *self )
+{
+	gchar *msgerr = NULL;
+
+	do_update( self, &msgerr );
+
+	if( my_strlen( msgerr )){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+		g_free( msgerr );
+	}
+
+	my_iwindow_close( MY_IWINDOW( self ));
 }
 
 static gboolean

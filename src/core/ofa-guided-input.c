@@ -65,14 +65,14 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-guided-input.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      iwindow_init( myIWindow *instance );
-static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      on_input_bin_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedInput *self );
-static void      check_for_enable_dlg( ofaGuidedInput *self );
-static gboolean  do_update( ofaGuidedInput *self, gchar **msgerr );
+static void   iwindow_iface_init( myIWindowInterface *iface );
+static void   iwindow_init( myIWindow *instance );
+static gchar *iwindow_get_identifier( const myIWindow *instance );
+static void   idialog_iface_init( myIDialogInterface *iface );
+static void   idialog_init( myIDialog *instance );
+static void   on_input_bin_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedInput *self );
+static void   check_for_enable_dlg( ofaGuidedInput *self );
+static void   on_ok_clicked( ofaGuidedInput *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaGuidedInput, ofa_guided_input, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaGuidedInput )
@@ -248,15 +248,17 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_guided_input_idialog_init";
 	ofaGuidedInputPrivate *priv;
-	GtkWidget *parent;
+	GtkWidget *btn, *parent;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_guided_input_get_instance_private( OFA_GUIDED_INPUT( instance ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
+	/* validate and record the operation on OK + always terminates */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->ok_btn = btn;
 
 	my_utils_container_dump( GTK_CONTAINER( instance ));
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "bin-parent" );
@@ -298,8 +300,8 @@ check_for_enable_dlg( ofaGuidedInput *self )
 	on_input_bin_changed( priv->input_bin, ok, self );
 }
 
-static gboolean
-do_update( ofaGuidedInput *self, gchar **msgerr )
+static void
+on_ok_clicked( ofaGuidedInput *self )
 {
 	ofaGuidedInputPrivate *priv;
 	gboolean ok;
@@ -308,9 +310,9 @@ do_update( ofaGuidedInput *self, gchar **msgerr )
 
 	ok = ofa_guided_input_bin_apply( priv->input_bin );
 
-	if( !ok && msgerr ){
-		*msgerr = g_strdup( _( "Unable to create the required entries" ));
+	if( !ok ){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to create the required entries" ));
 	}
 
-	return( ok );
+	my_iwindow_close( MY_IWINDOW( self ));
 }

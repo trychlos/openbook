@@ -148,7 +148,8 @@ static void     background_image_on_preview_clicked( GtkButton *button, ofaDossi
 static void     check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean is_dialog_valid( ofaDossierProperties *self );
 static void     set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec );
-static void     on_cancel( GtkButton *button, ofaDossierProperties *self );
+static void     on_cancel_clicked( ofaDossierProperties *self );
+static void     on_ok_clicked( ofaDossierProperties *self );
 static gboolean do_update( ofaDossierProperties *self, gchar **msgerr );
 static gboolean confirm_remediation( ofaDossierProperties *self, gint count );
 static void     display_progress_init( ofaDossierProperties *self );
@@ -334,13 +335,16 @@ idialog_init( myIDialog *instance )
 
 	priv = ofa_dossier_properties_get_instance_private( OFA_DOSSIER_PROPERTIES( instance ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
-
+	/* restore the original background on Cancel */
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-cancel" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-	g_signal_connect( btn, "clicked", G_CALLBACK( on_cancel ), instance );
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_cancel_clicked ), instance );
+
+	/* update properties on OK + always terminates */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->ok_btn = btn;
 
 	priv->msgerr = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "px-msgerr" );
 
@@ -969,13 +973,30 @@ set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec )
  * on cancel, restore the original background image
  */
 static void
-on_cancel( GtkButton *button, ofaDossierProperties *self )
+on_cancel_clicked( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
 	g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_PREVIEW, priv->background_orig_uri );
+
+	/* do not close the window here as this will be done in myIDialog */
+}
+
+static void
+on_ok_clicked( ofaDossierProperties *self )
+{
+	gchar *msgerr = NULL;
+
+	do_update( self, &msgerr );
+
+	if( my_strlen( msgerr )){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+		g_free( msgerr );
+	}
+
+	my_iwindow_close( MY_IWINDOW( self ));
 }
 
 static gboolean

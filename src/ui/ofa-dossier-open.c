@@ -306,7 +306,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_open_idialog_init";
 	ofaDossierOpenPrivate *priv;
-	GtkWidget *button, *focus;
+	GtkWidget *btn, *focus;
 	GtkSizeGroup *group;
 	const gchar *dossier_name;
 	ofaIDBExerciceMeta *init_period;
@@ -317,8 +317,8 @@ idialog_init( myIDialog *instance )
 
 	/* do this first to be available as soon as the first signal
 	 * triggers */
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-open" );
-	priv->ok_btn = button;
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-open" );
+	priv->ok_btn = btn;
 
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	idialog_init_exercice( OFA_DOSSIER_OPEN( instance ), group );

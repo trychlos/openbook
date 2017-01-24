@@ -50,10 +50,14 @@
  * (null)   31/12/2013 it is possible to create a new period starting
  *                     with 01/01/2014
  *
+ * Whether an error be detected or not at recording time, the dialog
+ * terminates on OK, maybe after having displayed an error message box.
+ *
  * Development rules:
- * - type:       non-modal dialog
- * - settings:   yes
- * - current:    yes
+ * - type:               non-modal dialog
+ * - message on success: no
+ * - settings:           yes
+ * - current:            yes
  */
 
 #include <gtk/gtk.h>

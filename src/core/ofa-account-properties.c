@@ -129,6 +129,7 @@ static void     on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *se
 static void     on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, gboolean root );
 static void     check_for_enable_dlg( ofaAccountProperties *self );
 static gboolean is_dialog_validable( ofaAccountProperties *self );
+static void     on_ok_clicked( ofaAccountProperties *self );
 static gboolean do_update( ofaAccountProperties *self, gchar **msgerr );
 static void     set_msgerr( ofaAccountProperties *self, const gchar *msg );
 
@@ -328,14 +329,17 @@ idialog_init( myIDialog *instance )
 	ofaAccountPropertiesPrivate *priv;
 	gchar *title;
 	const gchar *acc_number;
+	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_account_properties_get_instance_private( OFA_ACCOUNT_PROPERTIES( instance ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
+	/* validate and record the properties on OK + always terminates */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->ok_btn = btn;
 
 	/* dialog title */
 	acc_number = ofo_account_get_number( priv->account );
@@ -767,6 +771,21 @@ is_dialog_validable( ofaAccountProperties *self )
 	g_free( msgerr );
 
 	return( ok );
+}
+
+static void
+on_ok_clicked( ofaAccountProperties *self )
+{
+	gchar *msgerr = NULL;
+
+	do_update( self, &msgerr );
+
+	if( my_strlen( msgerr )){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+		g_free( msgerr );
+	}
+
+	my_iwindow_close( MY_IWINDOW( self ));
 }
 
 static gboolean

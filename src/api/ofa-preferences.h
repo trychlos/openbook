@@ -33,10 +33,14 @@
  * Manage the general user preferences,
  * i.e. user preferences which are not attached to any dossier.
  *
+ * Whether an error be detected or not at recording time, the dialog
+ * terminates on OK, maybe after having displayed an error message box.
+ *
  * Development rules:
- * - type:       non-modal dialog
- * - settings:   yes
- * - current:    no
+ * - type:               non-modal dialog
+ * - message on success: no
+ * - settings:           yes
+ * - current:            no
  */
 
 #include <gtk/gtk.h>

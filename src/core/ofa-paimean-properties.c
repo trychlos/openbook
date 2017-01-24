@@ -91,6 +91,7 @@ static void     on_label_changed( GtkEntry *entry, ofaPaimeanProperties *self );
 static void     on_account_changed( GtkEntry *entry, ofaPaimeanProperties *self );
 static void     check_for_enable_dlg( ofaPaimeanProperties *self );
 static gboolean is_dialog_validable( ofaPaimeanProperties *self );
+static void     on_ok_clicked( ofaPaimeanProperties *self );
 static gboolean do_update( ofaPaimeanProperties *self, gchar **msgerr );
 static void     set_msgerr( ofaPaimeanProperties *self, const gchar *msg, const gchar *style );
 
@@ -274,10 +275,17 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_paimean_properties_idialog_init";
 	ofaPaimeanPropertiesPrivate *priv;
+	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_paimean_properties_get_instance_private( OFA_PAIMEAN_PROPERTIES( instance ));
+
+	/* validate and record the properties on OK + always terminates */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->ok_btn = btn;
 
 	init_dialog( OFA_PAIMEAN_PROPERTIES( instance ));
 	init_properties( OFA_PAIMEAN_PROPERTIES( instance ));
@@ -302,10 +310,6 @@ init_dialog( ofaPaimeanProperties *self )
 	gchar *title;
 
 	priv = ofa_paimean_properties_get_instance_private( self );
-
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( MY_IDIALOG( self ), priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
@@ -489,6 +493,21 @@ is_dialog_validable( ofaPaimeanProperties *self )
  * or updating an existing one, and prev_code may have been modified
  * Please note that a record is uniquely identified by the code
  */
+static void
+on_ok_clicked( ofaPaimeanProperties *self )
+{
+	gchar *msgerr = NULL;
+
+	do_update( self, &msgerr );
+
+	if( my_strlen( msgerr )){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+		g_free( msgerr );
+	}
+
+	my_iwindow_close( MY_IWINDOW( self ));
+}
+
 static gboolean
 do_update( ofaPaimeanProperties *self, gchar **msgerr )
 {

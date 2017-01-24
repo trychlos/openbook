@@ -400,9 +400,6 @@
 1303 2016-12-27 ack -lw get_valid src
                 replace get_valid() with is_valid()
 
-1313 2017- 1- 5 generalize my_idialog_click_to_update_ex() in replacement
-                of my_idialog_click_to_update()
-
 1316 2017- 1- 9 DossierManager: implement call to ofa_dossier_collection_delete_period()
                 (requires a superuser connection on the dbms)
 
@@ -430,13 +427,6 @@
 1328 2017- 1-22 deprecate IDBEditor
 
 1329 2017- 1-22 deprecate DossierNewMini
-
-1330 2017- 1-22 review the dialog closing: today, this is automatic without
-                being clear if this is in all cases or in *most* cases;
-                it would be probably more clear if the dialog would be
-                explicitely closed from the caller
-     2017- 1-23 this may lead to deprecate my_idialog_click_to_update() and
-                my_idialog_click_to_update_ex()
 
 1331 2017- 1-23 rename my_date_editable_set_format() to my_date_editable_set_entry_format()
 
@@ -502,6 +492,10 @@
 1312 2017- 1- 5 obsolete ofaIDBDossierMeta::remove_period method
      2017- 1- 9 done
 
+1313 2017- 1- 5 generalize my_idialog_click_to_update_ex() in replacement
+                of my_idialog_click_to_update()
+     2017- 1-24 cancelled as both functions are deprecated (cf. #1330)
+
 1314 2017- 1- 6 DB: OFA_T_DOSSIER: add a unique id to identify the dossier
      2017- 1-12 use case: be able to identify that an archive comes from
                 this particular dossier (and maybe refuse to overwrite an
@@ -524,6 +518,14 @@
 1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
                 read-only (unset when current if was not set by the user) 
      2017- 1-16 done
+
+1330 2017- 1-22 review the dialog closing: today, this is automatic without
+                being clear if this is in all cases or in *most* cases;
+                it would be probably more clear if the dialog would be
+                explicitely closed from the caller
+     2017- 1-23 this may lead to deprecate my_idialog_click_to_update() and
+                my_idialog_click_to_update_ex()
+     2017- 1-24 done
 
 1333 2017- 1-23 deprecate my_iwindow_msg_dialog()
      2017- 1-23 done

@@ -33,9 +33,10 @@
  * Display the chart of accounts, letting the user edit it.
  *
  * Development rules:
- * - type:       modal dialog
- * - settings:   yes
- * - current:    no
+ * - type:         modal dialog
+ * - settings:     yes
+ * - current:      no
+ * - on terminate: hide
  */
 
 #include <gtk/gtk.h>

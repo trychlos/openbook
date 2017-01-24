@@ -33,9 +33,10 @@
  * Display the chart of bats, letting the user select one.
  *
  * Development rules:
- * - type:       modal dialog
- * - settings:   yes
- * - current:    no
+ * - type:         modal dialog
+ * - settings:     yes
+ * - current:      no
+ * - on terminate: close
  */
 
 #include <gtk/gtk.h>

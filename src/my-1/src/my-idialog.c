@@ -38,35 +38,27 @@
 /* a data structure attached to each instance
  */
 typedef struct {
-	gboolean            initialized;
-	GtkWidget          *cancel_btn;
-	GtkWidget          *update_btn;
-	myIDialogUpdateCb   update_cb;
-	myIDialogUpdateExCb update_ex_cb;
+	gboolean   initialized;
+	GtkWidget *cancel_btn;
+	GtkWidget *close_btn;
 }
 	sIDialog;
 
 static guint    st_initializations      = 0;		/* interface initialization count */
 
-static GType     register_type( void );
-static void      interface_base_init( myIDialogInterface *klass );
-static void      interface_base_finalize( myIDialogInterface *klass );
-static void      idialog_init_application( myIDialog *instance );
-static void      button_connect( myIDialog *instance, const gchar *label, gint response_code, GCallback cb );
-static void      on_cancel_clicked( GtkButton *button, myIDialog *instance );
-static void      on_close_clicked( GtkButton *button, myIDialog *instance );
-static void      on_ok_clicked( GtkButton *button, myIDialog *instance );
-static void      do_close( myIDialog *instance );
-static gboolean  ok_to_terminate( myIDialog *instance, gint response_code );
-static gboolean  do_quit_on_ok( myIDialog *instance );
-static gboolean  do_quit_on_code( myIDialog *instance, gint code );
-static void      on_update_button_clicked( GtkButton *button, myIDialog *instance );
-static void      do_update( myIDialog *instance );
-static void      do_update_ok( myIDialog *instance, sIDialog *sdata );
-static void      do_update_error( myIDialog *instance, sIDialog *sdata, const gchar *msgerr );
-static void      do_update_redo( myIDialog *instance, sIDialog *sdata );
-static sIDialog *get_instance_data( const myIDialog *instance );
-static void      on_instance_finalized( sIDialog *sdata, GObject *finalized_idialog );
+static GType      register_type( void );
+static void       interface_base_init( myIDialogInterface *klass );
+static void       interface_base_finalize( myIDialogInterface *klass );
+static void       idialog_init_application( myIDialog *instance );
+static GtkWidget *button_connect( myIDialog *instance, const gchar *label, gint response_code, GCallback cb );
+static void       on_cancel_clicked( GtkButton *button, myIDialog *instance );
+static void       on_close_clicked( GtkButton *button, myIDialog *instance );
+static void       do_close( myIDialog *instance );
+static gboolean   ok_to_terminate( myIDialog *instance, gint response_code );
+static gboolean   do_quit_on_ok( myIDialog *instance );
+static gboolean   do_quit_on_code( myIDialog *instance, gint code );
+static sIDialog  *get_instance_data( const myIDialog *instance );
+static void       on_instance_finalized( sIDialog *sdata, GObject *finalized_idialog );
 
 /**
  * my_idialog_get_type:
@@ -225,13 +217,16 @@ my_idialog_init( myIDialog *instance )
 		g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 		sdata->initialized = TRUE;
 
+		/* must be called before having connected the cancel/close buttons
+		 * so that the application has a chance to do something before
+		 * default behavior */
 		idialog_init_application( instance );
 
-		if( 0 ){
-			button_connect( instance, "Cancel", GTK_RESPONSE_CANCEL, G_CALLBACK( on_cancel_clicked ));
-			button_connect( instance, "Close", GTK_RESPONSE_CLOSE, G_CALLBACK( on_close_clicked ));
-			button_connect( instance, "OK", GTK_RESPONSE_OK, G_CALLBACK( on_ok_clicked ));
-		}
+		sdata->cancel_btn = button_connect(
+				instance, "Cancel", GTK_RESPONSE_CANCEL, G_CALLBACK( on_cancel_clicked ));
+
+		sdata->close_btn = button_connect(
+				instance, "Close", GTK_RESPONSE_CLOSE, G_CALLBACK( on_close_clicked ));
 
 		gtk_widget_show_all( GTK_WIDGET( instance ));
 	}
@@ -251,25 +246,23 @@ idialog_init_application( myIDialog *instance )
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
-static void
+static GtkWidget *
 button_connect( myIDialog *instance, const gchar *label, gint response_code, GCallback cb )
 {
 	static const gchar *thisfn = "my_idialog_button_connect";
-	sIDialog *sdata;
 	GtkWidget *btn;
 
 	btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), response_code );
+
 	if( btn ){
-		g_return_if_fail( GTK_IS_BUTTON( btn ));
+		g_return_val_if_fail( GTK_IS_BUTTON( btn ), NULL );
 		g_signal_connect( btn, "clicked", cb, instance );
 
-		if( response_code == GTK_RESPONSE_CANCEL ){
-			sdata = get_instance_data( instance );
-			sdata->cancel_btn = btn;
-		}
 	} else {
 		g_debug( "%s: unable to identify the [%s] button", thisfn, label );
 	}
+
+	return( btn );
 }
 
 /**
@@ -300,8 +293,11 @@ my_idialog_set_close_button( myIDialog *instance )
 		gtk_widget_destroy( button );
 	}
 
-	button = gtk_dialog_add_button( GTK_DIALOG( instance ), _( "Close" ), GTK_RESPONSE_CLOSE );
-	gtk_widget_show_all( button );
+	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( instance ), GTK_RESPONSE_CLOSE );
+	if( !button ){
+		button = gtk_dialog_add_button( GTK_DIALOG( instance ), _( "Close" ), GTK_RESPONSE_CLOSE );
+		gtk_widget_show_all( button );
+	}
 
 	return( button );
 }
@@ -326,17 +322,6 @@ static void
 on_close_clicked( GtkButton *button, myIDialog *instance )
 {
 	do_close( instance );
-}
-
-/*
- * GtkDialog-specific.
- *
- * click on [OK] button: does nothing ?
- */
-static void
-on_ok_clicked( GtkButton *button, myIDialog *instance )
-{
-
 }
 
 /*
@@ -483,136 +468,6 @@ do_quit_on_code( myIDialog *instance, gint code )
 	return( FALSE );
 }
 
-/**
- * my_idialog_click_to_update:
- * @instance: this #myIDialog instance.
- * @button:
- * @cb: [allow-none]:
- *
- * Records a #myIDialogUpdateCb validation callback.
- */
-void
-my_idialog_click_to_update( myIDialog *instance, GtkWidget *button, myIDialogUpdateCb cb )
-{
-	sIDialog *sdata;
-
-	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
-	g_return_if_fail( GTK_IS_DIALOG( instance ));
-	g_return_if_fail( MY_IS_IWINDOW( instance ));
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-
-	sdata = get_instance_data( instance );
-	g_return_if_fail( !sdata->update_cb && !sdata->update_ex_cb );
-
-	sdata->update_btn = button;
-	sdata->update_cb = cb;
-
-	if( cb ){
-		g_signal_connect( button, "clicked", G_CALLBACK( on_update_button_clicked ), instance );
-	}
-}
-
-/**
- * my_idialog_click_to_update_ex:
- * @instance: this #myIDialog instance.
- * @button:
- * @cb: [allow-none]:
- *
- * Records a #myIDialogUpdateExCb validation callback.
- */
-void
-my_idialog_click_to_update_ex( myIDialog *instance, GtkWidget *button, myIDialogUpdateExCb cb )
-{
-	sIDialog *sdata;
-
-	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
-	g_return_if_fail( GTK_IS_DIALOG( instance ));
-	g_return_if_fail( MY_IS_IWINDOW( instance ));
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-
-	sdata = get_instance_data( instance );
-	g_return_if_fail( !sdata->update_cb && !sdata->update_ex_cb );
-
-	sdata->update_btn = button;
-	sdata->update_ex_cb = cb;
-
-	if( cb ){
-		g_signal_connect( button, "clicked", G_CALLBACK( on_update_button_clicked ), instance );
-	}
-}
-
-static void
-on_update_button_clicked( GtkButton *button, myIDialog *instance )
-{
-	do_update( instance );
-}
-
-static void
-do_update( myIDialog *instance )
-{
-	sIDialog *sdata;
-	gboolean ok;
-	guint response;
-	gchar *msgerr;
-
-	sdata = get_instance_data( instance );
-	msgerr = NULL;
-
-	/* an update function which only returns a boolean
-	 */
-	if( sdata->update_cb ){
-		ok = sdata->update_cb( instance, &msgerr );
-		if( ok ){
-			do_update_ok( instance, sdata );
-		} else {
-			do_update_error( instance, sdata, msgerr );
-		}
-
-	/* an update function which returns a tri-state code
-	 */
-	} else if( sdata->update_ex_cb ){
-		msgerr = NULL;
-		response = sdata->update_ex_cb( instance, &msgerr );
-		switch( response ){
-			case IDIALOG_UPDATE_OK:
-				do_update_ok( instance, sdata );
-				break;
-			case IDIALOG_UPDATE_ERROR:
-				do_update_error( instance, sdata, msgerr );
-				break;
-			case IDIALOG_UPDATE_REDO:
-				do_update_redo( instance, sdata );
-				break;
-		}
-	}
-
-	g_free( msgerr );
-}
-
-static void
-do_update_ok( myIDialog *instance, sIDialog *sdata )
-{
-	my_iwindow_close( MY_IWINDOW( instance ));
-}
-
-static void
-do_update_error( myIDialog *instance, sIDialog *sdata, const gchar *msgerr )
-{
-	gchar *msg;
-
-	gtk_widget_set_sensitive( sdata->update_btn, FALSE );
-	gtk_button_set_label( GTK_BUTTON( sdata->cancel_btn ), _( "Close" ));
-
-	msg = g_strdup( my_strlen( msgerr ) ? msgerr : _( "Undefined error on update" ));
-	my_utils_msg_dialog( GTK_WINDOW( instance ), GTK_MESSAGE_WARNING, msg );
-	g_free( msg );
-}
-
-static void
-do_update_redo( myIDialog *instance, sIDialog *sdata )
-{
-}
-
 static sIDialog *
 get_instance_data( const myIDialog *instance )
 {
@@ -626,8 +481,6 @@ get_instance_data( const myIDialog *instance )
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
 
 		sdata->initialized = FALSE;
-		sdata->update_btn = NULL;
-		sdata->update_cb = NULL;
 	}
 
 	return( sdata );

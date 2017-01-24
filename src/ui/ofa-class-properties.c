@@ -81,6 +81,7 @@ static void     on_number_changed( GtkEntry *entry, ofaClassProperties *self );
 static void     on_label_changed( GtkEntry *entry, ofaClassProperties *self );
 static void     check_for_enable_dlg( ofaClassProperties *self );
 static gboolean is_dialog_validable( ofaClassProperties *self );
+static void     on_ok_clicked( ofaClassProperties *self );
 static gboolean do_update( ofaClassProperties *self, gchar **msgerr );
 static void     set_msgerr( ofaClassProperties *self, const gchar *msg );
 
@@ -272,15 +273,17 @@ idialog_init( myIDialog *instance )
 	gint number;
 	GtkEntry *entry;
 	gchar *str;
-	GtkWidget *label;
+	GtkWidget *label, *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_class_properties_get_instance_private( OFA_CLASS_PROPERTIES( instance ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
+	/* update properties on OK + always terminates */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->ok_btn = btn;
 
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
@@ -396,6 +399,21 @@ is_dialog_validable( ofaClassProperties *self )
 	g_free( msgerr );
 
 	return( ok );
+}
+
+static void
+on_ok_clicked( ofaClassProperties *self )
+{
+	gchar *msgerr = NULL;
+
+	do_update( self, &msgerr );
+
+	if( my_strlen( msgerr )){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+		g_free( msgerr );
+	}
+
+	my_iwindow_close( MY_IWINDOW( self ));
 }
 
 static gboolean

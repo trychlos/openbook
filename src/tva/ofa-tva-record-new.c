@@ -81,6 +81,7 @@ static void     idialog_init( myIDialog *instance );
 static void     init_properties( ofaTVARecordNew *self );
 static void     on_end_changed( GtkEntry *entry, ofaTVARecordNew *self );
 static void     check_for_enable_dlg( ofaTVARecordNew *self );
+static void     on_ok_clicked( ofaTVARecordNew *self );
 static gboolean do_update( ofaTVARecordNew *self, gchar **msgerr );
 static void     set_msgerr( ofaTVARecordNew *self, const gchar *msg );
 
@@ -264,14 +265,17 @@ idialog_init( myIDialog *instance )
 	ofaTVARecordNewPrivate *priv;
 	gchar *title;
 	const gchar *mnemo;
+	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_tva_record_new_get_instance_private( OFA_TVA_RECORD_NEW( instance ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
+	/* update properties on OK + always terminates */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->ok_btn = btn;
 
 	priv->form = ofo_tva_form_get_by_mnemo( priv->hub, ofo_tva_record_get_mnemo( priv->tva_record ));
 	g_return_if_fail( priv->form && OFO_IS_TVA_FORM( priv->form ));
@@ -390,9 +394,22 @@ check_for_enable_dlg( ofaTVARecordNew *self )
  * When the creation of a new VAT record is confirmed, then:
  * - activate (or open) the declarations management page
  * - open the declaration for edition.
- *
- * The dialog will be closed by the myIWindow interface.
  */
+static void
+on_ok_clicked( ofaTVARecordNew *self )
+{
+	gchar *msgerr = NULL;
+
+	do_update( self, &msgerr );
+
+	if( my_strlen( msgerr )){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+		g_free( msgerr );
+	}
+
+	my_iwindow_close( MY_IWINDOW( self ));
+}
+
 static gboolean
 do_update( ofaTVARecordNew *self, gchar **msgerr )
 {

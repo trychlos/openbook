@@ -48,9 +48,10 @@
  * - create the data model, updating it to last known version
  *
  * Development rules:
- * - type:       modal or non-modal dialog
- * - settings:   yes
- * - current:    no
+ * - type:               modal or non-modal dialog
+ * - message on success: no
+ * - settings:           yes
+ * - current:            no
  */
 
 #include <gtk/gtk.h>

@@ -515,6 +515,10 @@ my_iwindow_present( myIWindow *instance )
 void
 my_iwindow_close( myIWindow *instance )
 {
+	static const gchar *thisfn = "my_iwindow_close";
+
+	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
 	g_return_if_fail( instance && MY_IWINDOW( instance ));
 
 	do_close( instance );
@@ -528,9 +532,12 @@ my_iwindow_close( myIWindow *instance )
 void
 my_iwindow_close_all( void )
 {
+	static const gchar *thisfn = "my_iwindow_close_all";
 	sIWindow *sdata;
 	GList *it;
 	gboolean has_closed_something;
+
+	g_debug( "%s:", thisfn );
 
 	/* first reset the closing indicator */
 	for( it=st_live_list ; it ; it=it->next ){
@@ -588,10 +595,13 @@ do_close( myIWindow *instance )
 
 	sdata = get_instance_data( instance );
 
-	position_save( instance, sdata );
-
 	if( sdata->close_allowed ){
-		g_debug( "%s: destroying instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+		g_debug( "%s: close_allowed=%s, destroying widget=%p (%s)",
+				thisfn, sdata->close_allowed ? "True":"False",
+				( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+		position_save( instance, sdata );
+
 		gtk_widget_destroy( GTK_WIDGET( instance ));
 	}
 }

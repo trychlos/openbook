@@ -35,6 +35,7 @@
    DBModel Core v34.
 
    - myICollectionable: remove ofaHub dependancy (todo #1319).
+   - myIDialog: review whole closing process (todo #1330).
    - my_iwindow_msg_dialog(): deprecated (todo #1333).
    - my_iwindow_set_close_allowed(): new function replacing is_destroy_allowed() method (todo #1287).
    - my_stamp_xxx() functions now accept a display format (todo #1318).

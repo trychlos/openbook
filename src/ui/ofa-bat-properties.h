@@ -33,10 +33,14 @@
  * Display the BAT properties. Only the notes can be updated when the
  * opened dossier is not an archive.
  *
+ * Whether an error be detected or not at recording time, the dialog
+ * terminates on OK, maybe after having displayed an error message box.
+ *
  * Development rules:
- * - type:       non-modal dialog
- * - settings:   yes
- * - current:    yes
+ * - type:               non-modal dialog
+ * - message on success: no
+ * - settings:           yes
+ * - current:            yes
  */
 
 #include <gtk/gtk.h>

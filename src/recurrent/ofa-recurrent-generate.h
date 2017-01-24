@@ -32,10 +32,15 @@
  *
  * Let the user validate the generated operations before recording.
  *
+ * Whether an error be detected or not at recording time, the dialog
+ * terminates on OK, after having displayed a success or an error message
+ * box.
+ *
  * Development rules:
- * - type:       non-modal dialog
- * - settings:   yes
- * - current:    no
+ * - type:               non-modal dialog
+ * - message on success: yes
+ * - settings:           yes
+ * - current:            no
  *
  * Because this dialog is not modal, the user may dynamically change
  * the selection in #ofaRecurrentModelPage page, and try to re-generate

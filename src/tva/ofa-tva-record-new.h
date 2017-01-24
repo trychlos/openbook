@@ -36,10 +36,14 @@
  * date for a new TVA declaration. This end date is then unmodifiable
  * (the declaration has to be deleted before recreated).
  *
+ * Whether an error be detected or not at recording time, the dialog
+ * terminates on OK, maybe after having displayed an error message box.
+ *
  * Development rules:
- * - type:       non-modal dialog
- * - settings:   yes
- * - current:    no
+ * - type:               non-modal dialog
+ * - message on success: no
+ * - settings:           yes
+ * - current:            no
  */
 
 #include <gtk/gtk.h>

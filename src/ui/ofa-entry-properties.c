@@ -95,7 +95,6 @@ typedef struct {
 	GtkWidget      *template_label;
 	GtkWidget      *sens_combo;
 	GtkWidget      *amount_entry;
-	GtkWidget      *ok_btn;
 	GtkWidget      *msg_label;
 }
 	ofaEntryPropertiesPrivate;
@@ -139,9 +138,6 @@ static void       on_label_changed( GtkEntry *entry, ofaEntryProperties *self );
 static void       on_template_changed( GtkEntry *entry, ofaEntryProperties *self );
 static void       on_amount_changed( GtkEntry *entry, ofaEntryProperties *self );
 static void       check_for_enable_dlg( ofaEntryProperties *self );
-static gboolean   is_dialog_validable( ofaEntryProperties *self );
-static gboolean   do_update( ofaEntryProperties *self, gchar **msgerr );
-//static void       set_msgerr( ofaEntryProperties *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryProperties, ofa_entry_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaEntryProperties )
@@ -318,10 +314,6 @@ idialog_init( myIDialog *instance )
 
 	priv = ofa_entry_properties_get_instance_private( OFA_ENTRY_PROPERTIES( instance ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
-
 	/* v 0.62 */
 	/*priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );*/
 	priv->is_writable = FALSE;
@@ -341,12 +333,6 @@ idialog_init( myIDialog *instance )
 
 	my_utils_container_updstamp_init( instance, entry );
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->editable );
-
-	/* if not the current exercice, then only have a 'Close' button */
-	if( !priv->is_writable ){
-		my_idialog_set_close_button( instance );
-		priv->ok_btn = NULL;
-	}
 
 	check_for_enable_dlg( OFA_ENTRY_PROPERTIES( instance ));
 }
@@ -676,46 +662,4 @@ on_amount_changed( GtkEntry *entry, ofaEntryProperties *self )
 static void
 check_for_enable_dlg( ofaEntryProperties *self )
 {
-	ofaEntryPropertiesPrivate *priv;
-
-	priv = ofa_entry_properties_get_instance_private( self );
-
-	if( priv->is_writable ){
-		gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
-	}
 }
-
-/*
- * As of v0.62, update of an #ofaEntry is not handled here
- */
-static gboolean
-is_dialog_validable( ofaEntryProperties *self )
-{
-	return( TRUE );
-}
-
-static gboolean
-do_update( ofaEntryProperties *self, gchar **msgerr )
-{
-	return( TRUE );
-}
-
-#if 0
-static void
-set_msgerr( ofaEntryProperties *self, const gchar *msg )
-{
-	ofaEntryPropertiesPrivate *priv;
-	GtkWidget *label;
-
-	priv = ofa_entry_properties_get_instance_private( self );
-
-	if( !priv->msg_label ){
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
-		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		my_style_add( label, "labelerror" );
-		priv->msg_label = label;
-	}
-
-	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
-}
-#endif

@@ -86,7 +86,8 @@ static void     setup_others( ofaPeriodClose *self );
 static void     on_date_changed( GtkEditable *entry, ofaPeriodClose *self );
 static void     check_for_enable_dlg( ofaPeriodClose *self );
 static gboolean is_dialog_validable( ofaPeriodClose *self );
-static void     on_ok_clicked( GtkButton *button, ofaPeriodClose *self );
+static void     on_ok_clicked( ofaPeriodClose *self );
+static void     do_ok( ofaPeriodClose *self );
 static gboolean do_close( ofaPeriodClose *self );
 static void     read_settings( ofaPeriodClose *self );
 static void     write_settings( ofaPeriodClose *self );
@@ -254,8 +255,18 @@ static void
 idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_period_close_idialog_init";
+	ofaPeriodClosePrivate *priv;
+	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_period_close_get_instance_private( OFA_PERIOD_CLOSE( instance ));
+
+	/* close ledgers on OK + change Cancel button to Close */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->do_close_btn = btn;
 
 	setup_date( OFA_PERIOD_CLOSE( instance ));
 	setup_others( OFA_PERIOD_CLOSE( instance ));
@@ -308,7 +319,7 @@ static void
 setup_others( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
-	GtkWidget *btn, *label;
+	GtkWidget *label;
 
 	priv = ofa_period_close_get_instance_private( self );
 
@@ -317,11 +328,6 @@ setup_others( ofaPeriodClose *self )
 
 	priv->accounts_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-accounts" );
 	g_return_if_fail( priv->accounts_btn && GTK_IS_CHECK_BUTTON( priv->accounts_btn ));
-
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "btn-ok" );
-	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-	g_signal_connect( btn, "clicked", G_CALLBACK( on_ok_clicked ), self );
-	priv->do_close_btn = btn;
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -406,7 +412,15 @@ is_dialog_validable( ofaPeriodClose *self )
 }
 
 static void
-on_ok_clicked( GtkButton *button, ofaPeriodClose *self )
+on_ok_clicked( ofaPeriodClose *self )
+{
+	do_ok( self );
+
+	/* does not close the window here */
+}
+
+static void
+do_ok( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
 	GtkWidget *close_btn;
@@ -433,7 +447,7 @@ on_ok_clicked( GtkButton *button, ofaPeriodClose *self )
 		gtk_widget_set_sensitive( priv->closing_date, FALSE );
 		gtk_widget_set_sensitive( priv->ledgers_btn, FALSE );
 		gtk_widget_set_sensitive( priv->accounts_btn, FALSE );
-		gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->do_close_btn ), FALSE );
 		close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( self ), GTK_RESPONSE_CANCEL );
 		g_return_if_fail( close_btn && GTK_IS_BUTTON( close_btn ));
 		gtk_button_set_label( GTK_BUTTON( close_btn ), _( "_Close" ));

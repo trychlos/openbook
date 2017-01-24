@@ -121,7 +121,7 @@ static void     on_archive_ledgers_toggled( GtkToggleButton *button, ofaLedgerCl
 static gboolean check_for_enable_dlg( ofaLedgerClose *self, GList *selected );
 static gboolean is_dialog_validable( ofaLedgerClose *self, GList *selected );
 static void     check_foreach_ledger( ofaLedgerClose *self, ofoLedger *ledger );
-static void     on_ok_clicked( GtkButton *button, ofaLedgerClose *self );
+static void     on_ok_clicked( ofaLedgerClose *self );
 static void     do_ok( ofaLedgerClose *self );
 static gboolean do_close( ofaLedgerClose *self );
 static void     do_close_ledgers( sClose *sclose );
@@ -329,10 +329,17 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_close_idialog_init";
 	ofaLedgerClosePrivate *priv;
+	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_ledger_close_get_instance_private( OFA_LEDGER_CLOSE( instance ));
+
+	/* close ledgers on OK + change Cancel button to Close */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->do_close_btn = btn;
 
 	setup_treeview( OFA_LEDGER_CLOSE( instance ));
 	setup_date( OFA_LEDGER_CLOSE( instance ));
@@ -411,11 +418,6 @@ setup_others( ofaLedgerClose *self )
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( button, "toggled", G_CALLBACK( on_archive_ledgers_toggled ), self );
 	priv->archive_ledgers_btn = button;
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "btn-ok" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( button, "clicked", G_CALLBACK( on_ok_clicked ), self );
-	priv->do_close_btn = button;
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -617,9 +619,11 @@ check_foreach_ledger( ofaLedgerClose *self, ofoLedger *ledger )
 }
 
 static void
-on_ok_clicked( GtkButton *button, ofaLedgerClose *self )
+on_ok_clicked( ofaLedgerClose *self )
 {
 	do_ok( self );
+
+	/* does not close the window here */
 }
 
 static void

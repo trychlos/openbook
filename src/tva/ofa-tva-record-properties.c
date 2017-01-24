@@ -154,7 +154,7 @@ static void             on_generated_opes_changed( ofaTVARecordProperties *self 
 static void             check_for_enable_dlg( ofaTVARecordProperties *self );
 static void             set_dialog_title( ofaTVARecordProperties *self );
 static void             setup_tva_record( ofaTVARecordProperties *self );
-static gboolean         do_update( ofaTVARecordProperties *self, gchar **msgerr );
+static void             on_ok_clicked( ofaTVARecordProperties *self );
 static gboolean         do_update_dbms( ofaTVARecordProperties *self, gchar **msgerr );
 static void             on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self );
 static ofaFormulaEvalFn get_formula_eval_fn( const gchar *name, gint *min_count, gint *max_count, GMatchInfo *match_info, ofaTVARecordProperties *self );
@@ -363,14 +363,17 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_tva_record_properties_idialog_init";
 	ofaTVARecordPropertiesPrivate *priv;
 	const gchar *cstr;
+	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( instance ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
+	/* update properties on OK + always terminates */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->ok_btn = btn;
 
 	priv->compute_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "compute-btn" );
 	g_return_if_fail( priv->compute_btn && GTK_IS_BUTTON( priv->compute_btn ));
@@ -935,14 +938,20 @@ setup_tva_record( ofaTVARecordProperties *self )
 	}
 }
 
-/*
- * this is the 'on_ok_clicked' handler
- */
-static gboolean
-do_update( ofaTVARecordProperties *self, gchar **msgerr )
+static void
+on_ok_clicked( ofaTVARecordProperties *self )
 {
+	gchar *msgerr = NULL;
+
 	setup_tva_record( self );
-	return( do_update_dbms( self, msgerr ));
+	do_update_dbms( self, &msgerr );
+
+	if( my_strlen( msgerr )){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+		g_free( msgerr );
+	}
+
+	my_iwindow_close( MY_IWINDOW( self ));
 }
 
 /*

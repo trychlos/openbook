@@ -162,7 +162,7 @@ static void     on_date_changed( ofaPreferences *self, GtkComboBox *box, const g
 static void     on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self );
 static void     on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
 static void     check_for_activable_dlg( ofaPreferences *self );
-static gboolean do_update( ofaPreferences *self, gchar **msgerr );
+static void     on_ok_clicked( ofaPreferences *self );
 static gboolean do_update_quitting_page( ofaPreferences *self, gchar **msgerr );
 static gboolean is_willing_to_quit( void );
 static gboolean do_update_dossier_page( ofaPreferences *self, gchar **msgerr );
@@ -335,14 +335,17 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_preferences_idialog_init";
 	ofaPreferencesPrivate *priv;
+	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_preferences_get_instance_private( OFA_PREFERENCES( instance ));
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
+	/* validate the settings on OK + always terminates */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	priv->ok_btn = btn;
 
 	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "message" );
 	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
@@ -849,23 +852,31 @@ check_for_activable_dlg( ofaPreferences *self )
 	gtk_widget_set_sensitive( priv->ok_btn, activable );
 }
 
-static gboolean
-do_update( ofaPreferences *self, gchar **msgerr )
+static void
+on_ok_clicked( ofaPreferences *self )
 {
 	static const gchar *thisfn = "ofa_preferences_do_update";
 	gboolean ok;
+	gchar *msgerr;
 
-	ok = do_update_quitting_page( self, msgerr ) &&
-			do_update_dossier_page( self, msgerr ) &&
-			do_update_account_page( self, msgerr ) &&
-			do_update_locales_page( self, msgerr ) &&
-			do_update_export_page( self, msgerr ) &&
-			do_update_import_page( self, msgerr ) &&
-			update_prefs_plugin( self, msgerr );
+	msgerr = NULL;
+
+	ok = do_update_quitting_page( self, &msgerr ) &&
+			do_update_dossier_page( self, &msgerr ) &&
+			do_update_account_page( self, &msgerr ) &&
+			do_update_locales_page( self, &msgerr ) &&
+			do_update_export_page( self, &msgerr ) &&
+			do_update_import_page( self, &msgerr ) &&
+			update_prefs_plugin( self, &msgerr );
 
 	g_debug( "%s: ok=%s", thisfn, ok ? "True":"False" );
 
-	return( ok );
+	if( !ok && msgerr ){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+		g_free( msgerr );
+	}
+
+	my_iwindow_close( MY_IWINDOW( self ));
 }
 
 static gboolean

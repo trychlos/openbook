@@ -32,14 +32,18 @@
  *
  * Create a new/Update the recurrent model properties.
  *
- * The content of the provided ofoRecurrentModel object is not modified until the
- * do_update() function. At this time, all its content is _replaced_
- * with which is found in the dialog box.
+ * The content of the provided ofoRecurrentModel object is not modified
+ * until the on_ok_clicked() function. At this time, all its content is
+ * _replaced_ with what is found in the dialog box.
+ *
+ * Whether an error be detected or not at recording time, the dialog
+ * terminates on OK, maybe after having displayed an error message box.
  *
  * Development rules:
- * - type:       non-modal dialog
- * - settings:   yes
- * - current:    yes
+ * - type:               non-modal dialog
+ * - message on success: no
+ * - settings:           yes
+ * - current:            yes
  */
 
 #include "api/ofa-igetter-def.h"

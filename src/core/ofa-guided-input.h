@@ -30,15 +30,20 @@
  * @short_description: #ofaGuidedInput class definition.
  * @include: ui/ofa-guided-input.h
  *
- * #ofaGuidedInput implements a dialog box to enter an operation based
- * on a operation template.
+ * #ofaGuidedInput implements a non-modal dialog box to enter an
+ * operation based on an operation template.
+ *
+ * Whether an error be detected or not at recording time, the dialog
+ * terminates on OK after having displayed a success or an error message
+ * box.
  *
  * It internally implements an #ofaGuidedInputBin convenience class.
  *
  * Development rules:
- * - type:       non-modal dialog
- * - settings:   yes
- * - current:    no
+ * - type:               non-modal dialog
+ * - message on success: yes
+ * - settings:           yes
+ * - current:            no
  */
 
 #include <gtk/gtk.h>
