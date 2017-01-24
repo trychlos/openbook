@@ -745,7 +745,7 @@ application_startup( GApplication *application )
 
 	/* takes the ownership on the dossier store so that we are sure
 	 * it will be available during the run */
-	priv->dos_store = ofa_dossier_store_new( collection, priv->hub );
+	priv->dos_store = ofa_dossier_store_new( priv->hub );
 }
 
 /*

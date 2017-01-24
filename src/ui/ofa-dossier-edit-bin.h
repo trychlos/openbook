@@ -100,7 +100,9 @@ GType                ofa_dossier_edit_bin_get_type             ( void ) G_GNUC_C
 ofaDossierEditBin   *ofa_dossier_edit_bin_new                  ( ofaHub *hub,
 																	const gchar *settings_prefix,
 																	guint rule,
-																	gboolean allow_open );
+																	gboolean with_su,
+																	gboolean with_admin,
+																	gboolean with_open );
 
 gboolean             ofa_dossier_edit_bin_is_valid             ( ofaDossierEditBin *bin,
 																	gchar **message );

@@ -69,7 +69,7 @@ static gchar                *iident_get_display_name( const myIIdent *instance, 
 static gchar                *iident_get_version( const myIIdent *instance, void *user_data );
 static void                  idbprovider_iface_init( ofaIDBProviderInterface *iface );
 static ofaIDBDossierMeta    *idbprovider_new_dossier_meta( ofaIDBProvider *instance );
-static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
+static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule, gboolean with_su );
 static ofaIDBExerciceEditor *idbprovider_new_exercice_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
 static ofaIDBSuperuser      *idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule );
 static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
@@ -208,11 +208,11 @@ idbprovider_new_dossier_meta( ofaIDBProvider *instance )
 }
 
 static ofaIDBDossierEditor *
-idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule )
+idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule, gboolean with_su )
 {
 	ofaMysqlDossierEditor *widget;
 
-	widget = ofa_mysql_dossier_editor_new( instance, settings_prefix, rule );
+	widget = ofa_mysql_dossier_editor_new( instance, settings_prefix, rule, with_su );
 
 	return( OFA_IDBDOSSIER_EDITOR( widget ));
 }

@@ -48,27 +48,29 @@
 /* private instance data
  */
 typedef struct {
-	gboolean           dispose_has_run;
+	gboolean            dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter        *getter;
-	GtkWindow         *parent;
+	ofaIGetter         *getter;
+	GtkWindow          *parent;
 		/* when run as modal */
-	gboolean           allow_open;
-	gchar            **dossier_name;
+	gboolean            with_su;
+	gboolean            with_admin;
+	gboolean            with_open;
+	ofaIDBDossierMeta **dossier_meta;
 
 	/* runtime
 	 */
-	gchar             *settings_prefix;
-	ofaHub            *hub;
-	gboolean           dossier_created;
+	gchar              *settings_prefix;
+	ofaHub             *hub;
+	gboolean            dossier_created;
 
 	/* UI
 	 */
-	ofaDossierEditBin *edit_bin;
-	GtkWidget         *ok_btn;
-	GtkWidget         *msg_label;
+	ofaDossierEditBin  *edit_bin;
+	GtkWidget          *ok_btn;
+	GtkWidget          *msg_label;
 }
 	ofaDossierNewPrivate;
 
@@ -76,6 +78,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
+static gchar   *iwindow_get_key_prefix( const myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     on_edit_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self );
@@ -150,7 +153,9 @@ ofa_dossier_new_init( ofaDossierNew *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
-	priv->allow_open = TRUE;
+	priv->with_su = TRUE;
+	priv->with_admin = TRUE;
+	priv->with_open = TRUE;
 	priv->dossier_created = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
@@ -204,10 +209,12 @@ ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
  * ofa_dossier_new_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: the parent window.
- * @allow_open: whether this dialog should be allowed to open the newly
- *  created dossier (if any).
- * @dossier_name: [out][allow-none]: a placeholder for the name of the
- *  newly created dossier.
+ * @settings_prefix: the prefix of the key in user settings.
+ * @with_su: whether this dialog must display the super-user widget.
+ * @with_admin: whether this dialog must display the AdminCredentials widget.
+ * @with_open: whether this dialog must display the DossierActions widget.
+ * @dossier_meta: [out][allow-none]: a placeholder for the newly created
+ *  dossier.
  *
  * Run the DossierNew as a modal dialog.
  *
@@ -215,15 +222,18 @@ ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
  * cancel.
  */
 gboolean
-ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, gboolean allow_open, gchar **dossier_name )
+ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefix,
+								gboolean with_su, gboolean with_admin, gboolean with_open, ofaIDBDossierMeta **dossier_meta )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run_modal";
 	ofaDossierNew *self;
 	ofaDossierNewPrivate *priv;
 	gboolean dossier_created;
 
-	g_debug( "%s: getter=%p, parent=%p, allow_open=%s, dossier_name=%p",
-			thisfn, ( void * ) getter, ( void * ) parent, allow_open ? "True":"False", ( void * ) dossier_name );
+	g_debug( "%s: getter=%p, parent=%p, settings_prefix=%s, with_su=%s, with_admin=%s, with_open=%s, dossier_meta=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, settings_prefix,
+			with_su ? "True":"False", with_admin ? "True":"False", with_open ? "True":"False",
+			( void * ) dossier_meta );
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
@@ -234,13 +244,15 @@ ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, gboolean allow
 
 	priv->getter = ofa_igetter_get_permanent_getter( getter );
 	priv->parent = parent;
-	priv->allow_open = allow_open;
-	priv->dossier_name = dossier_name;
+	priv->with_su = with_su;
+	priv->with_admin = with_admin;
+	priv->with_open = with_open;
+	priv->dossier_meta = dossier_meta;
+
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( settings_prefix );
 
 	dossier_created = FALSE;
-	if( priv->dossier_name ){
-		*priv->dossier_name = NULL;
-	}
 
 	if( my_idialog_run( MY_IDIALOG( self )) == GTK_RESPONSE_OK ){
 		g_debug( "%s: dossier_created=%s", thisfn, priv->dossier_created ? "True":"False" );
@@ -262,6 +274,7 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
+	iface->get_key_prefix = iwindow_get_key_prefix;
 }
 
 static void
@@ -280,6 +293,16 @@ iwindow_init( myIWindow *instance )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+}
+
+static gchar *
+iwindow_get_key_prefix( const myIWindow *instance )
+{
+	ofaDossierNewPrivate *priv;
+
+	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
+
+	return( g_strdup( priv->settings_prefix ));
 }
 
 /*
@@ -327,7 +350,8 @@ idialog_init( myIDialog *instance )
 	/* create the composite widget and attach it to the dialog */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "edit-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->edit_bin = ofa_dossier_edit_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->allow_open );
+	priv->edit_bin = ofa_dossier_edit_bin_new(
+			priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_su, priv->with_admin, priv->with_open );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->edit_bin ));
 	g_signal_connect( priv->edit_bin, "ofa-changed", G_CALLBACK( on_edit_bin_changed ), instance );
 
@@ -448,8 +472,8 @@ do_open( ofaDossierNew *self )
 	/* open the newly created dossier if asked for */
 	} else {
 		priv->dossier_created = TRUE;
-		if( priv->dossier_name ){
-			*( priv->dossier_name ) = g_strdup( ofa_idbdossier_meta_get_dossier_name( dossier_meta ));
+		if( priv->dossier_meta ){
+			*( priv->dossier_meta) = dossier_meta;
 		}
 		open = ofa_dossier_edit_bin_get_open_on_create( priv->edit_bin );
 		if( open ){

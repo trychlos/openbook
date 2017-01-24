@@ -29,6 +29,7 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-dossier-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
@@ -41,12 +42,11 @@
 /* private instance data
  */
 typedef struct {
-	gboolean              dispose_has_run;
+	gboolean dispose_has_run;
 
 	/* initialization
 	 */
-	ofaDossierCollection *collection;
-	ofaHub               *hub;
+	ofaHub  *hub;
 }
 	ofaDossierStorePrivate;
 
@@ -168,10 +168,9 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
 
 /**
  * ofa_dossier_store_new:
- * @collection: [allow-none]: the #ofaDossierCollection instance which centralize the
- *  list of defined dossiers. This must be non-null at first call
- *  (instantiation time), while is not used on successive calls.
  * @hub: [allow-none]: the #ofaHub object of the application.
+ *  This must be non-null at first call (instanciation time), while
+ *  is not used on successive calls.
  *
  * The #ofaDossierStore class implements a singleton. Each returned
  * pointer is a new reference to the same instance of the class.
@@ -182,20 +181,22 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
  * must be g_object_unref() by the caller.
  */
 ofaDossierStore *
-ofa_dossier_store_new( ofaDossierCollection *collection, ofaHub *hub )
+ofa_dossier_store_new( ofaHub *hub )
 {
 	ofaDossierStore *store;
 	ofaDossierStorePrivate *priv;
+	ofaDossierCollection *collection;
 
 	if( st_store ){
 		store = g_object_ref( st_store );
 
 	} else {
+		g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
 		store = g_object_new( OFA_TYPE_DOSSIER_STORE, NULL );
 
 		priv = ofa_dossier_store_get_instance_private( store );
 
-		priv->collection = collection;
 		priv->hub = hub;
 
 		gtk_list_store_set_column_types(
@@ -208,6 +209,7 @@ ofa_dossier_store_new( ofaDossierCollection *collection, ofaHub *hub )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
+		collection = ofa_hub_get_dossier_collection( hub );
 		g_signal_connect( collection, "changed", G_CALLBACK( on_dossier_collection_changed ), store );
 		load_dataset( store, collection );
 		st_store = store;
@@ -255,6 +257,11 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierS
 static void
 on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaDossierStore *self )
 {
+	static const gchar *thisfn = "ofa_dossier_store_on_dossier_collection_changed";
+
+	g_debug( "%s: collection=%p, count=%u, self=%p",
+			thisfn, ( void * ) collection, count, ( void * ) self );
+
 	gtk_list_store_clear( GTK_LIST_STORE( self ));
 	load_dataset( self, collection );
 }

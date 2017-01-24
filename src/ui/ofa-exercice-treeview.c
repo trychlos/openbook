@@ -431,8 +431,11 @@ get_selected_with_selection( ofaExerciceTreeview *self, GtkTreeSelection *select
 void
 ofa_exercice_treeview_set_selected( ofaExerciceTreeview *view, ofaIDBExerciceMeta *meta )
 {
+	static const gchar *thisfn = "ofa_exercice_treeview_set_selected";
 	ofaExerciceTreeviewPrivate *priv;
 	GtkTreeSelection *selection;
+
+	g_debug( "%s: view=%p, meta=%p", thisfn, ( void * ) view, ( void * ) meta );
 
 	g_return_if_fail( view && OFA_IS_EXERCICE_TREEVIEW( view ));
 	g_return_if_fail( !meta || OFA_IS_IDBEXERCICE_META( meta ));

@@ -122,6 +122,7 @@ struct _ofaIDBProviderInterface {
 	 * @instance: this #ofaIDBProvider instance.
 	 * @settings_prefix: the prefix of a user preference key.
 	 * @rule: the usage of the editor.
+	 * @with_su: whether the editor should display the super-user widget.
 	 *
 	 * Returns: a #GtkWidget which implements the #ofaIDBDossierEditor
 	 * interface, and handles the informations needed to qualify a
@@ -131,7 +132,8 @@ struct _ofaIDBProviderInterface {
 	 */
 	ofaIDBDossierEditor *  ( *new_dossier_editor )     ( ofaIDBProvider *instance,
 															const gchar *settings_prefix,
-															guint rule );
+															guint rule,
+															gboolean with_su );
 
 	/**
 	 * new_exercice_editor:
@@ -209,7 +211,8 @@ ofaIDBDossierMeta    *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider
 
 ofaIDBDossierEditor  *ofa_idbprovider_new_dossier_editor        ( ofaIDBProvider *provider,
 																		const gchar *settings_prefix,
-																		guint rule );
+																		guint rule,
+																		gboolean with_su );
 
 ofaIDBExerciceEditor *ofa_idbprovider_new_exercice_editor       ( ofaIDBProvider *provider,
 																			const gchar *settings_prefix,

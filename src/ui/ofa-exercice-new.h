@@ -84,8 +84,10 @@ GType    ofa_exercice_new_get_type ( void ) G_GNUC_CONST;
 
 gboolean ofa_exercice_new_run_modal( ofaIGetter *getter,
 										GtkWindow *parent,
+										const gchar *settings_prefix,
 										ofaIDBDossierMeta *dossier_meta,
-										gboolean allow_open,
+										gboolean with_admin,
+										gboolean with_open,
 										ofaIDBExerciceMeta **exercice_meta );
 
 G_END_DECLS

@@ -69,7 +69,8 @@ GType                  ofa_mysql_dossier_editor_get_type              ( void ) G
 
 ofaMysqlDossierEditor *ofa_mysql_dossier_editor_new                   ( ofaIDBProvider *provider,
 																			const gchar *settings_prefix,
-																			guint rule );
+																			guint rule,
+																			gboolean with_su );
 
 const gchar           *ofa_mysql_dossier_editor_get_host              ( ofaMysqlDossierEditor *editor );
 

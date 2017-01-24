@@ -363,6 +363,7 @@ ofa_idbprovider_new_dossier_meta( ofaIDBProvider *provider, const gchar *dossier
  * @provider: this #ofaIDBProvider provider.
  * @settings_prefix: the prefix of a user preference key.
  * @rule: the usage of the editor.
+ * @with_su: whether the editor should display the super-user widget.
  *
  * Returns: a composite GTK container widget intended to hold the
  * informations needed to fully identify the DBMS server which manages
@@ -373,18 +374,18 @@ ofa_idbprovider_new_dossier_meta( ofaIDBProvider *provider, const gchar *dossier
  * should not keep any reference on this container.
  */
 ofaIDBDossierEditor *
-ofa_idbprovider_new_dossier_editor( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule )
+ofa_idbprovider_new_dossier_editor( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule, gboolean with_su )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_dossier_editor";
 	ofaIDBDossierEditor *editor;
 
-	g_debug( "%s: provider=%p, settings_prefix=%s, rule=%u",
-			thisfn,( void * ) provider, settings_prefix, rule );
+	g_debug( "%s: provider=%p, settings_prefix=%s, rule=%u, with_su=%s",
+			thisfn,( void * ) provider, settings_prefix, rule, with_su ? "True":"False" );
 
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor ){
-		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor( provider, settings_prefix, rule );
+		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_editor( provider, settings_prefix, rule, with_su );
 		ofa_idbdossier_editor_set_provider( editor, provider );
 		return( editor );
 	}

@@ -87,7 +87,8 @@ GType                 ofa_exercice_edit_bin_get_type             ( void ) G_GNUC
 ofaExerciceEditBin   *ofa_exercice_edit_bin_new                  ( ofaHub *hub,
 																		const gchar *settings_prefix,
 																		guint rule,
-																		gboolean allow_open );
+																		gboolean with_admin,
+																		gboolean with_open );
 
 void                  ofa_exercice_edit_bin_set_dossier_meta     ( ofaExerciceEditBin *bin,
 																		ofaIDBDossierMeta *dossier_meta );

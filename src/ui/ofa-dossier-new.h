@@ -56,6 +56,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -86,8 +87,11 @@ void     ofa_dossier_new_run      ( ofaIGetter *getter,
 
 gboolean ofa_dossier_new_run_modal( ofaIGetter *getter,
 										GtkWindow *parent,
-										gboolean allow_open,
-										gchar **dossier_name );
+										const gchar *settings_prefix,
+										gboolean with_su,
+										gboolean with_admin,
+										gboolean with_open,
+										ofaIDBDossierMeta **dossier_meta );
 
 G_END_DECLS
 

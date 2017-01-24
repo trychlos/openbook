@@ -201,6 +201,7 @@ static guint    p1_get_archive_format( ofaRestoreAssistant *self );
 static void     p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
+static void     p2_on_target_chooser_changed( ofaTargetChooserBin *bin, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta, ofaRestoreAssistant *self );
 static gboolean p2_check_for_complete( ofaRestoreAssistant *self );
 static void     p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -619,6 +620,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv->p2_chooser = ofa_target_chooser_bin_new( priv->getter, settings_prefix );
 	g_free( settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_chooser ));
+	g_signal_connect( priv->p2_chooser, "ofa-changed", G_CALLBACK( p2_on_target_chooser_changed ), self );
 }
 
 static void
@@ -635,6 +637,28 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->p2_uri_label ), priv->p1_uri );
+
+	p2_check_for_complete( self );
+}
+
+static void
+p2_on_target_chooser_changed( ofaTargetChooserBin *bin, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta, ofaRestoreAssistant *self )
+{
+	ofaRestoreAssistantPrivate *priv;
+
+	g_debug( "p2_on_target_chooser_changed: dossier=%p, exercice=%p", dossier_meta, exercice_meta );
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	g_clear_object( &priv->p2_dossier_meta );
+	g_clear_object( &priv->p2_exercice_meta );
+
+	if( dossier_meta ){
+		priv->p2_dossier_meta = g_object_ref( dossier_meta );
+		if( exercice_meta ){
+			priv->p2_exercice_meta = g_object_ref( exercice_meta );
+		}
+	}
 
 	p2_check_for_complete( self );
 }

@@ -404,10 +404,11 @@
                 (requires a superuser connection on the dbms)
 
 1320 2017- 1-16 RestoreAssistant:
-                choose target dossier/exercice
-                use new superuser account bin (from the provider)
+                choose target dossier/exercice: ok
+                use new superuser account bin (from the provider): ok
                 admin credentials should save the account: ok
                 use actions bin: ok
+                implement restore rules:
 
 1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
 

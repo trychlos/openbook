@@ -52,6 +52,7 @@ typedef struct {
 	ofaIDBProvider     *provider;
 	gchar              *settings_prefix;
 	guint               rule;
+	gboolean            with_su;
 
 	/* UI
 	 */
@@ -139,6 +140,7 @@ ofa_mysql_dossier_editor_init( ofaMysqlDossierEditor *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
+	priv->with_su = TRUE;
 	priv->connect = ofa_mysql_connect_new();
 }
 
@@ -158,6 +160,7 @@ ofa_mysql_dossier_editor_class_init( ofaMysqlDossierEditorClass *klass )
  * @provider: the #ofaIDBProvider provider.
  * @settings_prefix: the prefix of a user preference key.
  * @rule: the usage of the widget.
+ * @with_su: whether this editor should display the super-user widget.
  *
  * Returns: a new #ofaMysqlDossierEditor widget.
  *
@@ -166,7 +169,7 @@ ofa_mysql_dossier_editor_class_init( ofaMysqlDossierEditorClass *klass )
  * - the root credentials.
  */
 ofaMysqlDossierEditor *
-ofa_mysql_dossier_editor_new( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule )
+ofa_mysql_dossier_editor_new( ofaIDBProvider *provider, const gchar *settings_prefix, guint rule, gboolean with_su )
 {
 	ofaMysqlDossierEditor *bin;
 	ofaMysqlDossierEditorPrivate *priv;
@@ -183,6 +186,7 @@ ofa_mysql_dossier_editor_new( ofaIDBProvider *provider, const gchar *settings_pr
 	priv->settings_prefix = g_strdup( settings_prefix );
 
 	priv->rule = rule;
+	priv->with_su = with_su;
 
 	setup_bin( bin );
 
@@ -216,12 +220,14 @@ setup_bin( ofaMysqlDossierEditor *self )
 	g_signal_connect( priv->dossier_bin, "ofa-changed", G_CALLBACK( on_dossier_bin_changed ), self );
 	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_dossier_bin_get_size_group( priv->dossier_bin, 0 ));
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mde-root-parent" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->root_bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->rule );
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->root_bin ));
-	g_signal_connect( priv->root_bin, "ofa-changed", G_CALLBACK( on_root_bin_changed ), self );
-	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_root_bin_get_size_group( priv->root_bin, 0 ));
+	if( priv->with_su ){
+		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mde-root-parent" );
+		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+		priv->root_bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->rule );
+		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->root_bin ));
+		g_signal_connect( priv->root_bin, "ofa-changed", G_CALLBACK( on_root_bin_changed ), self );
+		my_utils_size_group_add_size_group( priv->group0, ofa_mysql_root_bin_get_size_group( priv->root_bin, 0 ));
+	}
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -376,7 +382,7 @@ ofa_mysql_dossier_editor_get_remembered_account( ofaMysqlDossierEditor *editor )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( ofa_mysql_root_bin_get_remembered_account( priv->root_bin ));
+	return( priv->root_bin ? ofa_mysql_root_bin_get_remembered_account( priv->root_bin ) : NULL );
 }
 
 /*
@@ -433,9 +439,12 @@ idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message
 
 	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
 
-	ok = ofa_mysql_dossier_bin_is_valid( priv->dossier_bin, message ) &&
-			ofa_mysql_root_bin_is_valid( priv->root_bin, message ) &&
-			check_root_connection( OFA_MYSQL_DOSSIER_EDITOR( instance ), message );
+	ok = ofa_mysql_dossier_bin_is_valid( priv->dossier_bin, message );
+
+	if( ok && priv->root_bin ){
+		ok &= ofa_mysql_root_bin_is_valid( priv->root_bin, message ) &&
+				check_root_connection( OFA_MYSQL_DOSSIER_EDITOR( instance ), message );
+	}
 
 	return( ok );
 }
