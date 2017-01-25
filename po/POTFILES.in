@@ -57,7 +57,6 @@ src/ui/ofa-dossier-edit-bin.ui
 src/ui/ofa-dossier-manager.ui
 src/ui/ofa-dossier-meta-bin.ui
 src/ui/ofa-dossier-new.ui
-src/ui/ofa-dossier-new-bin.ui
 src/ui/ofa-dossier-open.ui
 src/ui/ofa-dossier-properties.ui
 src/ui/ofa-entry-page.ui
