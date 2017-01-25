@@ -24,8 +24,8 @@ pkgdocdir = $(datarootdir)/doc/@PACKAGE@-@VERSION@
 
 dist_pkgdoc_DATA = \
 	DataDictionary.xls					\
-	DB_Model.odg						\
-	DB_Model.pdf						\
+	DBModel.odg							\
+	DBModel.pdf							\
 	Rules.ods							\
 	UserInterface.odg					\
 	ImportFormats.README				\
