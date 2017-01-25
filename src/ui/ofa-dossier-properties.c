@@ -495,7 +495,7 @@ init_properties_page( ofaDossierProperties *self )
 	my_date_set_from_date( &priv->begin, ofo_dossier_get_exe_begin( priv->dossier ));
 	priv->begin_empty = !my_date_is_valid( &priv->begin );
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
 	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin );
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
@@ -523,7 +523,7 @@ init_properties_page( ofaDossierProperties *self )
 	my_date_set_from_date( &priv->end, ofo_dossier_get_exe_end( priv->dossier ));
 	priv->end_empty = !my_date_is_valid( &priv->end );
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
 	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end );
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));

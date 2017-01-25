@@ -138,7 +138,7 @@ get_editable_date_data( GtkEditable *editable )
 		g_object_set_data( G_OBJECT( editable ), DATE_EDITABLE_DATA, data );
 
 		data->setting_text = FALSE;
-		my_date_editable_set_format( editable, -1 );
+		my_date_editable_set_entry_format( editable, -1 );
 		data->mandatory = DEFAULT_MANDATORY;
 		data->overwrite = DEFAULT_OVERWRITE;
 
@@ -180,7 +180,7 @@ get_date_format( guint date_format )
 }
 
 /**
- * my_date_editable_set_format:
+ * my_date_editable_set_entry_format:
  * @editable: this #GtkEditable instance.
  * @format: the allowed format for the date; set to -1 to restore the
  *  default value.
@@ -188,7 +188,7 @@ get_date_format( guint date_format )
  * Set up the current date format.
  */
 void
-my_date_editable_set_format( GtkEditable *editable, myDateFormat format )
+my_date_editable_set_entry_format( GtkEditable *editable, myDateFormat format )
 {
 	sEditableDate *data;
 
@@ -207,6 +207,32 @@ my_date_editable_set_format( GtkEditable *editable, myDateFormat format )
 		gtk_entry_set_max_length( GTK_ENTRY( editable ), data->format->max_length );
 		gtk_entry_set_placeholder_text( GTK_ENTRY( editable ), data->format->placeholder );
 	}
+}
+
+/**
+ * my_date_editable_set_label_format:
+ * @editable: this #GtkEditable instance.
+ * @label: a #GtkWidget which will be updated with a representation of
+ *  the current date at each change.
+ * @format: the format of the representation
+ *
+ * When a @label and a @format are set, then the entered date will be
+ * displayed with the specified @format into the specified @label, as
+ * the user enters the date in the main #GtkEditable.
+ */
+void
+my_date_editable_set_label_format( GtkEditable *editable, GtkWidget *label, myDateFormat format )
+{
+	sEditableDate *data;
+
+	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+	g_return_if_fail( label && GTK_IS_LABEL ( label ));
+	g_return_if_fail( format >= MY_DATE_FIRST && format < MY_DATE_LAST );
+
+	data = get_editable_date_data( editable );
+
+	data->label = label;
+	data->label_format = format;
 }
 
 static void
@@ -689,32 +715,6 @@ my_date_editable_set_date( GtkEditable *editable, const GDate *date )
 	/* render the date, triggering a 'changed' signal */
 	editable_date_render( editable );
 	on_changed( editable, data );
-}
-
-/**
- * my_date_editable_set_label_format:
- * @editable: this #GtkEditable instance.
- * @label: a #GtkWidget which will be updated with a representation of
- *  the current date at each change.
- * @format: the format of the representation
- *
- * When a @label and a @format are set, then the entered date will be
- * displayed with the specified @format into the specified @label, as
- * the user enters the date in the main #GtkEditable.
- */
-void
-my_date_editable_set_label_format( GtkEditable *editable, GtkWidget *label, myDateFormat format )
-{
-	sEditableDate *data;
-
-	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
-	g_return_if_fail( label && GTK_IS_LABEL ( label ));
-	g_return_if_fail( format >= MY_DATE_FIRST && format < MY_DATE_LAST );
-
-	data = get_editable_date_data( editable );
-
-	data->label = label;
-	data->label_format = format;
 }
 
 /**

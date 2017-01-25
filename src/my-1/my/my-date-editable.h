@@ -47,15 +47,15 @@ G_BEGIN_DECLS
 
 void         my_date_editable_init            ( GtkEditable *editable );
 
-void         my_date_editable_set_format      ( GtkEditable *editable,
+void         my_date_editable_set_entry_format( GtkEditable *editable,
 													myDateFormat format );
-
-void         my_date_editable_set_date        ( GtkEditable *editable,
-													const GDate *date );
 
 void         my_date_editable_set_label_format( GtkEditable *editable,
 													GtkWidget *label,
 													myDateFormat format );
+
+void         my_date_editable_set_date        ( GtkEditable *editable,
+													const GDate *date );
 
 void         my_date_editable_set_mandatory   ( GtkEditable *editable,
 													gboolean mandatory );

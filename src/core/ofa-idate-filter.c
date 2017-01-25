@@ -371,7 +371,7 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->hub ));
 	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( sdata->hub ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( sdata->hub ));
@@ -392,7 +392,7 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->hub ));
 	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( sdata->hub ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( sdata->hub ));
