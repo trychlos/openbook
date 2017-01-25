@@ -252,7 +252,7 @@ setup_bin( ofaExerciceMetaBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-begin-prompt" );
@@ -266,7 +266,7 @@ setup_bin( ofaExerciceMetaBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-end-prompt" );

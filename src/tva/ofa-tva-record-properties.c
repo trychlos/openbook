@@ -478,7 +478,7 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
@@ -505,7 +505,7 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
@@ -528,7 +528,7 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_dope_changed ), self );

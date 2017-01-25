@@ -463,7 +463,7 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	my_date_editable_init( GTK_EDITABLE( priv->p1_begin_cur ));
 	my_date_editable_set_format( GTK_EDITABLE( priv->p1_begin_cur ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label( GTK_EDITABLE( priv->p1_begin_cur ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_begin_cur ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_begin_cur ), TRUE );
 	begin_cur = ofo_dossier_get_exe_begin( priv->dossier );
 	my_date_editable_set_date( GTK_EDITABLE( priv->p1_begin_cur ), begin_cur );
@@ -484,7 +484,7 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	my_date_editable_init( GTK_EDITABLE( priv->p1_end_cur ));
 	my_date_editable_set_format( GTK_EDITABLE( priv->p1_end_cur ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label( GTK_EDITABLE( priv->p1_end_cur ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_end_cur ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_end_cur ), TRUE );
 	end_cur = ofo_dossier_get_exe_end( priv->dossier );
 	my_date_editable_set_date( GTK_EDITABLE( priv->p1_end_cur ), end_cur );
@@ -523,7 +523,7 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	my_date_editable_init( GTK_EDITABLE( priv->p1_begin_next ));
 	my_date_editable_set_format( GTK_EDITABLE( priv->p1_begin_next ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label( GTK_EDITABLE( priv->p1_begin_next ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_begin_next ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_begin_next ), TRUE );
 	my_date_editable_set_overwrite( GTK_EDITABLE( priv->p1_begin_next ), ofa_prefs_date_overwrite( priv->hub ));
 
@@ -548,7 +548,7 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	my_date_editable_init( GTK_EDITABLE( priv->p1_end_next ));
 	my_date_editable_set_format( GTK_EDITABLE( priv->p1_end_next ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label( GTK_EDITABLE( priv->p1_end_next ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_end_next ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_end_next ), TRUE );
 	my_date_editable_set_overwrite( GTK_EDITABLE( priv->p1_end_next ), ofa_prefs_date_overwrite( priv->hub ));
 

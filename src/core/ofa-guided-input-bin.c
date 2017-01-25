@@ -454,7 +454,7 @@ setup_dialog( ofaGuidedInputBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->dope_entry ));
-	my_date_editable_set_label( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
 	my_date_editable_set_overwrite( GTK_EDITABLE( priv->dope_entry ), ofa_prefs_date_overwrite( priv->hub ));
 
@@ -473,7 +473,7 @@ setup_dialog( ofaGuidedInputBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->deffect_entry ));
-	my_date_editable_set_label( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
 	my_date_editable_set_overwrite( GTK_EDITABLE( priv->deffect_entry ), ofa_prefs_date_overwrite( priv->hub ));
 

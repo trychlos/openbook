@@ -331,7 +331,7 @@ init_properties( ofaTVARecordNew *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), NULL );
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
 

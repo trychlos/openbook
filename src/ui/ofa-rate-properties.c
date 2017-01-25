@@ -430,7 +430,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 			entry, 1+COL_BEGIN, row, 1, 1 );
 
 	label = gtk_label_new( "" );
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );
@@ -450,7 +450,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 			entry, 1+COL_END, row, 1, 1 );
 
 	label = gtk_label_new( "" );
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );

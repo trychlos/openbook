@@ -35,6 +35,7 @@
 
    DBModel Core v34.
 
+   - my_date_editable_set_label_format(): renamed from my_date_editable_set_label (todo #1332).
    - myICollectionable: remove ofaHub dependancy (todo #1319).
    - myIDialog: review whole closing process (todo #1330).
    - my_iwindow_msg_dialog(): deprecated (todo #1333).

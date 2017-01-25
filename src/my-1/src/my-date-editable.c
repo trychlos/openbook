@@ -692,7 +692,7 @@ my_date_editable_set_date( GtkEditable *editable, const GDate *date )
 }
 
 /**
- * my_date_editable_set_label:
+ * my_date_editable_set_label_format:
  * @editable: this #GtkEditable instance.
  * @label: a #GtkWidget which will be updated with a representation of
  *  the current date at each change.
@@ -703,7 +703,7 @@ my_date_editable_set_date( GtkEditable *editable, const GDate *date )
  * the user enters the date in the main #GtkEditable.
  */
 void
-my_date_editable_set_label( GtkEditable *editable, GtkWidget *label, myDateFormat format )
+my_date_editable_set_label_format( GtkEditable *editable, GtkWidget *label, myDateFormat format )
 {
 	sEditableDate *data;
 

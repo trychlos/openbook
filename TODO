@@ -424,8 +424,6 @@
 
 1331 2017- 1-23 rename my_date_editable_set_format() to my_date_editable_set_entry_format()
 
-1332 2017- 1-23 rename my_date_editable_set_label() to my_date_editable_set_label_format()
-
 1335
 
 -----------------------------------------------------------------------
@@ -526,6 +524,9 @@
      2017- 1-23 this may lead to deprecate my_idialog_click_to_update() and
                 my_idialog_click_to_update_ex()
      2017- 1-24 done
+
+1332 2017- 1-23 rename my_date_editable_set_label() to my_date_editable_set_label_format()
+     2017- 1-25 done
 
 1333 2017- 1-23 deprecate my_iwindow_msg_dialog()
      2017- 1-23 done

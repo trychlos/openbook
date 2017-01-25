@@ -45,28 +45,28 @@
 
 G_BEGIN_DECLS
 
-void         my_date_editable_init         ( GtkEditable *editable );
+void         my_date_editable_init            ( GtkEditable *editable );
 
-void         my_date_editable_set_format   ( GtkEditable *editable,
+void         my_date_editable_set_format      ( GtkEditable *editable,
 													myDateFormat format );
 
-void         my_date_editable_set_date     ( GtkEditable *editable,
+void         my_date_editable_set_date        ( GtkEditable *editable,
 													const GDate *date );
 
-void         my_date_editable_set_label    ( GtkEditable *editable,
+void         my_date_editable_set_label_format( GtkEditable *editable,
 													GtkWidget *label,
 													myDateFormat format );
 
-void         my_date_editable_set_mandatory( GtkEditable *editable,
+void         my_date_editable_set_mandatory   ( GtkEditable *editable,
 													gboolean mandatory );
 
-void         my_date_editable_set_overwrite( GtkEditable *editable,
+void         my_date_editable_set_overwrite   ( GtkEditable *editable,
 													gboolean overwrite );
 
-const GDate *my_date_editable_get_date     ( GtkEditable *editable,
+const GDate *my_date_editable_get_date        ( GtkEditable *editable,
 													gboolean *valid );
 
-gboolean     my_date_editable_is_empty     ( GtkEditable *editable );
+gboolean     my_date_editable_is_empty        ( GtkEditable *editable );
 
 G_END_DECLS
 

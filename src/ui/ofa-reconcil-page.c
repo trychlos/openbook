@@ -1114,7 +1114,7 @@ setup_manual_rappro( ofaReconcilPage *self, GtkContainer *parent )
 
 	my_date_editable_init( GTK_EDITABLE( priv->date_concil ));
 	my_date_editable_set_format( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label( GTK_EDITABLE( priv->date_concil ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->date_concil ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_date( GTK_EDITABLE( priv->date_concil ), &priv->dconcil );
 	my_date_editable_set_overwrite( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_overwrite( priv->hub ));
 

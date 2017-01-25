@@ -354,7 +354,7 @@ setup_ui_properties( ofaEntryProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->dope );
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
 	priv->dope_entry = entry;
@@ -369,7 +369,7 @@ setup_ui_properties( ofaEntryProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-deffect-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->deffect );
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
 	priv->deffect_entry = entry;

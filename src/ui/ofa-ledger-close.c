@@ -395,7 +395,7 @@ setup_date( ofaLedgerClose *self )
 
 	my_date_editable_init( GTK_EDITABLE( priv->closing_entry ));
 	my_date_editable_set_format( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label( GTK_EDITABLE( priv->closing_entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->closing_entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_overwrite( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_overwrite( priv->hub ));
 
 	g_signal_connect( priv->closing_entry, "changed", G_CALLBACK( on_date_changed ), self );
