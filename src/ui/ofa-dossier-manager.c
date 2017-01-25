@@ -446,15 +446,26 @@ action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierMana
 	}
 }
 
+/*
+ * Only close the ofaDossierManager if open is successful
+ * (and after the #ofa_dossier_open_run() has returned, else the
+ *  ofaMainWindow will close all windows, releasing our connection)
+ */
 static void
 do_open( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period )
 {
 	ofaDossierManagerPrivate *priv;
+	gboolean ok;
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	if( ofa_dossier_open_run( priv->getter, GTK_WINDOW( self ), meta, period, NULL, NULL )){
+	my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
 
+	ok = ofa_dossier_open_run( priv->getter, GTK_WINDOW( self ), meta, period, NULL, NULL );
+
+	my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
+
+	if( ok ){
 		my_iwindow_close( MY_IWINDOW( self ));
 	}
 }
