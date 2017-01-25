@@ -634,6 +634,72 @@ get_exercice_key( ofaIDBDossierMeta *self, gchar **key, gchar **key_id )
 }
 
 /**
+ * ofa_idbdossier_meta_get_period:
+ * @meta: this #ofaIDBDossierMeta instance.
+ * @date: a valid date.
+ * @accept_empty: whether we accept to consider unset dates.
+ *
+ * Returns: the #ofaIDBExerciceMeta exercice the @date is part of, or %NULL.
+ *
+ * If @accept_empty is %TRUE, then we consider that:
+ * - an empty beginning date is extensible from the past,
+ * - an empty ending date is extensible to the future.
+ */
+ofaIDBExerciceMeta *
+ofa_idbdossier_meta_get_period( const ofaIDBDossierMeta *meta, const GDate *date, gboolean accept_empty )
+{
+	static const gchar *thisfn = "ofa_idbdossier_meta_get_period";
+	sIDBMeta *sdata;
+	GList *it;
+	ofaIDBExerciceMeta *period;
+	const GDate *period_begin, *period_end;
+	gint cmp_begin, cmp_end;
+
+	if( 0 ){
+		g_debug( "%s: meta=%p, date=%p",
+				thisfn, ( void * ) meta, ( void * ) date );
+	}
+
+	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
+	g_return_val_if_fail( my_date_is_valid( date ), NULL );
+
+	sdata = get_instance_data( meta );
+
+	for( it=sdata->periods ; it ; it=it->next ){
+		period = ( ofaIDBExerciceMeta * ) it->data;
+
+		period_begin = ofa_idbexercice_meta_get_begin_date( period );
+		if( !my_date_is_valid( period_begin ) && !accept_empty ){
+			continue;
+		}
+		cmp_begin = my_date_compare_ex( date, period_begin, TRUE );
+
+		period_end = ofa_idbexercice_meta_get_end_date( period );
+		if( !my_date_is_valid( period_end ) && !accept_empty ){
+			continue;
+		}
+		cmp_end = my_date_compare_ex( date, period_end, FALSE );
+
+		if( cmp_begin >= 0 && cmp_end <= 0 ){
+
+			if( 1 ){
+				gchar *sdate = my_date_to_str( date, MY_DATE_SQL );
+				gchar *sperbegin = my_date_to_str( period_begin, MY_DATE_SQL );
+				gchar *sperend = my_date_to_str( period_end, MY_DATE_SQL );
+				g_debug( "%s: sdate=%s, found period begin=%s, end=%s", thisfn, sdate, sperbegin, sperend );
+				g_free( sdate );
+				g_free( sperbegin );
+				g_free( sperend );
+			}
+
+			return( period );
+		}
+	}
+
+	return( NULL );
+}
+
+/**
  * ofa_idbdossier_meta_get_current_period:
  * @meta: this #ofaIDBDossierMeta instance.
  *

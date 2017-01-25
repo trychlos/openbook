@@ -69,10 +69,16 @@ typedef struct {
 }
 	ofaTargetChooserBinClass;
 
-GType                ofa_target_chooser_bin_get_type( void ) G_GNUC_CONST;
+GType                ofa_target_chooser_bin_get_type       ( void ) G_GNUC_CONST;
 
-ofaTargetChooserBin *ofa_target_chooser_bin_new     ( ofaIGetter *getter,
-															const gchar *settings_prefix );
+ofaTargetChooserBin *ofa_target_chooser_bin_new            ( ofaIGetter *getter,
+																const gchar *settings_prefix );
+
+gboolean             ofa_target_chooser_bin_is_new_dossier ( ofaTargetChooserBin *bin,
+																ofaIDBDossierMeta *dossier_meta );
+
+gboolean             ofa_target_chooser_bin_is_new_exercice( ofaTargetChooserBin *bin,
+																ofaIDBExerciceMeta *exercice_meta );
 
 G_END_DECLS
 

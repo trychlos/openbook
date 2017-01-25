@@ -38,6 +38,7 @@
 
 #include "api/ofa-backup-header.h"
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-dossier-props.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -103,17 +104,21 @@ typedef struct {
 	gchar                  *p1_uri;		/* the utf-8 to be restored file uri */
 	gint                    p1_filter;
 	guint                   p1_format;
+	ofaDossierProps        *p1_dossier_props;
 
 	/* p2: select the dossier target
 	 */
 	GtkWidget              *p2_uri_label;
 	ofaTargetChooserBin    *p2_chooser;
 	ofaIDBDossierMeta      *p2_dossier_meta;
+	gboolean                p2_new_dossier;
 	ofaIDBExerciceMeta     *p2_exercice_meta;
+	gboolean                p2_new_exercice;
 	ofaIDBProvider         *p2_provider;
 	ofaIDBConnect          *p2_connect;
 	gchar                  *p2_dossier_name;
 	gchar                  *p2_exercice_name;
+	GtkWidget              *p2_message;
 
 	/* p3: super-user credentials
 	 */
@@ -203,6 +208,10 @@ static void     p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget 
 static void     p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_on_target_chooser_changed( ofaTargetChooserBin *bin, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta, ofaRestoreAssistant *self );
 static gboolean p2_check_for_complete( ofaRestoreAssistant *self );
+static gboolean p2_check_for_restore_rules( ofaRestoreAssistant *self );
+static gboolean p2_check_for_rule1_dates( ofaRestoreAssistant *self );
+static gboolean p2_check_for_rule2_status( ofaRestoreAssistant *self );
+static void     p2_set_message( ofaRestoreAssistant *self, const gchar *message );
 static void     p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -308,6 +317,7 @@ restore_assistant_dispose( GObject *instance )
 		write_settings( OFA_RESTORE_ASSISTANT( instance ));
 
 		/* unref object members here */
+		g_clear_object( &priv->p1_dossier_props );
 		g_clear_object( &priv->p2_dossier_meta );
 		g_clear_object( &priv->p2_exercice_meta );
 		g_clear_object( &priv->p3_hgroup );
@@ -568,6 +578,7 @@ p1_get_archive_format( ofaRestoreAssistant *self )
 
 	if( !my_collate( extension, ".gz" )){
 		format = OFA_BACKUP_HEADER_GZ;
+
 	} else if( !my_collate( extension, ".zip" )){
 		format = OFA_BACKUP_HEADER_ZIP;
 	}
@@ -590,6 +601,11 @@ p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 
 	filter = gtk_file_chooser_get_filter( priv->p1_chooser );
 	priv->p1_filter = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( filter ), CHOOSER_FILTER_TYPE ));
+
+	g_clear_object( &priv->p1_dossier_props );
+	if( priv->p1_format == OFA_BACKUP_HEADER_ZIP ){
+		priv->p1_dossier_props = ofa_dossier_props_new_from_archive( priv->p1_uri );
+	}
 }
 
 /*
@@ -621,6 +637,11 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_free( settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_chooser ));
 	g_signal_connect( priv->p2_chooser, "ofa-changed", G_CALLBACK( p2_on_target_chooser_changed ), self );
+
+	/* message */
+	priv->p2_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-message" );
+	g_return_if_fail( priv->p2_message && GTK_IS_LABEL( priv->p2_message ));
+	my_style_add( priv->p2_message, "labelerror" );
 }
 
 static void
@@ -655,8 +676,10 @@ p2_on_target_chooser_changed( ofaTargetChooserBin *bin, ofaIDBDossierMeta *dossi
 
 	if( dossier_meta ){
 		priv->p2_dossier_meta = g_object_ref( dossier_meta );
+		priv->p2_new_dossier = ofa_target_chooser_bin_is_new_dossier( bin, dossier_meta );
 		if( exercice_meta ){
 			priv->p2_exercice_meta = g_object_ref( exercice_meta );
+			priv->p2_new_exercice = ofa_target_chooser_bin_is_new_exercice( bin, exercice_meta );
 		}
 	}
 
@@ -672,11 +695,142 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	ok = ( priv->p2_dossier_meta && OFA_IS_IDBDOSSIER_META( priv->p2_dossier_meta ) &&
-			priv->p2_exercice_meta && OFA_IS_IDBEXERCICE_META( priv->p2_exercice_meta ));
+			priv->p2_exercice_meta && OFA_IS_IDBEXERCICE_META( priv->p2_exercice_meta ) &&
+			p2_check_for_restore_rules( self ));
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 
 	return( ok );
+}
+
+/*
+ * Check that restored uri is compatible with selected dossier/exercice.
+ *
+ * Note: what we mean by "new dossier/new exercice" actually means "empty".
+ * But we do not have at this time the needed credentials to see if the
+ * dossier/exercice are actually empty or does contain something.
+ *
+ * So we are tied to only check if they have been just created in *this*
+ * #ofaTargetChooserBin instance.
+ */
+static gboolean
+p2_check_for_restore_rules( ofaRestoreAssistant *self )
+{
+	static const gchar *thisfn = "ofa_restore_assistant_p2_check_for_restore_rules";
+	ofaRestoreAssistantPrivate *priv;
+	gboolean ok;
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	ok = TRUE;
+
+	/* restoring from the historic format (.gz) is forbidden when target
+	 * exercice already existed (has not been created here)
+	 */
+	if( priv->p1_format == OFA_BACKUP_HEADER_GZ ){
+		if( !priv->p2_new_dossier && !priv->p2_new_exercice ){
+			ok = FALSE;
+			p2_set_message( self, _( "Overriding an existing exercice from old archive format is forbidden" ));
+		}
+
+	/* restoring from the ZIP format is subject to several rules
+	 * - restoring to a new dossier is always accepted
+	 * - restoring to a new exercice is accepted depending of dates (Rule1)
+	 * - restoring to an existing current exercice is accepted depending of dates (Rule1)
+	 * - refuse to restore on an existing archive from another source
+	 */
+	} else if( priv->p1_format == OFA_BACKUP_HEADER_ZIP ){
+		if( !priv->p2_new_dossier ){
+
+			if( priv->p2_new_exercice ){
+				ok = p2_check_for_rule1_dates( self );
+
+			} else if( ofa_idbexercice_meta_get_current( priv->p2_exercice_meta )){
+				ok = p2_check_for_rule1_dates( self );
+
+			} else {
+				ok = p2_check_for_rule2_status( self );
+			}
+		}
+
+	} else {
+		g_warning( "%s: invalid or unknown format=%u", thisfn, priv->p1_format );
+		ok = FALSE;
+	}
+
+	return( ok );
+}
+
+/*
+ * Check that restored dates are compatible with already defined exercice
+ * - source may be either a current or an archived exercice
+ * - destination is either a new exercice or an existing current one
+ */
+static gboolean
+p2_check_for_rule1_dates( ofaRestoreAssistant *self )
+{
+	ofaRestoreAssistantPrivate *priv;
+	const GDate *src_begin, *src_end;
+	ofaIDBExerciceMeta *period;
+	gchar *label, *str;
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	src_begin = ofa_dossier_props_get_begin_date( priv->p1_dossier_props );
+	src_end = ofa_dossier_props_get_end_date( priv->p1_dossier_props );
+
+	/* if we find another exercice which includes the begin date,
+	 * then there is a problem */
+	period = ofa_idbdossier_meta_get_period( priv->p2_dossier_meta, src_begin, FALSE );
+	if( period != priv->p2_exercice_meta ){
+		label = ofa_idbexercice_meta_get_label( period );
+		str = g_strdup_printf( _( "The restored file overrides the %s exercice" ), label );
+		p2_set_message( self, str );
+		g_free( str );
+		g_free( label );
+		return( FALSE );
+	}
+
+	/* if we find another exercice which includes the end date,
+	 * then there is a problem */
+	period = ofa_idbdossier_meta_get_period( priv->p2_dossier_meta, src_end, FALSE );
+	if( period != priv->p2_exercice_meta ){
+		label = ofa_idbexercice_meta_get_label( period );
+		str = g_strdup_printf( _( "The restored file overrides the %s exercice" ), label );
+		p2_set_message( self, str );
+		g_free( str );
+		g_free( label );
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * Restoring an archive to an existing archived exercice
+ * Check that the source are the same
+ */
+static gboolean
+p2_check_for_rule2_status( ofaRestoreAssistant *self )
+{
+
+	/* how to get the rpid of the target exercice while we do not have
+	 * any credentials at this time !?
+	 */
+
+	return( TRUE );
+}
+
+static void
+p2_set_message( ofaRestoreAssistant *self, const gchar *message )
+{
+	ofaRestoreAssistantPrivate *priv;
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	if( priv->p2_message ){
+		gtk_label_set_text( GTK_LABEL( priv->p2_message ), message ? message : "" );
+	}
 }
 
 static void

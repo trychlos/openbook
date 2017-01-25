@@ -60,6 +60,7 @@ typedef struct {
 	gulong               collection_handler;
 	gboolean             block_dossier;
 	gboolean             block_exercice;
+	GList               *new_list;
 
 	/* UI
 	 */
@@ -81,16 +82,18 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-target-chooser-bin.ui";
 
-static void setup_bin( ofaTargetChooserBin *self );
-static void dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *empty, ofaTargetChooserBin *self );
-static void dossier_on_new( GtkButton *button, ofaTargetChooserBin *self );
-static void exercice_set_sensitive( ofaTargetChooserBin *self );
-static void exercice_set_sensitive_widget( GtkWidget *widget, ofaTargetChooserBin *self );
-static void exercice_on_selection_changed( ofaExerciceTreeview *treeview, ofaIDBExerciceMeta *meta, ofaTargetChooserBin *self );
-static void period_on_new( GtkButton *button, ofaTargetChooserBin *self );
-static void set_collection_handler( ofaTargetChooserBin *self );
-static void remove_collection_handler( ofaTargetChooserBin *self );
-static void on_collection_changed( ofaDossierCollection *collection, guint count, ofaTargetChooserBin *self );
+static void     setup_bin( ofaTargetChooserBin *self );
+static void     dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *empty, ofaTargetChooserBin *self );
+static void     dossier_on_new( GtkButton *button, ofaTargetChooserBin *self );
+static void     exercice_set_sensitive( ofaTargetChooserBin *self );
+static void     exercice_set_sensitive_widget( GtkWidget *widget, ofaTargetChooserBin *self );
+static void     exercice_on_selection_changed( ofaExerciceTreeview *treeview, ofaIDBExerciceMeta *meta, ofaTargetChooserBin *self );
+static void     period_on_new( GtkButton *button, ofaTargetChooserBin *self );
+static void     set_collection_handler( ofaTargetChooserBin *self );
+static void     remove_collection_handler( ofaTargetChooserBin *self );
+static void     on_collection_changed( ofaDossierCollection *collection, guint count, ofaTargetChooserBin *self );
+static void     set_new_object( ofaTargetChooserBin *self, GObject *object );
+static gboolean get_is_new_object( ofaTargetChooserBin *self, GObject *object );
 
 G_DEFINE_TYPE_EXTENDED( ofaTargetChooserBin, ofa_target_chooser_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaTargetChooserBin ))
@@ -110,6 +113,7 @@ target_chooser_bin_finalize( GObject *instance )
 	priv = ofa_target_chooser_bin_get_instance_private( OFA_TARGET_CHOOSER_BIN( instance ));
 
 	g_free( priv->settings_prefix );
+	g_list_free( priv->new_list );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_target_chooser_bin_parent_class )->finalize( instance );
@@ -317,6 +321,8 @@ dossier_on_new( GtkButton *button, ofaTargetChooserBin *self )
 
 	if( ofa_dossier_new_run_modal( priv->getter, toplevel, settings_prefix, FALSE, FALSE, FALSE, &priv->dossier_meta )){
 
+		set_new_object( self, G_OBJECT( priv->dossier_meta ));
+
 		/* as a new dossier has been created, the dossier settings are
 		 * updated, the dossier store is cleared and reloaded; we so lose
 		 * the selection on the dossier treeview
@@ -387,6 +393,8 @@ period_on_new( GtkButton *button, ofaTargetChooserBin *self )
 	settings_prefix = g_strdup_printf( "%s-ofaExerciceNew", priv->settings_prefix );
 
 	if( ofa_exercice_new_run_modal( priv->getter, toplevel, settings_prefix, priv->dossier_meta, FALSE, FALSE, &priv->exercice_meta )){
+
+		set_new_object( self, G_OBJECT( priv->exercice_meta ));
 
 		/* as a new exercice has been created, the dossier settings are
 		 * updated, the dossier store is cleared and reloaded; we so lose
@@ -493,4 +501,71 @@ on_collection_changed( ofaDossierCollection *collection, guint count, ofaTargetC
 			ofa_exercice_treeview_set_selected( priv->exercice_tview, exercice_meta );
 		}
 	}
+}
+
+/**
+ * ofa_target_chooser_bin_is_new_dossier:
+ * @bin: this #ofaTargetChooserBin instance.
+ * @dossier_meta: the requested #ofaIDBDossierMeta object.
+ *
+ * Returns: %TRUE if the @dossier_meta has just been created.
+ */
+gboolean
+ofa_target_chooser_bin_is_new_dossier( ofaTargetChooserBin *bin, ofaIDBDossierMeta *dossier_meta )
+{
+	ofaTargetChooserBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_TARGET_CHOOSER_BIN( bin ), FALSE );
+	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), FALSE );
+
+	priv = ofa_target_chooser_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( get_is_new_object( bin, G_OBJECT( dossier_meta )));
+}
+
+/**
+ * ofa_target_chooser_bin_is_new_dossier:
+ * @bin: this #ofaTargetChooserBin instance.
+ * @exercice_meta: the requested #ofaIDBExerciceMeta object.
+ *
+ * Returns: %TRUE if the @exercice_meta has just been created.
+ */
+gboolean
+ofa_target_chooser_bin_is_new_exercice( ofaTargetChooserBin *bin, ofaIDBExerciceMeta *exercice_meta )
+{
+	ofaTargetChooserBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_TARGET_CHOOSER_BIN( bin ), FALSE );
+	g_return_val_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ), FALSE );
+
+	priv = ofa_target_chooser_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( get_is_new_object( bin, G_OBJECT( exercice_meta )));
+}
+
+static void
+set_new_object( ofaTargetChooserBin *self, GObject *object )
+{
+	ofaTargetChooserBinPrivate *priv;
+
+	priv = ofa_target_chooser_bin_get_instance_private( self );
+
+	priv->new_list = g_list_prepend( priv->new_list, object );
+}
+
+static gboolean
+get_is_new_object( ofaTargetChooserBin *self, GObject *object )
+{
+	ofaTargetChooserBinPrivate *priv;
+	GList *find;
+
+	priv = ofa_target_chooser_bin_get_instance_private( self );
+
+	find = g_list_find( priv->new_list, object );
+
+	return( find != NULL );
 }

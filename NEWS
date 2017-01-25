@@ -18,11 +18,12 @@
    identifier is automatically generated - if not already set - when
    opening a current exercice.
 
+   - Add a JSON header to backup archives.
    - Backups now manage several data streams, of which dossier and Openbook headers.
    - Backups now have a comment (todo #792).
    - DossierOpen: set the read-only flag when selecting a closed exercice (todo #1321).
    - Replace Backup standard dialog box with an assistant (todo #1317).
-   - Add to backup archives a JSON header.
+   - Restore assistant implements restore protection rules (todo #1320).
 
    + ofa-unzip: command-line utility to unarchive a data flow on stdout.
 

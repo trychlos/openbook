@@ -228,6 +228,10 @@ const GList          *ofa_idbdossier_meta_get_periods               ( const ofaI
 
 guint                 ofa_idbdossier_meta_get_periods_count         ( const ofaIDBDossierMeta *meta );
 
+ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_period                ( const ofaIDBDossierMeta *meta,
+																			const GDate *date,
+																			gboolean accept_empty );
+
 ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_current_period        ( const ofaIDBDossierMeta *meta );
 
 ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_archived_period       ( const ofaIDBDossierMeta *meta,
