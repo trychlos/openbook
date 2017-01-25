@@ -420,8 +420,6 @@
 
 1328 2017- 1-22 deprecate IDBEditor
 
-1329 2017- 1-22 deprecate DossierNewMini
-
 1335
 
 -----------------------------------------------------------------------
@@ -514,6 +512,9 @@
 1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
                 read-only (unset when current if was not set by the user) 
      2017- 1-16 done
+
+1329 2017- 1-22 deprecate DossierNewMini
+     2017- 1-25 done
 
 1330 2017- 1-22 review the dialog closing: today, this is automatic without
                 being clear if this is in all cases or in *most* cases;

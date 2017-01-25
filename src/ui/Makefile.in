@@ -157,11 +157,11 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-dossier-display-notes.$(OBJEXT) \
 	ofa-dossier-edit-bin.$(OBJEXT) ofa-dossier-manager.$(OBJEXT) \
 	ofa-dossier-meta-bin.$(OBJEXT) ofa-dossier-new.$(OBJEXT) \
-	ofa-dossier-new-bin.$(OBJEXT) ofa-dossier-new-mini.$(OBJEXT) \
-	ofa-dossier-open.$(OBJEXT) ofa-dossier-properties.$(OBJEXT) \
-	ofa-dossier-store.$(OBJEXT) ofa-dossier-treeview.$(OBJEXT) \
-	ofa-entry-page.$(OBJEXT) ofa-entry-properties.$(OBJEXT) \
-	ofa-entry-treeview.$(OBJEXT) ofa-exercice-combo.$(OBJEXT) \
+	ofa-dossier-new-bin.$(OBJEXT) ofa-dossier-open.$(OBJEXT) \
+	ofa-dossier-properties.$(OBJEXT) ofa-dossier-store.$(OBJEXT) \
+	ofa-dossier-treeview.$(OBJEXT) ofa-entry-page.$(OBJEXT) \
+	ofa-entry-properties.$(OBJEXT) ofa-entry-treeview.$(OBJEXT) \
+	ofa-exercice-combo.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-edit-bin.$(OBJEXT) \
 	ofa-exercice-meta-bin.$(OBJEXT) ofa-exercice-new.$(OBJEXT) \
@@ -582,8 +582,6 @@ openbook_SOURCES = \
 	ofa-dossier-new.h									\
 	ofa-dossier-new-bin.c								\
 	ofa-dossier-new-bin.h								\
-	ofa-dossier-new-mini.c								\
-	ofa-dossier-new-mini.h								\
 	ofa-dossier-open.c									\
 	ofa-dossier-open.h									\
 	ofa-dossier-properties.c							\
@@ -852,7 +850,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-meta-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-new-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-new-mini.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-new.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-open.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-properties.Po@am__quote@

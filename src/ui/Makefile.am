@@ -148,8 +148,6 @@ openbook_SOURCES = \
 	ofa-dossier-new.h									\
 	ofa-dossier-new-bin.c								\
 	ofa-dossier-new-bin.h								\
-	ofa-dossier-new-mini.c								\
-	ofa-dossier-new-mini.h								\
 	ofa-dossier-open.c									\
 	ofa-dossier-open.h									\
 	ofa-dossier-properties.c							\
