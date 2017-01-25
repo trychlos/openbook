@@ -251,6 +251,7 @@ ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent,
 	} else {
 		g_debug( "%s: %s", thisfn, msg );
 		g_free( msg );
+
 		if( my_idialog_run( MY_IDIALOG( self )) == GTK_RESPONSE_OK ){
 			opened = priv->opened;
 			my_iwindow_close( MY_IWINDOW( self ));
@@ -309,6 +310,7 @@ idialog_init( myIDialog *instance )
 	GtkWidget *btn, *focus;
 	GtkSizeGroup *group;
 	const gchar *dossier_name;
+	ofaIDBDossierMeta *init_dossier;
 	ofaIDBExerciceMeta *init_period;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -320,6 +322,9 @@ idialog_init( myIDialog *instance )
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-open" );
 	priv->ok_btn = btn;
 
+	init_dossier = priv->dossier_meta;
+	init_period = priv->exercice_meta;
+
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	idialog_init_exercice( OFA_DOSSIER_OPEN( instance ), group );
 	idialog_init_dossier( OFA_DOSSIER_OPEN( instance ), group );
@@ -329,11 +334,10 @@ idialog_init( myIDialog *instance )
 	/* setup the focus depending of the provided data */
 	focus = GTK_WIDGET( priv->dossier_tview );
 
-	if( priv->dossier_meta ){
+	if( init_dossier ){
 		/* because initial priv->exercice_meta will be reset when selecting the
 		 * dossier */
-		init_period = priv->exercice_meta ? g_object_ref( priv->exercice_meta ) : NULL;
-		dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->dossier_meta );
+		dossier_name = ofa_idbdossier_meta_get_dossier_name( init_dossier );
 		ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
 		focus = GTK_WIDGET( priv->exercice_combo );
 
@@ -342,8 +346,6 @@ idialog_init( myIDialog *instance )
 			ofa_exercice_combo_set_selected( priv->exercice_combo, init_period );
 			focus = NULL;
 		}
-
-		g_clear_object( &init_period );
 	}
 
 	if( priv->account ){
