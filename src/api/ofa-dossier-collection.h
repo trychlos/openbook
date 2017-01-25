@@ -48,7 +48,7 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
-#include "api/ofa-idbeditor.h"
+#include "api/ofa-idbexercice-meta-def.h"
 
 G_BEGIN_DECLS
 
@@ -71,31 +71,27 @@ typedef struct {
 }
 	ofaDossierCollectionClass;
 
-GType                 ofa_dossier_collection_get_type            ( void ) G_GNUC_CONST;
+GType                 ofa_dossier_collection_get_type     ( void ) G_GNUC_CONST;
 
-ofaDossierCollection *ofa_dossier_collection_new                 ( ofaHub *hub );
+ofaDossierCollection *ofa_dossier_collection_new          ( ofaHub *hub );
 
-GList                *ofa_dossier_collection_get_list            ( ofaDossierCollection *collection );
+GList                *ofa_dossier_collection_get_list     ( ofaDossierCollection *collection );
 
-guint                 ofa_dossier_collection_get_count           ( ofaDossierCollection *collection );
+guint                 ofa_dossier_collection_get_count    ( ofaDossierCollection *collection );
 
-ofaIDBDossierMeta    *ofa_dossier_collection_get_by_name         ( ofaDossierCollection *collection,
-																		const gchar *dossier_name );
+ofaIDBDossierMeta    *ofa_dossier_collection_get_by_name  ( ofaDossierCollection *collection,
+																const gchar *dossier_name );
 
-void                  ofa_dossier_collection_add_meta            ( ofaDossierCollection *collection,
-																		ofaIDBDossierMeta *meta );
+void                  ofa_dossier_collection_add_meta     ( ofaDossierCollection *collection,
+																ofaIDBDossierMeta *meta );
 
-void                  ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection,
-																		ofaIDBDossierMeta *meta,
-																		const ofaIDBEditor *editor );
+gboolean              ofa_dossier_collection_delete_period( ofaDossierCollection *collection,
+																ofaIDBConnect *connect,
+																ofaIDBExerciceMeta *period,
+																gboolean delete_dossier_on_last,
+																gchar **msgerr );
 
-gboolean              ofa_dossier_collection_delete_period       ( ofaDossierCollection *collection,
-																		ofaIDBConnect *connect,
-																		ofaIDBExerciceMeta *period,
-																		gboolean delete_dossier_on_last,
-																		gchar **msgerr );
-
-void                  ofa_dossier_collection_dump                ( ofaDossierCollection *collection );
+void                  ofa_dossier_collection_dump         ( ofaDossierCollection *collection );
 
 G_END_DECLS
 

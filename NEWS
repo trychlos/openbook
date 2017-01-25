@@ -45,12 +45,14 @@
    - my_utils_file_is_readable_file(): renamed to my_utils_file_is_readable().
    - my_utils_uri_is_readable_file(): renamed to my_utils_uri_is_readable().
    - ofaBackupAssistant: new class.
+   - ofa_dossier_collection_set_meta_from_editor(): deprecated function (todo #1267).
    - ofaDossierNew: makes use of ofaExerciceEditBin (todo #1334).
-   - ofaDossierNewBin: deprecated.
-   - ofaDossierNewMini: deprecated (todo #1329).
+   - ofaDossierNewBin: deprecated class.
+   - ofaDossierNewMini: deprecated class (todo #1329).
    - ofaDossierProps: new class.
    - ofa_idbconnect_backup(): renamed to ofa_idbconnect_backup_db().
    - ofa_idbconnect_restore(): renamed to ofa_idbconnect_restore_db().
+   - ofaIDBEditor: deprecated interface (todo #1328).
    - ofaIDBSuperuser: new interface.
    - ofaExerciceEditBin: new class.
    - ofaExerciceNew: new class.

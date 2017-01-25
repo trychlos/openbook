@@ -49,7 +49,6 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-editor-def.h"
-#include "api/ofa-idbeditor.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-idbprovider-def.h"

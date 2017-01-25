@@ -370,8 +370,6 @@
                 - entries: idem operation,
                 - accounts: all documents for this account
 
-1267 2016-11-29 obsolete ofa_dossier_collection_set_meta_from_editor()
-
 1270 2016-11-29 ofaIDBDossierEditor and ofaIDBExerciceEditor obsolete
                 ofaIDBEditor interface, and ofaMysqlEditorEnter and
                 ofaMysqlEditorDisplay classes.
@@ -418,8 +416,6 @@
 
 1327 2017- 1-22 deprecate DbmsRootBin
 
-1328 2017- 1-22 deprecate IDBEditor
-
 1335
 
 -----------------------------------------------------------------------
@@ -435,6 +431,9 @@
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
      2017- 1-12 done in CORE v34
+
+1267 2016-11-29 obsolete ofa_dossier_collection_set_meta_from_editor()
+     2017- 1-25 done
 
 1276 2016-12-10 review the way the exercices are written in dossier settings
                 so that this may be managed by the application instead of
@@ -512,6 +511,9 @@
 1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
                 read-only (unset when current if was not set by the user) 
      2017- 1-16 done
+
+1328 2017- 1-22 deprecate IDBEditor
+     2017- 1-25 done
 
 1329 2017- 1-22 deprecate DossierNewMini
      2017- 1-25 done

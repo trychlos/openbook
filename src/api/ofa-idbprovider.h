@@ -56,14 +56,13 @@
 
 #include <glib-object.h>
 
-#include "ofa-hub-def.h"
-#include "ofa-idbconnect-def.h"
-#include "ofa-idbdossier-meta-def.h"
-#include "ofa-idbdossier-editor-def.h"
-#include "ofa-idbeditor.h"
+#include "api/ofa-hub-def.h"
+#include "api/ofa-idbconnect-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
+#include "api/ofa-idbdossier-editor-def.h"
 #include "api/ofa-idbexercice-editor-def.h"
-#include "ofa-idbprovider-def.h"
-#include "ofa-idbsuperuser-def.h"
+#include "api/ofa-idbprovider-def.h"
+#include "api/ofa-idbsuperuser-def.h"
 
 G_BEGIN_DECLS
 
@@ -84,7 +83,6 @@ typedef struct _ofaIDBProviderInterface           ofaIDBProviderInterface;
  * @new_dossier_editor: [should]: returns a new ofaIDBDossierEditor object.
  * @new_exercice_editor: [should]: returns a new ofaIDBExerciceEditor object.
  * @new_superuser_bin: [should]: returns a new ofaIDBSuperuser widget.
- * @new_editor: [should]: returns a new ofaIDBEditor object.
  *
  * This defines the interface that an #ofaIDBProvider should implement.
  */
@@ -163,21 +161,6 @@ struct _ofaIDBProviderInterface {
 	 */
 	ofaIDBSuperuser *      ( *new_superuser_bin )      ( ofaIDBProvider *instance,
 															guint rule );
-
-	/**
-	 * new_editor:
-	 * @instance: this #ofaIDBProvider instance.
-	 * @editable: whether the returned widget should handle informations
-	 *  for edit or only display.
-	 *
-	 * Returns: a #GtkWidget which implements the #ofaIDBEditor
-	 * interface, and handles the informations needed to qualify a
-	 * DB server and the storage space required for a dossier.
-	 *
-	 * Since: version 1
-	 */
-	ofaIDBEditor *         ( *new_editor )             ( ofaIDBProvider *instance,
-															gboolean editable );
 };
 
 /*
@@ -220,9 +203,6 @@ ofaIDBExerciceEditor *ofa_idbprovider_new_exercice_editor       ( ofaIDBProvider
 
 ofaIDBSuperuser      *ofa_idbprovider_new_superuser_bin         ( ofaIDBProvider *provider,
 																		guint rule );
-
-ofaIDBEditor         *ofa_idbprovider_new_editor                ( ofaIDBProvider *provider,
-																		gboolean editable );
 
 G_END_DECLS
 

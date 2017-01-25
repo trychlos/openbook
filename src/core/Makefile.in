@@ -179,8 +179,8 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-iactionable.lo ofa-iactioner.lo ofa-icontext.lo \
 	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
 	ofa-idbdossier-editor.lo ofa-idbdossier-meta.lo \
-	ofa-idbeditor.lo ofa-idbexercice-meta.lo ofa-idbmodel.lo \
-	ofa-idbprovider.lo ofa-iexe-close.lo ofa-idbexercice-editor.lo \
+	ofa-idbexercice-meta.lo ofa-idbmodel.lo ofa-idbprovider.lo \
+	ofa-iexe-close.lo ofa-idbexercice-editor.lo \
 	ofa-idbsuperuser.lo ofa-iexportable.lo ofa-igetter.lo \
 	ofa-iimporter.lo ofa-iimportable.lo ofa-ijson.lo \
 	ofa-import-duplicate.lo ofa-ipage-manager.lo ofa-iprintable.lo \
@@ -541,7 +541,6 @@ libofa_core_la_SOURCES = \
 	ofa-idbconnect.c									\
 	ofa-idbdossier-editor.c								\
 	ofa-idbdossier-meta.c								\
-	ofa-idbeditor.c										\
 	ofa-idbexercice-meta.c								\
 	ofa-idbmodel.c										\
 	ofa-idbprovider.c									\
@@ -769,7 +768,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbconnect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbdossier-editor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbdossier-meta.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbeditor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbexercice-editor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbexercice-meta.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbmodel.Plo@am__quote@

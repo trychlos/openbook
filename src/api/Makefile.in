@@ -415,7 +415,6 @@ api_include_HEADERS = \
 	ofa-idbdossier-editor-def.h							\
 	ofa-idbdossier-meta.h								\
 	ofa-idbdossier-meta-def.h							\
-	ofa-idbeditor.h										\
 	ofa-idbexercice-editor.h							\
 	ofa-idbexercice-editor-def.h						\
 	ofa-idbexercice-meta.h								\

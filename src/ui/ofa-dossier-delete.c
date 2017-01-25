@@ -35,7 +35,6 @@
 
 #include "api/ofa-dossier-collection.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-idbeditor.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
@@ -68,7 +67,6 @@ typedef struct {
 
 	/* UI
 	 */
-	ofaIDBEditor             *infos;
 	ofaDBMSRootBin           *credentials;
 	ofaDossierDeletePrefsBin *prefs;
 	GtkWidget                *err_msg;
@@ -256,7 +254,6 @@ idialog_init( myIDialog *instance )
 	gchar *msg;
 	GtkSizeGroup *group;
 	const gchar *dossier_name;
-	ofaIDBProvider *provider;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -283,6 +280,7 @@ idialog_init( myIDialog *instance )
 	g_free( msg );
 
 	/* connection infos */
+#if 0
 	provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
 	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
 	priv->infos = ofa_idbprovider_new_editor( provider, FALSE );
@@ -292,6 +290,7 @@ idialog_init( myIDialog *instance )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->infos ));
 	my_utils_size_group_add_size_group(
 			group, ofa_idbeditor_get_size_group( priv->infos, 0 ));
+#endif
 
 	/* root credentials */
 	priv->credentials = ofa_dbms_root_bin_new( priv->hub );

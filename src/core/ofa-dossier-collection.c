@@ -437,52 +437,6 @@ ofa_dossier_collection_add_meta( ofaDossierCollection *collection, ofaIDBDossier
 	g_free( group );
 }
 
-/**
- * ofa_dossier_collection_set_meta_from_editor:
- * @collection: this #ofaDossierCollection instance.
- * @meta: the #ofaIDBDossierMeta to be set.
- * @editor: a #ofaIDBEditor instance which holds connection informations.
- *
- * Setup the @meta instance, writing informations to settings file.
- */
-void
-ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, ofaIDBDossierMeta *meta, const ofaIDBEditor *editor )
-{
-	static const gchar *thisfn = "ofa_dossier_collection_set_meta_from_editor";
-	ofaDossierCollectionPrivate *priv;
-	gchar *group, *prov_name;
-	ofaIDBProvider *prov_instance;
-	const gchar *dossier_name;
-
-	g_debug( "%s: collection=%p, meta=%p, editor=%p",
-			thisfn, ( void * ) collection, ( void * ) meta, ( void * ) editor );
-
-	g_return_if_fail( collection && OFA_IS_DOSSIER_COLLECTION( collection ));
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( editor && OFA_IS_IDBEDITOR( editor ));
-
-	priv = ofa_dossier_collection_get_instance_private( collection );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
-	group = g_strdup_printf( "%s%s", DOSSIER_COLLECTION_DOSSIER_GROUP_PREFIX, dossier_name );
-
-	prov_instance = ofa_idbeditor_get_provider( editor );
-	prov_name = ofa_idbprovider_get_canon_name( prov_instance );
-
-	my_isettings_set_string( priv->dossier_settings, group, DOSSIER_COLLECTION_PROVIDER_KEY, prov_name );
-
-	//ofa_idbdossier_meta_set_from_editor( meta, editor, MY_ISETTINGS( priv->dossier_settings ), group );
-
-	g_free( prov_name );
-	g_object_unref( prov_instance );
-	g_free( group );
-
-	on_settings_changed( priv->monitor, NULL, collection );
-	priv->ignore_next = TRUE;
-}
-
 /*
  * find the #ofaIDBDossierMeta by dossier name if exists
  */

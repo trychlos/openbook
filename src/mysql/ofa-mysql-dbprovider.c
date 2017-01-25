@@ -35,7 +35,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
-#include "api/ofa-idbeditor.h"
 #include "api/ofa-idbexercice-editor.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
@@ -46,7 +45,6 @@
 #include "mysql/ofa-mysql-dbprovider.h"
 #include "mysql/ofa-mysql-dossier-editor.h"
 #include "mysql/ofa-mysql-dossier-meta.h"
-#include "mysql/ofa-mysql-editor-enter.h"
 #include "mysql/ofa-mysql-exercice-editor.h"
 #include "mysql/ofa-mysql-root-bin.h"
 
@@ -72,7 +70,6 @@ static ofaIDBDossierMeta    *idbprovider_new_dossier_meta( ofaIDBProvider *insta
 static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule, gboolean with_su );
 static ofaIDBExerciceEditor *idbprovider_new_exercice_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
 static ofaIDBSuperuser      *idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule );
-static ofaIDBEditor         *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
 static void                  isetter_iface_init( ofaISetterInterface *iface );
 static ofaIGetter           *isetter_get_getter( ofaISetter *instance );
 static void                  isetter_set_getter( ofaISetter *instance, ofaIGetter *getter );
@@ -191,7 +188,6 @@ idbprovider_iface_init( ofaIDBProviderInterface *iface )
 	iface->new_dossier_editor = idbprovider_new_dossier_editor;
 	iface->new_exercice_editor = idbprovider_new_exercice_editor;
 	iface->new_superuser_bin = idbprovider_new_superuser_bin;
-	iface->new_editor = idbprovider_new_editor;
 }
 
 /*
@@ -244,16 +240,6 @@ idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule )
 	}
 
 	return( bin ? OFA_IDBSUPERUSER( bin ) : NULL );
-}
-
-static ofaIDBEditor *
-idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable )
-{
-	GtkWidget *widget;
-
-	widget = ofa_mysql_editor_enter_new();
-
-	return( OFA_IDBEDITOR( widget ));
 }
 
 /*
