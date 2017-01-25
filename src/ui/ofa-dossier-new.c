@@ -407,7 +407,10 @@ check_for_enable_dlg( ofaDossierNew *self )
 	priv = ofa_dossier_new_get_instance_private( self );
 
 	message = NULL;
-	ok = ofa_dossier_edit_bin_is_valid( priv->dossier_bin, &message );
+
+	ok = ofa_dossier_edit_bin_is_valid( priv->dossier_bin, &message ) &&
+			ofa_exercice_edit_bin_is_valid( priv->exercice_bin, &message );
+
 	set_message( self, message );
 	g_free( message );
 
@@ -473,7 +476,9 @@ do_open( ofaDossierNew *self )
 	}
 
 	/* register the new dossier in dossier settings */
-	if( !ofa_dossier_edit_bin_apply( priv->dossier_bin )){
+	if( !ofa_dossier_edit_bin_apply( priv->dossier_bin ) ||
+			!ofa_exercice_edit_bin_apply( priv->exercice_bin )){
+
 		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_ERROR,
 				_( "Unable to register the new dossier in settings" ));
 		return( FALSE );

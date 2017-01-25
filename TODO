@@ -349,8 +349,6 @@
 1243 2016-10-22 have a command-line tool which displays the version of
                 each of the DBModels of a saved database
 
-1246 2016-11-10 mysql root account could go to settings to be preset in dialogs
-
 1255 2016-11-13 have a setting per dossier to automatize backups path and name
      2016-11-17 path is nonetheless kept from last function call
                 so only name has to be configurable
@@ -369,10 +367,6 @@
                 - operations: the bill, or the purchase trace
                 - entries: idem operation,
                 - accounts: all documents for this account
-
-1270 2016-11-29 ofaIDBDossierEditor and ofaIDBExerciceEditor obsolete
-                ofaIDBEditor interface, and ofaMysqlEditorEnter and
-                ofaMysqlEditorDisplay classes.
 
 1271 2016-12- 1 obsoletes ofaDbmsRootBin
                 moving to mysql
@@ -414,8 +408,6 @@
 1326 2017- 1-19 RestoreAssistant: p3->p4->p3->p4: p2_dossier_meta is NULL
                 but should not
 
-1327 2017- 1-22 deprecate DbmsRootBin
-
 1335
 
 -----------------------------------------------------------------------
@@ -432,7 +424,15 @@
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
      2017- 1-12 done in CORE v34
 
+1246 2016-11-10 mysql root account could go to settings to be preset in dialogs
+     2017- 1-25 done in ofaMysqlRootBin class through ofaIDBSuperuser interface
+
 1267 2016-11-29 obsolete ofa_dossier_collection_set_meta_from_editor()
+     2017- 1-25 done
+
+1270 2016-11-29 ofaIDBDossierEditor and ofaIDBExerciceEditor obsolete
+                ofaIDBEditor interface, and ofaMysqlEditorEnter and
+                ofaMysqlEditorDisplay classes.
      2017- 1-25 done
 
 1276 2016-12-10 review the way the exercices are written in dossier settings
@@ -511,6 +511,9 @@
 1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
                 read-only (unset when current if was not set by the user) 
      2017- 1-16 done
+
+1327 2017- 1-22 deprecate DbmsRootBin
+     2017- 1-25 cancelled as duplicate of #1271
 
 1328 2017- 1-22 deprecate IDBEditor
      2017- 1-25 done
