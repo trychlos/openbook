@@ -357,8 +357,8 @@ ofa_exercice_edit_bin_set_dossier_meta( ofaExerciceEditBin *bin, ofaIDBDossierMe
 
 	g_return_if_fail( !priv->dispose_has_run );
 
+	priv->dossier_meta = dossier_meta;
 	ofa_exercice_meta_bin_set_dossier_meta( priv->exercice_meta_bin, dossier_meta );
-
 	ofa_exercice_edit_bin_set_provider( bin, ofa_idbdossier_meta_get_provider( dossier_meta ));
 }
 
