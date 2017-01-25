@@ -49,18 +49,7 @@
  *    |                                            +- ofaMysqlDossierBin
  *    |                                            |
  *    |                                            +- ofaMysqlRootBin
- *    |
- *    +- ofaExerciceMetaBin
- *    |
- *    +-------------------------------------- ofaIDBExerciceEditor
- *    |                                        |
- *    |                                        +- ofaMysqlExerciceEditor
- *    |                                            |
- *    |                                            +- ofaMysqlExerciceBin
- *    |
- *    +- ofaAdminCredentialsBin
- *    |
- *    +- ofaDossierActionsBin
+ *    +
  *
  * Development rules:
  * - type:       bin (parent='top')
@@ -73,6 +62,7 @@
 
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
+#include "api/ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
 
@@ -100,26 +90,18 @@ GType                ofa_dossier_edit_bin_get_type             ( void ) G_GNUC_C
 ofaDossierEditBin   *ofa_dossier_edit_bin_new                  ( ofaHub *hub,
 																	const gchar *settings_prefix,
 																	guint rule,
-																	gboolean with_su,
-																	gboolean with_admin,
-																	gboolean with_open );
+																	gboolean with_su );
 
 gboolean             ofa_dossier_edit_bin_is_valid             ( ofaDossierEditBin *bin,
 																	gchar **message );
 
 gboolean             ofa_dossier_edit_bin_apply                ( ofaDossierEditBin *bin );
 
-ofaIDBDossierEditor *ofa_dossier_edit_bin_get_dossier_editor   ( ofaDossierEditBin *bin );
+ofaIDBProvider      *ofa_dossier_edit_bin_get_provider         ( ofaDossierEditBin *bin );
 
 ofaIDBDossierMeta   *ofa_dossier_edit_bin_get_dossier_meta     ( ofaDossierEditBin *bin );
 
-void                 ofa_dossier_edit_bin_get_admin_credentials( ofaDossierEditBin *bin,
-																	gchar **account,
-																	gchar **password );
-
-gboolean             ofa_dossier_edit_bin_get_open_on_create   ( ofaDossierEditBin *bin );
-
-gboolean             ofa_dossier_edit_bin_get_apply_actions    ( ofaDossierEditBin *bin );
+ofaIDBDossierEditor *ofa_dossier_edit_bin_get_dossier_editor   ( ofaDossierEditBin *bin );
 
 G_END_DECLS
 

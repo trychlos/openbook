@@ -83,7 +83,7 @@
                     </child>
                     <child>
                       <object class="GtkCheckButton" id="mrb-remember-btn">
-                        <property name="label" translatable="yes">_Remember the DBMS root account</property>
+                        <property name="label" translatable="yes">_Remember this account</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>

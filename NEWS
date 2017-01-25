@@ -43,6 +43,7 @@
    - my_utils_file_is_readable_file(): renamed to my_utils_file_is_readable().
    - my_utils_uri_is_readable_file(): renamed to my_utils_uri_is_readable().
    - ofaBackupAssistant: new class.
+   - ofaDossierNew: makes use of ofaExerciceEditBin (todo #1334). 
    - ofaDossierProps: new class.
    - ofa_idbconnect_backup(): renamed to ofa_idbconnect_backup_db().
    - ofa_idbconnect_restore(): renamed to ofa_idbconnect_restore_db().

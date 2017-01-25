@@ -60,6 +60,7 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
+#include "api/ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
 
@@ -90,6 +91,9 @@ ofaExerciceEditBin   *ofa_exercice_edit_bin_new                  ( ofaHub *hub,
 																		gboolean with_admin,
 																		gboolean with_open );
 
+void                  ofa_exercice_edit_bin_set_provider         ( ofaExerciceEditBin *bin,
+																		ofaIDBProvider *provider );
+
 void                  ofa_exercice_edit_bin_set_dossier_meta     ( ofaExerciceEditBin *bin,
 																		ofaIDBDossierMeta *dossier_meta );
 
@@ -100,6 +104,7 @@ ofaIDBExerciceMeta   *ofa_exercice_edit_bin_apply                ( ofaExerciceEd
 
 #if 0
 ofaIDBExerciceEditor *ofa_exercice_edit_bin_get_exercice_editor  ( ofaExerciceEditBin *bin );
+#endif
 
 void                  ofa_exercice_edit_bin_get_admin_credentials( ofaExerciceEditBin *bin,
 																		gchar **account,
@@ -108,7 +113,6 @@ void                  ofa_exercice_edit_bin_get_admin_credentials( ofaExerciceEd
 gboolean              ofa_exercice_edit_bin_get_open_on_create   ( ofaExerciceEditBin *bin );
 
 gboolean              ofa_exercice_edit_bin_get_apply_actions    ( ofaExerciceEditBin *bin );
-#endif
 
 G_END_DECLS
 

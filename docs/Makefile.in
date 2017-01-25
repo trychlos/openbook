@@ -367,7 +367,10 @@ top_srcdir = @top_srcdir@
 pkgdocdir = $(datarootdir)/doc/@PACKAGE@-@VERSION@
 dist_pkgdoc_DATA = \
 	DataDictionary.xls					\
-	ExeDateRemediations.xls				\
+	DB_Model.odg						\
+	DB_Model.pdf						\
+	Rules.ods							\
+	UserInterface.odg					\
 	ImportFormats.README				\
 	Signals.README						\
 	Styles.README						\

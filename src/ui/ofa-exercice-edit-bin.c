@@ -67,6 +67,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	ofaIDBProvider         *provider;
 	ofaIDBDossierMeta      *dossier_meta;
 
 	/* result
@@ -301,6 +302,42 @@ on_exercice_meta_changed( ofaExerciceMetaBin *bin, ofaExerciceEditBin *self )
 }
 
 /**
+ * ofa_exercice_edit_bin_set_provider:
+ * @bin: this #ofaExerciceEditBin instance.
+ * @provider: [allow-none]: the #ofaIDBProvider to be attached to.
+ *
+ * Set the #ofaIDBProvider, initializing the specific part of the
+ * exercice editor.
+ */
+void
+ofa_exercice_edit_bin_set_provider( ofaExerciceEditBin *bin, ofaIDBProvider *provider )
+{
+	ofaExerciceEditBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ));
+	g_return_if_fail( !provider || OFA_IS_IDBPROVIDER( provider ));
+
+	priv = ofa_exercice_edit_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( provider != priv->provider ){
+		if( priv->exercice_editor_bin ){
+			gtk_container_remove( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
+			priv->provider = NULL;
+		}
+		if( provider ){
+			priv->provider = provider;
+			priv->exercice_editor_bin = ofa_idbprovider_new_exercice_editor( provider, priv->settings_prefix, priv->rule );
+			gtk_container_add( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
+			g_signal_connect( priv->exercice_editor_bin, "ofa-changed", G_CALLBACK( on_exercice_editor_changed ), bin );
+			my_utils_size_group_add_size_group( priv->group1, ofa_idbexercice_editor_get_size_group( priv->exercice_editor_bin, 0 ));
+		}
+		gtk_widget_show_all( GTK_WIDGET( bin ));
+	}
+}
+
+/**
  * ofa_exercice_edit_bin_set_dossier_meta:
  * @bin: this #ofaExerciceEditBin instance.
  * @dossier_meta: [allow-none]: the #ofaIDBDossierMeta to be attached to.
@@ -312,7 +349,6 @@ void
 ofa_exercice_edit_bin_set_dossier_meta( ofaExerciceEditBin *bin, ofaIDBDossierMeta *dossier_meta )
 {
 	ofaExerciceEditBinPrivate *priv;
-	ofaIDBProvider *provider;
 
 	g_return_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ));
 	g_return_if_fail( !dossier_meta || OFA_IS_IDBDOSSIER_META( dossier_meta ));
@@ -321,21 +357,9 @@ ofa_exercice_edit_bin_set_dossier_meta( ofaExerciceEditBin *bin, ofaIDBDossierMe
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	if( priv->exercice_editor_bin ){
-		gtk_container_remove( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
-		priv->dossier_meta = NULL;
-	}
-
 	ofa_exercice_meta_bin_set_dossier_meta( priv->exercice_meta_bin, dossier_meta );
 
-	if( priv->dossier_meta != dossier_meta ){
-		priv->dossier_meta = dossier_meta;
-		provider = ofa_idbdossier_meta_get_provider( dossier_meta );
-		priv->exercice_editor_bin = ofa_idbprovider_new_exercice_editor( provider, priv->settings_prefix, priv->rule );
-		gtk_container_add( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
-		g_signal_connect( priv->exercice_editor_bin, "ofa-changed", G_CALLBACK( on_exercice_editor_changed ), bin );
-		my_utils_size_group_add_size_group( priv->group1, ofa_idbexercice_editor_get_size_group( priv->exercice_editor_bin, 0 ));
-	}
+	ofa_exercice_edit_bin_set_provider( bin, ofa_idbdossier_meta_get_provider( dossier_meta ));
 }
 
 static void
@@ -456,6 +480,7 @@ ofa_exercice_edit_bin_get_exercice_editor( ofaExerciceEditBin *bin )
 
 	return( priv->exercice_editor_bin );
 }
+#endif
 
 /**
  * ofa_exercice_edit_bin_get_admin_credentials:
@@ -478,7 +503,16 @@ ofa_exercice_edit_bin_get_admin_credentials( ofaExerciceEditBin *bin, gchar **ac
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	return( ofa_admin_credentials_bin_get_credentials( priv->admin_bin, account, password ));
+	if( account ){
+		*account = NULL;
+	}
+	if( password ){
+		*password = NULL;
+	}
+	if( priv->with_admin ){
+		g_return_if_fail( priv->admin_bin && OFA_IS_ADMIN_CREDENTIALS_BIN( priv->admin_bin ));
+		ofa_admin_credentials_bin_get_credentials( priv->admin_bin, account, password );
+	}
 }
 
 /**
@@ -498,7 +532,7 @@ ofa_exercice_edit_bin_get_open_on_create( ofaExerciceEditBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( ofa_dossier_actions_bin_get_open_on_create( priv->actions_bin ));
+	return( priv->actions_bin ? ofa_dossier_actions_bin_get_open_on_create( priv->actions_bin ) : FALSE );
 }
 
 /**
@@ -518,6 +552,5 @@ ofa_exercice_edit_bin_get_apply_actions( ofaExerciceEditBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( ofa_dossier_actions_bin_get_apply_actions( priv->actions_bin ));
+	return( priv->actions_bin ? ofa_dossier_actions_bin_get_apply_actions( priv->actions_bin ) : FALSE );
 }
-#endif

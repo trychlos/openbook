@@ -44,6 +44,7 @@
 
 #include "ui/ofa-dossier-edit-bin.h"
 #include "ui/ofa-dossier-new.h"
+#include "ui/ofa-exercice-edit-bin.h"
 
 /* private instance data
  */
@@ -68,7 +69,8 @@ typedef struct {
 
 	/* UI
 	 */
-	ofaDossierEditBin  *edit_bin;
+	ofaDossierEditBin  *dossier_bin;
+	ofaExerciceEditBin *exercice_bin;
 	GtkWidget          *ok_btn;
 	GtkWidget          *msg_label;
 }
@@ -81,7 +83,8 @@ static void     iwindow_init( myIWindow *instance );
 static gchar   *iwindow_get_key_prefix( const myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
-static void     on_edit_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self );
+static void     on_dossier_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self );
+static void     on_exercice_bin_changed( ofaExerciceEditBin *bin, ofaDossierNew *self );
 static void     check_for_enable_dlg( ofaDossierNew *self );
 static void     on_ok_clicked( ofaDossierNew *self );
 static gboolean idialog_quit_on_ok( myIDialog *instance );
@@ -347,14 +350,23 @@ idialog_init( myIDialog *instance )
 	}
 	priv->ok_btn = btn;
 
-	/* create the composite widget and attach it to the dialog */
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "edit-parent" );
+	/* dossier edition */
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->edit_bin = ofa_dossier_edit_bin_new(
-			priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_su, priv->with_admin, priv->with_open );
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->edit_bin ));
-	g_signal_connect( priv->edit_bin, "ofa-changed", G_CALLBACK( on_edit_bin_changed ), instance );
+	priv->dossier_bin = ofa_dossier_edit_bin_new(
+			priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_su );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_bin ));
+	g_signal_connect( priv->dossier_bin, "ofa-changed", G_CALLBACK( on_dossier_bin_changed ), instance );
 
+	/* exercice edition */
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "exercice-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->exercice_bin = ofa_exercice_edit_bin_new(
+			priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_admin, priv->with_open );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
+	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), instance );
+
+	/* message */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dn-msg" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_style_add( label, "labelerror" );
@@ -362,11 +374,25 @@ idialog_init( myIDialog *instance )
 
 	read_settings( OFA_DOSSIER_NEW( instance ));
 
-	check_for_enable_dlg( OFA_DOSSIER_NEW( instance ));
+	on_dossier_bin_changed( priv->dossier_bin, OFA_DOSSIER_NEW( instance ));
 }
 
 static void
-on_edit_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self )
+on_dossier_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	ofaIDBProvider *provider;
+
+	priv = ofa_dossier_new_get_instance_private( self );
+
+	provider = ofa_dossier_edit_bin_get_provider( priv->dossier_bin );
+	ofa_exercice_edit_bin_set_provider( priv->exercice_bin, provider );
+
+	check_for_enable_dlg( self );
+}
+
+static void
+on_exercice_bin_changed( ofaExerciceEditBin *bin, ofaDossierNew *self )
 {
 	check_for_enable_dlg( self );
 }
@@ -381,7 +407,7 @@ check_for_enable_dlg( ofaDossierNew *self )
 	priv = ofa_dossier_new_get_instance_private( self );
 
 	message = NULL;
-	ok = ofa_dossier_edit_bin_is_valid( priv->edit_bin, &message );
+	ok = ofa_dossier_edit_bin_is_valid( priv->dossier_bin, &message );
 	set_message( self, message );
 	g_free( message );
 
@@ -447,17 +473,17 @@ do_open( ofaDossierNew *self )
 	}
 
 	/* register the new dossier in dossier settings */
-	if( !ofa_dossier_edit_bin_apply( priv->edit_bin )){
+	if( !ofa_dossier_edit_bin_apply( priv->dossier_bin )){
 		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_ERROR,
 				_( "Unable to register the new dossier in settings" ));
 		return( FALSE );
 	}
 
 	/* create the new dossier */
-	dossier_meta = ofa_dossier_edit_bin_get_dossier_meta( priv->edit_bin );
-	dossier_editor = ofa_dossier_edit_bin_get_dossier_editor( priv->edit_bin );
+	dossier_meta = ofa_dossier_edit_bin_get_dossier_meta( priv->dossier_bin );
+	dossier_editor = ofa_dossier_edit_bin_get_dossier_editor( priv->dossier_bin );
 	connect = ofa_idbdossier_editor_get_valid_connect( dossier_editor, dossier_meta );
-	ofa_dossier_edit_bin_get_admin_credentials( priv->edit_bin, &adm_account, &adm_password );
+	ofa_exercice_edit_bin_get_admin_credentials( priv->exercice_bin, &adm_account, &adm_password );
 
 	if( !ofa_idbconnect_period_new( connect, adm_account, adm_password, &msgerr )){
 		collection = ofa_hub_get_dossier_collection( priv->hub );
@@ -475,7 +501,7 @@ do_open( ofaDossierNew *self )
 		if( priv->dossier_meta ){
 			*( priv->dossier_meta) = dossier_meta;
 		}
-		open = ofa_dossier_edit_bin_get_open_on_create( priv->edit_bin );
+		open = ofa_exercice_edit_bin_get_open_on_create( priv->exercice_bin );
 		if( open ){
 			exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
 			connect = ofa_idbdossier_meta_new_connect( dossier_meta, exercice_meta );
@@ -484,7 +510,7 @@ do_open( ofaDossierNew *self )
 						_( "Unable to connect to newly created dossier" ));
 				g_object_unref( connect );
 			} else {
-				apply_actions = ofa_dossier_edit_bin_get_apply_actions( priv->edit_bin );
+				apply_actions = ofa_exercice_edit_bin_get_apply_actions( priv->exercice_bin );
 				if( ofa_hub_dossier_open( priv->hub, priv->parent, connect, apply_actions, FALSE )){
 					ofa_hub_dossier_remediate_settings( priv->hub );
 					ret = TRUE;
