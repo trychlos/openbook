@@ -453,10 +453,9 @@ do_open( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *p
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	if( ofa_dossier_open_run(
-			priv->getter, GTK_WINDOW( self ), meta, period, NULL, NULL )){
+	if( ofa_dossier_open_run( priv->getter, GTK_WINDOW( self ), meta, period, NULL, NULL )){
 
-		gtk_dialog_response( GTK_DIALOG( self ), GTK_RESPONSE_CLOSE );
+		my_iwindow_close( MY_IWINDOW( self ));
 	}
 }
 
