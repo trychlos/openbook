@@ -270,6 +270,36 @@ setup_bin( ofaDossierEditBin *self )
 	g_object_unref( builder );
 }
 
+/**
+ * ofa_dossier_edit_bin_get_size_group:
+ * @bin: this #ofaDossierEditBin instance.
+ * @column: the desired column.
+ *
+ * Returns: the #GtkSizeGroup which handles the desired @column.
+ */
+GtkSizeGroup *
+ofa_dossier_edit_bin_get_size_group( ofaDossierEditBin *bin, guint column )
+{
+	static const gchar *thisfn = "ofa_dossier_edit_bin_get_size_group";
+	ofaDossierEditBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), NULL );
+
+	priv = ofa_dossier_edit_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+
+	} else if( column == 1 ){
+		return( priv->group1 );
+	}
+
+	g_warning( "%s: unmanaged column=%u", thisfn, column );
+	return( NULL );
+}
+
 static void
 on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self )
 {

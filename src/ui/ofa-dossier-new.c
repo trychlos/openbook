@@ -55,7 +55,8 @@ typedef struct {
 	 */
 	ofaIGetter         *getter;
 	GtkWindow          *parent;
-		/* when run as modal */
+		/* when run as modal
+		 * (the caller is waiting for the result) */
 	gboolean            with_su;
 	gboolean            with_admin;
 	gboolean            with_open;
@@ -335,6 +336,7 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_dossier_new_idialog_init";
 	ofaDossierNewPrivate *priv;
 	GtkWidget *btn, *parent, *label;
+	GtkSizeGroup *group0;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -354,6 +356,7 @@ idialog_init( myIDialog *instance )
 			priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_su );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_bin ));
 	g_signal_connect( priv->dossier_bin, "ofa-changed", G_CALLBACK( on_dossier_bin_changed ), instance );
+	group0 = ofa_dossier_edit_bin_get_size_group( priv->dossier_bin, 0 );
 
 	/* exercice edition */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "exercice-parent" );
@@ -362,6 +365,7 @@ idialog_init( myIDialog *instance )
 			priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_admin, priv->with_open );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
 	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), instance );
+	my_utils_size_group_add_size_group( group0, ofa_exercice_edit_bin_get_size_group( priv->exercice_bin, 0 ));
 
 	/* message */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dn-msg" );
@@ -379,11 +383,14 @@ on_dossier_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
 	ofaIDBProvider *provider;
+	GtkSizeGroup *group1;
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
 	provider = ofa_dossier_edit_bin_get_provider( priv->dossier_bin );
 	ofa_exercice_edit_bin_set_provider( priv->exercice_bin, provider );
+	group1 = ofa_dossier_edit_bin_get_size_group( priv->dossier_bin, 1 );
+	my_utils_size_group_add_size_group( group1, ofa_exercice_edit_bin_get_size_group( priv->exercice_bin, 1 ));
 
 	check_for_enable_dlg( self );
 }

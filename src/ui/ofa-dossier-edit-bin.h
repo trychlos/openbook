@@ -92,6 +92,9 @@ ofaDossierEditBin   *ofa_dossier_edit_bin_new                  ( ofaHub *hub,
 																	guint rule,
 																	gboolean with_su );
 
+GtkSizeGroup        *ofa_dossier_edit_bin_get_size_group       ( ofaDossierEditBin *bin,
+																	guint column );
+
 gboolean             ofa_dossier_edit_bin_is_valid             ( ofaDossierEditBin *bin,
 																	gchar **message );
 

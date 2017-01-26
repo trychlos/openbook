@@ -91,6 +91,9 @@ ofaExerciceEditBin   *ofa_exercice_edit_bin_new                  ( ofaHub *hub,
 																		gboolean with_admin,
 																		gboolean with_open );
 
+GtkSizeGroup         *ofa_exercice_edit_bin_get_size_group       ( ofaExerciceEditBin *bin,
+																		guint column );
+
 void                  ofa_exercice_edit_bin_set_provider         ( ofaExerciceEditBin *bin,
 																		ofaIDBProvider *provider );
 

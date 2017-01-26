@@ -295,6 +295,36 @@ setup_bin( ofaExerciceEditBin *self )
 	g_object_unref( builder );
 }
 
+/**
+ * ofa_exercice_edit_bin_get_size_group:
+ * @bin: this #ofaExerciceEditBin instance.
+ * @column: the desire column.
+ *
+ * Returns: the #GtkSizeGroup which handles the desired @column.
+ */
+GtkSizeGroup *
+ofa_exercice_edit_bin_get_size_group( ofaExerciceEditBin *bin, guint column )
+{
+	static const gchar *thisfn = "ofa_exercice_edit_bin_get_size_group";
+	ofaExerciceEditBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ), NULL );
+
+	priv = ofa_exercice_edit_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+
+	} else if( column == 1 ){
+		return( priv->group1 );
+	}
+
+	g_warning( "%s: unmanaged column=%u", thisfn, column );
+	return( NULL );
+}
+
 static void
 on_exercice_meta_changed( ofaExerciceMetaBin *bin, ofaExerciceEditBin *self )
 {
