@@ -56,6 +56,7 @@
    - ofaIDBSuperuser: new interface.
    - ofaExerciceEditBin: new class.
    - ofaExerciceNew: new class.
+   - ofa_mysql_prefs_bin_is_valid(): renamed from ofa_mysql_prefs_bin_get_valid (todo #1302).
    - ofoExemeta: new class.
 
    + Add a prequisite on JSON-GLib library.

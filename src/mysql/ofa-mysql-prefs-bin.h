@@ -65,14 +65,14 @@ typedef struct {
 }
 	ofaMySQLPrefsBinClass;
 
-GType      ofa_mysql_prefs_bin_get_type    ( void ) G_GNUC_CONST;
+GType      ofa_mysql_prefs_bin_get_type( void ) G_GNUC_CONST;
 
-GtkWidget *ofa_mysql_prefs_bin_new         ( ofaHub *hub );
+GtkWidget *ofa_mysql_prefs_bin_new     ( ofaHub *hub );
 
-gboolean   ofa_mysql_prefs_bin_get_valid   ( ofaMySQLPrefsBin *bin,
+gboolean   ofa_mysql_prefs_bin_is_valid( ofaMySQLPrefsBin *bin,
 												gchar **msgerr );
 
-void       ofa_mysql_prefs_bin_apply       ( ofaMySQLPrefsBin *bin );
+void       ofa_mysql_prefs_bin_apply   ( ofaMySQLPrefsBin *bin );
 
 G_END_DECLS
 

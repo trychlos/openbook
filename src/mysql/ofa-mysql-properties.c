@@ -171,7 +171,7 @@ iproperties_get_valid( const ofaIProperties *instance, GtkWidget *widget, gchar 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_PROPERTIES( instance ), FALSE );
 	g_return_val_if_fail( widget && OFA_IS_MYSQL_PREFS_BIN( widget ), FALSE );
 
-	ok = ofa_mysql_prefs_bin_get_valid( OFA_MYSQL_PREFS_BIN( widget ), message );
+	ok = ofa_mysql_prefs_bin_is_valid( OFA_MYSQL_PREFS_BIN( widget ), message );
 
 	return( ok );
 }

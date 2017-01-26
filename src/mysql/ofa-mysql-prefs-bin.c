@@ -70,12 +70,12 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-prefs-bin.ui";
 
-static void       setup_bin( ofaMySQLPrefsBin *self );
-static void       on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
-static void       on_restore_gz_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
-static void       on_restore_zip_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
-static gboolean   get_is_valid( ofaMySQLPrefsBin *self, gchar **message );
-static void       do_apply( ofaMySQLPrefsBin *self );
+static void     setup_bin( ofaMySQLPrefsBin *self );
+static void     on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
+static void     on_restore_gz_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
+static void     on_restore_zip_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
+static gboolean is_valid( ofaMySQLPrefsBin *self, gchar **message );
+static void     do_apply( ofaMySQLPrefsBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLPrefsBin, ofa_mysql_prefs_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMySQLPrefsBin ))
@@ -294,14 +294,14 @@ on_restore_zip_changed( GtkEntry *entry, ofaMySQLPrefsBin *self )
 }
 
 /**
- * ofa_mysql_prefs_bin_get_valid:
+ * ofa_mysql_prefs_bin_is_valid:
  * @bin: this #ofaMySQLPrefsBin instance.
  * @message: [allow-none][out]: error message placeholder.
  *
  * Returns: %TRUE if the @bin instance is valid.
  */
 gboolean
-ofa_mysql_prefs_bin_get_valid( ofaMySQLPrefsBin *bin, gchar **message )
+ofa_mysql_prefs_bin_is_valid( ofaMySQLPrefsBin *bin, gchar **message )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 
@@ -311,11 +311,11 @@ ofa_mysql_prefs_bin_get_valid( ofaMySQLPrefsBin *bin, gchar **message )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( get_is_valid( bin, message ));
+	return( is_valid( bin, message ));
 }
 
 static gboolean
-get_is_valid( ofaMySQLPrefsBin *self, gchar **message )
+is_valid( ofaMySQLPrefsBin *self, gchar **message )
 {
 	if( message ){
 		*message = NULL;

@@ -385,10 +385,6 @@
 1301 2016-12-19 review myISettings interface: free_groups() does not have
                 settings arg, while free_string_list() has.
 
-1302 2016-12-27 ack -lw get_is_valid src
-                replace src/mysql/ofa-mysql-prefs-bin.c::get_is_valid()
-                with is_valid()
-
 1303 2016-12-27 ack -lw get_valid src
                 replace get_valid() with is_valid()
 
@@ -396,11 +392,10 @@
                 (requires a superuser connection on the dbms)
 
 1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
+     2017- 1-26 first *define* standard actions on open
 
 1323 2017- 1-18 propagate myISizegroup interface
      2017- 1-22 rename and include is_valid/apply
-
-1324 2017- 1-18 BatPage: lacks of an horizontal scrollbar (and vertical ?)
 
 1325 2017- 1-19 RestoreAssistant: p3->p4->p3: page should be complete,
                 but is not.
@@ -443,6 +438,11 @@
 1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
                 by a my_iwindow_set_is_destroy_allowed() method
      2017- 1-23 done
+
+1302 2016-12-27 ack -lw get_is_valid src
+                replace src/mysql/ofa-mysql-prefs-bin.c::get_is_valid()
+                with is_valid()
+     2017- 1-26 done
 
 1304 2016-12-28 ofa_idbdossier_meta_get_provider(): should not return 
                 a new reference
@@ -511,6 +511,9 @@
 1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
                 read-only (unset when current if was not set by the user) 
      2017- 1-16 done
+
+1324 2017- 1-18 BatPage: lacks of an horizontal scrollbar (and vertical ?)
+     2017- 1-26 cancelled (this might be a BatTreeview issue ?)
 
 1327 2017- 1-22 deprecate DbmsRootBin
      2017- 1-25 cancelled as duplicate of #1271
