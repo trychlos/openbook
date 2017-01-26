@@ -520,6 +520,7 @@ confirm_delete( ofaDossierManager *self, const ofaIDBDossierMeta *meta, const of
 	gboolean ok;
 	gchar *period_name, *str;
 	const gchar *dossier_name;
+	GtkWindow *toplevel;
 
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
 	period_name = ofa_idbexercice_meta_get_name( period );
@@ -530,7 +531,8 @@ confirm_delete( ofaDossierManager *self, const ofaIDBDossierMeta *meta, const of
 				"Are your sure ?" ),
 					period_name, dossier_name );
 
-	ok = my_utils_dialog_question( str, _( "_Delete" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ok = my_utils_dialog_question( toplevel, str, _( "_Delete" ));
 
 	g_free( str );
 	g_free( period_name );

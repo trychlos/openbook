@@ -417,11 +417,13 @@ delete_with_confirm( ofaRecPeriodPage *self, ofoRecPeriod *period )
 {
 	gchar *msg;
 	gboolean delete_ok;
+	GtkWindow *toplevel;
 
 	msg = g_strdup_printf( _( "Are you sure you want delete the '%s' periodicity ?" ),
 				ofo_rec_period_get_label( period ));
 
-	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	delete_ok = my_utils_dialog_question( toplevel, msg, _( "_Delete" ));
 
 	g_free( msg );
 

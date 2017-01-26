@@ -66,7 +66,7 @@ GtkWidget    *my_utils_builder_load_from_path         ( const gchar *path_xml, c
 GtkWidget    *my_utils_builder_load_from_resource     ( const gchar *resource, const gchar *widget_name );
 
 void          my_utils_msg_dialog                     ( GtkWindow *parent, GtkMessageType type, const gchar *msg );
-gboolean      my_utils_dialog_question                ( const gchar *msg, const gchar *ok_text );
+gboolean      my_utils_dialog_question                ( GtkWindow *parent, const gchar *msg, const gchar *ok_text );
 
 GtkWidget    *my_utils_container_get_child_by_name    ( GtkContainer *container, const gchar *name );
 GtkWidget    *my_utils_container_get_child_by_type    ( GtkContainer *container, GType type );

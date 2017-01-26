@@ -540,13 +540,15 @@ create_confirmed( const ofaDossierNew *self )
 {
 	gboolean ok;
 	gchar *str;
+	GtkWindow *toplevel;
 
 	str = g_strdup_printf(
 				_( "The create operation will drop and fully reset the target database.\n"
 					"This may not be what you actually want !\n"
 					"Are you sure you want to create into this database ?" ));
 
-	ok = my_utils_dialog_question( str, _( "C_reate" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ok = my_utils_dialog_question( toplevel, str, _( "C_reate" ));
 
 	g_free( str );
 

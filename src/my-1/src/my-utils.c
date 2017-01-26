@@ -550,13 +550,15 @@ my_utils_msg_dialog( GtkWindow *parent, GtkMessageType type, const gchar *msg )
  * Returns: %TRUE if OK.
  */
 gboolean
-my_utils_dialog_question( const gchar *msg, const gchar *ok_text )
+my_utils_dialog_question( GtkWindow *parent, const gchar *msg, const gchar *ok_text )
 {
 	GtkWidget *dialog;
 	gint response;
 
+	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
+
 	dialog = gtk_message_dialog_new(
-			NULL,
+			parent,
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_QUESTION,
 			GTK_BUTTONS_NONE, "%s", msg );

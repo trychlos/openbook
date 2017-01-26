@@ -53,6 +53,7 @@
 #include <my/my-progress-bar.h>
 #include <my/my-settings.h>
 #include <my/my-signal.h>
+#include <my/my-stamp.h>
 #include <my/my-style.h>
 #include <my/my-tab.h>
 #include <my/my-thousand-combo.h>

@@ -672,6 +672,7 @@ confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date )
 	ofaRecurrentGeneratePrivate *priv;
 	gchar *sbegin, *slast, *str;
 	gboolean ok;
+	GtkWindow *toplevel;
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
@@ -684,7 +685,8 @@ confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date )
 				"If they have been cancelled, you might want cancel the cancellation instead.\n"
 				"Do you confirm this generation ?" ), sbegin, slast );
 
-	ok = my_utils_dialog_question( str, _( "C_onfirm" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ok = my_utils_dialog_question( toplevel, str, _( "C_onfirm" ));
 
 	g_free( sbegin );
 	g_free( slast );

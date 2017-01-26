@@ -1389,6 +1389,7 @@ p6_restore_confirmed( ofaRestoreAssistant *self )
 	ofaRestoreAssistantPrivate *priv;
 	gboolean ok;
 	gchar *str;
+	GtkWindow *toplevel;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
@@ -1398,7 +1399,8 @@ p6_restore_confirmed( ofaRestoreAssistant *self )
 					"This may not be what you actually want !\n"
 					"Are you sure you want to restore into this database ?" ), priv->p2_exercice_name );
 
-	ok = my_utils_dialog_question( str, _( "_Restore" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ok = my_utils_dialog_question( toplevel, str, _( "_Restore" ));
 
 	g_free( str );
 

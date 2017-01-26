@@ -1424,8 +1424,12 @@ static gboolean
 confirm_validate( ofaTVARecordProperties *self )
 {
 	gboolean ok;
+	GtkWindow *toplevel;
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
 	ok = my_utils_dialog_question(
+				toplevel,
 				_( "You are about to validate the VAT declaration.\n"
 					"After this validation, the declaration will not be modifiable anymore,"
 					"and you will not be able to generate the VAT accounting operations.\n"

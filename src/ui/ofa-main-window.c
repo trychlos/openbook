@@ -834,7 +834,9 @@ gboolean
 ofa_main_window_is_willing_to_quit( const ofaMainWindow *main_window )
 {
 	return( my_utils_dialog_question(
-			_( "Are you sure you want to quit the application ?" ), _( "_Quit" )));
+				GTK_WINDOW( main_window ),
+				_( "Are you sure you want to quit the application ?" ),
+				_( "_Quit" )));
 }
 
 /*

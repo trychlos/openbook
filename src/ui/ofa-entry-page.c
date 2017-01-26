@@ -2250,14 +2250,16 @@ delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry )
 {
 	GString *msg;
 	gboolean ok;
+	GtkWindow *toplevel;
 
 	msg = g_string_new( "" );;
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( page ));
 
 	/* first ask for the standard confirmation */
 	g_string_printf( msg,
 			_( "Are you sure you want to remove the '%s' entry ?" ),
 			ofo_entry_get_label( entry ));
-	ok = my_utils_dialog_question( msg->str, _( "_Delete" ));
+	ok = my_utils_dialog_question( toplevel, msg->str, _( "_Delete" ));
 	g_string_free( msg, TRUE );
 
 	/* ask for more confirmation is the entry is settled or conciliated */
@@ -2278,7 +2280,7 @@ delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry )
 		}
 		if( my_strlen( msg->str )){
 			msg = g_string_append( msg, _( "\nAre you sure ?"));
-			ok = my_utils_dialog_question( msg->str, _( "Yes, _delete it" ));
+			ok = my_utils_dialog_question( toplevel, msg->str, _( "Yes, _delete it" ));
 		}
 		g_string_free( msg, TRUE );
 	}

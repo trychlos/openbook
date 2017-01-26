@@ -2171,6 +2171,7 @@ do_reconciliate_user_confirm( ofaReconcilPage *self, ofxAmount debit, ofxAmount 
 	ofaReconcilPagePrivate *priv;
 	gboolean ok;
 	gchar *sdeb, *scre, *str;
+	GtkWindow *toplevel;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
@@ -2180,7 +2181,8 @@ do_reconciliate_user_confirm( ofaReconcilPage *self, ofxAmount debit, ofxAmount 
 			"debit=%s, credit=%s.\n"
 			"Are you sure you want reconciliate this group ?" ), sdeb, scre );
 
-	ok = my_utils_dialog_question( str, _( "Reconciliate" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ok = my_utils_dialog_question( toplevel, str, _( "Reconciliate" ));
 
 	g_free( sdeb );
 	g_free( scre );

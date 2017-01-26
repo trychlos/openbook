@@ -546,6 +546,7 @@ action_user_confirm( ofaRecurrentRunPage *self )
 	gint count;
 	gchar *msg;
 	gboolean ok;
+	GtkWindow *toplevel;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
@@ -557,7 +558,8 @@ action_user_confirm( ofaRecurrentRunPage *self )
 								"Are you sure ?" ),
 			count );
 
-	ok = my_utils_dialog_question( msg, _( "_Validate" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ok = my_utils_dialog_question( toplevel, msg, _( "_Validate" ));
 
 	g_free( msg );
 

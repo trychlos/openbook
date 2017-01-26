@@ -1097,6 +1097,7 @@ confirm_remediation( ofaDossierProperties *self, gint count )
 {
 	gboolean ok;
 	gchar *str;
+	GtkWindow *toplevel;
 
 	str = g_strdup_printf(
 			_( "You have modified the begin and/or the end dates of the current exercice.\n"
@@ -1105,7 +1106,8 @@ confirm_remediation( ofaDossierProperties *self, gint count )
 				"update the corresponding account and ledger balances.\n"
 				"Are your sure ?" ), count );
 
-	ok = my_utils_dialog_question( str, _( "Con_firm" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ok = my_utils_dialog_question( toplevel, str, _( "Con_firm" ));
 
 	g_free( str );
 

@@ -1146,6 +1146,7 @@ delete_confirmed( ofaAccountFrameBin *self, ofoAccount *account )
 	ofaAccountFrameBinPrivate *priv;
 	gchar *msg;
 	gboolean delete_ok;
+	GtkWindow *toplevel;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
@@ -1171,7 +1172,8 @@ delete_confirmed( ofaAccountFrameBin *self, ofoAccount *account )
 					ofo_account_get_label( account ));
 	}
 
-	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	delete_ok = my_utils_dialog_question( toplevel, msg, _( "_Delete" ));
 
 	g_free( msg );
 

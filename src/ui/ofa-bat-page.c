@@ -422,11 +422,13 @@ delete_with_confirm( ofaBatPage *self, ofoBat *bat )
 {
 	gchar *msg;
 	gboolean delete_ok;
+	GtkWindow *toplevel;
 
 	msg = g_strdup( _( "Are you sure you want delete this BAT file\n"
 			"(All the corresponding lines will be deleted too) ?" ));
 
-	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	delete_ok = my_utils_dialog_question( toplevel, msg, _( "_Delete" ));
 
 	g_free( msg );
 

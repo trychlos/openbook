@@ -1442,8 +1442,12 @@ static gboolean
 p7_confirm_empty_table( const ofaImportAssistant *self )
 {
 	gboolean ok;
+	GtkWindow *toplevel;
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
 	ok = my_utils_dialog_question(
+				toplevel,
 				_( "You have asked to fully drop the previously content of the target "
 					"table before importing these new datas.\n"
 					"Are you sure ?" ),

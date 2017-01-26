@@ -970,12 +970,14 @@ delete_confirmed( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *ope )
 {
 	gchar *msg;
 	gboolean delete_ok;
+	GtkWindow *toplevel;
 
 	msg = g_strdup_printf( _( "Are you sure you want to delete the '%s - %s' entry model ?" ),
 			ofo_ope_template_get_mnemo( ope ),
 			ofo_ope_template_get_label( ope ));
 
-	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	delete_ok = my_utils_dialog_question( toplevel, msg, _( "_Delete" ));
 
 	g_free( msg );
 

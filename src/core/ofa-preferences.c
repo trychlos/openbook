@@ -1015,6 +1015,7 @@ is_willing_to_quit( void )
 	gboolean ok;
 
 	ok = my_utils_dialog_question(
+			NULL,
 			_( "Are you sure you want to quit this assistant ?" ),
 			_( "_Quit" ));
 

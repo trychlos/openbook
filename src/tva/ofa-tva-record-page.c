@@ -420,6 +420,7 @@ delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 	ofaTVARecordPagePrivate *priv;
 	gchar *msg, *send;
 	gboolean delete_ok;
+	GtkWindow *toplevel;
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
@@ -427,7 +428,8 @@ delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 	msg = g_strdup_printf( _( "Are you sure you want delete the %s at %s TVA declaration ?" ),
 				ofo_tva_record_get_mnemo( record ), send );
 
-	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	delete_ok = my_utils_dialog_question( toplevel, msg, _( "_Delete" ));
 
 	g_free( msg );
 	g_free( send );
@@ -460,6 +462,7 @@ validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 	ofaTVARecordPagePrivate *priv;
 	gchar *msg, *send;
 	gboolean delete_ok;
+	GtkWindow *toplevel;
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
@@ -467,7 +470,8 @@ validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 	msg = g_strdup_printf( _( "Are you sure you want validate the %s at %s TVA declaration ?" ),
 				ofo_tva_record_get_mnemo( record ), send );
 
-	delete_ok = my_utils_dialog_question( msg, _( "_Validate" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	delete_ok = my_utils_dialog_question( toplevel, msg, _( "_Validate" ));
 
 	g_free( msg );
 	g_free( send );

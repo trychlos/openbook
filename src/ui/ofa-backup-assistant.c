@@ -511,12 +511,14 @@ p1_confirm_overwrite( const ofaBackupAssistant *self, const gchar *fname )
 {
 	gboolean ok;
 	gchar *str;
+	GtkWindow *toplevel;
 
 	str = g_strdup_printf(
 				_( "The file '%s' already exists.\n"
 					"Are you sure you want to overwrite it ?" ), fname );
 
-	ok = my_utils_dialog_question( str, _( "_Overwrite" ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ok = my_utils_dialog_question( toplevel, str, _( "_Overwrite" ));
 
 	g_free( str );
 
