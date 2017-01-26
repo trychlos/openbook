@@ -241,6 +241,32 @@ my_isettings_get_groups( const myISettings *instance )
 }
 
 /**
+ * my_isettings_free_groups:
+ * @instance: this #myISettings instance.
+ * @groups_list: the list of groups to be freed, as returned by
+ *  #my_isettings_get_groups().
+ *
+ * Frees the provided @groups_list.
+ */
+void
+my_isettings_free_groups( myISettings *instance, GList *groups_list )
+{
+	static const gchar *thisfn = "my_isettings_free_groups";
+
+	g_debug( "%s: instance=%p, groups_list=%p", thisfn, ( void * ) instance, ( void * ) groups_list );
+
+	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
+	g_return_if_fail( groups_list );
+
+	if( MY_ISETTINGS_GET_INTERFACE( instance )->free_groups ){
+		MY_ISETTINGS_GET_INTERFACE( instance )->free_groups( instance, groups_list );
+
+	} else {
+		g_list_free_full( groups_list, ( GDestroyNotify ) g_free );
+	}
+}
+
+/**
  * my_isettings_remove_group:
  * @instance: this #myISettings instance.
  * @group: the name of the group.
@@ -296,26 +322,26 @@ my_isettings_get_keys( const myISettings *instance, const gchar *group )
 /**
  * my_isettings_free_keys:
  * @instance: this #myISettings instance.
- * @key_list: the list of keys to be freed, as returned by
+ * @keys_list: the list of keys to be freed, as returned by
  *  #my_isettings_get_keys().
  *
- * Frees the provided @key_list.
+ * Frees the provided @keys_list.
  */
 void
-my_isettings_free_keys( const myISettings *instance, GList *key_list )
+my_isettings_free_keys( myISettings *instance, GList *keys_list )
 {
 	static const gchar *thisfn = "my_isettings_free_keys";
 
-	g_debug( "%s: instance=%p, key_list=%p", thisfn, ( void * ) instance, ( void * ) key_list );
+	g_debug( "%s: instance=%p, keys_list=%p", thisfn, ( void * ) instance, ( void * ) keys_list );
 
 	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
-	g_return_if_fail( key_list );
+	g_return_if_fail( keys_list );
 
 	if( MY_ISETTINGS_GET_INTERFACE( instance )->free_keys ){
-		MY_ISETTINGS_GET_INTERFACE( instance )->free_keys( key_list );
+		MY_ISETTINGS_GET_INTERFACE( instance )->free_keys( instance, keys_list );
 
 	} else {
-		g_list_free_full( key_list, ( GDestroyNotify ) g_free );
+		g_list_free_full( keys_list, ( GDestroyNotify ) g_free );
 	}
 }
 
@@ -328,7 +354,7 @@ my_isettings_free_keys( const myISettings *instance, GList *key_list )
  * Returns: %TRUE if the provided @key exists in the specified @group.
  */
 gboolean
-my_isettings_has_key( const myISettings *instance, const gchar *group, const gchar *key )
+my_isettings_has_key( myISettings *instance, const gchar *group, const gchar *key )
 {
 	static const gchar *thisfn = "my_isettings_has_key";
 	GList *keys, *it;
@@ -568,7 +594,7 @@ my_isettings_set_uint_list( myISettings *instance, const gchar *group, const gch
  * Frees the provided @key_list.
  */
 void
-my_isettings_free_uint_list( const myISettings *instance, GList *value )
+my_isettings_free_uint_list( myISettings *instance, GList *value )
 {
 	static const gchar *thisfn = "my_isettings_free_uint_list";
 
@@ -578,7 +604,7 @@ my_isettings_free_uint_list( const myISettings *instance, GList *value )
 	g_return_if_fail( value );
 
 	if( MY_ISETTINGS_GET_INTERFACE( instance )->free_uint_list ){
-		MY_ISETTINGS_GET_INTERFACE( instance )->free_uint_list( value );
+		MY_ISETTINGS_GET_INTERFACE( instance )->free_uint_list( instance, value );
 
 	} else {
 		g_list_free( value );
@@ -713,7 +739,7 @@ my_isettings_set_string_list( myISettings *instance, const gchar *group, const g
  * Frees the provided @key_list.
  */
 void
-my_isettings_free_string_list( const myISettings *instance, GList *string_list )
+my_isettings_free_string_list( myISettings *instance, GList *string_list )
 {
 	static const gchar *thisfn = "my_isettings_free_string_list";
 
@@ -722,7 +748,7 @@ my_isettings_free_string_list( const myISettings *instance, GList *string_list )
 	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
 
 	if( MY_ISETTINGS_GET_INTERFACE( instance )->free_string_list ){
-		MY_ISETTINGS_GET_INTERFACE( instance )->free_string_list( string_list );
+		MY_ISETTINGS_GET_INTERFACE( instance )->free_string_list( instance, string_list );
 
 	} else if( string_list ){
 		g_list_free_full( string_list, ( GDestroyNotify ) g_free );

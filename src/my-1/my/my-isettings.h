@@ -129,6 +129,18 @@ typedef struct {
 	GList *    ( *get_groups )           ( const myISettings *instance );
 
 	/**
+	 * free_groups:
+	 * @instance: the #myISettings instance.
+	 * @groups_list: the list of groups as returned by #my_isettings_get_groups().
+	 *
+	 * Release the @groups list.
+	 *
+	 * Since: version 1.
+	 */
+	void       ( *free_groups )          ( myISettings *instance,
+												GList *groups_list );
+
+	/**
 	 * remove_group:
 	 * @instance: the #myISettings instance.
 	 * @group: the name of the group in the settings file.
@@ -155,13 +167,15 @@ typedef struct {
 
 	/**
 	 * free_keys:
-	 * @key_list: a list of keys as returned by #get_keys() method.
+	 * @instance: the #myISettings instance.
+	 * @keys_list: a list of keys as returned by #get_keys() method.
 	 *
-	 * Frees the provided @key_list.
+	 * Frees the provided @keys_list.
 	 *
 	 * Since: version 1.
 	 */
-	void       ( *free_keys )            ( GList *key_list );
+	void       ( *free_keys )            ( myISettings *settings,
+												GList *keys_list );
 
 	/**
 	 * remove_key:
@@ -280,7 +294,8 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void       ( *free_uint_list )       ( GList *value );
+	void       ( *free_uint_list )       ( myISettings *instance,
+												GList *value );
 
 	/**
 	 * get_string:
@@ -355,7 +370,8 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void       ( *free_string_list )     ( GList *string_list );
+	void       ( *free_string_list )     ( myISettings *instance,
+												GList *string_list );
 }
 	myISettingsInterface;
 
@@ -382,7 +398,8 @@ gchar    *my_isettings_get_filename              ( const myISettings *instance )
  */
 GList    *my_isettings_get_groups                ( const myISettings *settings );
 
-#define   my_isettings_free_groups( L )		     g_list_free_full(( L ), ( GDestroyNotify ) g_free )
+void      my_isettings_free_groups               ( myISettings *settings,
+														GList *groups_list );
 
 void      my_isettings_remove_group              ( myISettings *settings,
 														const gchar *group );
@@ -392,10 +409,10 @@ void      my_isettings_remove_group              ( myISettings *settings,
 GList    *my_isettings_get_keys                  ( const myISettings *instance,
 														const gchar *group );
 
-void      my_isettings_free_keys                 ( const myISettings *instance,
-														GList *key_list );
+void      my_isettings_free_keys                 ( myISettings *instance,
+														GList *keys_list );
 
-gboolean  my_isettings_has_key                   ( const myISettings *instance,
+gboolean  my_isettings_has_key                   ( myISettings *instance,
 														const gchar *group,
 														const gchar *key );
 
@@ -432,7 +449,7 @@ void      my_isettings_set_uint_list             ( myISettings *instance,
 														const gchar *key,
 														const GList *value );
 
-void      my_isettings_free_uint_list            ( const myISettings *instance,
+void      my_isettings_free_uint_list            ( myISettings *instance,
 														GList *value );
 
 gchar    *my_isettings_get_string                ( const myISettings *instance,
@@ -453,7 +470,7 @@ void      my_isettings_set_string_list           ( myISettings *instance,
 														const gchar *key,
 														const GList *value );
 
-void      my_isettings_free_string_list          ( const myISettings *instance,
+void      my_isettings_free_string_list          ( myISettings *instance,
 														GList *string_list );
 
 G_END_DECLS

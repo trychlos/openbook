@@ -328,7 +328,7 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 	}
 
 	collection_dump( self, outlist );
-	my_isettings_free_groups( inlist );
+	my_isettings_free_groups( priv->dossier_settings, inlist );
 	g_signal_emit_by_name( self, DOSSIER_COLLECTION_SIGNAL_CHANGED, g_list_length( outlist ));
 
 	return( g_list_reverse( outlist ));

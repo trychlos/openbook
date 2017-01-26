@@ -382,9 +382,6 @@
                 user_preferences + dossier_preferences + settings in
                 dossier_new and dossier_open
 
-1301 2016-12-19 review myISettings interface: free_groups() does not have
-                settings arg, while free_string_list() has.
-
 1316 2017- 1- 9 DossierManager: implement call to ofa_dossier_collection_delete_period()
                 (requires a superuser connection on the dbms)
 
@@ -393,12 +390,6 @@
 
 1323 2017- 1-18 propagate myISizegroup interface
      2017- 1-22 rename and include is_valid/apply
-
-1325 2017- 1-19 RestoreAssistant: p3->p4->p3: page should be complete,
-                but is not.
-
-1326 2017- 1-19 RestoreAssistant: p3->p4->p3->p4: p2_dossier_meta is NULL
-                but should not
 
 1335
 
@@ -435,6 +426,10 @@
 1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
                 by a my_iwindow_set_is_destroy_allowed() method
      2017- 1-23 done
+
+1301 2016-12-19 review myISettings interface: free_groups() does not have
+                settings arg, while free_string_list() has.
+     2017- 1-26 done (all methods have settings arg)
 
 1302 2016-12-27 ack -lw get_is_valid src
                 replace src/mysql/ofa-mysql-prefs-bin.c::get_is_valid()
@@ -515,6 +510,14 @@
 
 1324 2017- 1-18 BatPage: lacks of an horizontal scrollbar (and vertical ?)
      2017- 1-26 cancelled (this might be a BatTreeview issue ?)
+
+1325 2017- 1-19 RestoreAssistant: p3->p4->p3: page should be complete,
+                but is not.
+     2017- 1-26 fixed with #0b35204
+
+1326 2017- 1-19 RestoreAssistant: p3->p4->p3->p4: p2_dossier_meta is NULL
+                but should not
+     2017- 1-26 fixed with #0b35204
 
 1327 2017- 1-22 deprecate DbmsRootBin
      2017- 1-25 cancelled as duplicate of #1271
