@@ -131,6 +131,8 @@ typedef struct {
 	GtkWidget              *p3_dbsu_parent;
 	ofaIDBSuperuser        *p3_dbsu_credentials;
 	GtkWidget              *p3_message;
+	gchar                  *p3_dossier_name;
+	ofaIDBProvider         *p3_provider;
 
 	/* p4: dossier administrative credentials
 	 */
@@ -297,6 +299,7 @@ restore_assistant_finalize( GObject *instance )
 	g_free( priv->p1_uri );
 	g_free( priv->p2_dossier_name );
 	g_free( priv->p2_exercice_name );
+	g_free( priv->p3_dossier_name );
 	g_free( priv->p4_account );
 	g_free( priv->p4_password );
 
@@ -345,6 +348,10 @@ ofa_restore_assistant_init( ofaRestoreAssistant *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
+	priv->p2_dossier_meta = NULL;
+	priv->p2_exercice_meta = NULL;
+	priv->p3_dossier_name = NULL;
+	priv->p3_provider = NULL;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -652,14 +659,18 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p2_do_display";
 	ofaRestoreAssistantPrivate *priv;
 
-	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
-			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	g_debug( "%s: self=%p, page_num=%d, page=%p (%s), p2_dossier_meta=%p, p2_exercice_meta=%p",
+			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ),
+			( void * ) priv->p2_dossier_meta, ( void * ) priv->p2_exercice_meta );
 
 	g_return_if_fail( page && GTK_IS_CONTAINER( page ));
 
-	priv = ofa_restore_assistant_get_instance_private( self );
-
 	gtk_label_set_text( GTK_LABEL( priv->p2_uri_label ), priv->p1_uri );
+
+	ofa_target_chooser_bin_set_selected(
+			priv->p2_chooser, priv->p2_dossier_meta, priv->p2_exercice_meta );
 
 	p2_check_for_complete( self );
 }
@@ -914,6 +925,14 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	my_style_add( priv->p3_message, "labelerror" );
 }
 
+/*
+ * Store in p3_dossier_name the name of the dossier for which we have
+ * the connection display; this may prevent us to destroy the display
+ * without reason.
+ *
+ * Idem, store in p3_provider the provider for which we have created the
+ * super-user credentials widget.
+ */
 static void
 p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
@@ -933,39 +952,53 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	/* as the dossier may have changed since the initialization,
 	 * the display of connection informations is setup here */
-	gtk_container_foreach( GTK_CONTAINER( priv->p3_connect_parent ), ( GtkCallback ) gtk_widget_destroy, NULL );
-	display = ofa_idbconnect_get_display( priv->p2_connect, "labelinfo" );
-	if( display ){
-		gtk_container_add( GTK_CONTAINER( priv->p3_connect_parent ), display );
-		if(( group = my_isizegroup_get_size_group( MY_ISIZEGROUP( display ), 0 ))){
-			my_utils_size_group_add_size_group( priv->p3_hgroup, group );
+	if( priv->p3_dossier_name && my_collate( priv->p3_dossier_name, priv->p2_dossier_name )){
+		gtk_container_foreach( GTK_CONTAINER( priv->p3_connect_parent ), ( GtkCallback ) gtk_widget_destroy, NULL );
+		g_free( priv->p3_dossier_name );
+		priv->p3_dossier_name = NULL;
+	}
+	if( !priv->p3_dossier_name ){
+		display = ofa_idbconnect_get_display( priv->p2_connect, "labelinfo" );
+		if( display ){
+			gtk_container_add( GTK_CONTAINER( priv->p3_connect_parent ), display );
+			if(( group = my_isizegroup_get_size_group( MY_ISIZEGROUP( display ), 0 ))){
+				my_utils_size_group_add_size_group( priv->p3_hgroup, group );
+			}
+			priv->p3_dossier_name = g_strdup( priv->p2_dossier_name );
 		}
 	}
 
 	/* setup superuser UI */
-	gtk_container_foreach( GTK_CONTAINER( priv->p3_dbsu_parent ), ( GtkCallback ) gtk_widget_destroy, NULL );
-	priv->p3_dbsu_credentials = ofa_idbprovider_new_superuser_bin( priv->p2_provider, HUB_RULE_DOSSIER_RESTORE );
+	if( priv->p3_provider && priv->p3_provider != priv->p2_provider ){
+		gtk_container_foreach( GTK_CONTAINER( priv->p3_dbsu_parent ), ( GtkCallback ) gtk_widget_destroy, NULL );
+		priv->p3_provider = NULL;
+	}
+	if( !priv->p3_provider ){
+		priv->p3_dbsu_credentials = ofa_idbprovider_new_superuser_bin( priv->p2_provider, HUB_RULE_DOSSIER_RESTORE );
 
-	if( priv->p3_dbsu_credentials ){
-		gtk_container_add( GTK_CONTAINER( priv->p3_dbsu_parent ), GTK_WIDGET( priv->p3_dbsu_credentials ));
-		ofa_idbsuperuser_set_dossier_meta( priv->p3_dbsu_credentials, priv->p2_dossier_meta );
-		group = ofa_idbsuperuser_get_size_group( priv->p3_dbsu_credentials, 0 );
-		if( group ){
-			my_utils_size_group_add_size_group( priv->p3_hgroup, group );
+		if( priv->p3_dbsu_credentials ){
+			gtk_container_add( GTK_CONTAINER( priv->p3_dbsu_parent ), GTK_WIDGET( priv->p3_dbsu_credentials ));
+			ofa_idbsuperuser_set_dossier_meta( priv->p3_dbsu_credentials, priv->p2_dossier_meta );
+			group = ofa_idbsuperuser_get_size_group( priv->p3_dbsu_credentials, 0 );
+			if( group ){
+				my_utils_size_group_add_size_group( priv->p3_hgroup, group );
+			}
+			g_signal_connect( priv->p3_dbsu_credentials, "ofa-changed", G_CALLBACK( p3_on_dbsu_credentials_changed ), self );
+
+			/* if SU account is already set */
+			ofa_idbsuperuser_set_credentials_from_connect( priv->p3_dbsu_credentials, priv->p2_connect );
+
+		} else {
+			label = gtk_label_new( _(
+					"The selected DBMS provider does not need super-user credentials for restore operations.\n"
+					"Just press Next to continue." ));
+			gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+			gtk_label_set_line_wrap( GTK_LABEL( label ), TRUE );
+			gtk_label_set_line_wrap_mode( GTK_LABEL( label ), PANGO_WRAP_WORD );
+			gtk_container_add( GTK_CONTAINER( priv->p3_dbsu_parent ), label );
 		}
-		g_signal_connect( priv->p3_dbsu_credentials, "ofa-changed", G_CALLBACK( p3_on_dbsu_credentials_changed ), self );
 
-		/* if SU account is already set */
-		ofa_idbsuperuser_set_credentials_from_connect( priv->p3_dbsu_credentials, priv->p2_connect );
-
-	} else {
-		label = gtk_label_new( _(
-				"The selected DBMS provider does not need super-user credentials for restore operations.\n"
-				"Just press Next to continue." ));
-		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-		gtk_label_set_line_wrap( GTK_LABEL( label ), TRUE );
-		gtk_label_set_line_wrap_mode( GTK_LABEL( label ), PANGO_WRAP_WORD );
-		gtk_container_add( GTK_CONTAINER( priv->p3_dbsu_parent ), label );
+		priv->p3_provider = priv->p2_provider;
 	}
 
 	/* already triggered by #ofa_idbsuperuser_set_credentials_from_connect()

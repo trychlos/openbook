@@ -80,6 +80,10 @@ gboolean             ofa_target_chooser_bin_is_new_dossier ( ofaTargetChooserBin
 gboolean             ofa_target_chooser_bin_is_new_exercice( ofaTargetChooserBin *bin,
 																ofaIDBExerciceMeta *exercice_meta );
 
+void                 ofa_target_chooser_bin_set_selected   ( ofaTargetChooserBin *bin,
+																ofaIDBDossierMeta *dossier_meta,
+																ofaIDBExerciceMeta *exercice_meta );
+
 G_END_DECLS
 
 #endif /* __OFA_TARGET_CHOOSER_BIN_H__ */

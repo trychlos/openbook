@@ -292,8 +292,6 @@ dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *m
 
 	if( !priv->block_dossier ){
 
-		g_debug( "dossier_on_selection_changed: meta=%p", meta );
-
 		priv->dossier_meta = meta;
 		priv->exercice_meta = NULL;
 		ofa_exercice_treeview_set_dossier( priv->exercice_tview, meta );
@@ -367,8 +365,6 @@ exercice_on_selection_changed( ofaExerciceTreeview *treeview, ofaIDBExerciceMeta
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
 	if( !priv->block_exercice ){
-
-		g_debug( "exercice_on_selection_changed: meta=%p", meta );
 
 		priv->exercice_meta = meta;
 
@@ -493,14 +489,9 @@ on_collection_changed( ofaDossierCollection *collection, guint count, ofaTargetC
 	priv->block_dossier = FALSE;
 	priv->block_exercice = FALSE;
 
-	if( dossier_meta ){
-		dossier_name = ofa_idbdossier_meta_get_dossier_name( dossier_meta );
-		ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
-
-		if( exercice_meta ){
-			ofa_exercice_treeview_set_selected( priv->exercice_tview, exercice_meta );
-		}
-	}
+	dossier_name = dossier_meta ? ofa_idbdossier_meta_get_dossier_name( dossier_meta ) : NULL;
+	ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
+	ofa_exercice_treeview_set_selected( priv->exercice_tview, exercice_meta );
 }
 
 /**
@@ -568,4 +559,36 @@ get_is_new_object( ofaTargetChooserBin *self, GObject *object )
 	find = g_list_find( priv->new_list, object );
 
 	return( find != NULL );
+}
+
+/**
+ * ofa_target_chooser_bin_set_selected:
+ * @bin: this #ofaTargetChooserBin instance.
+ * @dossier_meta: [allow-none]: the requested #ofaIDBDossierMeta object.
+ * @exercice_meta: [allow-none]: the requested #ofaIDBExerciceMeta object.
+ *
+ * Set the selection.
+ */
+void
+ofa_target_chooser_bin_set_selected( ofaTargetChooserBin *bin,
+										ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta )
+{
+	static const gchar *thisfn = "ofa_target_chooser_bin_set_selected";
+	ofaTargetChooserBinPrivate *priv;
+	const gchar *dossier_name;
+
+	g_debug( "%s: bin=%p, dossier_meta=%p, exercice_meta=%p",
+			thisfn, ( void * ) bin, ( void * ) dossier_meta, ( void * ) exercice_meta );
+
+	g_return_if_fail( bin && OFA_IS_TARGET_CHOOSER_BIN( bin ));
+	g_return_if_fail( !dossier_meta || OFA_IS_IDBDOSSIER_META( dossier_meta ));
+	g_return_if_fail( !exercice_meta || OFA_IS_IDBEXERCICE_META( exercice_meta ));
+
+	priv = ofa_target_chooser_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	dossier_name = dossier_meta ? ofa_idbdossier_meta_get_dossier_name( dossier_meta ) : NULL;
+	ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
+	ofa_exercice_treeview_set_selected( priv->exercice_tview, exercice_meta );
 }
