@@ -102,10 +102,6 @@ gboolean              ofa_exercice_edit_bin_is_valid             ( ofaExerciceEd
 
 ofaIDBExerciceMeta   *ofa_exercice_edit_bin_apply                ( ofaExerciceEditBin *bin );
 
-#if 0
-ofaIDBExerciceEditor *ofa_exercice_edit_bin_get_exercice_editor  ( ofaExerciceEditBin *bin );
-#endif
-
 void                  ofa_exercice_edit_bin_get_admin_credentials( ofaExerciceEditBin *bin,
 																		gchar **account,
 																		gchar **password );

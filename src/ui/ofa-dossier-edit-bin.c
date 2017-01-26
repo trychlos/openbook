@@ -346,32 +346,27 @@ ofa_dossier_edit_bin_is_valid( ofaDossierEditBin *bin, gchar **message )
  * Define the dossier in dossier settings.
  * The caller is responsible for actually creating the database.
  *
- * Returns: %TRUE if the new dossier has been successfully registered.
+ * Returns: the newly registered #ofaIDBDossierMeta.
  */
-gboolean
+ofaIDBDossierMeta *
 ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 {
 	static const gchar *thisfn = "ofa_dossier_edit_bin_apply";
 	ofaDossierEditBinPrivate *priv;
-	gboolean ok;
 
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), NULL );
 
 	priv = ofa_dossier_edit_bin_get_instance_private( bin );
 
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	ok = TRUE;
+	ofa_dossier_meta_bin_apply( priv->dossier_meta_bin );
+	priv->dossier_meta = ofa_dossier_meta_bin_get_dossier_meta( priv->dossier_meta_bin );
+	ofa_idbdossier_meta_set_from_editor( priv->dossier_meta, priv->dossier_editor_bin );
 
-	if( ok ){
-		ok = ofa_dossier_meta_bin_apply( priv->dossier_meta_bin );
-		priv->dossier_meta = ofa_dossier_meta_bin_get_dossier_meta( priv->dossier_meta_bin );
-		ofa_idbdossier_meta_set_from_editor( priv->dossier_meta, priv->dossier_editor_bin );
-	}
-
-	return( ok );
+	return( priv->dossier_meta );
 }
 
 /**
@@ -392,26 +387,6 @@ ofa_dossier_edit_bin_get_provider( ofaDossierEditBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->provider );
-}
-
-/**
- * ofa_dossier_edit_bin_get_dossier_meta:
- * @bin: this #ofaDossierEditBin instance.
- *
- * Returns: the #ofaIDBDossierMeta newly created, or %NULL.
- */
-ofaIDBDossierMeta *
-ofa_dossier_edit_bin_get_dossier_meta( ofaDossierEditBin *bin )
-{
-	ofaDossierEditBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), NULL );
-
-	priv = ofa_dossier_edit_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->dossier_meta );
 }
 
 /**

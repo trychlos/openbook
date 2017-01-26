@@ -258,11 +258,13 @@ changed_composite( ofaMysqlDossierEditor *self )
 }
 
 /*
- * try a connection with root credentials at server level
+ * Try a connection with root credentials at server level
  *
  * It happens that the MariaDB instance accepts all connections which
  * have an unknown user and no password, showing only 'test' database.
  * So we only check here if password is set.
+ *
+ * This requires that a superuser widget was allowed at initialization.
  */
 static gboolean
 check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr )
@@ -449,6 +451,10 @@ idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message
 	return( ok );
 }
 
+/*
+ * There is no valid connection if the superuser widget was not allowed
+ * at initialization time.
+ */
 static ofaIDBConnect *
 idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta )
 {
@@ -461,11 +467,14 @@ idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDB
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	ofa_idbconnect_set_dossier_meta(
-			OFA_IDBCONNECT( priv->connect ), dossier_meta );
-	ofa_idbconnect_set_account(
-			OFA_IDBCONNECT( priv->connect ),
-			ofa_mysql_root_bin_get_account( priv->root_bin ), ofa_mysql_root_bin_get_password( priv->root_bin ));
+	if( priv->root_bin ){
+		ofa_idbconnect_set_dossier_meta(
+				OFA_IDBCONNECT( priv->connect ), dossier_meta );
 
-	return( OFA_IDBCONNECT( priv->connect ));
+		ofa_idbconnect_set_account(
+				OFA_IDBCONNECT( priv->connect ),
+				ofa_mysql_root_bin_get_account( priv->root_bin ), ofa_mysql_root_bin_get_password( priv->root_bin ));
+	}
+
+	return( priv->root_bin ? OFA_IDBCONNECT( priv->connect ) : NULL );
 }

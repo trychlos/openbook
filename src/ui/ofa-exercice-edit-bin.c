@@ -217,7 +217,7 @@ ofa_exercice_edit_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule
 	ofaExerciceEditBin *bin;
 	ofaExerciceEditBinPrivate *priv;
 
-	g_debug( "%s: hub=%p, settings_prefix=%s, guint=%u, with_admin=%s, with_open=%s",
+	g_debug( "%s: hub=%p, settings_prefix=%s, rule=%u, with_admin=%s, with_open=%s",
 			thisfn, ( void * ) hub, settings_prefix, rule, with_admin ? "True":"False", with_open ? "True":"False" );
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -459,28 +459,6 @@ ofa_exercice_edit_bin_apply( ofaExerciceEditBin *bin )
 
 	return( exercice_meta );
 }
-
-#if 0
-/**
- * ofa_exercice_edit_bin_get_exercice_editor:
- * @bin: this #ofaExerciceEditBin instance.
- *
- * Returns: the #ofaIDBExerciceEditor.
- */
-ofaIDBExerciceEditor *
-ofa_exercice_edit_bin_get_exercice_editor( ofaExerciceEditBin *bin )
-{
-	ofaExerciceEditBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ), NULL );
-
-	priv = ofa_exercice_edit_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->exercice_editor_bin );
-}
-#endif
 
 /**
  * ofa_exercice_edit_bin_get_admin_credentials:

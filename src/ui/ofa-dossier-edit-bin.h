@@ -95,11 +95,9 @@ ofaDossierEditBin   *ofa_dossier_edit_bin_new                  ( ofaHub *hub,
 gboolean             ofa_dossier_edit_bin_is_valid             ( ofaDossierEditBin *bin,
 																	gchar **message );
 
-gboolean             ofa_dossier_edit_bin_apply                ( ofaDossierEditBin *bin );
+ofaIDBDossierMeta   *ofa_dossier_edit_bin_apply                ( ofaDossierEditBin *bin );
 
 ofaIDBProvider      *ofa_dossier_edit_bin_get_provider         ( ofaDossierEditBin *bin );
-
-ofaIDBDossierMeta   *ofa_dossier_edit_bin_get_dossier_meta     ( ofaDossierEditBin *bin );
 
 ofaIDBDossierEditor *ofa_dossier_edit_bin_get_dossier_editor   ( ofaDossierEditBin *bin );
 

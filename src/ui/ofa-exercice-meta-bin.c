@@ -202,7 +202,7 @@ ofa_exercice_meta_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule
 	ofaExerciceMetaBin *self;
 	ofaExerciceMetaBinPrivate *priv;
 
-	g_debug( "%s: hub=%p, settings_prefix=%s, guint=%u",
+	g_debug( "%s: hub=%p, settings_prefix=%s, rule=%u",
 			thisfn, ( void * ) hub, settings_prefix, rule );
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
