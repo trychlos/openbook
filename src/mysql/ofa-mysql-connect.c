@@ -66,6 +66,7 @@ static void       idbconnect_iface_init( ofaIDBConnectInterface *iface );
 static guint      idbconnect_get_interface_version( void );
 static gboolean   idbconnect_open_with_account( ofaIDBConnect *instance, const gchar *account, const gchar *password );
 static gboolean   idbconnect_open_with_superuser( ofaIDBConnect *instance, ofaIDBSuperuser *su );
+static void       idbconnect_set_exercice_meta( ofaIDBConnect *instance, ofaIDBExerciceMeta *meta );
 static gboolean   idbconnect_is_opened( const ofaIDBConnect *instance );
 static GtkWidget *idbconnect_get_display( ofaIDBConnect *instance, const gchar *style );
 static gboolean   idbconnect_query( const ofaIDBConnect *instance, const gchar *query );
@@ -643,6 +644,7 @@ idbconnect_iface_init( ofaIDBConnectInterface *iface )
 	iface->get_interface_version = idbconnect_get_interface_version;
 	iface->open_with_account = idbconnect_open_with_account;
 	iface->open_with_superuser = idbconnect_open_with_superuser;
+	iface->set_exercice_meta = idbconnect_set_exercice_meta;
 	iface->is_opened = idbconnect_is_opened;
 	iface->get_display = idbconnect_get_display;
 	iface->query = idbconnect_query;
@@ -716,6 +718,22 @@ idbconnect_open_with_superuser( ofaIDBConnect *instance, ofaIDBSuperuser *su )
 	ok = ofa_idbconnect_open_with_account( instance, account, password );
 
 	return( ok );
+}
+
+static void
+idbconnect_set_exercice_meta( ofaIDBConnect *instance, ofaIDBExerciceMeta *meta )
+{
+	ofaMysqlConnectPrivate *priv;
+	const gchar *database;
+
+	g_return_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ));
+	g_return_if_fail( meta && OFA_IS_MYSQL_EXERCICE_META( meta ));
+
+	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
+
+	database = ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( meta ));
+	g_free( priv->database );
+	priv->database = g_strdup( database );
 }
 
 static gboolean

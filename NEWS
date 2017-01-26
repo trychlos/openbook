@@ -56,6 +56,7 @@
    - ofaIDBSuperuser: new interface.
    - ofaExerciceEditBin: new class.
    - ofaExerciceNew: new class.
+   - ofoExemeta: new class.
 
    + Add a prequisite on JSON-GLib library.
    + Add a prequisite on libarchive library.

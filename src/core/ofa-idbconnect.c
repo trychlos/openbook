@@ -394,6 +394,17 @@ ofa_idbconnect_set_exercice_meta( ofaIDBConnect *connect, ofaIDBExerciceMeta *ex
 	if( exercice_meta ){
 		sdata->exercice_meta = g_object_ref(( gpointer ) exercice_meta );
 	}
+
+#if 0
+	static const gchar *thisfn = "ofa_idbconnect_set_exercice_meta";
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->set_exercice_meta ){
+		OFA_IDBCONNECT_GET_INTERFACE( connect )->set_exercice_meta( connect, exercice_meta );
+
+	} else {
+		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'set_exercice_meta()' method",
+				thisfn, G_OBJECT_TYPE_NAME( connect ));
+	}
+#endif
 }
 
 /**

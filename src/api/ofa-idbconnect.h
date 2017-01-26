@@ -129,6 +129,18 @@ struct _ofaIDBConnectInterface {
 												ofaIDBSuperuser *su );
 
 	/**
+	 * set_exercice_meta:
+	 * @instance: this #ofaIDBConnect connection.
+	 * @meta: an #ofaIDBExerciceMeta object.
+	 *
+	 * Set the exercice meta.
+	 *
+	 * Since: version 1
+	 */
+	void        ( *set_exercice_meta )    ( ofaIDBConnect *instance,
+												ofaIDBExerciceMeta *meta );
+
+	/**
 	 * is_opened:
 	 * @instance: this #ofaIDBConnect connection.
 	 *

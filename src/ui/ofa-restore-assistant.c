@@ -51,6 +51,7 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-exemeta.h"
 
 #include "ui/ofa-admin-credentials-bin.h"
 #include "ui/ofa-dossier-actions-bin.h"
@@ -1441,8 +1442,8 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_remediate_settings";
 	ofaRestoreAssistantPrivate *priv;
-	ofoDossier *dossier;
-	ofaIDBConnect *hub_connect;
+	ofaIDBConnect *connect;
+	ofoExemeta *exemeta;
 	const GDate *dos_begin, *dos_end, *meta_begin, *meta_end;
 	gboolean ok, dos_current, meta_current, settings_updated;
 	ofaIDBExerciceMeta *period;
@@ -1450,43 +1451,46 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	ok = TRUE;
+	exemeta = NULL;
 	settings_updated = FALSE;
-	hub_connect = g_object_ref(( gpointer ) ofa_hub_get_connect( priv->hub ));
-	ofa_hub_set_connect( priv->hub, priv->p2_connect );
+	connect = ofa_idbdossier_meta_new_connect( priv->p2_dossier_meta, priv->p2_exercice_meta );
+	ok = ofa_idbconnect_open_with_superuser( connect, priv->p3_dbsu_credentials );
 
-	dossier = ofo_dossier_new( priv->hub );
+	if( ok ){
+		exemeta = ofo_exemeta_new( connect );
+		ok = ( exemeta && OFO_IS_EXEMETA( exemeta ));
+	}
+	if( ok ){
+		dos_begin = ofo_exemeta_get_begin_date( exemeta );
+		dos_end = ofo_exemeta_get_end_date( exemeta );
+		dos_current = ofo_exemeta_get_current( exemeta );
 
-	/* these are the restored data from uri */
-	dos_begin = ofo_dossier_get_exe_begin( dossier );
-	dos_end = ofo_dossier_get_exe_end( dossier );
-	dos_current = ofo_dossier_is_current( dossier );
-
-	if( 1 ){
-		sbegin = my_date_to_str( dos_begin, MY_DATE_SQL );
-		send = my_date_to_str( dos_end, MY_DATE_SQL );
-		g_debug( "%s: dossier begin=%s, end=%s, current=%s", thisfn, sbegin, send, dos_current ? "True":"False" );
-		g_free( sbegin );
-		g_free( send );
+		if( 1 ){
+			sbegin = my_date_to_str( dos_begin, MY_DATE_SQL );
+			send = my_date_to_str( dos_end, MY_DATE_SQL );
+			g_debug( "%s: dossier begin=%s, end=%s, current=%s", thisfn, sbegin, send, dos_current ? "True":"False" );
+			g_free( sbegin );
+			g_free( send );
+		}
 	}
 
 	/* check that the restored datas do not overlap with another exercice */
-	if( ok ){
+	if( ok && my_date_is_valid( dos_begin )){
 		period = ofa_idbdossier_meta_get_period( priv->p2_dossier_meta, dos_begin, TRUE );
 		if( period != priv->p2_exercice_meta ){
 			label = ofa_idbexercice_meta_get_label( period );
-			str = g_strdup_printf( _( "The restored file overrides the %s exercice" ), label );
+			str = g_strdup_printf( _( "Error: the restored file overrides the '%s' exercice" ), label );
 			p6_msg_cb( str, self );
 			g_free( str );
 			g_free( label );
 			ok = FALSE;
 		}
 	}
-	if( ok ){
+	if( ok && my_date_is_valid( dos_end )){
 		period = ofa_idbdossier_meta_get_period( priv->p2_dossier_meta, dos_end, TRUE );
 		if( period != priv->p2_exercice_meta ){
 			label = ofa_idbexercice_meta_get_label( period );
-			str = g_strdup_printf( _( "The restored file overrides the %s exercice" ), label );
+			str = g_strdup_printf( _( "Error: the restored file overrides the '%s' exercice" ), label );
 			p6_msg_cb( str, self );
 			g_free( str );
 			g_free( label );
@@ -1508,13 +1512,13 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 	}
 
 	/* set the settings date if not already done */
-	if( !my_date_is_valid( meta_begin ) && my_date_is_valid( dos_begin )){
+	if( ok && !my_date_is_valid( meta_begin ) && my_date_is_valid( dos_begin )){
 		g_debug( "%s: remediating settings begin", thisfn );
 		ofa_idbexercice_meta_set_begin_date( priv->p2_exercice_meta, dos_begin );
 		meta_begin = ofa_idbexercice_meta_get_begin_date( priv->p2_exercice_meta );
 		settings_updated = TRUE;
 	}
-	if( !my_date_is_valid( meta_end ) && my_date_is_valid( dos_end )){
+	if( ok && !my_date_is_valid( meta_end ) && my_date_is_valid( dos_end )){
 		g_debug( "%s: remediating settings end", thisfn );
 		ofa_idbexercice_meta_set_end_date( priv->p2_exercice_meta, dos_end );
 		meta_end = ofa_idbexercice_meta_get_end_date( priv->p2_exercice_meta );
@@ -1529,7 +1533,7 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 				period = ofa_idbdossier_meta_get_current_period( priv->p2_dossier_meta );
 				if( period != NULL ){
 					label = ofa_idbexercice_meta_get_label( period );
-					str = g_strdup_printf( _( "The restored file overrides the %s exercice" ), label );
+					str = g_strdup_printf( _( "Error: the restored file overrides the %s exercice" ), label );
 					p6_msg_cb( str, self );
 					g_free( str );
 					g_free( label );
@@ -1559,9 +1563,8 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 		ofa_idbexercice_meta_update_settings( priv->p2_exercice_meta );
 	}
 
-	ofa_hub_set_connect( priv->hub, hub_connect );
-	g_object_unref( hub_connect );
-	g_object_unref( dossier );
+	g_clear_object( &exemeta );
+	g_clear_object( &connect );
 
 	return( ok );
 }

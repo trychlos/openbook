@@ -115,6 +115,7 @@ api_include_HEADERS = \
 	ofo-dossier.h										\
 	ofo-dossier-def.h									\
 	ofo-entry.h											\
+	ofo-exemeta.h										\
 	ofo-ledger.h										\
 	ofo-ledger-def.h									\
 	ofo-ope-template.h									\
