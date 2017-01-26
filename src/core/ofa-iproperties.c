@@ -211,16 +211,16 @@ ofa_iproperties_init( ofaIProperties *instance, ofaHub *hub )
 }
 
 /**
- * ofa_iproperties_get_valid:
+ * ofa_iproperties_is_valid:
  * @widget: the #GtkWidget returned by init().
  * @msgerr: [allow-none][out]: an error message to be returned.
  *
  * Returns: %TRUE if the page is valid, %FALSE else.
  */
 gboolean
-ofa_iproperties_get_valid( GtkWidget *widget, gchar **msgerr )
+ofa_iproperties_is_valid( GtkWidget *widget, gchar **msgerr )
 {
-	static const gchar *thisfn = "ofa_iproperties_get_valid";
+	static const gchar *thisfn = "ofa_iproperties_is_valid";
 	sIProperties *sdata;
 
 	g_debug( "%s: widget=%p (%s), msgerr=%p",
@@ -231,11 +231,11 @@ ofa_iproperties_get_valid( GtkWidget *widget, gchar **msgerr )
 	sdata = get_iproperties_data( widget );
 
 	if( sdata && sdata->instance ){
-		if( OFA_IPROPERTIES_GET_INTERFACE( sdata->instance )->get_valid ){
-			return( OFA_IPROPERTIES_GET_INTERFACE( sdata->instance )->get_valid( sdata->instance, widget, msgerr ));
+		if( OFA_IPROPERTIES_GET_INTERFACE( sdata->instance )->is_valid ){
+			return( OFA_IPROPERTIES_GET_INTERFACE( sdata->instance )->is_valid( sdata->instance, widget, msgerr ));
 
 		} else {
-			g_info( "%s: ofaIProperties's %s implementation does not provide 'get_valid()' method",
+			g_info( "%s: ofaIProperties's %s implementation does not provide 'is_valid()' method",
 					thisfn, G_OBJECT_TYPE_NAME( sdata->instance ));
 		}
 	} else {

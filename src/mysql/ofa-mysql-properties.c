@@ -47,7 +47,7 @@ static void       iident_iface_init( myIIdentInterface *iface );
 static gchar     *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static void       iproperties_iface_init( ofaIPropertiesInterface *iface );
 static GtkWidget *iproperties_init( ofaIProperties *instance, ofaHub *hub );
-static gboolean   iproperties_get_valid( const ofaIProperties *instance, GtkWidget *widget, gchar **msgerr );
+static gboolean   iproperties_is_valid( const ofaIProperties *instance, GtkWidget *widget, gchar **msgerr );
 static void       iproperties_apply( const ofaIProperties *instance, GtkWidget *widget );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlProperties, ofa_mysql_properties, G_TYPE_OBJECT, 0,
@@ -146,7 +146,7 @@ iproperties_iface_init( ofaIPropertiesInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iproperties_init;
-	iface->get_valid = iproperties_get_valid;
+	iface->is_valid = iproperties_is_valid;
 	iface->apply = iproperties_apply;
 }
 
@@ -164,7 +164,7 @@ iproperties_init( ofaIProperties *instance, ofaHub *hub )
 }
 
 static gboolean
-iproperties_get_valid( const ofaIProperties *instance, GtkWidget *widget, gchar **message )
+iproperties_is_valid( const ofaIProperties *instance, GtkWidget *widget, gchar **message )
 {
 	gboolean ok;
 

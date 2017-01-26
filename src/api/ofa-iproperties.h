@@ -58,7 +58,7 @@ typedef struct _ofaIPropertiesInterface            ofaIPropertiesInterface;
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
  * @init: [should] initialize the page.
- * @get_valid: [should] returns if the page is valid.
+ * @is_valid: [should] returns if the page is valid.
  * @apply: [should] write to the settings.
  *
  * This defines the interface that an #ofaIProperties should implement.
@@ -95,7 +95,7 @@ struct _ofaIPropertiesInterface {
 												ofaHub *hub );
 
 	/**
-	 * get_valid:
+	 * is_valid:
 	 * @instance: the #ofaIProperties provider.
 	 * @widget: the page as returned by init().
 	 * @msgerr: [allow-none][out]: an error message placeholder.
@@ -107,7 +107,7 @@ struct _ofaIPropertiesInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean    ( *get_valid )            ( const ofaIProperties *instance,
+	gboolean    ( *is_valid )             ( const ofaIProperties *instance,
 												GtkWidget *page,
 												gchar **msgerr );
 
@@ -142,7 +142,7 @@ guint      ofa_iproperties_get_interface_version     ( GType type );
 GtkWidget *ofa_iproperties_init                      ( ofaIProperties *instance,
 															ofaHub *hub );
 
-gboolean   ofa_iproperties_get_valid                 ( GtkWidget *widget,
+gboolean   ofa_iproperties_is_valid                  ( GtkWidget *widget,
 															gchar **msgerr );
 
 void       ofa_iproperties_apply                     ( GtkWidget *widget );
