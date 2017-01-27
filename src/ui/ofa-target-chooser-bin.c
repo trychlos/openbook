@@ -294,6 +294,7 @@ dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *m
 
 		priv->dossier_meta = meta;
 		priv->exercice_meta = NULL;
+
 		ofa_exercice_treeview_set_dossier( priv->exercice_tview, meta );
 
 		exercice_set_sensitive( self );
@@ -477,21 +478,18 @@ on_collection_changed( ofaDossierCollection *collection, guint count, ofaTargetC
 	ofaTargetChooserBinPrivate *priv;
 	const gchar *dossier_name;
 	ofaIDBDossierMeta *dossier_meta;
-	ofaIDBExerciceMeta *exercice_meta;
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
 	g_debug( "%s: dossier=%p, exercice=%p", thisfn, priv->dossier_meta, priv->exercice_meta );
 
 	dossier_meta = priv->dossier_meta;
-	exercice_meta = priv->exercice_meta;
 
 	priv->block_dossier = FALSE;
 	priv->block_exercice = FALSE;
 
 	dossier_name = dossier_meta ? ofa_idbdossier_meta_get_dossier_name( dossier_meta ) : NULL;
 	ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
-	ofa_exercice_treeview_set_selected( priv->exercice_tview, exercice_meta );
 }
 
 /**

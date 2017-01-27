@@ -388,9 +388,6 @@
 
 1336 2017- 1-27 creating a new dossier from restore does not need a confirmation
 
-1337 2017- 1-27 TargetChooserBin: after new period, automatically select
-                 the only exercice
-
 1338
 
 -----------------------------------------------------------------------
@@ -559,6 +556,10 @@
 
 1334 2017- 1-23 ofaDossierNew: makes use of ofaExerciceEditBin
      2017- 1-25 done
+
+1337 2017- 1-27 TargetChooserBin: after new period, automatically select
+                 the only exercice
+     2017- 1-27 done: ExerciceTreeview automatically select the first exercice
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

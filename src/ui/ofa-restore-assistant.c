@@ -799,7 +799,7 @@ p2_check_for_rule1_dates( ofaRestoreAssistant *self )
 	/* if we find another exercice which includes the begin date,
 	 * then there is a problem */
 	period = ofa_idbdossier_meta_get_period( priv->p2_dossier_meta, src_begin, FALSE );
-	if( period != priv->p2_exercice_meta ){
+	if( period && period != priv->p2_exercice_meta ){
 		label = ofa_idbexercice_meta_get_label( period );
 		str = g_strdup_printf( _( "The restored file overrides the '%s' exercice" ), label );
 		p2_set_message( self, str );
@@ -811,7 +811,7 @@ p2_check_for_rule1_dates( ofaRestoreAssistant *self )
 	/* if we find another exercice which includes the end date,
 	 * then there is a problem */
 	period = ofa_idbdossier_meta_get_period( priv->p2_dossier_meta, src_end, FALSE );
-	if( period != priv->p2_exercice_meta ){
+	if( period && period != priv->p2_exercice_meta ){
 		label = ofa_idbexercice_meta_get_label( period );
 		str = g_strdup_printf( _( "The restored file overrides the '%s' exercice" ), label );
 		p2_set_message( self, str );

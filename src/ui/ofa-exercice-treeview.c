@@ -303,12 +303,15 @@ setup_columns( ofaExerciceTreeview *self )
  *
  * Create the store which automatically loads the available exercices
  * for this dossier.
+ *
+ * Select the first available exercice.
  */
 void
 ofa_exercice_treeview_set_dossier( ofaExerciceTreeview *view, ofaIDBDossierMeta *meta )
 {
 	static const gchar *thisfn = "ofa_exercice_treeview_set_dossier";
 	ofaExerciceTreeviewPrivate *priv;
+	const GList *periods;
 
 	g_debug( "%s: view=%p, meta=%p", thisfn, ( void * ) view, ( void * ) meta );
 
@@ -320,6 +323,10 @@ ofa_exercice_treeview_set_dossier( ofaExerciceTreeview *view, ofaIDBDossierMeta 
 	g_return_if_fail( !priv->dispose_has_run );
 
 	ofa_exercice_store_set_dossier( priv->store, meta );
+
+	periods = ofa_idbdossier_meta_get_periods( meta );
+	g_return_if_fail( g_list_length(( GList * ) periods ) >= 1 );
+	ofa_exercice_treeview_set_selected( view, OFA_IDBEXERCICE_META( periods->data ));
 }
 
 static void

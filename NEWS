@@ -24,6 +24,7 @@
    - DossierManager: delete an exercice (todo #1316).
    - DossierOpen: set the read-only flag when selecting a closed exercice (todo #1321).
    - ExerciceNew: create a new exercice.
+   - ExerciceTreeview: automatically selects the first exercice (todo #1337).
    - Replace Backup standard dialog box with an assistant (todo #1317).
    - Restore assistant implements restore protection rules (todo #1320).
 
@@ -31,7 +32,7 @@
 
  Bug fixes:
 
-   - 
+   - some.
 
  Other changes:
 
