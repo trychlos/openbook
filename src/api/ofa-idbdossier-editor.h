@@ -101,34 +101,6 @@ struct _ofaIDBDossierEditorInterface {
 
 	/*** instance-wide ***/
 	/**
-	 * get_size_group:
-	 * @instance: the #ofaIDBDossierEditor instance.
-	 * @column: the desired column.
-	 *
-	 * Returns: the #GtkSizeGroup for the desired @column.
-	 *
-	 * Since: version 1
-	 */
-	GtkSizeGroup *         ( *get_size_group )       ( const ofaIDBDossierEditor *instance,
-															guint column );
-
-	/**
-	 * is_valid:
-	 * @instance: the #ofaIDBDossierEditor instance.
-	 * @message: [allow-none][out]: a message to be set.
-	 *
-	 * Returns: %TRUE if the entered connection informations are valid.
-	 *
-	 * MySQL note: the DBMS provider validates the connection after having
-	 * successfully established a root connection to the DBMS at server
-	 * level.
-	 *
-	 * Since: version 1
-	 */
-	gboolean               ( *is_valid )             ( const ofaIDBDossierEditor *instance,
-														    gchar **message );
-
-	/**
 	 * get_valid_connect:
 	 * @instance: the #ofaIDBDossierEditor instance.
 	 * @dossier_meta: the #ofaIDBDossierMeta to associate with the @instance.

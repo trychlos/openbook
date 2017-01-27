@@ -98,42 +98,6 @@ struct _ofaIDBExerciceEditorInterface {
 	guint          ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
-	/**
-	 * get_size_group:
-	 * @instance: the #ofaIDBExerciceEditor instance.
-	 * @column: the desired column.
-	 *
-	 * Returns: the #GtkSizeGroup for the desired @column.
-	 *
-	 * Since: version 1
-	 */
-	GtkSizeGroup * ( *get_size_group )       ( const ofaIDBExerciceEditor *instance,
-													guint column );
-
-	/**
-	 * is_valid:
-	 * @instance: the #ofaIDBExerciceEditor instance.
-	 * @message: [allow-none][out]: a message to be set.
-	 *
-	 * Returns: %TRUE if the entered connection informations are valid.
-	 *
-	 * Note that we only do here an intrinsic check as we do not have
-	 * any credentials to test for a real server connection.
-	 *
-	 * Since: version 1
-	 */
-	gboolean       ( *is_valid )             ( const ofaIDBExerciceEditor *instance,
-													gchar **message );
-
-	/**
-	 * apply:
-	 * @instance: the #ofaIDBExerciceEditor instance.
-	 *
-	 * Returns: %TRUE if the informations have been successfully registered.
-	 *
-	 * Since: version 1
-	 */
-	gboolean       ( *apply )                ( const ofaIDBExerciceEditor *instance );
 };
 
 /*
@@ -151,9 +115,9 @@ guint              ofa_idbexercice_editor_get_interface_version     ( GType type
 /*
  * Instance-wide
  */
-ofaIDBProvider    *ofa_idbexercice_editor_get_provider             ( const ofaIDBExerciceEditor *instance );
+ofaIDBProvider    *ofa_idbexercice_editor_get_provider              ( const ofaIDBExerciceEditor *instance );
 
-void               ofa_idbexercice_editor_set_provider             ( ofaIDBExerciceEditor *instance,
+void               ofa_idbexercice_editor_set_provider              ( ofaIDBExerciceEditor *instance,
 																			ofaIDBProvider *provider );
 
 GtkSizeGroup      *ofa_idbexercice_editor_get_size_group            ( const ofaIDBExerciceEditor *instance,
@@ -161,8 +125,6 @@ GtkSizeGroup      *ofa_idbexercice_editor_get_size_group            ( const ofaI
 
 gboolean           ofa_idbexercice_editor_is_valid                  ( const ofaIDBExerciceEditor *instance,
 																			gchar **message );
-
-gboolean           ofa_idbexercice_editor_apply                     ( const ofaIDBExerciceEditor *instance );
 
 G_END_DECLS
 

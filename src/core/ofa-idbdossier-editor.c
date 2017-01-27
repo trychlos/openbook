@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -263,15 +264,13 @@ ofa_idbdossier_editor_get_size_group( const ofaIDBDossierEditor *editor, guint c
 {
 	static const gchar *thisfn = "ofa_idbdossier_editor_get_size_group";
 
-	g_debug( "%s: editor=%p, column=%u", thisfn, ( void * ) editor, column );
-
 	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), NULL );
 
-	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->get_size_group ){
-		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->get_size_group( editor, column ));
+	if( MY_IS_IBIN( editor )){
+		return( my_ibin_get_size_group( MY_IBIN( editor ), column ));
 	}
 
-	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'get_size_group()' method",
+	g_info( "%s: %s class does not implement myIBin interface",
 			thisfn, G_OBJECT_TYPE_NAME( editor ));
 	return( NULL );
 }
@@ -290,11 +289,11 @@ ofa_idbdossier_editor_is_valid( const ofaIDBDossierEditor *editor, gchar **messa
 
 	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), FALSE );
 
-	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->is_valid ){
-		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->is_valid( editor, message ));
+	if( MY_IS_IBIN( editor )){
+		return( my_ibin_is_valid( MY_IBIN( editor ), message ));
 	}
 
-	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'is_valid()' method",
+	g_info( "%s: %s class does not implement myIBin interface",
 			thisfn, G_OBJECT_TYPE_NAME( editor ));
 	return( FALSE );
 }

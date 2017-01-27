@@ -80,8 +80,6 @@ static GtkSizeGroup  *ibin_get_size_group( const myIBin *instance, guint column 
 static gboolean       ibin_is_valid( const myIBin *instance, gchar **msgerr );
 static void           idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface );
 static guint          idbdossier_editor_get_interface_version( void );
-static GtkSizeGroup  *idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint column );
-static gboolean       idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **msgerr );
 static ofaIDBConnect *idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierEditor, ofa_mysql_dossier_editor, GTK_TYPE_BIN, 0,
@@ -479,8 +477,6 @@ idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idbdossier_editor_get_interface_version;
-	iface->get_size_group = idbdossier_editor_get_size_group;
-	iface->is_valid = idbdossier_editor_is_valid;
 	iface->get_valid_connect = idbdossier_editor_get_valid_connect;
 }
 
@@ -488,22 +484,6 @@ static guint
 idbdossier_editor_get_interface_version( void )
 {
 	return( 1 );
-}
-
-static GtkSizeGroup *
-idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint column )
-{
-	return( my_ibin_get_size_group( MY_IBIN( instance ), column ));
-}
-
-/*
- * All the informations are optional.
- * When all pieces are valid, then we can check the connection itself.
- */
-static gboolean
-idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **msgerr )
-{
-	return( my_ibin_is_valid( MY_IBIN( instance ), msgerr ));
 }
 
 /*
@@ -516,7 +496,7 @@ idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDB
 	ofaMysqlDossierEditorPrivate *priv;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_DOSSIER_EDITOR( instance ), NULL );
-	g_return_val_if_fail( idbdossier_editor_is_valid( instance, NULL ), NULL );
+	g_return_val_if_fail( ofa_idbdossier_editor_is_valid( instance, NULL ), NULL );
 
 	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
 

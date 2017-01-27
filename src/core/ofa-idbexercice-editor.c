@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-idbdossier-editor.h"
@@ -260,15 +261,13 @@ ofa_idbexercice_editor_get_size_group( const ofaIDBExerciceEditor *instance, gui
 {
 	static const gchar *thisfn = "ofa_idbexercice_editor_get_size_group";
 
-	g_debug( "%s: instance=%p, column=%u", thisfn, ( void * ) instance, column );
-
 	g_return_val_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ), NULL );
 
-	if( OFA_IDBEXERCICE_EDITOR_GET_INTERFACE( instance )->get_size_group ){
-		return( OFA_IDBEXERCICE_EDITOR_GET_INTERFACE( instance )->get_size_group( instance, column ));
+	if( MY_IS_IBIN( instance )){
+		return( my_ibin_get_size_group( MY_IBIN( instance ), column ));
 	}
 
-	g_info( "%s: ofaIDBExerciceEditor's %s implementation does not provide 'get_size_group()' method",
+	g_info( "%s: %s class does not implement myIBin interface",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
@@ -287,35 +286,11 @@ ofa_idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **m
 
 	g_return_val_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ), FALSE );
 
-	if( OFA_IDBEXERCICE_EDITOR_GET_INTERFACE( instance )->is_valid ){
-		return( OFA_IDBEXERCICE_EDITOR_GET_INTERFACE( instance )->is_valid( instance, message ));
+	if( MY_IS_IBIN( instance )){
+		return( my_ibin_is_valid( MY_IBIN( instance ), message ));
 	}
 
-	g_info( "%s: ofaIDBExerciceEditor's %s implementation does not provide 'is_valid()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( FALSE );
-}
-
-/**
- * ofa_idbexercice_editor_apply:
- * @instance: this #ofaIDBExerciceEditor instance.
- *
- * Returns: %TRUE if the informations have been successfully registered.
- */
-gboolean
-ofa_idbexercice_editor_apply( const ofaIDBExerciceEditor *instance )
-{
-	static const gchar *thisfn = "ofa_idbexercice_editor_apply";
-
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
-
-	g_return_val_if_fail( instance && OFA_IS_IDBEXERCICE_EDITOR( instance ), FALSE );
-
-	if( OFA_IDBEXERCICE_EDITOR_GET_INTERFACE( instance )->apply ){
-		return( OFA_IDBEXERCICE_EDITOR_GET_INTERFACE( instance )->apply( instance ));
-	}
-
-	g_info( "%s: ofaIDBExerciceEditor's %s implementation does not provide 'apply()' method",
+	g_info( "%s: %s class does not implement myIBin interface",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( FALSE );
 }

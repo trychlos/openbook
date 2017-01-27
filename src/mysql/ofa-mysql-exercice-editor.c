@@ -72,9 +72,6 @@ static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
 static void          ibin_apply( myIBin *instance );
 static void          idbexercice_editor_iface_init( ofaIDBExerciceEditorInterface *iface );
 static guint         idbexercice_editor_get_interface_version( void );
-static GtkSizeGroup *idbexercice_editor_get_size_group( const ofaIDBExerciceEditor *instance, guint column );
-static gboolean      idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **msgerr );
-static gboolean      idbexercice_editor_apply( const ofaIDBExerciceEditor *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlExerciceEditor, ofa_mysql_exercice_editor, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlExerciceEditor )
@@ -377,35 +374,10 @@ idbexercice_editor_iface_init( ofaIDBExerciceEditorInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idbexercice_editor_get_interface_version;
-	iface->get_size_group = idbexercice_editor_get_size_group;
-	iface->is_valid = idbexercice_editor_is_valid;
-	iface->apply = idbexercice_editor_apply;
 }
 
 static guint
 idbexercice_editor_get_interface_version( void )
 {
 	return( 1 );
-}
-
-static GtkSizeGroup *
-idbexercice_editor_get_size_group( const ofaIDBExerciceEditor *instance, guint column )
-{
-	return( my_ibin_get_size_group( MY_IBIN( instance ), column ));
-}
-
-/*
- * the database is mandatory
- */
-static gboolean
-idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **msgerr )
-{
-	return( my_ibin_is_valid( MY_IBIN( instance ), msgerr ));
-}
-
-static gboolean
-idbexercice_editor_apply( const ofaIDBExerciceEditor *instance )
-{
-	my_ibin_apply( MY_IBIN( instance ));
-	return( TRUE );
 }
