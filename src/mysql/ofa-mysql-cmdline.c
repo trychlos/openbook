@@ -52,6 +52,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-idbsuperuser.h"
 #include "api/ofa-igetter.h"
 
 #include "ofa-mysql-cmdline.h"
@@ -252,19 +253,20 @@ ofa_mysql_cmdline_restore_db_run( ofaMysqlConnect *connect, ofaMysqlExerciceMeta
  */
 gboolean
 ofa_mysql_cmdline_archive_and_new( ofaMysqlConnect *connect,
-						const gchar *root_account, const gchar *root_password,
-						const GDate *begin_next, const GDate *end_next )
+						ofaIDBSuperuser *su, const GDate *begin_next, const GDate *end_next )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_archive_and_new";
 	ofaIDBConnect *server_cnx;
 	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBExerciceMeta *exercice_meta;
-	const gchar *host, *socket, *prev_dbname, *prev_account;
+	const gchar *host, *socket, *prev_dbname, *prev_account, *root_account, *root_password;
 	guint port;
 	gchar *new_db;
 	gboolean ok;
 	gchar *cmdline, *cmd, *stdout, *stderr;
 	gint status;
+
+	g_return_val_if_fail( su && OFA_IS_MYSQL_ROOT_BIN( su ), FALSE );
 
 	/* meta informations on the current dossier */
 	dossier_meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
@@ -272,13 +274,13 @@ ofa_mysql_cmdline_archive_and_new( ofaMysqlConnect *connect,
 
 	/* open a superuser new connection at DBMS server level */
 	server_cnx = ofa_idbdossier_meta_new_connect( dossier_meta, NULL );
-#if 0
-	if( !ofa_mysql_connect_open_with_meta( OFA_MYSQL_CONNECT( server_cnx ),
-			root_account, root_password, OFA_MYSQL_DOSSIER_META( dossier_meta ), NULL )){
-		g_warning( "%s: unable to get a root connection on the DB server", thisfn );
+	root_account = ofa_mysql_root_bin_get_account( OFA_MYSQL_ROOT_BIN( su ));
+	root_password = ofa_mysql_root_bin_get_password( OFA_MYSQL_ROOT_BIN( su ));
+
+	if( !ofa_idbconnect_open_with_superuser( server_cnx, su )){
+		g_warning( "%s: unable to open a super-user connection on the DBMS server", thisfn );
 		return( FALSE );
 	}
-#endif
 
 	/* get previous database from current connection on closed exercice */
 	exercice_meta = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));

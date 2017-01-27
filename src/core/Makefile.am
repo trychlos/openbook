@@ -89,8 +89,6 @@ libofa_core_la_SOURCES = \
 	ofa-currency-store.c								\
 	ofa-currency-store.h								\
 	ofa-date-filter-hv-bin.c							\
-	ofa-dbms-root-bin.c									\
-	ofa-dbms-root-bin.h									\
 	ofa-dossier-collection.c							\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\

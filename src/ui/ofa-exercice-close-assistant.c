@@ -44,6 +44,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-idbsuperuser.h"
 #include "api/ofa-iexe-close.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
@@ -56,7 +57,6 @@
 #include "api/ofs-currency.h"
 #include "api/ofs-ope.h"
 
-#include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-iconcil.h"
 
 #include "ui/ofa-application.h"
@@ -94,11 +94,9 @@ typedef struct {
 	GtkWidget            *p1_end_next;
 	ofaClosingParmsBin   *p1_closing_parms;
 
-	/* p2 - get DBMS root credentials
+	/* p2 - get super-user credentials
 	 */
-	ofaDBMSRootBin       *p2_dbms_credentials;
-	gchar                *p2_account;
-	gchar                *p2_password;
+	ofaIDBSuperuser      *p2_dbsu_credentials;
 	GtkWidget            *p2_message;
 
 	/* p3 - checking that entries, accounts and ledgers are balanced
@@ -167,7 +165,7 @@ static void           p1_check_for_complete( ofaExerciceCloseAssistant *self );
 static void           p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void           p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void           p2_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
-static void           p2_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaExerciceCloseAssistant *self );
+static void           p2_on_dbsu_credentials_changed( ofaIDBSuperuser *bin, ofaExerciceCloseAssistant *self );
 static void           p2_check_for_complete( ofaExerciceCloseAssistant *self );
 static void           p2_set_message( ofaExerciceCloseAssistant *self, const gchar *message );
 static void           p2_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
@@ -255,8 +253,6 @@ exercice_close_assistant_finalize( GObject *instance )
 
 	g_free( priv->settings_prefix );
 	g_free( priv->dos_name );
-	g_free( priv->p2_account );
-	g_free( priv->p2_password );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_exercice_close_assistant_parent_class )->finalize( instance );
@@ -667,6 +663,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p2_do_init";
 	ofaExerciceCloseAssistantPrivate *priv;
+	ofaIDBProvider *provider;
 	GtkWidget *parent, *label;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
@@ -676,16 +673,22 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-dbms" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p2_dbms_credentials = ofa_dbms_root_bin_new( priv->hub );
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dbms_credentials ));
-	ofa_dbms_root_bin_set_meta( priv->p2_dbms_credentials, priv->dossier_meta );
+	provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
+	priv->p2_dbsu_credentials = ofa_idbprovider_new_superuser_bin( provider, HUB_RULE_EXERCICE_CLOSE );
 
-	g_signal_connect(
-			priv->p2_dbms_credentials, "ofa-changed", G_CALLBACK( p2_on_dbms_root_changed ), self );
+	if( priv->p2_dbsu_credentials ){
+		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dbsu_credentials ));
+		ofa_idbsuperuser_set_dossier_meta( priv->p2_dbsu_credentials, priv->dossier_meta );
+		g_signal_connect( priv->p2_dbsu_credentials, "ofa-changed", G_CALLBACK( p2_on_dbsu_credentials_changed ), self );
 
-	if( priv->p2_account && priv->p2_password ){
-		ofa_dbms_root_bin_set_credentials(
-				priv->p2_dbms_credentials, priv->p2_account, priv->p2_password );
+	} else {
+		label = gtk_label_new( _(
+				"The current DBMS provider does not need super-user credentials for closing the exercice.\n"
+				"Just press Next to continue." ));
+		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+		gtk_label_set_line_wrap( GTK_LABEL( label ), TRUE );
+		gtk_label_set_line_wrap_mode( GTK_LABEL( label ), PANGO_WRAP_WORD );
+		gtk_container_add( GTK_CONTAINER( parent ), label );
 	}
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-message" );
@@ -703,18 +706,8 @@ p2_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 }
 
 static void
-p2_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaExerciceCloseAssistant *self )
+p2_on_dbsu_credentials_changed( ofaIDBSuperuser *bin, ofaExerciceCloseAssistant *self )
 {
-	ofaExerciceCloseAssistantPrivate *priv;
-
-	priv = ofa_exercice_close_assistant_get_instance_private( self );
-
-	g_free( priv->p2_account );
-	priv->p2_account = g_strdup( account );
-
-	g_free( priv->p2_password );
-	priv->p2_password = g_strdup( password );
-
 	p2_check_for_complete( self );
 }
 
@@ -727,9 +720,13 @@ p2_check_for_complete( ofaExerciceCloseAssistant *self )
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
+	ok = TRUE;
 	p2_set_message( self, "" );
 
-	ok = ofa_dbms_root_bin_is_valid( priv->p2_dbms_credentials, &message );
+	if( priv->p2_dbsu_credentials ){
+		ok = ofa_idbsuperuser_is_valid( priv->p2_dbsu_credentials, &message );
+	}
+
 	if( !ok ){
 		p2_set_message( self, message );
 		g_free( message );
@@ -1419,8 +1416,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 	end_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
-	ok = ofa_idbconnect_archive_and_new(
-				priv->connect, priv->p2_account, priv->p2_password, begin_next, end_next );
+	ok = ofa_idbconnect_archive_and_new( priv->connect, priv->p2_dbsu_credentials, begin_next, end_next );
 
 	if( !ok ){
 		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to archive the dossier" ));
@@ -1432,13 +1428,8 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		period = ofa_idbdossier_meta_get_current_period( priv->dossier_meta );
 		g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 		ofa_idbexercice_meta_dump( period );
-
-		//cur_account = ofa_idbconnect_get_account( priv->connect );
-		//cur_password = ofa_idbconnect_get_password( priv->connect );
-
-		//cnx = ofa_idbprovider_new_connect( provider, cur_account, cur_password, priv->dossier_meta, period );
 		cnx = ofa_idbdossier_meta_new_connect( priv->dossier_meta, period );
-		ok = ( cnx != NULL );
+		ok = ofa_idbconnect_open_with_superuser( cnx, priv->p2_dbsu_credentials );
 
 		if( !ok ){
 			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to open a connection on the new exercice" ));

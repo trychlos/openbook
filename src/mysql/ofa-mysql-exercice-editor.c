@@ -233,7 +233,7 @@ does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database )
 	connect = ofa_mysql_dossier_editor_get_connect( OFA_MYSQL_DOSSIER_EDITOR( dossier_editor ));
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
 
-	if( ofa_mysql_connect_is_opened( connect )){
+	if( ofa_idbconnect_is_opened( OFA_IDBCONNECT( connect ))){
 		exists = ofa_mysql_connect_does_database_exist( connect, database );
 	}
 

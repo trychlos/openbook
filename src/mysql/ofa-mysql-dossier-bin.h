@@ -71,12 +71,6 @@ ofaMysqlDossierBin *ofa_mysql_dossier_bin_new             ( ofaMysqlDBProvider *
 																const gchar *settings_prefix,
 																guint rule );
 
-GtkSizeGroup       *ofa_mysql_dossier_bin_get_size_group  ( ofaMysqlDossierBin *bin,
-																guint column );
-
-gboolean            ofa_mysql_dossier_bin_is_valid        ( ofaMysqlDossierBin *bin,
-																gchar **error_message );
-
 const gchar        *ofa_mysql_dossier_bin_get_host        ( ofaMysqlDossierBin *bin );
 
 guint               ofa_mysql_dossier_bin_get_port        ( ofaMysqlDossierBin *bin );

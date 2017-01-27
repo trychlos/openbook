@@ -1252,8 +1252,7 @@ restore_msg_cb( const gchar *string, void *user_data )
  * ofa_idbconnect_archive_and_new:
  * @connect: this #ofaIDBConnect instance which handles an active user
  *  connection on the closed exercice.
- * @root_account: the DBMS root account.
- * @root_password: the DBMS root password.
+ * @su: the super-user credentials.
  * @begin_next: the beginning date of the new exercice.
  * @end_next: the ending date of the new exercice.
  *
@@ -1267,19 +1266,18 @@ restore_msg_cb( const gchar *string, void *user_data )
  */
 gboolean
 ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
-									const gchar *root_account, const gchar *root_password,
-									const GDate *begin_next, const GDate *end_next )
+									ofaIDBSuperuser *su, const GDate *begin_next, const GDate *end_next )
 {
 	static const gchar *thisfn = "ofa_idbconnect_archive_and_new";
 
-	g_debug( "%s: connect=%p, root_account=%s, root_password=%s, begin_next=%p, end_next=%p",
-			thisfn, ( void * ) connect, root_account, root_password ? "******":root_password,
+	g_debug( "%s: connect=%p, su=%p, begin_next=%p, end_next=%p",
+			thisfn, ( void * ) connect, ( void * ) su,
 			( void * ) begin_next, ( void * ) end_next );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->archive_and_new ){
-		return( OFA_IDBCONNECT_GET_INTERFACE( connect )->archive_and_new( connect, root_account, root_password, begin_next, end_next ));
+		return( OFA_IDBCONNECT_GET_INTERFACE( connect )->archive_and_new( connect, su, begin_next, end_next ));
 	}
 
 	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'archive_and_new()' method",

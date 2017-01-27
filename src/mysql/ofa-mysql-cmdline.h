@@ -31,6 +31,7 @@
  */
 
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbsuperuser-def.h"
 
 #include "mysql/ofa-mysql-connect.h"
 #include "mysql/ofa-mysql-exercice-meta.h"
@@ -56,8 +57,7 @@ gboolean     ofa_mysql_cmdline_restore_db_run             ( ofaMysqlConnect *con
 																void *user_data );
 
 gboolean     ofa_mysql_cmdline_archive_and_new            ( ofaMysqlConnect *connect,
-																const gchar *root_account,
-																const gchar *root_password,
+																ofaIDBSuperuser *su,
 																const GDate *begin_next,
 																const GDate *end_next );
 

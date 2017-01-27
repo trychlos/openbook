@@ -342,6 +342,8 @@ ofa_idbmodel_update( ofaIGetter *getter, GtkWindow *parent )
 	const ofaIDBConnect *connect;
 	ofaHub *hub;
 
+	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
+
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
 
@@ -352,6 +354,9 @@ ofa_idbmodel_update( ofaIGetter *getter, GtkWindow *parent )
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 	connect = ofa_hub_get_connect( hub );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( ofa_idbconnect_is_opened( connect ), FALSE );
+
 	extenders = ofa_hub_get_extender_collection( hub );
 	plugins_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
 	g_debug( "%s: IDBModel plugins count=%u", thisfn, g_list_length( plugins_list ));

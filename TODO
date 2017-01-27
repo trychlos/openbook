@@ -368,9 +368,6 @@
                 - entries: idem operation,
                 - accounts: all documents for this account
 
-1271 2016-12- 1 obsoletes ofaDbmsRootBin
-                moving to mysql
-
 1285 2016-12-13 myIWindow: deprecate ::get_identifier() method
                 when several windows of same name are opened, just shift them 
 
@@ -387,9 +384,14 @@
      2017- 1-26 first *define* standard actions on open
 
 1335 2017- 1-27 MysqlExerciceEditor: check if database already exists
-     2017- 1-27 we have to find a valid connection
+     2017- 1-27 we have to have a valid connection
 
-1336
+1336 2017- 1-27 creating a new dossier from restore does not need a confirmation
+
+1337 2017- 1-27 TargetChooserBin: after new period, automatically select
+                 the only exercice
+
+1338
 
 -----------------------------------------------------------------------
  DONE
@@ -415,6 +417,10 @@
                 ofaIDBEditor interface, and ofaMysqlEditorEnter and
                 ofaMysqlEditorDisplay classes.
      2017- 1-25 done
+
+1271 2016-12- 1 obsoletes ofaDbmsRootBin
+                moving to mysql
+     2017- 1-27 done
 
 1276 2016-12-10 review the way the exercices are written in dossier settings
                 so that this may be managed by the application instead of

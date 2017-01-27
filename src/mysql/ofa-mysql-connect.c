@@ -74,7 +74,7 @@ static gboolean   idbconnect_query_ex( const ofaIDBConnect *instance, const gcha
 static gchar     *idbconnect_get_last_error( const ofaIDBConnect *instance );
 static gboolean   idbconnect_backup_db( const ofaIDBConnect *instance, const gchar *uri, ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data );
 static gboolean   idbconnect_restore_db( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *uri, guint format, ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data );
-static gboolean   idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next );
+static gboolean   idbconnect_archive_and_new( const ofaIDBConnect *instance, ofaIDBSuperuser *su, const GDate *begin_next, const GDate *end_next );
 static gboolean   idbconnect_period_new( const ofaIDBConnect *instance, gchar **msgerr );
 static gboolean   idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *account, const gchar *password, gchar **msgerr );
 static gboolean   idbconnect_transaction_start( const ofaIDBConnect *instance );
@@ -362,29 +362,6 @@ ofa_mysql_connect_get_database( ofaMysqlConnect *connect )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return(( const gchar * ) priv->database );
-}
-
-/**
- * ofa_mysql_connect_is_opened:
- * @connect: this #ofaMysqlConnect instance.
- *
- * Returns: %TRUE if the connection is opened (and is so expected to be OK).
- */
-gboolean
-ofa_mysql_connect_is_opened( ofaMysqlConnect *connect )
-{
-	ofaMysqlConnectPrivate *priv;
-	gboolean opened;
-
-	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
-
-	priv = ofa_mysql_connect_get_instance_private( connect );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	opened = ( priv->mysql != NULL );
-
-	return( opened );
 }
 
 /**
@@ -739,7 +716,18 @@ idbconnect_set_exercice_meta( ofaIDBConnect *instance, ofaIDBExerciceMeta *meta 
 static gboolean
 idbconnect_is_opened( const ofaIDBConnect *instance )
 {
-	return( ofa_mysql_connect_is_opened( OFA_MYSQL_CONNECT( instance )));
+	ofaMysqlConnectPrivate *priv;
+	gboolean opened;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
+
+	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	opened = ( priv->mysql != NULL );
+
+	return( opened );
 }
 
 static GtkWidget *
@@ -836,10 +824,9 @@ idbconnect_restore_db( const ofaIDBConnect *instance,
 
 
 static gboolean
-idbconnect_archive_and_new( const ofaIDBConnect *instance, const gchar *root_account, const gchar *root_password, const GDate *begin_next, const GDate *end_next )
+idbconnect_archive_and_new( const ofaIDBConnect *instance, ofaIDBSuperuser *su, const GDate *begin_next, const GDate *end_next )
 {
-	return( ofa_mysql_cmdline_archive_and_new(
-					OFA_MYSQL_CONNECT( instance ), root_account, root_password, begin_next, end_next ));
+	return( ofa_mysql_cmdline_archive_and_new( OFA_MYSQL_CONNECT( instance ), su, begin_next, end_next ));
 }
 
 /*

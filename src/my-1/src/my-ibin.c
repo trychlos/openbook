@@ -184,8 +184,6 @@ my_ibin_get_size_group( const myIBin *instance, guint column )
 {
 	static const gchar *thisfn = "my_ibin_get_size_group";
 
-	g_debug( "%s: instance=%p, column=%u", thisfn, ( void * ) instance, column );
-
 	g_return_val_if_fail( instance && MY_IS_IBIN( instance ), NULL );
 
 	if( MY_IBIN_GET_INTERFACE( instance )->get_size_group ){
@@ -211,8 +209,6 @@ my_ibin_is_valid( const myIBin *instance, gchar **msgerr )
 {
 	static const gchar *thisfn = "my_ibin_is_valid";
 
-	g_debug( "%s: instance=%p, msgerr=%p", thisfn, ( void * ) instance, ( void * ) msgerr );
-
 	g_return_val_if_fail( instance && MY_IS_IBIN( instance ), FALSE );
 
 	if( MY_IBIN_GET_INTERFACE( instance )->is_valid ){
@@ -234,8 +230,6 @@ void
 my_ibin_apply( myIBin *instance )
 {
 	static const gchar *thisfn = "my_ibin_apply";
-
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	g_return_if_fail( instance && MY_IS_IBIN( instance ));
 

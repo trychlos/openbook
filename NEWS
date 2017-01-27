@@ -50,6 +50,7 @@
    - my_utils_file_is_readable_file(): renamed to my_utils_file_is_readable().
    - my_utils_uri_is_readable_file(): renamed to my_utils_uri_is_readable().
    - ofaBackupAssistant: new class.
+   - ofaDbmsRootBin: deprecated class (todo #1271).
    - ofaDbsu: new class.
    - ofa_dossier_collection_set_meta_from_editor(): deprecated function (todo #1267).
    - ofaDossierDelete: deprecated class.

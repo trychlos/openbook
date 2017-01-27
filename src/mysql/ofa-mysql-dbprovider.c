@@ -233,6 +233,7 @@ idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule )
 		case HUB_RULE_DOSSIER_RESTORE:
 		case HUB_RULE_EXERCICE_NEW:
 		case HUB_RULE_EXERCICE_DELETE:
+		case HUB_RULE_EXERCICE_CLOSE:
 			bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( instance ), rule );
 			break;
 

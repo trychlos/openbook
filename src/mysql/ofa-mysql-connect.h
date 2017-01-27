@@ -80,8 +80,6 @@ const gchar     *ofa_mysql_connect_get_socket         ( ofaMysqlConnect *connect
 
 const gchar     *ofa_mysql_connect_get_database       ( ofaMysqlConnect *connect );
 
-gboolean         ofa_mysql_connect_is_opened          ( ofaMysqlConnect *connect );
-
 gboolean         ofa_mysql_connect_query              ( ofaMysqlConnect *connect,
 															const gchar *query );
 

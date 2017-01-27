@@ -456,7 +456,7 @@ ibin_is_valid( const myIBin *instance, gchar **msgerr )
 
 	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
 
-	ok = ofa_mysql_dossier_bin_is_valid( priv->dossier_bin, msgerr );
+	ok = my_ibin_is_valid( MY_IBIN( priv->dossier_bin ), msgerr );
 
 	if( ok && priv->root_bin ){
 		ok &= my_ibin_is_valid( MY_IBIN( priv->root_bin ), msgerr ) &&

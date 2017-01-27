@@ -2,7 +2,6 @@ data/desktop/openbook.desktop.in
 src/core/ofa-account-properties.ui
 src/core/ofa-account-select.ui
 src/core/ofa-date-filter-hv-bin.ui
-src/core/ofa-dbms-root-bin.ui
 src/core/ofa-dossier-delete-prefs-bin.ui
 src/core/ofa-guided-input.ui
 src/core/ofa-guided-input-bin.ui

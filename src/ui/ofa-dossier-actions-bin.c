@@ -48,7 +48,6 @@ typedef struct {
 
 	/* UI
 	 */
-	GtkSizeGroup *group0;
 	GtkWidget    *open_btn;
 	GtkWidget    *standard_btn;
 
@@ -131,7 +130,6 @@ dossier_actions_bin_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->group0 );
 	}
 
 	/* chain up to the parent class */
@@ -241,10 +239,6 @@ setup_bin( ofaDossierActionsBin *self )
 	priv = ofa_dossier_actions_bin_get_instance_private( self );
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
-
-	object = gtk_builder_get_object( builder, "dab-col0-hsize" );
-	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
-	priv->group0 = GTK_SIZE_GROUP( g_object_ref( object ));
 
 	object = gtk_builder_get_object( builder, "dab-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));

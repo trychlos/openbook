@@ -270,8 +270,7 @@ struct _ofaIDBConnectInterface {
 	/**
 	 * archive_and_new:
 	 * @instance: the #ofaIDBConnect user connection.
-	 * @root_account: the root account of the DBMS server.
-	 * @root_password: the corresponding password.
+	 * @su: the super-user credentials.
 	 * @begin_next: the beginning date of the next exercice.
 	 * @end_next: the ending date of the next exercice.
 	 *
@@ -288,8 +287,7 @@ struct _ofaIDBConnectInterface {
 	 * Since: version 1
 	 */
 	gboolean    ( *archive_and_new )      ( const ofaIDBConnect *instance,
-												const gchar *root_account,
-												const gchar *root_password,
+												ofaIDBSuperuser *su,
 												const GDate *begin_next,
 												const GDate *end_next );
 
@@ -467,8 +465,7 @@ gboolean            ofa_idbconnect_restore_db               ( const ofaIDBConnec
 																	void *user_data );
 
 gboolean            ofa_idbconnect_archive_and_new          ( const ofaIDBConnect *connect,
-																	const gchar *root_account,
-																	const gchar *root_password,
+																	ofaIDBSuperuser *su,
 																	const GDate *begin_next,
 																	const GDate *end_next );
 
