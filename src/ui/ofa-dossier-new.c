@@ -60,6 +60,7 @@ typedef struct {
 		 * (the caller is waiting for the result) */
 	gboolean            with_su;
 	gboolean            with_admin;
+	gboolean            with_confirm;
 	gboolean            with_open;
 	ofaIDBDossierMeta **dossier_meta;
 
@@ -159,6 +160,7 @@ ofa_dossier_new_init( ofaDossierNew *self )
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->with_su = TRUE;
 	priv->with_admin = TRUE;
+	priv->with_confirm = TRUE;
 	priv->with_open = TRUE;
 	priv->dossier_created = FALSE;
 
@@ -216,6 +218,7 @@ ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
  * @settings_prefix: the prefix of the key in user settings.
  * @with_su: whether this dialog must display the super-user widget.
  * @with_admin: whether this dialog must display the AdminCredentials widget.
+ * @with_confirm: whether we request a user confirmation.
  * @with_open: whether this dialog must display the DossierActions widget.
  * @dossier_meta: [out][allow-none]: a placeholder for the newly created
  *  dossier.
@@ -227,17 +230,18 @@ ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
  */
 gboolean
 ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefix,
-								gboolean with_su, gboolean with_admin, gboolean with_open, ofaIDBDossierMeta **dossier_meta )
+								gboolean with_su, gboolean with_admin, gboolean with_confirm, gboolean with_open, ofaIDBDossierMeta **dossier_meta )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run_modal";
 	ofaDossierNew *self;
 	ofaDossierNewPrivate *priv;
 	gboolean dossier_created;
 
-	g_debug( "%s: getter=%p, parent=%p, settings_prefix=%s, with_su=%s, with_admin=%s, with_open=%s, dossier_meta=%p",
+	g_debug( "%s: getter=%p, parent=%p, settings_prefix=%s, "
+			"	with_su=%s, with_admin=%s, with_confirm=%s, with_open=%s, dossier_meta=%p",
 			thisfn, ( void * ) getter, ( void * ) parent, settings_prefix,
-			with_su ? "True":"False", with_admin ? "True":"False", with_open ? "True":"False",
-			( void * ) dossier_meta );
+			with_su ? "True":"False", with_admin ? "True":"False", with_confirm ? "True":"False",
+			with_open ? "True":"False", ( void * ) dossier_meta );
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
@@ -250,6 +254,7 @@ ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *s
 	priv->parent = parent;
 	priv->with_su = with_su;
 	priv->with_admin = with_admin;
+	priv->with_confirm = with_confirm;
 	priv->with_open = with_open;
 	priv->dossier_meta = dossier_meta;
 
@@ -476,7 +481,7 @@ do_create( ofaDossierNew *self )
 	adm_password = NULL;
 
 	/* ask for user confirmation */
-	if( !create_confirmed( self )){
+	if( priv->with_confirm && !create_confirmed( self )){
 		return( FALSE );
 	}
 

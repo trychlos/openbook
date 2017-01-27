@@ -318,7 +318,8 @@ dossier_on_new( GtkButton *button, ofaTargetChooserBin *self )
 	priv->block_dossier = TRUE;
 	settings_prefix = g_strdup_printf( "%s-ofaDossierNew", priv->settings_prefix );
 
-	if( ofa_dossier_new_run_modal( priv->getter, toplevel, settings_prefix, FALSE, FALSE, FALSE, &priv->dossier_meta )){
+	if( ofa_dossier_new_run_modal(
+			priv->getter, toplevel, settings_prefix, FALSE, FALSE, FALSE, FALSE, &priv->dossier_meta )){
 
 		set_new_object( self, G_OBJECT( priv->dossier_meta ));
 

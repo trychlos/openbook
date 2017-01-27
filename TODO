@@ -386,8 +386,6 @@
 1335 2017- 1-27 MysqlExerciceEditor: check if database already exists
      2017- 1-27 we have to have a valid connection
 
-1336 2017- 1-27 creating a new dossier from restore does not need a confirmation
-
 1338
 
 -----------------------------------------------------------------------
@@ -556,6 +554,9 @@
 
 1334 2017- 1-23 ofaDossierNew: makes use of ofaExerciceEditBin
      2017- 1-25 done
+
+1336 2017- 1-27 creating a new dossier from restore does not need a confirmation
+     2017- 1-27 done
 
 1337 2017- 1-27 TargetChooserBin: after new period, automatically select
                  the only exercice

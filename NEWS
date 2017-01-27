@@ -26,7 +26,8 @@
    - ExerciceNew: create a new exercice.
    - ExerciceTreeview: automatically selects the first exercice (todo #1337).
    - Replace Backup standard dialog box with an assistant (todo #1317).
-   - Restore assistant implements restore protection rules (todo #1320).
+   - Restore assistant: implements restore protection rules (todo #1320).
+   - Restore assistant: does not require user confirmation on new dossier (todo #1336).
 
    + ofa-unzip: command-line utility to unarchive a data flow on stdout.
 

@@ -90,6 +90,7 @@ gboolean ofa_dossier_new_run_modal( ofaIGetter *getter,
 										const gchar *settings_prefix,
 										gboolean with_su,
 										gboolean with_admin,
+										gboolean with_confirm,
 										gboolean with_open,
 										ofaIDBDossierMeta **dossier_meta );
 
