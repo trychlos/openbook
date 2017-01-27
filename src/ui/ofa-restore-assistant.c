@@ -166,6 +166,8 @@ typedef struct {
 	GtkWidget              *p6_page;
 	GtkWidget              *p6_textview;
 	GtkWidget              *p6_label;
+	ofaIDBDossierMeta      *p6_dossier_meta;
+	ofaIDBExerciceMeta     *p6_exercice_meta;
 }
 	ofaRestoreAssistantPrivate;
 
@@ -1342,6 +1344,11 @@ p6_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p6_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-label" );
 	g_return_if_fail( priv->p6_label && GTK_IS_LABEL( priv->p6_label ));
+
+	/* keep a ref on target dossier/exercice as the current selection
+	 * will be reset during restore */
+	priv->p6_dossier_meta = priv->p2_dossier_meta;
+	priv->p6_exercice_meta = priv->p2_exercice_meta;
 }
 
 static void
@@ -1349,6 +1356,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_display";
 	ofaRestoreAssistantPrivate *priv;
+	ofaDossierCollection *collection;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
@@ -1359,13 +1367,16 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 
 	if( !p6_restore_confirmed( self )){
-#if 0
-		ofaDossierCollection *collection;
-		if( priv->p2_is_new_dossier ){
+
+		if( priv->p2_new_dossier ){
 			collection = ofa_hub_get_dossier_collection( priv->hub );
 			ofa_dossier_collection_delete_period( collection, priv->p2_connect, NULL, TRUE, NULL );
+
+		} else if( priv->p2_new_exercice ){
+			collection = ofa_hub_get_dossier_collection( priv->hub );
+			ofa_dossier_collection_delete_period( collection, priv->p2_connect, priv->p2_exercice_meta, TRUE, NULL );
 		}
-#endif
+
 		gtk_label_set_text(
 				GTK_LABEL( priv->p6_label ),
 				_( "The restore operation has been cancelled by the user." ));
@@ -1679,7 +1690,7 @@ p6_do_open( ofaRestoreAssistant *self )
 	if( priv->p5_open ){
 		ofa_dossier_open_run(
 				priv->getter, GTK_WINDOW( self ),
-				priv->p2_dossier_meta, priv->p2_exercice_meta, priv->p4_account, priv->p4_password );
+				priv->p6_dossier_meta, priv->p6_exercice_meta, priv->p4_account, priv->p4_password );
 
 		g_debug( "%s: return from ofa_dossier_open_run", thisfn );
 	}
