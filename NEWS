@@ -52,6 +52,7 @@
    - ofaBackupAssistant: new class.
    - ofaDbsu: new class.
    - ofa_dossier_collection_set_meta_from_editor(): deprecated function (todo #1267).
+   - ofaDossierDelete: deprecated class.
    - ofaDossierNew: makes use of ofaExerciceEditBin (todo #1334).
    - ofaDossierNewBin: deprecated class.
    - ofaDossierNewMini: deprecated class (todo #1329).

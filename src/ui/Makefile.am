@@ -136,8 +136,6 @@ openbook_SOURCES = \
 	ofa-dbsu.h											\
 	ofa-dossier-actions-bin.c							\
 	ofa-dossier-actions-bin.h							\
-	ofa-dossier-delete.c								\
-	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\
 	ofa-dossier-display-notes.h							\
 	ofa-dossier-edit-bin.c								\

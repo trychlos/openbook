@@ -46,7 +46,6 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-dbsu.h"
-#include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"

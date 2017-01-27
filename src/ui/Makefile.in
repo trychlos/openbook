@@ -153,7 +153,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-class-treeview.$(OBJEXT) ofa-closing-parms-bin.$(OBJEXT) \
 	ofa-currency-page.$(OBJEXT) ofa-currency-properties.$(OBJEXT) \
 	ofa-currency-treeview.$(OBJEXT) ofa-dbsu.$(OBJEXT) \
-	ofa-dossier-actions-bin.$(OBJEXT) ofa-dossier-delete.$(OBJEXT) \
+	ofa-dossier-actions-bin.$(OBJEXT) \
 	ofa-dossier-display-notes.$(OBJEXT) \
 	ofa-dossier-edit-bin.$(OBJEXT) ofa-dossier-manager.$(OBJEXT) \
 	ofa-dossier-meta-bin.$(OBJEXT) ofa-dossier-new.$(OBJEXT) \
@@ -569,8 +569,6 @@ openbook_SOURCES = \
 	ofa-dbsu.h											\
 	ofa-dossier-actions-bin.c							\
 	ofa-dossier-actions-bin.h							\
-	ofa-dossier-delete.c								\
-	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\
 	ofa-dossier-display-notes.h							\
 	ofa-dossier-edit-bin.c								\
@@ -844,7 +842,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbsu.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-actions-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-display-notes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-edit-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-manager.Po@am__quote@

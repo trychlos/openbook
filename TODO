@@ -387,6 +387,7 @@
      2017- 1-26 first *define* standard actions on open
 
 1335 2017- 1-27 MysqlExerciceEditor: check if database already exists
+     2017- 1-27 we have to find a valid connection
 
 1336
 
