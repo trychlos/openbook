@@ -42,6 +42,7 @@
 #include <my/my-file-monitor.h>
 #include <my/my-iaction-map.h>
 #include <my/my-iassistant.h>
+#include <my/my-ibin.h>
 #include <my/my-icollectionable.h>
 #include <my/my-icollector.h>
 #include <my/my-idialog.h>

@@ -75,6 +75,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-file-monitor.c									\
 	my-iaction-map.c									\
 	my-iassistant.c										\
+	my-ibin.c											\
 	my-icollectionable.c								\
 	my-icollector.c										\
 	my-idialog.c										\
@@ -82,7 +83,6 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-igridlist.c										\
 	my-iprogress.c										\
 	my-isettings.c										\
-	my-isizegroup.c										\
 	my-iwindow.c										\
 	my-progress-bar.c									\
 	my-settings.c										\

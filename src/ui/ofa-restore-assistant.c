@@ -30,7 +30,7 @@
 #include <stdlib.h>
 
 #include "my/my-iassistant.h"
-#include "my/my-isizegroup.h"
+#include "my/my-ibin.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
 #include "my/my-style.h"
@@ -961,7 +961,7 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 		display = ofa_idbconnect_get_display( priv->p2_connect, "labelinfo" );
 		if( display ){
 			gtk_container_add( GTK_CONTAINER( priv->p3_connect_parent ), display );
-			if(( group = my_isizegroup_get_size_group( MY_ISIZEGROUP( display ), 0 ))){
+			if(( group = my_ibin_get_size_group( MY_IBIN( display ), 0 ))){
 				my_utils_size_group_add_size_group( priv->p3_hgroup, group );
 			}
 			priv->p3_dossier_name = g_strdup( priv->p2_dossier_name );
@@ -1155,7 +1155,7 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	display = ofa_idbconnect_get_display( priv->p2_connect, "labelinfo" );
 	if( display ){
 		gtk_container_add( GTK_CONTAINER( priv->p4_connect_parent ), display );
-		if(( group = my_isizegroup_get_size_group( MY_ISIZEGROUP( display ), 0 ))){
+		if(( group = my_ibin_get_size_group( MY_IBIN( display ), 0 ))){
 			my_utils_size_group_add_size_group( priv->p4_hgroup, group );
 		}
 	}

@@ -375,6 +375,7 @@
                 when several windows of same name are opened, just shift them 
 
 1292 2016-12-17 optimize reconciliation loading
+     2017- 1-27 more generally, optimize entries loading
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 

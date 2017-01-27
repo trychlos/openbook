@@ -42,6 +42,7 @@ my_include_HEADERS = \
 	my-file-monitor.h									\
 	my-iaction-map.h									\
 	my-iassistant.h										\
+	my-ibin.h											\
 	my-icollectionable.h								\
 	my-icollector.h										\
 	my-idialog.h										\
@@ -49,7 +50,6 @@ my_include_HEADERS = \
 	my-igridlist.h										\
 	my-iprogress.h										\
 	my-isettings.h										\
-	my-isizegroup.h										\
 	my-iwindow.h										\
 	my-progress-bar.h									\
 	my-settings.h										\

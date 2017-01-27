@@ -28,7 +28,7 @@
 
 #include <glib/gi18n.h>
 
-#include "my/my-isizegroup.h"
+#include "my/my-ibin.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
@@ -79,20 +79,21 @@ static void          changed_composite( ofaMysqlRootBin *self );
 static gboolean      is_valid( ofaMysqlRootBin *self, gchar **str );
 static void          read_settings( ofaMysqlRootBin *self );
 static void          write_settings( ofaMysqlRootBin *self );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
 static void          idbsuperuser_iface_init( ofaIDBSuperuserInterface *iface );
 static GtkSizeGroup *idbsuperuser_get_size_group( const ofaIDBSuperuser *instance, guint column );
 static void          idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dossier_meta );
 static gboolean      idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message );
 static void          idbsuperuser_set_valid( ofaIDBSuperuser *instance, gboolean valid );
 static void          idbsuperuser_set_credentials_from_connect( ofaIDBSuperuser *instance, ofaIDBConnect *connect );
-static void          isizegroup_iface_init( myISizegroupInterface *iface );
-static guint         isizegroup_get_interface_version( void );
-static GtkSizeGroup *isizegroup_get_size_group( const myISizegroup *instance, guint column );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlRootBin, ofa_mysql_root_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlRootBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBSUPERUSER, idbsuperuser_iface_init )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_ISIZEGROUP, isizegroup_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBSUPERUSER, idbsuperuser_iface_init ))
 
 static void
 mysql_root_bin_finalize( GObject *instance )
@@ -287,42 +288,6 @@ ofa_mysql_root_bin_set_dossier_meta( ofaMysqlRootBin *bin, ofaIDBDossierMeta *do
 	read_settings( bin );
 }
 
-/**
- * ofa_mysql_root_bin_get_size_group:
- * @bin: this #ofaMysqlRootBin instance.
- * @column: the desired column number, counted from zero.
- *
- * Returns: the #GtkSizeGroup used to horizontally align the @column.
- *
- * As this is a composite widget, it is probable that we will want align
- * it with other composites or widgets in a dialog box. Having a size
- * group prevents us to have to determine the longest label, which
- * should be computed dynamically as this may depend of the translation.
- *
- * Here, the .xml UI definition defines a dedicated GtkSizeGroup that
- * we have just to return as is.
- */
-GtkSizeGroup *
-ofa_mysql_root_bin_get_size_group( ofaMysqlRootBin *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_mysql_root_bin_get_size_group";
-	ofaMysqlRootBinPrivate *priv;
-
-	g_debug( "%s: bin=%p, column=%u", thisfn, ( void * ) bin, column );
-
-	g_return_val_if_fail( bin && OFA_IS_MYSQL_ROOT_BIN( bin ), NULL );
-
-	priv = ofa_mysql_root_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-
-	return( NULL );
-}
-
 static void
 on_account_changed( GtkEditable *entry, ofaMysqlRootBin *self )
 {
@@ -370,41 +335,6 @@ changed_composite( ofaMysqlRootBin *self )
 	ofa_mysql_root_bin_set_valid( self, FALSE );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
-}
-
-/**
- * ofa_mysql_root_bin_is_valid:
- * @bin: this #ofaMysqlRootBin instance.
- * @error_message: [allow-none]: set to the error message as a newly
- *  allocated string which should be g_free() by the caller.
- *
- * Returns: %TRUE if both account and password are set.
- *
- * If a #ofaIDBDossierMeta is set, then check a connection against the
- * DBMS server (at DBMS server level).
- */
-gboolean
-ofa_mysql_root_bin_is_valid( ofaMysqlRootBin *bin, gchar **error_message )
-{
-	ofaMysqlRootBinPrivate *priv;
-	gboolean ok;
-	gchar *str;
-
-	g_return_val_if_fail( bin && OFA_IS_MYSQL_ROOT_BIN( bin ), FALSE );
-
-	priv = ofa_mysql_root_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	ok = is_valid( bin, &str );
-
-	if( error_message ){
-		*error_message = ok ? NULL : g_strdup( str );
-	}
-
-	g_free( str );
-
-	return( ok );
 }
 
 /*
@@ -648,6 +578,85 @@ write_settings( ofaMysqlRootBin *self )
 }
 
 /*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_connect_display_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_mysql_root_bin_ibin_get_size_group";
+	ofaMysqlRootBinPrivate *priv;
+
+	g_debug( "%s: instance=%p, column=%u", thisfn, ( void * ) instance, column );
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_ROOT_BIN( instance ), NULL );
+
+	priv = ofa_mysql_root_bin_get_instance_private( OFA_MYSQL_ROOT_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
+}
+
+/*
+ * ibin_is_valid:
+ * @bin: this #ofaMysqlRootBin instance.
+ * @error_message: [allow-none]: set to the error message as a newly
+ *  allocated string which should be g_free() by the caller.
+ *
+ * Returns: %TRUE if both account and password are set.
+ *
+ * If a #ofaIDBDossierMeta is set, then check a connection against the
+ * DBMS server (at DBMS server level).
+ */
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **error_message )
+{
+	ofaMysqlRootBinPrivate *priv;
+	gboolean ok;
+	gchar *str;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_ROOT_BIN( instance ), FALSE );
+
+	priv = ofa_mysql_root_bin_get_instance_private( OFA_MYSQL_ROOT_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	ok = is_valid( OFA_MYSQL_ROOT_BIN( instance ), &str );
+
+	if( error_message ){
+		*error_message = ok ? NULL : g_strdup( str );
+	}
+
+	g_free( str );
+
+	return( ok );
+}
+
+/*
  * #ofaIDBSuperuser interface setup
  */
 static void
@@ -667,7 +676,7 @@ idbsuperuser_iface_init( ofaIDBSuperuserInterface *iface )
 static GtkSizeGroup *
 idbsuperuser_get_size_group( const ofaIDBSuperuser *instance, guint column )
 {
-	return( ofa_mysql_root_bin_get_size_group( OFA_MYSQL_ROOT_BIN( instance ), column ));
+	return( my_ibin_get_size_group( MY_IBIN( instance ), column ));
 }
 
 static void
@@ -679,7 +688,7 @@ idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dos
 static gboolean
 idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message )
 {
-	return( ofa_mysql_root_bin_is_valid( OFA_MYSQL_ROOT_BIN( instance ), message ));
+	return( my_ibin_is_valid( MY_IBIN( instance ), message ));
 }
 
 static void
@@ -704,30 +713,4 @@ idbsuperuser_set_credentials_from_connect( ofaIDBSuperuser *instance, ofaIDBConn
 	if( my_strlen( cstr )){
 		gtk_entry_set_text( GTK_ENTRY( priv->password_entry ), cstr );
 	}
-}
-
-/*
- * myISizegroup interface management
- */
-static void
-isizegroup_iface_init( myISizegroupInterface *iface )
-{
-	static const gchar *thisfn = "ofa_mysql_connect_display_isizegroup_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = isizegroup_get_interface_version;
-	iface->get_size_group = isizegroup_get_size_group;
-}
-
-static guint
-isizegroup_get_interface_version( void )
-{
-	return( 1 );
-}
-
-static GtkSizeGroup *
-isizegroup_get_size_group( const myISizegroup *instance, guint column )
-{
-	return( ofa_mysql_root_bin_get_size_group( OFA_MYSQL_ROOT_BIN( instance ), column ));
 }

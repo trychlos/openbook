@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include "my/my-isizegroup.h"
+#include "my/my-ibin.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
@@ -57,13 +57,13 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysq
 
 static void          setup_bin( ofaMysqlConnectDisplay *self );
 static void          setup_data( ofaMysqlConnectDisplay *self );
-static void          isizegroup_iface_init( myISizegroupInterface *iface );
-static guint         isizegroup_get_interface_version( void );
-static GtkSizeGroup *isizegroup_get_size_group( const myISizegroup *instance, guint column );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlConnectDisplay, ofa_mysql_connect_display, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlConnectDisplay )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_ISIZEGROUP, isizegroup_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 mysql_connect_display_finalize( GObject *instance )
@@ -254,29 +254,29 @@ setup_data( ofaMysqlConnectDisplay *self )
 }
 
 /*
- * myISizegroup interface management
+ * myIBin interface management
  */
 static void
-isizegroup_iface_init( myISizegroupInterface *iface )
+ibin_iface_init( myIBinInterface *iface )
 {
-	static const gchar *thisfn = "ofa_mysql_connect_display_isizegroup_iface_init";
+	static const gchar *thisfn = "ofa_mysql_connect_display_ibin_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = isizegroup_get_interface_version;
-	iface->get_size_group = isizegroup_get_size_group;
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
 }
 
 static guint
-isizegroup_get_interface_version( void )
+ibin_get_interface_version( void )
 {
 	return( 1 );
 }
 
 static GtkSizeGroup *
-isizegroup_get_size_group( const myISizegroup *instance, guint column )
+ibin_get_size_group( const myIBin *instance, guint column )
 {
-	static const gchar *thisfn = "ofa_mysql_connect_display_isizegroup_get_size_group";
+	static const gchar *thisfn = "ofa_mysql_connect_display_ibin_get_size_group";
 	ofaMysqlConnectDisplayPrivate *priv;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT_DISPLAY( instance ), NULL );

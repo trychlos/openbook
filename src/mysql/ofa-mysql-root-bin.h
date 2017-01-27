@@ -90,12 +90,6 @@ ofaMysqlRootBin *ofa_mysql_root_bin_new                   ( ofaMysqlDBProvider *
 void             ofa_mysql_root_bin_set_dossier_meta      ( ofaMysqlRootBin *bin,
 																ofaIDBDossierMeta *dossier_meta );
 
-GtkSizeGroup    *ofa_mysql_root_bin_get_size_group        ( ofaMysqlRootBin *bin,
-																guint column );
-
-gboolean         ofa_mysql_root_bin_is_valid              ( ofaMysqlRootBin *bin,
-																gchar **error_message );
-
 void             ofa_mysql_root_bin_set_valid             ( ofaMysqlRootBin *bin,
 																gboolean valid );
 

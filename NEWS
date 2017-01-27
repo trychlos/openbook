@@ -39,6 +39,7 @@
 
    - my_date_editable_set_entry_format(): renamed from my_date_editable_set_format (todo #1331).
    - my_date_editable_set_label_format(): renamed from my_date_editable_set_label (todo #1332).
+   - myIBin: new interface (todo #1323).
    - myICollectionable: remove ofaHub dependancy (todo #1319).
    - myIDialog: review whole closing process (todo #1330).
    - myISettings: make the interface more consistent (todo #1301).

@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-idbconnect.h"
@@ -200,6 +201,7 @@ setup_bin( ofaMysqlDossierEditor *self )
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *parent;
+	GtkSizeGroup *group;
 
 	priv = ofa_mysql_dossier_editor_get_instance_private( self );
 
@@ -226,7 +228,9 @@ setup_bin( ofaMysqlDossierEditor *self )
 		priv->root_bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->rule );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->root_bin ));
 		g_signal_connect( priv->root_bin, "ofa-changed", G_CALLBACK( on_root_bin_changed ), self );
-		my_utils_size_group_add_size_group( priv->group0, ofa_mysql_root_bin_get_size_group( priv->root_bin, 0 ));
+		if(( group = my_ibin_get_size_group( MY_IBIN( priv->root_bin ), 0 ))){
+			my_utils_size_group_add_size_group( priv->group0, group );
+		}
 	}
 
 	gtk_widget_destroy( toplevel );
@@ -444,7 +448,7 @@ idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message
 	ok = ofa_mysql_dossier_bin_is_valid( priv->dossier_bin, message );
 
 	if( ok && priv->root_bin ){
-		ok &= ofa_mysql_root_bin_is_valid( priv->root_bin, message ) &&
+		ok &= my_ibin_is_valid( MY_IBIN( priv->root_bin ), message ) &&
 				check_root_connection( OFA_MYSQL_DOSSIER_EDITOR( instance ), message );
 	}
 
