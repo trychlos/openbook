@@ -1055,22 +1055,28 @@ static void
 pane_right_add_empty_notebook( ofaMainWindow *self, ofaHub *hub )
 {
 	ofaMainWindowPrivate *priv;
-	myDndBook *book;
+	GtkWidget *book;
+	gboolean detacheable;
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	book = my_dnd_book_new();
-	my_utils_widget_set_margins( GTK_WIDGET( book ), 4, 4, 2, 4 );
+	detacheable = ofa_prefs_dnd_detach( hub );
+	if( detacheable ){
+		book = GTK_WIDGET( my_dnd_book_new());
+	} else {
+		book = gtk_notebook_new();
+	}
+	my_utils_widget_set_margins( book, 4, 4, 2, 4 );
 	gtk_notebook_set_scrollable( GTK_NOTEBOOK( book ), TRUE );
 	gtk_notebook_popup_enable( GTK_NOTEBOOK( book ));
-	gtk_widget_set_hexpand( GTK_WIDGET( book ), TRUE );
-	gtk_widget_set_vexpand( GTK_WIDGET( book ), TRUE );
+	gtk_widget_set_hexpand( book, TRUE );
+	gtk_widget_set_vexpand( book, TRUE );
 
 	g_signal_connect( book, "draw", G_CALLBACK( notebook_on_draw ), self );
 	g_signal_connect( book, "page-removed", G_CALLBACK( on_page_removed ), self );
 	g_signal_connect( book, "my-append-page", G_CALLBACK( book_on_append_page ), self );
 
-	gtk_paned_pack2( priv->pane, GTK_WIDGET( book ), TRUE, FALSE );
+	gtk_paned_pack2( priv->pane, book, TRUE, FALSE );
 }
 
 static void

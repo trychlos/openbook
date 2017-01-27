@@ -80,6 +80,9 @@ void         ofa_preferences_run                        ( ofaIGetter *getter,
 
 /* these are helpers globally available
  */
+gboolean     ofa_prefs_dnd_reorder                      ( ofaHub *hub );
+gboolean     ofa_prefs_dnd_detach                       ( ofaHub *hub );
+
 gboolean     ofa_prefs_assistant_quit_on_escape         ( ofaHub *hub );
 gboolean     ofa_prefs_assistant_confirm_on_escape      ( ofaHub *hub );
 gboolean     ofa_prefs_assistant_confirm_on_cancel      ( ofaHub *hub );

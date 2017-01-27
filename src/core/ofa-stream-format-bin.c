@@ -1409,7 +1409,7 @@ ibin_apply( myIBin *instance )
 	ofaStreamFormatBinPrivate *priv;
 
 	g_return_if_fail( instance && OFA_IS_STREAM_FORMAT_BIN( instance ));
-	g_return_if_fail( !my_ibin_is_valid( instance, NULL ));
+	g_return_if_fail( my_ibin_is_valid( instance, NULL ));
 
 	priv = ofa_stream_format_bin_get_instance_private( OFA_STREAM_FORMAT_BIN( instance ));
 

@@ -86,8 +86,6 @@
  314 2014- 9-26 have a preference to use millenary shortcut
                 (i.e. entering '14' gives '2014')
 
- 325 2014-10-12 DossierManage Properties: to be written
-
  334 2014-10-18 homogeneize styles:
                 e.g. displaying validated entries in ofaViewEntries or
                 validated balances if AccountProperties should have the
@@ -121,10 +119,6 @@
      2015- 1-10 idem when validating entries:
                 count=484: average is 0.09846 s
 
- 553 2015- 1- 6 deleting a dossier only removes its references from
-                settings - so DossierDelete and DossierDeletePrefs
-                become useless (see also #522)
-
  559 2015- 1- 8 have a macro language to automate dossier creation,
                 import of files
      2016- 1-27 other use case: automatically print the reports on
@@ -133,10 +127,6 @@
  584 2015- 1-12 ofo_insert_entry: should also insert reconciliation and
                 settlement data groups if they are set in the object
                 (would prevent two updates when closing the exercice)
-
- 599 2015- 1-22 GtkFileChooser in an assistant: unable to select again
-                the previously selected file when coming back from an
-                other page
 
  601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
                 database
@@ -166,10 +156,6 @@
 
  758 2015- 3-21 FEAT warns when deleting a settled or reconciliated
                      entry +unsettle/unreconciliate
-
- 761 2015- 3-22 DISP in the warning displayed when restoring to a
-                     database, display the target database in bold (or
-                     red)
 
  783 2015- 4- 3 FEAT have a summary of unsettle/unreconciliated entries
                      which will be reported after exercice closing
@@ -262,10 +248,6 @@
 
 1003 2016- 2-24 FEAT RenderPage: add navigation+zoom buttons
 
-1007 2016- 2-25 FEAT GuidedInput: have a red cross at the end of the line
-                     when the amount is set, but one of another field is
-                     wrong
-
 1012 2016- 2-25 FEAT OpeTemplate: when a row is moved up or down, then
                      the indexes should be updated accordingly
 
@@ -291,10 +273,6 @@
 
 1110 2016- 5- 5 BUG DnD: when drag and drop page - see TODO_1110/trace
                 gdk_window_move_resize_internal: assertion 'GDK_IS_WINDOW (window)' failed
-
-1147 2016- 6- 8 UserPref: whether to take advantage of tab reordering
-                or of detachable pages in the main book as the two are
-                mutually exclusive
 
 1149 2016- 6- 8 FEAT: print the accounts archived balances for a given date
                 SELECT a.ACC_NUMBER,a.ACC_LABEL,b.ACC_ARC_DEBIT-b.ACC_ARC_CREDIT FROM OFA_T_ACCOUNTS a,OFA_T_ACCOUNTS_ARC b WHERE a.ACC_NUMBER LIKE '5%' AND b.ACC_ARC_DATE='2016-01-31' AND a.ACC_NUMBER=b.ACC_NUMBER;
@@ -392,12 +370,41 @@
  DONE
  ====
 
+ 325 2014-10-12 DossierManage Properties: to be written
+     2017- 1-27 cancelled (because do not know what this is about)
+
+ 553 2015- 1- 6 deleting a dossier only removes its references from
+                settings - so DossierDelete and DossierDeletePrefs
+                become useless (see also #522)
+     2017- 1-27 deleting a dossier/exercice is now possible from
+                DossierManager
+
+ 599 2015- 1-22 GtkFileChooser in an assistant: unable to select again
+                the previously selected file when coming back from an
+                other page
+     2017- 1-27 no more the case
+
+ 761 2015- 3-22 DISP in the warning displayed when restoring to a
+                     database, display the target database in bold (or
+                     red)
+     2017- 1-27 cancelled as obsolete
+
  792 2015- 4- 6 FEAT have a comment in the backup
      2017- 1-13 done
+
+1007 2016- 2-25 FEAT GuidedInput: have a red cross at the end of the line
+                     when the amount is set, but one of another field is
+                     wrong
+     2017- 1-27 useless
 
 1073 2016- 4-14 ofaIDBConnect::restore: returns an error message
      2017- 1-16 cancelled as an error message may be sent through the
                 msg_cb callback
+
+1147 2016- 6- 8 UserPref: whether to take advantage of tab reordering
+                or of detachable pages in the main book as the two are
+                mutually exclusive
+     2017- 1-27 done
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
      2017- 1-12 done in CORE v34
