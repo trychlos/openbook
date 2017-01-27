@@ -21,7 +21,9 @@
    - Add a JSON header to backup archives.
    - Backups now manage several data streams, of which dossier and Openbook headers.
    - Backups now have a comment (todo #792).
+   - DossierManager: delete an exercice (todo #1316).
    - DossierOpen: set the read-only flag when selecting a closed exercice (todo #1321).
+   - ExerciceNew: create a new exercice.
    - Replace Backup standard dialog box with an assistant (todo #1317).
    - Restore assistant implements restore protection rules (todo #1320).
 
@@ -47,6 +49,7 @@
    - my_utils_file_is_readable_file(): renamed to my_utils_file_is_readable().
    - my_utils_uri_is_readable_file(): renamed to my_utils_uri_is_readable().
    - ofaBackupAssistant: new class.
+   - ofaDbsu: new class.
    - ofa_dossier_collection_set_meta_from_editor(): deprecated function (todo #1267).
    - ofaDossierNew: makes use of ofaExerciceEditBin (todo #1334).
    - ofaDossierNewBin: deprecated class.

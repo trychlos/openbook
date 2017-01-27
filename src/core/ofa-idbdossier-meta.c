@@ -908,6 +908,7 @@ ofa_idbdossier_meta_delete_period( ofaIDBDossierMeta *meta,
 	g_return_val_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ), FALSE );
 
 	ok = TRUE;
+	msg = NULL;
 	sdata = get_instance_data( meta );
 
 	if( msgerr ){
@@ -986,7 +987,7 @@ delete_add_msg( gchar **msgerr, const gchar *msg )
 	if( my_strlen( msg )){
 		tmp = g_strdup_printf( "%s%s%s",
 				my_strlen( *msgerr ) ? *msgerr : "",
-				my_strlen( *msgerr ) ? "\\n" : "",
+				my_strlen( *msgerr ) ? "\n" : "",
 				msg );
 		g_free( *msgerr );
 		*msgerr = tmp;

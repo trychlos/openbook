@@ -456,7 +456,9 @@ ofa_idbprovider_new_superuser_bin( ofaIDBProvider *provider, guint rule )
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_superuser_bin ){
 		bin = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_superuser_bin( provider, rule );
-		ofa_idbsuperuser_set_provider( bin, provider );
+		if( bin ){
+			ofa_idbsuperuser_set_provider( bin, provider );
+		}
 		return( bin );
 	}
 

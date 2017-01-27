@@ -34,6 +34,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-dossier-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -44,6 +45,7 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofo-dossier.h"
 
+#include "ui/ofa-dbsu.h"
 #include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
@@ -476,18 +478,23 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 	static const gchar *thisfn = "ofa_dossier_manager_action_on_delete_activated";
 	ofaDossierManagerPrivate *priv;
 	const ofaIDBConnect *dossier_connect;
+	ofaIDBProvider *provider;
 	ofaIDBDossierMeta *meta, *dossier_meta;
 	ofaIDBExerciceMeta *period, *exercice_meta;
 	ofoDossier *dossier;
 	gint cmp;
+	ofaIDBSuperuser *su_bin;
+	gchar *settings_prefix, *msgerr;
+	ofaIDBConnect *connect;
+	ofaDossierCollection *collection;
+	GtkWindow *toplevel;
 
 	g_debug( "%s: action=%p, empty=%p, self=%p",
 			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period ) &&
-		confirm_delete( self, meta, period )){
+	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period )){
 
 		/* close the currently opened dossier/exercice if we are about
 		 * to delete it */
@@ -509,8 +516,33 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 				ofa_hub_dossier_close( priv->hub );
 			}
 		}
-		/* TODO: delete dossier */
-		g_warning( "%s: ofa_dossier_collection_delete_period() to be implemented", thisfn );
+
+		/* delete the exercice
+		 * delete the dossier when deleting the last exercice */
+		provider = ofa_idbdossier_meta_get_provider( meta );
+		settings_prefix = g_strdup_printf( "%s-dbsu", priv->settings_prefix );
+
+		if( ofa_dbsu_run( priv->getter, GTK_WINDOW( self ), settings_prefix, provider, HUB_RULE_EXERCICE_DELETE, &su_bin ) &&
+			confirm_delete( self, meta, period )){
+
+			connect = ofa_idbdossier_meta_new_connect( meta, NULL );
+			if( ofa_idbconnect_open_with_superuser( connect, su_bin )){
+
+				msgerr = NULL;
+				collection = ofa_hub_get_dossier_collection( priv->hub );
+
+				if( !ofa_dossier_collection_delete_period( collection, connect, period, TRUE, &msgerr )){
+					toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+					my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING, msgerr );
+					g_free( msgerr );
+				}
+			}
+
+			g_object_unref( connect );
+			gtk_widget_destroy( GTK_WIDGET( su_bin ));
+		}
+
+		g_free( settings_prefix );
 	}
 }
 
@@ -526,8 +558,8 @@ confirm_delete( ofaDossierManager *self, const ofaIDBDossierMeta *meta, const of
 	period_name = ofa_idbexercice_meta_get_name( period );
 	str = g_strdup_printf(
 			_( "You are about to remove the '%s' period from the '%s' dossier.\n"
-				"This operation will remove the referenced exercice from the settings, "
-				"while letting the database itself unchanged.\n"
+				"This operation will entirely delete the referenced exercice from the settings "
+				"and from the DBMS provider.\n"
 				"Are your sure ?" ),
 					period_name, dossier_name );
 

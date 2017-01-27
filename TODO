@@ -382,9 +382,6 @@
                 user_preferences + dossier_preferences + settings in
                 dossier_new and dossier_open
 
-1316 2017- 1- 9 DossierManager: implement call to ofa_dossier_collection_delete_period()
-                (requires a superuser connection on the dbms)
-
 1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
      2017- 1-26 first *define* standard actions on open
 
@@ -485,6 +482,10 @@
 
 1315 2017- 1- 9 ofa_dossier_collection_delete_period(): to be written
      2017- 1- 9 done
+
+1316 2017- 1- 9 DossierManager: implement call to ofa_dossier_collection_delete_period()
+                (requires a superuser connection on the dbms)
+     2017- 1-27 done
 
 1317 2017- 1-10 move ofaBackup to myIDialog, including a comment
      2017- 1-12 actually move to an assistant
