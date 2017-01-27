@@ -30,6 +30,7 @@
 #include <glib/gprintf.h>
 #include <stdlib.h>
 
+#include "my/my-ibin.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-style.h"
@@ -348,7 +349,7 @@ check_for_enable_dlg( ofaExerciceNew *self )
 	priv = ofa_exercice_new_get_instance_private( self );
 
 	message = NULL;
-	ok = ofa_exercice_edit_bin_is_valid( priv->edit_bin, &message );
+	ok = my_ibin_is_valid( MY_IBIN( priv->edit_bin ), &message );
 	set_message( self, message );
 	g_free( message );
 

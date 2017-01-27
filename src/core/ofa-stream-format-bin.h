@@ -68,9 +68,6 @@ GType               ofa_stream_format_bin_get_type          ( void ) G_GNUC_CONS
 
 ofaStreamFormatBin *ofa_stream_format_bin_new               ( ofaStreamFormat *format );
 
-GtkSizeGroup       *ofa_stream_format_bin_get_size_group    ( ofaStreamFormatBin *bin,
-																guint col_number );
-
 void                ofa_stream_format_bin_set_name_sensitive( ofaStreamFormatBin *bin,
 																	gboolean sensitive );
 
@@ -82,11 +79,6 @@ void                ofa_stream_format_bin_set_format        ( ofaStreamFormatBin
 
 void                ofa_stream_format_bin_set_updatable     ( ofaStreamFormatBin *bin,
 																gboolean updatable );
-
-gboolean            ofa_stream_format_bin_is_valid          ( ofaStreamFormatBin *bin,
-																gchar **error_message );
-
-gboolean            ofa_stream_format_bin_apply             ( ofaStreamFormatBin *bin );
 
 G_END_DECLS
 

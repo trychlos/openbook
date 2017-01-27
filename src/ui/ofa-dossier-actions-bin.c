@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -82,14 +83,17 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-actions-bin.ui";
 
-static void setup_bin( ofaDossierActionsBin *self );
-static void on_open_toggled( GtkToggleButton *button, ofaDossierActionsBin *self );
-static void changed_composite( ofaDossierActionsBin *self );
-static void read_settings( ofaDossierActionsBin *self );
-static void write_settings( ofaDossierActionsBin *self );
+static void          setup_bin( ofaDossierActionsBin *self );
+static void          on_open_toggled( GtkToggleButton *button, ofaDossierActionsBin *self );
+static void          changed_composite( ofaDossierActionsBin *self );
+static void          read_settings( ofaDossierActionsBin *self );
+static void          write_settings( ofaDossierActionsBin *self );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierActionsBin, ofa_dossier_actions_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaDossierActionsBin ))
+		G_ADD_PRIVATE( ofaDossierActionsBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 dossier_actions_bin_finalize( GObject *instance )
@@ -273,33 +277,6 @@ setup_bin( ofaDossierActionsBin *self )
 	g_object_unref( builder );
 }
 
-/**
- * ofa_dossier_actions_bin_get_size_group:
- * @bin: this #ofaDossierActionsBin instance.
- * @column: the desired column.
- *
- * Returns: the #GtkSizeGroup which handles the desired @column.
- */
-GtkSizeGroup *
-ofa_dossier_actions_bin_get_size_group( ofaDossierActionsBin *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_dossier_actions_bin_get_size_group";
-	ofaDossierActionsBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_ACTIONS_BIN( bin ), NULL );
-
-	priv = ofa_dossier_actions_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-
-	g_warning( "%s: unmanaged column=%u", thisfn, column );
-	return( NULL );
-}
-
 static void
 on_open_toggled( GtkToggleButton *button, ofaDossierActionsBin *self )
 {
@@ -318,19 +295,6 @@ static void
 changed_composite( ofaDossierActionsBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
-}
-
-/**
- * ofa_dossier_actions_bin_is_valid:
- * @bin: this #ofaDossierActionsBin instance.
- * @error_message: [allow-none]: the error message to be displayed.
- *
- * The dialog is always valid.
- */
-gboolean
-ofa_dossier_actions_bin_is_valid( ofaDossierActionsBin *bin, gchar **error_message )
-{
-	return( TRUE );
 }
 
 /**
@@ -426,4 +390,23 @@ write_settings( ofaDossierActionsBin *self )
 
 	g_free( key );
 	g_free( str );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_actions_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
 }

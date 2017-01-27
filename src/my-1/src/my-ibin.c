@@ -203,6 +203,8 @@ my_ibin_get_size_group( const myIBin *instance, guint column )
  * @msgerr: [out][allow-none]: a placeholder for an error message.
  *
  * Returns: %TRUE if the @instance is valid.
+ *
+ * Defaults to %TRUE.
  */
 gboolean
 my_ibin_is_valid( const myIBin *instance, gchar **msgerr )
@@ -219,7 +221,7 @@ my_ibin_is_valid( const myIBin *instance, gchar **msgerr )
 
 	g_info( "%s: myIBin's %s implementation does not provide 'is_valid()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( FALSE );
+	return( TRUE );
 }
 
 /**

@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -71,17 +72,22 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-admin-credentials-bin.ui";
 
-static void     setup_bin( ofaAdminCredentialsBin *bin );
-static void     on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
-static void     on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
-static void     on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
-static void     changed_composite( ofaAdminCredentialsBin *self );
-static gboolean is_valid_composite( ofaAdminCredentialsBin *self );
-static void     read_settings( ofaAdminCredentialsBin *self );
-static void     write_settings( ofaAdminCredentialsBin *self );
+static void          setup_bin( ofaAdminCredentialsBin *bin );
+static void          on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
+static void          on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
+static void          on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
+static void          changed_composite( ofaAdminCredentialsBin *self );
+static gboolean      is_valid_composite( ofaAdminCredentialsBin *self );
+static void          read_settings( ofaAdminCredentialsBin *self );
+static void          write_settings( ofaAdminCredentialsBin *self );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaAdminCredentialsBin, ofa_admin_credentials_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaAdminCredentialsBin ))
+		G_ADD_PRIVATE( ofaAdminCredentialsBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 admin_credentials_bin_finalize( GObject *instance )
@@ -265,42 +271,6 @@ setup_bin( ofaAdminCredentialsBin *bin )
 	g_object_unref( builder );
 }
 
-/**
- * ofa_admin_credentials_bin_get_size_group:
- * @bin: this #ofaAdminCredentialsBin instance.
- * @column: the desired column number, counted from zero.
- *
- * Returns: the #GtkSizeGroup used to horizontally align the @column.
- *
- * As this is a composite widget, it is probable that we will want align
- * it with other composites or widgets in a dialog box. Having a size
- * group prevents us to have to determine the longest label, which
- * should be computed dynamically as this may depend of the translation.
- *
- * Here, the .xml UI definition defines a dedicated GtkSizeGroup that
- * we have just to return as is.
- */
-GtkSizeGroup *
-ofa_admin_credentials_bin_get_size_group( ofaAdminCredentialsBin *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_admin_credentials_bin_get_size_group";
-	ofaAdminCredentialsBinPrivate *priv;
-
-	g_debug( "%s: bin=%p, column=%u", thisfn, ( void * ) bin, column );
-
-	g_return_val_if_fail( bin && OFA_IS_ADMIN_CREDENTIALS_BIN( bin ), NULL );
-
-	priv = ofa_admin_credentials_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-
-	return( NULL );
-}
-
 static void
 on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *self )
 {
@@ -351,38 +321,6 @@ changed_composite( ofaAdminCredentialsBin *self )
 	priv = ofa_admin_credentials_bin_get_instance_private( self );
 
 	g_signal_emit_by_name( self, "ofa-changed", priv->account, priv->password );
-}
-
-/**
- * ofa_admin_credentials_bin_is_valid:
- * @bin:
- * @error_message: [allow-none]: set to the error message as a newly
- *  allocated string which should be g_free() by the caller.
- *
- * Returns: %TRUE if the composite widget is valid: both account and
- * password are set, password is repeated twice and are equal.
- */
-gboolean
-ofa_admin_credentials_bin_is_valid( ofaAdminCredentialsBin *bin, gchar **error_message )
-{
-	ofaAdminCredentialsBinPrivate *priv;
-	gboolean is_valid;
-
-	g_return_val_if_fail( bin && OFA_IS_ADMIN_CREDENTIALS_BIN( bin ), FALSE );
-
-	priv = ofa_admin_credentials_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	is_valid = is_valid_composite( bin );
-
-	if( error_message ){
-		*error_message = is_valid ?
-				NULL :
-				g_strdup( _( "Dossier administrative credentials are not valid" ));
-	}
-
-	return( is_valid );
 }
 
 static gboolean
@@ -509,4 +447,75 @@ write_settings( ofaAdminCredentialsBin *self )
 
 	g_free( key );
 	g_free( str );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_admin_credentials_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_admin_credentials_bin_ibin_get_size_group";
+	ofaAdminCredentialsBinPrivate *priv;
+
+	g_debug( "%s: instance=%p, column=%u", thisfn, ( void * ) instance, column );
+
+	g_return_val_if_fail( instance && OFA_IS_ADMIN_CREDENTIALS_BIN( instance ), NULL );
+
+	priv = ofa_admin_credentials_bin_get_instance_private( OFA_ADMIN_CREDENTIALS_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
+}
+
+/*
+ * Returns: %TRUE if the composite widget is valid: both account and
+ * password are set, password is repeated twice and are equal.
+ */
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
+{
+	ofaAdminCredentialsBinPrivate *priv;
+	gboolean is_valid;
+
+	g_return_val_if_fail( instance && OFA_IS_ADMIN_CREDENTIALS_BIN( instance ), FALSE );
+
+	priv = ofa_admin_credentials_bin_get_instance_private( OFA_ADMIN_CREDENTIALS_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	is_valid = is_valid_composite( OFA_ADMIN_CREDENTIALS_BIN( instance ));
+
+	if( msgerr ){
+		*msgerr = is_valid ?
+				NULL :
+				g_strdup( _( "Dossier administrative credentials are not valid" ));
+	}
+
+	return( is_valid );
 }

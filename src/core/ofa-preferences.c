@@ -32,6 +32,7 @@
 #include "my/my-date.h"
 #include "my/my-date-combo.h"
 #include "my/my-decimal-combo.h"
+#include "my/my-ibin.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-style.h"
@@ -591,7 +592,7 @@ init_export_page( ofaPreferences *self )
 	ofaPreferencesPrivate *priv;
 	GtkWidget *target, *label;
 	gchar *str;
-	GtkSizeGroup *group;
+	GtkSizeGroup *group, *group_bin;
 	ofaStreamFormat *format;
 
 	priv = ofa_preferences_get_instance_private( self );
@@ -605,9 +606,9 @@ init_export_page( ofaPreferences *self )
 	priv->export_settings = ofa_stream_format_bin_new( format );
 	g_object_unref( format );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->export_settings ));
-	my_utils_size_group_add_size_group(
-			group, ofa_stream_format_bin_get_size_group( priv->export_settings, 0 ));
-
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->export_settings ), 0 ))){
+		my_utils_size_group_add_size_group( group, group_bin );
+	}
 	ofa_stream_format_bin_set_name_sensitive( priv->export_settings, FALSE );
 	ofa_stream_format_bin_set_mode_sensitive( priv->export_settings, FALSE );
 
@@ -834,14 +835,14 @@ check_for_activable_dlg( ofaPreferences *self )
 	if( !activable ){
 		set_message( self, _( "Language must accept either dot or comma decimal separator" ));
 
-	} else if( priv->export_settings && !ofa_stream_format_bin_is_valid( priv->export_settings, &msg )){
+	} else if( priv->export_settings && !my_ibin_is_valid( MY_IBIN( priv->export_settings ), &msg )){
 		msgerr = g_strdup_printf( _( "Export settings: %s" ), msg );
 		set_message( self, msgerr );
 		g_free( msg );
 		g_free( msgerr );
 		activable = FALSE;
 
-	} else if( priv->import_settings && !ofa_stream_format_bin_is_valid( priv->import_settings, &msg )){
+	} else if( priv->import_settings && !my_ibin_is_valid( MY_IBIN( priv->import_settings ), &msg )){
 		msgerr = g_strdup_printf( _( "Import settings: %s" ), msg );
 		set_message( self, msgerr );
 		g_free( msg );
@@ -1485,7 +1486,7 @@ do_update_export_page( ofaPreferences *self, gchar **msgerr )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	ofa_stream_format_bin_apply( priv->export_settings );
+	my_ibin_apply( MY_IBIN( priv->export_settings ));
 
 	text = gtk_file_chooser_get_uri( priv->p5_chooser );
 	if( my_strlen( text )){
@@ -1523,7 +1524,7 @@ do_update_import_page( ofaPreferences *self, gchar **msgerr )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	ofa_stream_format_bin_apply( priv->import_settings );
+	my_ibin_apply( MY_IBIN( priv->import_settings ));
 
 	return( TRUE );
 }

@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -86,13 +87,18 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-edit-bin.ui";
 
-static void setup_bin( ofaDossierEditBin *self );
-static void on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self );
-static void on_dossier_editor_changed( ofaIDBDossierEditor *editor, ofaDossierEditBin *self );
-static void changed_composite( ofaDossierEditBin *self );
+static void          setup_bin( ofaDossierEditBin *self );
+static void          on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self );
+static void          on_dossier_editor_changed( ofaIDBDossierEditor *editor, ofaDossierEditBin *self );
+static void          changed_composite( ofaDossierEditBin *self );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierEditBin, ofa_dossier_edit_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaDossierEditBin ))
+		G_ADD_PRIVATE( ofaDossierEditBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 dossier_edit_bin_finalize( GObject *instance )
@@ -242,6 +248,7 @@ setup_bin( ofaDossierEditBin *self )
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *parent;
+	GtkSizeGroup *group_bin;
 
 	priv = ofa_dossier_edit_bin_get_instance_private( self );
 
@@ -259,7 +266,9 @@ setup_bin( ofaDossierEditBin *self )
 	priv->dossier_meta_bin = ofa_dossier_meta_bin_new( priv->hub, priv->settings_prefix, priv->rule );
 	g_signal_connect( priv->dossier_meta_bin, "ofa-changed", G_CALLBACK( on_dossier_meta_changed ), self );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_meta_bin ));
-	my_utils_size_group_add_size_group( priv->group0, ofa_dossier_meta_bin_get_size_group( priv->dossier_meta_bin, 0 ));
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->dossier_meta_bin ), 0 ))){
+		my_utils_size_group_add_size_group( priv->group0, group_bin );
+	}
 
 	/* dossier dbeditor */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "deb-dossier-editor-parent" );
@@ -268,36 +277,6 @@ setup_bin( ofaDossierEditBin *self )
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
-}
-
-/**
- * ofa_dossier_edit_bin_get_size_group:
- * @bin: this #ofaDossierEditBin instance.
- * @column: the desired column.
- *
- * Returns: the #GtkSizeGroup which handles the desired @column.
- */
-GtkSizeGroup *
-ofa_dossier_edit_bin_get_size_group( ofaDossierEditBin *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_dossier_edit_bin_get_size_group";
-	ofaDossierEditBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), NULL );
-
-	priv = ofa_dossier_edit_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-
-	} else if( column == 1 ){
-		return( priv->group1 );
-	}
-
-	g_warning( "%s: unmanaged column=%u", thisfn, column );
-	return( NULL );
 }
 
 static void
@@ -341,35 +320,6 @@ changed_composite( ofaDossierEditBin *self )
 }
 
 /**
- * ofa_dossier_edit_bin_is_valid:
- * @bin: this #ofaDossierEditBin instance.
- * @message: [out][allow-none]: a placeholder for the output error message.
- *
- * Returns: %TRUE if the dialog is valid.
- */
-gboolean
-ofa_dossier_edit_bin_is_valid( ofaDossierEditBin *bin, gchar **message )
-{
-	ofaDossierEditBinPrivate *priv;
-	gboolean ok = TRUE;
-
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_EDIT_BIN( bin ), FALSE );
-
-	priv = ofa_dossier_edit_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	if( ok ){
-		ok = ofa_dossier_meta_bin_is_valid( priv->dossier_meta_bin, message );
-	}
-	if( ok ){
-		ok = priv->dossier_editor_bin ? ofa_idbdossier_editor_is_valid( priv->dossier_editor_bin, message ) : TRUE;
-	}
-
-	return( ok );
-}
-
-/**
  * ofa_dossier_edit_bin_apply:
  * @bin: this #ofaDossierEditBin instance.
  *
@@ -392,7 +342,7 @@ ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	ofa_dossier_meta_bin_apply( priv->dossier_meta_bin );
+	my_ibin_apply( MY_IBIN( priv->dossier_meta_bin ));
 	priv->dossier_meta = ofa_dossier_meta_bin_get_dossier_meta( priv->dossier_meta_bin );
 	ofa_idbdossier_meta_set_from_editor( priv->dossier_meta, priv->dossier_editor_bin );
 
@@ -437,4 +387,71 @@ ofa_dossier_edit_bin_get_dossier_editor( ofaDossierEditBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->dossier_editor_bin );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_edit_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_dossier_edit_bin_ibin_get_size_group";
+	ofaDossierEditBinPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_DOSSIER_EDIT_BIN( instance ), NULL );
+
+	priv = ofa_dossier_edit_bin_get_instance_private( OFA_DOSSIER_EDIT_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+
+	} else if( column == 1 ){
+		return( priv->group1 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
+}
+
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
+{
+	ofaDossierEditBinPrivate *priv;
+	gboolean ok = TRUE;
+
+	g_return_val_if_fail( instance && OFA_IS_DOSSIER_EDIT_BIN( instance ), FALSE );
+
+	priv = ofa_dossier_edit_bin_get_instance_private( OFA_DOSSIER_EDIT_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	if( ok ){
+		ok = my_ibin_is_valid( MY_IBIN( priv->dossier_meta_bin ), msgerr );
+	}
+	if( ok ){
+		ok = priv->dossier_editor_bin ? ofa_idbdossier_editor_is_valid( priv->dossier_editor_bin, msgerr ) : TRUE;
+	}
+
+	return( ok );
 }

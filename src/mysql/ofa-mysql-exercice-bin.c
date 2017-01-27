@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-idbexercice-editor.h"
@@ -69,12 +70,17 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-exercice-bin.ui";
 
-static void setup_bin( ofaMysqlExerciceBin *self );
-static void on_database_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaMysqlExerciceBin *self );
-static void on_database_changed( GtkEntry *entry, ofaMysqlExerciceBin *self );
+static void          setup_bin( ofaMysqlExerciceBin *self );
+static void          on_database_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaMysqlExerciceBin *self );
+static void          on_database_changed( GtkEntry *entry, ofaMysqlExerciceBin *self );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlExerciceBin, ofa_mysql_exercice_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaMysqlExerciceBin ))
+		G_ADD_PRIVATE( ofaMysqlExerciceBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 mysql_exercice_bin_finalize( GObject *instance )
@@ -267,88 +273,6 @@ on_database_changed( GtkEntry *entry, ofaMysqlExerciceBin *self )
 }
 
 /**
- * ofa_mysql_exercice_bin_get_size_group:
- * @bin: this #ofaMysqlExerciceBin instance.
- * @column: the desired column.
- *
- * Returns: the #GtkSizeGroup for the @column if it exists.
- */
-GtkSizeGroup *
-ofa_mysql_exercice_bin_get_size_group( ofaMysqlExerciceBin *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_mysql_exercice_bin_get_size_group";
-	ofaMysqlExerciceBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_MYSQL_EXERCICE_BIN( bin ), NULL );
-
-	priv = ofa_mysql_exercice_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-
-	g_warning( "%s: column=%u", thisfn, column );
-	return( NULL );
-}
-
-/**
- * ofa_mysql_exercice_bin_is_valid:
- * @bin: this #ofaMysqlExerciceBin instance.
- * @¢message: [out][allow-none]: a placeholder for an error message.
- *
- * Returns: %TRUE if the widget is valid.
- */
-gboolean
-ofa_mysql_exercice_bin_is_valid( ofaMysqlExerciceBin *bin, gchar **message )
-{
-	ofaMysqlExerciceBinPrivate *priv;
-	gboolean ok;
-
-	g_return_val_if_fail( bin && OFA_IS_MYSQL_EXERCICE_BIN( bin ), FALSE );
-
-	priv = ofa_mysql_exercice_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	ok = TRUE;
-	if( message ){
-		*message = NULL;
-	}
-
-	if( !my_strlen( priv->database )){
-		ok = FALSE;
-		if( message ){
-			*message = g_strdup( _( "The database name is empty" ));
-		}
-	}
-
-	return( ok );
-}
-
-/**
- * ofa_mysql_exercice_bin_apply:
- * @bin: this #ofaMysqlExerciceBin instance.
- *
- * Returns: %TRUE if the widget has been applied (whatever this may mean
- * here).
- */
-gboolean
-ofa_mysql_exercice_bin_apply( ofaMysqlExerciceBin *bin )
-{
-	ofaMysqlExerciceBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_MYSQL_EXERCICE_BIN( bin ), FALSE );
-
-	priv = ofa_mysql_exercice_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	return( TRUE );
-}
-
-/**
  * ofa_mysql_exercice_bin_get_database:
  * @exercice_bin: this #ofaMysqlExerciceBin instance.
  *
@@ -369,4 +293,73 @@ ofaMysqlExerciceBinPrivate *priv;
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return(( const gchar * ) priv->database );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_exercice_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_mysql_exercice_bin_ibin_get_size_group";
+	ofaMysqlExerciceBinPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_EXERCICE_BIN( instance ), NULL );
+
+	priv = ofa_mysql_exercice_bin_get_instance_private( OFA_MYSQL_EXERCICE_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
+}
+
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
+{
+	ofaMysqlExerciceBinPrivate *priv;
+	gboolean ok;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_EXERCICE_BIN( instance ), FALSE );
+
+	priv = ofa_mysql_exercice_bin_get_instance_private( OFA_MYSQL_EXERCICE_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	ok = TRUE;
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
+	if( !my_strlen( priv->database )){
+		ok = FALSE;
+		if( msgerr ){
+			*msgerr = g_strdup( _( "The database name is empty" ));
+		}
+	}
+
+	return( ok );
 }

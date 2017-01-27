@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-idbdossier-meta.h"
@@ -74,15 +75,20 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-dossier-bin.ui";
 
-static void setup_bin( ofaMysqlDossierBin *self );
-static void setup_dossier_meta( ofaMysqlDossierBin *self );
-static void on_host_changed( GtkEntry *entry, ofaMysqlDossierBin *self );
-static void on_port_changed( GtkEntry *entry, ofaMysqlDossierBin *self );
-static void on_socket_changed( GtkEntry *entry, ofaMysqlDossierBin *self );
-static void changed_composite( ofaMysqlDossierBin *self );
+static void          setup_bin( ofaMysqlDossierBin *self );
+static void          setup_dossier_meta( ofaMysqlDossierBin *self );
+static void          on_host_changed( GtkEntry *entry, ofaMysqlDossierBin *self );
+static void          on_port_changed( GtkEntry *entry, ofaMysqlDossierBin *self );
+static void          on_socket_changed( GtkEntry *entry, ofaMysqlDossierBin *self );
+static void          changed_composite( ofaMysqlDossierBin *self );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierBin, ofa_mysql_dossier_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaMysqlDossierBin ))
+		G_ADD_PRIVATE( ofaMysqlDossierBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 mysql_dossier_bin_finalize( GObject *instance )
@@ -272,33 +278,6 @@ setup_dossier_meta( ofaMysqlDossierBin *self )
 
 }
 
-/**
- * ofa_mysql_dossier_bin_get_size_group:
- * @bin: this #ofaMysqlDossierBin instance.
- * @column: the desired column, counted from zero.
- *
- * Returns: the #GtkSizeGroup for the specified @column.
- */
-GtkSizeGroup *
-ofa_mysql_dossier_bin_get_size_group( ofaMysqlDossierBin *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_mysql_dossier_bin_get_size_group";
-	ofaMysqlDossierBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_MYSQL_DOSSIER_BIN( bin ), NULL );
-
-	priv = ofa_mysql_dossier_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-
-	g_warning( "%s: column=%u", thisfn, column );
-	return( NULL );
-}
-
 static void
 on_host_changed( GtkEntry *entry, ofaMysqlDossierBin *self )
 {
@@ -347,33 +326,6 @@ static void
 changed_composite( ofaMysqlDossierBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
-}
-
-/**
- * ofa_mysql_dossier_bin_is_valid:
- * @bin: this #ofaMysqlDossierBin instance.
- * @message: [out][allow-none]: a placeholder for the error message.
- *
- * Returns: %TRUE if the dialog is valid.
- *
- * All the informations are optional: the widget is always valid.
- */
-gboolean
-ofa_mysql_dossier_bin_is_valid( ofaMysqlDossierBin *bin, gchar **message )
-{
-	ofaMysqlDossierBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_MYSQL_DOSSIER_BIN( bin ), FALSE );
-
-	priv = ofa_mysql_dossier_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	if( message ){
-		*message = NULL;
-	}
-
-	return( TRUE );
 }
 
 /**
@@ -463,4 +415,67 @@ ofa_mysql_dossier_bin_set_dossier_meta( ofaMysqlDossierBin *bin, ofaIDBDossierMe
 	priv->dossier_meta = dossier_meta;
 
 	setup_dossier_meta( bin );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_dossier_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_mysql_dossier_bin_ibin_get_size_group";
+	ofaMysqlDossierBinPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_DOSSIER_BIN( instance ), NULL );
+
+	priv = ofa_mysql_dossier_bin_get_instance_private( OFA_MYSQL_DOSSIER_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
+}
+
+/*
+ * All informations are optional: the widget is always valid.
+ */
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
+{
+	ofaMysqlDossierBinPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_DOSSIER_BIN( instance ), FALSE );
+
+	priv = ofa_mysql_dossier_bin_get_instance_private( OFA_MYSQL_DOSSIER_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
+	return( TRUE );
 }

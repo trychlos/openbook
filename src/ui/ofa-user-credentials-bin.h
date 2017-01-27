@@ -28,12 +28,9 @@
 /**
  * SECTION: ofa_user_credentials_bin
  * @short_description: #ofaUserCredentialsBin class definition.
- * @include: core/ofa-admin-credentials-bin.h
+ * @include: ui/ofa-user-credentials-bin.h
  *
- * Let the user enter dossier administrative account and password when
- * defining a new (or restoring a) dossier. We do not check here whether
- * the entered credentials are actually registered and valid into the
- * dossier database, but only if they are set.
+ * Let the user enter his account and password.
  *
  * Development rules:
  * - type:       bin (parent='top')
@@ -65,23 +62,17 @@ typedef struct {
 }
 	ofaUserCredentialsBinClass;
 
-GType                  ofa_user_credentials_bin_get_type      ( void ) G_GNUC_CONST;
+GType                  ofa_user_credentials_bin_get_type    ( void ) G_GNUC_CONST;
 
-ofaUserCredentialsBin *ofa_user_credentials_bin_new           ( void );
+ofaUserCredentialsBin *ofa_user_credentials_bin_new         ( void );
 
-GtkSizeGroup          *ofa_user_credentials_bin_get_size_group( ofaUserCredentialsBin *bin,
-																			guint column );
+void                   ofa_user_credentials_bin_grab_focus  ( ofaUserCredentialsBin *bin );
 
-void                   ofa_user_credentials_bin_grab_focus    ( ofaUserCredentialsBin *bin );
+void                   ofa_user_credentials_bin_set_account ( ofaUserCredentialsBin *bin,
+																	const gchar *account );
 
-void                   ofa_user_credentials_bin_set_account   ( ofaUserCredentialsBin *bin,
-																			const gchar *account );
-
-void                   ofa_user_credentials_bin_set_password  ( ofaUserCredentialsBin *bin,
-																			const gchar *account );
-
-gboolean               ofa_user_credentials_bin_is_valid      ( ofaUserCredentialsBin *bin,
-																			gchar **msgerr );
+void                   ofa_user_credentials_bin_set_password( ofaUserCredentialsBin *bin,
+																	const gchar *account );
 
 G_END_DECLS
 

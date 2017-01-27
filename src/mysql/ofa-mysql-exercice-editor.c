@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -64,14 +65,20 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysq
 static void          setup_bin( ofaMysqlExerciceEditor *self );
 static void          on_exercice_bin_changed( ofaMysqlExerciceBin *bin, ofaMysqlExerciceEditor *self );
 //static gboolean      does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
+static void          ibin_apply( myIBin *instance );
 static void          idbexercice_editor_iface_init( ofaIDBExerciceEditorInterface *iface );
 static guint         idbexercice_editor_get_interface_version( void );
 static GtkSizeGroup *idbexercice_editor_get_size_group( const ofaIDBExerciceEditor *instance, guint column );
-static gboolean      idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **message );
+static gboolean      idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **msgerr );
 static gboolean      idbexercice_editor_apply( const ofaIDBExerciceEditor *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlExerciceEditor, ofa_mysql_exercice_editor, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlExerciceEditor )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBEXERCICE_EDITOR, idbexercice_editor_iface_init ))
 
 static void
@@ -180,6 +187,7 @@ setup_bin( ofaMysqlExerciceEditor *self )
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *parent;
+	GtkSizeGroup *group_bin;
 
 	priv = ofa_mysql_exercice_editor_get_instance_private( self );
 
@@ -198,7 +206,9 @@ setup_bin( ofaMysqlExerciceEditor *self )
 	priv->exercice_bin = ofa_mysql_exercice_bin_new( priv->settings_prefix, priv->rule );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
 	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), self );
-	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_exercice_bin_get_size_group( priv->exercice_bin, 0 ));
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->exercice_bin ), 0 ))){
+		my_utils_size_group_add_size_group( priv->group0, group_bin );
+	}
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -258,6 +268,105 @@ ofa_mysql_exercice_editor_get_database( ofaMysqlExerciceEditor *editor )
 }
 
 /*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_exercice_editor_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+	iface->apply = ibin_apply;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_mysql_exercice_editor_ibin_get_size_group";
+	ofaMysqlExerciceEditorPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_EXERCICE_EDITOR( instance ), NULL );
+
+	priv = ofa_mysql_exercice_editor_get_instance_private( OFA_MYSQL_EXERCICE_EDITOR( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
+}
+
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
+{
+	ofaMysqlExerciceEditorPrivate *priv;
+	gboolean ok;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_EXERCICE_EDITOR( instance ), FALSE );
+
+	priv = ofa_mysql_exercice_editor_get_instance_private( OFA_MYSQL_EXERCICE_EDITOR( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
+	ok = my_ibin_is_valid( MY_IBIN( priv->exercice_bin ), msgerr );
+
+#if 0
+	const gchar *database;
+	gboolean exists;
+	if( ok ){
+		database = ofa_mysql_exercice_bin_get_database( priv->exercice_bin );
+		exists = does_database_exist( OFA_MYSQL_EXERCICE_EDITOR( instance ), database );
+		//g_debug( "ofa_idbexercice_editor_is_valid: database=%s, exists=%s", database, exists ? "True":"False" );
+
+		switch( priv->rule ){
+			case HUB_RULE_DOSSIER_NEW:
+				if( exists ){
+					ok = FALSE;
+					if( msgerr ){
+						*msgerr = g_strdup_printf( _( "Database '%s' already exists" ), database );
+					}
+				}
+				break;
+		}
+	}
+#endif
+
+	return( ok );
+}
+
+static void
+ibin_apply( myIBin *instance )
+{
+	ofaMysqlExerciceEditorPrivate *priv;
+
+	g_return_if_fail( instance && OFA_IS_MYSQL_EXERCICE_EDITOR( instance ));
+
+	priv = ofa_mysql_exercice_editor_get_instance_private( OFA_MYSQL_EXERCICE_EDITOR( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	my_ibin_apply( MY_IBIN( priv->exercice_bin ));
+}
+
+/*
  * ofaIDBExerciceEditor interface management
  */
 static void
@@ -282,78 +391,21 @@ idbexercice_editor_get_interface_version( void )
 static GtkSizeGroup *
 idbexercice_editor_get_size_group( const ofaIDBExerciceEditor *instance, guint column )
 {
-	static const gchar *thisfn = "ofa_mysql_exercice_editor_get_size_group";
-	ofaMysqlExerciceEditorPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_EXERCICE_EDITOR( instance ), NULL );
-
-	priv = ofa_mysql_exercice_editor_get_instance_private( OFA_MYSQL_EXERCICE_EDITOR( instance ));
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-
-	g_warning( "%s: column=%u", thisfn, column );
-	return( NULL );
+	return( my_ibin_get_size_group( MY_IBIN( instance ), column ));
 }
 
 /*
  * the database is mandatory
  */
 static gboolean
-idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **message )
+idbexercice_editor_is_valid( const ofaIDBExerciceEditor *instance, gchar **msgerr )
 {
-	ofaMysqlExerciceEditorPrivate *priv;
-	gboolean ok;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_EXERCICE_EDITOR( instance ), FALSE );
-
-	priv = ofa_mysql_exercice_editor_get_instance_private( OFA_MYSQL_EXERCICE_EDITOR( instance ));
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	if( message ){
-		*message = NULL;
-	}
-
-	ok = ofa_mysql_exercice_bin_is_valid( priv->exercice_bin, message );
-
-#if 0
-	const gchar *database;
-	gboolean exists;
-	if( ok ){
-		database = ofa_mysql_exercice_bin_get_database( priv->exercice_bin );
-		exists = does_database_exist( OFA_MYSQL_EXERCICE_EDITOR( instance ), database );
-		//g_debug( "ofa_idbexercice_editor_is_valid: database=%s, exists=%s", database, exists ? "True":"False" );
-
-		switch( priv->rule ){
-			case HUB_RULE_DOSSIER_NEW:
-				if( exists ){
-					ok = FALSE;
-					if( message ){
-						*message = g_strdup_printf( _( "Database '%s' already exists" ), database );
-					}
-				}
-				break;
-		}
-	}
-#endif
-
-	return( ok );
+	return( my_ibin_is_valid( MY_IBIN( instance ), msgerr ));
 }
 
 static gboolean
 idbexercice_editor_apply( const ofaIDBExerciceEditor *instance )
 {
-	ofaMysqlExerciceEditorPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_EXERCICE_EDITOR( instance ), FALSE );
-
-	priv = ofa_mysql_exercice_editor_get_instance_private( OFA_MYSQL_EXERCICE_EDITOR( instance ));
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	return( ofa_mysql_exercice_bin_apply( priv->exercice_bin ));
+	my_ibin_apply( MY_IBIN( instance ));
+	return( TRUE );
 }

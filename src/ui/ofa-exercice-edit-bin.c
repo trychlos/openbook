@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -87,16 +88,21 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-exercice-edit-bin.ui";
 
-static void setup_bin( ofaExerciceEditBin *self );
-static void on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaExerciceEditBin *self );
-static void on_exercice_meta_changed( ofaExerciceMetaBin *bin, ofaExerciceEditBin *self );
-static void on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaExerciceEditBin *self );
-static void on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaExerciceEditBin *self );
-static void on_actions_bin_changed( ofaDossierActionsBin *bin, ofaExerciceEditBin *self );
-static void changed_composite( ofaExerciceEditBin *self );
+static void          setup_bin( ofaExerciceEditBin *self );
+static void          on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaExerciceEditBin *self );
+static void          on_exercice_meta_changed( ofaExerciceMetaBin *bin, ofaExerciceEditBin *self );
+static void          on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaExerciceEditBin *self );
+static void          on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaExerciceEditBin *self );
+static void          on_actions_bin_changed( ofaDossierActionsBin *bin, ofaExerciceEditBin *self );
+static void          changed_composite( ofaExerciceEditBin *self );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaExerciceEditBin, ofa_exercice_edit_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaExerciceEditBin ))
+		G_ADD_PRIVATE( ofaExerciceEditBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 exercice_edit_bin_finalize( GObject *instance )
@@ -247,6 +253,7 @@ setup_bin( ofaExerciceEditBin *self )
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *parent;
+	GtkSizeGroup *group_bin;
 
 	priv = ofa_exercice_edit_bin_get_instance_private( self );
 
@@ -264,7 +271,9 @@ setup_bin( ofaExerciceEditBin *self )
 	priv->exercice_meta_bin = ofa_exercice_meta_bin_new( priv->hub, priv->settings_prefix, priv->rule );
 	g_signal_connect( priv->exercice_meta_bin, "ofa-changed", G_CALLBACK( on_exercice_meta_changed ), self );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_meta_bin ));
-	my_utils_size_group_add_size_group( priv->group0, ofa_exercice_meta_bin_get_size_group( priv->exercice_meta_bin, 0 ));
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->exercice_meta_bin ), 0 ))){
+		my_utils_size_group_add_size_group( priv->group0, group_bin );
+	}
 
 	/* exercice dbeditor */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "eeb-exercice-editor-parent" );
@@ -278,7 +287,9 @@ setup_bin( ofaExerciceEditBin *self )
 		priv->admin_bin = ofa_admin_credentials_bin_new( priv->hub, priv->settings_prefix );
 		g_signal_connect( priv->admin_bin, "ofa-changed", G_CALLBACK( on_admin_credentials_changed ), self );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_bin ));
-		my_utils_size_group_add_size_group( priv->group0, ofa_admin_credentials_bin_get_size_group( priv->admin_bin, 0 ));
+		if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->admin_bin ), 0 ))){
+			my_utils_size_group_add_size_group( priv->group0, group_bin );
+		}
 	}
 
 	/* actions on creation */
@@ -288,41 +299,10 @@ setup_bin( ofaExerciceEditBin *self )
 		priv->actions_bin = ofa_dossier_actions_bin_new( priv->hub, priv->settings_prefix, priv->rule );
 		g_signal_connect( priv->actions_bin, "ofa-changed", G_CALLBACK( on_actions_bin_changed ), self );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->actions_bin ));
-		//my_utils_size_group_add_size_group( priv->group1, ofa_dossier_actions_bin_get_size_group( priv->actions_bin, 0 ));
 	}
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
-}
-
-/**
- * ofa_exercice_edit_bin_get_size_group:
- * @bin: this #ofaExerciceEditBin instance.
- * @column: the desire column.
- *
- * Returns: the #GtkSizeGroup which handles the desired @column.
- */
-GtkSizeGroup *
-ofa_exercice_edit_bin_get_size_group( ofaExerciceEditBin *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_exercice_edit_bin_get_size_group";
-	ofaExerciceEditBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ), NULL );
-
-	priv = ofa_exercice_edit_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-
-	} else if( column == 1 ){
-		return( priv->group1 );
-	}
-
-	g_warning( "%s: unmanaged column=%u", thisfn, column );
-	return( NULL );
 }
 
 static void
@@ -414,43 +394,6 @@ static void
 changed_composite( ofaExerciceEditBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
-}
-
-/**
- * ofa_exercice_edit_bin_is_valid:
- * @bin: this #ofaExerciceEditBin instance.
- * @message: [out][allow-none]: a placeholder for the output error message.
- *
- * Returns: %TRUE if the dialog is valid.
- *
- * Note that checks may be better if an #ofaIDBDossierMeta has been set.
- */
-gboolean
-ofa_exercice_edit_bin_is_valid( ofaExerciceEditBin *bin, gchar **message )
-{
-	ofaExerciceEditBinPrivate *priv;
-	gboolean ok = TRUE;
-
-	g_return_val_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ), FALSE );
-
-	priv = ofa_exercice_edit_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	if( ok ){
-		ok = ofa_exercice_meta_bin_is_valid( priv->exercice_meta_bin, message );
-	}
-	if( ok ){
-		ok = priv->exercice_editor_bin ? ofa_idbexercice_editor_is_valid( priv->exercice_editor_bin, message ) : TRUE;
-	}
-	if( ok && priv->admin_bin ){
-		ok = ofa_admin_credentials_bin_is_valid( priv->admin_bin, message );
-	}
-	if( ok && priv->actions_bin ){
-		ok = ofa_dossier_actions_bin_is_valid( priv->actions_bin, message );
-	}
-
-	return( ok );
 }
 
 /**
@@ -561,4 +504,80 @@ ofa_exercice_edit_bin_get_apply_actions( ofaExerciceEditBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
 	return( priv->actions_bin ? ofa_dossier_actions_bin_get_apply_actions( priv->actions_bin ) : FALSE );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_exercice_edit_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_exercice_edit_bin_ibin_get_size_group";
+	ofaExerciceEditBinPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_EXERCICE_EDIT_BIN( instance ), NULL );
+
+	priv = ofa_exercice_edit_bin_get_instance_private( OFA_EXERCICE_EDIT_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+
+	} else if( column == 1 ){
+		return( priv->group1 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
+}
+
+/*
+ * Note that checks may be better if an #ofaIDBDossierMeta has been set.
+ */
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
+{
+	ofaExerciceEditBinPrivate *priv;
+	gboolean ok = TRUE;
+
+	g_return_val_if_fail( instance && OFA_IS_EXERCICE_EDIT_BIN( instance ), FALSE );
+
+	priv = ofa_exercice_edit_bin_get_instance_private( OFA_EXERCICE_EDIT_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	if( ok ){
+		ok = my_ibin_is_valid( MY_IBIN( priv->exercice_meta_bin ), msgerr );
+	}
+	if( ok ){
+		ok = priv->exercice_editor_bin ? ofa_idbexercice_editor_is_valid( priv->exercice_editor_bin, msgerr ) : TRUE;
+	}
+	if( ok && priv->admin_bin ){
+		ok = my_ibin_is_valid( MY_IBIN( priv->admin_bin ), msgerr );
+	}
+	if( ok && priv->actions_bin ){
+		ok = my_ibin_is_valid( MY_IBIN( priv->actions_bin ), msgerr );
+	}
+
+	return( ok );
 }

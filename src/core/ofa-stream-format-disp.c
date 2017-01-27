@@ -32,6 +32,7 @@
 #include "my/my-date.h"
 #include "my/my-decimal-combo.h"
 #include "my/my-field-combo.h"
+#include "my/my-ibin.h"
 #include "my/my-thousand-combo.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
@@ -73,12 +74,16 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-stream-format-disp.ui";
 
-static void setup_bin( ofaStreamFormatDisp *bin );
-static void setup_labels( ofaStreamFormatDisp *bin );
-static void setup_format( ofaStreamFormatDisp *bin );
+static void          setup_bin( ofaStreamFormatDisp *bin );
+static void          setup_labels( ofaStreamFormatDisp *bin );
+static void          setup_format( ofaStreamFormatDisp *bin );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
 
 G_DEFINE_TYPE_EXTENDED( ofaStreamFormatDisp, ofa_stream_format_disp, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaStreamFormatDisp ))
+		G_ADD_PRIVATE( ofaStreamFormatDisp )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 stream_format_disp_finalize( GObject *instance )
@@ -249,33 +254,6 @@ setup_labels( ofaStreamFormatDisp *self )
 }
 
 /**
- * ofa_stream_format_disp_get_size_group:
- * @bin: this #ofaStreamFormatDisp instance.
- * @column: the desired column number.
- *
- * Returns: the #GtkSizeGroup which managed the @column.
- */
-GtkSizeGroup *
-ofa_stream_format_disp_get_size_group( ofaStreamFormatDisp *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_stream_format_disp_get_size_group";
-	ofaStreamFormatDispPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_STREAM_FORMAT_DISP( bin ), NULL );
-
-	priv = ofa_stream_format_disp_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-
-	g_warning( "%s: unkknown column=%d", thisfn, column );
-	return( NULL );
-}
-
-/**
  * ofa_stream_format_disp_set_format:
  * @bin: this #ofaStreamFormatDisp instance.
  * @format: the new #ofaStreamFormat object to be considered.
@@ -422,4 +400,45 @@ setup_format( ofaStreamFormatDisp *self )
 	gtk_label_set_text( GTK_LABEL( priv->headers_data ), str );
 	g_free( str );
 	my_style_add( priv->headers_data, "labelinfo" );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_stream_format_disp_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_stream_format_disp_ibin_get_size_group";
+	ofaStreamFormatDispPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_STREAM_FORMAT_DISP( instance ), NULL );
+
+	priv = ofa_stream_format_disp_get_instance_private( OFA_STREAM_FORMAT_DISP( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+
+	g_warning( "%s: invalid column=%d", thisfn, column );
+
+	return( NULL );
 }

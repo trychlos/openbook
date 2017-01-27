@@ -71,12 +71,6 @@ ofaDossierActionsBin *ofa_dossier_actions_bin_new               ( ofaHub *hub,
 																		const gchar *settings_prefix,
 																		guint rule );
 
-GtkSizeGroup         *ofa_dossier_actions_bin_get_size_group    ( ofaDossierActionsBin *bin,
-																		guint column );
-
-gboolean              ofa_dossier_actions_bin_is_valid          ( ofaDossierActionsBin *bin,
-																		gchar **error_message );
-
 gboolean              ofa_dossier_actions_bin_get_open_on_create( ofaDossierActionsBin *bin );
 
 gboolean              ofa_dossier_actions_bin_get_apply_actions ( ofaDossierActionsBin *bin );

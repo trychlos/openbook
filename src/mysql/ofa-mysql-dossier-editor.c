@@ -74,14 +74,19 @@ static void           on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlD
 static void           on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self );
 static void           changed_composite( ofaMysqlDossierEditor *self );
 static gboolean       check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr );
+static void           ibin_iface_init( myIBinInterface *iface );
+static guint          ibin_get_interface_version( void );
+static GtkSizeGroup  *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean       ibin_is_valid( const myIBin *instance, gchar **msgerr );
 static void           idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface );
 static guint          idbdossier_editor_get_interface_version( void );
 static GtkSizeGroup  *idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint column );
-static gboolean       idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message );
+static gboolean       idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **msgerr );
 static ofaIDBConnect *idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierEditor, ofa_mysql_dossier_editor, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlDossierEditor )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBDOSSIER_EDITOR, idbdossier_editor_iface_init ))
 
 static void
@@ -215,13 +220,17 @@ setup_bin( ofaMysqlDossierEditor *self )
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
+	/* dossier */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mde-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->dossier_bin = ofa_mysql_dossier_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->settings_prefix, priv->rule );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_bin ));
 	g_signal_connect( priv->dossier_bin, "ofa-changed", G_CALLBACK( on_dossier_bin_changed ), self );
-	my_utils_size_group_add_size_group( priv->group0, ofa_mysql_dossier_bin_get_size_group( priv->dossier_bin, 0 ));
+	if(( group = my_ibin_get_size_group( MY_IBIN( priv->dossier_bin ), 0 ))){
+		my_utils_size_group_add_size_group( priv->group0, group );
+	}
 
+	/* super-user credentials */
 	if( priv->with_su ){
 		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mde-root-parent" );
 		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -392,6 +401,74 @@ ofa_mysql_dossier_editor_get_remembered_account( ofaMysqlDossierEditor *editor )
 }
 
 /*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_dossier_editor_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_mysql_dossier_editor_ibin_get_size_group";
+	ofaMysqlDossierEditorPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_DOSSIER_EDITOR( instance ), NULL );
+
+	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
+}
+
+/*
+ * ibin_is_valid:
+ * @bin: this #ofaMysqlDossierEditor instance.
+ * @msgerr: [allow-none]: set to the error message as a newly
+ *  allocated string which should be g_free() by the caller.
+ *
+ * Returns: %TRUE if connection is valid.
+ */
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
+{
+	ofaMysqlDossierEditorPrivate *priv;
+	gboolean ok;
+
+	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
+
+	ok = ofa_mysql_dossier_bin_is_valid( priv->dossier_bin, msgerr );
+
+	if( ok && priv->root_bin ){
+		ok &= my_ibin_is_valid( MY_IBIN( priv->root_bin ), msgerr ) &&
+				check_root_connection( OFA_MYSQL_DOSSIER_EDITOR( instance ), msgerr );
+	}
+
+	return( ok );
+}
+
+/*
  * ofaIDBDossierEditor interface management
  */
 static void
@@ -416,21 +493,7 @@ idbdossier_editor_get_interface_version( void )
 static GtkSizeGroup *
 idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint column )
 {
-	static const gchar *thisfn = "ofa_mysql_dossier_editor_get_size_group";
-	ofaMysqlDossierEditorPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_DOSSIER_EDITOR( instance ), NULL );
-
-	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-
-	g_warning( "%s: column=%u", thisfn, column );
-	return( NULL );
+	return( my_ibin_get_size_group( MY_IBIN( instance ), column ));
 }
 
 /*
@@ -438,21 +501,9 @@ idbdossier_editor_get_size_group( const ofaIDBDossierEditor *instance, guint col
  * When all pieces are valid, then we can check the connection itself.
  */
 static gboolean
-idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **message )
+idbdossier_editor_is_valid( const ofaIDBDossierEditor *instance, gchar **msgerr )
 {
-	ofaMysqlDossierEditorPrivate *priv;
-	gboolean ok;
-
-	priv = ofa_mysql_dossier_editor_get_instance_private( OFA_MYSQL_DOSSIER_EDITOR( instance ));
-
-	ok = ofa_mysql_dossier_bin_is_valid( priv->dossier_bin, message );
-
-	if( ok && priv->root_bin ){
-		ok &= my_ibin_is_valid( MY_IBIN( priv->root_bin ), message ) &&
-				check_root_connection( OFA_MYSQL_DOSSIER_EDITOR( instance ), message );
-	}
-
-	return( ok );
+	return( my_ibin_is_valid( MY_IBIN( instance ), msgerr ));
 }
 
 /*

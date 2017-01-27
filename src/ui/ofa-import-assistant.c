@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "my/my-iassistant.h"
+#include "my/my-ibin.h"
 #include "my/my-iprogress.h"
 #include "my/my-isettings.h"
 #include "my/my-iwindow.h"
@@ -1107,7 +1108,7 @@ p5_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_import_assistant_p5_do_init";
 	ofaImportAssistantPrivate *priv;
 	GtkWidget *parent, *label;
-	GtkSizeGroup *hgroup;
+	GtkSizeGroup *hgroup, *group_bin;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -1179,8 +1180,9 @@ p5_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p5_settings_prefs = ofa_stream_format_bin_new( NULL );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p5_settings_prefs ));
-	my_utils_size_group_add_size_group(
-			hgroup, ofa_stream_format_bin_get_size_group( priv->p5_settings_prefs, 0 ));
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p5_settings_prefs ), 0 ))){
+		my_utils_size_group_add_size_group( hgroup, group_bin );
+	}
 
 	g_signal_connect(
 			priv->p5_settings_prefs, "ofa-changed", G_CALLBACK( p5_on_settings_changed ), self );
@@ -1257,7 +1259,7 @@ p5_check_for_complete( ofaImportAssistant *self )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
-	ok = ofa_stream_format_bin_is_valid( priv->p5_settings_prefs, &message );
+	ok = my_ibin_is_valid( MY_IBIN( priv->p5_settings_prefs ), &message );
 
 	gtk_label_set_text( GTK_LABEL( priv->p5_message ), my_strlen( message ) ? message : "" );
 	g_free( message );
@@ -1276,7 +1278,7 @@ p5_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
-	ofa_stream_format_bin_apply( priv->p5_settings_prefs );
+	my_ibin_apply( MY_IBIN( priv->p5_settings_prefs ));
 }
 
 /*
@@ -1288,7 +1290,7 @@ p6_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_import_assistant_p6_do_init";
 	ofaImportAssistantPrivate *priv;
 	GtkWidget *label, *parent;
-	GtkSizeGroup *group;
+	GtkSizeGroup *group, *group_bin;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -1322,8 +1324,9 @@ p6_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p6_format = ofa_stream_format_disp_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p6_format ));
-	my_utils_size_group_add_size_group(
-			group, ofa_stream_format_disp_get_size_group( priv->p6_format, 0 ));
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p6_format ), 0 ))){
+		my_utils_size_group_add_size_group( group, group_bin );
+	}
 
 	g_object_unref( group );
 }

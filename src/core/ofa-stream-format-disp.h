@@ -56,15 +56,12 @@ typedef struct {
 }
 	ofaStreamFormatDispClass;
 
-GType                ofa_stream_format_disp_get_type      ( void ) G_GNUC_CONST;
+GType                ofa_stream_format_disp_get_type  ( void ) G_GNUC_CONST;
 
-ofaStreamFormatDisp *ofa_stream_format_disp_new           ( void );
+ofaStreamFormatDisp *ofa_stream_format_disp_new       ( void );
 
-GtkSizeGroup        *ofa_stream_format_disp_get_size_group( ofaStreamFormatDisp *bin,
-																guint col_number );
-
-void                 ofa_stream_format_disp_set_format    ( ofaStreamFormatDisp *bin,
-																ofaStreamFormat *format );
+void                 ofa_stream_format_disp_set_format( ofaStreamFormatDisp *bin,
+															ofaStreamFormat *format );
 
 G_END_DECLS
 

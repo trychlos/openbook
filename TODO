@@ -386,10 +386,9 @@
 1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
      2017- 1-26 first *define* standard actions on open
 
-1323 2017- 1-18 propagate myISizegroup interface
-     2017- 1-22 rename and include is_valid/apply
+1335 2017- 1-27 MysqlExerciceEditor: check if database already exists
 
-1335
+1336
 
 -----------------------------------------------------------------------
  DONE
@@ -509,6 +508,10 @@
 1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
                 read-only (unset when current if was not set by the user) 
      2017- 1-16 done
+
+1323 2017- 1-18 propagate myISizegroup interface
+     2017- 1-22 rename and include is_valid/apply
+     2017- 1-27 done in (new) myIBin interface
 
 1324 2017- 1-18 BatPage: lacks of an horizontal scrollbar (and vertical ?)
      2017- 1-26 cancelled (this might be a BatTreeview issue ?)

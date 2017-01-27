@@ -1065,7 +1065,7 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p4_do_init";
 	ofaRestoreAssistantPrivate *priv;
 	GtkWidget *parent, *label;
-	GtkSizeGroup *group;
+	GtkSizeGroup *group_bin;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -1110,9 +1110,8 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p4_admin_credentials = ofa_admin_credentials_bin_new( priv->hub, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_admin_credentials ));
-	group = ofa_admin_credentials_bin_get_size_group( priv->p4_admin_credentials, 0 );
-	if( group ){
-		my_utils_size_group_add_size_group( priv->p4_hgroup, group );
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p4_admin_credentials ), 0 ))){
+		my_utils_size_group_add_size_group( priv->p4_hgroup, group_bin );
 	}
 
 	g_signal_connect( priv->p4_admin_credentials,
@@ -1196,8 +1195,8 @@ p4_check_for_complete( ofaRestoreAssistant *self )
 
 	p4_set_message( self, "" );
 
-	ok = ofa_admin_credentials_bin_is_valid( priv->p4_admin_credentials, &message ) &&
-			ofa_dossier_actions_bin_is_valid( priv->p4_actions, &message );
+	ok = my_ibin_is_valid( MY_IBIN( priv->p4_admin_credentials ), &message ) &&
+			my_ibin_is_valid( MY_IBIN( priv->p4_actions ), &message );
 
 	if( !ok ){
 		p4_set_message( self, message );

@@ -31,6 +31,7 @@
 #include <stdlib.h>
 
 #include "my/my-iassistant.h"
+#include "my/my-ibin.h"
 #include "my/my-isettings.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
@@ -562,7 +563,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_export_assistant_p2_do_init";
 	ofaExportAssistantPrivate *priv;
 	GtkWidget *label, *parent, *button;
-	GtkSizeGroup *hgroup;
+	GtkSizeGroup *hgroup, *group_bin;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -596,8 +597,9 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_size_group_add_widget( hgroup, label );
 
-	my_utils_size_group_add_size_group(
-			hgroup, ofa_stream_format_bin_get_size_group( priv->p2_settings_prefs, 0 ));
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p2_settings_prefs ), 0 ))){
+		my_utils_size_group_add_size_group( hgroup, group_bin );
+	}
 
 	g_object_unref( hgroup );
 }
@@ -651,7 +653,7 @@ p2_check_for_complete( ofaExportAssistant *self )
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	ok = ofa_stream_format_bin_is_valid( priv->p2_settings_prefs, &message );
+	ok = my_ibin_is_valid( MY_IBIN( priv->p2_settings_prefs ), &message );
 
 	gtk_label_set_text( GTK_LABEL( priv->p2_message ), my_strlen( message ) ? message : "" );
 	g_free( message );
@@ -670,7 +672,7 @@ p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	ofa_stream_format_bin_apply( priv->p2_settings_prefs );
+	my_ibin_apply( MY_IBIN( priv->p2_settings_prefs ));
 
 	g_free( priv->p2_format );
 	priv->p2_format = g_strdup( ofa_stream_format_get_name( priv->p2_export_settings ));
@@ -893,7 +895,7 @@ p4_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_export_assistant_p4_do_init";
 	ofaExportAssistantPrivate *priv;
 	GtkWidget *label, *parent;
-	GtkSizeGroup *group;
+	GtkSizeGroup *group, *group_bin;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -919,8 +921,9 @@ p4_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p4_format = ofa_stream_format_disp_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_format ));
-	my_utils_size_group_add_size_group(
-			group, ofa_stream_format_disp_get_size_group( priv->p4_format, 0 ));
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p4_format ), 0 ))){
+		my_utils_size_group_add_size_group( group, group_bin );
+	}
 
 	g_object_unref( group );
 }

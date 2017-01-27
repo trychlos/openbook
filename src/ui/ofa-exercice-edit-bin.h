@@ -53,6 +53,11 @@
  * - validation: yes (has 'ofa-changed' signal)
  * - settings:   no
  * - current:    no
+ *
+ * Note that #ofaExerciceEditBin class implements myIBin interface,
+ * but the #appli() method, because this later returns the newly
+ * created #ofaIDBExerciceMeta object, which does not fit into the
+ * standard prototype.
  */
 
 #include <gtk/gtk.h>
@@ -91,17 +96,11 @@ ofaExerciceEditBin   *ofa_exercice_edit_bin_new                  ( ofaHub *hub,
 																		gboolean with_admin,
 																		gboolean with_open );
 
-GtkSizeGroup         *ofa_exercice_edit_bin_get_size_group       ( ofaExerciceEditBin *bin,
-																		guint column );
-
 void                  ofa_exercice_edit_bin_set_provider         ( ofaExerciceEditBin *bin,
 																		ofaIDBProvider *provider );
 
 void                  ofa_exercice_edit_bin_set_dossier_meta     ( ofaExerciceEditBin *bin,
 																		ofaIDBDossierMeta *dossier_meta );
-
-gboolean              ofa_exercice_edit_bin_is_valid             ( ofaExerciceEditBin *bin,
-																		gchar **message );
 
 ofaIDBExerciceMeta   *ofa_exercice_edit_bin_apply                ( ofaExerciceEditBin *bin );
 

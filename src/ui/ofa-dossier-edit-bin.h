@@ -56,6 +56,11 @@
  * - validation: yes (has 'ofa-changed' signal)
  * - settings:   no
  * - current:    no
+ *
+ * Note that #ofaDossierEditBin class implements myIBin interface,
+ * but the #appli() method, because this later returns the newly
+ * created #ofaIDBDossierMeta object, which does not fit into the
+ * standard prototype.
  */
 
 #include <gtk/gtk.h>
@@ -85,24 +90,18 @@ typedef struct {
 }
 	ofaDossierEditBinClass;
 
-GType                ofa_dossier_edit_bin_get_type             ( void ) G_GNUC_CONST;
+GType                ofa_dossier_edit_bin_get_type          ( void ) G_GNUC_CONST;
 
-ofaDossierEditBin   *ofa_dossier_edit_bin_new                  ( ofaHub *hub,
+ofaDossierEditBin   *ofa_dossier_edit_bin_new               ( ofaHub *hub,
 																	const gchar *settings_prefix,
 																	guint rule,
 																	gboolean with_su );
 
-GtkSizeGroup        *ofa_dossier_edit_bin_get_size_group       ( ofaDossierEditBin *bin,
-																	guint column );
+ofaIDBDossierMeta   *ofa_dossier_edit_bin_apply             ( ofaDossierEditBin *bin );
 
-gboolean             ofa_dossier_edit_bin_is_valid             ( ofaDossierEditBin *bin,
-																	gchar **message );
+ofaIDBProvider      *ofa_dossier_edit_bin_get_provider      ( ofaDossierEditBin *bin );
 
-ofaIDBDossierMeta   *ofa_dossier_edit_bin_apply                ( ofaDossierEditBin *bin );
-
-ofaIDBProvider      *ofa_dossier_edit_bin_get_provider         ( ofaDossierEditBin *bin );
-
-ofaIDBDossierEditor *ofa_dossier_edit_bin_get_dossier_editor   ( ofaDossierEditBin *bin );
+ofaIDBDossierEditor *ofa_dossier_edit_bin_get_dossier_editor( ofaDossierEditBin *bin );
 
 G_END_DECLS
 

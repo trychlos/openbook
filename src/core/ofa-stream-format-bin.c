@@ -33,6 +33,7 @@
 #include "my/my-date-combo.h"
 #include "my/my-decimal-combo.h"
 #include "my/my-field-combo.h"
+#include "my/my-ibin.h"
 #include "my/my-thousand-combo.h"
 #include "my/my-utils.h"
 
@@ -102,46 +103,52 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-stream-format-bin.ui";
 
-static void     setup_bin( ofaStreamFormatBin *bin );
-static void     name_init( ofaStreamFormatBin *self );
-static void     name_on_changed( GtkEntry *entry, ofaStreamFormatBin *self );
-static void     name_set_sensitive( ofaStreamFormatBin *self );
-static void     mode_init( ofaStreamFormatBin *self );
-static void     mode_insert_row( ofaStreamFormatBin *self, GtkListStore *store, ofeSFMode mode );
-static void     mode_on_changed( GtkComboBox *combo, ofaStreamFormatBin *self );
-static void     mode_set_sensitive( ofaStreamFormatBin *self );
-static void     encoding_init( ofaStreamFormatBin *self );
-static GList   *encoding_get_available( void );
-static GList   *encoding_get_defaults( void );
-static gchar   *encoding_get_selected( ofaStreamFormatBin *self );
-static void     encoding_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
-static void     encoding_on_changed( GtkComboBox *box, ofaStreamFormatBin *self );
-static void     date_format_init( ofaStreamFormatBin *self );
-static void     date_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
-static void     date_on_changed( myDateCombo *combo, myDateFormat format, ofaStreamFormatBin *self );
-static void     thousand_sep_init( ofaStreamFormatBin *self );
-static void     thousand_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
-static void     thousand_on_changed( myThousandCombo *combo, const gchar *thousand_sep, ofaStreamFormatBin *self );
-static void     decimal_dot_init( ofaStreamFormatBin *self );
-static void     decimal_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
-static void     decimal_on_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaStreamFormatBin *self );
-static void     field_sep_init( ofaStreamFormatBin *self );
-static void     field_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
-static void     field_on_changed( myFieldCombo *combo, const gchar *field_sep, ofaStreamFormatBin *self );
-static void     str_delimiter_init( ofaStreamFormatBin *self );
-static void     str_delim_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
-static void     str_delim_on_changed( GtkEntry *entry, ofaStreamFormatBin *self );
-static void     headers_init( ofaStreamFormatBin *self );
-static void     headers_on_with_toggled( GtkToggleButton *button, ofaStreamFormatBin *self );
-static void     headers_on_count_changed( GtkSpinButton *button, ofaStreamFormatBin *self );
-static void     headers_set_sensitive( ofaStreamFormatBin *self );
-static void     setup_format( ofaStreamFormatBin *bin );
-static void     setup_updatable( ofaStreamFormatBin *self );
-static gboolean is_validable( ofaStreamFormatBin *self, gchar **error_message );
-static gboolean do_apply( ofaStreamFormatBin *self );
+static void          setup_bin( ofaStreamFormatBin *bin );
+static void          name_init( ofaStreamFormatBin *self );
+static void          name_on_changed( GtkEntry *entry, ofaStreamFormatBin *self );
+static void          name_set_sensitive( ofaStreamFormatBin *self );
+static void          mode_init( ofaStreamFormatBin *self );
+static void          mode_insert_row( ofaStreamFormatBin *self, GtkListStore *store, ofeSFMode mode );
+static void          mode_on_changed( GtkComboBox *combo, ofaStreamFormatBin *self );
+static void          mode_set_sensitive( ofaStreamFormatBin *self );
+static void          encoding_init( ofaStreamFormatBin *self );
+static GList        *encoding_get_available( void );
+static GList        *encoding_get_defaults( void );
+static gchar        *encoding_get_selected( ofaStreamFormatBin *self );
+static void          encoding_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
+static void          encoding_on_changed( GtkComboBox *box, ofaStreamFormatBin *self );
+static void          date_format_init( ofaStreamFormatBin *self );
+static void          date_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
+static void          date_on_changed( myDateCombo *combo, myDateFormat format, ofaStreamFormatBin *self );
+static void          thousand_sep_init( ofaStreamFormatBin *self );
+static void          thousand_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
+static void          thousand_on_changed( myThousandCombo *combo, const gchar *thousand_sep, ofaStreamFormatBin *self );
+static void          decimal_dot_init( ofaStreamFormatBin *self );
+static void          decimal_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
+static void          decimal_on_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaStreamFormatBin *self );
+static void          field_sep_init( ofaStreamFormatBin *self );
+static void          field_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
+static void          field_on_changed( myFieldCombo *combo, const gchar *field_sep, ofaStreamFormatBin *self );
+static void          str_delimiter_init( ofaStreamFormatBin *self );
+static void          str_delim_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
+static void          str_delim_on_changed( GtkEntry *entry, ofaStreamFormatBin *self );
+static void          headers_init( ofaStreamFormatBin *self );
+static void          headers_on_with_toggled( GtkToggleButton *button, ofaStreamFormatBin *self );
+static void          headers_on_count_changed( GtkSpinButton *button, ofaStreamFormatBin *self );
+static void          headers_set_sensitive( ofaStreamFormatBin *self );
+static void          setup_format( ofaStreamFormatBin *bin );
+static void          setup_updatable( ofaStreamFormatBin *self );
+static gboolean      is_validable( ofaStreamFormatBin *self, gchar **error_message );
+static gboolean      do_apply( ofaStreamFormatBin *self );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
+static void          ibin_apply( myIBin *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaStreamFormatBin, ofa_stream_format_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaStreamFormatBin ))
+		G_ADD_PRIVATE( ofaStreamFormatBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 stream_format_bin_finalize( GObject *instance )
@@ -918,36 +925,6 @@ headers_set_sensitive( ofaStreamFormatBin *self )
 }
 
 /**
- * ofa_stream_format_bin_get_size_group:
- * @bin: this #ofaStreamFormatBin instance.
- * @column: the desired column number.
- *
- * Returns: the #GtkSizeGroup which managed the @column.
- */
-GtkSizeGroup *
-ofa_stream_format_bin_get_size_group( ofaStreamFormatBin *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_stream_format_bin_get_size_group";
-	ofaStreamFormatBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ), NULL );
-
-	priv = ofa_stream_format_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-	if( column == 1 ){
-		return( priv->group1 );
-	}
-
-	g_warning( "%s: unkknown column=%d", thisfn, column );
-	return( NULL );
-}
-
-/**
  * ofa_stream_format_bin_set_name_sensitive:
  * @bin: this #ofaStreamFormatBin instance.
  * @sensitive: whether the name may be modified.
@@ -1168,29 +1145,6 @@ setup_updatable( ofaStreamFormatBin *self )
 	headers_set_sensitive( self );
 }
 
-/**
- * ofa_stream_format_bin_is_valid:
- * @bin: this #ofaStreamFormatBin instance.
- * @error_message: [allow-none]: pointer to an error message.
- *  If set, then this is a newly allocated string which should be
- *  g_free() by the caller.
- *
- * Returns: %TRUE if selection is ok.
- */
-gboolean
-ofa_stream_format_bin_is_valid( ofaStreamFormatBin *bin, gchar **error_message )
-{
-	ofaStreamFormatBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ), FALSE );
-
-	priv = ofa_stream_format_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	return( is_validable( bin, error_message ));
-}
-
 static gboolean
 is_validable( ofaStreamFormatBin *self, gchar **error_message )
 {
@@ -1315,32 +1269,6 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 	return( TRUE );
 }
 
-/**
- * ofa_stream_format_bin_apply:
- *
- * This take the current selection out of the dialog box, setting the
- * user preferences.
- *
- * Returns: %TRUE if selection is ok
- */
-gboolean
-ofa_stream_format_bin_apply( ofaStreamFormatBin *bin )
-{
-	ofaStreamFormatBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ), FALSE );
-
-	priv = ofa_stream_format_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	if( !is_validable( bin, NULL )){
-		return( FALSE );
-	}
-
-	return( do_apply( bin ));
-}
-
 static gboolean
 do_apply( ofaStreamFormatBin *self )
 {
@@ -1413,4 +1341,79 @@ do_apply( ofaStreamFormatBin *self )
 	g_free( charmap );
 
 	return( TRUE );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_stream_format_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+	iface->apply = ibin_apply;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_stream_format_bin_ibin_get_size_group";
+	ofaStreamFormatBinPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_STREAM_FORMAT_BIN( instance ), NULL );
+
+	priv = ofa_stream_format_bin_get_instance_private( OFA_STREAM_FORMAT_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+	if( column == 1 ){
+		return( priv->group1 );
+	}
+
+	g_warning( "%s: invalid column=%d", thisfn, column );
+
+	return( NULL );
+}
+
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
+{
+	ofaStreamFormatBinPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_STREAM_FORMAT_BIN( instance ), FALSE );
+
+	priv = ofa_stream_format_bin_get_instance_private( OFA_STREAM_FORMAT_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( is_validable( OFA_STREAM_FORMAT_BIN( instance ), msgerr ));
+}
+
+static void
+ibin_apply( myIBin *instance )
+{
+	ofaStreamFormatBinPrivate *priv;
+
+	g_return_if_fail( instance && OFA_IS_STREAM_FORMAT_BIN( instance ));
+	g_return_if_fail( !my_ibin_is_valid( instance, NULL ));
+
+	priv = ofa_stream_format_bin_get_instance_private( OFA_STREAM_FORMAT_BIN( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	do_apply( OFA_STREAM_FORMAT_BIN( instance ));
 }

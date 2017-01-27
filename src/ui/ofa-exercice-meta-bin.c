@@ -30,6 +30,7 @@
 
 #include "my/my-date.h"
 #include "my/my-date-editable.h"
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -80,15 +81,20 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-exercice-meta-bin.ui";
 
-static void     setup_bin( ofaExerciceMetaBin *self );
-static void     on_begin_changed( GtkEditable *editable, ofaExerciceMetaBin *self );
-static void     on_end_changed( GtkEditable *editable, ofaExerciceMetaBin *self );
-static void     on_archive_toggled( GtkToggleButton *button, ofaExerciceMetaBin *self );
-static void     changed_composite( ofaExerciceMetaBin *self );
-static gboolean is_valid( ofaExerciceMetaBin *self, gchar **msg );
+static void          setup_bin( ofaExerciceMetaBin *self );
+static void          on_begin_changed( GtkEditable *editable, ofaExerciceMetaBin *self );
+static void          on_end_changed( GtkEditable *editable, ofaExerciceMetaBin *self );
+static void          on_archive_toggled( GtkToggleButton *button, ofaExerciceMetaBin *self );
+static void          changed_composite( ofaExerciceMetaBin *self );
+static gboolean      is_valid( ofaExerciceMetaBin *self, gchar **msg );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaExerciceMetaBin, ofa_exercice_meta_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaExerciceMetaBin ))
+		G_ADD_PRIVATE( ofaExerciceMetaBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 exercice_meta_bin_finalize( GObject *instance )
@@ -294,33 +300,6 @@ setup_bin( ofaExerciceMetaBin *self )
 }
 
 /**
- * ofa_exercice_meta_bin_get_size_group:
- * @bin: this #ofaExerciceMetaBin instance.
- * @column: the desire column.
- *
- * Returns: the #GtkSizeGroup which handles the desired @column.
- */
-GtkSizeGroup *
-ofa_exercice_meta_bin_get_size_group( ofaExerciceMetaBin *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_exercice_meta_bin_get_size_group";
-	ofaExerciceMetaBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), NULL );
-
-	priv = ofa_exercice_meta_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-
-	g_warning( "%s: unmanaged column=%u", thisfn, column );
-	return( NULL );
-}
-
-/**
  * ofa_exercice_meta_bin_set_dossier_meta:
  * @bin: this #ofaExerciceEditBin instance.
  * @dossier_meta: [allow-none]: the #ofaIDBDossierMeta to be attached to.
@@ -382,41 +361,6 @@ static void
 changed_composite( ofaExerciceMetaBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
-}
-
-/**
- * ofa_exercice_meta_bin_is_valid:
- * @bin: this #ofaExerciceMetaBin instance.
- * @message: [out][allow-none]: a placeholder for an output message.
- *
- * Both beginning and ending dates must be set when defining an archive.
- */
-gboolean
-ofa_exercice_meta_bin_is_valid( ofaExerciceMetaBin *bin, gchar **message )
-{
-	ofaExerciceMetaBinPrivate *priv;
-	gboolean valid;
-	gchar *msg;
-
-	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), FALSE );
-
-	priv = ofa_exercice_meta_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	msg = NULL;
-	if( message ){
-		*message = NULL;
-	}
-
-	valid = is_valid( bin, &msg );
-	if( !valid && message ){
-		*message = g_strdup( msg );
-	}
-
-	g_free( msg );
-
-	return( valid );
 }
 
 /*
@@ -491,7 +435,7 @@ ofa_exercice_meta_bin_apply( ofaExerciceMetaBin *bin )
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
 	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), NULL );
-	g_return_val_if_fail( ofa_exercice_meta_bin_is_valid( bin, NULL ), NULL );
+	g_return_val_if_fail( my_ibin_is_valid( MY_IBIN( bin ), NULL ), NULL );
 
 	priv = ofa_exercice_meta_bin_get_instance_private( bin );
 
@@ -574,3 +518,76 @@ ofa_exercice_meta_bin_get_is_current( ofaExerciceMetaBin *bin )
 	return( priv->is_current );
 }
 #endif
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_exercice_meta_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_exercice_meta_bin_ibin_get_size_group";
+	ofaExerciceMetaBinPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_EXERCICE_META_BIN( instance ), NULL );
+
+	priv = ofa_exercice_meta_bin_get_instance_private( OFA_EXERCICE_META_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
+}
+
+/*
+ * Both beginning and ending dates must be set when defining an archive.
+ */
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
+{
+	ofaExerciceMetaBinPrivate *priv;
+	gboolean valid;
+	gchar *msg;
+
+	g_return_val_if_fail( instance && OFA_IS_EXERCICE_META_BIN( instance ), FALSE );
+
+	priv = ofa_exercice_meta_bin_get_instance_private( OFA_EXERCICE_META_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	msg = NULL;
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
+	valid = is_valid( OFA_EXERCICE_META_BIN( instance ), &msg );
+	if( !valid && msgerr ){
+		*msgerr = g_strdup( msg );
+	}
+
+	g_free( msg );
+
+	return( valid );
+}

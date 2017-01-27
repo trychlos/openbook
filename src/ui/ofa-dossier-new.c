@@ -30,6 +30,7 @@
 #include <glib/gprintf.h>
 #include <stdlib.h>
 
+#include "my/my-ibin.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-style.h"
@@ -336,11 +337,13 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_dossier_new_idialog_init";
 	ofaDossierNewPrivate *priv;
 	GtkWidget *btn, *parent, *label;
-	GtkSizeGroup *group0;
+	GtkSizeGroup *group, *group_bin;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
+
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
 	/* we do not know at this time if are going to run as modal or non-modal
 	 * so only option is to wait until OK button is clicked */
@@ -356,7 +359,9 @@ idialog_init( myIDialog *instance )
 			priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_su );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_bin ));
 	g_signal_connect( priv->dossier_bin, "ofa-changed", G_CALLBACK( on_dossier_bin_changed ), instance );
-	group0 = ofa_dossier_edit_bin_get_size_group( priv->dossier_bin, 0 );
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->dossier_bin ), 0 ))){
+		my_utils_size_group_add_size_group( group, group_bin );
+	}
 
 	/* exercice edition */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "exercice-parent" );
@@ -365,13 +370,17 @@ idialog_init( myIDialog *instance )
 			priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_admin, priv->with_open );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
 	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), instance );
-	my_utils_size_group_add_size_group( group0, ofa_exercice_edit_bin_get_size_group( priv->exercice_bin, 0 ));
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->exercice_bin ), 0 ))){
+		my_utils_size_group_add_size_group( group, group_bin );
+	}
 
 	/* message */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dn-msg" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_style_add( label, "labelerror" );
 	priv->msg_label = label;
+
+	g_object_unref( group );
 
 	read_settings( OFA_DOSSIER_NEW( instance ));
 
@@ -383,14 +392,21 @@ on_dossier_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
 	ofaIDBProvider *provider;
-	GtkSizeGroup *group1;
+	GtkSizeGroup *group, *group_bin;
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
 	provider = ofa_dossier_edit_bin_get_provider( priv->dossier_bin );
 	ofa_exercice_edit_bin_set_provider( priv->exercice_bin, provider );
-	group1 = ofa_dossier_edit_bin_get_size_group( priv->dossier_bin, 1 );
-	my_utils_size_group_add_size_group( group1, ofa_exercice_edit_bin_get_size_group( priv->exercice_bin, 1 ));
+
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->dossier_bin ), 1 ))){
+		my_utils_size_group_add_size_group( group, group_bin );
+	}
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->exercice_bin ), 1 ))){
+		my_utils_size_group_add_size_group( group, group_bin );
+	}
+	g_object_unref( group );
 
 	check_for_enable_dlg( self );
 }
@@ -412,8 +428,8 @@ check_for_enable_dlg( ofaDossierNew *self )
 
 	message = NULL;
 
-	ok = ofa_dossier_edit_bin_is_valid( priv->dossier_bin, &message ) &&
-			ofa_exercice_edit_bin_is_valid( priv->exercice_bin, &message );
+	ok = my_ibin_is_valid( MY_IBIN( priv->dossier_bin ), &message ) &&
+			my_ibin_is_valid( MY_IBIN( priv->exercice_bin ), &message );
 
 	set_message( self, message );
 	g_free( message );

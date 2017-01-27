@@ -583,7 +583,7 @@ write_settings( ofaMysqlRootBin *self )
 static void
 ibin_iface_init( myIBinInterface *iface )
 {
-	static const gchar *thisfn = "ofa_mysql_connect_display_ibin_iface_init";
+	static const gchar *thisfn = "ofa_mysql_root_bin_ibin_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -624,7 +624,7 @@ ibin_get_size_group( const myIBin *instance, guint column )
 /*
  * ibin_is_valid:
  * @bin: this #ofaMysqlRootBin instance.
- * @error_message: [allow-none]: set to the error message as a newly
+ * @msgerr: [allow-none]: set to the error message as a newly
  *  allocated string which should be g_free() by the caller.
  *
  * Returns: %TRUE if both account and password are set.
@@ -633,7 +633,7 @@ ibin_get_size_group( const myIBin *instance, guint column )
  * DBMS server (at DBMS server level).
  */
 gboolean
-ibin_is_valid( const myIBin *instance, gchar **error_message )
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
 {
 	ofaMysqlRootBinPrivate *priv;
 	gboolean ok;
@@ -647,8 +647,8 @@ ibin_is_valid( const myIBin *instance, gchar **error_message )
 
 	ok = is_valid( OFA_MYSQL_ROOT_BIN( instance ), &str );
 
-	if( error_message ){
-		*error_message = ok ? NULL : g_strdup( str );
+	if( msgerr ){
+		*msgerr = ok ? NULL : g_strdup( str );
 	}
 
 	g_free( str );
@@ -686,9 +686,9 @@ idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dos
 }
 
 static gboolean
-idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message )
+idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **msgerr )
 {
-	return( my_ibin_is_valid( MY_IBIN( instance ), message ));
+	return( my_ibin_is_valid( MY_IBIN( instance ), msgerr ));
 }
 
 static void

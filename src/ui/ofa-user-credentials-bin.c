@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "ui/ofa-user-credentials-bin.h"
@@ -61,14 +62,17 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-user-credentials-bin.ui";
 
-static void     setup_bin( ofaUserCredentialsBin *self );
-static void     on_account_changed( GtkEditable *entry, ofaUserCredentialsBin *self );
-static void     on_password_changed( GtkEditable *entry, ofaUserCredentialsBin *self );
-static void     changed_composite( ofaUserCredentialsBin *self );
-static gboolean is_valid_composite( ofaUserCredentialsBin *self );
+static void          setup_bin( ofaUserCredentialsBin *self );
+static void          on_account_changed( GtkEditable *entry, ofaUserCredentialsBin *self );
+static void          on_password_changed( GtkEditable *entry, ofaUserCredentialsBin *self );
+static void          changed_composite( ofaUserCredentialsBin *self );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
 
 G_DEFINE_TYPE_EXTENDED( ofaUserCredentialsBin, ofa_user_credentials_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaUserCredentialsBin ))
+		G_ADD_PRIVATE( ofaUserCredentialsBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 user_credentials_bin_finalize( GObject *instance )
@@ -225,43 +229,6 @@ setup_bin( ofaUserCredentialsBin *self )
 }
 
 /**
- * ofa_user_credentials_bin_get_size_group:
- * @bin: this #ofaUserCredentialsBin instance.
- * @column: the desired column number, counted from zero.
- *
- * Returns: the #GtkSizeGroup used to horizontally align the @column.
- *
- * As this is a composite widget, it is probable that we will want align
- * it with other composites or widgets in a dialog box. Having a size
- * group prevents us to have to determine the longest label, which
- * should be computed dynamically as this may depend of the translation.
- *
- * Here, the .xml UI definition defines a dedicated GtkSizeGroup that
- * we have just to return as is.
- */
-GtkSizeGroup *
-ofa_user_credentials_bin_get_size_group( ofaUserCredentialsBin *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_user_credentials_bin_get_size_group";
-	ofaUserCredentialsBinPrivate *priv;
-
-	g_debug( "%s: bin=%p, column=%u", thisfn, ( void * ) bin, column );
-
-	g_return_val_if_fail( bin && OFA_IS_USER_CREDENTIALS_BIN( bin ), NULL );
-
-	priv = ofa_user_credentials_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-
-	g_warning( "%s: unknown column=%u", thisfn, column );
-	return( NULL );
-}
-
-/**
  * ofa_user_credentials_bin_grab_focus:
  * @bin: this #ofaUserCredentialsBin instance.
  *
@@ -312,9 +279,6 @@ on_password_changed( GtkEditable *entry, ofaUserCredentialsBin *self )
 	changed_composite( self );
 }
 
-/*
- * check that all fields are set, and that the two passwords are equal
- */
 static void
 changed_composite( ofaUserCredentialsBin *self )
 {
@@ -367,48 +331,45 @@ ofa_user_credentials_bin_set_password( ofaUserCredentialsBin *bin, const gchar *
 	gtk_entry_set_text( GTK_ENTRY( priv->password_entry ), password );
 }
 
-/**
- * ofa_user_credentials_bin_is_valid:
- * @bin: this #ofaUserCredentialsBin instance.
- * @msgerr: [allow-none]: set to the error message as a newly
- *  allocated string which should be g_free() by the caller.
- *
- * Returns: %TRUE if the widget is valid, i.e. if both account and
- * password are set.
+/*
+ * myIBin interface management
  */
-gboolean
-ofa_user_credentials_bin_is_valid( ofaUserCredentialsBin *bin, gchar **msgerr )
+static void
+ibin_iface_init( myIBinInterface *iface )
 {
-	ofaUserCredentialsBinPrivate *priv;
-	gboolean is_valid;
+	static const gchar *thisfn = "ofa_user_credentials_bin_ibin_iface_init";
 
-	g_return_val_if_fail( bin && OFA_IS_USER_CREDENTIALS_BIN( bin ), FALSE );
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	priv = ofa_user_credentials_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	is_valid = is_valid_composite( bin );
-
-	if( msgerr ){
-		*msgerr = is_valid ?
-				NULL :
-				g_strdup( _( "User credentials are not valid" ));
-	}
-
-	return( is_valid );
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
 }
 
-static gboolean
-is_valid_composite( ofaUserCredentialsBin *self )
+static guint
+ibin_get_interface_version( void )
 {
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_user_credentials_bin_ibin_get_size_group";
 	ofaUserCredentialsBinPrivate *priv;
-	gboolean ok;
 
-	priv = ofa_user_credentials_bin_get_instance_private( self );
+	g_debug( "%s: instance=%p, column=%u", thisfn, ( void * ) instance, column );
 
-	ok = my_strlen( priv->account ) &&
-			my_strlen( priv->password );
+	g_return_val_if_fail( instance && OFA_IS_USER_CREDENTIALS_BIN( instance ), NULL );
 
-	return( ok );
+	priv = ofa_user_credentials_bin_get_instance_private( OFA_USER_CREDENTIALS_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
 }

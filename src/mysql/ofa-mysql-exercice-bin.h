@@ -68,14 +68,6 @@ GType                ofa_mysql_exercice_bin_get_type      ( void ) G_GNUC_CONST;
 ofaMysqlExerciceBin *ofa_mysql_exercice_bin_new           ( const gchar *settings_prefix,
 																guint rule );
 
-GtkSizeGroup        *ofa_mysql_exercice_bin_get_size_group( ofaMysqlExerciceBin *bin,
-																guint column );
-
-gboolean             ofa_mysql_exercice_bin_is_valid      ( ofaMysqlExerciceBin *bin,
-																gchar **message );
-
-gboolean             ofa_mysql_exercice_bin_apply         ( ofaMysqlExerciceBin *bin);
-
 const gchar         *ofa_mysql_exercice_bin_get_database  ( ofaMysqlExerciceBin *bin );
 
 G_END_DECLS

@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-ibin.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-style.h"
@@ -431,6 +432,7 @@ idialog_init_credentials( ofaDossierOpen *self, GtkSizeGroup *group )
 {
 	ofaDossierOpenPrivate *priv;
 	GtkWidget *container;
+	GtkSizeGroup *group_bin;
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
@@ -442,8 +444,9 @@ idialog_init_credentials( ofaDossierOpen *self, GtkSizeGroup *group )
 
 	g_signal_connect( priv->user_credentials, "ofa-changed", G_CALLBACK( on_user_credentials_changed ), self );
 
-	my_utils_size_group_add_size_group(
-			group, ofa_user_credentials_bin_get_size_group( priv->user_credentials, 0 ));
+	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->user_credentials ), 0 ))){
+		my_utils_size_group_add_size_group( group, group_bin );
+	}
 }
 
 static void

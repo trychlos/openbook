@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-dossier-collection.h"
@@ -88,18 +89,24 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-meta-bin.ui";
 
-static void     setup_bin( ofaDossierMetaBin *self );
-static void     setup_dbms_provider( ofaDossierMetaBin *self );
-static void     on_dossier_name_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaDossierMetaBin *self );
-static void     on_dossier_name_changed( GtkEditable *editable, ofaDossierMetaBin *self );
-static void     on_dbms_provider_changed( GtkComboBox *combo, ofaDossierMetaBin *self );
-static void     changed_composite( ofaDossierMetaBin *self );
-static gboolean is_valid( ofaDossierMetaBin *self, gchar **msgerr );
-static void     read_settings( ofaDossierMetaBin *self );
-static void     write_settings( ofaDossierMetaBin *self );
+static void          setup_bin( ofaDossierMetaBin *self );
+static void          setup_dbms_provider( ofaDossierMetaBin *self );
+static void          on_dossier_name_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaDossierMetaBin *self );
+static void          on_dossier_name_changed( GtkEditable *editable, ofaDossierMetaBin *self );
+static void          on_dbms_provider_changed( GtkComboBox *combo, ofaDossierMetaBin *self );
+static void          changed_composite( ofaDossierMetaBin *self );
+static gboolean      is_valid( ofaDossierMetaBin *self, gchar **msgerr );
+static void          read_settings( ofaDossierMetaBin *self );
+static void          write_settings( ofaDossierMetaBin *self );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
+static void          ibin_apply( myIBin *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierMetaBin, ofa_dossier_meta_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaDossierMetaBin ))
+		G_ADD_PRIVATE( ofaDossierMetaBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 dossier_meta_bin_finalize( GObject *instance )
@@ -342,33 +349,6 @@ setup_dbms_provider( ofaDossierMetaBin *self )
 	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_dbms_provider_changed ), self );
 }
 
-/**
- * ofa_dossier_meta_bin_get_size_group:
- * @bin: this #ofaDossierMetaBin instance.
- * @column: the desired column.
- *
- * Returns: the #GtkSizeGroup which handles the desired @column.
- */
-GtkSizeGroup *
-ofa_dossier_meta_bin_get_size_group( ofaDossierMetaBin *bin, guint column )
-{
-	static const gchar *thisfn = "ofa_dossier_meta_bin_get_size_group";
-	ofaDossierMetaBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_META_BIN( bin ), NULL );
-
-	priv = ofa_dossier_meta_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	if( column == 0 ){
-		return( priv->group0 );
-	}
-
-	g_warning( "%s: unmanaged column=%u", thisfn, column );
-	return( NULL );
-}
-
 /*
  * just refuse any new text which would contain square brackets
  * as this is refused by underlying GKeyFile
@@ -426,40 +406,6 @@ changed_composite( ofaDossierMetaBin *self )
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
-/**
- * ofa_dossier_meta_bin_is_valid:
- * @bin: this #ofaDossierMetaBin instance.
- * @error_message: [allow-none]: the error message to be displayed.
- *
- * The bin of dialog is valid if :
- * - the dossier name is set
- * - a DBMS provider is set
- */
-gboolean
-ofa_dossier_meta_bin_is_valid( ofaDossierMetaBin *bin, gchar **error_message )
-{
-	ofaDossierMetaBinPrivate *priv;
-	gboolean ok;
-	gchar *str;
-
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_META_BIN( bin ), FALSE );
-
-	priv = ofa_dossier_meta_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	str = NULL;
-	ok = is_valid( bin, &str );
-
-	if( error_message ){
-		*error_message = str;
-	} else {
-		g_free( str );
-	}
-
-	return( ok );
-}
-
 static gboolean
 is_valid( ofaDossierMetaBin *self, gchar **msgerr )
 {
@@ -504,42 +450,6 @@ is_valid( ofaDossierMetaBin *self, gchar **msgerr )
 	}
 
 	return( ok );
-}
-
-/**
- * ofa_dossier_meta_bin_apply:
- * @bin: this #ofaDossierMetaBin instance.
- *
- * If needed (on new dossier), instanciates a new #ofaIDBDossierMeta.
- * Register the #ofaIDBDossierMeta in dossier settings.
- *
- * Returns: %TRUE.
- */
-gboolean
-ofa_dossier_meta_bin_apply( ofaDossierMetaBin *bin )
-{
-	static const gchar *thisfn = "ofa_dossier_meta_bin_apply";
-	ofaDossierMetaBinPrivate *priv;
-	ofaDossierCollection *collection;
-
-	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
-
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_META_BIN( bin ), FALSE );
-	g_return_val_if_fail( ofa_dossier_meta_bin_is_valid( bin, NULL ), FALSE );
-
-	priv = ofa_dossier_meta_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	switch( priv->rule ){
-		case HUB_RULE_DOSSIER_NEW:
-			priv->dossier_meta = ofa_idbprovider_new_dossier_meta( priv->provider, priv->dossier_name );
-			collection = ofa_hub_get_dossier_collection( priv->hub );
-			ofa_dossier_collection_add_meta( collection, priv->dossier_meta );
-			break;
-	}
-
-	return( TRUE );
 }
 
 /**
@@ -634,4 +544,108 @@ write_settings( ofaDossierMetaBin *self )
 
 	g_free( key );
 	g_free( str );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_meta_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+	iface->apply = ibin_apply;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_dossier_meta_bin_ibin_get_size_group";
+	ofaDossierMetaBinPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_DOSSIER_META_BIN( instance ), NULL );
+
+	priv = ofa_dossier_meta_bin_get_instance_private( OFA_DOSSIER_META_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
+}
+
+/*
+ * The widget is valid if :
+ * - the dossier name is set
+ * - a DBMS provider is set
+ */
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
+{
+	ofaDossierMetaBinPrivate *priv;
+	gboolean ok;
+	gchar *str;
+
+	g_return_val_if_fail( instance && OFA_IS_DOSSIER_META_BIN( instance ), FALSE );
+
+	priv = ofa_dossier_meta_bin_get_instance_private( OFA_DOSSIER_META_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	str = NULL;
+	ok = is_valid( OFA_DOSSIER_META_BIN( instance ), &str );
+
+	if( msgerr ){
+		*msgerr = str;
+	} else {
+		g_free( str );
+	}
+
+	return( ok );
+}
+
+/*
+* If needed (on new dossier), instanciates a new #ofaIDBDossierMeta.
+ * Register the #ofaIDBDossierMeta in dossier settings.
+ *
+ * Returns: %TRUE.
+ */
+static void
+ibin_apply( myIBin *instance )
+{
+	static const gchar *thisfn = "ofa_dossier_meta_bin_ibin_apply";
+	ofaDossierMetaBinPrivate *priv;
+	ofaDossierCollection *collection;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	g_return_if_fail( instance && OFA_IS_DOSSIER_META_BIN( instance ));
+	g_return_if_fail( my_ibin_is_valid( instance, NULL ));
+
+	priv = ofa_dossier_meta_bin_get_instance_private( OFA_DOSSIER_META_BIN( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	switch( priv->rule ){
+		case HUB_RULE_DOSSIER_NEW:
+			priv->dossier_meta = ofa_idbprovider_new_dossier_meta( priv->provider, priv->dossier_name );
+			collection = ofa_hub_get_dossier_collection( priv->hub );
+			ofa_dossier_collection_add_meta( collection, priv->dossier_meta );
+			break;
+	}
 }

@@ -94,6 +94,8 @@ typedef struct {
 	 *
 	 * Returns: %TRUE if the @instance is valid.
 	 *
+	 * Defaults to %TRUE.
+	 *
 	 * Since: version 1
 	 */
 	gboolean       ( *is_valid )             ( const myIBin *instance,
