@@ -66,7 +66,7 @@ static void       idbconnect_iface_init( ofaIDBConnectInterface *iface );
 static guint      idbconnect_get_interface_version( void );
 static gboolean   idbconnect_open_with_account( ofaIDBConnect *instance, const gchar *account, const gchar *password );
 static gboolean   idbconnect_open_with_superuser( ofaIDBConnect *instance, ofaIDBSuperuser *su );
-static void       idbconnect_set_exercice_meta( ofaIDBConnect *instance, ofaIDBExerciceMeta *meta );
+//static void       idbconnect_set_exercice_meta( ofaIDBConnect *instance, ofaIDBExerciceMeta *meta );
 static gboolean   idbconnect_is_opened( const ofaIDBConnect *instance );
 static GtkWidget *idbconnect_get_display( ofaIDBConnect *instance, const gchar *style );
 static gboolean   idbconnect_query( const ofaIDBConnect *instance, const gchar *query );
@@ -621,7 +621,7 @@ idbconnect_iface_init( ofaIDBConnectInterface *iface )
 	iface->get_interface_version = idbconnect_get_interface_version;
 	iface->open_with_account = idbconnect_open_with_account;
 	iface->open_with_superuser = idbconnect_open_with_superuser;
-	iface->set_exercice_meta = idbconnect_set_exercice_meta;
+	//iface->set_exercice_meta = idbconnect_set_exercice_meta;
 	iface->is_opened = idbconnect_is_opened;
 	iface->get_display = idbconnect_get_display;
 	iface->query = idbconnect_query;
@@ -697,6 +697,7 @@ idbconnect_open_with_superuser( ofaIDBConnect *instance, ofaIDBSuperuser *su )
 	return( ok );
 }
 
+#if 0
 static void
 idbconnect_set_exercice_meta( ofaIDBConnect *instance, ofaIDBExerciceMeta *meta )
 {
@@ -712,6 +713,7 @@ idbconnect_set_exercice_meta( ofaIDBConnect *instance, ofaIDBExerciceMeta *meta 
 	g_free( priv->database );
 	priv->database = g_strdup( database );
 }
+#endif
 
 static gboolean
 idbconnect_is_opened( const ofaIDBConnect *instance )

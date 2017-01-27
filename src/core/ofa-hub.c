@@ -909,29 +909,6 @@ ofa_hub_get_connect( ofaHub *hub )
 }
 
 /*
- * ofa_hub_det_connect:
- * @hub: this #ofaHub instance.
- * @connect: the handled connection.
- *
- * Get a new reference on the provided @connect.
- */
-void
-ofa_hub_set_connect( ofaHub *hub, ofaIDBConnect *connect )
-{
-	ofaHubPrivate *priv;
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	g_clear_object( &priv->connect );
-	priv->connect = g_object_ref( connect );
-}
-
-/*
  * ofa_hub_get_dossier:
  * @hub: this #ofaHub instance.
  *

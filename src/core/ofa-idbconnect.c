@@ -383,6 +383,7 @@ ofa_idbconnect_get_exercice_meta( const ofaIDBConnect *connect )
 void
 ofa_idbconnect_set_exercice_meta( ofaIDBConnect *connect, ofaIDBExerciceMeta *exercice_meta )
 {
+	static const gchar *thisfn = "ofa_idbconnect_set_exercice_meta";
 	sIDBConnect *sdata;
 
 	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
@@ -395,8 +396,6 @@ ofa_idbconnect_set_exercice_meta( ofaIDBConnect *connect, ofaIDBExerciceMeta *ex
 		sdata->exercice_meta = g_object_ref(( gpointer ) exercice_meta );
 	}
 
-#if 0
-	static const gchar *thisfn = "ofa_idbconnect_set_exercice_meta";
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->set_exercice_meta ){
 		OFA_IDBCONNECT_GET_INTERFACE( connect )->set_exercice_meta( connect, exercice_meta );
 
@@ -404,7 +403,6 @@ ofa_idbconnect_set_exercice_meta( ofaIDBConnect *connect, ofaIDBExerciceMeta *ex
 		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'set_exercice_meta()' method",
 				thisfn, G_OBJECT_TYPE_NAME( connect ));
 	}
-#endif
 }
 
 /**

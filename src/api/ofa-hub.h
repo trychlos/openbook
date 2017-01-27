@@ -149,9 +149,6 @@ void                   ofa_hub_set_runtime_dir           ( ofaHub *hub,
 
 const ofaIDBConnect   *ofa_hub_get_connect               ( ofaHub *hub );
 
-void                   ofa_hub_set_connect               ( ofaHub *hub,
-																ofaIDBConnect *connect );
-
 ofoDossier            *ofa_hub_get_dossier               ( ofaHub *hub );
 
 gboolean               ofa_hub_dossier_open              ( ofaHub *hub,
