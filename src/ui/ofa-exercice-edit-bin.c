@@ -483,7 +483,7 @@ ofa_exercice_edit_bin_get_open_on_create( ofaExerciceEditBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( priv->actions_bin ? ofa_dossier_actions_bin_get_open_on_create( priv->actions_bin ) : FALSE );
+	return( priv->actions_bin ? ofa_dossier_actions_bin_get_open( priv->actions_bin ) : FALSE );
 }
 
 /**
@@ -503,7 +503,7 @@ ofa_exercice_edit_bin_get_apply_actions( ofaExerciceEditBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( priv->actions_bin ? ofa_dossier_actions_bin_get_apply_actions( priv->actions_bin ) : FALSE );
+	return( priv->actions_bin ? ofa_dossier_actions_bin_get_apply( priv->actions_bin ) : FALSE );
 }
 
 /*

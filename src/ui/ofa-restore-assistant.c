@@ -1314,9 +1314,9 @@ p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( priv->p5_admin_account ), priv->p4_account );
 	gtk_label_set_text( GTK_LABEL( priv->p5_admin_password ), "******" );
 
-	priv->p5_open = ofa_dossier_actions_bin_get_open_on_create( priv->p4_actions );
+	priv->p5_open = ofa_dossier_actions_bin_get_open( priv->p4_actions );
 	gtk_label_set_text( GTK_LABEL( priv->p5_open_label ), priv->p5_open ? "True":"False" );
-	priv->p5_apply = ofa_dossier_actions_bin_get_apply_actions( priv->p4_actions );
+	priv->p5_apply = ofa_dossier_actions_bin_get_apply( priv->p4_actions );
 	gtk_label_set_text( GTK_LABEL( priv->p5_apply_label ), priv->p5_apply ? "True":"False" );
 }
 

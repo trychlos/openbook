@@ -66,8 +66,9 @@ typedef struct {
 	sLabel;
 
 static sLabel st_label[] = {
-		{ HUB_RULE_DOSSIER_NEW,     N_( "O_pen the dossier right after having created it " )},
-		{ HUB_RULE_DOSSIER_RESTORE, N_( "O_pen the dossier right after having restored the archive " )},
+		{ HUB_RULE_DOSSIER_NEW,     N_( "O_pen the dossier right after having created it" )},
+		{ HUB_RULE_DOSSIER_RESTORE, N_( "O_pen the dossier right after the restoration" )},
+		{ HUB_RULE_EXERCICE_CLOSE,  N_( "O_pen the new exercice" )},
 		{ 0 }
 };
 
@@ -82,13 +83,13 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-actions-bin.ui";
 
-static void          setup_bin( ofaDossierActionsBin *self );
-static void          on_open_toggled( GtkToggleButton *button, ofaDossierActionsBin *self );
-static void          changed_composite( ofaDossierActionsBin *self );
-static void          read_settings( ofaDossierActionsBin *self );
-static void          write_settings( ofaDossierActionsBin *self );
-static void          ibin_iface_init( myIBinInterface *iface );
-static guint         ibin_get_interface_version( void );
+static void  setup_bin( ofaDossierActionsBin *self );
+static void  on_open_toggled( GtkToggleButton *button, ofaDossierActionsBin *self );
+static void  changed_composite( ofaDossierActionsBin *self );
+static void  read_settings( ofaDossierActionsBin *self );
+static void  write_settings( ofaDossierActionsBin *self );
+static void  ibin_iface_init( myIBinInterface *iface );
+static guint ibin_get_interface_version( void );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierActionsBin, ofa_dossier_actions_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaDossierActionsBin )
@@ -191,7 +192,9 @@ ofa_dossier_actions_bin_class_init( ofaDossierActionsBinClass *klass )
 /**
  * ofa_dossier_actions_bin_new:
  * @hub: the #ofaHub object of the application.
- * @settings_prefix: the prefix of the key in user settings.
+ * @settings_prefix: [allow-none]: the prefix of the key in user settings;
+ *  if %NULL, then rely on this class name;
+ *  when set, then this class automatically adds its name as a suffix.
  * @rule: the usage of this widget.
  *
  * Returns: a newly defined composite widget which let the user decide
@@ -204,6 +207,7 @@ ofa_dossier_actions_bin_new( ofaHub *hub, const gchar *settings_prefix, guint ru
 	static const gchar *thisfn = "ofa_dossier_actions_bin_new";
 	ofaDossierActionsBin *bin;
 	ofaDossierActionsBinPrivate *priv;
+	gchar *str;
 
 	g_debug( "%s: hub=%p, settings_prefix=%s, guint=%u",
 			thisfn, ( void * ) hub, settings_prefix, rule );
@@ -218,8 +222,11 @@ ofa_dossier_actions_bin_new( ofaHub *hub, const gchar *settings_prefix, guint ru
 	priv->hub = hub;
 	priv->rule = rule;
 
-	g_free( priv->settings_prefix );
-	priv->settings_prefix = g_strdup( settings_prefix );
+	if( my_strlen( settings_prefix )){
+		str = priv->settings_prefix;
+		priv->settings_prefix = g_strdup_printf( "%s-%s", settings_prefix, str );
+		g_free( str );
+	}
 
 	setup_bin( bin );
 	read_settings( bin );
@@ -292,13 +299,13 @@ changed_composite( ofaDossierActionsBin *self )
 }
 
 /**
- * ofa_dossier_actions_bin_get_open_on_create:
+ * ofa_dossier_actions_bin_get_open:
  * @bin: this #ofaDossierActionsBin instance.
  *
  * Returns: %TRUE if the dossier should be opened after creation.
  */
 gboolean
-ofa_dossier_actions_bin_get_open_on_create( ofaDossierActionsBin *bin )
+ofa_dossier_actions_bin_get_open( ofaDossierActionsBin *bin )
 {
 	ofaDossierActionsBinPrivate *priv;
 
@@ -312,13 +319,13 @@ ofa_dossier_actions_bin_get_open_on_create( ofaDossierActionsBin *bin )
 }
 
 /**
- * ofa_dossier_actions_bin_get_apply_actions:
+ * ofa_dossier_actions_bin_get_apply:
  * @bin: this #ofaDossierActionsBin instance.
  *
  * Returns: %TRUE if the standard actions should be applied on open.
  */
 gboolean
-ofa_dossier_actions_bin_get_apply_actions( ofaDossierActionsBin *bin )
+ofa_dossier_actions_bin_get_apply( ofaDossierActionsBin *bin )
 {
 	ofaDossierActionsBinPrivate *priv;
 
@@ -404,3 +411,12 @@ ibin_get_interface_version( void )
 {
 	return( 1 );
 }
+
+/*
+ * is_valid: always, so relies on interface default behavior
+ *
+ * apply: open the dossier if asked for, so would require additional
+ * datas (and do not fit in interface prototype).
+ * So the caller has to get the current value of the check buttons and
+ * act accordingly.
+ */

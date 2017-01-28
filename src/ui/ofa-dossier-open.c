@@ -92,10 +92,10 @@ static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
-static void     idialog_init_exercice( ofaDossierOpen *self, GtkSizeGroup *group );
-static void     idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group );
-static void     idialog_init_credentials( ofaDossierOpen *self, GtkSizeGroup *group );
-static void     idialog_init_menu( ofaDossierOpen *self );
+static void     setup_exercice( ofaDossierOpen *self, GtkSizeGroup *group );
+static void     setup_dossier( ofaDossierOpen *self, GtkSizeGroup *group );
+static void     setup_credentials( ofaDossierOpen *self, GtkSizeGroup *group );
+static void     setup_menu( ofaDossierOpen *self );
 static void     on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
 static void     on_exercice_changed( ofaExerciceCombo *combo, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
 static void     on_read_only_toggled( GtkToggleButton *button, ofaDossierOpen *self );
@@ -327,9 +327,9 @@ idialog_init( myIDialog *instance )
 	init_period = priv->exercice_meta;
 
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
-	idialog_init_exercice( OFA_DOSSIER_OPEN( instance ), group );
-	idialog_init_dossier( OFA_DOSSIER_OPEN( instance ), group );
-	idialog_init_credentials( OFA_DOSSIER_OPEN( instance ), group );
+	setup_exercice( OFA_DOSSIER_OPEN( instance ), group );
+	setup_dossier( OFA_DOSSIER_OPEN( instance ), group );
+	setup_credentials( OFA_DOSSIER_OPEN( instance ), group );
 	g_object_unref( group );
 
 	/* setup the focus depending of the provided data */
@@ -371,7 +371,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->readonly_btn && GTK_IS_CHECK_BUTTON( priv->readonly_btn ));
 	g_signal_connect( priv->readonly_btn, "toggled", G_CALLBACK( on_read_only_toggled ), instance );
 
-	idialog_init_menu( OFA_DOSSIER_OPEN( instance ));
+	setup_menu( OFA_DOSSIER_OPEN( instance ));
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
@@ -379,7 +379,7 @@ idialog_init( myIDialog *instance )
 }
 
 static void
-idialog_init_exercice( ofaDossierOpen *self, GtkSizeGroup *group )
+setup_exercice( ofaDossierOpen *self, GtkSizeGroup *group )
 {
 	ofaDossierOpenPrivate *priv;
 	GtkWidget *container, *label;
@@ -399,7 +399,7 @@ idialog_init_exercice( ofaDossierOpen *self, GtkSizeGroup *group )
 }
 
 static void
-idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group )
+setup_dossier( ofaDossierOpen *self, GtkSizeGroup *group )
 {
 	ofaDossierOpenPrivate *priv;
 	GtkWidget *container, *label;
@@ -428,7 +428,7 @@ idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group )
 }
 
 static void
-idialog_init_credentials( ofaDossierOpen *self, GtkSizeGroup *group )
+setup_credentials( ofaDossierOpen *self, GtkSizeGroup *group )
 {
 	ofaDossierOpenPrivate *priv;
 	GtkWidget *container;
@@ -450,7 +450,7 @@ idialog_init_credentials( ofaDossierOpen *self, GtkSizeGroup *group )
 }
 
 static void
-idialog_init_menu( ofaDossierOpen *self )
+setup_menu( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 	GMenu *menu;

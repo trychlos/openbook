@@ -30,8 +30,17 @@
  * @short_description: #ofaDossierActionsBin class definition.
  * @include: ui/ofa-dossier-actions-bin.h
  *
- * Let the user define actions which are to be taken on dossier
- * opening.
+ * Let the user choose if the dossier/exercice should be opened after
+ * the current action.
+ *
+ * This widget is used (and the label is automatically updated):
+ * - from restore assistant: do we open the restored archived ?
+ * - for new dossier dialog: do we open the newly created dossier ?
+ * - from exercice closing assistant: do we open the new exercice ?
+ *
+ * The widget implements the #myIBin interface, but does not provide
+ * any code for the apply() method. Instead, the caller should get the
+ * current status of the check buttons and act accordingly.
  *
  * Development rules:
  * - type:       bin (parent='top')
@@ -65,15 +74,15 @@ typedef struct {
 }
 	ofaDossierActionsBinClass;
 
-GType                 ofa_dossier_actions_bin_get_type          ( void ) G_GNUC_CONST;
+GType                 ofa_dossier_actions_bin_get_type ( void ) G_GNUC_CONST;
 
-ofaDossierActionsBin *ofa_dossier_actions_bin_new               ( ofaHub *hub,
-																		const gchar *settings_prefix,
-																		guint rule );
+ofaDossierActionsBin *ofa_dossier_actions_bin_new      ( ofaHub *hub,
+															const gchar *settings_prefix,
+															guint rule );
 
-gboolean              ofa_dossier_actions_bin_get_open_on_create( ofaDossierActionsBin *bin );
+gboolean              ofa_dossier_actions_bin_get_open ( ofaDossierActionsBin *bin );
 
-gboolean              ofa_dossier_actions_bin_get_apply_actions ( ofaDossierActionsBin *bin );
+gboolean              ofa_dossier_actions_bin_get_apply( ofaDossierActionsBin *bin );
 
 G_END_DECLS
 

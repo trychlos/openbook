@@ -20,6 +20,8 @@
               <object class="GtkFrame">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="tooltip_text" translatable="yes">Standard actions on open are defined as user preferences, and apply as default to newly created dossiers.
+They are then registered as dossier preferences and can be modified here on a per-dossier basis.</property>
                 <property name="hexpand">True</property>
                 <property name="label_xalign">0</property>
                 <property name="shadow_type">in</property>
@@ -34,7 +36,7 @@
                     <property name="column_spacing">4</property>
                     <child>
                       <object class="GtkCheckButton" id="dab-open-btn">
-                        <property name="label" translatable="yes">O_pen the dossier right after having created it</property>
+                        <property name="label" translatable="yes">O_pen the dossier</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>

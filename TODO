@@ -338,6 +338,8 @@
                 + have an option to save this choice (do not automatically save)
 
 1262 2016-11-17 pass settings_prefix as a constructor argument (or know why)
+     2017- 1-28 new settings_prefix behavior:
+                - ofaDossierActionsBin
 
 1263 2016-11-19 store documents
                 + attach documents via an interface to:
@@ -360,9 +362,6 @@
 
 1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
      2017- 1-26 first *define* standard actions on open
-
-1335 2017- 1-27 MysqlExerciceEditor: check if database already exists
-     2017- 1-27 we have to have a valid connection
 
 1338
 
@@ -561,6 +560,10 @@
 
 1334 2017- 1-23 ofaDossierNew: makes use of ofaExerciceEditBin
      2017- 1-25 done
+
+1335 2017- 1-27 MysqlExerciceEditor: check if database already exists
+     2017- 1-27 we have to have a valid connection
+     2017- 1-28 cancelled as this is almost never possible
 
 1336 2017- 1-27 creating a new dossier from restore does not need a confirmation
      2017- 1-27 done
