@@ -51,6 +51,7 @@ typedef struct {
 	 */
 	ofaIGetter          *getter;
 	gchar               *settings_prefix;
+	guint                rule;
 
 	/* runtime data
 	 */
@@ -200,15 +201,19 @@ ofa_target_chooser_bin_class_init( ofaTargetChooserBinClass *klass )
 /**
  * ofa_target_chooser_bin_new:
  * @getter: an #ofaIGetter.
- * @settings_prefix: the prefix of the user preferences in settings.
+ * @settings_prefix: [allow-none]: the prefix of the key in user settings;
+ *  if %NULL, then rely on this class name;
+ *  when set, then this class automatically adds its name as a suffix.
+ * @rule: the usage of the widget.
  *
  * Returns: a new #ofaTargetChooserBin instance.
  */
 ofaTargetChooserBin *
-ofa_target_chooser_bin_new( ofaIGetter *getter, const gchar *settings_prefix )
+ofa_target_chooser_bin_new( ofaIGetter *getter, const gchar *settings_prefix, guint rule )
 {
 	ofaTargetChooserBin *bin;
 	ofaTargetChooserBinPrivate *priv;
+	gchar *str;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -217,9 +222,13 @@ ofa_target_chooser_bin_new( ofaIGetter *getter, const gchar *settings_prefix )
 	priv = ofa_target_chooser_bin_get_instance_private( bin );
 
 	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->rule = rule;
 
-	g_free( priv->settings_prefix );
-	priv->settings_prefix = g_strdup( settings_prefix );
+	if( my_strlen( settings_prefix )){
+		str = priv->settings_prefix;
+		priv->settings_prefix = g_strdup_printf( "%s-%s", settings_prefix, str );
+		g_free( str );
+	}
 
 	setup_bin( bin );
 	exercice_set_sensitive( bin );
@@ -308,7 +317,6 @@ dossier_on_new( GtkButton *button, ofaTargetChooserBin *self )
 {
 	ofaTargetChooserBinPrivate *priv;
 	GtkWindow *toplevel;
-	gchar *settings_prefix;
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
@@ -316,10 +324,10 @@ dossier_on_new( GtkButton *button, ofaTargetChooserBin *self )
 	ofa_dossier_treeview_set_selected( priv->dossier_tview, NULL );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	priv->block_dossier = TRUE;
-	settings_prefix = g_strdup_printf( "%s-ofaDossierNew", priv->settings_prefix );
 
 	if( ofa_dossier_new_run_modal(
-			priv->getter, toplevel, settings_prefix, FALSE, FALSE, FALSE, FALSE, &priv->dossier_meta )){
+			priv->getter, toplevel, priv->settings_prefix,
+			priv->rule, FALSE, FALSE, FALSE, FALSE, &priv->dossier_meta )){
 
 		set_new_object( self, G_OBJECT( priv->dossier_meta ));
 
@@ -332,8 +340,6 @@ dossier_on_new( GtkButton *button, ofaTargetChooserBin *self )
 	} else {
 		priv->block_dossier = FALSE;
 	}
-
-	g_free( settings_prefix );
 }
 
 static void
@@ -379,7 +385,6 @@ exercice_on_new( GtkButton *button, ofaTargetChooserBin *self )
 {
 	ofaTargetChooserBinPrivate *priv;
 	GtkWindow *toplevel;
-	gchar *settings_prefix;
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
@@ -388,9 +393,8 @@ exercice_on_new( GtkButton *button, ofaTargetChooserBin *self )
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	priv->block_dossier = TRUE;
 	priv->block_exercice = TRUE;
-	settings_prefix = g_strdup_printf( "%s-ofaExerciceNew", priv->settings_prefix );
 
-	if( ofa_exercice_new_run_modal( priv->getter, toplevel, settings_prefix, priv->dossier_meta, &priv->exercice_meta )){
+	if( ofa_exercice_new_run_modal( priv->getter, toplevel, priv->settings_prefix, priv->dossier_meta, &priv->exercice_meta )){
 
 		set_new_object( self, G_OBJECT( priv->exercice_meta ));
 
@@ -405,38 +409,7 @@ exercice_on_new( GtkButton *button, ofaTargetChooserBin *self )
 		priv->block_dossier = FALSE;
 		priv->block_exercice = FALSE;
 	}
-
-	g_free( settings_prefix );
 }
-
-#if 0
-/**
- * ofa_target_chooser_bin_get_selected:
- * @view: this #ofaTargetChooserBin instance.
- * @meta: [out]: the placeholder for the selected #ofaIDBDossierMeta object.
- * @period: [out]: the placeholder for the selected #ofaIDBExerciceMeta object.
- *
- * Returns: %TRUE if there is a selection.
- */
-gboolean
-ofa_target_chooser_bin_get_selected( ofaTargetChooserBin *bin, ofaIDBDossierMeta **meta, ofaIDBExerciceMeta **period )
-{
-	ofaTargetChooserBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_TARGET_CHOOSER_BIN( bin ), FALSE );
-	g_return_val_if_fail( meta, FALSE );
-	g_return_val_if_fail( period, FALSE );
-
-	priv = ofa_target_chooser_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	*meta = priv->dossier_meta;
-	ofa_exercice_treeview_get_selected( priv->exercice_tview, period );
-
-	return( *meta && *period );
-}
-#endif
 
 /*
  * Before updating the dossier collection, set a handler to reset the

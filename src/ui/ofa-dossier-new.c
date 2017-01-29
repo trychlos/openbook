@@ -60,6 +60,7 @@ typedef struct {
 	GtkWindow              *parent;
 		/* when run as modal
 		 * (the caller is waiting for the result) */
+	guint                   rule;
 	gboolean                with_su;
 	gboolean                with_admin;
 	gboolean                with_confirm;
@@ -164,6 +165,7 @@ ofa_dossier_new_init( ofaDossierNew *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
+	priv->rule = HUB_RULE_DOSSIER_NEW;
 	priv->with_su = TRUE;
 	priv->with_admin = TRUE;
 	priv->with_confirm = TRUE;
@@ -221,7 +223,9 @@ ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
  * ofa_dossier_new_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: the parent window.
- * @settings_prefix: the prefix of the key in user settings.
+ * @settings_prefix: [allow-none]: the prefix of the key in user settings;
+ *  if %NULL, then rely on this class name;
+ *  when set, then this class automatically adds its name as a suffix.
  * @with_su: whether this dialog must display the super-user widget.
  * @with_admin: whether this dialog must display the AdminCredentials widget.
  * @with_confirm: whether we request a user confirmation.
@@ -235,17 +239,18 @@ ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
  * cancel.
  */
 gboolean
-ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefix,
+ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefix, guint rule,
 								gboolean with_su, gboolean with_admin, gboolean with_confirm, gboolean with_actions, ofaIDBDossierMeta **dossier_meta )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run_modal";
 	ofaDossierNew *self;
 	ofaDossierNewPrivate *priv;
 	gboolean dossier_created;
+	gchar *str;
 
-	g_debug( "%s: getter=%p, parent=%p, settings_prefix=%s, "
+	g_debug( "%s: getter=%p, parent=%p, settings_prefix=%s, rule=%u, "
 			"	with_su=%s, with_admin=%s, with_confirm=%s, with_actions=%s, dossier_meta=%p",
-			thisfn, ( void * ) getter, ( void * ) parent, settings_prefix,
+			thisfn, ( void * ) getter, ( void * ) parent, settings_prefix, rule,
 			with_su ? "True":"False", with_admin ? "True":"False", with_confirm ? "True":"False",
 			with_actions ? "True":"False", ( void * ) dossier_meta );
 
@@ -258,14 +263,18 @@ ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *s
 
 	priv->getter = ofa_igetter_get_permanent_getter( getter );
 	priv->parent = parent;
+	priv->rule = rule;
 	priv->with_su = with_su;
 	priv->with_admin = with_admin;
 	priv->with_confirm = with_confirm;
 	priv->with_actions = with_actions;
 	priv->dossier_meta = dossier_meta;
 
-	g_free( priv->settings_prefix );
-	priv->settings_prefix = g_strdup( settings_prefix );
+	if( my_strlen( settings_prefix )){
+		str = priv->settings_prefix;
+		priv->settings_prefix = g_strdup_printf( "%s-%s", settings_prefix, str );
+		g_free( str );
+	}
 
 	dossier_created = FALSE;
 

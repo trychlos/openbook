@@ -339,8 +339,12 @@
 
 1262 2016-11-17 pass settings_prefix as a constructor argument (or know why)
      2017- 1-28 new settings_prefix behavior:
-                - ofaAdminCredentialsBin
-                - ofaDossierActionsBin
+                - ofaAdminCredentialsBin (<unused>      + '-settings')
+                - ofaDossierActionsBin   (add to prefix + '-settings')
+                - ofaDossierNew          (add to prefix + <unused>)
+                - ofaExerciceEditBin     (add to prefix + <unused>)
+                - ofaExerciceNew         (add to prefix + <unused>)
+                - ofaTargetChooserBin    (add to prefix + <unused>)
 
 1263 2016-11-19 store documents
                 + attach documents via an interface to:

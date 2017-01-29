@@ -72,7 +72,8 @@ typedef struct {
 GType                ofa_target_chooser_bin_get_type       ( void ) G_GNUC_CONST;
 
 ofaTargetChooserBin *ofa_target_chooser_bin_new            ( ofaIGetter *getter,
-																const gchar *settings_prefix );
+																const gchar *settings_prefix,
+																guint rule );
 
 gboolean             ofa_target_chooser_bin_is_new_dossier ( ofaTargetChooserBin *bin,
 																ofaIDBDossierMeta *dossier_meta );
