@@ -91,7 +91,7 @@ gboolean ofa_dossier_new_run_modal( ofaIGetter *getter,
 										gboolean with_su,
 										gboolean with_admin,
 										gboolean with_confirm,
-										gboolean with_open,
+										gboolean with_actions,
 										ofaIDBDossierMeta **dossier_meta );
 
 G_END_DECLS

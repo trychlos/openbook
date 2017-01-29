@@ -37,8 +37,6 @@
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 
-#include "ui/ofa-admin-credentials-bin.h"
-#include "ui/ofa-dossier-actions-bin.h"
 #include "ui/ofa-exercice-edit-bin.h"
 #include "ui/ofa-exercice-meta-bin.h"
 
@@ -52,8 +50,6 @@ typedef struct {
 	ofaHub                 *hub;
 	gchar                  *settings_prefix;
 	guint                   rule;
-	gboolean                with_admin;
-	gboolean                with_open;
 
 	/* UI
 	 */
@@ -62,8 +58,6 @@ typedef struct {
 	ofaExerciceMetaBin     *exercice_meta_bin;
 	GtkWidget              *exercice_editor_parent;
 	ofaIDBExerciceEditor   *exercice_editor_bin;
-	ofaAdminCredentialsBin *admin_bin;
-	ofaDossierActionsBin   *actions_bin;
 	GtkWidget              *msg_label;
 
 	/* runtime
@@ -92,8 +86,6 @@ static void          setup_bin( ofaExerciceEditBin *self );
 static void          on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaExerciceEditBin *self );
 static void          on_exercice_meta_changed( ofaExerciceMetaBin *bin, ofaExerciceEditBin *self );
 static void          on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaExerciceEditBin *self );
-static void          on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaExerciceEditBin *self );
-static void          on_actions_bin_changed( ofaDossierActionsBin *bin, ofaExerciceEditBin *self );
 static void          changed_composite( ofaExerciceEditBin *self );
 static void          ibin_iface_init( myIBinInterface *iface );
 static guint         ibin_get_interface_version( void );
@@ -161,8 +153,6 @@ ofa_exercice_edit_bin_init( ofaExerciceEditBin *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
-	priv->with_admin = TRUE;
-	priv->with_open = TRUE;
 	priv->group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	priv->group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	priv->dossier_meta = NULL;
@@ -209,22 +199,23 @@ ofa_exercice_edit_bin_class_init( ofaExerciceEditBinClass *klass )
 /**
  * ofa_exercice_edit_bin_new:
  * @hub: the #ofaHub object of the application.
- * @settings_prefix: the prefix of the key in user settings.
+ * @settings_prefix: [allow-none]: the prefix of the key in user settings;
+ *  if %NULL, then rely on this class name;
+ *  when set, then this class automatically adds its name as a suffix.
  * @rule: the usage of this widget.
- * @with_admin: whether we should display the AdminCredentials widget.
- * @with_open: whether we should display the DossierActions widget.
  *
  * Returns: a newly defined composite widget.
  */
 ofaExerciceEditBin *
-ofa_exercice_edit_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule, gboolean with_admin, gboolean with_open )
+ofa_exercice_edit_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule )
 {
 	static const gchar *thisfn = "ofa_exercice_edit_bin_new";
 	ofaExerciceEditBin *bin;
 	ofaExerciceEditBinPrivate *priv;
+	gchar *str;
 
-	g_debug( "%s: hub=%p, settings_prefix=%s, rule=%u, with_admin=%s, with_open=%s",
-			thisfn, ( void * ) hub, settings_prefix, rule, with_admin ? "True":"False", with_open ? "True":"False" );
+	g_debug( "%s: hub=%p, settings_prefix=%s, rule=%u",
+			thisfn, ( void * ) hub, settings_prefix, rule );
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( my_strlen( settings_prefix ), NULL );
@@ -235,11 +226,12 @@ ofa_exercice_edit_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule
 
 	priv->hub = hub;
 	priv->rule = rule;
-	priv->with_admin = with_admin;
-	priv->with_open = with_open;
 
-	g_free( priv->settings_prefix );
-	priv->settings_prefix = g_strdup( settings_prefix );
+	if( my_strlen( settings_prefix )){
+		str = priv->settings_prefix;
+		priv->settings_prefix = g_strdup_printf( "%s-%s", settings_prefix, str );
+		g_free( str );
+	}
 
 	setup_bin( bin );
 
@@ -279,27 +271,6 @@ setup_bin( ofaExerciceEditBin *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "eeb-exercice-editor-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->exercice_editor_parent = parent;
-
-	/* administrative credentials */
-	if( priv->with_admin ){
-		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "eeb-admin-parent" );
-		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-		priv->admin_bin = ofa_admin_credentials_bin_new( priv->hub, priv->settings_prefix, priv->rule );
-		g_signal_connect( priv->admin_bin, "ofa-changed", G_CALLBACK( on_admin_credentials_changed ), self );
-		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_bin ));
-		if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->admin_bin ), 0 ))){
-			my_utils_size_group_add_size_group( priv->group0, group_bin );
-		}
-	}
-
-	/* actions on creation */
-	if( priv->with_open ){
-		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "eeb-actions-parent" );
-		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-		priv->actions_bin = ofa_dossier_actions_bin_new( priv->hub, priv->settings_prefix, priv->rule );
-		g_signal_connect( priv->actions_bin, "ofa-changed", G_CALLBACK( on_actions_bin_changed ), self );
-		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->actions_bin ));
-	}
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -379,18 +350,6 @@ on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaExerciceEditBin *se
 }
 
 static void
-on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaExerciceEditBin *self )
-{
-	changed_composite( self );
-}
-
-static void
-on_actions_bin_changed( ofaDossierActionsBin *bin, ofaExerciceEditBin *self )
-{
-	changed_composite( self );
-}
-
-static void
 changed_composite( ofaExerciceEditBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
@@ -411,7 +370,6 @@ ofa_exercice_edit_bin_apply( ofaExerciceEditBin *bin )
 	static const gchar *thisfn = "ofa_exercice_edit_bin_apply";
 	ofaExerciceEditBinPrivate *priv;
 	ofaIDBExerciceMeta *exercice_meta;
-	const gchar *account;
 
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
@@ -425,85 +383,7 @@ ofa_exercice_edit_bin_apply( ofaExerciceEditBin *bin )
 	exercice_meta = ofa_exercice_meta_bin_apply( priv->exercice_meta_bin );
 	ofa_idbexercice_meta_set_from_editor( exercice_meta, priv->exercice_editor_bin );
 
-	if( priv->admin_bin ){
-		account = ofa_admin_credentials_bin_get_remembered_account( priv->admin_bin );
-		ofa_idbexercice_meta_set_remembered_account( exercice_meta, account );
-	}
-
 	return( exercice_meta );
-}
-
-/**
- * ofa_exercice_edit_bin_get_admin_credentials:
- * @bin: this #ofaExerciceEditBin instance.
- * @account: [out]: a placeholder for the account.
- * @password: [out]: a placeholder for the password.
- *
- * Set the provided placeholders to their respective value.
- */
-void
-ofa_exercice_edit_bin_get_admin_credentials( ofaExerciceEditBin *bin, gchar **account, gchar **password )
-{
-	ofaExerciceEditBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ));
-	g_return_if_fail( account );
-	g_return_if_fail( password );
-
-	priv = ofa_exercice_edit_bin_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	if( account ){
-		*account = NULL;
-	}
-	if( password ){
-		*password = NULL;
-	}
-	if( priv->with_admin ){
-		g_return_if_fail( priv->admin_bin && OFA_IS_ADMIN_CREDENTIALS_BIN( priv->admin_bin ));
-		ofa_admin_credentials_bin_get_credentials( priv->admin_bin, account, password );
-	}
-}
-
-/**
- * ofa_exercice_edit_bin_get_open_on_create:
- * @bin: this #ofaExerciceEditBin instance.
- *
- * Returns: %TRUE if the new dossier should be opened after creation.
- */
-gboolean
-ofa_exercice_edit_bin_get_open_on_create( ofaExerciceEditBin *bin )
-{
-	ofaExerciceEditBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ), FALSE );
-
-	priv = ofa_exercice_edit_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	return( priv->actions_bin ? ofa_dossier_actions_bin_get_open( priv->actions_bin ) : FALSE );
-}
-
-/**
- * ofa_exercice_edit_bin_get_apply_actions:
- * @bin: this #ofaExerciceEditBin instance.
- *
- * Returns: %TRUE if the new dossier should be opened after creation.
- */
-gboolean
-ofa_exercice_edit_bin_get_apply_actions( ofaExerciceEditBin *bin )
-{
-	ofaExerciceEditBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_EXERCICE_EDIT_BIN( bin ), FALSE );
-
-	priv = ofa_exercice_edit_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	return( priv->actions_bin ? ofa_dossier_actions_bin_get_apply( priv->actions_bin ) : FALSE );
 }
 
 /*
@@ -571,12 +451,6 @@ ibin_is_valid( const myIBin *instance, gchar **msgerr )
 	}
 	if( ok ){
 		ok = priv->exercice_editor_bin ? ofa_idbexercice_editor_is_valid( priv->exercice_editor_bin, msgerr ) : TRUE;
-	}
-	if( ok && priv->admin_bin ){
-		ok = my_ibin_is_valid( MY_IBIN( priv->admin_bin ), msgerr );
-	}
-	if( ok && priv->actions_bin ){
-		ok = my_ibin_is_valid( MY_IBIN( priv->actions_bin ), msgerr );
 	}
 
 	return( ok );

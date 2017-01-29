@@ -86,8 +86,6 @@ gboolean ofa_exercice_new_run_modal( ofaIGetter *getter,
 										GtkWindow *parent,
 										const gchar *settings_prefix,
 										ofaIDBDossierMeta *dossier_meta,
-										gboolean with_admin,
-										gboolean with_open,
 										ofaIDBExerciceMeta **exercice_meta );
 
 G_END_DECLS

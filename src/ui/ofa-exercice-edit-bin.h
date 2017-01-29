@@ -43,10 +43,7 @@
  *    |                                        +- ofaMysqlExerciceEditor
  *    |                                            |
  *    |                                            +- ofaMysqlExerciceBin
- *    |
- *    +- ofaAdminCredentialsBin
- *    |
- *    +- ofaDossierActionsBin
+ *    +
  *
  * Development rules:
  * - type:       bin (parent='top')
@@ -92,9 +89,7 @@ GType                 ofa_exercice_edit_bin_get_type             ( void ) G_GNUC
 
 ofaExerciceEditBin   *ofa_exercice_edit_bin_new                  ( ofaHub *hub,
 																		const gchar *settings_prefix,
-																		guint rule,
-																		gboolean with_admin,
-																		gboolean with_open );
+																		guint rule );
 
 void                  ofa_exercice_edit_bin_set_provider         ( ofaExerciceEditBin *bin,
 																		ofaIDBProvider *provider );
@@ -103,14 +98,6 @@ void                  ofa_exercice_edit_bin_set_dossier_meta     ( ofaExerciceEd
 																		ofaIDBDossierMeta *dossier_meta );
 
 ofaIDBExerciceMeta   *ofa_exercice_edit_bin_apply                ( ofaExerciceEditBin *bin );
-
-void                  ofa_exercice_edit_bin_get_admin_credentials( ofaExerciceEditBin *bin,
-																		gchar **account,
-																		gchar **password );
-
-gboolean              ofa_exercice_edit_bin_get_open_on_create   ( ofaExerciceEditBin *bin );
-
-gboolean              ofa_exercice_edit_bin_get_apply_actions    ( ofaExerciceEditBin *bin );
 
 G_END_DECLS
 

@@ -88,7 +88,7 @@ static void     dossier_on_new( GtkButton *button, ofaTargetChooserBin *self );
 static void     exercice_set_sensitive( ofaTargetChooserBin *self );
 static void     exercice_set_sensitive_widget( GtkWidget *widget, ofaTargetChooserBin *self );
 static void     exercice_on_selection_changed( ofaExerciceTreeview *treeview, ofaIDBExerciceMeta *meta, ofaTargetChooserBin *self );
-static void     period_on_new( GtkButton *button, ofaTargetChooserBin *self );
+static void     exercice_on_new( GtkButton *button, ofaTargetChooserBin *self );
 static void     set_collection_handler( ofaTargetChooserBin *self );
 static void     remove_collection_handler( ofaTargetChooserBin *self );
 static void     on_collection_changed( ofaDossierCollection *collection, guint count, ofaTargetChooserBin *self );
@@ -276,7 +276,7 @@ setup_bin( ofaTargetChooserBin *self )
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-new-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-	g_signal_connect( btn, "clicked", G_CALLBACK( period_on_new ), self );
+	g_signal_connect( btn, "clicked", G_CALLBACK( exercice_on_new ), self );
 	priv->exercice_new_btn = btn;
 
 	gtk_widget_destroy( toplevel );
@@ -375,7 +375,7 @@ exercice_on_selection_changed( ofaExerciceTreeview *treeview, ofaIDBExerciceMeta
 }
 
 static void
-period_on_new( GtkButton *button, ofaTargetChooserBin *self )
+exercice_on_new( GtkButton *button, ofaTargetChooserBin *self )
 {
 	ofaTargetChooserBinPrivate *priv;
 	GtkWindow *toplevel;
@@ -390,7 +390,7 @@ period_on_new( GtkButton *button, ofaTargetChooserBin *self )
 	priv->block_exercice = TRUE;
 	settings_prefix = g_strdup_printf( "%s-ofaExerciceNew", priv->settings_prefix );
 
-	if( ofa_exercice_new_run_modal( priv->getter, toplevel, settings_prefix, priv->dossier_meta, FALSE, FALSE, &priv->exercice_meta )){
+	if( ofa_exercice_new_run_modal( priv->getter, toplevel, settings_prefix, priv->dossier_meta, &priv->exercice_meta )){
 
 		set_new_object( self, G_OBJECT( priv->exercice_meta ));
 

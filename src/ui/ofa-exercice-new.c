@@ -57,8 +57,6 @@ typedef struct {
 	GtkWindow           *parent;
 	ofaIDBDossierMeta   *dossier_meta;
 		/* when run as modal */
-	gboolean             with_admin;
-	gboolean             with_open;
 	ofaIDBExerciceMeta **exercice_meta;
 
 	/* runtime
@@ -151,8 +149,6 @@ ofa_exercice_new_init( ofaExerciceNew *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
-	priv->with_admin = TRUE;
-	priv->with_open = TRUE;
 	priv->exercice_created = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
@@ -177,8 +173,6 @@ ofa_exercice_new_class_init( ofaExerciceNewClass *klass )
  * @parent: the parent window.
  * @settings_prefix: the prefix of the keys in user settings.
  * @dossier_meta: the #ofaIDBDossierMeta to be attached to.
- * @with_admin: whether this dialog must display the admin credentials.
- * @with_open: whether this dialog must display the actions on open.
  * @exercice_meta: [out][allow-none]: a placeholder for the newly created
  *  #ofaIDBExerciceMeta.
  *
@@ -194,17 +188,16 @@ ofa_exercice_new_class_init( ofaExerciceNewClass *klass )
  */
 gboolean
 ofa_exercice_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefix,
-								ofaIDBDossierMeta *dossier_meta, gboolean with_admin, gboolean with_open,
-								ofaIDBExerciceMeta **exercice_meta )
+								ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta **exercice_meta )
 {
 	static const gchar *thisfn = "ofa_exercice_new_run_modal";
 	ofaExerciceNew *self;
 	ofaExerciceNewPrivate *priv;
 	gboolean exercice_created;
+	gchar *str;
 
-	g_debug( "%s: getter=%p, parent=%p, settings_prefix=%s, dossier_meta=%p, with_admin=%s, with_open=%s, exercice_meta=%p",
+	g_debug( "%s: getter=%p, parent=%p, settings_prefix=%s, dossier_meta=%p, exercice_meta=%p",
 			thisfn, ( void * ) getter, ( void * ) parent, settings_prefix, ( void * ) dossier_meta,
-			with_admin ? "True":"False", with_open ? "True":"False",
 			( void * ) exercice_meta );
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
@@ -218,12 +211,13 @@ ofa_exercice_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *
 	priv->getter = ofa_igetter_get_permanent_getter( getter );
 	priv->parent = parent;
 	priv->dossier_meta = dossier_meta;
-	priv->with_admin = with_admin;
-	priv->with_open = with_open;
 	priv->exercice_meta = exercice_meta;
 
-	g_free( priv->settings_prefix );
-	priv->settings_prefix = g_strdup( settings_prefix );
+	if( my_strlen( settings_prefix )){
+		str = priv->settings_prefix;
+		priv->settings_prefix = g_strdup_printf( "%s-%s", settings_prefix, str );
+		g_free( str );
+	}
 
 	exercice_created = FALSE;
 
@@ -314,8 +308,7 @@ idialog_init( myIDialog *instance )
 	/* create the composite widget and attach it to the dialog */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "edit-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->edit_bin = ofa_exercice_edit_bin_new(
-			priv->hub, priv->settings_prefix, HUB_RULE_EXERCICE_NEW, priv->with_admin, priv->with_open );
+	priv->edit_bin = ofa_exercice_edit_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_EXERCICE_NEW );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->edit_bin ));
 	ofa_exercice_edit_bin_set_dossier_meta( priv->edit_bin, priv->dossier_meta );
 	g_signal_connect( priv->edit_bin, "ofa-changed", G_CALLBACK( on_edit_bin_changed ), instance );

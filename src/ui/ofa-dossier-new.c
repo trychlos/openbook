@@ -43,6 +43,8 @@
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 
+#include "ui/ofa-admin-credentials-bin.h"
+#include "ui/ofa-dossier-actions-bin.h"
 #include "ui/ofa-dossier-edit-bin.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-exercice-edit-bin.h"
@@ -50,32 +52,34 @@
 /* private instance data
  */
 typedef struct {
-	gboolean            dispose_has_run;
+	gboolean                dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter         *getter;
-	GtkWindow          *parent;
+	ofaIGetter             *getter;
+	GtkWindow              *parent;
 		/* when run as modal
 		 * (the caller is waiting for the result) */
-	gboolean            with_su;
-	gboolean            with_admin;
-	gboolean            with_confirm;
-	gboolean            with_open;
-	ofaIDBDossierMeta **dossier_meta;
+	gboolean                with_su;
+	gboolean                with_admin;
+	gboolean                with_confirm;
+	gboolean                with_actions;
+	ofaIDBDossierMeta     **dossier_meta;
 
 	/* runtime
 	 */
-	gchar              *settings_prefix;
-	ofaHub             *hub;
-	gboolean            dossier_created;
+	gchar                  *settings_prefix;
+	ofaHub                 *hub;
+	gboolean                dossier_created;
 
 	/* UI
 	 */
-	ofaDossierEditBin  *dossier_bin;
-	ofaExerciceEditBin *exercice_bin;
-	GtkWidget          *ok_btn;
-	GtkWidget          *msg_label;
+	ofaDossierEditBin      *dossier_bin;
+	ofaExerciceEditBin     *exercice_bin;
+	ofaAdminCredentialsBin *admin_bin;
+	ofaDossierActionsBin   *actions_bin;
+	GtkWidget              *ok_btn;
+	GtkWidget              *msg_label;
 }
 	ofaDossierNewPrivate;
 
@@ -88,6 +92,8 @@ static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     on_dossier_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self );
 static void     on_exercice_bin_changed( ofaExerciceEditBin *bin, ofaDossierNew *self );
+static void     on_admin_bin_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
+static void     on_actions_bin_changed( ofaDossierActionsBin *bin, ofaDossierNew *self );
 static void     check_for_enable_dlg( ofaDossierNew *self );
 static void     on_ok_clicked( ofaDossierNew *self );
 static gboolean do_create( ofaDossierNew *self );
@@ -161,7 +167,7 @@ ofa_dossier_new_init( ofaDossierNew *self )
 	priv->with_su = TRUE;
 	priv->with_admin = TRUE;
 	priv->with_confirm = TRUE;
-	priv->with_open = TRUE;
+	priv->with_actions = TRUE;
 	priv->dossier_created = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
@@ -219,7 +225,7 @@ ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
  * @with_su: whether this dialog must display the super-user widget.
  * @with_admin: whether this dialog must display the AdminCredentials widget.
  * @with_confirm: whether we request a user confirmation.
- * @with_open: whether this dialog must display the DossierActions widget.
+ * @with_actions: whether this dialog must display the DossierActions widget.
  * @dossier_meta: [out][allow-none]: a placeholder for the newly created
  *  dossier.
  *
@@ -230,7 +236,7 @@ ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
  */
 gboolean
 ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefix,
-								gboolean with_su, gboolean with_admin, gboolean with_confirm, gboolean with_open, ofaIDBDossierMeta **dossier_meta )
+								gboolean with_su, gboolean with_admin, gboolean with_confirm, gboolean with_actions, ofaIDBDossierMeta **dossier_meta )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run_modal";
 	ofaDossierNew *self;
@@ -238,10 +244,10 @@ ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *s
 	gboolean dossier_created;
 
 	g_debug( "%s: getter=%p, parent=%p, settings_prefix=%s, "
-			"	with_su=%s, with_admin=%s, with_confirm=%s, with_open=%s, dossier_meta=%p",
+			"	with_su=%s, with_admin=%s, with_confirm=%s, with_actions=%s, dossier_meta=%p",
 			thisfn, ( void * ) getter, ( void * ) parent, settings_prefix,
 			with_su ? "True":"False", with_admin ? "True":"False", with_confirm ? "True":"False",
-			with_open ? "True":"False", ( void * ) dossier_meta );
+			with_actions ? "True":"False", ( void * ) dossier_meta );
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
@@ -255,7 +261,7 @@ ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *s
 	priv->with_su = with_su;
 	priv->with_admin = with_admin;
 	priv->with_confirm = with_confirm;
-	priv->with_open = with_open;
+	priv->with_actions = with_actions;
 	priv->dossier_meta = dossier_meta;
 
 	g_free( priv->settings_prefix );
@@ -371,12 +377,32 @@ idialog_init( myIDialog *instance )
 	/* exercice edition */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "exercice-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->exercice_bin = ofa_exercice_edit_bin_new(
-			priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_admin, priv->with_open );
+	priv->exercice_bin = ofa_exercice_edit_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
 	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), instance );
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->exercice_bin ), 0 ))){
 		my_utils_size_group_add_size_group( group, group_bin );
+	}
+
+	/* admin credentials */
+	if( priv->with_admin ){
+		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "admin-parent" );
+		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+		priv->admin_bin = ofa_admin_credentials_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
+		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_bin ));
+		g_signal_connect( priv->admin_bin, "ofa-changed", G_CALLBACK( on_admin_bin_changed ), instance );
+		if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->admin_bin ), 0 ))){
+			my_utils_size_group_add_size_group( group, group_bin );
+		}
+	}
+
+	/* dossier actions on open */
+	if( priv->with_actions ){
+		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "actions-parent" );
+		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+		priv->actions_bin = ofa_dossier_actions_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
+		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->actions_bin ));
+		g_signal_connect( priv->actions_bin, "ofa-changed", G_CALLBACK( on_actions_bin_changed ), instance );
 	}
 
 	/* message */
@@ -423,6 +449,18 @@ on_exercice_bin_changed( ofaExerciceEditBin *bin, ofaDossierNew *self )
 }
 
 static void
+on_admin_bin_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self )
+{
+	check_for_enable_dlg( self );
+}
+
+static void
+on_actions_bin_changed( ofaDossierActionsBin *bin, ofaDossierNew *self )
+{
+	check_for_enable_dlg( self );
+}
+
+static void
 check_for_enable_dlg( ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
@@ -435,6 +473,13 @@ check_for_enable_dlg( ofaDossierNew *self )
 
 	ok = my_ibin_is_valid( MY_IBIN( priv->dossier_bin ), &message ) &&
 			my_ibin_is_valid( MY_IBIN( priv->exercice_bin ), &message );
+
+	if( ok && priv->admin_bin ){
+		ok = my_ibin_is_valid( MY_IBIN( priv->admin_bin ), &message );
+	}
+	if( ok && priv->actions_bin ){
+		ok = my_ibin_is_valid( MY_IBIN( priv->actions_bin ), &message );
+	}
 
 	set_message( self, message );
 	g_free( message );
@@ -505,7 +550,9 @@ do_create( ofaDossierNew *self )
 	if( priv->with_su ){
 		dossier_editor = ofa_dossier_edit_bin_get_dossier_editor( priv->dossier_bin );
 		connect = ofa_idbdossier_editor_get_valid_connect( dossier_editor, dossier_meta );
-		ofa_exercice_edit_bin_get_admin_credentials( priv->exercice_bin, &adm_account, &adm_password );
+		if( priv->with_admin ){
+			ofa_admin_credentials_bin_get_credentials( priv->admin_bin, &adm_account, &adm_password );
+		}
 		ret = ofa_idbconnect_period_new( connect, adm_account, adm_password, &msgerr );
 
 		if( !ret ){
@@ -519,15 +566,23 @@ do_create( ofaDossierNew *self )
 			g_object_unref( dossier_meta );
 		}
 	}
-
-	/* open the newly created dossier if asked for */
 	if( ret ){
 		priv->dossier_created = TRUE;
 		if( priv->dossier_meta ){
 			*( priv->dossier_meta ) = dossier_meta;
 		}
-		if( priv->with_open ){
-			open = ofa_exercice_edit_bin_get_open_on_create( priv->exercice_bin );
+	}
+/*
+		if( priv->admin_bin ){
+			account = ofa_admin_credentials_bin_get_remembered_account( priv->admin_bin );
+			ofa_idbexercice_meta_set_remembered_account( exercice_meta, account );
+		}
+		*/
+
+	/* open the newly created dossier if asked for */
+	if( ret ){
+		if( priv->with_actions ){
+			open = ofa_dossier_actions_bin_get_open( priv->actions_bin );
 			if( open ){
 				exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
 				connect = ofa_idbdossier_meta_new_connect( dossier_meta, exercice_meta );
@@ -536,7 +591,7 @@ do_create( ofaDossierNew *self )
 							_( "Unable to connect to newly created dossier" ));
 					g_object_unref( connect );
 				} else {
-					apply_actions = ofa_exercice_edit_bin_get_apply_actions( priv->exercice_bin );
+					apply_actions = ofa_dossier_actions_bin_get_apply( priv->actions_bin );
 					if( ofa_hub_dossier_open( priv->hub, priv->parent, connect, apply_actions, FALSE )){
 						ofa_hub_dossier_remediate_settings( priv->hub );
 						ret = TRUE;
