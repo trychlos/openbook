@@ -195,7 +195,8 @@ ofa_dossier_actions_bin_class_init( ofaDossierActionsBinClass *klass )
  * @settings_prefix: [allow-none]: the prefix of the key in user settings;
  *  if %NULL, then rely on this class name;
  *  when set, then this class automatically adds its name as a suffix.
- * @rule: the usage of this widget.
+ * @rule: the usage of this widget;
+ *  is particularly used to set the ad-hoc label of the widget.
  *
  * Returns: a newly defined composite widget which let the user decide
  * if he wants open the newly created (resp. restored) dossier, and
@@ -353,7 +354,7 @@ read_settings( ofaDossierActionsBin *self )
 	priv = ofa_dossier_actions_bin_get_instance_private( self );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	key = g_strdup_printf( "%s-dossier-actions", priv->settings_prefix );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
@@ -386,7 +387,7 @@ write_settings( ofaDossierActionsBin *self )
 				gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->standard_btn )) ? "True":"False" );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	key = g_strdup_printf( "%s-dossier-actions", priv->settings_prefix );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( key );

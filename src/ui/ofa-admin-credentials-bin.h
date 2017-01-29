@@ -30,10 +30,21 @@
  * @short_description: #ofaAdminCredentialsBin class definition.
  * @include: ui/ofa-admin-credentials-bin.h
  *
- * Let the user enter dossier administrative account and password when
- * defining a new (or restoring a) dossier. We do not check here whether
- * the entered credentials are actually registered and valid into the
- * dossier database, but only if they are set.
+ * Let the user define the administrative account and password of an
+ * exercice.
+ *
+ * This widget is used:
+ * - from restore assistant
+ * - in new dossier dialog
+ *
+ * The widget implements the #myIBin interface, but does not provide
+ * any code for the apply() method. Instead, the caller should get the
+ * currently set credentials, and act accordingly.
+ *
+ * Whether the administrative account of a dossier should be remembered
+ * is an application-wide user preferences. The administrative account
+ * itself is a per-dossier settings (and so requires an #ofaIDBDossierMeta
+ * to have been set).
  *
  * Development rules:
  * - type:       bin (parent='top')
@@ -45,6 +56,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
 
 G_BEGIN_DECLS
 
@@ -70,13 +82,11 @@ typedef struct {
 GType                   ofa_admin_credentials_bin_get_type              ( void ) G_GNUC_CONST;
 
 ofaAdminCredentialsBin *ofa_admin_credentials_bin_new                   ( ofaHub *hub,
-																				const gchar *settings_prefix );
+																				const gchar *settings_prefix,
+																				guint rule );
 
-GtkSizeGroup           *ofa_admin_credentials_bin_get_size_group        ( ofaAdminCredentialsBin *bin,
-																				guint column );
-
-gboolean                ofa_admin_credentials_bin_is_valid              ( ofaAdminCredentialsBin *bin,
-																				gchar **error_message );
+void                    ofa_admin_credentials_bin_set_dossier_meta      ( ofaAdminCredentialsBin *bin,
+																				ofaIDBDossierMeta *dossier_meta );
 
 const gchar            *ofa_admin_credentials_bin_get_remembered_account( ofaAdminCredentialsBin *bin );
 

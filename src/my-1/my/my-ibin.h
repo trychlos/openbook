@@ -90,7 +90,10 @@ typedef struct {
 	/**
 	 * is_valid:
 	 * @instance: this #myIBin instance.
-	 * @msgerr: [out][allow-none]: a placeholder for an error message.
+	 * @msgerr: [out]: a placeholder for an error message;
+	 *  the interface makes sure that this @msgerr pointer is not null,
+	 *  and that the implementation can safely store an error message
+	 *  in it.
 	 *
 	 * Returns: %TRUE if the @instance is valid.
 	 *

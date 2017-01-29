@@ -35,7 +35,7 @@
  *
  * This widget is used (and the label is automatically updated):
  * - from restore assistant: do we open the restored archived ?
- * - for new dossier dialog: do we open the newly created dossier ?
+ * - in new dossier dialog: do we open the newly created dossier ?
  * - from exercice closing assistant: do we open the new exercice ?
  *
  * The widget implements the #myIBin interface, but does not provide

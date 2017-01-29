@@ -284,7 +284,7 @@ setup_bin( ofaExerciceEditBin *self )
 	if( priv->with_admin ){
 		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "eeb-admin-parent" );
 		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-		priv->admin_bin = ofa_admin_credentials_bin_new( priv->hub, priv->settings_prefix );
+		priv->admin_bin = ofa_admin_credentials_bin_new( priv->hub, priv->settings_prefix, priv->rule );
 		g_signal_connect( priv->admin_bin, "ofa-changed", G_CALLBACK( on_admin_credentials_changed ), self );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_bin ));
 		if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->admin_bin ), 0 ))){

@@ -339,6 +339,7 @@
 
 1262 2016-11-17 pass settings_prefix as a constructor argument (or know why)
      2017- 1-28 new settings_prefix behavior:
+                - ofaAdminCredentialsBin
                 - ofaDossierActionsBin
 
 1263 2016-11-19 store documents

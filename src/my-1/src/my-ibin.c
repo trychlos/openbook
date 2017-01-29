@@ -208,16 +208,31 @@ gboolean
 my_ibin_is_valid( const myIBin *instance, gchar **msgerr )
 {
 	static const gchar *thisfn = "my_ibin_is_valid";
+	gchar *msg;
+	gboolean ok;
 
 	g_return_val_if_fail( instance && MY_IS_IBIN( instance ), FALSE );
 
-	if( MY_IBIN_GET_INTERFACE( instance )->is_valid ){
-		return( MY_IBIN_GET_INTERFACE( instance )->is_valid( instance, msgerr ));
+	ok = TRUE;
+
+	if( msgerr ){
+		*msgerr = NULL;
 	}
 
-	g_info( "%s: myIBin's %s implementation does not provide 'is_valid()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( TRUE );
+	if( MY_IBIN_GET_INTERFACE( instance )->is_valid ){
+		msg = NULL;
+		ok = MY_IBIN_GET_INTERFACE( instance )->is_valid( instance, &msg );
+		if( msgerr ){
+			*msgerr = g_strdup( msg );
+		}
+		g_free( msg );
+
+	} else {
+		g_info( "%s: myIBin's %s implementation does not provide 'is_valid()' method",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
+	}
+
+	return( ok );
 }
 
 /**
