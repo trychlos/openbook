@@ -217,12 +217,6 @@
  910 2015-11-30 FEAT let the user configure the main title components as
                      a preference
 
- 920 2015-12-10 FEAT review RestoreAssistant
-                     + let restore on a selected exercice rather than on
-                     the current one
-     2016- 6- 3 have a checkbutton restoring as an archive or as the
-                current exercice
-
  938 2015-12-21 ARCH distinguish a core api with core objects (eg. for
                      command-line only tools) and a ui api which contains
                      some base classes and interfaces which would be useful
@@ -367,6 +361,7 @@
 
 1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
      2017- 1-26 first *define* standard actions on open
+     2017- 1-29 they are defined in user preferences
 
 1338
 
@@ -395,6 +390,13 @@
 
  792 2015- 4- 6 FEAT have a comment in the backup
      2017- 1-13 done
+
+ 920 2015-12-10 FEAT review RestoreAssistant
+                     + let restore on a selected exercice rather than on
+                     the current one
+     2016- 6- 3 have a checkbutton restoring as an archive or as the
+                current exercice
+     2017- 1-29 done with respect to restore rules
 
 1007 2016- 2-25 FEAT GuidedInput: have a red cross at the end of the line
                      when the amount is set, but one of another field is
