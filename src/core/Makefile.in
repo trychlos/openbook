@@ -171,16 +171,15 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-buttons-box.lo ofa-core.lo ofa-counter.lo \
 	ofa-currency-combo.lo ofa-currency-store.lo \
 	ofa-date-filter-hv-bin.lo ofa-dossier-collection.lo \
-	ofa-dossier-delete-prefs-bin.lo ofa-dossier-prefs.lo \
-	ofa-dossier-props.lo ofa-entry-store.lo \
-	ofa-extender-collection.lo ofa-extender-module.lo \
-	ofa-formula-engine.lo ofa-guided-input.lo \
-	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
-	ofa-iactionable.lo ofa-iactioner.lo ofa-icontext.lo \
-	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
-	ofa-idbdossier-editor.lo ofa-idbdossier-meta.lo \
-	ofa-idbexercice-meta.lo ofa-idbmodel.lo ofa-idbprovider.lo \
-	ofa-iexe-close.lo ofa-idbexercice-editor.lo \
+	ofa-dossier-delete-prefs-bin.lo ofa-dossier-props.lo \
+	ofa-entry-store.lo ofa-extender-collection.lo \
+	ofa-extender-module.lo ofa-formula-engine.lo \
+	ofa-guided-input.lo ofa-guided-input-bin.lo ofa-hub.lo \
+	ofa-iabout.lo ofa-iactionable.lo ofa-iactioner.lo \
+	ofa-icontext.lo ofa-iconcil.lo ofa-idate-filter.lo \
+	ofa-idbconnect.lo ofa-idbdossier-editor.lo \
+	ofa-idbdossier-meta.lo ofa-idbexercice-meta.lo ofa-idbmodel.lo \
+	ofa-idbprovider.lo ofa-iexe-close.lo ofa-idbexercice-editor.lo \
 	ofa-idbsuperuser.lo ofa-iexportable.lo ofa-igetter.lo \
 	ofa-iimporter.lo ofa-iimportable.lo ofa-ijson.lo \
 	ofa-import-duplicate.lo ofa-ipage-manager.lo ofa-iprintable.lo \
@@ -191,20 +190,20 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
 	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
 	ofa-ope-template-select.lo ofa-ope-template-store.lo \
-	ofa-ope-template-treeview.lo ofa-open-prefs-bin.lo \
-	ofa-openbook-props.lo ofa-paimean-editable.lo \
-	ofa-paimean-frame-bin.lo ofa-paimean-properties.lo \
-	ofa-paimean-select.lo ofa-paimean-store.lo \
-	ofa-paimean-treeview.lo ofa-paned-page.lo ofa-page.lo \
-	ofa-preferences.lo ofa-rate-store.lo ofa-render-page.lo \
-	ofa-stream-format.lo ofa-stream-format-bin.lo \
-	ofa-stream-format-disp.lo ofa-tree-store.lo ofa-tvbin.lo \
-	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
-	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
-	ofo-entry.lo ofo-exemeta.lo ofo-ledger.lo ofo-ope-template.lo \
-	ofo-paimean.lo ofo-rate.lo ofs-account-balance.lo \
-	ofs-concil-id.lo ofs-currency.lo ofs-ledger-balance.lo \
-	ofs-ope.lo
+	ofa-ope-template-treeview.lo ofa-open-prefs.lo \
+	ofa-open-prefs-bin.lo ofa-openbook-props.lo \
+	ofa-paimean-editable.lo ofa-paimean-frame-bin.lo \
+	ofa-paimean-properties.lo ofa-paimean-select.lo \
+	ofa-paimean-store.lo ofa-paimean-treeview.lo ofa-paned-page.lo \
+	ofa-page.lo ofa-preferences.lo ofa-rate-store.lo \
+	ofa-render-page.lo ofa-stream-format.lo \
+	ofa-stream-format-bin.lo ofa-stream-format-disp.lo \
+	ofa-tree-store.lo ofa-tvbin.lo ofo-account.lo ofo-base.lo \
+	ofo-bat.lo ofo-bat-line.lo ofo-class.lo ofo-concil.lo \
+	ofo-currency.lo ofo-dossier.lo ofo-entry.lo ofo-exemeta.lo \
+	ofo-ledger.lo ofo-ope-template.lo ofo-paimean.lo ofo-rate.lo \
+	ofs-account-balance.lo ofs-concil-id.lo ofs-currency.lo \
+	ofs-ledger-balance.lo ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
@@ -518,7 +517,6 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-collection.c							\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
-	ofa-dossier-prefs.c									\
 	ofa-dossier-props.c									\
 	ofa-entry-store.c									\
 	ofa-entry-store.h									\
@@ -580,6 +578,8 @@ libofa_core_la_SOURCES = \
 	ofa-ope-template-store.c							\
 	ofa-ope-template-treeview.c							\
 	ofa-ope-template-treeview.h							\
+	ofa-open-prefs.c									\
+	ofa-open-prefs.h									\
 	ofa-open-prefs-bin.c								\
 	ofa-open-prefs-bin.h								\
 	ofa-openbook-props.c								\
@@ -749,7 +749,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-date-filter-hv-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete-prefs-bin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-prefs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-props.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extender-collection.Plo@am__quote@
@@ -801,6 +800,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-open-prefs-bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-open-prefs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-openbook-props.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paimean-editable.Plo@am__quote@

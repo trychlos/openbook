@@ -397,7 +397,6 @@ api_include_HEADERS = \
 	ofa-counter.h										\
 	ofa-date-filter-hv-bin.h							\
 	ofa-dossier-collection.h							\
-	ofa-dossier-prefs.h									\
 	ofa-dossier-props.h									\
 	ofa-extender-collection.h							\
 	ofa-extender-module.h								\

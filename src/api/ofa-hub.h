@@ -50,7 +50,6 @@
 #include "my/my-isettings.h"
 
 #include "api/ofa-dossier-collection.h"
-#include "api/ofa-dossier-prefs.h"
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
@@ -160,8 +159,6 @@ gboolean               ofa_hub_dossier_open              ( ofaHub *hub,
 void                   ofa_hub_dossier_close             ( ofaHub *hub );
 
 gboolean               ofa_hub_dossier_is_writable       ( ofaHub *hub );
-
-ofaDossierPrefs       *ofa_hub_dossier_get_prefs         ( ofaHub *hub );
 
 gboolean               ofa_hub_dossier_remediate_settings( ofaHub *hub );
 

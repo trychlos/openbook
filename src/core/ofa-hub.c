@@ -79,7 +79,6 @@ typedef struct {
 	 */
 	ofaIDBConnect         *connect;
 	ofoDossier            *dossier;
-	ofaDossierPrefs       *dossier_prefs;
 	gboolean               read_only;
 }
 	ofaHubPrivate;
@@ -971,7 +970,6 @@ ofa_hub_dossier_open( ofaHub *hub, GtkWindow *parent, ofaIDBConnect *connect, gb
 		priv->dossier = ofo_dossier_new( hub );
 		if( priv->dossier ){
 			priv->read_only = read_only;
-			priv->dossier_prefs = ofa_dossier_prefs_new( hub );
 			ok = TRUE;
 		}
 	}
@@ -1020,7 +1018,6 @@ dossier_do_close( ofaHub *self )
 
 	g_clear_object( &priv->connect );
 	g_clear_object( &priv->dossier );
-	g_clear_object( &priv->dossier_prefs );
 
 	my_icollector_free_all( ofa_hub_get_collector( self ));
 }
@@ -1050,29 +1047,6 @@ ofa_hub_dossier_is_writable( ofaHub *hub )
 			!priv->read_only;
 
 	return( is_writable );
-}
-
-/*
- * ofa_hub_dossier_get_prefs:
- * @hub: this #ofaHub instance.
- *
- * Returns: the #ofaDossierPrefs object.
- *
- * The returned reference is owned by the @hub object, and should
- * not be released by the caller.
- */
-ofaDossierPrefs *
-ofa_hub_dossier_get_prefs( ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->dossier_prefs );
 }
 
 /*

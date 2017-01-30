@@ -91,12 +91,6 @@ gboolean     ofa_prefs_assistant_is_willing_to_quit     ( ofaHub *hub, guint key
 gboolean     ofa_prefs_appli_confirm_on_altf4           ( ofaHub *hub );
 gboolean     ofa_prefs_appli_confirm_on_quit            ( ofaHub *hub );
 
-gboolean     ofa_prefs_dossier_open_notes               ( ofaHub *hub );
-gboolean     ofa_prefs_dossier_open_notes_if_empty      ( ofaHub *hub );
-gboolean     ofa_prefs_dossier_open_properties          ( ofaHub *hub );
-gboolean     ofa_prefs_dossier_open_balance             ( ofaHub *hub );
-gboolean     ofa_prefs_dossier_open_integrity           ( ofaHub *hub );
-
 gboolean     ofa_prefs_account_delete_root_with_children( ofaHub *hub );
 
 myDateFormat ofa_prefs_date_display                     ( ofaHub *hub );

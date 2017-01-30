@@ -43,6 +43,8 @@
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 
+#include "core/ofa-open-prefs.h"
+
 #include "ui/ofa-admin-credentials-bin.h"
 #include "ui/ofa-dossier-actions-bin.h"
 #include "ui/ofa-dossier-edit-bin.h"
@@ -525,6 +527,9 @@ do_create( ofaDossierNew *self )
 	ofaIDBDossierEditor *dossier_editor;
 	gchar *msgerr, *adm_account, *adm_password;
 	ofaDossierCollection *collection;
+	myISettings *settings;
+	ofaOpenPrefs *prefs;
+	const gchar *group;
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
@@ -553,6 +558,15 @@ do_create( ofaDossierNew *self )
 				_( "Unable to register the new dossier in settings" ));
 		return( FALSE );
 	}
+
+	/* copy user preferences for actions on open */
+	settings = ofa_hub_get_user_settings( priv->hub );
+	prefs = ofa_open_prefs_new( settings, HUB_USER_SETTINGS_GROUP, OPEN_PREFS_USER_KEY );
+	settings = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
+	group = ofa_idbdossier_meta_get_settings_group( dossier_meta );
+	ofa_open_prefs_change_settings( prefs, settings, group, OPEN_PREFS_DOSSIER_KEY );
+	ofa_open_prefs_apply_settings( prefs );
+	g_object_unref( prefs );
 
 	/* create the new dossier
 	 * if superuser credentials were allowed at initialization */

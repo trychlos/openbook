@@ -67,6 +67,11 @@ typedef struct {
 }
 	ofaDossierPropertiesClass;
 
+/**
+ * The key name for background image in dossier settings.
+ */
+#define DOSSIER_BACKGROUND_KEY          "ofa-BackgroundImage"
+
 GType ofa_dossier_properties_get_type( void ) G_GNUC_CONST;
 
 void  ofa_dossier_properties_run     ( ofaIGetter *getter,

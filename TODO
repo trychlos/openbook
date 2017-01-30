@@ -355,10 +355,6 @@
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 
-1300 2016-12-19 Review preferences on opening a new/existing dossier:
-                user_preferences + dossier_preferences + settings in
-                dossier_new and dossier_open
-
 1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
      2017- 1-26 first *define* standard actions on open
      2017- 1-29 they are defined in user preferences
@@ -438,6 +434,13 @@
 1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
                 by a my_iwindow_set_is_destroy_allowed() method
      2017- 1-23 done
+
+1300 2016-12-19 Review preferences on opening a new/existing dossier:
+                user_preferences + dossier_preferences + settings in
+                dossier_new and dossier_open
+     2017- 1-29 review usage of DossierPrefs vs. OpenPrefs
+                (see ofaMainWindow::do_open_run_prefs)
+     2017- 1-30 done
 
 1301 2016-12-19 review myISettings interface: free_groups() does not have
                 settings arg, while free_string_list() has.

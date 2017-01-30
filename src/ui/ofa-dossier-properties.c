@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "my/my-date-editable.h"
+#include "my/my-ibin.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
@@ -37,9 +38,9 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-counter.h"
-#include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
@@ -48,6 +49,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 
+#include "core/ofa-open-prefs.h"
 #include "core/ofa-open-prefs-bin.h"
 #include "core/ofa-currency-combo.h"
 #include "core/ofa-ledger-combo.h"
@@ -77,7 +79,8 @@ typedef struct {
 	GDate               end_init;
 	GDate               min_end;
 	GDate               prevexe_end;
-	ofaDossierPrefs    *prefs;
+	myISettings        *settings_iface;		/* dossier settings */
+	const gchar        *settings_group;
 
 	/* data
 	 */
@@ -92,6 +95,7 @@ typedef struct {
 	gboolean            end_empty;
 	gint                duree;
 	gchar              *exe_notes;
+	ofaOpenPrefs       *prefs;
 	gchar              *background_orig_uri;
 
 	/* UI
@@ -202,6 +206,8 @@ dossier_properties_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->prefs );
+
 		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
@@ -669,27 +675,23 @@ static void
 init_preferences_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
+	const ofaIDBConnect *connect;
+	ofaIDBDossierMeta *dossier_meta;
 	GtkWidget *parent, *label;
-	gboolean notes, nonempty, props, bals, integ;
 	gchar *uri;
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
+	connect = ofa_hub_get_connect( priv->hub );
+	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
+	priv->settings_iface = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
+	priv->settings_group = ofa_idbdossier_meta_get_settings_group( dossier_meta );
+	priv->prefs = ofa_open_prefs_new( priv->settings_iface, priv->settings_group, OPEN_PREFS_DOSSIER_KEY );
+
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "prefs-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	priv->prefs_bin = ofa_open_prefs_bin_new();
+	priv->prefs_bin = ofa_open_prefs_bin_new( priv->prefs );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->prefs_bin ));
-
-	priv->prefs = ofa_hub_dossier_get_prefs( priv->hub );
-
-	notes = ofa_dossier_prefs_get_open_notes( priv->prefs );
-	nonempty = ofa_dossier_prefs_get_nonempty( priv->prefs );
-	props = ofa_dossier_prefs_get_properties( priv->prefs );
-	bals = ofa_dossier_prefs_get_balances( priv->prefs );
-	integ = ofa_dossier_prefs_get_integrity( priv->prefs );
-
-	ofa_open_prefs_bin_set_data( priv->prefs_bin, notes, nonempty, props, bals, integ );
 
 	/* background image */
 	priv->background_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-filechooserbutton" );
@@ -708,7 +710,7 @@ init_preferences_page( ofaDossierProperties *self )
 	g_return_if_fail( priv->background_preview && GTK_IS_BUTTON( priv->background_preview ));
 	g_signal_connect( priv->background_preview, "clicked", G_CALLBACK( background_image_on_preview_clicked ), self );
 
-	uri = ofa_dossier_prefs_get_background_img( priv->prefs );
+	uri = my_isettings_get_string( priv->settings_iface, priv->settings_group, DOSSIER_BACKGROUND_KEY );
 	priv->background_orig_uri = g_strdup( uri );
 	if( my_strlen( uri )){
 		gtk_file_chooser_set_uri( GTK_FILE_CHOOSER( priv->background_btn ), uri );
@@ -936,6 +938,12 @@ is_dialog_valid( ofaDossierProperties *self )
 		return( FALSE );
 	}
 
+	if( !my_ibin_is_valid( MY_IBIN( priv->prefs_bin ), &msg )){
+		set_msgerr( self, msg, MSG_ERROR );
+		g_free( msg );
+		return( FALSE );
+	}
+
 	if( priv->closing_parms ){
 		if( !ofa_closing_parms_bin_is_valid( priv->closing_parms, &msg )){
 			set_msgerr( self, msg, MSG_WARNING );
@@ -1006,7 +1014,6 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 	gboolean date_has_changed;
 	gint count;
 	gboolean ok;
-	gboolean prefs_notes, prefs_nonempty, prefs_props, prefs_bals, prefs_integ;
 	gchar *uri;
 
 	g_return_val_if_fail( is_dialog_valid( self ), FALSE );
@@ -1073,17 +1080,12 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 		display_progress_end( self );
 	}
 
-	/* record settings */
-	ofa_open_prefs_bin_get_data( priv->prefs_bin, &prefs_notes, &prefs_nonempty, &prefs_props, &prefs_bals, &prefs_integ );
-	ofa_dossier_prefs_set_open_notes( priv->prefs, prefs_notes );
-	ofa_dossier_prefs_set_nonempty( priv->prefs, prefs_nonempty );
-	ofa_dossier_prefs_set_properties( priv->prefs, prefs_props );
-	ofa_dossier_prefs_set_balances( priv->prefs, prefs_bals );
-	ofa_dossier_prefs_set_integrity( priv->prefs, prefs_integ );
+	/* record standard actions on open */
+	my_ibin_apply( MY_IBIN( priv->prefs_bin ));
 
 	/* background image */
 	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( priv->background_btn ));
-	ofa_dossier_prefs_set_background_img( priv->prefs, uri );
+	my_isettings_set_string( priv->settings_iface, priv->settings_group, DOSSIER_BACKGROUND_KEY, uri );
 	g_free( uri );
 
 	/* last, advertize the dossier changes */

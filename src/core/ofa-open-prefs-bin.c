@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "core/ofa-open-prefs-bin.h"
@@ -34,6 +35,10 @@
  */
 typedef struct {
 	gboolean      dispose_has_run;
+
+	/* initialization
+	 */
+	ofaOpenPrefs *prefs;
 
 	/* UI
 	 */
@@ -47,11 +52,20 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-open-prefs-bin.ui";
 
-static void     setup_bin( ofaOpenPrefsBin *self );
-static void     on_display_notes_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self );
+static void  setup_bin( ofaOpenPrefsBin *self );
+static void  setup_data( ofaOpenPrefsBin *self );
+static void  on_display_notes_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self );
+static void  on_non_empty_notes_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self );
+static void  on_display_properties_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self );
+static void  on_check_balances_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self );
+static void  on_check_integrity_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self );
+static void  ibin_iface_init( myIBinInterface *iface );
+static guint ibin_get_interface_version( void );
+static void  ibin_apply( myIBin *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpenPrefsBin, ofa_open_prefs_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaOpenPrefsBin ))
+		G_ADD_PRIVATE( ofaOpenPrefsBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 open_prefs_bin_finalize( GObject *instance )
@@ -83,6 +97,7 @@ open_prefs_bin_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->prefs );
 	}
 
 	/* chain up to the parent class */
@@ -118,15 +133,26 @@ ofa_open_prefs_bin_class_init( ofaOpenPrefsBinClass *klass )
 
 /**
  * ofa_open_prefs_bin_new:
+ * @prefs: a #ofaOpenPrefs object.
+ *
+ * Returns: a new #ofaOpenPrefsBin object.
  */
 ofaOpenPrefsBin *
-ofa_open_prefs_bin_new( void )
+ofa_open_prefs_bin_new( ofaOpenPrefs *prefs )
 {
 	ofaOpenPrefsBin *bin;
+	ofaOpenPrefsBinPrivate *priv;
+
+	g_return_val_if_fail( prefs && OFA_IS_OPEN_PREFS( prefs ), NULL );
 
 	bin = g_object_new( OFA_TYPE_OPEN_PREFS_BIN, NULL );
 
+	priv = ofa_open_prefs_bin_get_instance_private( bin );
+
+	priv->prefs = g_object_ref( prefs );
+
 	setup_bin( bin );
+	setup_data( bin );
 
 	return( bin );
 }
@@ -156,103 +182,145 @@ setup_bin( ofaOpenPrefsBin *self )
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-nonempty" );
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_non_empty_notes_toggled ), self );
 	priv->nonempty_btn = btn;
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-properties" );
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_display_properties_toggled ), self );
 	priv->properties_btn = btn;
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-balance" );
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_check_balances_toggled ), self );
 	priv->balances_btn = btn;
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-integrity" );
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_check_integrity_toggled ), self );
 	priv->integrity_btn = btn;
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
 }
 
-/**
- * ofa_open_prefs_bin_get_data:
- * @bin: this #ofaOpenPrefsBin instance.
- * @display_notes: [out][allow-none]: placeholder for the returned boolean.
- * @when_non_empty: [out][allow-none]: placeholder for the returned boolean.
- * @display_properties: [out][allow-none]: placeholder for the returned boolean.
- * @check_balances: [out][allow-none]: placeholder for the returned boolean.
- * @check_integrity: [out][allow-none]: placeholder for the returned boolean.
- *
- * Set the output values.
- */
-void
-ofa_open_prefs_bin_get_data( ofaOpenPrefsBin *bin,
-		gboolean *display_notes, gboolean *when_non_empty, gboolean *display_properties,  gboolean *check_balances,
-		gboolean *check_integrity )
+static void
+setup_data( ofaOpenPrefsBin *self )
 {
 	ofaOpenPrefsBinPrivate *priv;
+	gboolean active;
 
-	g_return_if_fail( bin && OFA_IS_OPEN_PREFS_BIN( bin ));
+	priv = ofa_open_prefs_bin_get_instance_private( self );
 
-	priv = ofa_open_prefs_bin_get_instance_private( bin );
+	active = ofa_open_prefs_get_display_notes( priv->prefs );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->notes_btn ), TRUE );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->notes_btn ), active );
 
-	g_return_if_fail( !priv->dispose_has_run );
+	active = ofa_open_prefs_get_non_empty_notes( priv->prefs );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->nonempty_btn ), active );
 
-	if( display_notes ){
-		*display_notes = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->notes_btn ));
-	}
-	if( when_non_empty ){
-		*when_non_empty = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->nonempty_btn ));
-	}
-	if( display_properties ){
-		*display_properties = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->properties_btn ));
-	}
-	if( check_balances ){
-		*check_balances = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->balances_btn ));
-	}
-	if( check_integrity ){
-		*check_integrity = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->integrity_btn ));
-	}
-}
+	active = ofa_open_prefs_get_display_properties( priv->prefs );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->properties_btn ), active );
 
-/**
- * ofa_open_prefs_bin_set_data:
- * @bin: this #ofaOpenPrefsBin instance.
- * @display_notes: whether to display notes.
- * @when_non_empty: whether to display notes only when non empty.
- * @display_properties: whether to display properties.
- * @check_balances: whether to check balances.
- * @check_integrity: whether to check DBMS integrity.
- *
- * Set the data.
- */
-void
-ofa_open_prefs_bin_set_data( ofaOpenPrefsBin *bin,
-		gboolean display_notes, gboolean when_non_empty, gboolean display_properties, gboolean check_balances,
-		gboolean check_integrity )
-{
-	ofaOpenPrefsBinPrivate *priv;
+	active = ofa_open_prefs_get_check_balances( priv->prefs );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->balances_btn ), active );
 
-	g_return_if_fail( bin && OFA_IS_OPEN_PREFS_BIN( bin ));
-
-	priv = ofa_open_prefs_bin_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->notes_btn ), display_notes );
-	on_display_notes_toggled( GTK_TOGGLE_BUTTON( priv->notes_btn ), bin );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->nonempty_btn ), when_non_empty );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->properties_btn ), display_properties );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->balances_btn ), check_balances );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->integrity_btn ), check_integrity );
+	active = ofa_open_prefs_get_check_integrity( priv->prefs );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->integrity_btn ), active );
 }
 
 static void
 on_display_notes_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self )
 {
 	ofaOpenPrefsBinPrivate *priv;
+	gboolean active;
 
 	priv = ofa_open_prefs_bin_get_instance_private( self );
 
-	gtk_widget_set_sensitive( priv->nonempty_btn, gtk_toggle_button_get_active( button ));
+	active = gtk_toggle_button_get_active( button );
+	ofa_open_prefs_set_display_notes( priv->prefs, active );
+
+	gtk_widget_set_sensitive( priv->nonempty_btn, active );
+}
+
+static void
+on_non_empty_notes_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self )
+{
+	ofaOpenPrefsBinPrivate *priv;
+	gboolean active;
+
+	priv = ofa_open_prefs_bin_get_instance_private( self );
+
+	active = gtk_toggle_button_get_active( button );
+	ofa_open_prefs_set_non_empty_notes( priv->prefs, active );
+}
+
+static void
+on_display_properties_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self )
+{
+	ofaOpenPrefsBinPrivate *priv;
+	gboolean active;
+
+	priv = ofa_open_prefs_bin_get_instance_private( self );
+
+	active = gtk_toggle_button_get_active( button );
+	ofa_open_prefs_set_display_properties( priv->prefs, active );
+}
+
+static void
+on_check_balances_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self )
+{
+	ofaOpenPrefsBinPrivate *priv;
+	gboolean active;
+
+	priv = ofa_open_prefs_bin_get_instance_private( self );
+
+	active = gtk_toggle_button_get_active( button );
+	ofa_open_prefs_set_check_balances( priv->prefs, active );
+}
+
+static void
+on_check_integrity_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self )
+{
+	ofaOpenPrefsBinPrivate *priv;
+	gboolean active;
+
+	priv = ofa_open_prefs_bin_get_instance_private( self );
+
+	active = gtk_toggle_button_get_active( button );
+	ofa_open_prefs_set_check_integrity( priv->prefs, active );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_open_prefs_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->apply = ibin_apply;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+void
+ibin_apply( myIBin *instance )
+{
+	ofaOpenPrefsBinPrivate *priv;
+
+	g_return_if_fail( instance && OFA_IS_OPEN_PREFS_BIN( instance ));
+
+	priv = ofa_open_prefs_bin_get_instance_private( OFA_OPEN_PREFS_BIN( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	ofa_open_prefs_apply_settings( priv->prefs );
 }

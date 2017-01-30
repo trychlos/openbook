@@ -15,7 +15,7 @@
 
  New features and improvements:
 
-   - 
+   - Review and harmonize standard actions on dossier open (todo #1300).
 
  Bug fixes:
 
@@ -23,7 +23,8 @@
 
  Other changes:
 
-   - 
+   - ofaDossierPrefs: deprecated class.
+   - ofaOpenPrefs: new class.
 
 -----------------------------------------------------------------------
  Version 0.65

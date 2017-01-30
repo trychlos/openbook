@@ -44,6 +44,7 @@
 #include "api/ofa-iproperties.h"
 #include "api/ofa-preferences.h"
 
+#include "core/ofa-open-prefs.h"
 #include "core/ofa-open-prefs-bin.h"
 #include "core/ofa-dossier-delete-prefs-bin.h"
 #include "core/ofa-stream-format-bin.h"
@@ -79,6 +80,7 @@ typedef struct {
 
 	/* UI - Dossier page
 	 */
+	ofaOpenPrefs             *open_prefs;
 	ofaOpenPrefsBin          *prefs_bin;
 	ofaDossierDeletePrefsBin *dd_prefs;
 
@@ -131,11 +133,6 @@ static const gchar *st_assistant_confirm_on_escape    = "AssistantConfirmOnEscap
 static const gchar *st_assistant_confirm_on_cancel    = "AssistantConfirmOnCancel";
 static const gchar *st_appli_confirm_on_quit          = "ApplicationConfirmOnQuit";
 static const gchar *st_appli_confirm_on_altf4         = "ApplicationConfirmOnAltF4";
-static const gchar *st_dossier_open_notes             = "DossierOpenNotes";
-static const gchar *st_dossier_open_notes_if_empty    = "DossierOpenNotesIfNonEmpty";
-static const gchar *st_dossier_open_properties        = "DossierOpenProperties";
-static const gchar *st_dossier_open_balance           = "DossierOpenBalance";
-static const gchar *st_dossier_open_integrity         = "DossierOpenIntegrity";
 static const gchar *st_account_delete_root_with_child = "AssistantConfirmOnCancel";
 static const gchar *st_export_default_folder          = "ExportDefaultFolder";
 
@@ -147,7 +144,7 @@ static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
-static void     init_quitting_page( ofaPreferences *self );
+static void     init_user_interface_page( ofaPreferences *self );
 static void     init_dossier_page( ofaPreferences *self );
 static void     init_account_page( ofaPreferences *self );
 static void     init_locales_page( ofaPreferences *self );
@@ -167,7 +164,7 @@ static void     on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *
 static void     on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
 static void     check_for_activable_dlg( ofaPreferences *self );
 static void     on_ok_clicked( ofaPreferences *self );
-static gboolean do_update_quitting_page( ofaPreferences *self, gchar **msgerr );
+static gboolean do_update_user_interface_page( ofaPreferences *self, gchar **msgerr );
 static gchar   *dnd_main_tabs_read_settings( ofaHub *hub );
 static void     dnd_main_tabs_write_settings( ofaPreferences *self, GtkWidget *reorder_btn );
 static gboolean is_willing_to_quit( void );
@@ -217,6 +214,7 @@ preferences_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->open_prefs );
 	}
 
 	/* chain up to the parent class */
@@ -360,7 +358,7 @@ idialog_init( myIDialog *instance )
 	priv->book = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "notebook" );
 	g_return_if_fail( priv->book && GTK_IS_NOTEBOOK( priv->book ));
 
-	init_quitting_page( OFA_PREFERENCES( instance ));
+	init_user_interface_page( OFA_PREFERENCES( instance ));
 	init_dossier_page( OFA_PREFERENCES( instance ));
 	init_account_page( OFA_PREFERENCES( instance ));
 	init_locales_page( OFA_PREFERENCES( instance ));
@@ -373,7 +371,7 @@ idialog_init( myIDialog *instance )
 }
 
 static void
-init_quitting_page( ofaPreferences *self )
+init_user_interface_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkWidget *button;
@@ -428,21 +426,17 @@ init_dossier_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkWidget *parent;
+	myISettings *settings;
 
 	priv = ofa_preferences_get_instance_private( self );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
+	priv->open_prefs = ofa_open_prefs_new( settings, HUB_USER_SETTINGS_GROUP, OPEN_PREFS_USER_KEY );
+
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "prefs-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	priv->prefs_bin = ofa_open_prefs_bin_new();
+	priv->prefs_bin = ofa_open_prefs_bin_new( priv->open_prefs );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->prefs_bin ));
-
-	ofa_open_prefs_bin_set_data( priv->prefs_bin,
-			ofa_prefs_dossier_open_notes( priv->hub ),
-			ofa_prefs_dossier_open_notes_if_empty( priv->hub ),
-			ofa_prefs_dossier_open_properties( priv->hub ),
-			ofa_prefs_dossier_open_balance( priv->hub ),
-			ofa_prefs_dossier_open_integrity( priv->hub ));
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dossier-delete-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -836,9 +830,10 @@ check_for_activable_dlg( ofaPreferences *self )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	activable = TRUE;
 	set_message( self, "" );
 	msg = NULL;
+
+	activable = my_ibin_is_valid( MY_IBIN( priv->prefs_bin ), &msg );
 
 	if( !priv->p4_accept_dot || !priv->p4_accept_comma ){
 		activable = FALSE;
@@ -878,7 +873,7 @@ on_ok_clicked( ofaPreferences *self )
 
 	msgerr = NULL;
 
-	ok = do_update_quitting_page( self, &msgerr ) &&
+	ok = do_update_user_interface_page( self, &msgerr ) &&
 			do_update_dossier_page( self, &msgerr ) &&
 			do_update_account_page( self, &msgerr ) &&
 			do_update_locales_page( self, &msgerr ) &&
@@ -897,7 +892,7 @@ on_ok_clicked( ofaPreferences *self )
 }
 
 static gboolean
-do_update_quitting_page( ofaPreferences *self, gchar **msgerr )
+do_update_user_interface_page( ofaPreferences *self, gchar **msgerr )
 {
 	ofaPreferencesPrivate *priv;
 	myISettings *settings;
@@ -1172,115 +1167,14 @@ static gboolean
 do_update_dossier_page( ofaPreferences *self, gchar **msgerr )
 {
 	ofaPreferencesPrivate *priv;
-	myISettings *settings;
-	gboolean notes, nonempty, props, bals, integ;
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	ofa_open_prefs_bin_get_data( priv->prefs_bin, &notes, &nonempty, &props, &bals, &integ );
-	settings = ofa_hub_get_user_settings( priv->hub );
-
-	my_isettings_set_boolean( settings, HUB_USER_SETTINGS_GROUP, st_dossier_open_notes, notes );
-	my_isettings_set_boolean( settings, HUB_USER_SETTINGS_GROUP, st_dossier_open_notes_if_empty, nonempty );
-	my_isettings_set_boolean( settings, HUB_USER_SETTINGS_GROUP, st_dossier_open_properties, props );
-	my_isettings_set_boolean( settings, HUB_USER_SETTINGS_GROUP, st_dossier_open_balance, bals );
-	my_isettings_set_boolean( settings, HUB_USER_SETTINGS_GROUP, st_dossier_open_integrity, integ );
+	my_ibin_apply( MY_IBIN( priv->prefs_bin ));
 
 	ofa_dossier_delete_prefs_bin_apply( priv->dd_prefs );
 
 	return( TRUE );
-}
-
-/**
- * ofa_prefs_dossier_open_notes:
- * @hub: the #ofaHub object of the application.
- *
- * Returns: %TRUE if notes should be displayed when opening a dossier.
- */
-gboolean
-ofa_prefs_dossier_open_notes( ofaHub *hub )
-{
-	myISettings *settings;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	settings = ofa_hub_get_user_settings( hub );
-
-	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_dossier_open_notes ));
-}
-
-/**
- * ofa_prefs_dossier_open_notes_if_empty:
- * @hub: the #ofaHub object of the application.
- *
- * Returns: %TRUE if notes should be displayed when opening a dossier
- * even if they are empty.
- */
-gboolean
-ofa_prefs_dossier_open_notes_if_empty( ofaHub *hub )
-{
-	myISettings *settings;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	settings = ofa_hub_get_user_settings( hub );
-
-	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_dossier_open_notes_if_empty ));
-}
-
-/**
- * ofa_prefs_dossier_open_properties:
- * @hub: the #ofaHub object of the application.
- *
- * Returns: %TRUE if properties should be displayed when opening a dossier.
- */
-gboolean
-ofa_prefs_dossier_open_properties( ofaHub *hub )
-{
-	myISettings *settings;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	settings = ofa_hub_get_user_settings( hub );
-
-	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_dossier_open_properties ));
-}
-
-/**
- * ofa_prefs_dossier_open_balance:
- * @hub: the #ofaHub object of the application.
- *
- * Returns: %TRUE if balances should be checked when opening a dossier.
- */
-gboolean
-ofa_prefs_dossier_open_balance( ofaHub *hub )
-{
-	myISettings *settings;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	settings = ofa_hub_get_user_settings( hub );
-
-	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_dossier_open_balance ));
-}
-
-/**
- * ofa_prefs_dossier_open_integrity:
- * @hub: the #ofaHub object of the application.
- *
- * Returns: %TRUE if DBMS integrity should be checked when opening a
- * dossier.
- */
-gboolean
-ofa_prefs_dossier_open_integrity( ofaHub *hub )
-{
-	myISettings *settings;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	settings = ofa_hub_get_user_settings( hub );
-
-	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_dossier_open_integrity ));
 }
 
 static gboolean

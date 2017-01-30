@@ -40,7 +40,6 @@
 #include "my/my-tab.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
@@ -52,6 +51,7 @@
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-guided-input.h"
+#include "core/ofa-open-prefs.h"
 
 #include "ui/ofa-account-book-render.h"
 #include "ui/ofa-account-page.h"
@@ -277,7 +277,7 @@ static void                  hub_on_dossier_changed( ofaHub *hub, ofaMainWindow 
 static void                  hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window );
 static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void                  do_open_dossier( ofaMainWindow *self, ofaHub *hub, gboolean run_prefs, gboolean read_only );
-static void                  do_open_run_prefs( ofaMainWindow *self, ofaHub *hub, gboolean read_only );
+static gboolean              do_open_run_prefs( ofaMainWindow *self, ofaHub *hub );
 static void                  do_close_dossier( ofaMainWindow *self, ofaHub *hub );
 static void                  menubar_setup( ofaMainWindow *window, myIActionMap *map );
 static void                  set_window_title( ofaMainWindow *window, gboolean with_dossier );
@@ -689,6 +689,7 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub, gboolean run_prefs, gboolean 
 	ofaMainWindowPrivate *priv;
 	const GDate *exe_begin, *exe_end;
 	ofoDossier *dossier;
+	gboolean display_properties;
 
 	priv = ofa_main_window_get_instance_private( self );
 
@@ -701,18 +702,20 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub, gboolean run_prefs, gboolean 
 
 	menubar_setup( self, MY_IACTION_MAP( self ));
 
-	/* warns if begin or end of exercice is not set */
-	dossier = ofa_hub_get_dossier( hub );
-	exe_begin = ofo_dossier_get_exe_begin( dossier );
-	exe_end = ofo_dossier_get_exe_end( dossier );
-	if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
-		warning_exercice_unset( self );
-	}
-
 	g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CHANGED );
 
-	if( run_prefs ){
-		do_open_run_prefs( self, hub, read_only );
+	display_properties = run_prefs ? do_open_run_prefs( self, hub ) : FALSE;
+
+	/* warns if begin or end of exercice is not set
+	 *  and properties have not been displayed as part of standard
+	 *  actions on opening the dossier */
+	if( !display_properties ){
+		dossier = ofa_hub_get_dossier( hub );
+		exe_begin = ofo_dossier_get_exe_begin( dossier );
+		exe_end = ofo_dossier_get_exe_end( dossier );
+		if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
+			warning_exercice_unset( self );
+		}
 	}
 }
 
@@ -726,60 +729,68 @@ void
 ofa_main_window_dossier_run_prefs( ofaMainWindow *main_window )
 {
 	ofaHub *hub;
-	gboolean read_only;
 
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	hub = igetter_get_hub( OFA_IGETTER( main_window ));
-	read_only = !ofa_hub_dossier_is_writable( hub );
 
-	do_open_run_prefs( main_window, hub, read_only );
+	do_open_run_prefs( main_window, hub );
 }
 
-static void
-do_open_run_prefs( ofaMainWindow *self, ofaHub *hub, gboolean read_only )
+/*
+ * Returns: %TRUE if we have displayed properties
+ */
+static gboolean
+do_open_run_prefs( ofaMainWindow *self, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_main_window_do_open_run_prefs";
-	const gchar *main_notes, *exe_notes;
+	myISettings *settings;
+	const ofaIDBConnect *connect;
+	ofaIDBDossierMeta *dossier_meta;
+	ofaOpenPrefs *prefs;
+	const gchar *group, *main_notes, *exe_notes;
 	ofoDossier *dossier;
-	ofaDossierPrefs *prefs;
-	gboolean open_notes, empty, user_prefs_non_empty, dossier_prefs_non_empty;
+	gboolean empty, only_non_empty, display_properties;
 
-	dossier = ofa_hub_get_dossier( hub );
-	prefs = ofa_hub_dossier_get_prefs( hub );
-	open_notes = ofa_prefs_dossier_open_notes( hub );
+	connect = ofa_hub_get_connect( hub );
+	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
+	settings = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
+	group = ofa_idbdossier_meta_get_settings_group( dossier_meta );
+	prefs = ofa_open_prefs_new( settings, group, OPEN_PREFS_DOSSIER_KEY );
 
 	/* display dossier notes ? */
-	if( open_notes || ofa_dossier_prefs_get_open_notes( prefs )){
+	if( ofa_open_prefs_get_display_notes( prefs )){
 
+		dossier = ofa_hub_get_dossier( hub );
 		main_notes = ofo_dossier_get_notes( dossier );
 		exe_notes = ofo_dossier_get_exe_notes( dossier );
 		empty = my_strlen( main_notes ) == 0 && my_strlen( exe_notes ) == 0;
-		user_prefs_non_empty = open_notes && ofa_prefs_dossier_open_notes_if_empty( hub );
-		dossier_prefs_non_empty = ofa_dossier_prefs_get_open_notes( prefs ) && ofa_dossier_prefs_get_nonempty( prefs );
+		only_non_empty = ofa_open_prefs_get_non_empty_notes( prefs );
 
-		g_debug( "%s: empty=%s, user_prefs_non_empty=%s, dossier_prefs_non_empty=%s",
-				thisfn, empty ? "True":"False",
-				user_prefs_non_empty ? "True":"False",
-				dossier_prefs_non_empty ? "True":"False" );
+		g_debug( "%s: empty=%s, only_non_empty=%s",
+				thisfn, empty ? "True":"False", only_non_empty ? "True":"False" );
 
-		if( !empty || ( !user_prefs_non_empty && !dossier_prefs_non_empty )){
+		if( !empty || !only_non_empty ){
 			ofa_dossier_display_notes_run( OFA_IGETTER( self ), GTK_WINDOW( self ), main_notes, exe_notes );
 		}
 	}
 
 	/* check balances and DBMS integrity*/
-	if( ofa_prefs_dossier_open_balance( hub ) || ofa_dossier_prefs_get_balances( prefs )){
+	if( ofa_open_prefs_get_check_balances( prefs )){
 		ofa_check_balances_run( OFA_IGETTER( self ), GTK_WINDOW( self ));
 	}
-	if( ofa_prefs_dossier_open_integrity( hub ) || ofa_dossier_prefs_get_integrity( prefs )){
+	if( ofa_open_prefs_get_check_integrity( prefs )){
 		ofa_check_integrity_run( OFA_IGETTER( self ), GTK_WINDOW( self ));
 	}
 
 	/* display dossier properties */
-	if( ofa_prefs_dossier_open_properties( hub ) || ofa_dossier_prefs_get_properties( prefs )){
+	display_properties = FALSE;
+	if( ofa_open_prefs_get_display_properties( prefs )){
 		do_properties( self );
+		display_properties = TRUE;
 	}
+
+	return( display_properties );
 }
 
 /*
@@ -1082,12 +1093,20 @@ pane_right_add_empty_notebook( ofaMainWindow *self, ofaHub *hub )
 static void
 background_image_update( ofaMainWindow *self, ofaHub *hub )
 {
-	ofaDossierPrefs *prefs;
+	const ofaIDBConnect *connect;
+	ofaIDBDossierMeta *dossier_meta;
+	myISettings *settings;
+	const gchar *group;
 	gchar *background_uri;
 
-	prefs = ofa_hub_dossier_get_prefs( hub );
-	background_uri = ofa_dossier_prefs_get_background_img( prefs );
+	connect = ofa_hub_get_connect( hub );
+	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
+	settings = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
+	group = ofa_idbdossier_meta_get_settings_group( dossier_meta );
+	background_uri = my_isettings_get_string( settings, group, DOSSIER_BACKGROUND_KEY );
+
 	background_image_set_uri( self, background_uri );
+
 	g_free( background_uri );
 }
 

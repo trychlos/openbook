@@ -92,7 +92,6 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-collection.c							\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
-	ofa-dossier-prefs.c									\
 	ofa-dossier-props.c									\
 	ofa-entry-store.c									\
 	ofa-entry-store.h									\
@@ -154,6 +153,8 @@ libofa_core_la_SOURCES = \
 	ofa-ope-template-store.c							\
 	ofa-ope-template-treeview.c							\
 	ofa-ope-template-treeview.h							\
+	ofa-open-prefs.c									\
+	ofa-open-prefs.h									\
 	ofa-open-prefs-bin.c								\
 	ofa-open-prefs-bin.h								\
 	ofa-openbook-props.c								\

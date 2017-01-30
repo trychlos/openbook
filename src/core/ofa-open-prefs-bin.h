@@ -45,7 +45,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "core/ofa-open-prefs.h"
 
 G_BEGIN_DECLS
 
@@ -68,23 +68,9 @@ typedef struct {
 }
 	ofaOpenPrefsBinClass;
 
-GType            ofa_open_prefs_bin_get_type      ( void ) G_GNUC_CONST;
+GType            ofa_open_prefs_bin_get_type( void ) G_GNUC_CONST;
 
-ofaOpenPrefsBin *ofa_open_prefs_bin_new           ( void );
-
-void             ofa_open_prefs_bin_get_data      ( ofaOpenPrefsBin *bin,
-														gboolean *display_notes,
-														gboolean *when_non_empty,
-														gboolean *display_properties,
-														gboolean *check_balances,
-														gboolean *check_integrity );
-
-void             ofa_open_prefs_bin_set_data      ( ofaOpenPrefsBin *bin,
-														gboolean display_notes,
-														gboolean when_non_empty,
-														gboolean display_properties,
-														gboolean check_balances,
-														gboolean check_integrity );
+ofaOpenPrefsBin *ofa_open_prefs_bin_new     ( ofaOpenPrefs *prefs );
 
 G_END_DECLS
 
