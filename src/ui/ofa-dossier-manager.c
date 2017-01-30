@@ -78,6 +78,7 @@ typedef struct {
 	 */
 	GSimpleAction      *new_action;
 	GSimpleAction      *open_action;
+	GSimpleAction      *close_action;
 	GSimpleAction      *delete_action;
 }
 	ofaDossierManagerPrivate;
@@ -96,6 +97,7 @@ static void     on_tview_activated( ofaDossierTreeview *tview, ofaIDBDossierMeta
 static void     action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
 static void     action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
 static void     do_open( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period );
+static void     action_on_close_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
 static void     action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
 static gboolean confirm_delete( ofaDossierManager *self, const ofaIDBDossierMeta *meta, const ofaIDBExerciceMeta *period );
 static void     iactionable_iface_init( ofaIActionableInterface *iface );
@@ -144,6 +146,7 @@ dossier_manager_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->new_action );
 		g_clear_object( &priv->open_action );
+		g_clear_object( &priv->close_action );
 		g_clear_object( &priv->delete_action );
 
 		if( priv->apply_actions && priv->getter ){
@@ -342,6 +345,19 @@ idialog_init_actions( ofaDossierManager *self )
 					_( "_Open..." )));
 	g_simple_action_set_enabled( priv->new_action, TRUE );
 
+	/* close action */
+	priv->close_action = g_simple_action_new( "close", NULL );
+	g_signal_connect( priv->close_action, "activate", G_CALLBACK( action_on_close_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->close_action ),
+			_( "Close" ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_new_button(
+					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->close_action ),
+					_( "_Close" )));
+	g_simple_action_set_enabled( priv->new_action, TRUE );
+
 	/* delete action */
 	priv->delete_action = g_simple_action_new( "delete", NULL );
 	g_simple_action_set_enabled( priv->delete_action, TRUE );
@@ -380,29 +396,21 @@ static void
 on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaDossierManager *self )
 {
 	ofaDossierManagerPrivate *priv;
-	gboolean ok, is_opened;
-	const ofaIDBConnect *connect;
-	ofaIDBDossierMeta *dossier_meta;
-	ofaIDBExerciceMeta *exercice_meta;
+	gboolean have_data, is_opened;
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	connect = ofa_hub_get_connect( priv->hub );
-	if( connect ){
-		g_return_if_fail( OFA_IS_IDBCONNECT( connect ));
-		dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
-		exercice_meta = ofa_idbconnect_get_exercice_meta( connect );
-	}
-
-	is_opened = ( connect && meta == dossier_meta && period == exercice_meta );
-
-	ok = ( meta && period && !is_opened );
+	have_data = meta && period;
+	is_opened = have_data && ofa_hub_is_opened_dossier( priv->hub, period );
 
 	if( priv->open_action ){
-		g_simple_action_set_enabled( priv->open_action, ok );
+		g_simple_action_set_enabled( priv->open_action, have_data && !is_opened );
+	}
+	if( priv->close_action ){
+		g_simple_action_set_enabled( priv->close_action, have_data && is_opened );
 	}
 	if( priv->delete_action ){
-		g_simple_action_set_enabled( priv->delete_action, ok );
+		g_simple_action_set_enabled( priv->delete_action, have_data && !is_opened );
 	}
 }
 
@@ -478,6 +486,29 @@ do_open( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *p
 	if( ok ){
 		priv->apply_actions = TRUE;
 		my_iwindow_close( MY_IWINDOW( self ));
+	}
+}
+
+static void
+action_on_close_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self )
+{
+	static const gchar *thisfn = "ofa_dossier_manager_action_on_close_activated";
+	ofaDossierManagerPrivate *priv;
+	ofaIDBDossierMeta *meta;
+	ofaIDBExerciceMeta *period;
+
+	g_debug( "%s: action=%p, empty=%p, self=%p",
+			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
+
+	priv = ofa_dossier_manager_get_instance_private( self );
+
+	meta = NULL;
+	period = NULL;
+
+	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period ) &&
+			ofa_hub_is_opened_dossier( priv->hub, period )){
+
+		ofa_hub_close_dossier( priv->hub );
 	}
 }
 

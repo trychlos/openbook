@@ -15,6 +15,7 @@
 
  New features and improvements:
 
+   - DossierManager: be able to close the currently opened dossier (todo #1338).
    - Review and harmonize standard actions on dossier open (todo #1300, todo #1322).
 
  Bug fixes:

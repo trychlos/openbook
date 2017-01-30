@@ -355,9 +355,6 @@
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 
-1338 2017- 1-30 DossierManager: have a Close button enabled on the currently
-                opened dossier
-
 1339
 
 -----------------------------------------------------------------------
@@ -585,6 +582,10 @@
 1337 2017- 1-27 TargetChooserBin: after new period, automatically select
                  the only exercice
      2017- 1-27 done: ExerciceTreeview automatically select the first exercice
+
+1338 2017- 1-30 DossierManager: have a Close button enabled on the currently
+                opened dossier
+     2017- 1-30 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
