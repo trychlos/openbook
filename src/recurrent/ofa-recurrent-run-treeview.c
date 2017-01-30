@@ -390,7 +390,7 @@ on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTree
 		case REC_RUN_COL_AMOUNT2:
 		case REC_RUN_COL_AMOUNT3:
 			status = ofo_recurrent_run_get_status( recrun );
-			editable = ofa_hub_dossier_is_writable( priv->hub );
+			editable = ofa_hub_is_writable_dossier( priv->hub );
 			editable &= ( my_strlen( csdef ) > 0 );
 			editable &= ( my_collate( status, REC_STATUS_WAITING ) == 0 );
 			g_object_set( G_OBJECT( renderer ), "editable-set", TRUE, "editable", editable, NULL );

@@ -61,18 +61,18 @@ typedef struct {
 	 */
 	ofaIGetter            *getter;
 	GtkWindow             *parent;
+	ofaIDBExerciceMeta    *exercice_meta;
+	gchar                 *account;
+	gchar                 *password;
+	gboolean               read_only;
 
 	/* runtime
 	 */
 	gchar                 *settings_prefix;
 	ofaHub                *hub;
-	ofaIDBDossierMeta     *dossier_meta;		/* the selected dossier */
-	ofaIDBExerciceMeta    *exercice_meta;		/* the selected exercice */
-	gchar                 *account;				/* user credentials */
-	gchar                 *password;
-	ofaIDBConnect         *connect;				/* the DB connection */
+	ofaIDBDossierMeta     *dossier_meta;
+	ofaIDBConnect         *connect;
 	gboolean               opened;
-	gboolean               read_only;
 	gboolean               prev_readonly;
 
 	/* UI
@@ -148,7 +148,6 @@ dossier_open_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->dossier_meta );
 		g_clear_object( &priv->exercice_meta );
 		g_clear_object( &priv->connect );
 	}
@@ -194,21 +193,30 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
 /**
  * ofa_dossier_open_run:
  * @getter: a #ofaIGetter instance.
- * @parent: the parent #GtkWindow.
- * @meta: [allow-none]: the dossier to be opened.
- * @period: [allow-none]: the exercice to be opened.
+ * @parent: [allow-none]: the parent #GtkWindow.
+ * @exercice_meta: [allow-none]: the exercice to be opened.
  * @account: [allow-none]: the user account.
  * @password: [allow-none]: the user password.
+ * @read_only: whether the dossier should be opened read-only.
  *
  * Open the specified dossier, requiring the missing informations
  * if needed.
  *
- * Returns: %TRUE if the dossier has been opened, %FALSE else.
+ * Returns: %TRUE if a dossier has been successfully opened, %FALSE else.
+ *
+ * As a special case, this function returns %TRUE if the dossier selected
+ * to be opened was already opened. The function does not do anything and
+ * just returns %TRUE.
+ *
+ * Note that this function does not guarantee that the eventually opened
+ * dossier is the same one that those which was provided as input
+ * parameters. As soon as the user interface is displayed and a user
+ * interaction is needed, the user may choose to select any available
+ * dossier.
  */
 gboolean
-ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent,
-										ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period,
-										const gchar *account, const gchar *password )
+ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent, ofaIDBExerciceMeta *exercice_meta,
+							const gchar *account, const gchar *password, gboolean read_only )
 {
 	static const gchar *thisfn = "ofa_dossier_open_run";
 	ofaDossierOpen *self;
@@ -216,12 +224,14 @@ ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent,
 	gboolean opened;
 	gchar *msg;
 
-	g_debug( "%s: getter=%p, parent=%p, meta=%p, period=%p, account=%s, password=%s",
+	g_debug( "%s: getter=%p, parent=%p, exercice_meta=%p, account=%s, password=%s, read_only=%s",
 			thisfn, ( void * ) getter, ( void * ) parent,
-			( void * ) meta, ( void * ) period, account, password ? "******" : "(null)" );
+			( void * ) exercice_meta, account, password ? "******" : "(null)",
+			read_only ? "True":"False" );
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
+	g_return_val_if_fail( !exercice_meta || OFA_IS_IDBEXERCICE_META( exercice_meta ), FALSE );
 
 	self = g_object_new( OFA_TYPE_DOSSIER_OPEN, NULL );
 
@@ -233,15 +243,14 @@ ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent,
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), FALSE );
 
-	if( meta ){
-		priv->dossier_meta = g_object_ref( meta );
-		if( period ){
-			priv->exercice_meta = g_object_ref( period );
-		}
+	if( exercice_meta ){
+		priv->exercice_meta = g_object_ref( exercice_meta );
+		priv->dossier_meta = ofa_idbexercice_meta_get_dossier_meta( exercice_meta );
 	}
 
 	priv->account = g_strdup( account );
 	priv->password = g_strdup( password );
+	priv->read_only = read_only;
 
 	opened = FALSE;
 	msg = NULL;
@@ -469,21 +478,14 @@ setup_menu( ofaDossierOpen *self )
 }
 
 static void
-on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *period, ofaDossierOpen *self )
+on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *unused, ofaDossierOpen *self )
 {
-	static const gchar *thisfn = "ofa_dossier_open_on_dossier_changed";
 	ofaDossierOpenPrivate *priv;
-
-	if( 0 ){
-		g_debug( "%s", thisfn );
-	}
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
-	g_clear_object( &priv->dossier_meta );
-
 	if( dossier_meta ){
-		priv->dossier_meta = g_object_ref( dossier_meta );
+		priv->dossier_meta = dossier_meta;
 		ofa_exercice_combo_set_dossier( priv->exercice_combo, dossier_meta );
 
 	/* If dossier_meta is set, then the #ofa_exercice_combo_set_dossier()
@@ -499,12 +501,7 @@ on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, 
 static void
 on_exercice_changed( ofaExerciceCombo *combo, ofaIDBExerciceMeta *period, ofaDossierOpen *self )
 {
-	static const gchar *thisfn = "ofa_dossier_open_on_exercice_changed";
 	ofaDossierOpenPrivate *priv;
-
-	if( 0 ){
-		g_debug( "%s", thisfn );
-	}
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
@@ -594,6 +591,9 @@ check_for_enable_dlg( ofaDossierOpen *self )
 	}
 }
 
+/*
+ * must have a ofaIDBExerciceMeta, and user credentials
+ */
 static gboolean
 are_data_set( ofaDossierOpen *self, gchar **msg )
 {
@@ -605,11 +605,7 @@ are_data_set( ofaDossierOpen *self, gchar **msg )
 
 	valid = FALSE;
 
-	if( !priv->dossier_meta ){
-		if( msg ){
-			*msg = g_strdup( _( "No selected dossier" ));
-		}
-	} else if( !priv->exercice_meta ){
+	if( !priv->exercice_meta ){
 		if( msg ){
 			*msg = g_strdup( _( "No selected exercice" ));
 		}
@@ -687,7 +683,12 @@ is_connection_valid( ofaDossierOpen *self, gchar **msg )
 }
 
 /*
- * is called when the user click on the 'Open' button
+ * The user has clicked on the 'Open' button
+ *   (which was enabled because all data were rightly set),
+ * and a connection has been successfully opened with user credentials
+ *
+ * -> if another dossier was already opened, asks the hub to close it now
+ * -> asks the hub to open this selected one
  */
 static gboolean
 do_open_dossier( ofaDossierOpen *self )
@@ -697,14 +698,14 @@ do_open_dossier( ofaDossierOpen *self )
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
-	ok = FALSE;
-
-	if( ofa_hub_dossier_open( priv->hub, GTK_WINDOW( self ), priv->connect, TRUE, priv->read_only )){
-		if( ofa_hub_dossier_remediate_settings( priv->hub )){
-			g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_CHANGED );
-		}
-		ok = TRUE;
+	/* if this same exercice is already opened, just do nothing */
+	if( ofa_hub_is_opened_dossier( priv->hub, priv->exercice_meta )){
+		return( TRUE );
 	}
+
+	ofa_hub_close_dossier( priv->hub );
+
+	ok = ofa_hub_open_dossier( priv->hub, GTK_WINDOW( self ), priv->connect, priv->read_only, TRUE );
 
 	return( ok );
 }

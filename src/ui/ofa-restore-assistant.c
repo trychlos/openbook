@@ -134,7 +134,7 @@ typedef struct {
 	gchar                  *p3_dossier_name;
 	ofaIDBProvider         *p3_provider;
 
-	/* p4: dossier administrative credentials
+	/* p4: dossier administrative credentials + apply actions
 	 */
 	GtkSizeGroup           *p4_hgroup;
 	GtkWidget              *p4_uri_label;
@@ -145,6 +145,7 @@ typedef struct {
 	ofaDossierActionsBin   *p4_actions;
 	gchar                  *p4_account;
 	gchar                  *p4_password;
+	gboolean                p4_apply_actions;
 	GtkWidget              *p4_message;
 
 	/* p5: display operations to be done and ask for confirmation
@@ -313,6 +314,7 @@ static void
 restore_assistant_dispose( GObject *instance )
 {
 	ofaRestoreAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 
 	g_return_if_fail( instance && OFA_IS_RESTORE_ASSISTANT( instance ));
 
@@ -329,6 +331,12 @@ restore_assistant_dispose( GObject *instance )
 		g_clear_object( &priv->p2_exercice_meta );
 		g_clear_object( &priv->p3_hgroup );
 		g_clear_object( &priv->p2_connect );
+
+		if( priv->p4_apply_actions && priv->getter ){
+			main_window = ofa_igetter_get_main_window( priv->getter );
+			g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+			ofa_main_window_dossier_apply_actions( OFA_MAIN_WINDOW( main_window ));
+		}
 	}
 
 	/* chain up to the parent class */
@@ -354,6 +362,7 @@ ofa_restore_assistant_init( ofaRestoreAssistant *self )
 	priv->p2_exercice_meta = NULL;
 	priv->p3_dossier_name = NULL;
 	priv->p3_provider = NULL;
+	priv->p4_apply_actions = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -1383,7 +1392,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 		/* prevent the window manager to close this assistant */
 		my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
-		ofa_hub_dossier_close( priv->hub );
+		ofa_hub_close_dossier( priv->hub );
 		my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
 
 		g_idle_add(( GSourceFunc ) p6_do_restore, self );
@@ -1685,11 +1694,12 @@ p6_do_open( ofaRestoreAssistant *self )
 			thisfn, ( void * ) self, ( void * ) priv->p2_dossier_meta, ( void * ) priv->p2_exercice_meta, priv->p4_account );
 
 	if( priv->p5_open ){
-		ofa_dossier_open_run(
+		if( !ofa_dossier_open_run(
 				priv->getter, GTK_WINDOW( self ),
-				priv->p6_dossier_meta, priv->p6_exercice_meta, priv->p4_account, priv->p4_password );
+				priv->p6_exercice_meta, priv->p4_account, priv->p4_password, FALSE )){
 
-		g_debug( "%s: return from ofa_dossier_open_run", thisfn );
+			priv->p4_apply_actions = FALSE;
+		}
 	}
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );

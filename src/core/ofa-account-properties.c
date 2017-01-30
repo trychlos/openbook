@@ -355,7 +355,7 @@ idialog_init( myIDialog *instance )
 	/* dossier */
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
 
 	/* account */
 	priv->has_entries = ofo_entry_use_account( priv->hub, acc_number );

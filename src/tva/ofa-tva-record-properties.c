@@ -387,7 +387,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->validate_btn && GTK_IS_BUTTON( priv->validate_btn ));
 	g_signal_connect( priv->validate_btn, "clicked", G_CALLBACK( on_validate_clicked ), instance );
 
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub ) && !ofo_tva_record_get_is_validated( priv->tva_record );
+	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub ) && !ofo_tva_record_get_is_validated( priv->tva_record );
 	priv->style_provider = ofa_tva_style_new( priv->hub );
 
 	priv->form = ofo_tva_form_get_by_mnemo( priv->hub, ofo_tva_record_get_mnemo( priv->tva_record ));

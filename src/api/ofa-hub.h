@@ -53,6 +53,7 @@
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
+#include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-openbook-props.h"
@@ -146,23 +147,24 @@ const gchar           *ofa_hub_get_runtime_dir           ( ofaHub *hub );
 void                   ofa_hub_set_runtime_dir           ( ofaHub *hub,
 																const gchar *dir );
 
-const ofaIDBConnect   *ofa_hub_get_connect               ( ofaHub *hub );
+gboolean               ofa_hub_open_dossier              ( ofaHub *hub,
+																GtkWindow *parent,
+																ofaIDBConnect *connect,
+																gboolean read_only,
+																gboolean remediate_settings );
+
+ofaIDBConnect         *ofa_hub_get_connect               ( ofaHub *hub );
 
 ofoDossier            *ofa_hub_get_dossier               ( ofaHub *hub );
 
-gboolean               ofa_hub_dossier_open              ( ofaHub *hub,
-																GtkWindow *parent,
-																ofaIDBConnect *connect,
-																gboolean run_prefs,
-																gboolean read_only );
+gboolean               ofa_hub_is_opened_dossier         ( ofaHub *hub,
+																ofaIDBExerciceMeta *exercice_meta );
 
-void                   ofa_hub_dossier_close             ( ofaHub *hub );
+gboolean               ofa_hub_is_writable_dossier       ( ofaHub *hub );
 
-gboolean               ofa_hub_dossier_is_writable       ( ofaHub *hub );
+void                   ofa_hub_close_dossier             ( ofaHub *hub );
 
-gboolean               ofa_hub_dossier_remediate_settings( ofaHub *hub );
-
-ofaIImporter          *ofa_hub_get_willing_to            ( ofaHub *hub,
+ofaIImporter          *ofa_hub_get_willing_to_import     ( ofaHub *hub,
 																const gchar *uri,
 																GType type );
 

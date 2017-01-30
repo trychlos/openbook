@@ -849,9 +849,12 @@ application_activate( GApplication *application )
 			g_free( str );
 		}
 		if( meta && period ){
-			ofa_dossier_open_run(
-					OFA_IGETTER( application ), GTK_WINDOW( priv->main_window ),
-					meta, period, st_dossier_user_opt, st_dossier_passwd_opt );
+			if( ofa_dossier_open_run(
+						OFA_IGETTER( application ), GTK_WINDOW( priv->main_window ),
+						period, st_dossier_user_opt, st_dossier_passwd_opt, FALSE )){
+
+				ofa_main_window_dossier_apply_actions( priv->main_window );
+			}
 		}
 	}
 }
@@ -961,7 +964,12 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_dossier_open_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ), NULL, NULL, NULL, NULL );
+	if( ofa_dossier_open_run(
+				OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ),
+				NULL, NULL, NULL, FALSE )){
+
+		ofa_main_window_dossier_apply_actions( priv->main_window );
+	}
 }
 
 static void

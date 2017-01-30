@@ -1199,6 +1199,9 @@ my_utils_widget_get_toplevel( GtkWidget *widget )
  * two things have distinct semantics:
  * - editable: whether we are allowed to modify the value (is not read-only)
  * - sensitive: whether the value is relevant (has a sense in this context)
+ *
+ * pwi 2017- 1-30: do not unsensitive a widget if editable is %TRUE
+ * (because they default to be created as if editable=%TRUE)
  */
 void
 my_utils_widget_set_editable( GtkWidget *widget, gboolean editable )
@@ -1239,22 +1242,32 @@ my_utils_widget_set_editable( GtkWidget *widget, gboolean editable )
 
 	/* others */
 	if( GTK_IS_BUTTON( widget )){
-		gtk_widget_set_sensitive( widget, editable );
+		if( !editable ){
+			gtk_widget_set_sensitive( widget, editable );
+		}
 
 	} else if( GTK_IS_COMBO_BOX( widget )){
-		gtk_combo_box_set_button_sensitivity(
-				GTK_COMBO_BOX( widget ), editable ? GTK_SENSITIVITY_ON : GTK_SENSITIVITY_OFF );
+		if( !editable ){
+			gtk_combo_box_set_button_sensitivity(
+					GTK_COMBO_BOX( widget ), editable ? GTK_SENSITIVITY_ON : GTK_SENSITIVITY_OFF );
+		}
 
 	} else if( GTK_IS_ENTRY( widget )){
-		gtk_widget_set_sensitive( widget, editable );
+		if( !editable ){
+			gtk_widget_set_sensitive( widget, editable );
+		}
 
 	} else if( GTK_IS_FRAME( widget )){
-		gtk_widget_set_sensitive( widget, editable );
+		if( !editable ){
+			gtk_widget_set_sensitive( widget, editable );
+		}
 
 	} else if( GTK_IS_TEXT_VIEW( widget )){
-		gtk_text_view_set_editable( GTK_TEXT_VIEW( widget ), editable );
 		if( !editable ){
-			my_style_add( widget, "textviewinsensitive" );
+			gtk_text_view_set_editable( GTK_TEXT_VIEW( widget ), editable );
+			if( !editable ){
+				my_style_add( widget, "textviewinsensitive" );
+			}
 		}
 
 	} else if( GTK_IS_TREE_VIEW( widget )){

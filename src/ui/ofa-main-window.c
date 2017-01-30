@@ -92,7 +92,7 @@ typedef struct {
 	 */
 	gchar           *settings_prefix;
 	gchar           *orig_title;
-	GtkGrid         *grid;
+	GtkWidget       *grid;
 	GtkMenuBar      *menubar;
 	myAccelGroup    *accel_group;
 	guint            paned_position;
@@ -100,7 +100,7 @@ typedef struct {
 	/* when a dossier is opened
 	 */
 	GMenuModel      *menu;
-	GtkPaned        *pane;
+	GtkWidget       *pane;
 	guint            last_theme;
 	cairo_surface_t *background_image;
 	gint             background_image_width;
@@ -269,16 +269,13 @@ static const gchar *st_resource_css     = "/org/trychlos/openbook/ui/ofa.css";
 static const gchar *st_dosmenu_id       = "dos-menu";
 static const gchar *st_icon_fname       = ICONFNAME;
 
-static void                  window_store_ref( ofaMainWindow *self, GtkBuilder *builder, const gchar *placeholder );
+static void                  init_store_menu_ref( ofaMainWindow *self, GtkBuilder *builder, const gchar *placeholder );
 static void                  init_themes( ofaMainWindow *self );
-static void                  hub_on_dossier_opened( ofaHub *hub, gboolean run_prefs, gboolean read_only, ofaMainWindow *self );
+static void                  hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self );
 static void                  hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self );
 static void                  hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *main_window );
 static void                  hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window );
 static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-static void                  do_open_dossier( ofaMainWindow *self, ofaHub *hub, gboolean run_prefs, gboolean read_only );
-static gboolean              do_open_run_prefs( ofaMainWindow *self, ofaHub *hub );
-static void                  do_close_dossier( ofaMainWindow *self, ofaHub *hub );
 static void                  menubar_setup( ofaMainWindow *window, myIActionMap *map );
 static void                  set_window_title( ofaMainWindow *window, gboolean with_dossier );
 static void                  warning_exercice_unset( const ofaMainWindow *window );
@@ -368,7 +365,7 @@ main_window_dispose( GObject *instance )
 	if( !priv->dispose_has_run ){
 
 		hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
-		do_close_dossier( OFA_MAIN_WINDOW( instance ), hub );
+		ofa_hub_close_dossier( hub );
 
 		settings = ofa_hub_get_user_settings( hub );
 		my_utils_window_position_save( GTK_WINDOW( instance ), settings, priv->settings_prefix );
@@ -431,14 +428,14 @@ main_window_constructed( GObject *instance )
 					thisfn, st_resource_dosmenu, ( void * ) menu, g_menu_model_get_n_items( menu ));
 
 			/* store the references to the plugins placeholders */
-			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_app_dossier" );
-			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope1" );
-			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope2" );
-			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope3" );
-			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope4" );
-			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_print" );
-			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ref" );
-			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_app_misc" );
+			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_app_dossier" );
+			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope1" );
+			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope2" );
+			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope3" );
+			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope4" );
+			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_print" );
+			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ref" );
+			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_app_misc" );
 
 		} else {
 			g_warning( "%s: unable to find '%s' object in '%s' resource", thisfn, st_dosmenu_id, st_resource_dosmenu );
@@ -460,12 +457,13 @@ main_window_constructed( GObject *instance )
 		 *  |                                                                    |
 		 *  +--------------------------------------------------------------------+
 		 */
-		priv->grid = GTK_GRID( gtk_grid_new());
+		priv->grid = gtk_grid_new();
+		g_debug( "%s: grid=%p (%s)", thisfn, priv->grid, G_OBJECT_TYPE_NAME( priv->grid ));
 		/*gtk_widget_set_hexpand( GTK_WIDGET( priv->grid ), TRUE );*/
 		/*gtk_widget_set_vexpand( GTK_WIDGET( priv->grid ), TRUE );*/
 		/*gtk_container_set_resize_mode( GTK_CONTAINER( priv->grid ), GTK_RESIZE_QUEUE );*/
-		gtk_grid_set_row_homogeneous( priv->grid, FALSE );
-		gtk_container_add( GTK_CONTAINER( instance ), GTK_WIDGET( priv->grid ));
+		gtk_grid_set_row_homogeneous( GTK_GRID( priv->grid ), FALSE );
+		gtk_container_add( GTK_CONTAINER( instance ), priv->grid );
 
 		/* connect some signals
 		 */
@@ -481,31 +479,6 @@ main_window_constructed( GObject *instance )
 
 		/* style class initialisation */
 		my_style_set_css_resource( st_resource_css );
-	}
-}
-
-/*
- * @main_window:
- * @builder:
- * @placeholder: the name of an object inserted in the menu definition;
- *  this same name will be set against @main_window GObject pointing to
- *  the menu definition.
- *
- * Makes a new association between @placeholder and the object found in
- * the @builder. This association may later be used by plugins and other
- * add-ons to insert their own menu items at @placeholder places.
- */
-static void
-window_store_ref( ofaMainWindow *main_window, GtkBuilder *builder, const gchar *placeholder )
-{
-	static const gchar *thisfn = "ofa_main_window_window_store_ref";
-	GObject *menu;
-
-	menu = gtk_builder_get_object( builder, placeholder );
-	if( !menu ){
-		g_warning( "%s: unable to find '%s' placeholder", thisfn, placeholder );
-	} else {
-		g_object_set_data( G_OBJECT( main_window ), placeholder, menu );
 	}
 }
 
@@ -560,6 +533,7 @@ ofa_main_window_new( ofaApplication *application )
 	 *  available after g_object_new() has returned
 	 */
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW, "application", application, NULL );
+
 	priv = ofa_main_window_get_instance_private( window );
 
 	/* restore window geometry
@@ -588,9 +562,42 @@ ofa_main_window_new( ofaApplication *application )
 	g_object_get( G_OBJECT( application ), OFA_PROP_APPLICATION_NAME, &priv->orig_title, NULL );
 
 	my_iaction_map_register( MY_IACTION_MAP( window ), "win" );
+
+	/* install the application menubar
+	 */
 	menubar_setup( window, MY_IACTION_MAP( application ));
 
+	/* the window title defaults to the application title
+	 * the application menubar does not have any dynamic item *
+	 * no background image
+	 */
+
 	return( window );
+}
+
+/*
+ * @main_window:
+ * @builder:
+ * @placeholder: the name of an object inserted in the menu definition;
+ *  this same name will be set against @main_window GObject pointing to
+ *  the menu definition.
+ *
+ * Makes a new association between @placeholder and the object found in
+ * the @builder. This association may later be used by plugins and other
+ * add-ons to insert their own menu items at @placeholder places.
+ */
+static void
+init_store_menu_ref( ofaMainWindow *main_window, GtkBuilder *builder, const gchar *placeholder )
+{
+	static const gchar *thisfn = "ofa_main_window_init_store_menu_ref";
+	GObject *menu;
+
+	menu = gtk_builder_get_object( builder, placeholder );
+	if( !menu ){
+		g_warning( "%s: unable to find '%s' placeholder", thisfn, placeholder );
+	} else {
+		g_object_set_data( G_OBJECT( main_window ), placeholder, menu );
+	}
 }
 
 /*
@@ -618,15 +625,65 @@ init_themes( ofaMainWindow *self )
 }
 
 static void
-hub_on_dossier_opened( ofaHub *hub, gboolean run_prefs, gboolean read_only, ofaMainWindow *self )
+hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self )
 {
-	do_open_dossier( self, hub, run_prefs, read_only );
+	ofaMainWindowPrivate *priv;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	priv->pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
+	gtk_grid_attach( GTK_GRID( priv->grid ), priv->pane, 0, 1, 1, 1 );
+	gtk_paned_set_position( GTK_PANED( priv->pane ), priv->paned_position );
+	pane_left_add_treeview( self );
+	pane_right_add_empty_notebook( self, hub );
+
+	/* install the application menubar
+	 */
+	menubar_setup( self, MY_IACTION_MAP( self ));
+
+	/* the window title defaults to the application title
+	 * the application menubar does not have any dynamic item *
+	 * no background image
+	 */
+	hub_on_dossier_changed( hub, self );
 }
 
+/*
+ * At this time, the main window may have been already destroyed
+ */
 static void
 hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self )
 {
-	do_close_dossier( self, hub );
+	static const gchar *thisfn = "ofa_main_window_hub_on_dossier_closed";
+	ofaMainWindowPrivate *priv;
+	GtkApplication *application;
+
+	g_debug( "%s: self=%p, hub=%p", thisfn, ( void * ) self, ( void * ) hub );
+
+	//if( GTK_IS_WINDOW( self ) && ofa_hub_get_dossier( hub )){
+	if( GTK_IS_WINDOW( self )){
+
+		close_all_pages( self );
+		my_iwindow_close_all();
+
+		priv = ofa_main_window_get_instance_private( self );
+
+		if( priv->background_image ){
+			cairo_surface_destroy( priv->background_image );
+			priv->background_image = NULL;
+		}
+
+		if( priv->pane ){
+			priv->paned_position = gtk_paned_get_position( GTK_PANED( priv->pane ));
+			gtk_widget_destroy( priv->pane );
+			priv->pane = NULL;
+		}
+
+		application = gtk_window_get_application( GTK_WINDOW( self ));
+		menubar_setup( self, MY_IACTION_MAP( application ));
+
+		set_window_title( self, FALSE );
+	}
 }
 
 /*
@@ -636,6 +693,10 @@ hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self )
 static void
 hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *self )
 {
+	static const gchar *thisfn = "ofa_main_window_hub_on_dossier_changed";
+
+	g_debug( "%s: hub=%p, self=%p", thisfn, ( void * ) hub, ( void * ) self );
+
 	set_window_title( self, TRUE );
 	do_update_menubar_items( self );
 	background_image_update( self, hub );
@@ -651,9 +712,11 @@ hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *self )
 }
 
 /*
- * triggered when the user clicks on the top right [X] button
- * returns %TRUE to stop the signal to be propagated (which would cause
+ * Triggered when the user clicks on the top right [X] button.
+ *
+ * Returns %TRUE to stop the signal to be propagated (which would cause
  * the window to be destroyed); instead we gracefully quit the application.
+ *
  * Or, in other terms:
  * If you return FALSE in the "delete_event" signal handler, GTK will
  * emit the "destroy" signal. Returning TRUE means you don't want the
@@ -683,75 +746,40 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 	return( !ok_to_quit );
 }
 
-static void
-do_open_dossier( ofaMainWindow *self, ofaHub *hub, gboolean run_prefs, gboolean read_only )
-{
-	ofaMainWindowPrivate *priv;
-	const GDate *exe_begin, *exe_end;
-	ofoDossier *dossier;
-	gboolean display_properties;
-
-	priv = ofa_main_window_get_instance_private( self );
-
-	priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
-	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->pane ), 0, 1, 1, 1 );
-	gtk_paned_set_position( priv->pane, priv->paned_position );
-	pane_left_add_treeview( self );
-	pane_right_add_empty_notebook( self, hub );
-	background_image_update( self, hub );
-
-	menubar_setup( self, MY_IACTION_MAP( self ));
-
-	g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CHANGED );
-
-	display_properties = run_prefs ? do_open_run_prefs( self, hub ) : FALSE;
-
-	/* warns if begin or end of exercice is not set
-	 *  and properties have not been displayed as part of standard
-	 *  actions on opening the dossier */
-	if( !display_properties ){
-		dossier = ofa_hub_get_dossier( hub );
-		exe_begin = ofo_dossier_get_exe_begin( dossier );
-		exe_end = ofo_dossier_get_exe_end( dossier );
-		if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
-			warning_exercice_unset( self );
-		}
-	}
-}
-
 /**
- * ofa_main_window_dossier_run_prefs:
+ * ofa_main_window_dossier_apply_actions:
  * @main_window: this #ofaMainWindow instance.
  *
- * Run the user preferences.
+ * Run the the standard actions after having opened the dossier.
+ *
+ * This is in particularly used by the functions which open a dossier
+ * in order to have the actions run *after* the dialog (resp. assistant)
+ * is closed.
  */
 void
-ofa_main_window_dossier_run_prefs( ofaMainWindow *main_window )
+ofa_main_window_dossier_apply_actions( ofaMainWindow *main_window )
 {
-	ofaHub *hub;
-
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	hub = igetter_get_hub( OFA_IGETTER( main_window ));
-
-	do_open_run_prefs( main_window, hub );
-}
-
-/*
- * Returns: %TRUE if we have displayed properties
- */
-static gboolean
-do_open_run_prefs( ofaMainWindow *self, ofaHub *hub )
-{
-	static const gchar *thisfn = "ofa_main_window_do_open_run_prefs";
+	static const gchar *thisfn = "ofa_main_window_dossier_apply_actions";
+	ofaMainWindowPrivate *priv;
 	myISettings *settings;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *dossier_meta;
 	ofaOpenPrefs *prefs;
 	const gchar *group, *main_notes, *exe_notes;
 	ofoDossier *dossier;
-	gboolean empty, only_non_empty, display_properties;
+	gboolean empty, only_non_empty;
+	const GDate *exe_begin, *exe_end;
+	ofaHub *hub;
 
+	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
+
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv = ofa_main_window_get_instance_private( main_window );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	hub = igetter_get_hub( OFA_IGETTER( main_window ));
 	connect = ofa_hub_get_connect( hub );
 	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
 	settings = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
@@ -771,64 +799,30 @@ do_open_run_prefs( ofaMainWindow *self, ofaHub *hub )
 				thisfn, empty ? "True":"False", only_non_empty ? "True":"False" );
 
 		if( !empty || !only_non_empty ){
-			ofa_dossier_display_notes_run( OFA_IGETTER( self ), GTK_WINDOW( self ), main_notes, exe_notes );
+			ofa_dossier_display_notes_run( OFA_IGETTER( main_window ), GTK_WINDOW( main_window ), main_notes, exe_notes );
 		}
 	}
 
-	/* check balances and DBMS integrity*/
+	/* check balances and DBMS integrity ? */
 	if( ofa_open_prefs_get_check_balances( prefs )){
-		ofa_check_balances_run( OFA_IGETTER( self ), GTK_WINDOW( self ));
+		ofa_check_balances_run( OFA_IGETTER( main_window ), GTK_WINDOW( main_window ));
 	}
 	if( ofa_open_prefs_get_check_integrity( prefs )){
-		ofa_check_integrity_run( OFA_IGETTER( self ), GTK_WINDOW( self ));
+		ofa_check_integrity_run( OFA_IGETTER( main_window ), GTK_WINDOW( main_window ));
 	}
 
-	/* display dossier properties */
-	display_properties = FALSE;
+	/* display dossier properties ? */
 	if( ofa_open_prefs_get_display_properties( prefs )){
-		do_properties( self );
-		display_properties = TRUE;
-	}
+		do_properties( main_window );
 
-	return( display_properties );
-}
-
-/*
- * this function may be executed after delete_event handler,
- * so after the main window has actually been destroyed
- */
-static void
-do_close_dossier( ofaMainWindow *self, ofaHub *hub )
-{
-	static const gchar *thisfn = "ofa_main_window_do_close_dossier";
-	ofaMainWindowPrivate *priv;
-	GtkApplication *application;
-
-	g_debug( "%s: self=%p, hub=%p", thisfn, ( void * ) self, ( void * ) hub );
-
-	if( GTK_IS_WINDOW( self ) && ofa_hub_get_dossier( hub )){
-
-		close_all_pages( self );
-		my_iwindow_close_all();
-
-		priv = ofa_main_window_get_instance_private( self );
-
-		if( priv->background_image ){
-			cairo_surface_destroy( priv->background_image );
-			priv->background_image = NULL;
+	/* at least warns if begin or end of exercice is not set */
+	} else {
+		dossier = ofa_hub_get_dossier( hub );
+		exe_begin = ofo_dossier_get_exe_begin( dossier );
+		exe_end = ofo_dossier_get_exe_end( dossier );
+		if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
+			warning_exercice_unset( main_window );
 		}
-
-		if( priv->pane ){
-			priv->paned_position = gtk_paned_get_position( priv->pane );
-		}
-
-		gtk_widget_destroy( GTK_WIDGET( priv->pane ));
-		priv->pane = NULL;
-
-		application = gtk_window_get_application( GTK_WINDOW( self ));
-		menubar_setup( self, MY_IACTION_MAP( application ));
-
-		set_window_title( self, FALSE );
 	}
 }
 
@@ -891,7 +885,7 @@ menubar_setup( ofaMainWindow *window, myIActionMap *map )
 				( void * ) model, G_OBJECT_TYPE_NAME( model ), ( void * ) menubar,
 				( void * ) priv->grid, G_OBJECT_TYPE_NAME( priv->grid ));
 
-		gtk_grid_attach( priv->grid, menubar, 0, 0, 1, 1 );
+		gtk_grid_attach( GTK_GRID( priv->grid ), menubar, 0, 0, 1, 1 );
 		priv->menubar = GTK_MENU_BAR( menubar );
 	}
 
@@ -1002,7 +996,7 @@ pane_left_add_treeview( ofaMainWindow *window )
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	my_utils_widget_set_margins( GTK_WIDGET( frame ), 4, 4, 4, 2 );
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
-	gtk_paned_pack1( priv->pane, GTK_WIDGET( frame ), FALSE, FALSE );
+	gtk_paned_pack1( GTK_PANED( priv->pane ), GTK_WIDGET( frame ), FALSE, FALSE );
 
 	view = GTK_TREE_VIEW( gtk_tree_view_new());
 	gtk_widget_set_hexpand( GTK_WIDGET( view ), FALSE );
@@ -1074,9 +1068,11 @@ pane_right_add_empty_notebook( ofaMainWindow *self, ofaHub *hub )
 	detacheable = ofa_prefs_dnd_detach( hub );
 	if( detacheable ){
 		book = GTK_WIDGET( my_dnd_book_new());
+		g_signal_connect( book, "my-append-page", G_CALLBACK( book_on_append_page ), self );
 	} else {
 		book = gtk_notebook_new();
 	}
+
 	my_utils_widget_set_margins( book, 4, 4, 2, 4 );
 	gtk_notebook_set_scrollable( GTK_NOTEBOOK( book ), TRUE );
 	gtk_notebook_popup_enable( GTK_NOTEBOOK( book ));
@@ -1085,9 +1081,8 @@ pane_right_add_empty_notebook( ofaMainWindow *self, ofaHub *hub )
 
 	g_signal_connect( book, "draw", G_CALLBACK( notebook_on_draw ), self );
 	g_signal_connect( book, "page-removed", G_CALLBACK( on_page_removed ), self );
-	g_signal_connect( book, "my-append-page", G_CALLBACK( book_on_append_page ), self );
 
-	gtk_paned_pack2( priv->pane, book, TRUE, FALSE );
+	gtk_paned_pack2( GTK_PANED( priv->pane ), book, TRUE, FALSE );
 }
 
 static void
@@ -1158,7 +1153,7 @@ do_update_menubar_items( ofaMainWindow *self )
 	gboolean is_writable;
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-	is_writable = ofa_hub_dossier_is_writable( hub );
+	is_writable = ofa_hub_is_writable_dossier( hub );
 
 	enable_action_guided_input( self, is_writable );
 	enable_action_settlement( self, is_writable );
@@ -1328,7 +1323,7 @@ on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_hub_dossier_close( ofa_igetter_get_hub( OFA_IGETTER( user_data )));
+	ofa_hub_close_dossier( ofa_igetter_get_hub( OFA_IGETTER( user_data )));
 }
 
 static void
@@ -1654,7 +1649,7 @@ notebook_get_book( ofaMainWindow *window )
 	book = NULL;
 
 	if( priv->pane ){
-		book = gtk_paned_get_child2( priv->pane );
+		book = gtk_paned_get_child2( GTK_PANED( priv->pane ));
 		g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
 		return( GTK_NOTEBOOK( book ));
 	}

@@ -279,7 +279,7 @@ exercice_close_assistant_dispose( GObject *instance )
 		if( priv->getter ){
 			main_window = ofa_igetter_get_main_window( priv->getter );
 			g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-			ofa_main_window_dossier_run_prefs( OFA_MAIN_WINDOW( main_window ));
+			ofa_main_window_dossier_apply_actions( OFA_MAIN_WINDOW( main_window ));
 		}
 	}
 
@@ -1437,12 +1437,14 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 
 		} else {
-			/* opening the new dossier means also closing the old one
-			 * prevent the window manager to close this particular one
+			/* opening the new exercice means also closing the old one
+			 * prevent the window manager to close this assistant
 			 */
 			my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
-			ok = ofa_hub_dossier_open( priv->hub, GTK_WINDOW( main_window ), cnx, FALSE, FALSE );
+			ofa_hub_close_dossier( priv->hub );
 			my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
+
+			ok = ofa_hub_open_dossier( priv->hub, GTK_WINDOW( main_window ), cnx, FALSE, FALSE );
 			if( ok ){
 				priv->dossier = ofa_hub_get_dossier( priv->hub );
 				priv->connect = ofa_hub_get_connect( priv->hub );
@@ -1457,7 +1459,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		g_object_unref( cnx );
 	}
 
-	/* re-emit the changed signal after changes */
+	/* re-emit the changed signal after update of the new exercice */
 	g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_CHANGED );
 
 	return( ok );

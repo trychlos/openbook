@@ -116,19 +116,19 @@ enum {
 	THM_LAST_THEME
 };
 
-GType          ofa_main_window_get_type          ( void ) G_GNUC_CONST;
+GType          ofa_main_window_get_type             ( void ) G_GNUC_CONST;
 
-ofaMainWindow *ofa_main_window_new               ( ofaApplication *application );
+ofaMainWindow *ofa_main_window_new                  ( ofaApplication *application );
 
-gboolean       ofa_main_window_is_willing_to_quit( const ofaMainWindow *window );
+gboolean       ofa_main_window_is_willing_to_quit   ( const ofaMainWindow *window );
 
-void           ofa_main_window_dossier_backup    ( ofaMainWindow *window );
+void           ofa_main_window_dossier_backup       ( ofaMainWindow *window );
 
-void           ofa_main_window_dossier_properties( ofaMainWindow *window );
+void           ofa_main_window_dossier_properties   ( ofaMainWindow *window );
 
-void           ofa_main_window_dossier_run_prefs ( ofaMainWindow *window );
+void           ofa_main_window_dossier_apply_actions( ofaMainWindow *window );
 
-void           ofa_main_window_warning_no_entry  ( const ofaMainWindow *window );
+void           ofa_main_window_warning_no_entry     ( const ofaMainWindow *window );
 
 G_END_DECLS
 

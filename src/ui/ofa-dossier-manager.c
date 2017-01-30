@@ -68,6 +68,7 @@ typedef struct {
 	 */
 	gchar              *settings_prefix;
 	ofaHub             *hub;
+	gboolean            apply_actions;
 
 	/* UI
 	 */
@@ -130,6 +131,7 @@ static void
 dossier_manager_dispose( GObject *instance )
 {
 	ofaDossierManagerPrivate *priv;
+	GtkApplicationWindow *main_window;
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_MANAGER( instance ));
 
@@ -143,6 +145,12 @@ dossier_manager_dispose( GObject *instance )
 		g_clear_object( &priv->new_action );
 		g_clear_object( &priv->open_action );
 		g_clear_object( &priv->delete_action );
+
+		if( priv->apply_actions && priv->getter ){
+			main_window = ofa_igetter_get_main_window( priv->getter );
+			g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+			ofa_main_window_dossier_apply_actions( OFA_MAIN_WINDOW( main_window ));
+		}
 	}
 
 	/* chain up to the parent class */
@@ -164,6 +172,7 @@ ofa_dossier_manager_init( ofaDossierManager *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
+	priv->apply_actions = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -462,11 +471,12 @@ do_open( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *p
 
 	my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
 
-	ok = ofa_dossier_open_run( priv->getter, GTK_WINDOW( self ), meta, period, NULL, NULL );
+	ok = ofa_dossier_open_run( priv->getter, GTK_WINDOW( self ), period, NULL, NULL, FALSE );
 
 	my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
 
 	if( ok ){
+		priv->apply_actions = TRUE;
 		my_iwindow_close( MY_IWINDOW( self ));
 	}
 }
@@ -476,12 +486,9 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 {
 	static const gchar *thisfn = "ofa_dossier_manager_action_on_delete_activated";
 	ofaDossierManagerPrivate *priv;
-	const ofaIDBConnect *dossier_connect;
 	ofaIDBProvider *provider;
-	ofaIDBDossierMeta *meta, *dossier_meta;
-	ofaIDBExerciceMeta *period, *exercice_meta;
-	ofoDossier *dossier;
-	gint cmp;
+	ofaIDBDossierMeta *meta;
+	ofaIDBExerciceMeta *period;
 	ofaIDBSuperuser *su_bin;
 	gchar *settings_prefix, *msgerr;
 	ofaIDBConnect *connect;
@@ -495,27 +502,6 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 
 	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period )){
 
-		/* close the currently opened dossier/exercice if we are about
-		 * to delete it */
-		dossier = ofa_hub_get_dossier( priv->hub );
-		if( dossier ){
-			g_return_if_fail( OFO_IS_DOSSIER( dossier ));
-
-			dossier_connect = ofa_hub_get_connect( priv->hub );
-			g_return_if_fail( dossier_connect && OFA_IS_IDBCONNECT( dossier_connect ));
-			dossier_meta = ofa_idbconnect_get_dossier_meta( dossier_connect );
-			g_return_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ));
-			cmp = 1;
-			if( ofa_idbdossier_meta_compare( meta, dossier_meta ) == 0 ){
-				exercice_meta = ofa_idbconnect_get_exercice_meta( dossier_connect );
-				g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
-				cmp = ofa_idbexercice_meta_compare( period, exercice_meta );
-			}
-			if( cmp == 0 ){
-				ofa_hub_dossier_close( priv->hub );
-			}
-		}
-
 		/* delete the exercice
 		 * delete the dossier when deleting the last exercice */
 		provider = ofa_idbdossier_meta_get_provider( meta );
@@ -523,6 +509,11 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 
 		if( ofa_dbsu_run( priv->getter, GTK_WINDOW( self ), settings_prefix, provider, HUB_RULE_EXERCICE_DELETE, &su_bin ) &&
 			confirm_delete( self, meta, period )){
+
+			/* close the currently opened dossier/exercice if we are about to delete it */
+			if( ofa_hub_is_opened_dossier( priv->hub, period )){
+				ofa_hub_close_dossier( priv->hub );
+			}
 
 			connect = ofa_idbdossier_meta_new_connect( meta, NULL );
 			if( ofa_idbconnect_open_with_superuser( connect, su_bin )){

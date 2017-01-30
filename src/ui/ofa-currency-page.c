@@ -195,7 +195,7 @@ action_page_v_setup_view( ofaActionPage *page )
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
 
 	priv->tview = ofa_currency_treeview_new( priv->hub );
 	ofa_currency_treeview_set_settings_key( priv->tview, priv->settings_prefix );

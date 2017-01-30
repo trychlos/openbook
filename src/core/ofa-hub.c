@@ -108,8 +108,8 @@ static void     hub_init_signaling_system( ofaHub *self );
 static void     init_signaling_system_connect_to( ofaHub *self, GType type );
 static void     hub_setup_settings( ofaHub *self );
 static gboolean on_deletable_default_handler( ofaHub *self, GObject *object );
-static void     dossier_do_close( ofaHub *self );
-static gboolean check_db_vs_settings( ofaHub *self );
+static void     on_dossier_changed( ofaHub *hub, void *empty );
+static gboolean remediate_dossier_settings( ofaHub *self );
 static void     icollector_iface_init( myICollectorInterface *iface );
 static guint    icollector_get_interface_version( void );
 
@@ -148,8 +148,8 @@ hub_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		/* close the opened dossier before disposing hub */
-		dossier_do_close( OFA_HUB( instance ));
+		/* close the opened dossier (if any) before disposing hub */
+		ofa_hub_close_dossier( OFA_HUB( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -333,8 +333,6 @@ ofa_hub_class_init( ofaHubClass *klass )
 	 *
 	 * Handler is of type:
 	 * 		void user_handler( ofaHub   *hub,
-	 * 							gboolean run_checks,
-	 * 							gboolean read_only,
 	 * 							gpointer user_data );
 	 */
 	st_signals[ DOSSIER_OPENED ] = g_signal_new_class_handler(
@@ -346,8 +344,8 @@ ofa_hub_class_init( ofaHubClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				2,
-				G_TYPE_BOOLEAN, G_TYPE_BOOLEAN );
+				0,
+				G_TYPE_NONE );
 
 	/**
 	 * ofaHub::hub-dossier-closed:
@@ -375,7 +373,12 @@ ofa_hub_class_init( ofaHubClass *klass )
 	 * ofaHub::hub-dossier-changed:
 	 *
 	 * This signal is sent on the hub when the properties of the dossier
-	 * has been modified (or may have been modified) by the user.
+	 * has been modified (or may have been modified) by the user. This
+	 * strictly corresponds to the OFA_T_DOSSIER table content.
+	 *
+	 * The #ofaHub itself is connected to the signal and is the very
+	 * first handler triggered. It takes advantage of this signal to
+	 * remediate the dossier settings.
 	 *
 	 * Handler is of type:
 	 * 		void user_handler( ofaHub   *hub,
@@ -531,6 +534,8 @@ ofa_hub_new( ofaIGetter *getter )
 
 	priv->dossier_collection = ofa_dossier_collection_new( hub );
 	priv->openbook_props = ofa_openbook_props_new( hub );
+
+	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CHANGED, G_CALLBACK( on_dossier_changed ), NULL );
 
 	return( hub );
 }
@@ -703,6 +708,12 @@ on_deletable_default_handler( ofaHub *self, GObject *object )
 			thisfn, ( void * ) self, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
 	return( TRUE );
+}
+
+static void
+on_dossier_changed( ofaHub *hub, void *empty )
+{
+	remediate_dossier_settings( hub );
 }
 
 /**
@@ -884,74 +895,43 @@ ofa_hub_set_runtime_dir( ofaHub *hub, const gchar *dir )
 	priv->runtime_dir = g_strdup( dir );
 }
 
-/*
- * ofa_hub_get_connect:
- * @hub: this #ofaHub instance.
- *
- * Returns: the #ofaIDBConnect connection object.
- *
- * The returned reference is owned by the @hub object, and should
- * not be released by the caller.
- */
-const ofaIDBConnect *
-ofa_hub_get_connect( ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->connect );
-}
-
-/*
- * ofa_hub_get_dossier:
- * @hub: this #ofaHub instance.
- *
- * Returns: the #ofoDossier object.
- *
- * The returned reference is owned by the @hub object, and should
- * not be released by the caller.
- */
-ofoDossier *
-ofa_hub_get_dossier( ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->dossier );
-}
-
 /**
- * ofa_hub_dossier_open:
+ * ofa_hub_open_dossier:
  * @hub: this #ofaHub instance.
  * @parent: [allow-none]: the #GtkWindow parent window.
- * @connect: a valid connection to the targeted database.
- * @run_prefs: whether to allow the user prefs to be run.
+ * @connect: a valid connection to the targeted database;
+ *  the @hub object takes its own reference on the @connect instance,
+ *  which thus can then be released by the caller.
  * @read_only: whether the dossier should be opened in read-only mode.
+ * @remediate_settings: whether settings should be remediated to the
+ *  properties read from database;
+ *  though this is in general %TRUE, this is in particular %FALSE when
+ *  about to open the new exercice after a closing, because the new
+ *  properties have not yet been updated.
  *
  * Open the dossier and exercice pointed to by the @connect connection.
  * On success, the @hub object takes a reference on this @connect
  * connection, which thus may be then released by the caller.
  *
- * This method is the canonical way of opening a dossier.
+ * This method is the canonical way of opening a dossier in batch mode.
+ * #ofaIDBConnect and #ofoDossier are expected to be %NULL.
+ *
+ * In user interface mode, see #ofa_dossier_open_run() function.
  *
  * Returns: %TRUE if the dossier has been successully opened, %FALSE
  * else.
  */
 gboolean
-ofa_hub_dossier_open( ofaHub *hub, GtkWindow *parent, ofaIDBConnect *connect, gboolean run_prefs, gboolean read_only )
+ofa_hub_open_dossier( ofaHub *hub, GtkWindow *parent,
+							ofaIDBConnect *connect, gboolean read_only, gboolean remediate_settings )
 {
+	static const gchar *thisfn = "ofa_hub_open_dossier";
 	ofaHubPrivate *priv;
 	gboolean ok;
+
+	g_debug( "%s: hub=%p, parent=%p, connect=%p, read_only=%s, remediate_settings=%s",
+			thisfn, ( void * ) hub, ( void * ) parent, ( void * ) connect,
+			read_only ? "True":"False", remediate_settings ? "True":"False" );
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
@@ -961,7 +941,10 @@ ofa_hub_dossier_open( ofaHub *hub, GtkWindow *parent, ofaIDBConnect *connect, gb
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	ofa_hub_dossier_close( hub );
+	/* this is a programming error to have a dossier currently opened
+	 *  at this time */
+	g_return_val_if_fail( priv->connect == NULL, FALSE );
+	g_return_val_if_fail( priv->dossier == NULL, FALSE );
 
 	priv->connect = g_object_ref(( gpointer ) connect );
 	ok = FALSE;
@@ -970,108 +953,19 @@ ofa_hub_dossier_open( ofaHub *hub, GtkWindow *parent, ofaIDBConnect *connect, gb
 		priv->dossier = ofo_dossier_new( hub );
 		if( priv->dossier ){
 			priv->read_only = read_only;
+			g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_OPENED );
 			ok = TRUE;
+			if( remediate_settings ){
+				g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CHANGED );
+			}
 		}
 	}
 
 	if( !ok ){
-		dossier_do_close( hub );
-
-	} else {
-		g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_OPENED, run_prefs, read_only );
+		ofa_hub_close_dossier( hub );
 	}
 
 	return( ok );
-}
-
-/**
- * ofa_hub_dossier_close:
- * @hub: this #ofaHub instance.
- *
- * Close the currently opened dossier if any.
- *
- * This method is the canonical way of closing a dossier.
- */
-void
-ofa_hub_dossier_close( ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	if( priv->dossier ){
-		g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CLOSED );
-		dossier_do_close( hub );
-	}
-}
-
-static void
-dossier_do_close( ofaHub *self )
-{
-	ofaHubPrivate *priv;
-
-	priv = ofa_hub_get_instance_private( self );
-
-	g_clear_object( &priv->connect );
-	g_clear_object( &priv->dossier );
-
-	my_icollector_free_all( ofa_hub_get_collector( self ));
-}
-
-/**
- * ofa_hub_dossier_is_writable:
- * @hub: this #ofaHub instance.
- *
- * Returns: %TRUE if the dossier is writable, i.e. is a current exercice
- * which has not been opened in read-only mode.
- */
-gboolean
-ofa_hub_dossier_is_writable( ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-	gboolean is_writable;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	is_writable = priv->dossier &&
-			OFO_IS_DOSSIER( priv->dossier ) &&
-			ofo_dossier_is_current( priv->dossier ) &&
-			!priv->read_only;
-
-	return( is_writable );
-}
-
-/*
- * ofa_hub_dossier_remediate_settings:
- * @hub: this #ofaHub instance.
- *
- * Make sure, and update them if needed, that dossier settings datas
- * are synchronized with the same data recorded in the database:
- * - opened or closed exercice,
- * - begin and end dates of the exercice.
- *
- * Returns: %TRUE if the dossier settings have actually been remediated.
- */
-gboolean
-ofa_hub_dossier_remediate_settings( ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	return( check_db_vs_settings( hub ));
 }
 
 /*
@@ -1086,9 +980,9 @@ ofa_hub_dossier_remediate_settings( ofaHub *hub )
  * user.
  */
 static gboolean
-check_db_vs_settings( ofaHub *self )
+remediate_dossier_settings( ofaHub *self )
 {
-	static const gchar *thisfn = "ofa_hub_check_db_vs_settings";
+	static const gchar *thisfn = "ofa_hub_remediate_dossier_settings";
 	ofoDossier *dossier;
 	gboolean db_current, settings_current, remediated;
 	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
@@ -1137,13 +1031,161 @@ check_db_vs_settings( ofaHub *self )
 		ofa_idbexercice_meta_update_settings( period );
 
 		remediated = TRUE;
+
+	} else {
+		g_debug( "%s: nothing to do", thisfn );
 	}
 
 	return( remediated );
 }
 
+/*
+ * ofa_hub_get_connect:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the #ofaIDBConnect connection object.
+ *
+ * The returned reference is owned by the @hub object, and should
+ * not be released by the caller.
+ */
+ofaIDBConnect *
+ofa_hub_get_connect( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->connect );
+}
+
+/*
+ * ofa_hub_get_dossier:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the #ofoDossier object.
+ *
+ * The returned reference is owned by the @hub object, and should
+ * not be released by the caller.
+ */
+ofoDossier *
+ofa_hub_get_dossier( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->dossier );
+}
+
 /**
- * ofa_hub_get_willing_to:
+ * ofa_hub_is_opened_dossier:
+ * @hub: this #ofaHub instance.
+ * @exercice_meta: the #ofaIDBExerciceMeta we would want open.
+ *
+ * Returns: %TRUE if @exercice_meta is currently opened.
+ */
+gboolean
+ofa_hub_is_opened_dossier( ofaHub *hub, ofaIDBExerciceMeta *exercice_meta )
+{
+	ofaHubPrivate *priv;
+	ofaIDBDossierMeta *current_dossier, *candidate_dossier;
+	ofaIDBExerciceMeta *current_exercice;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ), FALSE );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	if( !priv->connect || !priv->dossier ){
+		return( FALSE );
+	}
+
+	candidate_dossier = ofa_idbexercice_meta_get_dossier_meta( exercice_meta );
+	current_dossier = ofa_idbconnect_get_dossier_meta( priv->connect );
+
+	if( ofa_idbdossier_meta_compare( current_dossier, candidate_dossier ) != 0 ){
+		return( FALSE );
+	}
+
+	current_exercice = ofa_idbconnect_get_exercice_meta( priv->connect );
+	if( ofa_idbexercice_meta_compare( current_exercice, exercice_meta ) != 0 ){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/**
+ * ofa_hub_is_writable_dossier:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: %TRUE if the dossier is writable, i.e. is a current exercice
+ * which has not been opened in read-only mode.
+ */
+gboolean
+ofa_hub_is_writable_dossier( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+	gboolean is_writable;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	is_writable = priv->dossier &&
+			OFO_IS_DOSSIER( priv->dossier ) &&
+			ofo_dossier_is_current( priv->dossier ) &&
+			!priv->read_only;
+
+	return( is_writable );
+}
+
+/**
+ * ofa_hub_close_dossier:
+ * @hub: this #ofaHub instance.
+ *
+ * Close the currently opened dossier if any.
+ *
+ * This method is the canonical way of closing a dossier.
+ */
+void
+ofa_hub_close_dossier( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( priv->dossier || priv->connect ){
+
+		/* emit the closing signal
+		 *  at this time all datas are alive and valid */
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CLOSED );
+
+		g_clear_object( &priv->connect );
+		g_clear_object( &priv->dossier );
+
+		my_icollector_free_all( ofa_hub_get_collector( hub ));
+	}
+}
+
+/**
+ * ofa_hub_get_willing_to_import:
  * @hub: this #ofaHub instance.
  * @uri: the URI of a file to be imported.
  * @type: the expected target GType.
@@ -1152,7 +1194,7 @@ check_db_vs_settings( ofaHub *self )
  * import the @uri, which should be #g_object_unref() by the caller.
  */
 ofaIImporter *
-ofa_hub_get_willing_to( ofaHub *hub, const gchar *uri, GType type )
+ofa_hub_get_willing_to_import( ofaHub *hub, const gchar *uri, GType type )
 {
 	ofaIImporter *found;
 	ofaExtenderCollection *extenders;

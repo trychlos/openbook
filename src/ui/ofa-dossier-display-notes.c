@@ -224,7 +224,7 @@ idialog_init( myIDialog *instance )
 	set_notes( OFA_DOSSIER_DISPLAY_NOTES( instance ), "main-label", "main-text", priv->main_notes );
 	set_notes( OFA_DOSSIER_DISPLAY_NOTES( instance ), "exe-label", "exe-text", priv->exe_notes );
 
-	my_utils_container_set_editable( GTK_CONTAINER( instance ), ofa_hub_dossier_is_writable( priv->hub ));
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), ofa_hub_is_writable_dossier( priv->hub ));
 }
 
 static void

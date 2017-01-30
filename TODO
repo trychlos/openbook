@@ -355,11 +355,10 @@
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 
-1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
-     2017- 1-26 first *define* standard actions on open
-     2017- 1-29 they are defined in user preferences
+1338 2017- 1-30 DossierManager: have a Close button enabled on the currently
+                opened dossier
 
-1338
+1339
 
 -----------------------------------------------------------------------
  DONE
@@ -526,6 +525,11 @@
 1321 2017- 1-16 DossierOpen: when selected exercice is an archive, set
                 read-only (unset when current if was not set by the user) 
      2017- 1-16 done
+
+1322 2017- 1-16 ofaDossierActionsBin: apply standard actions on open
+     2017- 1-26 first *define* standard actions on open
+     2017- 1-29 they are defined in user preferences
+     2017- 1-30 done
 
 1323 2017- 1-18 propagate myISizegroup interface
      2017- 1-22 rename and include is_valid/apply

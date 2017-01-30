@@ -32,13 +32,22 @@
  *
  * Open an existing dossier.
  *
+ * #ofa_dossier_open_run() function should be the canonical way of
+ * opening a dossier from the user interface.
+ *
+ * It takes care:
+ * - of validating the provided parameters, displaying the dialog and
+ *   requesting the user if unset or invalid;
+ * - closing the currently opened dossier (if any);
+ * - opening the dossier and setting up the application
+ *   (cf. #ofa_hub_open_dossier() function).
+ *
  * Development rules:
  * - type:       modal dialog
  * - settings:   no
  * - current:    no
  */
 
-#include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-igetter-def.h"
 
@@ -67,10 +76,10 @@ GType    ofa_dossier_open_get_type( void ) G_GNUC_CONST;
 
 gboolean ofa_dossier_open_run     ( ofaIGetter *getter,
 										GtkWindow *parent,
-										ofaIDBDossierMeta *dossier_meta,
-										ofaIDBExerciceMeta *period,
+										ofaIDBExerciceMeta *exercice_meta,
 										const gchar *account,
-										const gchar *password );
+										const gchar *password,
+										gboolean read_only );
 
 G_END_DECLS
 

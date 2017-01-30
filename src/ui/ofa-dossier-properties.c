@@ -357,7 +357,7 @@ idialog_init( myIDialog *instance )
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
 
 	init_properties_page( OFA_DOSSIER_PROPERTIES( instance ));
 	init_forward_page( OFA_DOSSIER_PROPERTIES( instance ));
@@ -682,6 +682,7 @@ init_preferences_page( ofaDossierProperties *self )
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
+	/* apply actions on open */
 	connect = ofa_hub_get_connect( priv->hub );
 	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
 	priv->settings_iface = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
@@ -989,7 +990,7 @@ on_cancel_clicked( ofaDossierProperties *self )
 
 	g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_PREVIEW, priv->background_orig_uri );
 
-	/* do not close the window here as this will be done in myIDialog */
+	/* do not close the window here as this will be done by myIDialog */
 }
 
 static void
@@ -1068,9 +1069,6 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 	if( !ok ){
 		*msgerr = g_strdup( _( "Unable to update the dossier" ));
 		return( FALSE );
-	}
-	if( ofa_hub_dossier_remediate_settings( priv->hub )){
-		g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_CHANGED );
 	}
 
 	if( count > 0 ){

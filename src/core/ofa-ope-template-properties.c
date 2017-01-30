@@ -354,7 +354,7 @@ idialog_init( myIDialog *instance )
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;
 
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
 
 	init_dialog_title( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
 	init_mnemo( OFA_OPE_TEMPLATE_PROPERTIES( instance ));

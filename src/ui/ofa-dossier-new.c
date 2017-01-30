@@ -49,7 +49,9 @@
 #include "ui/ofa-dossier-actions-bin.h"
 #include "ui/ofa-dossier-edit-bin.h"
 #include "ui/ofa-dossier-new.h"
+#include "ui/ofa-dossier-open.h"
 #include "ui/ofa-exercice-edit-bin.h"
+#include "ui/ofa-main-window.h"
 
 /* private instance data
  */
@@ -74,6 +76,7 @@ typedef struct {
 	gchar                  *settings_prefix;
 	ofaHub                 *hub;
 	gboolean                dossier_created;
+	gboolean                apply_actions;
 
 	/* UI
 	 */
@@ -134,6 +137,7 @@ static void
 dossier_new_dispose( GObject *instance )
 {
 	ofaDossierNewPrivate *priv;
+	GtkApplicationWindow *main_window;
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW( instance ));
 
@@ -146,6 +150,12 @@ dossier_new_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		if( priv->apply_actions && priv->getter ){
+			main_window = ofa_igetter_get_main_window( priv->getter );
+			g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+			ofa_main_window_dossier_apply_actions( OFA_MAIN_WINDOW( main_window ));
+		}
 	}
 
 	/* chain up to the parent class */
@@ -173,6 +183,7 @@ ofa_dossier_new_init( ofaDossierNew *self )
 	priv->with_confirm = TRUE;
 	priv->with_actions = TRUE;
 	priv->dossier_created = FALSE;
+	priv->apply_actions = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -520,7 +531,7 @@ static gboolean
 do_create( ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
-	gboolean ret, open, apply_actions;
+	gboolean ret, open;
 	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBExerciceMeta *exercice_meta;
 	ofaIDBConnect *connect;
@@ -608,22 +619,10 @@ do_create( ofaDossierNew *self )
 			open = ofa_dossier_actions_bin_get_open( priv->actions_bin );
 			if( open ){
 				exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
-				connect = ofa_idbdossier_meta_new_connect( dossier_meta, exercice_meta );
-				if( !ofa_idbconnect_open_with_account( connect, adm_account, adm_password )){
-					my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_ERROR,
-							_( "Unable to connect to newly created dossier" ));
-					g_object_unref( connect );
-				} else {
-					apply_actions = ofa_dossier_actions_bin_get_apply( priv->actions_bin );
-					if( ofa_hub_dossier_open( priv->hub, priv->parent, connect, apply_actions, FALSE )){
-						ofa_hub_dossier_remediate_settings( priv->hub );
-						ret = TRUE;
-					} else {
-						my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_ERROR,
-								_( "Unable to open the newly created dossier" ));
-						g_object_unref( connect );
-					}
-				}
+				priv->apply_actions = ofa_dossier_actions_bin_get_apply( priv->actions_bin );
+				ret = ofa_dossier_open_run(
+							priv->getter, GTK_WINDOW( self ),
+							exercice_meta, adm_account, adm_password, FALSE );
 			}
 		}
 	}

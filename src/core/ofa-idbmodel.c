@@ -818,7 +818,7 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 		uri = g_filename_to_uri( fname, NULL, NULL );
 		g_free( fname );
 		type = import->typefn();
-		importer = ofa_hub_get_willing_to( priv->hub, uri, type );
+		importer = ofa_hub_get_willing_to_import( priv->hub, uri, type );
 
 		/* if found, then import data */
 		if( importer ){

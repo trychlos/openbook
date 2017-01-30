@@ -311,7 +311,7 @@ init_dialog( ofaPaimeanProperties *self )
 
 	priv = ofa_paimean_properties_get_instance_private( self );
 
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
 
 	code = ofo_paimean_get_code( priv->paimean );
 	if( !code ){

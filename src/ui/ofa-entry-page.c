@@ -353,7 +353,7 @@ page_v_setup_page( ofaPage *page )
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier );
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
 
 	my_utils_container_attach_from_resource( GTK_CONTAINER( page ), st_resource_ui, st_ui_id, "px-box" );
 

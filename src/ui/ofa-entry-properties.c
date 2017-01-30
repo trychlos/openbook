@@ -315,7 +315,7 @@ idialog_init( myIDialog *instance )
 	priv = ofa_entry_properties_get_instance_private( OFA_ENTRY_PROPERTIES( instance ));
 
 	/* v 0.62 */
-	/*priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );*/
+	/*priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );*/
 	priv->is_writable = FALSE;
 
 	if( !ofo_entry_get_number( priv->entry )){

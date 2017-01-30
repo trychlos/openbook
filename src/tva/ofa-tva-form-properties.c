@@ -346,7 +346,7 @@ idialog_init( myIDialog *instance )
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;
 
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
 
 	mnemo = ofo_tva_form_get_mnemo( priv->tva_form );
 	if( !mnemo ){

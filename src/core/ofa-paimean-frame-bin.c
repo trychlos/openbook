@@ -282,7 +282,7 @@ setup_getter( ofaPaimeanFrameBin *self, ofaIGetter *getter )
 	/* hub-related initialization */
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
 }
 
 /*
