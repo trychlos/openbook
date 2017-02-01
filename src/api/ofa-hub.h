@@ -126,7 +126,10 @@ enum {
 
 GType                  ofa_hub_get_type                  ( void ) G_GNUC_CONST;
 
-ofaHub                *ofa_hub_new                       ( ofaIGetter *getter );
+ofaHub                *ofa_hub_new                       ( GApplication *application,
+																const gchar *argv_0 );
+
+GApplication          *ofa_hub_get_application           ( ofaHub *hub );
 
 ofaExtenderCollection *ofa_hub_get_extender_collection   ( ofaHub *hub );
 
@@ -144,9 +147,6 @@ myISettings           *ofa_hub_get_user_settings         ( ofaHub *hub );
 ofaOpenbookProps      *ofa_hub_get_openbook_props        ( ofaHub *hub );
 
 const gchar           *ofa_hub_get_runtime_dir           ( ofaHub *hub );
-
-void                   ofa_hub_set_runtime_dir           ( ofaHub *hub,
-																const gchar *dir );
 
 gboolean               ofa_hub_open_dossier              ( ofaHub *hub,
 																GtkWindow *parent,

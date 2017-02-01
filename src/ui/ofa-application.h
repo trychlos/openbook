@@ -170,8 +170,6 @@ typedef struct {
 #define OFA_PROP_HUB                    "ofa-application-prop-hub"
 
 /**
- * ofaExitCode:
- *
  * The code returned by the application.
  *
  * @OFA_EXIT_CODE_OK = 0:         the program has successfully run, and returns zero.
@@ -179,13 +177,12 @@ typedef struct {
  * @OFA_EXIT_CODE_WINDOW = 2:     unable to create the startup window
  * @OFA_EXIT_CODE_PROGRAM = 3:    general program error code.
  */
-typedef enum {
+enum {
 	OFA_EXIT_CODE_OK = 0,
 	OFA_EXIT_CODE_ARGS,
 	OFA_EXIT_CODE_WINDOW,
 	OFA_EXIT_CODE_PROGRAM
-}
-	ofaExitCode;
+};
 
 GType               ofa_application_get_type          ( void ) G_GNUC_CONST;
 

@@ -63,6 +63,11 @@ typedef struct {
 
 	/* initialization
 	 */
+	GApplication          *application;
+	gchar                 *argv_0;
+
+	/* to be deprecated
+	 */
 	ofaIGetter            *getter;
 
 	/* global data
@@ -103,10 +108,10 @@ enum {
 
 static gint st_signals[ N_SIGNALS ]     = { 0 };
 
-static void     hub_register_types( ofaHub *self );
-static void     hub_init_signaling_system( ofaHub *self );
+static void     register_types( ofaHub *self );
+static void     init_signaling_system( ofaHub *self );
 static void     init_signaling_system_connect_to( ofaHub *self, GType type );
-static void     hub_setup_settings( ofaHub *self );
+static void     setup_settings( ofaHub *self );
 static gboolean on_deletable_default_handler( ofaHub *self, GObject *object );
 static void     on_dossier_changed( ofaHub *hub, void *empty );
 static gboolean remediate_dossier_settings( ofaHub *self );
@@ -131,6 +136,7 @@ hub_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_hub_get_instance_private( OFA_HUB( instance ));
 
+	g_free( priv->argv_0 );
 	g_free( priv->runtime_dir );
 
 	/* chain up to the parent class */
@@ -505,35 +511,43 @@ ofa_hub_class_init( ofaHubClass *klass )
 
 /**
  * ofa_hub_new:
- * @getter: a #ofaIGetter instance which will be passed to dynamically
- *  loaded plugins.
+ * @application: the #GApplication which has created and owns this object.
  *
  * Allocates and initializes the #ofaHub object of the application.
  *
  * Returns: a new #ofaHub object.
  */
 ofaHub *
-ofa_hub_new( ofaIGetter *getter )
+ofa_hub_new( GApplication *application, const gchar *argv_0 )
 {
+	static const gchar *thisfn = "ofa_hub_new";
 	ofaHub *hub;
 	ofaHubPrivate *priv;
 
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_debug( "%s: application=%p, argv_0=%s", thisfn, ( void * ) application, argv_0 );
+
+	g_return_val_if_fail( application && G_IS_APPLICATION( application ), NULL );
 
 	hub = g_object_new( OFA_TYPE_HUB, NULL );
 
 	priv = ofa_hub_get_instance_private( hub );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
-	priv->extenders = ofa_extender_collection_new( priv->getter, PKGLIBDIR );
+	priv->application = application;
+	priv->argv_0 = g_strdup( argv_0 );
 
 	ofa_box_register_types();
-	hub_register_types( hub );
-	hub_init_signaling_system( hub );
-	hub_setup_settings( hub );
+	register_types( hub );
+	init_signaling_system( hub );
+	setup_settings( hub );
 
+	/* as of 2017-02-01 (v0.66), the IGetter interface becomes useless
+	 * as long as we always have a #ofaHub object */
+	priv->getter = ofa_igetter_get_permanent_getter( OFA_IGETTER( application ));
+
+	priv->extenders = ofa_extender_collection_new( priv->getter, PKGLIBDIR );
 	priv->dossier_collection = ofa_dossier_collection_new( hub );
 	priv->openbook_props = ofa_openbook_props_new( hub );
+	priv->runtime_dir = g_path_get_dirname( priv->argv_0 );
 
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CHANGED, G_CALLBACK( on_dossier_changed ), NULL );
 
@@ -558,7 +572,7 @@ ofa_hub_new( ofaIGetter *getter )
  * dynamically requested on demand.
  */
 static void
-hub_register_types( ofaHub *self )
+register_types( ofaHub *self )
 {
 	ofaHubPrivate *priv;
 
@@ -597,7 +611,7 @@ hub_register_types( ofaHub *self )
  * This method must be called after having registered core types.
  */
 static void
-hub_init_signaling_system( ofaHub *self )
+init_signaling_system( ofaHub *self )
 {
 	GList *list, *it;
 
@@ -631,7 +645,7 @@ init_signaling_system_connect_to( ofaHub *self, GType type )
 }
 
 static void
-hub_setup_settings( ofaHub *self )
+setup_settings( ofaHub *self )
 {
 	ofaHubPrivate *priv;
 	gchar *name;
@@ -643,6 +657,29 @@ hub_setup_settings( ofaHub *self )
 	name = g_strdup_printf( "%s.conf", PACKAGE );
 	priv->user_settings = my_settings_new_user_config( name, "OFA_USER_CONF" );
 	g_free( name );
+}
+
+/**
+ * ofa_hub_get_application:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the #GApplication which has created and owns this @hub.
+ *
+ * The returned reference is owned by the @hub instance, and should not
+ * be released by the caller.
+ */
+GApplication *
+ofa_hub_get_application( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->application );
 }
 
 /**
@@ -869,30 +906,6 @@ ofa_hub_get_runtime_dir( ofaHub *hub )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return(( const gchar * ) priv->runtime_dir );
-}
-
-/**
- * ofa_hub_set_runtime_dir:
- * @hub: this #ofaHub instance.
- * @dir: the directory where Openbook is executed from.
- *
- * Set the runtime directory.
- */
-void
-ofa_hub_set_runtime_dir( ofaHub *hub, const gchar *dir )
-{
-	static const gchar *thisfn = "ofa_hub_set_runtime_dir";
-	ofaHubPrivate *priv;
-
-	g_debug( "%s: hub=%p, dir=%s", thisfn, ( void * ) hub, dir );
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->runtime_dir = g_strdup( dir );
 }
 
 /**

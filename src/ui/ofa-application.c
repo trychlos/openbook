@@ -70,7 +70,7 @@ typedef struct {
 	gchar           *icon_name;
 	ofaHub          *hub;
 
-	/* internals
+	/* command-line
 	 */
 	int              argc;
 	GStrv            argv;
@@ -114,31 +114,31 @@ static const gchar       *st_icon_name          = N_( "openbook" );
 
 static       gboolean     st_version_opt        = FALSE;
 
+static       gchar       *st_user_account_opt   = NULL;
+static       gchar       *st_user_password_opt  = NULL;
 static       gchar       *st_dossier_name_opt   = NULL;
 static       gchar       *st_dossier_begin_opt  = NULL;
 static       gchar       *st_dossier_end_opt    = NULL;
-static       gchar       *st_dossier_user_opt   = NULL;
-static       gchar       *st_dossier_passwd_opt = NULL;
 
 static       GOptionEntry st_option_entries[]   = {
+	{ "account",  'a', 0, G_OPTION_ARG_STRING, &st_user_account_opt,
+			N_( "username to be used on opening the dossier []" ), NULL },
+	{ "password", 'p', 0, G_OPTION_ARG_STRING, &st_user_password_opt,
+			N_( "password to be used on opening the dossier []" ), NULL },
 	{ "dossier",  'd', 0, G_OPTION_ARG_STRING, &st_dossier_name_opt,
 			N_( "open the specified dossier []" ), NULL },
 	{ "begin",    'b', 0, G_OPTION_ARG_STRING, &st_dossier_begin_opt,
-			N_( "beginning date (yyyymmdd) of the exercice to open []" ), NULL },
+			N_( "beginning date (yyyymmdd) of the period to open []" ), NULL },
 	{ "end",      'e', 0, G_OPTION_ARG_STRING, &st_dossier_end_opt,
-			N_( "ending date (yyyymmdd) of the exercice to open []" ), NULL },
-	{ "user",     'u', 0, G_OPTION_ARG_STRING, &st_dossier_user_opt,
-			N_( "username to be used on opening the dossier []" ), NULL },
-	{ "password", 'p', 0, G_OPTION_ARG_STRING, &st_dossier_passwd_opt,
-			N_( "password to be used on opening the dossier []" ), NULL },
+			N_( "ending date (yyyymmdd) of the period to open []" ), NULL },
 	{ "version",  'v', 0, G_OPTION_ARG_NONE, &st_version_opt,
 			N_( "display the version number [no]" ), NULL },
 	{ NULL }
 };
 
-static void                  init_i18n( ofaApplication *application );
-static gboolean              init_gtk_args( ofaApplication *application );
-static gboolean              manage_options( ofaApplication *application );
+static void                  init_i18n( ofaApplication *self );
+static gboolean              init_gtk_args( ofaApplication *self );
+static gboolean              manage_options( ofaApplication *self );
 static void                  application_startup( GApplication *application );
 static void                  appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
 static void                  menubar_update_items( ofaApplication *self );
@@ -518,11 +518,11 @@ ofa_application_run_with_args( ofaApplication *application, int argc, GStrv argv
  * i18n initialization
  */
 static void
-init_i18n( ofaApplication *application )
+init_i18n( ofaApplication *self )
 {
 	static const gchar *thisfn = "ofa_application_init_i18n";
 
-	g_debug( "%s: application=%p", thisfn, ( void * ) application );
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 #ifdef ENABLE_NLS
 	bindtextdomain( GETTEXT_PACKAGE, GNOMELOCALEDIR );
@@ -543,7 +543,7 @@ init_i18n( ofaApplication *application )
  * "eat" its own arguments, and only have to handle our owns...
  */
 static gboolean
-init_gtk_args( ofaApplication *application )
+init_gtk_args( ofaApplication *self )
 {
 	static const gchar *thisfn = "ofa_application_init_gtk_args";
 	ofaApplicationPrivate *priv;
@@ -551,9 +551,9 @@ init_gtk_args( ofaApplication *application )
 	char *parameter_string;
 	GError *error;
 
-	g_debug( "%s: application=%p", thisfn, ( void * ) application );
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	priv = ofa_application_get_instance_private( application );
+	priv = ofa_application_get_instance_private( self );
 
 	/* manage command-line arguments
 	 */
@@ -593,13 +593,16 @@ init_gtk_args( ofaApplication *application )
  * application.
  */
 static gboolean
-manage_options( ofaApplication *application )
+manage_options( ofaApplication *self )
 {
 	static const gchar *thisfn = "ofa_application_manage_options";
+	ofaApplicationPrivate *priv;
 	gboolean ret;
 	GDate date;
 
-	g_debug( "%s: application=%p", thisfn, ( void * ) application );
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	priv = ofa_application_get_instance_private( self );
 
 	ret = TRUE;
 
@@ -607,46 +610,54 @@ manage_options( ofaApplication *application )
 	 * if yes, then stops here
 	 */
 	if( st_version_opt ){
-		on_version( application );
+		on_version( self );
 		ret = FALSE;
 
-	/* for opening a dossier, minimal data is dossier name
+	/* for opening a dossier, minimal data are user account and password,
+	 * and dossier name;
 	 * begin/end dates must be valid if specified */
-	} else if( st_dossier_name_opt ){
-		if( st_dossier_begin_opt ){
-			my_date_set_from_str( &date, st_dossier_begin_opt, MY_DATE_YYMD );
-			if( !my_date_is_valid( &date )){
-				g_warning( "%s: invalid date: %s", thisfn, st_dossier_begin_opt );
-				ret = FALSE;
+	} else if( my_strlen( st_user_account_opt ) || my_strlen( st_user_password_opt ) || my_strlen( st_dossier_name_opt )){
+		if( !my_strlen( st_user_account_opt ) || !my_strlen( st_user_password_opt ) || !my_strlen( st_dossier_name_opt )){
+			g_warning( _( "Minimal datas for opening a dossier from the command-line are user account and password, and dossier name" ));
+			if( !my_strlen( st_user_account_opt )){
+				g_warning( _( "User account is not set" ));
 			}
-		}
-		if( st_dossier_end_opt ){
-			my_date_set_from_str( &date, st_dossier_end_opt, MY_DATE_YYMD );
-			if( !my_date_is_valid( &date )){
-				g_warning( "%s: invalid date: %s", thisfn, st_dossier_end_opt );
-				ret = FALSE;
+			if( !my_strlen( st_user_password_opt )){
+				g_warning( _( "User password is not set" ));
+			}
+			if( !my_strlen( st_dossier_name_opt )){
+				g_warning( _( "Dossier name is not set" ));
+			}
+			priv->code = OFA_EXIT_CODE_ARGS;
+			ret = FALSE;
+		} else {
+			if( st_dossier_begin_opt ){
+				my_date_set_from_str( &date, st_dossier_begin_opt, MY_DATE_YYMD );
+				if( !my_date_is_valid( &date )){
+					g_warning( _( "Beginning date '%s' is invalid" ), st_dossier_begin_opt );
+					priv->code = OFA_EXIT_CODE_ARGS;
+					ret = FALSE;
+				}
+			}
+			if( st_dossier_end_opt ){
+				my_date_set_from_str( &date, st_dossier_end_opt, MY_DATE_YYMD );
+				if( !my_date_is_valid( &date )){
+					g_warning( _( "Ending date '%s' is invalid" ), st_dossier_end_opt );
+					priv->code = OFA_EXIT_CODE_ARGS;
+					ret = FALSE;
+				}
 			}
 		}
 	} else {
-		/* if dossier name is not specified */
+		/* neither user account, password not dossier name are specified */
 		if( st_dossier_begin_opt ){
-			g_warning( "%s: invalid begin date '%s' while dossier name is not specified",
-					thisfn, st_dossier_begin_opt );
+			g_warning( _( "Beginning date '%s' found while dossier name is not specified" ), st_dossier_begin_opt );
+			priv->code = OFA_EXIT_CODE_ARGS;
 			ret = FALSE;
 		}
 		if( st_dossier_end_opt ){
-			g_warning( "%s: invalid end date '%s' while dossier name is not specified",
-					thisfn, st_dossier_end_opt );
-			ret = FALSE;
-		}
-		if( st_dossier_user_opt ){
-			g_warning( "%s: invalid account '%s' while dossier name is not specified",
-					thisfn, st_dossier_user_opt );
-			ret = FALSE;
-		}
-		if( st_dossier_passwd_opt ){
-			g_warning( "%s: invalid password '%s' while dossier name is not specified",
-					thisfn, st_dossier_begin_opt );
+			g_warning( _( "Ending date '%s' found while dossier name is not specified" ), st_dossier_end_opt );
+			priv->code = OFA_EXIT_CODE_ARGS;
 			ret = FALSE;
 		}
 	}
@@ -686,7 +697,6 @@ application_startup( GApplication *application )
 	GtkBuilder *builder;
 	GMenuModel *menu;
 	ofaDossierCollection *collection;
-	gchar *dir;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
@@ -701,12 +711,7 @@ application_startup( GApplication *application )
 	}
 
 	/* instanciates and initializes the #ofaHub object of the application */
-	priv->hub = ofa_hub_new( OFA_IGETTER( application ));
-
-	/* setup runtime dir */
-	dir = g_path_get_dirname( priv->argv[0] );
-	ofa_hub_set_runtime_dir( priv->hub, dir );
-	g_free( dir );
+	priv->hub = ofa_hub_new( application, priv->argv[0] );
 
 	ofa_misc_audit_item_signal_connect( OFA_IGETTER( application ));
 	ofa_misc_collector_item_signal_connect( OFA_IGETTER( application ));
@@ -826,11 +831,6 @@ application_activate( GApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_activate";
 	ofaApplicationPrivate *priv;
-	ofaDossierCollection *collection;
-	ofaIDBDossierMeta *meta;
-	ofaIDBExerciceMeta *period;
-	GDate dbegin, dend;
-	gchar *str;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
@@ -847,6 +847,12 @@ application_activate( GApplication *application )
 	g_debug( "%s: main window instanciated at %p", thisfn, priv->main_window );
 	gtk_window_present( GTK_WINDOW( priv->main_window ));
 
+#if 0
+	ofaDossierCollection *collection;
+	ofaIDBDossierMeta *meta;
+	ofaIDBExerciceMeta *period;
+	GDate dbegin, dend;
+	gchar *str;
 	/* if a dossier is to be opened due to options specified in the
 	 * command-line */
 	if( st_dossier_name_opt ){
@@ -885,6 +891,7 @@ application_activate( GApplication *application )
 			}
 		}
 	}
+#endif
 }
 
 /*
