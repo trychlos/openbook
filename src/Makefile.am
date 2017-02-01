@@ -26,6 +26,7 @@ SUBDIRS = \
 	my-1												\
 	api													\
 	core												\
+	ebp-recovery										\
 	importers											\
 	mysql												\
 	postgre												\

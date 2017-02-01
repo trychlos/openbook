@@ -77,6 +77,7 @@ src/ui/ofa-plugin-manager.ui
 src/ui/ofa-rate-properties.ui
 src/ui/ofa-reconcil-args.ui
 src/ui/ofa-reconcil-page.ui
+src/ui/ofa-recovery-assistant.ui
 src/ui/ofa-restore-assistant.ui
 src/ui/ofa-settlement-page.ui
 src/ui/ofa-target-chooser-bin.ui

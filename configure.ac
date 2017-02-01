@@ -134,6 +134,7 @@ AC_CONFIG_FILES([
 	src/api/Makefile
 	src/cmdline/Makefile
 	src/core/Makefile
+	src/ebp-recovery/Makefile
 	src/importers/Makefile
 	src/my-1/Makefile
 	src/my-1/my/Makefile
@@ -161,6 +162,7 @@ $as_echo "
 	  JSON                          ${JSON_GLIB_msg_version}
 	  libarchive                    ${LIBARCHIVE_msg_version}
 	Built plugins:"
+	$as_echo "	  EBP-Recovery                  yes"
 if test "${have_POPPLER}" = "yes"; then
 	$as_echo "	  Stock importers               ${have_IMPORTERS} (with Poppler ${POPPLER_msg_version})"
 else

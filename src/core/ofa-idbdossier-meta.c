@@ -486,7 +486,8 @@ ofa_idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, ofaIDBDossierEdito
  * ofa_idbdossier_meta_new_connect:
  * @dossier_meta: this #ofaIDBDossierMeta instance.
  * @exercice_meta: [allow-none]: the #ofaIDBEXerciceMeta object;
- *  if %NULL, the connection will be established at server level.
+ *  if %NULL, the connection will be established at server level,
+ *  and no database will be set for use.
  *
  * Returns: a newly defined #ofaIDBConnect object.
  */

@@ -72,9 +72,9 @@ ofaDossierMetaBin *ofa_dossier_meta_bin_new             ( ofaHub *hub,
 																const gchar *settings_prefix,
 																guint rule );
 
-ofaIDBProvider    *ofa_dossier_meta_bin_get_provider    ( ofaDossierMetaBin *bin );
+ofaIDBDossierMeta *ofa_dossier_meta_bin_apply           ( ofaDossierMetaBin *bin );
 
-ofaIDBDossierMeta *ofa_dossier_meta_bin_get_dossier_meta( ofaDossierMetaBin *bin );
+ofaIDBProvider    *ofa_dossier_meta_bin_get_provider    ( ofaDossierMetaBin *bin );
 
 G_END_DECLS
 

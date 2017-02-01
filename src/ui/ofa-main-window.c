@@ -277,6 +277,7 @@ static void                  hub_on_dossier_changed( ofaHub *hub, ofaMainWindow 
 static void                  hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window );
 static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void                  menubar_setup( ofaMainWindow *window, myIActionMap *map );
+static void                  menubar_update_items( ofaMainWindow *self );
 static void                  set_window_title( ofaMainWindow *window, gboolean with_dossier );
 static void                  warning_exercice_unset( const ofaMainWindow *window );
 static void                  pane_left_add_treeview( ofaMainWindow *window );
@@ -284,14 +285,6 @@ static void                  pane_left_on_item_activated( GtkTreeView *view, Gtk
 static void                  pane_right_add_empty_notebook( ofaMainWindow *window, ofaHub *hub );
 static void                  background_image_update( ofaMainWindow *self, ofaHub *hub );
 static void                  background_image_set_uri( ofaMainWindow *self, const gchar *uri );
-static void                  do_update_menubar_items( ofaMainWindow *self );
-static void                  enable_action_guided_input( ofaMainWindow *window, gboolean enable );
-static void                  enable_action_settlement( ofaMainWindow *window, gboolean enable );
-static void                  enable_action_reconciliation( ofaMainWindow *window, gboolean enable );
-static void                  enable_action_close_ledger( ofaMainWindow *window, gboolean enable );
-static void                  enable_action_close_period( ofaMainWindow *window, gboolean enable );
-static void                  enable_action_close_exercice( ofaMainWindow *window, gboolean enable );
-static void                  enable_action_import( ofaMainWindow *window, gboolean enable );
 static void                  do_backup( ofaMainWindow *self );
 static void                  do_properties( const ofaMainWindow *self );
 static GtkNotebook          *notebook_get_book( ofaMainWindow *window );
@@ -698,7 +691,7 @@ hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *self )
 	g_debug( "%s: hub=%p, self=%p", thisfn, ( void * ) hub, ( void * ) self );
 
 	set_window_title( self, TRUE );
-	do_update_menubar_items( self );
+	menubar_update_items( self );
 	background_image_update( self, hub );
 }
 
@@ -890,6 +883,31 @@ menubar_setup( ofaMainWindow *window, myIActionMap *map )
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( window ));
+}
+
+/*
+ * Enable menu items depending of the writability status of the current
+ * dossier
+ */
+static void
+menubar_update_items( ofaMainWindow *self )
+{
+	ofaMainWindowPrivate *priv;
+	ofaHub *hub;
+	gboolean is_writable;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+	is_writable = ofa_hub_is_writable_dossier( hub );
+
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_guided_input,   "guided",     is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_settlement,     "settlement", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_reconciliation, "concil",     is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_ledger,   "ledclosing", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_period,   "perclosing", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_exercice, "execlosing", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_import,         "import",     is_writable );
 }
 
 /*
@@ -1144,94 +1162,6 @@ background_image_set_uri( ofaMainWindow *self, const gchar *uri )
 
 	book = notebook_get_book( self );
 	gtk_widget_queue_draw( GTK_WIDGET( book ));
-}
-
-static void
-do_update_menubar_items( ofaMainWindow *self )
-{
-	ofaHub *hub;
-	gboolean is_writable;
-
-	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-	is_writable = ofa_hub_is_writable_dossier( hub );
-
-	enable_action_guided_input( self, is_writable );
-	enable_action_settlement( self, is_writable );
-	enable_action_reconciliation( self, is_writable );
-	enable_action_close_ledger( self, is_writable );
-	enable_action_close_period( self, is_writable );
-	enable_action_close_exercice( self, is_writable );
-	enable_action_import( self, is_writable );
-}
-
-static void
-enable_action_guided_input( ofaMainWindow *window, gboolean enable )
-{
-	ofaMainWindowPrivate *priv;
-
-	priv = ofa_main_window_get_instance_private( window );
-
-	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_guided_input, "guided", enable );
-}
-
-static void
-enable_action_settlement( ofaMainWindow *window, gboolean enable )
-{
-	ofaMainWindowPrivate *priv;
-
-	priv = ofa_main_window_get_instance_private( window );
-
-	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_settlement, "settlement", enable );
-}
-
-static void
-enable_action_reconciliation( ofaMainWindow *window, gboolean enable )
-{
-	ofaMainWindowPrivate *priv;
-
-	priv = ofa_main_window_get_instance_private( window );
-
-	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_reconciliation, "concil", enable );
-}
-
-static void
-enable_action_close_ledger( ofaMainWindow *window, gboolean enable )
-{
-	ofaMainWindowPrivate *priv;
-
-	priv = ofa_main_window_get_instance_private( window );
-
-	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_close_ledger, "ledclosing", enable );
-}
-
-static void
-enable_action_close_period( ofaMainWindow *window, gboolean enable )
-{
-	ofaMainWindowPrivate *priv;
-
-	priv = ofa_main_window_get_instance_private( window );
-
-	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_close_period, "perclosing", enable );
-}
-
-static void
-enable_action_close_exercice( ofaMainWindow *window, gboolean enable )
-{
-	ofaMainWindowPrivate *priv;
-
-	priv = ofa_main_window_get_instance_private( window );
-
-	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_close_exercice, "execlosing", enable );
-}
-
-static void
-enable_action_import( ofaMainWindow *window, gboolean enable )
-{
-	ofaMainWindowPrivate *priv;
-
-	priv = ofa_main_window_get_instance_private( window );
-
-	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_import, "import", enable );
 }
 
 /**

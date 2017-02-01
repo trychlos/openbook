@@ -64,10 +64,6 @@ typedef struct {
 	 */
 	ofaIDBProvider         *provider;
 	ofaIDBDossierMeta      *dossier_meta;
-
-	/* result
-	 */
-	ofaIDBExerciceMeta     *exercice_meta;		/* the newly created ofaIDBExerciceMeta */
 }
 	ofaExerciceEditBinPrivate;
 
@@ -156,7 +152,6 @@ ofa_exercice_edit_bin_init( ofaExerciceEditBin *self )
 	priv->group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	priv->group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	priv->dossier_meta = NULL;
-	priv->exercice_meta = NULL;
 }
 
 static void

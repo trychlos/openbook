@@ -15336,7 +15336,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-ac_config_files="$ac_config_files Makefile data/Makefile data/desktop/Makefile data/icons/Makefile data/init_utf8_comma_pipe_fr/Makefile docs/Makefile m4/Makefile maintainer/Makefile misc/Makefile po/Makefile.in src/Makefile src/api/Makefile src/cmdline/Makefile src/core/Makefile src/importers/Makefile src/my-1/Makefile src/my-1/my/Makefile src/my-1/src/Makefile src/mysql/Makefile src/postgre/Makefile src/recurrent/Makefile src/tva/Makefile src/ui/Makefile"
+ac_config_files="$ac_config_files Makefile data/Makefile data/desktop/Makefile data/icons/Makefile data/init_utf8_comma_pipe_fr/Makefile docs/Makefile m4/Makefile maintainer/Makefile misc/Makefile po/Makefile.in src/Makefile src/api/Makefile src/cmdline/Makefile src/core/Makefile src/ebp-recovery/Makefile src/importers/Makefile src/my-1/Makefile src/my-1/my/Makefile src/my-1/src/Makefile src/mysql/Makefile src/postgre/Makefile src/recurrent/Makefile src/tva/Makefile src/ui/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -16423,6 +16423,7 @@ do
     "src/api/Makefile") CONFIG_FILES="$CONFIG_FILES src/api/Makefile" ;;
     "src/cmdline/Makefile") CONFIG_FILES="$CONFIG_FILES src/cmdline/Makefile" ;;
     "src/core/Makefile") CONFIG_FILES="$CONFIG_FILES src/core/Makefile" ;;
+    "src/ebp-recovery/Makefile") CONFIG_FILES="$CONFIG_FILES src/ebp-recovery/Makefile" ;;
     "src/importers/Makefile") CONFIG_FILES="$CONFIG_FILES src/importers/Makefile" ;;
     "src/my-1/Makefile") CONFIG_FILES="$CONFIG_FILES src/my-1/Makefile" ;;
     "src/my-1/my/Makefile") CONFIG_FILES="$CONFIG_FILES src/my-1/my/Makefile" ;;
@@ -17740,6 +17741,7 @@ $as_echo "
 	  JSON                          ${JSON_GLIB_msg_version}
 	  libarchive                    ${LIBARCHIVE_msg_version}
 	Built plugins:"
+	$as_echo "	  EBP-Recovery                  yes"
 if test "${have_POPPLER}" = "yes"; then
 	$as_echo "	  Stock importers               ${have_IMPORTERS} (with Poppler ${POPPLER_msg_version})"
 else

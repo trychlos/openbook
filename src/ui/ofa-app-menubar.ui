@@ -26,6 +26,11 @@
           <attribute name="action">app.restore</attribute>
           <attribute name="accel">&lt;Control&gt;r</attribute>
         </item>
+        <item>
+          <attribute name="label" translatable="yes">Re_cover...</attribute>
+          <attribute name="action">app.recover</attribute>
+          <attribute name="accel">&lt;Control&gt;c</attribute>
+        </item>
       </section>
       <item>
         <link name='section' id='plugins_app_dossier'></link>

@@ -652,7 +652,7 @@ hub_setup_settings( ofaHub *self )
  * Returns: the extenders collection.
  *
  * The returned reference is owned by the @hub instance, and should not
- * be unreffed by the caller.
+ * be released by the caller.
  */
 ofaExtenderCollection *
 ofa_hub_get_extender_collection( ofaHub *hub )

@@ -435,6 +435,7 @@ api_include_HEADERS = \
 	ofa-ipage-manager-def.h								\
 	ofa-iprintable.h									\
 	ofa-iproperties.h									\
+	ofa-irecover.h										\
 	ofa-irenderable.h									\
 	ofa-isetter.h										\
 	ofa-isignal-hub.h									\

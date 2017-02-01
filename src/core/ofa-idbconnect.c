@@ -1284,11 +1284,13 @@ ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
 }
 
 /**
- * ofa_idbconnect_period_new:
+ * ofa_idbconnect_new_period:
  * @connect: an #ofaIDBConnect object which handles a superuser
  *  connection on the DBMS at server-level. The connection may have
- *  been opened with editor informations, and period member is not
- *  expected to be valid.
+ *  been opened with editor informations, and period member is ignored.
+ * @period: the #ofaIDBExerciceMeta to be created;
+ *  if the creation is successful, the @connect will take its own
+ *  reference on the @period.
  * @adm_account: the Openbook administrative user account.
  * @adm_password: the Openbook administrative user password.
  * @msgerr: [out][allow-none]: a placeholder for an error message.
@@ -1300,41 +1302,41 @@ ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
  * Returns: %TRUE if successful.
  */
 gboolean
-ofa_idbconnect_period_new( const ofaIDBConnect *connect, const gchar *adm_account, const gchar *adm_password, gchar **msgerr )
+ofa_idbconnect_new_period( ofaIDBConnect *connect, ofaIDBExerciceMeta *period, const gchar *adm_account, const gchar *adm_password, gchar **msgerr )
 {
-	static const gchar *thisfn = "ofa_idbconnect_period_new";
+	static const gchar *thisfn = "ofa_idbconnect_new_period";
 	sIDBConnect *sdata;
 	gboolean ok;
 	GString *query;
-	ofaIDBExerciceMeta *period;
 	ofaIDBConnect *db_connection;
 
-	g_debug( "%s: connect=%p, adm_account=%s, adm_password=%s, msgerr=%p",
-			thisfn, ( void * ) connect, adm_account, adm_password ? "******":adm_password, ( void * ) msgerr );
+	g_debug( "%s: connect=%p, period=%p, adm_account=%s, adm_password=%s, msgerr=%p",
+			thisfn, ( void * ) connect, ( void * ) period,
+			adm_account, adm_password ? "******":adm_password, ( void * ) msgerr );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 
 	ok = FALSE;
 	sdata = get_instance_data( connect );
 
-	/* create the minimal database and grant the user */
-	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->period_new ){
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->period_new( connect, msgerr );
+	/* create an empty database */
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->new_period ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->new_period( connect, period, msgerr );
 
 	} else {
-		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'period_new()' method",
+		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'new_period()' method",
 				thisfn, G_OBJECT_TYPE_NAME( connect ));
 		return( FALSE );
 	}
 
 	db_connection = NULL;
-	period = NULL;
 	query = g_string_new( "" );
 
 	/* define the dossier administrative account
 	 * requires another superuser connection, on the exercice at this time */
 	if( ok ){
-		period = ofa_idbdossier_meta_get_current_period( sdata->dossier_meta );
+		ofa_idbconnect_set_exercice_meta( connect, period );
 		db_connection = ofa_idbdossier_meta_new_connect( sdata->dossier_meta, period );
 		ok = ofa_idbconnect_open_with_account( db_connection, sdata->account, sdata->password );
 	}

@@ -59,6 +59,7 @@
 #include "api/ofa-idbdossier-editor-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbprovider-def.h"
+#include "api/ofa-idbsuperuser-def.h"
 
 G_BEGIN_DECLS
 
@@ -101,17 +102,17 @@ struct _ofaIDBDossierEditorInterface {
 
 	/*** instance-wide ***/
 	/**
-	 * get_valid_connect:
+	 * get_su:
 	 * @instance: the #ofaIDBDossierEditor instance.
-	 * @dossier_meta: the #ofaIDBDossierMeta to associate with the @instance.
 	 *
-	 * Returns: the #ofaIDBConnect which was used to validate the @instance,
-	 * or %NULL.
+	 * Returns: the managed #ofaIDBSuperuser.
+	 *
+	 * The returned reference is owned by the @instance, and should not
+	 * be released by the caller.
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBConnect *        ( *get_valid_connect )    ( const ofaIDBDossierEditor *instance,
-															ofaIDBDossierMeta *dossier_meta );
+	ofaIDBSuperuser *      ( *get_su )               ( const ofaIDBDossierEditor *instance );
 };
 
 /*
@@ -140,8 +141,7 @@ GtkSizeGroup         *ofa_idbdossier_editor_get_size_group            ( const of
 gboolean              ofa_idbdossier_editor_is_valid                  ( const ofaIDBDossierEditor *editor,
 																			gchar **message );
 
-ofaIDBConnect        *ofa_idbdossier_editor_get_valid_connect         ( const ofaIDBDossierEditor *editor,
-																			ofaIDBDossierMeta *dossier_meta );
+ofaIDBSuperuser      *ofa_idbdossier_editor_get_su                    ( const ofaIDBDossierEditor *editor );
 
 G_END_DECLS
 

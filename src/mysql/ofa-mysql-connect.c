@@ -75,7 +75,7 @@ static gchar     *idbconnect_get_last_error( const ofaIDBConnect *instance );
 static gboolean   idbconnect_backup_db( const ofaIDBConnect *instance, const gchar *uri, ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data );
 static gboolean   idbconnect_restore_db( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *uri, guint format, ofaMsgCb msg_cb, ofaDataCb data_cb, void *user_data );
 static gboolean   idbconnect_archive_and_new( const ofaIDBConnect *instance, ofaIDBSuperuser *su, const GDate *begin_next, const GDate *end_next );
-static gboolean   idbconnect_period_new( const ofaIDBConnect *instance, gchar **msgerr );
+static gboolean   idbconnect_new_period( ofaIDBConnect *instance, ofaIDBExerciceMeta *period, gchar **msgerr );
 static gboolean   idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *period, const gchar *account, const gchar *password, gchar **msgerr );
 static gboolean   idbconnect_transaction_start( const ofaIDBConnect *instance );
 static gboolean   idbconnect_transaction_cancel( const ofaIDBConnect *instance );
@@ -630,7 +630,7 @@ idbconnect_iface_init( ofaIDBConnectInterface *iface )
 	iface->backup_db = idbconnect_backup_db;
 	iface->restore_db = idbconnect_restore_db;
 	iface->archive_and_new = idbconnect_archive_and_new;
-	iface->period_new = idbconnect_period_new;
+	iface->new_period = idbconnect_new_period;
 	iface->grant_user = idbconnect_grant_user;
 	iface->transaction_start = idbconnect_transaction_start;
 	iface->transaction_cancel = idbconnect_transaction_cancel;
@@ -835,26 +835,21 @@ idbconnect_archive_and_new( const ofaIDBConnect *instance, ofaIDBSuperuser *su, 
  * @instance: a superuser connection on the DBMS server.
  */
 static gboolean
-idbconnect_period_new( const ofaIDBConnect *instance, gchar **msgerr )
+idbconnect_new_period( ofaIDBConnect *instance, ofaIDBExerciceMeta *period, gchar **msgerr )
 {
-	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_period_new";
+	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_new_period";
 	ofaMysqlConnectPrivate *priv;
-	ofaIDBDossierMeta *dossier_meta;
 	GString *query;
-	ofaIDBExerciceMeta *period;
 	const gchar *database;
 	gboolean ok;
 	gchar *msg;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_MYSQL_EXERCICE_META( period ), FALSE );
 
 	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	dossier_meta = ofa_idbconnect_get_dossier_meta( instance );
-	period = ofa_idbdossier_meta_get_current_period( dossier_meta );
-	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 
 	database = ofa_mysql_exercice_meta_get_database( OFA_MYSQL_EXERCICE_META( period ));
 	query = g_string_new( "" );

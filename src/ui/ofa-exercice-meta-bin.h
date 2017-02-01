@@ -81,14 +81,6 @@ void                ofa_exercice_meta_bin_set_dossier_meta ( ofaExerciceMetaBin 
 
 ofaIDBExerciceMeta *ofa_exercice_meta_bin_apply            ( ofaExerciceMetaBin *bin );
 
-#if 0
-const GDate        *ofa_exercice_meta_bin_get_begin_date   ( ofaExerciceMetaBin *bin );
-
-const GDate        *ofa_exercice_meta_bin_get_end_date     ( ofaExerciceMetaBin *bin );
-
-gboolean            ofa_exercice_meta_bin_get_is_current   ( ofaExerciceMetaBin *bin );
-#endif
-
 G_END_DECLS
 
 #endif /* __OFA_EXERCICE_META_BIN_H__ */

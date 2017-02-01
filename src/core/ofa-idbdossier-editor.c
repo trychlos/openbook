@@ -299,36 +299,28 @@ ofa_idbdossier_editor_is_valid( const ofaIDBDossierEditor *editor, gchar **messa
 }
 
 /**
- * ofa_idbdossier_editor_get_valid_connect:
+ * ofa_idbdossier_editor_get_su:
  * @editor: this #ofaIDBDossierEditor instance.
- * @dossier_meta: the #ofaIDBDossierMeta to associate with the @instance.
  *
- * Returns: the #ofaIDBConnect which was used to validate the @editor.
- *
- * This #ofaIDBConnect is expected to handles a superuser connection to
- * the DBMS at server level, and thus dossier_meta, account and password
- * are set.
- *
- * It is not expected that it knows anything about an #ofaIDBExerciceMeta.
+ * Returns: the managed #ofaIDBSuperuser (if it exists).
  *
  * If not %NULL, the returned reference is owned by @editor, and should
  * not be released by the caller.
  */
-ofaIDBConnect *
-ofa_idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *editor, ofaIDBDossierMeta *dossier_meta )
+ofaIDBSuperuser *
+ofa_idbdossier_editor_get_su( const ofaIDBDossierEditor *editor )
 {
-	static const gchar *thisfn = "ofa_idbdossier_editor_get_valid_connect";
+	static const gchar *thisfn = "ofa_idbdossier_editor_get_su";
 
 	g_debug( "%s: editor=%p", thisfn, ( void * ) editor );
 
 	g_return_val_if_fail( editor && OFA_IS_IDBDOSSIER_EDITOR( editor ), NULL );
-	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), NULL );
 
-	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->get_valid_connect ){
-		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->get_valid_connect( editor, dossier_meta ));
+	if( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->get_su ){
+		return( OFA_IDBDOSSIER_EDITOR_GET_INTERFACE( editor )->get_su( editor ));
 	}
 
-	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'get_valid_connect()' method",
+	g_info( "%s: ofaIDBDossierEditor's %s implementation does not provide 'get_su()' method",
 			thisfn, G_OBJECT_TYPE_NAME( editor ));
 	return( NULL );
 }

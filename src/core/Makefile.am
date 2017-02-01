@@ -128,6 +128,7 @@ libofa_core_la_SOURCES = \
 	ofa-ipage-manager.c									\
 	ofa-iprintable.c									\
 	ofa-iproperties.c									\
+	ofa-irecover.c										\
 	ofa-irenderable.c									\
 	ofa-isetter.c										\
 	ofa-isignal-hub.c									\

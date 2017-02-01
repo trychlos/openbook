@@ -69,10 +69,6 @@ typedef struct {
 	/* runtime
 	 */
 	ofaIDBProvider         *provider;
-
-	/* result
-	 */
-	ofaIDBDossierMeta      *dossier_meta;		/* the newly created ofaIDBDossierMeta */
 }
 	ofaDossierEditBinPrivate;
 
@@ -161,7 +157,6 @@ ofa_dossier_edit_bin_init( ofaDossierEditBin *self )
 	priv->group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	priv->group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	priv->provider = NULL;
-	priv->dossier_meta = NULL;
 }
 
 static void
@@ -333,6 +328,7 @@ ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 {
 	static const gchar *thisfn = "ofa_dossier_edit_bin_apply";
 	ofaDossierEditBinPrivate *priv;
+	ofaIDBDossierMeta *dossier_meta;
 
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
@@ -342,11 +338,10 @@ ofa_dossier_edit_bin_apply( ofaDossierEditBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	my_ibin_apply( MY_IBIN( priv->dossier_meta_bin ));
-	priv->dossier_meta = ofa_dossier_meta_bin_get_dossier_meta( priv->dossier_meta_bin );
-	ofa_idbdossier_meta_set_from_editor( priv->dossier_meta, priv->dossier_editor_bin );
+	dossier_meta = ofa_dossier_meta_bin_apply( priv->dossier_meta_bin );
+	ofa_idbdossier_meta_set_from_editor( dossier_meta, priv->dossier_editor_bin );
 
-	return( priv->dossier_meta );
+	return( dossier_meta );
 }
 
 /**
@@ -370,13 +365,14 @@ ofa_dossier_edit_bin_get_provider( ofaDossierEditBin *bin )
 }
 
 /**
- * ofa_dossier_edit_bin_get_dossier_editor:
+ * ofa_dossier_edit_bin_get_su:
  * @bin: this #ofaDossierEditBin instance.
  *
- * Returns: the #ofaIDBDossierEditor.
+ * Returns: the #ofaIDBSuperuser instance (which happens to be managed
+ * by the dossier editor).
  */
-ofaIDBDossierEditor *
-ofa_dossier_edit_bin_get_dossier_editor( ofaDossierEditBin *bin )
+ofaIDBSuperuser *
+ofa_dossier_edit_bin_get_su( ofaDossierEditBin *bin )
 {
 	ofaDossierEditBinPrivate *priv;
 
@@ -386,7 +382,7 @@ ofa_dossier_edit_bin_get_dossier_editor( ofaDossierEditBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( priv->dossier_editor_bin );
+	return( ofa_idbdossier_editor_get_su( priv->dossier_editor_bin ));
 }
 
 /*

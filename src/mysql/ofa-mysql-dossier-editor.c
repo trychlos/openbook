@@ -37,6 +37,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-editor.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-idbsuperuser.h"
 
 #include "mysql/ofa-mysql-connect.h"
 #include "mysql/ofa-mysql-dossier-bin.h"
@@ -69,18 +70,18 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-dossier-editor.ui";
 
-static void           setup_bin( ofaMysqlDossierEditor *self );
-static void           on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlDossierEditor *self );
-static void           on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self );
-static void           changed_composite( ofaMysqlDossierEditor *self );
-static gboolean       check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr );
-static void           ibin_iface_init( myIBinInterface *iface );
-static guint          ibin_get_interface_version( void );
-static GtkSizeGroup  *ibin_get_size_group( const myIBin *instance, guint column );
-static gboolean       ibin_is_valid( const myIBin *instance, gchar **msgerr );
-static void           idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface );
-static guint          idbdossier_editor_get_interface_version( void );
-static ofaIDBConnect *idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta );
+static void             setup_bin( ofaMysqlDossierEditor *self );
+static void             on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlDossierEditor *self );
+static void             on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self );
+static void             changed_composite( ofaMysqlDossierEditor *self );
+static gboolean         check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr );
+static void             ibin_iface_init( myIBinInterface *iface );
+static guint            ibin_get_interface_version( void );
+static GtkSizeGroup    *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean         ibin_is_valid( const myIBin *instance, gchar **msgerr );
+static void             idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface );
+static guint            idbdossier_editor_get_interface_version( void );
+static ofaIDBSuperuser *idbdossier_editor_get_su( const ofaIDBDossierEditor *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierEditor, ofa_mysql_dossier_editor, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMysqlDossierEditor )
@@ -477,7 +478,7 @@ idbdossier_editor_iface_init( ofaIDBDossierEditorInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idbdossier_editor_get_interface_version;
-	iface->get_valid_connect = idbdossier_editor_get_valid_connect;
+	iface->get_su = idbdossier_editor_get_su;
 }
 
 static guint
@@ -490,8 +491,8 @@ idbdossier_editor_get_interface_version( void )
  * There is no valid connection if the superuser widget was not allowed
  * at initialization time.
  */
-static ofaIDBConnect *
-idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDBDossierMeta *dossier_meta )
+static ofaIDBSuperuser *
+idbdossier_editor_get_su( const ofaIDBDossierEditor *instance )
 {
 	ofaMysqlDossierEditorPrivate *priv;
 
@@ -502,14 +503,5 @@ idbdossier_editor_get_valid_connect( const ofaIDBDossierEditor *instance, ofaIDB
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	if( priv->root_bin ){
-		ofa_idbconnect_set_dossier_meta(
-				OFA_IDBCONNECT( priv->connect ), dossier_meta );
-
-		ofa_idbconnect_set_account(
-				OFA_IDBCONNECT( priv->connect ),
-				ofa_mysql_root_bin_get_account( priv->root_bin ), ofa_mysql_root_bin_get_password( priv->root_bin ));
-	}
-
-	return( priv->root_bin ? OFA_IDBCONNECT( priv->connect ) : NULL );
+	return( priv->root_bin ? OFA_IDBSUPERUSER( priv->root_bin ) : NULL );
 }

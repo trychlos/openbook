@@ -228,6 +228,9 @@ ofa_idbexercice_meta_get_dossier_meta( const ofaIDBExerciceMeta *exercice_meta )
  * @dossier_meta: the #ofaIDBDossierMeta dossier.
  *
  * Attach the @dossier_meta to the @exercice_meta.
+ *
+ * The interface takes its own reference on the @dossier_meta.
+ * This reference will be automatically released on @exercice_meta finalization.
  */
 void
 ofa_idbexercice_meta_set_dossier_meta( ofaIDBExerciceMeta *exercice_meta, ofaIDBDossierMeta *dossier_meta )
@@ -239,7 +242,7 @@ ofa_idbexercice_meta_set_dossier_meta( ofaIDBExerciceMeta *exercice_meta, ofaIDB
 
 	sdata = get_instance_data( exercice_meta );
 
-	sdata->dossier_meta = dossier_meta;
+	sdata->dossier_meta = g_object_ref( dossier_meta );
 }
 
 /**
@@ -930,6 +933,7 @@ on_instance_finalized( sIDBMeta *sdata, GObject *finalized_period )
 
 	g_debug( "%s: sdata=%p, finalized_period=%p", thisfn, ( void * ) sdata, ( void * ) finalized_period );
 
+	g_clear_object( &sdata->dossier_meta );
 	g_free( sdata->settings_key );
 	g_free( sdata->settings_id );
 	g_free( sdata->admin_account );

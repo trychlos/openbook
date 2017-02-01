@@ -40,6 +40,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 
@@ -535,12 +536,12 @@ do_create( ofaDossierNew *self )
 	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBExerciceMeta *exercice_meta;
 	ofaIDBConnect *connect;
-	ofaIDBDossierEditor *dossier_editor;
 	gchar *msgerr, *adm_account, *adm_password;
 	ofaDossierCollection *collection;
 	myISettings *settings;
 	ofaOpenPrefs *prefs;
-	const gchar *group;
+	const gchar *group, *account;
+	ofaIDBSuperuser *su;
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
@@ -582,12 +583,19 @@ do_create( ofaDossierNew *self )
 	/* create the new dossier
 	 * if superuser credentials were allowed at initialization */
 	if( priv->with_su ){
-		dossier_editor = ofa_dossier_edit_bin_get_dossier_editor( priv->dossier_bin );
-		connect = ofa_idbdossier_editor_get_valid_connect( dossier_editor, dossier_meta );
-		if( priv->with_admin ){
-			ofa_admin_credentials_bin_get_credentials( priv->admin_bin, &adm_account, &adm_password );
+		connect = ofa_idbdossier_meta_new_connect( dossier_meta, NULL );
+		su = ofa_dossier_edit_bin_get_su( priv->dossier_bin );
+
+		if( !ofa_idbconnect_open_with_superuser( connect, su )){
+			msgerr = g_strdup( _( "Unable to connect to the DBMS provider with provided credentials" ));
+			ret = FALSE;
+
+		} else {
+			if( priv->with_admin ){
+				ofa_admin_credentials_bin_get_credentials( priv->admin_bin, &adm_account, &adm_password );
+			}
+			ret = ofa_idbconnect_new_period( connect, exercice_meta, adm_account, adm_password, &msgerr );
 		}
-		ret = ofa_idbconnect_period_new( connect, adm_account, adm_password, &msgerr );
 
 		if( !ret ){
 			collection = ofa_hub_get_dossier_collection( priv->hub );
@@ -606,19 +614,17 @@ do_create( ofaDossierNew *self )
 			*( priv->dossier_meta ) = dossier_meta;
 		}
 	}
-/*
-		if( priv->admin_bin ){
-			account = ofa_admin_credentials_bin_get_remembered_account( priv->admin_bin );
-			ofa_idbexercice_meta_set_remembered_account( exercice_meta, account );
-		}
-		*/
+
+	if( priv->admin_bin ){
+		account = ofa_admin_credentials_bin_get_remembered_account( priv->admin_bin );
+		ofa_idbexercice_meta_set_remembered_account( exercice_meta, account );
+	}
 
 	/* open the newly created dossier if asked for */
 	if( ret ){
 		if( priv->with_actions ){
 			open = ofa_dossier_actions_bin_get_open( priv->actions_bin );
 			if( open ){
-				exercice_meta = ofa_idbdossier_meta_get_current_period( dossier_meta );
 				priv->apply_actions = ofa_dossier_actions_bin_get_apply( priv->actions_bin );
 				ret = ofa_dossier_open_run(
 							priv->getter, GTK_WINDOW( self ),

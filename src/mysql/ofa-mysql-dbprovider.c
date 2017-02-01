@@ -230,6 +230,7 @@ idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule )
 
 	switch( rule ){
 		case HUB_RULE_DOSSIER_NEW:
+		case HUB_RULE_DOSSIER_RECOVERY:
 		case HUB_RULE_DOSSIER_RESTORE:
 		case HUB_RULE_EXERCICE_NEW:
 		case HUB_RULE_EXERCICE_DELETE:

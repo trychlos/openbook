@@ -40,6 +40,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
+#include "api/ofa-irecover.h"
 #include "api/ofa-preferences.h"
 
 #include "ui/ofa-about.h"
@@ -53,6 +54,7 @@
 #include "ui/ofa-misc-audit-item.h"
 #include "ui/ofa-misc-collector-item.h"
 #include "ui/ofa-plugin-manager.h"
+#include "ui/ofa-recovery-assistant.h"
 #include "ui/ofa-restore-assistant.h"
 
 /* private instance data
@@ -80,6 +82,7 @@ typedef struct {
 	/* menu items
 	 */
 	GSimpleAction   *action_open;
+	GSimpleAction   *action_recover;
 }
 	ofaApplicationPrivate;
 
@@ -138,13 +141,14 @@ static gboolean              init_gtk_args( ofaApplication *application );
 static gboolean              manage_options( ofaApplication *application );
 static void                  application_startup( GApplication *application );
 static void                  appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
+static void                  menubar_update_items( ofaApplication *self );
 static void                  application_activate( GApplication *application );
 static void                  application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
 static void                  on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaApplication *application );
-static void                  enable_action_open( ofaApplication *application, gboolean enable );
 static void                  on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void                  on_recover( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -169,6 +173,7 @@ static const GActionEntry st_app_entries[] = {
 		{ "manage",        on_manage,        NULL, NULL, NULL },
 		{ "new",           on_new,           NULL, NULL, NULL },
 		{ "open",          on_open,          NULL, NULL, NULL },
+		{ "recover",       on_recover,       NULL, NULL, NULL },
 		{ "restore",       on_restore,       NULL, NULL, NULL },
 		{ "user_prefs",    on_user_prefs,    NULL, NULL, NULL },
 		{ "quit",          on_quit,          NULL, NULL, NULL },
@@ -735,6 +740,9 @@ application_startup( GApplication *application )
 	}
 	g_object_unref( builder );
 
+	/* update the menu items sensitivity */
+	menubar_update_items( appli );
+
 	g_signal_emit_by_name( application, "menu-available", application, "app" );
 
 	/* dossiers collection monitoring
@@ -766,6 +774,26 @@ appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *
 		 *  menu appears to be unreffed with its parent GMenuModel */
 		g_object_set_data( G_OBJECT( application ), placeholder, menu );
 	}
+}
+
+static void
+menubar_update_items( ofaApplication *self )
+{
+	ofaApplicationPrivate *priv;
+	ofaHub *hub;
+	ofaExtenderCollection *collection;
+	GList *recovers;
+	gboolean has_irecover;
+
+	priv = ofa_application_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+	collection = ofa_hub_get_extender_collection( hub );
+	recovers = ofa_extender_collection_get_for_type( collection, OFA_TYPE_IRECOVER );
+	has_irecover = ( g_list_length( recovers ) > 0 );
+	ofa_extender_collection_free_types( recovers );
+
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_recover, "recover", has_irecover );
 }
 
 /*
@@ -896,21 +924,17 @@ static void
 on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_on_dossier_collection_changed";
+	ofaApplicationPrivate *priv;
+	gboolean has_dossier;
 
 	g_debug( "%s: collection=%p, count=%u, application=%p",
 			thisfn, ( void * ) collection, count, ( void * ) application );
 
-	enable_action_open( application, count > 0 );
-}
-
-static void
-enable_action_open( ofaApplication *application, gboolean enable )
-{
-	ofaApplicationPrivate *priv;
-
 	priv = ofa_application_get_instance_private( application );
 
-	my_utils_action_enable( G_ACTION_MAP( application ), &priv->action_open, "open", enable );
+	has_dossier = ( count > 0 );
+
+	my_utils_action_enable( G_ACTION_MAP( application ), &priv->action_open, "open", has_dossier );
 }
 
 static void
@@ -970,6 +994,24 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 		ofa_main_window_dossier_apply_actions( priv->main_window );
 	}
+}
+
+static void
+on_recover( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_application_on_recover";
+	ofaApplicationPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
+
+	priv = ofa_application_get_instance_private( OFA_APPLICATION( user_data ));
+
+	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
+
+	ofa_recovery_assistant_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ) );
 }
 
 static void

@@ -45,6 +45,7 @@
     <file>ofa-rate-properties.ui</file>
     <file>ofa-reconcil-args.ui</file>
     <file>ofa-reconcil-page.ui</file>
+    <file>ofa-recovery-assistant.ui</file>
     <file>ofa-restore-assistant.ui</file>
     <file>ofa-settlement-page.ui</file>
     <file>ofa-target-chooser-bin.ui</file>

@@ -66,9 +66,10 @@ typedef struct {
 	sLabel;
 
 static sLabel st_label[] = {
-		{ HUB_RULE_DOSSIER_NEW,     N_( "O_pen the dossier right after having created it" )},
-		{ HUB_RULE_DOSSIER_RESTORE, N_( "O_pen the dossier right after the restoration" )},
-		{ HUB_RULE_EXERCICE_CLOSE,  N_( "O_pen the new exercice" )},
+		{ HUB_RULE_DOSSIER_NEW,      N_( "O_pen the dossier right after having created it" )},
+		{ HUB_RULE_DOSSIER_RECOVERY, N_( "O_pen the dossier right after the recovery" )},
+		{ HUB_RULE_DOSSIER_RESTORE,  N_( "O_pen the dossier right after the restoration" )},
+		{ HUB_RULE_EXERCICE_CLOSE,   N_( "O_pen the new exercice" )},
 		{ 0 }
 };
 

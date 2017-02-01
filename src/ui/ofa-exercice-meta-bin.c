@@ -63,10 +63,6 @@ typedef struct {
 	GDate               begin;
 	GDate               end;
 	gboolean            is_current;
-
-	/* on apply
-	 */
-	ofaIDBExerciceMeta *exercice_meta;
 }
 	ofaExerciceMetaBinPrivate;
 
@@ -452,72 +448,12 @@ ofa_exercice_meta_bin_apply( ofaExerciceMetaBin *bin )
 			ofa_idbexercice_meta_set_end_date( exercice_meta, &priv->end );
 			ofa_idbexercice_meta_set_current( exercice_meta, priv->is_current );
 			break;
+		default:
+			g_warning( "%s: unmanaged rule=%u", thisfn, priv->rule );
 	}
 
 	return( exercice_meta );
 }
-
-#if 0
-/**
- * ofa_exercice_meta_bin_get_begin_date:
- * @bin: this #ofaExerciceMetaBin instance.
- *
- * Returns: the beginning date.
- */
-const GDate *
-ofa_exercice_meta_bin_get_begin_date( ofaExerciceMetaBin *bin )
-{
-	ofaExerciceMetaBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), NULL );
-
-	priv = ofa_exercice_meta_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( &priv->begin );
-}
-
-/**
- * ofa_exercice_meta_bin_get_end_date:
- * @bin: this #ofaExerciceMetaBin instance.
- *
- * Returns: the ending date.
- */
-const GDate *
-ofa_exercice_meta_bin_get_end_date( ofaExerciceMetaBin *bin )
-{
-	ofaExerciceMetaBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), NULL );
-
-	priv = ofa_exercice_meta_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( &priv->end );
-}
-
-/**
- * ofa_exercice_meta_bin_get_is_current:
- * @bin: this #ofaExerciceMetaBin instance.
- *
- * Returns: %TRUE if the exercice is current.
- */
-gboolean
-ofa_exercice_meta_bin_get_is_current( ofaExerciceMetaBin *bin )
-{
-	ofaExerciceMetaBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_EXERCICE_META_BIN( bin ), FALSE );
-
-	priv = ofa_exercice_meta_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	return( priv->is_current );
-}
-#endif
 
 /*
  * myIBin interface management

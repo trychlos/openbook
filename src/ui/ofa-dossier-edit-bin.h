@@ -68,6 +68,7 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbprovider-def.h"
+#include "api/ofa-idbsuperuser-def.h"
 
 G_BEGIN_DECLS
 
@@ -90,18 +91,18 @@ typedef struct {
 }
 	ofaDossierEditBinClass;
 
-GType                ofa_dossier_edit_bin_get_type          ( void ) G_GNUC_CONST;
+GType              ofa_dossier_edit_bin_get_type    ( void ) G_GNUC_CONST;
 
-ofaDossierEditBin   *ofa_dossier_edit_bin_new               ( ofaHub *hub,
-																	const gchar *settings_prefix,
-																	guint rule,
-																	gboolean with_su );
+ofaDossierEditBin *ofa_dossier_edit_bin_new         ( ofaHub *hub,
+															const gchar *settings_prefix,
+															guint rule,
+															gboolean with_su );
 
-ofaIDBDossierMeta   *ofa_dossier_edit_bin_apply             ( ofaDossierEditBin *bin );
+ofaIDBDossierMeta *ofa_dossier_edit_bin_apply       ( ofaDossierEditBin *bin );
 
-ofaIDBProvider      *ofa_dossier_edit_bin_get_provider      ( ofaDossierEditBin *bin );
+ofaIDBProvider    *ofa_dossier_edit_bin_get_provider( ofaDossierEditBin *bin );
 
-ofaIDBDossierEditor *ofa_dossier_edit_bin_get_dossier_editor( ofaDossierEditBin *bin );
+ofaIDBSuperuser   *ofa_dossier_edit_bin_get_su      ( ofaDossierEditBin *bin );
 
 G_END_DECLS
 

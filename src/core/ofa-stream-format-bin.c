@@ -138,8 +138,6 @@ static void          headers_on_count_changed( GtkSpinButton *button, ofaStreamF
 static void          headers_set_sensitive( ofaStreamFormatBin *self );
 static void          setup_format( ofaStreamFormatBin *bin );
 static void          setup_updatable( ofaStreamFormatBin *self );
-static gboolean      is_validable( ofaStreamFormatBin *self, gchar **error_message );
-static gboolean      do_apply( ofaStreamFormatBin *self );
 static void          ibin_iface_init( myIBinInterface *iface );
 static guint         ibin_get_interface_version( void );
 static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
@@ -1145,204 +1143,6 @@ setup_updatable( ofaStreamFormatBin *self )
 	headers_set_sensitive( self );
 }
 
-static gboolean
-is_validable( ofaStreamFormatBin *self, gchar **error_message )
-{
-	ofaStreamFormatBinPrivate *priv;
-	const gchar *cstr;
-	ofeSFMode mode;
-	gchar *charmap, *thousand_sep, *decimal_sep, *field_sep;
-	gint ivalue;
-	gboolean has;
-
-	priv = ofa_stream_format_bin_get_instance_private( self );
-
-	if( error_message ){
-		*error_message = NULL;
-	}
-
-	/* name */
-	cstr = gtk_entry_get_text( GTK_ENTRY( priv->name_entry ));
-	if( !my_strlen( cstr )){
-		if( error_message ){
-			*error_message = g_strdup( _( "Name is empty" ));
-		}
-		return( FALSE );
-	}
-
-	/* mode */
-	cstr = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->mode_combo ));
-	if( !my_strlen( cstr )){
-		if( error_message ){
-			*error_message = g_strdup( _( "No mode is selected" ));
-		}
-		return( FALSE );
-	}
-	mode = atoi( cstr );
-	if( mode != OFA_SFMODE_EXPORT && mode != OFA_SFMODE_IMPORT ){
-		if( error_message ){
-			*error_message = g_strdup_printf( _( "Mode '%s' is unknown or invalid" ), cstr );
-		}
-		return( FALSE );
-	}
-
-	/* charmap */
-	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_encoding ));
-	if( has ){
-		charmap = encoding_get_selected( self );
-		if( !my_strlen( charmap )){
-			g_free( charmap );
-			if( error_message ){
-				*error_message = g_strdup( _( "Characters encoding type is unknown or invalid" ));
-			}
-			return( FALSE );
-		}
-		g_free( charmap );
-	}
-
-	/* date format */
-	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_date ));
-	if( has ){
-		ivalue = my_date_combo_get_selected( priv->date_combo );
-		if( ivalue < MY_DATE_FIRST ){
-			if( error_message ){
-				*error_message = g_strdup( _( "Date format is unknown or invalid" ));
-			}
-			return( FALSE );
-		}
-	}
-
-	/* thousand separator */
-	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_thousand ));
-	if( has ){
-		thousand_sep = my_thousand_combo_get_selected( priv->thousand_combo );
-		if( !my_strlen( thousand_sep )){
-			g_free( thousand_sep );
-			if( error_message ){
-				*error_message = g_strdup( _( "Thousand separator is unknown or invalid" ));
-			}
-			return( FALSE );
-		}
-		g_free( thousand_sep );
-	}
-
-	/* decimal separator */
-	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_decimal ));
-	if( has ){
-		decimal_sep = my_decimal_combo_get_selected( priv->decimal_combo );
-		if( !my_strlen( decimal_sep )){
-			g_free( decimal_sep );
-			if( error_message ){
-				*error_message = g_strdup( _( "Decimal separator is unknown or invalid" ));
-			}
-			return( FALSE );
-		}
-		g_free( decimal_sep );
-	}
-
-	/* field separator */
-	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_field ));
-	if( has ){
-		field_sep = my_field_combo_get_selected( priv->field_combo );
-		if( !my_strlen( field_sep )){
-			g_free( field_sep );
-			if( error_message ){
-				*error_message = g_strdup( _( "Field separator is unknown or invalid" ));
-			}
-			return( FALSE );
-		}
-		g_free( field_sep );
-	}
-
-	/* string delimiter */
-	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_strdelim ));
-	if( has ){
-		cstr = gtk_entry_get_text( GTK_ENTRY( priv->strdelim_entry ));
-		if( !my_strlen( cstr )){
-			if( error_message ){
-				*error_message = g_strdup( _( "String delimiter is unknown or invalid" ));
-			}
-			return( FALSE );
-		}
-	}
-
-	return( TRUE );
-}
-
-static gboolean
-do_apply( ofaStreamFormatBin *self )
-{
-	static const gchar *thisfn = "ofa_stream_format_bin_do_apply";
-	ofaStreamFormatBinPrivate *priv;
-	gboolean has_charmap, has_date, has_thousand, has_decimal, has_field, has_str;
-	gchar *charmap, *thousand_sep, *decimal_sep, *field_sep, *strdelim;
-	gint datefmt, iheaders;
-	ofeSFMode mode;
-	const gchar *cstr;
-
-	priv = ofa_stream_format_bin_get_instance_private( self );
-
-	cstr = gtk_entry_get_text( GTK_ENTRY( priv->name_entry ));
-	g_return_val_if_fail( my_strlen( cstr ), FALSE );
-	ofa_stream_format_set_name( priv->format, cstr );
-
-	cstr = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->mode_combo ));
-	g_return_val_if_fail( my_strlen( cstr ), FALSE );
-	mode = atoi( cstr );
-	ofa_stream_format_set_mode( priv->format, mode );
-
-	has_charmap = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_encoding ));
-	charmap = has_charmap ? encoding_get_selected( self ) : NULL;
-
-	has_date = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_date ));
-	datefmt = has_date ? my_date_combo_get_selected( priv->date_combo ) : 0;
-
-	has_thousand = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_thousand ));
-	thousand_sep = has_thousand ? my_thousand_combo_get_selected( priv->thousand_combo ) : g_strdup( "" );
-
-	has_decimal = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_decimal ));
-	decimal_sep = has_decimal ? my_decimal_combo_get_selected( priv->decimal_combo ) : g_strdup( "" );
-
-	has_field = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_field ));
-	field_sep = has_field ? my_field_combo_get_selected( priv->field_combo ) : g_strdup( "" );
-
-	has_str = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_strdelim ));
-	cstr = has_str ? gtk_entry_get_text( GTK_ENTRY( priv->strdelim_entry )) : NULL;
-	strdelim = g_strdup( cstr ? cstr : "");
-
-	if( mode == OFA_SFMODE_EXPORT ){
-		iheaders = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->headers_btn ));
-	} else {
-		iheaders = gtk_spin_button_get_value( GTK_SPIN_BUTTON( priv->headers_count ));
-	}
-
-	g_debug( "%s: format=%p, has_charmap=%s, charmap=%s, has_date=%s, datefmt=%u, "
-			"has_thousand=%s, thousand_sep=%s, has_decimal=%s, decimal_sep=%s, "
-			"has_field=%s, field_sep=%s, has_str=%s, strdelim=%s, iheaders=%u",
-			thisfn, ( void * ) priv->format,
-			has_charmap ? "True":"False", charmap, has_date ? "True":"False", datefmt,
-			has_thousand ? "True":"False", thousand_sep, has_decimal ? "True":"False", decimal_sep,
-			has_field ? "True":"False", field_sep, has_str ? "True":"False", strdelim,
-			iheaders );
-
-	ofa_stream_format_set( priv->format,
-									has_charmap, charmap,
-									has_date, datefmt,
-									has_thousand, thousand_sep[0],
-									has_decimal, decimal_sep[0],
-									has_field, field_sep[0],
-									has_str, strdelim[0],
-									iheaders );
-
-	g_free( strdelim );
-	g_free( field_sep );
-	g_free( decimal_sep );
-	g_free( thousand_sep );
-	g_free( charmap );
-
-	return( TRUE );
-}
-
 /*
  * myIBin interface management
  */
@@ -1393,6 +1193,11 @@ gboolean
 ibin_is_valid( const myIBin *instance, gchar **msgerr )
 {
 	ofaStreamFormatBinPrivate *priv;
+	const gchar *cstr;
+	ofeSFMode mode;
+	gchar *charmap, *thousand_sep, *decimal_sep, *field_sep;
+	gint ivalue;
+	gboolean has;
 
 	g_return_val_if_fail( instance && OFA_IS_STREAM_FORMAT_BIN( instance ), FALSE );
 
@@ -1400,13 +1205,128 @@ ibin_is_valid( const myIBin *instance, gchar **msgerr )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( is_validable( OFA_STREAM_FORMAT_BIN( instance ), msgerr ));
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
+	/* name */
+	cstr = gtk_entry_get_text( GTK_ENTRY( priv->name_entry ));
+	if( !my_strlen( cstr )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Name is empty" ));
+		}
+		return( FALSE );
+	}
+
+	/* mode */
+	cstr = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->mode_combo ));
+	if( !my_strlen( cstr )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "No mode is selected" ));
+		}
+		return( FALSE );
+	}
+	mode = atoi( cstr );
+	if( mode != OFA_SFMODE_EXPORT && mode != OFA_SFMODE_IMPORT ){
+		if( msgerr ){
+			*msgerr = g_strdup_printf( _( "Mode '%s' is unknown or invalid" ), cstr );
+		}
+		return( FALSE );
+	}
+
+	/* charmap */
+	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_encoding ));
+	if( has ){
+		charmap = encoding_get_selected( OFA_STREAM_FORMAT_BIN( instance ));
+		if( !my_strlen( charmap )){
+			g_free( charmap );
+			if( msgerr ){
+				*msgerr = g_strdup( _( "Characters encoding type is unknown or invalid" ));
+			}
+			return( FALSE );
+		}
+		g_free( charmap );
+	}
+
+	/* date format */
+	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_date ));
+	if( has ){
+		ivalue = my_date_combo_get_selected( priv->date_combo );
+		if( ivalue < MY_DATE_FIRST ){
+			if( msgerr ){
+				*msgerr = g_strdup( _( "Date format is unknown or invalid" ));
+			}
+			return( FALSE );
+		}
+	}
+
+	/* thousand separator */
+	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_thousand ));
+	if( has ){
+		thousand_sep = my_thousand_combo_get_selected( priv->thousand_combo );
+		if( !my_strlen( thousand_sep )){
+			g_free( thousand_sep );
+			if( msgerr ){
+				*msgerr = g_strdup( _( "Thousand separator is unknown or invalid" ));
+			}
+			return( FALSE );
+		}
+		g_free( thousand_sep );
+	}
+
+	/* decimal separator */
+	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_decimal ));
+	if( has ){
+		decimal_sep = my_decimal_combo_get_selected( priv->decimal_combo );
+		if( !my_strlen( decimal_sep )){
+			g_free( decimal_sep );
+			if( msgerr ){
+				*msgerr = g_strdup( _( "Decimal separator is unknown or invalid" ));
+			}
+			return( FALSE );
+		}
+		g_free( decimal_sep );
+	}
+
+	/* field separator */
+	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_field ));
+	if( has ){
+		field_sep = my_field_combo_get_selected( priv->field_combo );
+		if( !my_strlen( field_sep )){
+			g_free( field_sep );
+			if( msgerr ){
+				*msgerr = g_strdup( _( "Field separator is unknown or invalid" ));
+			}
+			return( FALSE );
+		}
+		g_free( field_sep );
+	}
+
+	/* string delimiter */
+	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_strdelim ));
+	if( has ){
+		cstr = gtk_entry_get_text( GTK_ENTRY( priv->strdelim_entry ));
+		if( !my_strlen( cstr )){
+			if( msgerr ){
+				*msgerr = g_strdup( _( "String delimiter is unknown or invalid" ));
+			}
+			return( FALSE );
+		}
+	}
+
+	return( TRUE );
 }
 
 static void
 ibin_apply( myIBin *instance )
 {
+	static const gchar *thisfn = "ofa_stream_format_bin_ibin_apply";
 	ofaStreamFormatBinPrivate *priv;
+	gboolean has_charmap, has_date, has_thousand, has_decimal, has_field, has_str;
+	gchar *charmap, *thousand_sep, *decimal_sep, *field_sep, *strdelim;
+	gint datefmt, iheaders;
+	ofeSFMode mode;
+	const gchar *cstr;
 
 	g_return_if_fail( instance && OFA_IS_STREAM_FORMAT_BIN( instance ));
 	g_return_if_fail( my_ibin_is_valid( instance, NULL ));
@@ -1415,5 +1335,61 @@ ibin_apply( myIBin *instance )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	do_apply( OFA_STREAM_FORMAT_BIN( instance ));
+	cstr = gtk_entry_get_text( GTK_ENTRY( priv->name_entry ));
+	g_return_if_fail( my_strlen( cstr ));
+	ofa_stream_format_set_name( priv->format, cstr );
+
+	cstr = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->mode_combo ));
+	g_return_if_fail( my_strlen( cstr ));
+	mode = atoi( cstr );
+	ofa_stream_format_set_mode( priv->format, mode );
+
+	has_charmap = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_encoding ));
+	charmap = has_charmap ? encoding_get_selected( OFA_STREAM_FORMAT_BIN( instance )) : NULL;
+
+	has_date = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_date ));
+	datefmt = has_date ? my_date_combo_get_selected( priv->date_combo ) : 0;
+
+	has_thousand = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_thousand ));
+	thousand_sep = has_thousand ? my_thousand_combo_get_selected( priv->thousand_combo ) : g_strdup( "" );
+
+	has_decimal = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_decimal ));
+	decimal_sep = has_decimal ? my_decimal_combo_get_selected( priv->decimal_combo ) : g_strdup( "" );
+
+	has_field = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_field ));
+	field_sep = has_field ? my_field_combo_get_selected( priv->field_combo ) : g_strdup( "" );
+
+	has_str = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_strdelim ));
+	cstr = has_str ? gtk_entry_get_text( GTK_ENTRY( priv->strdelim_entry )) : NULL;
+	strdelim = g_strdup( cstr ? cstr : "");
+
+	if( mode == OFA_SFMODE_EXPORT ){
+		iheaders = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->headers_btn ));
+	} else {
+		iheaders = gtk_spin_button_get_value( GTK_SPIN_BUTTON( priv->headers_count ));
+	}
+
+	g_debug( "%s: format=%p, has_charmap=%s, charmap=%s, has_date=%s, datefmt=%u, "
+			"has_thousand=%s, thousand_sep=%s, has_decimal=%s, decimal_sep=%s, "
+			"has_field=%s, field_sep=%s, has_str=%s, strdelim=%s, iheaders=%u",
+			thisfn, ( void * ) priv->format,
+			has_charmap ? "True":"False", charmap, has_date ? "True":"False", datefmt,
+			has_thousand ? "True":"False", thousand_sep, has_decimal ? "True":"False", decimal_sep,
+			has_field ? "True":"False", field_sep, has_str ? "True":"False", strdelim,
+			iheaders );
+
+	ofa_stream_format_set( priv->format,
+									has_charmap, charmap,
+									has_date, datefmt,
+									has_thousand, thousand_sep[0],
+									has_decimal, decimal_sep[0],
+									has_field, field_sep[0],
+									has_str, strdelim[0],
+									iheaders );
+
+	g_free( strdelim );
+	g_free( field_sep );
+	g_free( decimal_sep );
+	g_free( thousand_sep );
+	g_free( charmap );
 }

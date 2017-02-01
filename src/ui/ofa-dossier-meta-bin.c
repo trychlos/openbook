@@ -62,10 +62,6 @@ typedef struct {
 	gchar             *dossier_name;
 	gchar             *provider_name;
 	ofaIDBProvider    *provider;
-
-	/* on apply
-	 */
-	ofaIDBDossierMeta *dossier_meta;
 }
 	ofaDossierMetaBinPrivate;
 
@@ -102,7 +98,6 @@ static void          ibin_iface_init( myIBinInterface *iface );
 static guint         ibin_get_interface_version( void );
 static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
 static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
-static void          ibin_apply( myIBin *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierMetaBin, ofa_dossier_meta_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaDossierMetaBin )
@@ -453,6 +448,45 @@ is_valid( ofaDossierMetaBin *self, gchar **msgerr )
 }
 
 /**
+ * ofa_dossier_meta_bin_apply:
+ * @bin: this #ofaDossierMetaBin instance.
+ *
+ * If needed (on new dossier), instanciates a new #ofaIDBDossierMeta.
+ * Register the #ofaIDBDossierMeta in dossier settings.
+ */
+ofaIDBDossierMeta *
+ofa_dossier_meta_bin_apply( ofaDossierMetaBin *bin )
+{
+	static const gchar *thisfn = "ofa_dossier_meta_bin_apply";
+	ofaDossierMetaBinPrivate *priv;
+	ofaIDBDossierMeta *dossier_meta;
+	ofaDossierCollection *collection;
+
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
+
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_META_BIN( bin ), NULL );
+	g_return_val_if_fail( my_ibin_is_valid( MY_IBIN( bin ), NULL ), NULL );
+
+	priv = ofa_dossier_meta_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	dossier_meta = NULL;
+
+	switch( priv->rule ){
+		case HUB_RULE_DOSSIER_NEW:
+			dossier_meta = ofa_idbprovider_new_dossier_meta( priv->provider, priv->dossier_name );
+			collection = ofa_hub_get_dossier_collection( priv->hub );
+			ofa_dossier_collection_add_meta( collection, dossier_meta );
+			break;
+		default:
+			g_warning( "%s: unmanaged rule=%u", thisfn, priv->rule );
+	}
+
+	return( dossier_meta );
+}
+
+/**
  * ofa_dossier_meta_bin_get_provider:
  * @bin: this #ofaDossierMetaBin instance.
  *
@@ -473,29 +507,6 @@ ofa_dossier_meta_bin_get_provider( ofaDossierMetaBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->provider );
-}
-
-/**
- * ofa_dossier_meta_bin_get_dossier_meta:
- * @bin: this #ofaDossierMetaBin instance.
- *
- * Returns: the #ofaIDBDossierMeta object.
- *
- * On new dossier, the #ofaIDBDossierMeta object has been instanciated
- * at apply time.
- */
-ofaIDBDossierMeta *
-ofa_dossier_meta_bin_get_dossier_meta( ofaDossierMetaBin *bin )
-{
-	ofaDossierMetaBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_DOSSIER_META_BIN( bin ), NULL );
-
-	priv = ofa_dossier_meta_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->dossier_meta );
 }
 
 /*
@@ -559,7 +570,6 @@ ibin_iface_init( myIBinInterface *iface )
 	iface->get_interface_version = ibin_get_interface_version;
 	iface->get_size_group = ibin_get_size_group;
 	iface->is_valid = ibin_is_valid;
-	iface->apply = ibin_apply;
 }
 
 static guint
@@ -617,35 +627,4 @@ ibin_is_valid( const myIBin *instance, gchar **msgerr )
 	}
 
 	return( ok );
-}
-
-/*
-* If needed (on new dossier), instanciates a new #ofaIDBDossierMeta.
- * Register the #ofaIDBDossierMeta in dossier settings.
- *
- * Returns: %TRUE.
- */
-static void
-ibin_apply( myIBin *instance )
-{
-	static const gchar *thisfn = "ofa_dossier_meta_bin_ibin_apply";
-	ofaDossierMetaBinPrivate *priv;
-	ofaDossierCollection *collection;
-
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
-
-	g_return_if_fail( instance && OFA_IS_DOSSIER_META_BIN( instance ));
-	g_return_if_fail( my_ibin_is_valid( instance, NULL ));
-
-	priv = ofa_dossier_meta_bin_get_instance_private( OFA_DOSSIER_META_BIN( instance ));
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	switch( priv->rule ){
-		case HUB_RULE_DOSSIER_NEW:
-			priv->dossier_meta = ofa_idbprovider_new_dossier_meta( priv->provider, priv->dossier_name );
-			collection = ofa_hub_get_dossier_collection( priv->hub );
-			ofa_dossier_collection_add_meta( collection, priv->dossier_meta );
-			break;
-	}
 }

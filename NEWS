@@ -16,6 +16,7 @@
  New features and improvements:
 
    - DossierManager: be able to close the currently opened dossier (todo #1338).
+   - Recovery: new assistant to import datas from other softwares (todo #1260).
    - Review and harmonize standard actions on dossier open (todo #1300, todo #1322).
 
  Bug fixes:
@@ -25,7 +26,9 @@
  Other changes:
 
    - ofaDossierPrefs: deprecated class.
+   - ofaIRecover: new interface.
    - ofaOpenPrefs: new class.
+   - ofaRecoveryAssistant: new class.
 
 -----------------------------------------------------------------------
  Version 0.65

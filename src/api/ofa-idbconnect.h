@@ -73,7 +73,7 @@ typedef struct _ofaIDBConnectInterface           ofaIDBConnectInterface;
  * @backup_db: [should]: backups the currently opened dossier.
  * @restore_db: [should]: restore a file to a dossier.
  * @archive_and_new: [should]: archives the current and defines a new exercice.
- * @period_new: [should]: creates a new financial period.
+ * @new_period: [should]: creates a new financial period.
  * @grant_user: [should]: grant permissions on a dossier to a user.
  * @transaction_start: [should]: start a transaction.
  * @transaction_cancel: [should]: cancel a transaction.
@@ -292,8 +292,9 @@ struct _ofaIDBConnectInterface {
 												const GDate *end_next );
 
 	/**
-	 * period_new:
+	 * new_period:
 	 * @instance: an #ofaIDBConnect superuser connection on the DBMS server.
+	 * @period: the #ofaIDBExerciceMeta to be created.
 	 * @msgerr: [out][allow-none]: a placeholder for an error message.
 	 *
 	 * Create and initialize a new minimal dossier database.
@@ -304,7 +305,8 @@ struct _ofaIDBConnectInterface {
 	 *
 	 * Since: version 1
 	 */
-	gboolean    ( *period_new )           ( const ofaIDBConnect *instance,
+	gboolean    ( *new_period )           ( ofaIDBConnect *instance,
+												ofaIDBExerciceMeta *period,
 												gchar **msgerr );
 
 	/**
@@ -469,7 +471,8 @@ gboolean            ofa_idbconnect_archive_and_new          ( const ofaIDBConnec
 																	const GDate *begin_next,
 																	const GDate *end_next );
 
-gboolean            ofa_idbconnect_period_new               ( const ofaIDBConnect *connect,
+gboolean            ofa_idbconnect_new_period               ( ofaIDBConnect *connect,
+																	ofaIDBExerciceMeta *period,
 																	const gchar *adm_account,
 																	const gchar *adm_password,
 																	gchar **msgerr );
