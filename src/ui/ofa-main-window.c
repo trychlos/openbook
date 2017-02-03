@@ -76,6 +76,7 @@
 #include "ui/ofa-ledger-page.h"
 #include "ui/ofa-ledger-summary-render.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-misc-audit-ui.h"
 #include "ui/ofa-ope-template-page.h"
 #include "ui/ofa-paimean-page.h"
 #include "ui/ofa-period-close.h"
@@ -156,6 +157,7 @@ static void on_ref_paimeans          ( GSimpleAction *action, GVariant *paramete
 static void on_ref_batfiles          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_check_balances        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_check_integrity       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_misc_audit            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
 		{ "properties",             on_properties,             NULL, NULL, NULL },
@@ -185,6 +187,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "batfiles",               on_ref_batfiles,           NULL, NULL, NULL },
 		{ "chkbal",                 on_check_balances,         NULL, NULL, NULL },
 		{ "integrity",              on_check_integrity,        NULL, NULL, NULL },
+		{ "misc_audit",             on_misc_audit,             NULL, NULL, NULL },
 };
 
 /* This structure handles the data needed to manage the themes.
@@ -563,8 +566,6 @@ menubar_init( ofaMainWindow *self )
 		g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
 				thisfn, st_resource_dosmenu, ( void * ) menu, g_menu_model_get_n_items( menu ));
 
-		/* register the IActionMap with its menu before releasing the builder */
-		//my_iaction_map_register( MY_IACTION_MAP( instance ), menu, "win" );
 		priv->menu_model = g_object_ref( menu );
 
 		/* register the menu model with the action map
@@ -1595,6 +1596,22 @@ on_check_integrity( GSimpleAction *action, GVariant *parameter, gpointer user_da
 	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
 
 	ofa_check_integrity_run( priv->getter, GTK_WINDOW( user_data ));
+}
+
+static void
+on_misc_audit( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_misc_misc_audit";
+	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
+
+	ofa_misc_audit_ui_run( priv->getter );
 }
 
 static GtkNotebook *

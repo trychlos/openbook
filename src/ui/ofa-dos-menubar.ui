@@ -257,6 +257,22 @@
 				</item>
 			</section>
 			<section>
+				<attribute name="id">misc-30</attribute>
+				<item>
+					<attribute name="id">misc-30-audit</attribute>
+					<attribute name="label" translatable="yes">DBMS _audit trace...</attribute>
+					<attribute name="action">win.misc_audit</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">misc-40</attribute>
+				<item>
+					<attribute name="id">misc-40-collector</attribute>
+					<attribute name="label" translatable="yes">myI_Collector items...</attribute>
+					<attribute name="action">app.misc_collector</attribute>
+				</item>
+			</section>
+			<section>
 				<attribute name="id">misc-99</attribute>
 			</section>
 		</submenu>

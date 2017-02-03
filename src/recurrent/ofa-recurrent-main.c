@@ -147,7 +147,7 @@ on_menu_available( ofaISignaler *signaler, const gchar *scope, GActionMap *map, 
 
 	if( !my_collate( scope, "win" )){
 		g_action_map_add_action_entries(
-				G_ACTION_MAP( map ), st_win_entries, G_N_ELEMENTS( st_win_entries ), map );
+				G_ACTION_MAP( map ), st_win_entries, G_N_ELEMENTS( st_win_entries ), getter );
 
 		mapper = ofa_igetter_get_scope_mapper( getter );
 		model = my_iscope_map_get_menu_model( MY_ISCOPE_MAP( mapper ), map );
@@ -217,6 +217,7 @@ on_rec_period( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
 	manager = ofa_igetter_get_page_manager( OFA_IGETTER( user_data ));
+
 	ofa_ipage_manager_activate( manager, OFA_TYPE_REC_PERIOD_PAGE );
 }
 
@@ -232,6 +233,7 @@ on_recurrent_run( GSimpleAction *action, GVariant *parameter, gpointer user_data
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
 	manager = ofa_igetter_get_page_manager( OFA_IGETTER( user_data ));
+
 	ofa_ipage_manager_activate( manager, OFA_TYPE_RECURRENT_RUN_PAGE );
 }
 
@@ -247,5 +249,6 @@ on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_d
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
 	manager = ofa_igetter_get_page_manager( OFA_IGETTER( user_data ));
+
 	ofa_ipage_manager_activate( manager, OFA_TYPE_RECURRENT_MODEL_PAGE );
 }

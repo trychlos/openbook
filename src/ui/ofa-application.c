@@ -51,8 +51,7 @@
 #include "ui/ofa-dossier-store.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-maintainer.h"
-#include "ui/ofa-misc-audit-item.h"
-#include "ui/ofa-misc-collector-item.h"
+#include "ui/ofa-misc-collector-ui.h"
 #include "ui/ofa-plugin-manager.h"
 #include "ui/ofa-recovery-assistant.h"
 #include "ui/ofa-restore-assistant.h"
@@ -155,6 +154,7 @@ static void     on_restore( GSimpleAction *action, GVariant *parameter, gpointer
 static void     on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_misc_collector( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_version( ofaApplication *application );
 
@@ -162,15 +162,16 @@ G_DEFINE_TYPE_EXTENDED( ofaApplication, ofa_application, GTK_TYPE_APPLICATION, 0
 		G_ADD_PRIVATE( ofaApplication ))
 
 static const GActionEntry st_app_entries[] = {
-		{ "manage",        on_manage,        NULL, NULL, NULL },
-		{ "new",           on_new,           NULL, NULL, NULL },
-		{ "open",          on_open,          NULL, NULL, NULL },
-		{ "recover",       on_recover,       NULL, NULL, NULL },
-		{ "restore",       on_restore,       NULL, NULL, NULL },
-		{ "user_prefs",    on_user_prefs,    NULL, NULL, NULL },
-		{ "quit",          on_quit,          NULL, NULL, NULL },
-		{ "plugin_manage", on_plugin_manage, NULL, NULL, NULL },
-		{ "about",         on_about,         NULL, NULL, NULL },
+		{ "manage",         on_manage,         NULL, NULL, NULL },
+		{ "new",            on_new,            NULL, NULL, NULL },
+		{ "open",           on_open,           NULL, NULL, NULL },
+		{ "recover",        on_recover,        NULL, NULL, NULL },
+		{ "restore",        on_restore,        NULL, NULL, NULL },
+		{ "user_prefs",     on_user_prefs,     NULL, NULL, NULL },
+		{ "quit",           on_quit,           NULL, NULL, NULL },
+		{ "plugin_manage",  on_plugin_manage,  NULL, NULL, NULL },
+		{ "misc_collector", on_misc_collector, NULL, NULL, NULL },
+		{ "about",          on_about,          NULL, NULL, NULL },
 };
 
 static const gchar *st_resource_appmenu = "/org/trychlos/openbook/ui/ofa-app-menubar.ui";
@@ -677,12 +678,9 @@ application_startup( GApplication *application )
 	ofa_hub_set_application( priv->hub, application );
 	ofa_hub_set_runtime_command( priv->hub, priv->argv[0] );
 
-	/* menu management
-	 * - let some classes add their own items through IDynamicUI interface
-	 * - load the menu from the resources
-	 * - enable the menu items sensitivity depending of current conditions */
-	ofa_misc_audit_item_signal_connect( OFA_IGETTER( priv->hub ));
-	ofa_misc_collector_item_signal_connect( OFA_IGETTER( priv->hub ));
+	/* load the menubar
+	 * (just load it: it will be later attached to the main window)
+	 */
 	menubar_init( OFA_APPLICATION( application ));
 	menubar_update_items( appli );
 
@@ -745,6 +743,10 @@ menubar_init( ofaApplication *self )
 	g_object_unref( builder );
 }
 
+/*
+ * This is a static initialization which only depends of the dynamically
+ * loaded modules (aka plugins) found at startup.
+ */
 static void
 menubar_update_items( ofaApplication *self )
 {
@@ -1075,6 +1077,22 @@ on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
 	ofa_plugin_manager_run( OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ));
+}
+
+static void
+on_misc_collector( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_application_on_misc_collector";
+	ofaApplicationPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
+
+	priv = ofa_application_get_instance_private( OFA_APPLICATION( user_data ));
+
+	ofa_misc_collector_ui_run( OFA_IGETTER( priv->hub ));
 }
 
 static void

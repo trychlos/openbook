@@ -74,6 +74,14 @@
 				</item>
 			</section>
 			<section>
+				<attribute name="id">misc-40</attribute>
+				<item>
+					<attribute name="id">misc-40-collector</attribute>
+					<attribute name="label" translatable="yes">myI_Collector items...</attribute>
+					<attribute name="action">app.misc_collector</attribute>
+				</item>
+			</section>
+			<section>
 				<attribute name="id">misc-99</attribute>
 			</section>
 		</submenu>

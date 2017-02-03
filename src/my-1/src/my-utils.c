@@ -1370,7 +1370,7 @@ menu_get_model_rec( GMenuModel *model, const gchar *id, gint *pos )
 		att_iter = g_menu_model_iterate_item_attributes( model, i );
 		while( !found && g_menu_attribute_iter_get_next( att_iter, &att_name, &att_variant )){
 			att_value = g_variant_get_string( att_variant, NULL );
-			if( 1 ){
+			if( 0 ){
 				g_debug( "%s: model=%p, i=%d, att_name=%s, att_value=%s",
 						thisfn, model, i, att_name, att_value );
 			}
@@ -1387,8 +1387,10 @@ menu_get_model_rec( GMenuModel *model, const gchar *id, gint *pos )
 		ret = NULL;
 		link_iter = g_menu_model_iterate_item_links( model, i );
 		while( !ret && g_menu_link_iter_get_next( link_iter, &link_name, &lv )){
-			g_debug( "%s: model=%p, i=%d, link_name=%s, link_value=%s",
-					thisfn, model, i, link_name, G_OBJECT_TYPE_NAME( lv ));
+			if( 0 ){
+				g_debug( "%s: model=%p, i=%d, link_name=%s, link_value=%s",
+						thisfn, model, i, link_name, G_OBJECT_TYPE_NAME( lv ));
+			}
 			ret = menu_get_model_rec( lv, id, pos );
 			g_object_unref( lv );
 		}
