@@ -494,33 +494,6 @@ ofa_igetter_get_main_window( const ofaIGetter *getter )
 }
 
 /**
- * ofa_igetter_get_menu_manager:
- * @instance: this #ofaIGetter instance.
- *
- * Returns: the #ofaIPageManager instance of the application, if any,
- * or %NULL if the application does not have any main window (is not
- * UI-related).
- *
- * The returned reference is owned by the @getter instance, and should
- * not be released by the caller.
- */
-myMenuManager *
-ofa_igetter_get_menu_manager( const ofaIGetter *instance )
-{
-	static const gchar *thisfn = "ofa_igetter_get_menu_manager";
-
-	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
-
-	if( OFA_IGETTER_GET_INTERFACE( instance )->get_menu_manager ){
-		return( OFA_IGETTER_GET_INTERFACE( instance )->get_menu_manager( instance ));
-	}
-
-	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_menu_manager()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( NULL );
-}
-
-/**
  * ofa_igetter_get_page_manager:
  * @instance: this #ofaIGetter instance.
  *
@@ -543,6 +516,33 @@ ofa_igetter_get_page_manager( const ofaIGetter *instance )
 	}
 
 	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_page_manager()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( NULL );
+}
+
+/**
+ * ofa_igetter_get_scope_mapper:
+ * @instance: this #ofaIGetter instance.
+ *
+ * Returns: the #myScopeMapper instance, if any,
+ * or %NULL if the application does not have any main window (is not
+ * UI-related).
+ *
+ * The returned reference is owned by the @getter instance, and should
+ * not be released by the caller.
+ */
+myScopeMapper *
+ofa_igetter_get_scope_mapper( const ofaIGetter *instance )
+{
+	static const gchar *thisfn = "ofa_igetter_get_scope_mapper";
+
+	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
+
+	if( OFA_IGETTER_GET_INTERFACE( instance )->get_scope_mapper ){
+		return( OFA_IGETTER_GET_INTERFACE( instance )->get_scope_mapper( instance ));
+	}
+
+	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_scope_mapper()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }

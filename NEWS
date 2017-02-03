@@ -25,6 +25,8 @@
 
  Other changes:
 
+   - myIScopeMap: is renamed from myIActionMap.
+   - myScopeMapper: new class.
    - ofaDossierPrefs: deprecated class.
    - ofaIGetter: review interface to be the only one which accesses to ofaHub (todo #1339).
    - ofaIRecover: new interface.

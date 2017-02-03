@@ -49,7 +49,7 @@
 
 #include "my/my-icollector.h"
 #include "my/my-isettings.h"
-#include "my/my-menu-manager.h"
+#include "my/my-scope-mapper.h"
 
 #include "api/ofa-dossier-collection.h"
 #include "api/ofa-extender-collection.h"
@@ -86,8 +86,8 @@ typedef struct _ofaIGetter                    ofaIGetter;
  * @get_signaler: [should]: return the #ofaISignaler instance.
  * @get_user_settings: [should]: return the user settings.
  * @get_main_window: [should]: return the #ofaMainWindow instance.
- * @get_menu_manager: [should]: return the #myMenuManager instance.
  * @get_page_manager: [should]: return the #ofaIPageManager instance.
+ * @get_scope_mapper: [should]: return the #myScopeMapper instance.
  *
  * This defines the interface that an #ofaIGetter must/should/may implement.
  */
@@ -244,16 +244,6 @@ typedef struct {
 	GtkApplicationWindow *  ( *get_main_window )        ( const ofaIGetter *getter );
 
 	/**
-	 * get_menu_manager:
-	 * @getter: this #ofaIGetter getter.
-	 *
-	 * Returns: the menu manager of the application, or %NULL.
-	 *
-	 * Since: version 1
-	 */
-	myMenuManager *        ( *get_menu_manager )        ( const ofaIGetter *getter );
-
-	/**
 	 * get_page_manager:
 	 * @getter: this #ofaIGetter getter.
 	 *
@@ -262,6 +252,16 @@ typedef struct {
 	 * Since: version 1
 	 */
 	ofaIPageManager *      ( *get_page_manager )        ( const ofaIGetter *getter );
+
+	/**
+	 * get_scope_mapper:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the instanciated #myScopeMapper, or %NULL.
+	 *
+	 * Since: version 1
+	 */
+	myScopeMapper *        ( *get_scope_mapper )        ( const ofaIGetter *getter );
 }
 	ofaIGetterInterface;
 
@@ -322,9 +322,9 @@ myISettings           *ofa_igetter_get_user_settings         ( const ofaIGetter 
  */
 GtkApplicationWindow  *ofa_igetter_get_main_window           ( const ofaIGetter *getter );
 
-myMenuManager         *ofa_igetter_get_menu_manager          ( const ofaIGetter *getter );
-
 ofaIPageManager       *ofa_igetter_get_page_manager          ( const ofaIGetter *getter );
+
+myScopeMapper         *ofa_igetter_get_scope_mapper          ( const ofaIGetter *getter );
 
 G_END_DECLS
 

@@ -356,8 +356,6 @@
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 
-1339 2017- 2- 1 deprecate IGetter interface elsewhere that the Hub
-
 1340 2017- 2- 1 review ExtenderCollection to move to my library ?
 
 1341 2017- 2- 1 ofa_extender_collection_get_for_type: does not return a new ref
@@ -600,6 +598,9 @@
 1338 2017- 1-30 DossierManager: have a Close button enabled on the currently
                 opened dossier
      2017- 1-30 done
+
+1339 2017- 2- 1 deprecate IGetter interface elsewhere that the Hub
+     2017- 2- 3 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

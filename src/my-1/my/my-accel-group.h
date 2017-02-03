@@ -35,7 +35,7 @@
 
 #include <gtk/gtk.h>
 
-#include "my/my-menu-manager.h"
+#include "my/my-iscope-map.h"
 
 G_BEGIN_DECLS
 
@@ -64,7 +64,7 @@ myAccelGroup *my_accel_group_new                   ( void );
 
 void          my_accel_group_setup_accels_from_menu( myAccelGroup *group,
 															GMenuModel *menu,
-															myMenuManager *menu_manager );
+															myIScopeMap *mapper );
 
 G_END_DECLS
 

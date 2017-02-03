@@ -139,11 +139,10 @@ interface_base_init( ofaISignalerInterface *klass )
 		 * by the #myMenuManager.
 		 *
 		 * Handler is of type:
-		 * 		void user_handler( ofaISignaler  *signaler,
-		 * 							ofaIGetter   *getter,
-		 * 							myIActionMap *action_map,
-		 * 							const gchar  *scope,
-		 * 							gpointer      user_data );
+		 * 		void user_handler( ofaISignaler *signaler,
+		 * 							const gchar *scope,
+		 * 							GActionMap  *action_map,
+		 * 							gpointer     user_data );
 		 */
 		st_signals[ MENU_AVAILABLE ] = g_signal_new_class_handler(
 					"ofa-signaler-menu-available",
@@ -154,8 +153,8 @@ interface_base_init( ofaISignalerInterface *klass )
 					NULL,								/* accumulator data */
 					NULL,
 					G_TYPE_NONE,
-					3,
-					G_TYPE_POINTER, G_TYPE_POINTER, G_TYPE_STRING );
+					2,
+					G_TYPE_STRING, G_TYPE_POINTER );
 	}
 
 	st_initializations += 1;

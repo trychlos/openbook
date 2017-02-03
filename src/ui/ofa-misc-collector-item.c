@@ -30,8 +30,6 @@
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
-#include "my/my-iaction-map.h"
-
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignaler.h"
 
@@ -48,7 +46,7 @@ typedef struct {
 }
 	sItemDef;
 
-static void on_menu_available( ofaISignaler *signaler, ofaIGetter *getter, myIActionMap *map, const gchar *scope, void *empty );
+static void on_menu_available( ofaISignaler *signaler, const gchar *scope, GActionMap *map, ofaIGetter *getter );
 static void menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder );
 static void on_misc_collector_item( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
@@ -83,7 +81,7 @@ ofa_misc_collector_item_signal_connect( ofaIGetter *getter )
 	signaler = ofa_igetter_get_signaler( getter );
 
 	g_signal_connect( signaler,
-			"ofa-signaler-menu-available", G_CALLBACK( on_menu_available ), NULL );
+			"ofa-signaler-menu-available", G_CALLBACK( on_menu_available ), getter );
 }
 
 /*
@@ -95,12 +93,12 @@ ofa_misc_collector_item_signal_connect( ofaIGetter *getter )
  * or main window.
  */
 static void
-on_menu_available( ofaISignaler *signaler, ofaIGetter *getter, myIActionMap *map, const gchar *scope, void *empty )
+on_menu_available( ofaISignaler *signaler, const gchar *scope, GActionMap *map, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_misc_collector_item_on_menu_available";
 
-	g_debug( "%s: signaler=%p, getter=%p, map=%p, scope=%s, empty=%p",
-			thisfn, ( void * ) signaler, ( void * ) getter, ( void * ) map, scope, ( void * ) empty );
+	g_debug( "%s: signaler=%p, scope=%s, map=%p, getter=%p",
+			thisfn, ( void * ) signaler, scope, ( void * ) map, ( void * ) getter );
 
 	g_action_map_add_action_entries(
 			G_ACTION_MAP( map ), st_app_entries, G_N_ELEMENTS( st_app_entries ), map );

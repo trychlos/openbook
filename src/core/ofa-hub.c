@@ -31,7 +31,7 @@
 #include "my/my-date.h"
 #include "my/my-icollector.h"
 #include "my/my-isettings.h"
-#include "my/my-menu-manager.h"
+#include "my/my-scope-mapper.h"
 #include "my/my-settings.h"
 #include "my/my-signal.h"
 #include "my/my-utils.h"
@@ -79,7 +79,7 @@ typedef struct {
 	 */
 	GtkApplicationWindow  *main_window;
 	ofaIPageManager       *page_manager;
-	myMenuManager         *menu_manager;
+	myScopeMapper         *scope_mapper;
 
 	/* dossier
 	 */
@@ -116,7 +116,6 @@ static void                   init_signaling_system_connect_to( ofaHub *self, GT
 static gboolean               on_deletable_default_handler( ofaHub *self, GObject *object );
 static void                   on_dossier_changed( ofaHub *hub, void *empty );
 static gboolean               remediate_dossier_settings( ofaHub *self );
-static void                   menu_manager_on_register( myMenuManager *manager, myIActionMap *map, const gchar *scope, GMenuModel *menu, ofaHub *self );
 static void                   icollector_iface_init( myICollectorInterface *iface );
 static guint                  icollector_get_interface_version( void );
 static void                   igetter_iface_init( ofaIGetterInterface *iface );
@@ -133,8 +132,8 @@ static const gchar           *igetter_get_runtime_dir( const ofaIGetter *getter 
 static ofaISignaler          *igetter_get_signaler( const ofaIGetter *getter );
 static myISettings           *igetter_get_user_settings( const ofaIGetter *getter );
 static GtkApplicationWindow  *igetter_get_main_window( const ofaIGetter *getter );
-static myMenuManager         *igetter_get_menu_manager( const ofaIGetter *getter );
 static ofaIPageManager       *igetter_get_page_manager( const ofaIGetter *getter );
+static myScopeMapper         *igetter_get_scope_mapper( const ofaIGetter *getter );
 static void                   isignaler_iface_init( ofaISignalerInterface *iface );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
@@ -188,7 +187,7 @@ hub_dispose( GObject *instance )
 		g_clear_object( &priv->dossiers_collection );
 		g_clear_object( &priv->extenders_collection );
 		g_clear_object( &priv->openbook_props );
-		g_clear_object( &priv->menu_manager );
+		g_clear_object( &priv->scope_mapper );
 
 		g_list_free_full( priv->core_objects, ( GDestroyNotify ) g_object_unref );
 	}
@@ -564,8 +563,7 @@ ofa_hub_new( void )
 
 	/* connect to menu manager signals to be able to proxy them via the
 	 *  ISignaler interface */
-	priv->menu_manager = my_menu_manager_new();
-	g_signal_connect( priv->menu_manager, "my-menu-manager-register", G_CALLBACK( menu_manager_on_register ), hub );
+	priv->scope_mapper = my_scope_mapper_new();
 
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CHANGED, G_CALLBACK( on_dossier_changed ), NULL );
 
@@ -1162,21 +1160,6 @@ ofa_hub_disconnect_handlers( ofaHub *hub, GList **handlers )
 }
 
 /*
- * Proxy the signals from myMenuManager via the ofaISignaler interface
- *
- * myMenuManager::my-menu-manager-register -> ofaISignaler::ofa-signaler-menu-available
- * (only map and scope arguments are proxyed)
- */
-static void
-menu_manager_on_register( myMenuManager *manager, myIActionMap *map, const gchar *scope, GMenuModel *menu, ofaHub *self )
-{
-	ofaISignaler *signaler = OFA_ISIGNALER( self );
-	ofaIGetter *getter = OFA_IGETTER( self );
-
-	g_signal_emit_by_name( signaler, "ofa-signaler-menu-available", getter, map, scope );
-}
-
-/*
  * myICollector interface management
  */
 static void
@@ -1221,8 +1204,8 @@ igetter_iface_init( ofaIGetterInterface *iface )
 
 	/* ui-related */
 	iface->get_main_window = igetter_get_main_window;
-	iface->get_menu_manager = igetter_get_menu_manager;
 	iface->get_page_manager = igetter_get_page_manager;
+	iface->get_scope_mapper = igetter_get_scope_mapper;
 }
 
 static GApplication *
@@ -1359,16 +1342,6 @@ igetter_get_main_window( const ofaIGetter *getter )
 	return( priv->main_window );
 }
 
-static myMenuManager *
-igetter_get_menu_manager( const ofaIGetter *getter )
-{
-	ofaHubPrivate *priv;
-
-	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
-
-	return( priv->menu_manager );
-}
-
 /*
  * the themes are managed by the main window
  */
@@ -1380,6 +1353,16 @@ igetter_get_page_manager( const ofaIGetter *getter )
 	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
 
 	return( priv->page_manager );
+}
+
+static myScopeMapper *
+igetter_get_scope_mapper( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( priv->scope_mapper );
 }
 
 /*

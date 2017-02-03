@@ -40,7 +40,6 @@ my_include_HEADERS = \
 	my-double-renderer.h								\
 	my-field-combo.h									\
 	my-file-monitor.h									\
-	my-iaction-map.h									\
 	my-iassistant.h										\
 	my-ibin.h											\
 	my-icollectionable.h								\
@@ -49,10 +48,11 @@ my_include_HEADERS = \
 	my-iident.h											\
 	my-igridlist.h										\
 	my-iprogress.h										\
+	my-iscope-map.h										\
 	my-isettings.h										\
 	my-iwindow.h										\
-	my-menu-manager.h									\
 	my-progress-bar.h									\
+	my-scope-mapper.h									\
 	my-settings.h										\
 	my-signal.h											\
 	my-stamp.h											\

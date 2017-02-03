@@ -30,8 +30,7 @@
 #include <glib/gi18n.h>
 #include <string.h>
 
-#include "my/my-iaction-map.h"
-#include "my/my-menu-manager.h"
+#include "my/my-scope-mapper.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-core.h"
@@ -159,11 +158,9 @@ static void     on_quit( GSimpleAction *action, GVariant *parameter, gpointer us
 static void     on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_version( ofaApplication *application );
-static void     iaction_map_iface_init( myIActionMapInterface *iface );
 
 G_DEFINE_TYPE_EXTENDED( ofaApplication, ofa_application, GTK_TYPE_APPLICATION, 0,
-		G_ADD_PRIVATE( ofaApplication )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IACTION_MAP, iaction_map_iface_init ))
+		G_ADD_PRIVATE( ofaApplication ))
 
 static const GActionEntry st_app_entries[] = {
 		{ "manage",        on_manage,        NULL, NULL, NULL },
@@ -708,7 +705,8 @@ setup_application_menu( ofaApplication *self )
 	ofaApplicationPrivate *priv;
 	GtkBuilder *builder;
 	GMenuModel *menu;
-	myMenuManager *menu_manager;
+	myScopeMapper *mapper;
+	ofaISignaler *signaler;
 
 	priv = ofa_application_get_instance_private( self );
 
@@ -739,9 +737,12 @@ setup_application_menu( ofaApplication *self )
 
 	/* register the menu model with the action map
 	 */
-	menu_manager = ofa_igetter_get_menu_manager( OFA_IGETTER( priv->hub ));
-	my_menu_manager_register( menu_manager, MY_IACTION_MAP( self ), "app", menu );
+	mapper = ofa_igetter_get_scope_mapper( OFA_IGETTER( priv->hub ));
+	my_scope_mapper_register( mapper, "app", G_ACTION_MAP( self ), menu );
 	priv->menu_model = g_object_ref( menu );
+
+	signaler = ofa_igetter_get_signaler( OFA_IGETTER( priv->hub ));
+	g_signal_emit_by_name( signaler, "ofa-signaler-menu-available", "app", self );
 
 	g_object_unref( builder );
 }
@@ -1129,15 +1130,4 @@ on_version( ofaApplication *application )
 	g_debug( "Program has been compiled against Glib %d.%d.%d, Gtk+ %d.%d.%d",
 			GLIB_MAJOR_VERSION, GLIB_MINOR_VERSION, GLIB_MICRO_VERSION,
 			GTK_MAJOR_VERSION, GTK_MINOR_VERSION, GTK_MICRO_VERSION );
-}
-
-/*
- * myIActionMap interface management
- */
-static void
-iaction_map_iface_init( myIActionMapInterface *iface )
-{
-	static const gchar *thisfn = "ofa_application_iaction_map_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }

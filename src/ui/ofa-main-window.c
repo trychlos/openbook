@@ -34,9 +34,9 @@
 #include "my/my-date.h"
 #include "my/my-dnd-book.h"
 #include "my/my-dnd-window.h"
-#include "my/my-iaction-map.h"
+#include "my/my-iscope-map.h"
 #include "my/my-iwindow.h"
-#include "my/my-menu-manager.h"
+#include "my/my-scope-mapper.h"
 #include "my/my-style.h"
 #include "my/my-tab.h"
 #include "my/my-utils.h"
@@ -281,7 +281,7 @@ static void                  hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *
 static void                  hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *main_window );
 static void                  hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window );
 static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-static void                  menubar_setup( ofaMainWindow *window, myIActionMap *map );
+static void                  menubar_setup( ofaMainWindow *window, GActionMap *map );
 static void                  menubar_update_items( ofaMainWindow *self );
 static void                  set_window_title( ofaMainWindow *window, gboolean with_dossier );
 static void                  warning_exercice_unset( ofaMainWindow *window );
@@ -310,11 +310,9 @@ static void                  ipage_manager_define( ofaIPageManager *instance, GT
 static ofaPage              *ipage_manager_activate( ofaIPageManager *instance, GType type );
 static sThemeDef            *theme_get_by_type( GList **list, GType type );
 static void                  theme_free( sThemeDef *def );
-static void                  iaction_map_iface_init( myIActionMapInterface *iface );
 
 G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW, 0,
 		G_ADD_PRIVATE( ofaMainWindow )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IACTION_MAP, iaction_map_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPAGE_MANAGER, ipage_manager_iface_init ))
 
 static void
@@ -521,7 +519,8 @@ ofa_main_window_new( ofaIGetter *getter )
 	GApplication *application;
 	myISettings *settings;
 	ofaHub *hub;
-	myMenuManager *menu_manager;
+	myScopeMapper *mapper;
+	ofaISignaler *signaler;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -557,8 +556,11 @@ ofa_main_window_new( ofaIGetter *getter )
 
 	/* let the plugins update these menu map/model
 	 */
-	menu_manager = ofa_igetter_get_menu_manager( getter );
-	my_menu_manager_register( menu_manager, MY_IACTION_MAP( window ), "win", priv->menu_model );
+	mapper = ofa_igetter_get_scope_mapper( getter );
+	my_scope_mapper_register( mapper, "win", G_ACTION_MAP( window ), priv->menu_model );
+
+	signaler = ofa_igetter_get_signaler( getter );
+	g_signal_emit_by_name( signaler, "ofa-signaler-menu-available", "win", window );
 
 	/* let the plugins update the managed themes */
 	init_themes( window );
@@ -567,7 +569,7 @@ ofa_main_window_new( ofaIGetter *getter )
 
 	/* install the application menubar
 	 */
-	menubar_setup( window, MY_IACTION_MAP( application ));
+	menubar_setup( window, G_ACTION_MAP( application ));
 
 	/* the window title defaults to the application title
 	 * the application menubar does not have any dynamic item *
@@ -641,7 +643,7 @@ hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self )
 
 	/* install the application menubar
 	 */
-	menubar_setup( self, MY_IACTION_MAP( self ));
+	menubar_setup( self, G_ACTION_MAP( self ));
 
 	/* the window title defaults to the application title
 	 * the application menubar does not have any dynamic item *
@@ -682,7 +684,7 @@ hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self )
 		}
 
 		application = gtk_window_get_application( GTK_WINDOW( self ));
-		menubar_setup( self, MY_IACTION_MAP( application ));
+		menubar_setup( self, G_ACTION_MAP( application ));
 
 		set_window_title( self, FALSE );
 	}
@@ -852,12 +854,13 @@ ofa_main_window_is_willing_to_quit( const ofaMainWindow *main_window )
  * - the GtkApplicationWindow on dossier open
  */
 static void
-menubar_setup( ofaMainWindow *window, myIActionMap *map )
+menubar_setup( ofaMainWindow *window, GActionMap *map )
 {
 	static const gchar *thisfn = "ofa_main_window_menubar_setup";
 	ofaMainWindowPrivate *priv;
 	GtkWidget *menubar;
 	GMenuModel *model;
+	myScopeMapper *mapper;
 
 	g_debug( "%s: window=%p, map=%p", thisfn, ( void * ) window, ( void * ) map );
 
@@ -874,10 +877,11 @@ menubar_setup( ofaMainWindow *window, myIActionMap *map )
 		priv->accel_group = NULL;
 	}
 
-	model = my_iaction_map_get_menu_model( map );
+	mapper = ofa_igetter_get_scope_mapper( priv->getter );
+	model = my_iscope_map_get_menu_model( MY_ISCOPE_MAP( mapper ), map );
 	if( model ){
 		priv->accel_group = my_accel_group_new();
-		my_accel_group_setup_accels_from_menu( priv->accel_group, model, ofa_igetter_get_menu_manager( priv->getter ));
+		my_accel_group_setup_accels_from_menu( priv->accel_group, model, MY_ISCOPE_MAP( mapper ));
 		gtk_window_add_accel_group( GTK_WINDOW( window ), GTK_ACCEL_GROUP( priv->accel_group ));
 
 		menubar = gtk_menu_bar_new_from_model( model );
@@ -1214,8 +1218,13 @@ on_backup( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 static void
 do_backup( ofaMainWindow *self )
 {
+	ofaMainWindowPrivate *priv;
+
+	priv = ofa_main_window_get_instance_private( self );
+
 	close_all_pages( self );
-	ofa_backup_assistant_run( OFA_IGETTER( self ), GTK_WINDOW( self ));
+
+	ofa_backup_assistant_run( priv->getter, GTK_WINDOW( self ));
 }
 
 /**
@@ -1969,15 +1978,4 @@ theme_free( sThemeDef *def )
 {
 	g_free( def->label );
 	g_free( def );
-}
-
-/*
- * myIActionMap interface management
- */
-static void
-iaction_map_iface_init( myIActionMapInterface *iface )
-{
-	static const gchar *thisfn = "ofa_main_window_iaction_map_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }

@@ -73,7 +73,6 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-double-renderer.c								\
 	my-field-combo.c									\
 	my-file-monitor.c									\
-	my-iaction-map.c									\
 	my-iassistant.c										\
 	my-ibin.c											\
 	my-icollectionable.c								\
@@ -82,10 +81,11 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-iident.c											\
 	my-igridlist.c										\
 	my-iprogress.c										\
+	my-iscope-map.c										\
 	my-isettings.c										\
 	my-iwindow.c										\
-	my-menu-manager.c									\
 	my-progress-bar.c									\
+	my-scope-mapper.c									\
 	my-settings.c										\
 	my-signal.c											\
 	my-stamp.c											\

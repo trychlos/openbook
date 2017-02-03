@@ -40,7 +40,6 @@
 #include <my/my-double-renderer.h>
 #include <my/my-field-combo.h>
 #include <my/my-file-monitor.h>
-#include <my/my-iaction-map.h>
 #include <my/my-iassistant.h>
 #include <my/my-ibin.h>
 #include <my/my-icollectionable.h>
@@ -49,10 +48,11 @@
 #include <my/my-igridlist.h>
 #include <my/my-iident.h>
 #include <my/my-iprogress.h>
+#include <my/my-iscope-map.h>
 #include <my/my-isettings.h>
 #include <my/my-iwindow.h>
-#include <my/my-menu-manager.h>
 #include <my/my-progress-bar.h>
+#include <my/my-scope-mapper.h>
 #include <my/my-settings.h>
 #include <my/my-signal.h>
 #include <my/my-stamp.h>
