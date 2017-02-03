@@ -274,42 +274,42 @@ static const gchar *st_resource_css     = "/org/trychlos/openbook/ui/ofa.css";
 static const gchar *st_dosmenu_id       = "dos-menu";
 static const gchar *st_icon_fname       = ICONFNAME;
 
-static void                  init_store_menu_ref( ofaMainWindow *self, GtkBuilder *builder, const gchar *placeholder );
-static void                  init_themes( ofaMainWindow *self );
-static void                  hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self );
-static void                  hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self );
-static void                  hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *main_window );
-static void                  hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window );
-static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-static void                  menubar_setup( ofaMainWindow *window, GActionMap *map );
-static void                  menubar_update_items( ofaMainWindow *self );
-static void                  set_window_title( ofaMainWindow *window, gboolean with_dossier );
-static void                  warning_exercice_unset( ofaMainWindow *window );
-static void                  pane_left_add_treeview( ofaMainWindow *window );
-static void                  pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
-static void                  pane_right_add_empty_notebook( ofaMainWindow *window );
-static void                  background_image_update( ofaMainWindow *self );
-static void                  background_image_set_uri( ofaMainWindow *self, const gchar *uri );
-static void                  do_backup( ofaMainWindow *self );
-static void                  do_properties( ofaMainWindow *self );
-static GtkNotebook          *notebook_get_book( ofaMainWindow *window );
-static ofaPage              *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
-static ofaPage              *notebook_create_page( ofaMainWindow *self, GtkNotebook *book, const sThemeDef *def );
-static void                  book_attach_page( ofaMainWindow *self, GtkNotebook *book, GtkWidget *page, const gchar *title );
-static void                  notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
-static gboolean              notebook_on_draw( GtkWidget *widget, cairo_t *cr, ofaMainWindow *self );
-static gboolean              book_on_append_page( myDndBook *book, GtkWidget *page, const gchar *title, ofaMainWindow *self );
-static void                  on_tab_close_clicked( myTab *tab, ofaPage *page );
-static void                  do_close( ofaPage *page );
-static void                  on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *self );
-static void                  close_all_pages( ofaMainWindow *self );
-static void                  read_settings( ofaMainWindow *self );
-static void                  write_settings( ofaMainWindow *self );
-static void                  ipage_manager_iface_init( ofaIPageManagerInterface *iface );
-static void                  ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label );
-static ofaPage              *ipage_manager_activate( ofaIPageManager *instance, GType type );
-static sThemeDef            *theme_get_by_type( GList **list, GType type );
-static void                  theme_free( sThemeDef *def );
+static void         menubar_init( ofaMainWindow *self );
+static void         menubar_setup( ofaMainWindow *window, GActionMap *map );
+static void         menubar_update_items( ofaMainWindow *self );
+static void         init_themes( ofaMainWindow *self );
+static void         hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self );
+static void         hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self );
+static void         hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *main_window );
+static void         hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window );
+static gboolean     on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
+static void         set_window_title( ofaMainWindow *window, gboolean with_dossier );
+static void         warning_exercice_unset( ofaMainWindow *window );
+static void         pane_left_add_treeview( ofaMainWindow *window );
+static void         pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
+static void         pane_right_add_empty_notebook( ofaMainWindow *window );
+static void         background_image_update( ofaMainWindow *self );
+static void         background_image_set_uri( ofaMainWindow *self, const gchar *uri );
+static void         do_backup( ofaMainWindow *self );
+static void         do_properties( ofaMainWindow *self );
+static GtkNotebook *notebook_get_book( ofaMainWindow *window );
+static ofaPage     *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
+static ofaPage     *notebook_create_page( ofaMainWindow *self, GtkNotebook *book, const sThemeDef *def );
+static void         book_attach_page( ofaMainWindow *self, GtkNotebook *book, GtkWidget *page, const gchar *title );
+static void         notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
+static gboolean     notebook_on_draw( GtkWidget *widget, cairo_t *cr, ofaMainWindow *self );
+static gboolean     book_on_append_page( myDndBook *book, GtkWidget *page, const gchar *title, ofaMainWindow *self );
+static void         on_tab_close_clicked( myTab *tab, ofaPage *page );
+static void         do_close( ofaPage *page );
+static void         on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *self );
+static void         close_all_pages( ofaMainWindow *self );
+static void         read_settings( ofaMainWindow *self );
+static void         write_settings( ofaMainWindow *self );
+static void         ipage_manager_iface_init( ofaIPageManagerInterface *iface );
+static void         ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label );
+static ofaPage     *ipage_manager_activate( ofaIPageManager *instance, GType type );
+static sThemeDef   *theme_get_by_type( GList **list, GType type );
+static void         theme_free( sThemeDef *def );
 
 G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW, 0,
 		G_ADD_PRIVATE( ofaMainWindow )
@@ -379,8 +379,6 @@ main_window_constructed( GObject *instance )
 	static const gchar *thisfn = "ofa_main_window_constructed";
 	ofaMainWindowPrivate *priv;
 	GError *error;
-	GtkBuilder *builder;
-	GMenuModel *menu;
 
 	g_return_if_fail( instance && OFA_IS_MAIN_WINDOW( instance ));
 
@@ -395,44 +393,6 @@ main_window_constructed( GObject *instance )
 		if( G_OBJECT_CLASS( ofa_main_window_parent_class )->constructed ){
 			G_OBJECT_CLASS( ofa_main_window_parent_class )->constructed( instance );
 		}
-
-		/* define the main instance actions
-		 */
-		g_action_map_add_action_entries(
-				G_ACTION_MAP( instance ),
-		        st_dos_entries, G_N_ELEMENTS( st_dos_entries ),
-		        ( gpointer ) instance );
-
-		/* define a traditional menubar
-		 * the program will abort if GtkBuilder is not able to be parsed
-		 * from the given file
-		 */
-		error = NULL;
-		builder = gtk_builder_new_from_resource( st_resource_dosmenu );
-		menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_dosmenu_id ));
-		if( menu ){
-			g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
-					thisfn, st_resource_dosmenu, ( void * ) menu, g_menu_model_get_n_items( menu ));
-
-			/* store the references to the plugins placeholders */
-			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_app_dossier" );
-			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope1" );
-			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope2" );
-			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope3" );
-			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope4" );
-			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_print" );
-			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ref" );
-			init_store_menu_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_app_misc" );
-
-		} else {
-			g_warning( "%s: unable to find '%s' object in '%s' resource", thisfn, st_dosmenu_id, st_resource_dosmenu );
-		}
-
-		/* register the IActionMap with its menu before releasing the builder */
-		//my_iaction_map_register( MY_IACTION_MAP( instance ), menu, "win" );
-		priv->menu_model = g_object_ref( menu );
-
-		g_object_unref( builder );
 
 		/* application (GtkWindow's property) is not set here because
 		 * this is not a 'construct' property */
@@ -519,8 +479,6 @@ ofa_main_window_new( ofaIGetter *getter )
 	GApplication *application;
 	myISettings *settings;
 	ofaHub *hub;
-	myScopeMapper *mapper;
-	ofaISignaler *signaler;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -535,6 +493,11 @@ ofa_main_window_new( ofaIGetter *getter )
 
 	priv = ofa_main_window_get_instance_private( window );
 	priv->getter = getter;
+
+	/* load the menubar
+	 * (just load it: it will be later attached to the main window)
+	 */
+	menubar_init( window );
 
 	/* restore window geometry
 	 * (here because application is not yet set in constructed()
@@ -554,14 +517,6 @@ ofa_main_window_new( ofaIGetter *getter )
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CHANGED, G_CALLBACK( hub_on_dossier_changed ), window );
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_PREVIEW, G_CALLBACK( hub_on_dossier_preview ), window );
 
-	/* let the plugins update these menu map/model
-	 */
-	mapper = ofa_igetter_get_scope_mapper( getter );
-	my_scope_mapper_register( mapper, "win", G_ACTION_MAP( window ), priv->menu_model );
-
-	signaler = ofa_igetter_get_signaler( getter );
-	g_signal_emit_by_name( signaler, "ofa-signaler-menu-available", "win", window );
-
 	/* let the plugins update the managed themes */
 	init_themes( window );
 
@@ -579,29 +534,127 @@ ofa_main_window_new( ofaIGetter *getter )
 	return( window );
 }
 
+static void
+menubar_init( ofaMainWindow *self )
+{
+	static const gchar *thisfn = "ofa_main_window_menubar_init";
+	ofaMainWindowPrivate *priv;
+	GtkBuilder *builder;
+	GMenuModel *menu;
+	myScopeMapper *mapper;
+	ofaISignaler *signaler;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	/* define the main instance actions
+	 */
+	g_action_map_add_action_entries(
+			G_ACTION_MAP( self ),
+			st_dos_entries, G_N_ELEMENTS( st_dos_entries ),
+			( gpointer ) self );
+
+	/* define a traditional menubar
+	 * the program will abort if GtkBuilder is not able to be parsed
+	 * from the given file
+	 */
+	builder = gtk_builder_new_from_resource( st_resource_dosmenu );
+	menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_dosmenu_id ));
+	if( menu ){
+		g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
+				thisfn, st_resource_dosmenu, ( void * ) menu, g_menu_model_get_n_items( menu ));
+
+		/* register the IActionMap with its menu before releasing the builder */
+		//my_iaction_map_register( MY_IACTION_MAP( instance ), menu, "win" );
+		priv->menu_model = g_object_ref( menu );
+
+		/* register the menu model with the action map
+		 */
+		mapper = ofa_igetter_get_scope_mapper( priv->getter );
+		my_scope_mapper_register( mapper, "win", G_ACTION_MAP( self ), menu );
+
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		g_signal_emit_by_name( signaler, "ofa-signaler-menu-available", "win", self );
+
+	} else {
+		g_warning( "%s: unable to find '%s' object in '%s' resource", thisfn, st_dosmenu_id, st_resource_dosmenu );
+	}
+
+	g_object_unref( builder );
+}
+
 /*
- * @main_window:
- * @builder:
- * @placeholder: the name of an object inserted in the menu definition;
- *  this same name will be set against @main_window GObject pointing to
- *  the menu definition.
- *
- * Makes a new association between @placeholder and the object found in
- * the @builder. This association may later be used by plugins and other
- * add-ons to insert their own menu items at @placeholder places.
+ * @map is:
+ * - the GtkApplication at main window creation and on dossier close
+ * - the GtkApplicationWindow on dossier open
  */
 static void
-init_store_menu_ref( ofaMainWindow *main_window, GtkBuilder *builder, const gchar *placeholder )
+menubar_setup( ofaMainWindow *window, GActionMap *map )
 {
-	static const gchar *thisfn = "ofa_main_window_init_store_menu_ref";
-	GObject *menu;
+	static const gchar *thisfn = "ofa_main_window_menubar_setup";
+	ofaMainWindowPrivate *priv;
+	GtkWidget *menubar;
+	GMenuModel *model;
+	myScopeMapper *mapper;
 
-	menu = gtk_builder_get_object( builder, placeholder );
-	if( !menu ){
-		g_warning( "%s: unable to find '%s' placeholder", thisfn, placeholder );
-	} else {
-		g_object_set_data( G_OBJECT( main_window ), placeholder, menu );
+	g_debug( "%s: window=%p, map=%p", thisfn, ( void * ) window, ( void * ) map );
+
+	priv = ofa_main_window_get_instance_private( window );
+
+	if( priv->menubar ){
+		gtk_widget_destroy( GTK_WIDGET( priv->menubar ));
+		priv->menubar = NULL;
 	}
+
+	if( priv->accel_group ){
+		gtk_window_remove_accel_group( GTK_WINDOW( window ), GTK_ACCEL_GROUP( priv->accel_group ));
+		g_object_unref( priv->accel_group );
+		priv->accel_group = NULL;
+	}
+
+	mapper = ofa_igetter_get_scope_mapper( priv->getter );
+	model = my_iscope_map_get_menu_model( MY_ISCOPE_MAP( mapper ), map );
+	if( model ){
+		priv->accel_group = my_accel_group_new();
+		my_accel_group_setup_accels_from_menu( priv->accel_group, model, MY_ISCOPE_MAP( mapper ));
+		gtk_window_add_accel_group( GTK_WINDOW( window ), GTK_ACCEL_GROUP( priv->accel_group ));
+
+		menubar = gtk_menu_bar_new_from_model( model );
+
+		g_debug( "%s: model=%p (%s), menubar=%p, grid=%p (%s)",
+				thisfn,
+				( void * ) model, G_OBJECT_TYPE_NAME( model ), ( void * ) menubar,
+				( void * ) priv->grid, G_OBJECT_TYPE_NAME( priv->grid ));
+
+		gtk_grid_attach( GTK_GRID( priv->grid ), menubar, 0, 0, 1, 1 );
+		priv->menubar = GTK_MENU_BAR( menubar );
+	}
+
+	gtk_widget_show_all( GTK_WIDGET( window ));
+}
+
+/*
+ * Enable menu items depending of the writability status of the current
+ * dossier
+ */
+static void
+menubar_update_items( ofaMainWindow *self )
+{
+	ofaMainWindowPrivate *priv;
+	ofaHub *hub;
+	gboolean is_writable;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	is_writable = ofa_hub_is_writable_dossier( hub );
+
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_guided_input,   "guided",     is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_settlement,     "settlement", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_reconciliation, "concil",     is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_ledger,   "ledclosing", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_period,   "perclosing", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_exercice, "execlosing", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_import,         "import",     is_writable );
 }
 
 /*
@@ -846,81 +899,6 @@ ofa_main_window_is_willing_to_quit( const ofaMainWindow *main_window )
 				GTK_WINDOW( main_window ),
 				_( "Are you sure you want to quit the application ?" ),
 				_( "_Quit" )));
-}
-
-/*
- * @map is:
- * - the GtkApplication at main window creation and on dossier close
- * - the GtkApplicationWindow on dossier open
- */
-static void
-menubar_setup( ofaMainWindow *window, GActionMap *map )
-{
-	static const gchar *thisfn = "ofa_main_window_menubar_setup";
-	ofaMainWindowPrivate *priv;
-	GtkWidget *menubar;
-	GMenuModel *model;
-	myScopeMapper *mapper;
-
-	g_debug( "%s: window=%p, map=%p", thisfn, ( void * ) window, ( void * ) map );
-
-	priv = ofa_main_window_get_instance_private( window );
-
-	if( priv->menubar ){
-		gtk_widget_destroy( GTK_WIDGET( priv->menubar ));
-		priv->menubar = NULL;
-	}
-
-	if( priv->accel_group ){
-		gtk_window_remove_accel_group( GTK_WINDOW( window ), GTK_ACCEL_GROUP( priv->accel_group ));
-		g_object_unref( priv->accel_group );
-		priv->accel_group = NULL;
-	}
-
-	mapper = ofa_igetter_get_scope_mapper( priv->getter );
-	model = my_iscope_map_get_menu_model( MY_ISCOPE_MAP( mapper ), map );
-	if( model ){
-		priv->accel_group = my_accel_group_new();
-		my_accel_group_setup_accels_from_menu( priv->accel_group, model, MY_ISCOPE_MAP( mapper ));
-		gtk_window_add_accel_group( GTK_WINDOW( window ), GTK_ACCEL_GROUP( priv->accel_group ));
-
-		menubar = gtk_menu_bar_new_from_model( model );
-
-		g_debug( "%s: model=%p (%s), menubar=%p, grid=%p (%s)",
-				thisfn,
-				( void * ) model, G_OBJECT_TYPE_NAME( model ), ( void * ) menubar,
-				( void * ) priv->grid, G_OBJECT_TYPE_NAME( priv->grid ));
-
-		gtk_grid_attach( GTK_GRID( priv->grid ), menubar, 0, 0, 1, 1 );
-		priv->menubar = GTK_MENU_BAR( menubar );
-	}
-
-	gtk_widget_show_all( GTK_WIDGET( window ));
-}
-
-/*
- * Enable menu items depending of the writability status of the current
- * dossier
- */
-static void
-menubar_update_items( ofaMainWindow *self )
-{
-	ofaMainWindowPrivate *priv;
-	ofaHub *hub;
-	gboolean is_writable;
-
-	priv = ofa_main_window_get_instance_private( self );
-
-	hub = ofa_igetter_get_hub( priv->getter );
-	is_writable = ofa_hub_is_writable_dossier( hub );
-
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_guided_input,   "guided",     is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_settlement,     "settlement", is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_reconciliation, "concil",     is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_ledger,   "ledclosing", is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_period,   "perclosing", is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_exercice, "execlosing", is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_import,         "import",     is_writable );
 }
 
 /*

@@ -45,17 +45,18 @@ typedef struct {
 static GRegex         *st_quote_single_regex    = NULL;
 static const gchar    *st_save_restore_group    = "orgtrychlosmy";
 
-static gchar   *quote_backslashes( const gchar *str );
-static gboolean utils_quote_cb( const GMatchInfo *info, GString *res, gpointer data );
-static gboolean utils_unquote_cb( const GMatchInfo *info, GString *res, gpointer data );
-static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
-static void     my_utils_container_dump_rec( GtkContainer *container, const gchar *prefix );
-static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
-static void     position_set_from_int_list( GList *list, gint *x, gint *y, gint *width, gint *height );
-static gchar   *position_get_key( const gchar *name );
-static GSList  *split_by_line( const gchar *content );
-static gboolean is_dir( GFile *file );
-static gboolean is_readable_gfile( GFile *file );
+static gchar      *quote_backslashes( const gchar *str );
+static gboolean    utils_quote_cb( const GMatchInfo *info, GString *res, gpointer data );
+static gboolean    utils_unquote_cb( const GMatchInfo *info, GString *res, gpointer data );
+static void        child_set_editable_cb( GtkWidget *widget, gpointer data );
+static void        my_utils_container_dump_rec( GtkContainer *container, const gchar *prefix );
+static void        on_notes_changed( GtkTextBuffer *buffer, void *user_data );
+static GMenuModel *menu_get_model_rec( GMenuModel *menu, const gchar *id, gint *pos );
+static void        position_set_from_int_list( GList *list, gint *x, gint *y, gint *width, gint *height );
+static gchar      *position_get_key( const gchar *name );
+static GSList     *split_by_line( const gchar *content );
+static gboolean    is_dir( GFile *file );
+static gboolean    is_readable_gfile( GFile *file );
 
 /**
  * my_collate:
@@ -1143,6 +1144,261 @@ my_utils_container_updstamp_setup_full( GtkContainer *container,
 
 	g_free( str );
 	g_free( str_stamp );
+}
+
+/**
+ * my_utils_menu_get_menu_model:
+ * @menu: the input menu model.
+ * @id: the identifier of a link or an intem.
+ * @pos: [out][allow-none]: if set, a placeholder which receives the
+ *  position of the item in its menu.
+ *
+ * Returns: the #GMenuModel
+ */
+GMenuModel *
+my_utils_menu_get_menu_model( GMenuModel *menu, const gchar *id, gint *pos )
+{
+	gint mypos;
+	GMenuModel *model;
+
+	g_return_val_if_fail( menu && G_IS_MENU_MODEL( menu ), NULL );
+
+	mypos = 0;
+	model = menu_get_model_rec( menu, id, &mypos );
+	if( pos ){
+		*pos = mypos;
+	}
+
+	return( model );
+}
+
+#if 0
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=0, att_name=id, value=dossier
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=0, att_name=label, value=_Dossier
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=0, link_name=submenu, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x82ae30, i=0, att_name=id, value=dossier-10
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x82ae30, i=0, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=0, att_name=id, value=dossier-10-new
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=0, att_name=action, value=app.new
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=0, att_name=label, value=_New...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=0, att_name=accel, value=<Control>n
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=1, att_name=id, value=dossier-10-open
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=1, att_name=action, value=app.open
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=1, att_name=label, value=_Open...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=1, att_name=accel, value=<Control>o
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=2, att_name=id, value=dossier-10-properties
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=2, att_name=action, value=win.properties
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=2, att_name=label, value=_Properties...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=2, att_name=accel, value=<Control>i
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=3, att_name=id, value=dossier-10-backup
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=3, att_name=action, value=win.backup
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=3, att_name=label, value=_Backup...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=3, att_name=accel, value=<Control>b
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=4, att_name=id, value=dossier-10-close
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=4, att_name=action, value=win.close
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=4, att_name=label, value=_Close
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8eded0, i=4, att_name=accel, value=<Control>w
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x82ae30, i=1, att_name=id, value=dossier-20
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x82ae30, i=1, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=0, att_name=id, value=dossier-20-manage
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=0, att_name=action, value=app.manage
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=0, att_name=label, value=_Manage...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=0, att_name=accel, value=<Control>m
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=1, att_name=id, value=dossier-20-restore
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=1, att_name=action, value=app.restore
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=1, att_name=label, value=_Restore...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=1, att_name=accel, value=<Control>r
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=2, att_name=id, value=dossier-20-recover
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=2, att_name=action, value=app.recover
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=2, att_name=label, value=Re_cover...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fc750, i=2, att_name=accel, value=<Control>c
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x82ae30, i=2, att_name=id, value=dossier-30
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x82ae30, i=2, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fe210, i=0, att_name=id, value=dossier-30-prefs
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fe210, i=0, att_name=action, value=app.user_prefs
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fe210, i=0, att_name=label, value=_User preferences...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8fe210, i=0, att_name=accel, value=<Control>u
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x82ae30, i=3, att_name=id, value=dossier-40
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x82ae30, i=3, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x902670, i=0, att_name=id, value=dossier-40-quit
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x902670, i=0, att_name=action, value=app.quit
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x902670, i=0, att_name=label, value=_Quit
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x902670, i=0, att_name=accel, value=<Control>q
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x82ae30, i=4, att_name=id, value=dossier-99
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x82ae30, i=4, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=1, att_name=id, value=operations
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=1, att_name=label, value=_Operations
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=1, link_name=submenu, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x9042a0, i=0, att_name=id, value=operations-10
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x9042a0, i=0, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ffd90, i=0, att_name=id, value=operations-10-guided
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ffd90, i=0, att_name=action, value=win.guided
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ffd90, i=0, att_name=label, value=_Guided input...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ffd90, i=1, att_name=id, value=operations-10-entries
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ffd90, i=1, att_name=action, value=win.entries
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ffd90, i=1, att_name=label, value=_View entries...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x9042a0, i=1, att_name=id, value=operations-20
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x9042a0, i=1, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x905d00, i=0, att_name=id, value=operations-20-settlement
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x905d00, i=0, att_name=action, value=win.settlement
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x905d00, i=0, att_name=label, value=Account _settlement...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x905d00, i=1, att_name=id, value=operations-20-concil
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x905d00, i=1, att_name=action, value=win.concil
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x905d00, i=1, att_name=label, value=Account _reconciliation...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x9042a0, i=2, att_name=id, value=operations-30
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x9042a0, i=2, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x904f50, i=0, att_name=id, value=operations-30-ledclosing
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x904f50, i=0, att_name=action, value=win.ledclosing
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x904f50, i=0, att_name=label, value=_Ledgers closing...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x904f50, i=1, att_name=id, value=operations-30-perclosing
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x904f50, i=1, att_name=action, value=win.perclosing
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x904f50, i=1, att_name=label, value=_Period closing...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x904f50, i=2, att_name=id, value=operations-30-execlosing
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x904f50, i=2, att_name=action, value=win.execlosing
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x904f50, i=2, att_name=label, value=E_xercice closing...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x9042a0, i=3, att_name=id, value=operations-40
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x9042a0, i=3, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x90a190, i=0, att_name=id, value=operations-40-import
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x90a190, i=0, att_name=action, value=win.import
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x90a190, i=0, att_name=label, value=_Import...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x90a190, i=1, att_name=id, value=operations-40-export
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x90a190, i=1, att_name=action, value=win.export
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x90a190, i=1, att_name=label, value=_Export...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x9042a0, i=4, att_name=id, value=operations-99
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x9042a0, i=4, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=2, att_name=id, value=print
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=2, att_name=label, value=_Printings
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=2, link_name=submenu, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39800, i=0, att_name=id, value=print-10
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39800, i=0, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=0, att_name=id, value=print-10-balances
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=0, att_name=action, value=win.render-balances
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=0, att_name=label, value=_Entries balance...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=1, att_name=id, value=print-10-books
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=1, att_name=action, value=win.render-books
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=1, att_name=label, value=_Accounts book...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=2, att_name=id, value=print-10-ledbook
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=2, att_name=action, value=win.render-ledgers-book
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=2, att_name=label, value=_Ledgers book...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=3, att_name=id, value=print-10-ledsummary
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=3, att_name=action, value=win.render-ledgers-summary
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=3, att_name=label, value=Le_dgers summary...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=4, att_name=id, value=print-10-reconcil
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=4, att_name=action, value=win.render-reconcil
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39950, i=4, att_name=label, value=_Reconciliation...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39800, i=1, att_name=id, value=print-99
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa39800, i=1, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=3, att_name=id, value=ref
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=3, att_name=label, value=_References
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=3, link_name=submenu, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30800, i=0, att_name=id, value=ref-10
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30800, i=0, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=0, att_name=id, value=ref-10-accounts
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=0, att_name=action, value=win.accounts
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=0, att_name=label, value=Chart of _Accounts...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=1, att_name=id, value=ref-10-ledgers
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=1, att_name=action, value=win.ledgers
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=1, att_name=label, value=_Ledgers...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=2, att_name=id, value=ref-10-ope-templates
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=2, att_name=action, value=win.ope-templates
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=2, att_name=label, value=Operation templates...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=3, att_name=id, value=ref-10-currencies
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=3, att_name=action, value=win.currencies
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=3, att_name=label, value=_Currencies...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=4, att_name=id, value=ref-10-rates
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=4, att_name=action, value=win.rates
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=4, att_name=label, value=_Rates...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=5, att_name=id, value=ref-10-paimeans
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=5, att_name=action, value=win.paimeans
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=5, att_name=label, value=_Means of paiement...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=6, att_name=id, value=ref-10-classes
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=6, att_name=action, value=win.classes
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30950, i=6, att_name=label, value=Account c_lasses...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30800, i=1, att_name=id, value=ref-20
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30800, i=1, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x90ca10, i=0, att_name=id, value=ref-20-batfiles
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x90ca10, i=0, att_name=action, value=win.batfiles
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x90ca10, i=0, att_name=label, value=I_mported transaction files...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30800, i=2, att_name=id, value=ref-99
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa30800, i=2, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=4, att_name=id, value=misc
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=4, att_name=label, value=_Miscellaneous
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=4, link_name=submenu, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x957c70, i=0, att_name=id, value=misc-10
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x957c70, i=0, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x954400, i=0, att_name=id, value=misc-10-plugins
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x954400, i=0, att_name=action, value=app.plugin_manage
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x954400, i=0, att_name=label, value=_Plugins manager...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x957c70, i=1, att_name=id, value=misc-20
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x957c70, i=1, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x954460, i=0, att_name=id, value=misc-20-balances
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x954460, i=0, att_name=action, value=win.chkbal
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x954460, i=0, att_name=label, value=Check _balances...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x954460, i=1, att_name=id, value=misc-20-integrity
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x954460, i=1, att_name=action, value=win.integrity
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x954460, i=1, att_name=label, value=Check DBMS _integrity...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x957c70, i=2, att_name=id, value=misc-99
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x957c70, i=2, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=5, att_name=id, value=help
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=5, att_name=label, value=Help
+MY-DEBUG: my_utils_menu_get_model_rec: model=0x8ed060, i=5, link_name=submenu, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa20ca0, i=0, att_name=id, value=help-10
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa20ca0, i=0, link_name=section, link_value=GMenu
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa50830, i=0, att_name=id, value=help-10-about
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa50830, i=0, att_name=action, value=app.about
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa50830, i=0, att_name=label, value=_About Openbook...
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa20ca0, i=1, att_name=id, value=help-99
+MY-DEBUG: my_utils_menu_get_model_rec: model=0xa20ca0, i=1, link_name=section, link_value=GMenu
+#endif
+
+static GMenuModel *
+menu_get_model_rec( GMenuModel *model, const gchar *id, gint *pos )
+{
+	static const gchar *thisfn = "my_utils_menu_get_model_rec";
+	GMenuLinkIter *link_iter;
+	GMenuAttributeIter *att_iter;
+	gint i;
+	const gchar *att_name, *att_value, *link_name;
+	GMenuModel *lv, *ret;
+	GVariant *att_variant;
+	gboolean found;
+
+	/* iterate through items and attributes to find the searched identifier */
+	found = FALSE;
+	for( i=0 ; i<g_menu_model_get_n_items( model ) ; ++i ){
+
+		att_iter = g_menu_model_iterate_item_attributes( model, i );
+		while( !found && g_menu_attribute_iter_get_next( att_iter, &att_name, &att_variant )){
+			att_value = g_variant_get_string( att_variant, NULL );
+			if( 1 ){
+				g_debug( "%s: model=%p, i=%d, att_name=%s, att_value=%s",
+						thisfn, model, i, att_name, att_value );
+			}
+			found = my_collate( att_name, "id" ) == 0 && my_collate( att_value, id ) == 0;
+			g_variant_unref( att_variant );
+		}
+		g_object_unref( att_iter );
+
+		if( found ){
+			*pos = i;
+			return( model );
+		}
+
+		ret = NULL;
+		link_iter = g_menu_model_iterate_item_links( model, i );
+		while( !ret && g_menu_link_iter_get_next( link_iter, &link_name, &lv )){
+			g_debug( "%s: model=%p, i=%d, link_name=%s, link_value=%s",
+					thisfn, model, i, link_name, G_OBJECT_TYPE_NAME( lv ));
+			ret = menu_get_model_rec( lv, id, pos );
+			g_object_unref( lv );
+		}
+		g_object_unref( link_iter );
+		if( ret ){
+			return( ret );
+		}
+	}
+
+	return( NULL );
 }
 
 /**

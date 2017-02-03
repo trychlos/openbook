@@ -106,6 +106,8 @@ void          my_utils_container_updstamp_setup_full  ( GtkContainer *container,
 																GTK_CONTAINER(C), "px-last-update", ofo_ ## T ## _get_upd_stamp( priv->T ), \
 																ofo_ ## T ## _get_upd_user( priv->T )); }
 
+GMenuModel   *my_utils_menu_get_menu_model            ( GMenuModel *menu, const gchar *id, gint *pos );
+
 void          my_utils_size_group_add_size_group      ( GtkSizeGroup *target, GtkSizeGroup *source );
 
 GtkWindow    *my_utils_widget_get_toplevel            ( GtkWidget *widget );

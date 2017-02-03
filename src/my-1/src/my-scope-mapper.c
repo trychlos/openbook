@@ -160,8 +160,8 @@ my_scope_mapper_register( myScopeMapper *mapper, const gchar *scope, GActionMap 
 	sRegister *sdata;
 	gboolean ok;
 
-	g_debug( "%s: mapper=%p, scope=%s, action_map=%p",
-			thisfn, ( void * ) mapper, scope, ( void * ) action_map );
+	g_debug( "%s: mapper=%p, scope=%s, action_map=%p, menu_model=%p",
+			thisfn, ( void * ) mapper, scope, ( void * ) action_map, ( void * ) menu_model );
 
 	g_return_val_if_fail( mapper && MY_IS_SCOPE_MAPPER( mapper ), FALSE );
 	g_return_val_if_fail( my_strlen( scope ) > 0, FALSE );

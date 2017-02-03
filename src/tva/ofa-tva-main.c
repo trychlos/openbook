@@ -30,6 +30,9 @@
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
+#include "my/my-iscope-map.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-isignaler.h"
@@ -59,10 +62,10 @@ typedef struct {
 	sThemeDef;
 
 static void on_menu_available( ofaISignaler *signaler, const gchar *scope, GActionMap *map, ofaIGetter *getter );
-static void menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder );
-static void on_page_manager_available( ofaISignaler *signaler, ofaIGetter *getter, void *empty );
+static void menu_add_section( GMenuModel *model, const gchar *scope, const sItemDef *sitems, const gchar *placeholder );
 static void on_tva_declare( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_tva_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_page_manager_available( ofaISignaler *signaler, ofaIGetter *getter, void *empty );
 
 /* all the actions added for the TVA modules
  */
@@ -124,46 +127,51 @@ static void
 on_menu_available( ofaISignaler *signaler, const gchar *scope, GActionMap *map, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "tva/ofa_tva_main_on_menu_available";
+	myScopeMapper *mapper;
+	GMenuModel *model;
 
 	g_debug( "%s: signaler=%p, scope=%s, map=%p, getter=%p",
 			thisfn, ( void * ) signaler, scope, ( void * ) map, ( void * ) getter );
 
-	if( GTK_IS_APPLICATION_WINDOW( map )){
+	if( !my_collate( scope, "win" )){
 		g_action_map_add_action_entries(
 				G_ACTION_MAP( map ), st_win_entries, G_N_ELEMENTS( st_win_entries ), map );
 
-		menu_add_section( G_OBJECT( map ), st_items_ope2, "plugins_win_ope2" );
-		menu_add_section( G_OBJECT( map ), st_items_ref, "plugins_win_ref" );
+		mapper = ofa_igetter_get_scope_mapper( getter );
+		model = my_iscope_map_get_menu_model( MY_ISCOPE_MAP( mapper ), map );
+		g_return_if_fail( model && G_IS_MENU_MODEL( model ));
+
+		menu_add_section( model, "win", st_items_ope2, "operations-30" );
+		menu_add_section( model, "win", st_items_ref, "ref-99" );
 	}
 }
 
 static void
-menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder )
+menu_add_section( GMenuModel *parent_model, const gchar *scope, const sItemDef *sitems, const gchar *placeholder )
 {
 	static const gchar *thisfn = "tva/ofa_tva_main_menu_add_section";
-	GMenuModel *menu_model;
+	GMenuModel *placelink;
     GMenu *section;
     gchar *label, *action_name;
-    gint i;
+    gint pos, i;
 
-	menu_model = ( GMenuModel * ) g_object_get_data( parent, placeholder );
-	g_debug( "%s: menu_model=%p", thisfn, ( void * ) menu_model );
-	/*
-	g_debug( "%s: menu_model=%p (%s), ref_count=%d",
-			thisfn, ( void * ) menu_model, G_OBJECT_TYPE_NAME( menu_model ),
-			G_OBJECT( menu_model )->ref_count );
-			*/
+    pos = 0;
+	placelink = my_utils_menu_get_menu_model( parent_model, placeholder, &pos );
 
-	if( menu_model ){
+	if( !placelink ){
+		g_warning( "%s: parent_model=%p (%s), scope=%s, placeholder=%s not found",
+				thisfn, ( void * ) parent_model, G_OBJECT_TYPE_NAME( parent_model ), scope, placeholder );
+
+	} else {
 		section = g_menu_new();
 		for( i=0 ; sitems[i].action_name ; ++i ){
 			label = g_strdup( sitems[i].item_label );
-			action_name = g_strconcat( "win.", sitems[i].action_name, NULL );
-			g_menu_insert( section, 0, label, action_name );
+			action_name = g_strdup_printf( "%s.%s", scope, sitems[i].action_name );
+			g_menu_insert( section, i, label, action_name );
 			g_free( label );
 			g_free( action_name );
 		}
-		g_menu_append_section( G_MENU( menu_model ), NULL, G_MENU_MODEL( section ));
+		g_menu_insert_section( G_MENU( placelink ), pos, NULL, G_MENU_MODEL( section ));
 		g_object_unref( section );
 	}
 }

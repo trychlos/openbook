@@ -1,141 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <menu id="app-menu">
-    <submenu>
-      <attribute name="label" translatable="yes">_Dossier</attribute>
-      <item>
-        <link name='section' id='dynamic_ui_app_dossier_10'></link>
-      </item>
-      <section>
-        <item>
-          <link name='section' id='dynamic_ui_app_dossier_new'></link>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_New...</attribute>
-          <attribute name="action">app.new</attribute>
-          <attribute name="accel">&lt;Control&gt;n</attribute>
-        </item>
-        <item>
-          <link name='section' id='dynamic_ui_app_dossier_open'></link>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Open...</attribute>
-          <attribute name="action">app.open</attribute>
-          <attribute name="accel">&lt;Control&gt;o</attribute>
-        </item>
-        <item>
-          <link name='section' id='dynamic_ui_app_dossier_19'></link>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='dynamic_ui_app_dossier_20'></link>
-      </item>
-      <section>
-        <item>
-          <link name='section' id='dynamic_ui_app_dossier_manage'></link>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Manage...</attribute>
-          <attribute name="action">app.manage</attribute>
-          <attribute name="accel">&lt;Control&gt;m</attribute>
-        </item>
-        <item>
-          <link name='section' id='dynamic_ui_app_dossier_restore'></link>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Restore...</attribute>
-          <attribute name="action">app.restore</attribute>
-          <attribute name="accel">&lt;Control&gt;r</attribute>
-        </item>
-        <item>
-          <link name='section' id='dynamic_ui_app_dossier_recover'></link>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">Re_cover...</attribute>
-          <attribute name="action">app.recover</attribute>
-          <attribute name="accel">&lt;Control&gt;c</attribute>
-        </item>
-        <item>
-          <link name='section' id='dynamic_ui_app_dossier_29'></link>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='dynamic_ui_app_dossier_30'></link>
-      </item>
-      <section>
-        <item>
-          <link name='section' id='dynamic_ui_app_dossier_userprefs'></link>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_User preferences...</attribute>
-          <attribute name="action">app.user_prefs</attribute>
-          <attribute name="accel">&lt;Control&gt;u</attribute>
-        </item>
-        <item>
-          <link name='section' id='dynamic_ui_app_dossier_39'></link>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='dynamic_ui_app_dossier_40'></link>
-      </item>
-      <section>
-        <item>
-          <link name='section' id='dynamic_ui_app_dossier_quit'></link>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Quit</attribute>
-          <attribute name="action">app.quit</attribute>
-          <attribute name="accel">&lt;Control&gt;q</attribute>
-        </item>
-        <item>
-          <link name='section' id='dynamic_ui_app_dossier_49'></link>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='dynamic_ui_app_dossier_99'></link>
-      </item>
-    </submenu>
-    <submenu>
-      <attribute name="label" translatable="yes">_Miscellaneous</attribute>
-      <item>
-        <link name='section' id='dynamic_ui_app_misc_10'></link>
-      </item>
-      <section>
-        <item>
-          <link name='section' id='dynamic_ui_app_misc_plugins'></link>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Plugins manager...</attribute>
-          <attribute name="action">app.plugin_manage</attribute>
-        </item>
-        <item>
-          <link name='section' id='dynamic_ui_app_misc_19'></link>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='dynamic_ui_app_misc_99'></link>
-      </item>
-    </submenu>
-    <submenu>
-      <attribute name="label" translatable="yes">_Help</attribute>
-      <item>
-        <link name='section' id='dynamic_ui_app_help_10'></link>
-      </item>
-      <section>
-        <item>
-          <link name='section' id='dynamic_ui_app_help_about'></link>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_About Openbook...</attribute>
-          <attribute name="action">app.about</attribute>
-        </item>
-        <item>
-          <link name='section' id='dynamic_ui_app_help_19'></link>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='dynamic_ui_app_help_99'></link>
-      </item>
-    </submenu>
+	<menu id="app-menu">
+		<submenu>
+			<attribute name="id">dossier</attribute>
+			<attribute name="label" translatable="yes">_Dossier</attribute>
+			<section>
+				<attribute name="id">dossier-10</attribute>
+				<item>
+					<attribute name="id">dossier-10-new</attribute>
+					<attribute name="label" translatable="yes">_New...</attribute>
+					<attribute name="action">app.new</attribute>
+					<attribute name="accel">&lt;Control&gt;n</attribute>
+				</item>
+				<item>
+					<attribute name="id">dossier-10-open</attribute>
+					<attribute name="label" translatable="yes">_Open...</attribute>
+					<attribute name="action">app.open</attribute>
+					<attribute name="accel">&lt;Control&gt;o</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">dossier-20</attribute>
+				<item>
+					<attribute name="id">dossier-20-manage</attribute>
+					<attribute name="label" translatable="yes">_Manage...</attribute>
+					<attribute name="action">app.manage</attribute>
+					<attribute name="accel">&lt;Control&gt;m</attribute>
+				</item>
+				<item>
+					<attribute name="id">dossier-20-restore</attribute>
+					<attribute name="label" translatable="yes">_Restore...</attribute>
+					<attribute name="action">app.restore</attribute>
+					<attribute name="accel">&lt;Control&gt;r</attribute>
+				</item>
+				<item>
+					<attribute name="id">dossier-20-recover</attribute>
+					<attribute name="label" translatable="yes">Re_cover...</attribute>
+					<attribute name="action">app.recover</attribute>
+					<attribute name="accel">&lt;Control&gt;c</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">dossier-30</attribute>
+				<item>
+					<attribute name="id">dossier-30-prefs</attribute>
+					<attribute name="label" translatable="yes">_User preferences...</attribute>
+					<attribute name="action">app.user_prefs</attribute>
+					<attribute name="accel">&lt;Control&gt;u</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">dossier-40</attribute>
+				<item>
+					<attribute name="id">dossier-40-quit</attribute>
+					<attribute name="label" translatable="yes">_Quit</attribute>
+					<attribute name="action">app.quit</attribute>
+					<attribute name="accel">&lt;Control&gt;q</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">dossier-99</attribute>
+			</section>
+		</submenu>
+		<submenu>
+			<attribute name="id">misc</attribute>
+			<attribute name="label" translatable="yes">_Miscellaneous</attribute>
+			<section>
+				<attribute name="id">misc-10</attribute>
+				<item>
+					<attribute name="id">misc-10-plugins</attribute>
+					<attribute name="label" translatable="yes">_Plugins manager...</attribute>
+					<attribute name="action">app.plugin_manage</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">misc-99</attribute>
+			</section>
+		</submenu>
+		<submenu>
+			<attribute name="id">help</attribute>
+			<attribute name="label" translatable="yes">_Help</attribute>
+			<section>
+				<attribute name="id">help-10</attribute>
+				<item>
+					<attribute name="id">help-10-about</attribute>
+					<attribute name="label" translatable="yes">_About Openbook...</attribute>
+					<attribute name="action">app.about</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">help-99</attribute>
+			</section>
+		</submenu>
   </menu>
 </interface>

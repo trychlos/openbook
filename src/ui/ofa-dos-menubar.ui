@@ -1,229 +1,279 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <menu id="dos-menu">
-    <submenu>
-      <attribute name="label" translatable="yes">_Dossier</attribute>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">_New...</attribute>
-          <attribute name="action">app.new</attribute>
-          <attribute name="accel">&lt;Control&gt;n</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Open...</attribute>
-          <attribute name="action">app.open</attribute>
-          <attribute name="accel">&lt;Control&gt;o</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Properties...</attribute>
-          <attribute name="action">win.properties</attribute>
-          <attribute name="accel">&lt;Control&gt;i</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Backup...</attribute>
-          <attribute name="action">win.backup</attribute>
-          <attribute name="accel">&lt;Control&gt;b</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Close</attribute>
-          <attribute name="action">win.close</attribute>
-          <attribute name="accel">&lt;Control&gt;w</attribute>
-        </item>
-      </section>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">_Manage...</attribute>
-          <attribute name="action">app.manage</attribute>
-          <attribute name="accel">&lt;Control&gt;m</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Restore...</attribute>
-          <attribute name="action">app.restore</attribute>
-          <attribute name="accel">&lt;Control&gt;r</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">Re_cover...</attribute>
-          <attribute name="action">app.recover</attribute>
-          <attribute name="accel">&lt;Control&gt;c</attribute>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='plugins_app_dossier'></link>
-      </item>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">_User preferences...</attribute>
-          <attribute name="action">app.user_prefs</attribute>
-          <attribute name="accel">&lt;Control&gt;u</attribute>
-        </item>
-      </section>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">_Quit</attribute>
-          <attribute name="action">app.quit</attribute>
-          <attribute name="accel">&lt;Control&gt;q</attribute>
-        </item>
-      </section>
-    </submenu>
-    <submenu>
-      <attribute name="label" translatable="yes">_Operations</attribute>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">_Guided input...</attribute>
-          <attribute name="action">win.guided</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_View entries...</attribute>
-          <attribute name="action">win.entries</attribute>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='plugins_win_ope1'></link>
-      </item>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">Account _settlement...</attribute>
-          <attribute name="action">win.settlement</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">Account _reconciliation...</attribute>
-          <attribute name="action">win.concil</attribute>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='plugins_win_ope2'></link>
-      </item>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">_Ledgers closing...</attribute>
-          <attribute name="action">win.ledclosing</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Period closing...</attribute>
-          <attribute name="action">win.perclosing</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">E_xercice closing...</attribute>
-          <attribute name="action">win.execlosing</attribute>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='plugins_win_ope3'></link>
-      </item>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">_Import...</attribute>
-          <attribute name="action">win.import</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Export...</attribute>
-          <attribute name="action">win.export</attribute>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='plugins_win_ope4'></link>
-      </item>
-    </submenu>
-    <submenu>
-      <attribute name="label" translatable="yes">_Printings</attribute>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">_Entries balance...</attribute>
-          <attribute name="action">win.render-balances</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Accounts book...</attribute>
-          <attribute name="action">win.render-books</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Ledgers book...</attribute>
-          <attribute name="action">win.render-ledgers-book</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">Le_dgers summary...</attribute>
-          <attribute name="action">win.render-ledgers-summary</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Reconciliation...</attribute>
-          <attribute name="action">win.render-reconcil</attribute>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='plugins_win_print'></link>
-      </item>
-    </submenu>
-    <submenu>
-      <attribute name="label" translatable="yes">_References</attribute>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">Chart of _Accounts...</attribute>
-          <attribute name="action">win.accounts</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Ledgers...</attribute>
-          <attribute name="action">win.ledgers</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">Operation templates...</attribute>
-          <attribute name="action">win.ope-templates</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Currencies...</attribute>
-          <attribute name="action">win.currencies</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Rates...</attribute>
-          <attribute name="action">win.rates</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">_Means of paiement...</attribute>
-          <attribute name="action">win.paimeans</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">Account c_lasses...</attribute>
-          <attribute name="action">win.classes</attribute>
-        </item>
-      </section>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">I_mported transaction files...</attribute>
-          <attribute name="action">win.batfiles</attribute>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='plugins_win_ref'></link>
-      </item>
-    </submenu>
-    <submenu>
-      <attribute name="label" translatable="yes">_Miscellaneous</attribute>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">_Plugins manager...</attribute>
-          <attribute name="action">app.plugin_manage</attribute>
-        </item>
-      </section>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">Check _balances...</attribute>
-          <attribute name="action">win.chkbal</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">Check DBMS _integrity...</attribute>
-          <attribute name="action">win.integrity</attribute>
-        </item>
-      </section>
-      <item>
-        <link name='section' id='plugins_app_misc'></link>
-      </item>
-    </submenu>
-    <submenu>
-      <attribute name="label" translatable="yes">Help</attribute>
-      <section>
-        <item>
-          <attribute name="label" translatable="yes">_About Openbook...</attribute>
-          <attribute name="action">app.about</attribute>
-        </item>
-      </section>
-    </submenu>
-  </menu>
+	<menu id="dos-menu">
+		<submenu>
+			<attribute name="id">dossier</attribute>
+			<attribute name="label" translatable="yes">_Dossier</attribute>
+			<section>
+				<attribute name="id">dossier-10</attribute>
+				<item>
+					<attribute name="id">dossier-10-new</attribute>
+					<attribute name="label" translatable="yes">_New...</attribute>
+					<attribute name="action">app.new</attribute>
+					<attribute name="accel">&lt;Control&gt;n</attribute>
+				</item>
+				<item>
+					<attribute name="id">dossier-10-open</attribute>
+					<attribute name="label" translatable="yes">_Open...</attribute>
+					<attribute name="action">app.open</attribute>
+					<attribute name="accel">&lt;Control&gt;o</attribute>
+				</item>
+				<item>
+					<attribute name="id">dossier-10-properties</attribute>
+					<attribute name="label" translatable="yes">_Properties...</attribute>
+					<attribute name="action">win.properties</attribute>
+					<attribute name="accel">&lt;Control&gt;i</attribute>
+				</item>
+				<item>
+					<attribute name="id">dossier-10-backup</attribute>
+					<attribute name="label" translatable="yes">_Backup...</attribute>
+					<attribute name="action">win.backup</attribute>
+					<attribute name="accel">&lt;Control&gt;b</attribute>
+				</item>
+				<item>
+					<attribute name="id">dossier-10-close</attribute>
+					<attribute name="label" translatable="yes">_Close</attribute>
+					<attribute name="action">win.close</attribute>
+					<attribute name="accel">&lt;Control&gt;w</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">dossier-20</attribute>
+				<item>
+					<attribute name="id">dossier-20-manage</attribute>
+					<attribute name="label" translatable="yes">_Manage...</attribute>
+					<attribute name="action">app.manage</attribute>
+					<attribute name="accel">&lt;Control&gt;m</attribute>
+				</item>
+				<item>
+					<attribute name="id">dossier-20-restore</attribute>
+					<attribute name="label" translatable="yes">_Restore...</attribute>
+					<attribute name="action">app.restore</attribute>
+					<attribute name="accel">&lt;Control&gt;r</attribute>
+				</item>
+				<item>
+					<attribute name="id">dossier-20-recover</attribute>
+					<attribute name="label" translatable="yes">Re_cover...</attribute>
+					<attribute name="action">app.recover</attribute>
+					<attribute name="accel">&lt;Control&gt;c</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">dossier-30</attribute>
+				<item>
+					<attribute name="id">dossier-30-prefs</attribute>
+					<attribute name="label" translatable="yes">_User preferences...</attribute>
+					<attribute name="action">app.user_prefs</attribute>
+					<attribute name="accel">&lt;Control&gt;u</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">dossier-40</attribute>
+				<item>
+					<attribute name="id">dossier-40-quit</attribute>
+					<attribute name="label" translatable="yes">_Quit</attribute>
+					<attribute name="action">app.quit</attribute>
+					<attribute name="accel">&lt;Control&gt;q</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">dossier-99</attribute>
+			</section>
+		</submenu>
+		<submenu>
+			<attribute name="id">operations</attribute>
+			<attribute name="label" translatable="yes">_Operations</attribute>
+			<section>
+				<attribute name="id">operations-10</attribute>
+				<item>
+					<attribute name="id">operations-10-guided</attribute>
+					<attribute name="label" translatable="yes">_Guided input...</attribute>
+					<attribute name="action">win.guided</attribute>
+				</item>
+				<item>
+					<attribute name="id">operations-10-entries</attribute>
+					<attribute name="label" translatable="yes">_View entries...</attribute>
+					<attribute name="action">win.entries</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">operations-20</attribute>
+				<item>
+					<attribute name="id">operations-20-settlement</attribute>
+					<attribute name="label" translatable="yes">Account _settlement...</attribute>
+					<attribute name="action">win.settlement</attribute>
+				</item>
+				<item>
+					<attribute name="id">operations-20-concil</attribute>
+					<attribute name="label" translatable="yes">Account _reconciliation...</attribute>
+					<attribute name="action">win.concil</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">operations-30</attribute>
+				<item>
+					<attribute name="id">operations-30-ledclosing</attribute>
+					<attribute name="label" translatable="yes">_Ledgers closing...</attribute>
+					<attribute name="action">win.ledclosing</attribute>
+				</item>
+				<item>
+					<attribute name="id">operations-30-perclosing</attribute>
+					<attribute name="label" translatable="yes">_Period closing...</attribute>
+					<attribute name="action">win.perclosing</attribute>
+				</item>
+				<item>
+					<attribute name="id">operations-30-execlosing</attribute>
+					<attribute name="label" translatable="yes">E_xercice closing...</attribute>
+					<attribute name="action">win.execlosing</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">operations-40</attribute>
+				<item>
+					<attribute name="id">operations-40-import</attribute>
+					<attribute name="label" translatable="yes">_Import...</attribute>
+					<attribute name="action">win.import</attribute>
+				</item>
+				<item>
+					<attribute name="id">operations-40-export</attribute>
+					<attribute name="label" translatable="yes">_Export...</attribute>
+					<attribute name="action">win.export</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">operations-99</attribute>
+			</section>
+		</submenu>
+		<submenu>
+			<attribute name="id">print</attribute>
+			<attribute name="label" translatable="yes">_Printings</attribute>
+			<section>
+				<attribute name="id">print-10</attribute>
+				<item>
+					<attribute name="id">print-10-balances</attribute>
+					<attribute name="label" translatable="yes">_Entries balance...</attribute>
+					<attribute name="action">win.render-balances</attribute>
+				</item>
+				<item>
+					<attribute name="id">print-10-books</attribute>
+					<attribute name="label" translatable="yes">_Accounts book...</attribute>
+					<attribute name="action">win.render-books</attribute>
+				</item>
+				<item>
+					<attribute name="id">print-10-ledbook</attribute>
+					<attribute name="label" translatable="yes">_Ledgers book...</attribute>
+					<attribute name="action">win.render-ledgers-book</attribute>
+				</item>
+				<item>
+					<attribute name="id">print-10-ledsummary</attribute>
+					<attribute name="label" translatable="yes">Le_dgers summary...</attribute>
+					<attribute name="action">win.render-ledgers-summary</attribute>
+				</item>
+				<item>
+					<attribute name="id">print-10-reconcil</attribute>
+					<attribute name="label" translatable="yes">_Reconciliation...</attribute>
+					<attribute name="action">win.render-reconcil</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">print-99</attribute>
+			</section>
+		</submenu>
+		<submenu>
+			<attribute name="id">ref</attribute>
+			<attribute name="label" translatable="yes">_References</attribute>
+			<section>
+				<attribute name="id">ref-10</attribute>
+				<item>
+					<attribute name="id">ref-10-accounts</attribute>
+					<attribute name="label" translatable="yes">Chart of _Accounts...</attribute>
+					<attribute name="action">win.accounts</attribute>
+				</item>
+				<item>
+					<attribute name="id">ref-10-ledgers</attribute>
+					<attribute name="label" translatable="yes">_Ledgers...</attribute>
+					<attribute name="action">win.ledgers</attribute>
+				</item>
+				<item>
+					<attribute name="id">ref-10-ope-templates</attribute>
+					<attribute name="label" translatable="yes">Operation templates...</attribute>
+					<attribute name="action">win.ope-templates</attribute>
+				</item>
+				<item>
+					<attribute name="id">ref-10-currencies</attribute>
+					<attribute name="label" translatable="yes">_Currencies...</attribute>
+					<attribute name="action">win.currencies</attribute>
+				</item>
+				<item>
+					<attribute name="id">ref-10-rates</attribute>
+					<attribute name="label" translatable="yes">_Rates...</attribute>
+					<attribute name="action">win.rates</attribute>
+				</item>
+				<item>
+					<attribute name="id">ref-10-paimeans</attribute>
+					<attribute name="label" translatable="yes">_Means of paiement...</attribute>
+					<attribute name="action">win.paimeans</attribute>
+				</item>
+				<item>
+					<attribute name="id">ref-10-classes</attribute>
+					<attribute name="label" translatable="yes">Account c_lasses...</attribute>
+					<attribute name="action">win.classes</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">ref-20</attribute>
+				<item>
+					<attribute name="id">ref-20-batfiles</attribute>
+					<attribute name="label" translatable="yes">I_mported transaction files...</attribute>
+					<attribute name="action">win.batfiles</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">ref-99</attribute>
+			</section>
+		</submenu>
+		<submenu>
+			<attribute name="id">misc</attribute>
+			<attribute name="label" translatable="yes">_Miscellaneous</attribute>
+			<section>
+				<attribute name="id">misc-10</attribute>
+				<item>
+					<attribute name="id">misc-10-plugins</attribute>
+					<attribute name="label" translatable="yes">_Plugins manager...</attribute>
+					<attribute name="action">app.plugin_manage</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">misc-20</attribute>
+				<item>
+					<attribute name="id">misc-20-balances</attribute>
+					<attribute name="label" translatable="yes">Check _balances...</attribute>
+					<attribute name="action">win.chkbal</attribute>
+				</item>
+				<item>
+					<attribute name="id">misc-20-integrity</attribute>
+					<attribute name="label" translatable="yes">Check DBMS _integrity...</attribute>
+					<attribute name="action">win.integrity</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">misc-99</attribute>
+			</section>
+		</submenu>
+		<submenu>
+			<attribute name="id">help</attribute>
+			<attribute name="label" translatable="yes">Help</attribute>
+			<section>
+				<attribute name="id">help-10</attribute>
+				<item>
+					<attribute name="id">help-10-about</attribute>
+					<attribute name="label" translatable="yes">_About Openbook...</attribute>
+					<attribute name="action">app.about</attribute>
+				</item>
+			</section>
+			<section>
+				<attribute name="id">help-99</attribute>
+			</section>
+		</submenu>
+	</menu>
 </interface>

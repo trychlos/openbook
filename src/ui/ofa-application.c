@@ -142,8 +142,7 @@ static void     init_i18n( ofaApplication *self );
 static gboolean init_gtk_args( ofaApplication *self );
 static gboolean manage_options( ofaApplication *self );
 static void     application_startup( GApplication *application );
-static void     setup_application_menu( ofaApplication *self );
-static void     appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
+static void     menubar_init( ofaApplication *self );
 static void     menubar_update_items( ofaApplication *self );
 static void     application_activate( GApplication *application );
 static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
@@ -684,7 +683,7 @@ application_startup( GApplication *application )
 	 * - enable the menu items sensitivity depending of current conditions */
 	ofa_misc_audit_item_signal_connect( OFA_IGETTER( priv->hub ));
 	ofa_misc_collector_item_signal_connect( OFA_IGETTER( priv->hub ));
-	setup_application_menu( OFA_APPLICATION( application ));
+	menubar_init( OFA_APPLICATION( application ));
 	menubar_update_items( appli );
 
 	/* dossiers collection monitoring
@@ -699,9 +698,9 @@ application_startup( GApplication *application )
 }
 
 static void
-setup_application_menu( ofaApplication *self )
+menubar_init( ofaApplication *self )
 {
-	static const gchar *thisfn = "ofa_application_setup_application_menu";
+	static const gchar *thisfn = "ofa_application_menubar_init";
 	ofaApplicationPrivate *priv;
 	GtkBuilder *builder;
 	GMenuModel *menu;
@@ -724,47 +723,26 @@ setup_application_menu( ofaApplication *self )
 	 */
 	builder = gtk_builder_new_from_resource( st_resource_appmenu );
 	menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_appmenu_id ));
+
 	if( menu ){
 		g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
 				thisfn, st_resource_appmenu, ( void * ) menu, g_menu_model_get_n_items( menu ));
 
-		appli_store_ref( self, builder, "plugins_app_dossier" );
-		appli_store_ref( self, builder, "plugins_app_misc" );
+		priv->menu_model = g_object_ref( menu );
+
+		/* register the menu model with the action map
+		 */
+		mapper = ofa_igetter_get_scope_mapper( OFA_IGETTER( priv->hub ));
+		my_scope_mapper_register( mapper, "app", G_ACTION_MAP( self ), menu );
+
+		signaler = ofa_igetter_get_signaler( OFA_IGETTER( priv->hub ));
+		g_signal_emit_by_name( signaler, "ofa-signaler-menu-available", "app", self );
 
 	} else {
 		g_warning( "%s: unable to find '%s' object in '%s' resource", thisfn, st_appmenu_id, st_resource_appmenu );
 	}
 
-	/* register the menu model with the action map
-	 */
-	mapper = ofa_igetter_get_scope_mapper( OFA_IGETTER( priv->hub ));
-	my_scope_mapper_register( mapper, "app", G_ACTION_MAP( self ), menu );
-	priv->menu_model = g_object_ref( menu );
-
-	signaler = ofa_igetter_get_signaler( OFA_IGETTER( priv->hub ));
-	g_signal_emit_by_name( signaler, "ofa-signaler-menu-available", "app", self );
-
 	g_object_unref( builder );
-}
-
-/*
- * stores against the @application GObject the data needed later by the
- * plugins to be able to update the menus
- */
-static void
-appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder )
-{
-	static const gchar *thisfn = "ofa_application_appli_store_ref";
-	GObject *item;
-
-	item = gtk_builder_get_object( builder, placeholder );
-	if( !item ){
-		g_warning( "%s: unable to find '%s' placeholder", thisfn, placeholder );
-	} else {
-		/* gtk+/examples/plugman.c uses g_object_set_data_full(), but
-		 *  item appears to be unreffed with its parent GMenuModel */
-		g_object_set_data( G_OBJECT( application ), placeholder, item );
-	}
 }
 
 static void
