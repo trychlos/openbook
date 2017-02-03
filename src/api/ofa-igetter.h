@@ -35,25 +35,29 @@
  * generally all parts of application access to some global interest
  * variables.
  *
- * All Openbook-related applications, whether they are GUI-oriented or
- * only command-line tools, should at least have an #ofaHub global
- * object, as it is supposed to hold all non-gui related variables.
+ * The #ofaIGetter interface is mainly the external API to the #ofaHub
+ * object of the application.
  *
- * The Openbook GUI also provides a theme manager, implemented by the
- * main window, which displays pages as tabs of a main notebook.
- *
- * It happens that both the ofaApplication, the ofaMainWindow and all
- * the ofaPage-derived objects all implement this ofaIGetter interface.
- * This let rather all code get an easy access to global variables.
+ * As such, it manages some UI-related and some not-UI-related properties.
+ * In a command-line program without user interface, the caller should
+ * be prepared to not have all properties set.
  */
 
 #include <gio/gio.h>
 #include <glib-object.h>
 #include <gtk/gtk.h>
 
+#include "my/my-icollector.h"
+#include "my/my-isettings.h"
+#include "my/my-menu-manager.h"
+
+#include "api/ofa-dossier-collection.h"
+#include "api/ofa-extender-collection.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-ipage-manager-def.h"
+#include "api/ofa-isignaler.h"
+#include "api/ofa-openbook-props.h"
 
 G_BEGIN_DECLS
 
@@ -70,8 +74,20 @@ typedef struct _ofaIGetter                    ofaIGetter;
  * ofaIGetterInterface:
  * @get_interface_version: [should]: returns the implemented version number.
  * @get_application: [should]: return the #GApplication instance.
+ * @get_auth_settings: [should]: return the authentification settings.
+ * @get_collector: [should]: return the #myICollector object.
+ * @get_dossier_collection: [should]: return the #ofaDossierCollection object.
+ * @get_dossier_settings: [should]: return the dossier settings.
+ * @get_extender_collection: [should]: return the #ofaExtenderCollection object.
+ * @get_for_type: [should]: return the list of objects for a type..
  * @get_hub: [should]: return the #ofaHub instance.
- * @get_theme_manager: [should]: return the #ofaIPageManager instance.
+ * @get_openbook_props: [should]: return the #ofaOpenbookProps instance.
+ * @get_runtime_dir: [should]: return the running directory.
+ * @get_signaler: [should]: return the #ofaISignaler instance.
+ * @get_user_settings: [should]: return the user settings.
+ * @get_main_window: [should]: return the #ofaMainWindow instance.
+ * @get_menu_manager: [should]: return the #myMenuManager instance.
+ * @get_page_manager: [should]: return the #ofaIPageManager instance.
  *
  * This defines the interface that an #ofaIGetter must/should/may implement.
  */
@@ -91,19 +107,9 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint                  ( *get_interface_version )( void );
+	guint                   ( *get_interface_version )  ( void );
 
-	/*** instance-wide ***/
-	/**
-	 * get_permanent:
-	 * @instance: this #ofaIGetter instance.
-	 *
-	 * Returns: a permanent instance of #ofaIGetter implementation.
-	 *
-	 * Since: version 1
-	 */
-	ofaIGetter *           ( *get_permanent )        ( const ofaIGetter *instance );
-
+	/*** instance-wide non-UI related ***/
 	/**
 	 * get_application:
 	 * @instance: this #ofaIGetter instance.
@@ -112,64 +118,213 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GApplication *         ( *get_application )      ( const ofaIGetter *instance );
+	GApplication *          ( *get_application )        ( const ofaIGetter *getter );
+
+	/**
+	 * get_auth_settings:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the #myISettings interface which manages the #ofaIAuth data.
+	 *
+	 * Since: version 1
+	 */
+	myISettings *           ( *get_auth_settings )      ( const ofaIGetter *getter );
+
+	/**
+	 * get_collector:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the #myICollector interface.
+	 *
+	 * Since: version 1
+	 */
+	myICollector *          ( *get_collector )          ( const ofaIGetter *getter );
+
+	/**
+	 * get_dossier_collection:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the dossier collection.
+	 *
+	 * Since: version 1
+	 */
+	ofaDossierCollection *  ( *get_dossier_collection ) ( const ofaIGetter *getter );
+
+	/**
+	 * get_dossier_settings:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the #myISettings interface to the dossier settings.
+	 *
+	 * Since: version 1
+	 */
+	myISettings *           ( *get_dossier_settings )   ( const ofaIGetter *getter );
+
+	/**
+	 * get_extender_collection:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the extenders collection.
+	 *
+	 * Since: version 1
+	 */
+	ofaExtenderCollection * ( *get_extender_collection )( const ofaIGetter *getter );
+
+	/**
+	 * get_for_type:
+	 * @getter: this #ofaIGetter getter.
+	 * @type: the requested #GType.
+	 *
+	 * Returns: the list of objects which implements the @type.
+	 *
+	 * Since: version 1
+	 */
+	GList *                 ( *get_for_type )           ( const ofaIGetter *getter,
+																GType type );
 
 	/**
 	 * get_hub:
-	 * @instance: this #ofaIGetter instance.
+	 * @getter: this #ofaIGetter getter.
 	 *
 	 * Returns: the main hub object of the application, or %NULL.
 	 *
 	 * Since: version 1
 	 */
-	ofaHub *               ( *get_hub )              ( const ofaIGetter *instance );
+	ofaHub *                ( *get_hub )                ( const ofaIGetter *getter );
 
 	/**
+	 * get_openbook_props:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the #ofaOpenbookProps object.
+	 *
+	 * Since: version 1
+	 */
+	ofaOpenbookProps *      ( *get_openbook_props )     ( const ofaIGetter *getter );
+
+	/**
+	 * get_runtime_dir:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the runtime directory.
+	 *
+	 * Since: version 1
+	 */
+	const gchar *           ( *get_runtime_dir )        ( const ofaIGetter *getter );
+
+	/**
+	 * get_signaler:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the #ofaISignaler instance.
+	 *
+	 * Since: version 1
+	 */
+	ofaISignaler *          ( *get_signaler )           ( const ofaIGetter *getter );
+
+	/**
+	 * get_user_settings:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the #myISettings interface which manages the user preferences.
+	 *
+	 * Since: version 1
+	 */
+	myISettings *           ( *get_user_settings )      ( const ofaIGetter *getter );
+
+	/*** instance-wide UI related ***/
+	/**
 	 * get_main_window:
-	 * @instance: this #ofaIGetter instance.
+	 * @getter: this #ofaIGetter getter.
 	 *
 	 * Returns: the main window of the application, or %NULL.
 	 *
 	 * Since: version 1
 	 */
-	GtkApplicationWindow * ( *get_main_window )      ( const ofaIGetter *instance );
+	GtkApplicationWindow *  ( *get_main_window )        ( const ofaIGetter *getter );
+
+	/**
+	 * get_menu_manager:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the menu manager of the application, or %NULL.
+	 *
+	 * Since: version 1
+	 */
+	myMenuManager *        ( *get_menu_manager )        ( const ofaIGetter *getter );
 
 	/**
 	 * get_page_manager:
-	 * @instance: this #ofaIGetter instance.
+	 * @getter: this #ofaIGetter getter.
 	 *
 	 * Returns: the page manager of the application, or %NULL.
 	 *
 	 * Since: version 1
 	 */
-	ofaIPageManager *     ( *get_page_manager )      ( const ofaIGetter *instance );
+	ofaIPageManager *      ( *get_page_manager )        ( const ofaIGetter *getter );
 }
 	ofaIGetterInterface;
+
+/**
+ * The group name for user preferences.
+ */
+#define HUB_USER_SETTINGS_GROUP         "General"
+
+/**
+ * The default decimals count for a rate.
+ * The default decimals count for an amount.
+ */
+#define HUB_DEFAULT_DECIMALS_AMOUNT      2
+#define HUB_DEFAULT_DECIMALS_RATE        3
 
 /*
  * Interface-wide
  */
-GType                 ofa_igetter_get_type                  ( void );
+GType                  ofa_igetter_get_type                  ( void );
 
-guint                 ofa_igetter_get_interface_last_version( void );
+guint                  ofa_igetter_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint                 ofa_igetter_get_interface_version     ( GType type );
+guint                  ofa_igetter_get_interface_version     ( GType type );
 
 /*
- * Instance-wide
+ * Instance-wide non-UI related
  */
-ofaIGetter           *ofa_igetter_get_permanent_getter      ( const ofaIGetter *instance );
+GApplication          *ofa_igetter_get_application           ( const ofaIGetter *getter );
 
-GApplication         *ofa_igetter_get_application           ( const ofaIGetter *instance );
+myISettings           *ofa_igetter_get_auth_settings         ( const ofaIGetter *getter );
 
-ofaHub               *ofa_igetter_get_hub                   ( const ofaIGetter *instance );
+myICollector          *ofa_igetter_get_collector             ( const ofaIGetter *getter );
 
-GtkApplicationWindow *ofa_igetter_get_main_window           ( const ofaIGetter *instance );
+ofaDossierCollection  *ofa_igetter_get_dossier_collection    ( const ofaIGetter *getter );
 
-ofaIPageManager      *ofa_igetter_get_page_manager          ( const ofaIGetter *instance );
+myISettings           *ofa_igetter_get_dossier_settings      ( const ofaIGetter *getter );
+
+ofaExtenderCollection *ofa_igetter_get_extender_collection   ( const ofaIGetter *getter );
+
+GList                 *ofa_igetter_get_for_type              ( const ofaIGetter *getter,
+																	GType type );
+
+ofaHub                *ofa_igetter_get_hub                   ( const ofaIGetter *getter );
+
+ofaOpenbookProps      *ofa_igetter_get_openbook_props        ( const ofaIGetter *getter );
+
+const gchar           *ofa_igetter_get_runtime_dir           ( const ofaIGetter *getter );
+
+ofaISignaler          *ofa_igetter_get_signaler              ( const ofaIGetter *getter );
+
+myISettings           *ofa_igetter_get_user_settings         ( const ofaIGetter *getter );
+
+/*
+ * Instance-wide UI related
+ */
+GtkApplicationWindow  *ofa_igetter_get_main_window           ( const ofaIGetter *getter );
+
+myMenuManager         *ofa_igetter_get_menu_manager          ( const ofaIGetter *getter );
+
+ofaIPageManager       *ofa_igetter_get_page_manager          ( const ofaIGetter *getter );
 
 G_END_DECLS
 

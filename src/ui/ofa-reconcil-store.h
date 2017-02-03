@@ -70,8 +70,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tree-store.h"
-#include "api/ofa-hub-def.h"
 
 #include "core/ofa-iconcil.h"
 
@@ -160,7 +160,7 @@ enum {
 
 GType             ofa_reconcil_store_get_type         ( void );
 
-ofaReconcilStore *ofa_reconcil_store_new              ( ofaHub *hub );
+ofaReconcilStore *ofa_reconcil_store_new              ( ofaIGetter *getter );
 
 ofxCounter        ofa_reconcil_store_load_by_account  ( ofaReconcilStore *store,
 															const gchar *account_id );

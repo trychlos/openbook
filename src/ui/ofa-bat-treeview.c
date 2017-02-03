@@ -33,8 +33,8 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-icontext.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
@@ -51,7 +51,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub      *hub;
+	ofaIGetter  *getter;
 
 	/* UI
 	 */
@@ -230,27 +230,27 @@ ofa_bat_treeview_class_init( ofaBatTreeviewClass *klass )
 
 /**
  * ofa_bat_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaBatTreeview instance.
  */
 ofaBatTreeview *
-ofa_bat_treeview_new( ofaHub *hub )
+ofa_bat_treeview_new( ofaIGetter *getter )
 {
 	ofaBatTreeview *view;
 	ofaBatTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_BAT_TREEVIEW,
 					"ofa-tvbin-hpolicy", GTK_POLICY_NEVER,
-					"ofa-tvbin-hub",     hub,
+					"ofa-tvbin-getter",  getter,
 					"ofa-tvbin-shadow",  GTK_SHADOW_IN,
 					NULL );
 
 	priv = ofa_bat_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoBat object instead of just the raw GtkTreeSelection
@@ -365,7 +365,7 @@ ofa_bat_treeview_setup_store( ofaBatTreeview *view )
 		setup_columns( view );
 	}
 
-	priv->store = ofa_bat_store_new( priv->hub );
+	priv->store = ofa_bat_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 
@@ -569,10 +569,10 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			cmp = my_collate( formata, formatb );
 			break;
 		case BAT_COL_BEGIN:
-			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case BAT_COL_END:
-			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case BAT_COL_RIB:
 			cmp = my_collate( riba, ribb );

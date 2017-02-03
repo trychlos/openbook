@@ -31,6 +31,7 @@
 #include "my/my-date.h"
 #include "my/my-icollector.h"
 #include "my/my-isettings.h"
+#include "my/my-menu-manager.h"
 #include "my/my-settings.h"
 #include "my/my-signal.h"
 #include "my/my-utils.h"
@@ -61,24 +62,24 @@
 typedef struct {
 	gboolean               dispose_has_run;
 
-	/* initialization
+	/* runtime
 	 */
 	GApplication          *application;
 	gchar                 *argv_0;
-
-	/* to be deprecated
-	 */
-	ofaIGetter            *getter;
-
-	/* global data
-	 */
-	ofaExtenderCollection *extenders;
-	ofaDossierCollection  *dossier_collection;
+	ofaExtenderCollection *extenders_collection;
+	ofaDossierCollection  *dossiers_collection;
 	GList                 *core_objects;
+	mySettings            *iauth_settings;
 	mySettings            *dossier_settings;
 	mySettings            *user_settings;
 	ofaOpenbookProps      *openbook_props;
 	gchar                 *runtime_dir;
+
+	/* UI related
+	 */
+	GtkApplicationWindow  *main_window;
+	ofaIPageManager       *page_manager;
+	myMenuManager         *menu_manager;
 
 	/* dossier
 	 */
@@ -108,19 +109,39 @@ enum {
 
 static gint st_signals[ N_SIGNALS ]     = { 0 };
 
-static void     register_types( ofaHub *self );
-static void     init_signaling_system( ofaHub *self );
-static void     init_signaling_system_connect_to( ofaHub *self, GType type );
-static void     setup_settings( ofaHub *self );
-static gboolean on_deletable_default_handler( ofaHub *self, GObject *object );
-static void     on_dossier_changed( ofaHub *hub, void *empty );
-static gboolean remediate_dossier_settings( ofaHub *self );
-static void     icollector_iface_init( myICollectorInterface *iface );
-static guint    icollector_get_interface_version( void );
+static void                   hub_register_types( ofaHub *self );
+static void                   setup_settings( ofaHub *self );
+static void                   init_signaling_system( ofaHub *self );
+static void                   init_signaling_system_connect_to( ofaHub *self, GType type );
+static gboolean               on_deletable_default_handler( ofaHub *self, GObject *object );
+static void                   on_dossier_changed( ofaHub *hub, void *empty );
+static gboolean               remediate_dossier_settings( ofaHub *self );
+static void                   menu_manager_on_register( myMenuManager *manager, myIActionMap *map, const gchar *scope, GMenuModel *menu, ofaHub *self );
+static void                   icollector_iface_init( myICollectorInterface *iface );
+static guint                  icollector_get_interface_version( void );
+static void                   igetter_iface_init( ofaIGetterInterface *iface );
+static GApplication          *igetter_get_application( const ofaIGetter *getter );
+static myISettings           *igetter_get_auth_settings( const ofaIGetter *getter );
+static myICollector          *igetter_get_collector( const ofaIGetter *getter );
+static ofaDossierCollection  *igetter_get_dossier_collection( const ofaIGetter *getter );
+static myISettings           *igetter_get_dossier_settings( const ofaIGetter *getter );
+static ofaExtenderCollection *igetter_get_extender_collection( const ofaIGetter *getter );
+static GList                 *igetter_get_for_type( const ofaIGetter *getter, GType type );
+static ofaHub                *igetter_get_hub( const ofaIGetter *getter );
+static ofaOpenbookProps      *igetter_get_openbook_props( const ofaIGetter *getter );
+static const gchar           *igetter_get_runtime_dir( const ofaIGetter *getter );
+static ofaISignaler          *igetter_get_signaler( const ofaIGetter *getter );
+static myISettings           *igetter_get_user_settings( const ofaIGetter *getter );
+static GtkApplicationWindow  *igetter_get_main_window( const ofaIGetter *getter );
+static myMenuManager         *igetter_get_menu_manager( const ofaIGetter *getter );
+static ofaIPageManager       *igetter_get_page_manager( const ofaIGetter *getter );
+static void                   isignaler_iface_init( ofaISignalerInterface *iface );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTOR, icollector_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTOR, icollector_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IGETTER, igetter_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALER, isignaler_iface_init ))
 
 static void
 hub_finalize( GObject *instance )
@@ -161,11 +182,13 @@ hub_dispose( GObject *instance )
 
 		/* unref object members here */
 
+		g_clear_object( &priv->iauth_settings );
 		g_clear_object( &priv->dossier_settings );
 		g_clear_object( &priv->user_settings );
-		g_clear_object( &priv->dossier_collection );
-		g_clear_object( &priv->extenders );
+		g_clear_object( &priv->dossiers_collection );
+		g_clear_object( &priv->extenders_collection );
 		g_clear_object( &priv->openbook_props );
+		g_clear_object( &priv->menu_manager );
 
 		g_list_free_full( priv->core_objects, ( GDestroyNotify ) g_object_unref );
 	}
@@ -187,8 +210,8 @@ ofa_hub_init( ofaHub *self )
 	priv = ofa_hub_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->extenders = NULL;
-	priv->dossier_collection = NULL;
+	priv->extenders_collection = NULL;
+	priv->dossiers_collection = NULL;
 }
 
 static void
@@ -511,43 +534,38 @@ ofa_hub_class_init( ofaHubClass *klass )
 
 /**
  * ofa_hub_new:
- * @application: the #GApplication which has created and owns this object.
  *
  * Allocates and initializes the #ofaHub object of the application.
  *
  * Returns: a new #ofaHub object.
  */
 ofaHub *
-ofa_hub_new( GApplication *application, const gchar *argv_0 )
+ofa_hub_new( void )
 {
-	static const gchar *thisfn = "ofa_hub_new";
 	ofaHub *hub;
 	ofaHubPrivate *priv;
-
-	g_debug( "%s: application=%p, argv_0=%s", thisfn, ( void * ) application, argv_0 );
-
-	g_return_val_if_fail( application && G_IS_APPLICATION( application ), NULL );
 
 	hub = g_object_new( OFA_TYPE_HUB, NULL );
 
 	priv = ofa_hub_get_instance_private( hub );
 
-	priv->application = application;
-	priv->argv_0 = g_strdup( argv_0 );
+	ofa_box_register_types();			/* register types */
+	hub_register_types( hub );
 
-	ofa_box_register_types();
-	register_types( hub );
+	setup_settings( hub );				/* instanciates the settings file */
+
+	/* must have extenders_collection before signaling init */
+	priv->extenders_collection = ofa_extender_collection_new( OFA_IGETTER( hub ), PKGLIBDIR );
+
 	init_signaling_system( hub );
-	setup_settings( hub );
 
-	/* as of 2017-02-01 (v0.66), the IGetter interface becomes useless
-	 * as long as we always have a #ofaHub object */
-	priv->getter = ofa_igetter_get_permanent_getter( OFA_IGETTER( application ));
+	priv->dossiers_collection = ofa_dossier_collection_new( OFA_IGETTER( hub ));
+	priv->openbook_props = ofa_openbook_props_new( OFA_IGETTER( hub ));
 
-	priv->extenders = ofa_extender_collection_new( priv->getter, PKGLIBDIR );
-	priv->dossier_collection = ofa_dossier_collection_new( hub );
-	priv->openbook_props = ofa_openbook_props_new( hub );
-	priv->runtime_dir = g_path_get_dirname( priv->argv_0 );
+	/* connect to menu manager signals to be able to proxy them via the
+	 *  ISignaler interface */
+	priv->menu_manager = my_menu_manager_new();
+	g_signal_connect( priv->menu_manager, "my-menu-manager-register", G_CALLBACK( menu_manager_on_register ), hub );
 
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CHANGED, G_CALLBACK( on_dossier_changed ), NULL );
 
@@ -555,14 +573,13 @@ ofa_hub_new( GApplication *application, const gchar *argv_0 )
 }
 
 /*
- * ofa_hub_register_types:
- * @hub: this #ofaHub instance.
+ * hub_register_types:
  *
  * Registers all #ofoBase derived types provided by the core library
  * (aka "core types") so that @hub will be able to dynamically request
  * them on demand.
  *
- * This method, plus #ofa_hub_get_for_type() below, are for example
+ * This method, plus #ofa_igetter_get_for_type() below, are for example
  * used to get a dynamic list of importable or exportable types, and
  * more generally to be able to get a dynamic list of any known (and
  * registered) type.
@@ -572,7 +589,7 @@ ofa_hub_new( GApplication *application, const gchar *argv_0 )
  * dynamically requested on demand.
  */
 static void
-register_types( ofaHub *self )
+hub_register_types( ofaHub *self )
 {
 	ofaHubPrivate *priv;
 
@@ -594,9 +611,25 @@ register_types( ofaHub *self )
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_BAT, NULL ));
 }
 
+static void
+setup_settings( ofaHub *self )
+{
+	ofaHubPrivate *priv;
+	gchar *name;
+
+	priv = ofa_hub_get_instance_private( self );
+
+	priv->iauth_settings = my_settings_new_user_config( "iauth.conf", "OFA_IAUTH_CONF" );
+
+	priv->dossier_settings = my_settings_new_user_config( "dossier.conf", "OFA_DOSSIER_CONF" );
+
+	name = g_strdup_printf( "%s.conf", PACKAGE );
+	priv->user_settings = my_settings_new_user_config( name, "OFA_USER_CONF" );
+	g_free( name );
+}
+
 /*
- * ofa_hub_init_signaling_system:
- * @hub: this #ofaHub instance.
+ * init_signaling_system:
  *
  * Initialize the hub signaling system.
  *
@@ -615,13 +648,13 @@ init_signaling_system( ofaHub *self )
 {
 	GList *list, *it;
 
-	list = ofa_hub_get_for_type( self, OFA_TYPE_ISIGNAL_HUB );
+	list = ofa_igetter_get_for_type( OFA_IGETTER( self ), OFA_TYPE_ISIGNAL_HUB );
 
 	for( it=list ; it ; it=it->next ){
 		init_signaling_system_connect_to( self, G_OBJECT_TYPE( it->data ));
 	}
 
-	g_list_free_full( list, ( GDestroyNotify ) g_object_unref );
+	g_list_free( list );
 }
 
 static void
@@ -644,79 +677,52 @@ init_signaling_system_connect_to( ofaHub *self, GType type )
 	g_type_class_unref( klass );
 }
 
-static void
-setup_settings( ofaHub *self )
-{
-	ofaHubPrivate *priv;
-	gchar *name;
-
-	priv = ofa_hub_get_instance_private( self );
-
-	priv->dossier_settings = my_settings_new_user_config( "dossier.conf", "OFA_DOSSIER_CONF" );
-
-	name = g_strdup_printf( "%s.conf", PACKAGE );
-	priv->user_settings = my_settings_new_user_config( name, "OFA_USER_CONF" );
-	g_free( name );
-}
-
 /**
- * ofa_hub_get_application:
+ * ofa_hub_set_application:
  * @hub: this #ofaHub instance.
+ * @application: the #GApplication which has created and owns this @hub.
  *
- * Returns: the #GApplication which has created and owns this @hub.
- *
- * The returned reference is owned by the @hub instance, and should not
- * be released by the caller.
+ * Set the @application.
  */
-GApplication *
-ofa_hub_get_application( ofaHub *hub )
+void
+ofa_hub_set_application( ofaHub *hub, GApplication *application )
 {
 	ofaHubPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( application && G_IS_APPLICATION( application ));
 
 	priv = ofa_hub_get_instance_private( hub );
 
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+	g_return_if_fail( !priv->dispose_has_run );
 
-	return( priv->application );
+	priv->application = application;
 }
 
 /**
- * ofa_hub_get_extender_collection:
+ * ofa_hub_set_runtime_command:
  * @hub: this #ofaHub instance.
+ * @argv_0: the first argument of the command-line.
  *
- * Returns: the extenders collection.
+ * Set the @argv_0.
  *
- * The returned reference is owned by the @hub instance, and should not
- * be released by the caller.
+ * Simultaneously compute the runtime directory (the directory from
+ * which the current program has been run).
  */
-ofaExtenderCollection *
-ofa_hub_get_extender_collection( ofaHub *hub )
+void
+ofa_hub_set_runtime_command( ofaHub *hub, const gchar *argv_0 )
 {
 	ofaHubPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( my_strlen( argv_0 ));
 
 	priv = ofa_hub_get_instance_private( hub );
 
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+	g_return_if_fail( !priv->dispose_has_run );
 
-	return( priv->extenders );
-}
-
-/**
- * ofa_hub_get_collector:
- * @hub: this #ofaHub instance.
- *
- * Returns: the object which implement #myICollector interface.
- */
-myICollector *
-ofa_hub_get_collector( const ofaHub *hub )
-{
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	return( MY_ICOLLECTOR( hub ));
+	priv->argv_0 = g_strdup( argv_0 );
+	priv->runtime_dir = g_path_get_dirname( priv->argv_0 );
 }
 
 /*
@@ -754,158 +760,47 @@ on_dossier_changed( ofaHub *hub, void *empty )
 }
 
 /**
- * ofa_hub_get_for_type:
- * @hub: the #ofaHub object of the application.
- * @type: a GType.
+ * ofa_hub_set_main_window:
+ * @hub: this #ofaHub instance.
+ * @main_window: the main window of the application.
  *
- * Returns: a list of new references to objects which implement the
- * @type, concatenating both those from the core library, and those
- * advertized by the plugins.
- *
- * It is expected that the caller takes ownership of the returned list,
- * and #g_list_free_full( list, ( GDestroyNotify ) g_object_unref )
- * after use.
+ * Set the @main_window.
  */
-GList *
-ofa_hub_get_for_type( ofaHub *hub, GType type )
+void
+ofa_hub_set_main_window( ofaHub *hub, GtkApplicationWindow *main_window )
 {
 	ofaHubPrivate *priv;
-	GList *objects, *it, *extender_objects;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( main_window && GTK_IS_APPLICATION_WINDOW( main_window ));
 
 	priv = ofa_hub_get_instance_private( hub );
 
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+	g_return_if_fail( !priv->dispose_has_run );
 
-	/* requests first the objects registered from core library */
-	objects = NULL;
-	for( it=priv->core_objects ; it ; it=it->next ){
-		if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( it->data ), type )){
-			objects = g_list_prepend( objects, g_object_ref( it->data ));
-		}
-	}
-
-	/* requests then same type from loaded modules */
-	extender_objects = ofa_extender_collection_get_for_type( priv->extenders, type );
-	objects = g_list_concat( objects, extender_objects );
-
-	return( objects );
+	priv->main_window = main_window;
 }
 
 /**
- * ofa_hub_get_dossier_collection:
+ * ofa_hub_set_page_manager:
  * @hub: this #ofaHub instance.
+ * @page_manager: the page manager of the application.
  *
- * Returns: the #ofaDossierCollection object which manages the
- * collection of dossiers (aka portfolio) from the settings point of
- * view.
- *
- * The returned reference is owned by the @hub instance, and should not
- * be released by the caller.
+ * Set the @page_manager.
  */
-ofaDossierCollection *
-ofa_hub_get_dossier_collection( ofaHub *hub )
+void
+ofa_hub_set_page_manager( ofaHub *hub, ofaIPageManager *page_manager )
 {
 	ofaHubPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( page_manager && OFA_IS_IPAGE_MANAGER( page_manager ));
 
 	priv = ofa_hub_get_instance_private( hub );
 
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+	g_return_if_fail( !priv->dispose_has_run );
 
-	return( priv->dossier_collection );
-}
-
-/**
- * ofa_hub_get_dossier_settings:
- * @hub: this #ofaHub instance.
- *
- * Returns: the #myISettings instance which manages the dossier settings.
- *
- * The returned reference is owned by the @hub object, and should
- * not be released by the caller.
- */
-myISettings *
-ofa_hub_get_dossier_settings( ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( MY_ISETTINGS( priv->dossier_settings ));
-}
-
-/**
- * ofa_hub_get_user_settings:
- * @hub: this #ofaHub instance.
- *
- * Returns: the #myISettings instance which manages the user settings.
- *
- * The returned reference is owned by the @hub object, and should
- * not be released by the caller.
- */
-myISettings *
-ofa_hub_get_user_settings( ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( MY_ISETTINGS( priv->user_settings ));
-}
-
-/**
- * ofa_hub_get_openbook_props:
- * @hub: this #ofaHub instance.
- *
- * Returns: the #ofaOpenbookProps which has been initialized at startup
- * time.
- *
- * The returned reference is owned by the @hub object, and should
- * not be released by the caller.
- */
-ofaOpenbookProps *
-ofa_hub_get_openbook_props( ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->openbook_props );
-}
-
-/**
- * ofa_hub_get_runtime_dir:
- * @hub: this #ofaHub instance.
- *
- * Returns: the directory where Openbook is executed from.
- */
-const gchar *
-ofa_hub_get_runtime_dir( ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return(( const gchar * ) priv->runtime_dir );
+	priv->page_manager = page_manager;
 }
 
 /**
@@ -962,8 +857,8 @@ ofa_hub_open_dossier( ofaHub *hub, GtkWindow *parent,
 	priv->connect = g_object_ref(( gpointer ) connect );
 	ok = FALSE;
 
-	if( ofa_idbmodel_update( priv->getter, parent )){
-		priv->dossier = ofo_dossier_new( hub );
+	if( ofa_idbmodel_update( OFA_IGETTER( hub ), parent )){
+		priv->dossier = ofo_dossier_new( OFA_IGETTER( hub ));
 		if( priv->dossier ){
 			priv->read_only = read_only;
 			g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_OPENED );
@@ -1193,7 +1088,7 @@ ofa_hub_close_dossier( ofaHub *hub )
 		g_clear_object( &priv->connect );
 		g_clear_object( &priv->dossier );
 
-		my_icollector_free_all( ofa_hub_get_collector( hub ));
+		my_icollector_free_all( ofa_igetter_get_collector( OFA_IGETTER( hub )));
 	}
 }
 
@@ -1210,15 +1105,15 @@ ofaIImporter *
 ofa_hub_get_willing_to_import( ofaHub *hub, const gchar *uri, GType type )
 {
 	ofaIImporter *found;
-	ofaExtenderCollection *extenders;
+	ofaExtenderCollection *extenders_collection;
 	GList *importers, *it;
 
 	found = NULL;
-	extenders = ofa_hub_get_extender_collection( hub );
-	importers = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IIMPORTER );
+	extenders_collection = ofa_igetter_get_extender_collection( OFA_IGETTER( hub ));
+	importers = ofa_extender_collection_get_for_type( extenders_collection, OFA_TYPE_IIMPORTER );
 
 	for( it=importers ; it ; it=it->next ){
-		if( ofa_iimporter_is_willing_to( OFA_IIMPORTER( it->data ), hub, uri, type )){
+		if( ofa_iimporter_is_willing_to( OFA_IIMPORTER( it->data ), OFA_IGETTER( hub ), uri, type )){
 			found = OFA_IIMPORTER( it->data );
 			break;
 		}
@@ -1267,6 +1162,21 @@ ofa_hub_disconnect_handlers( ofaHub *hub, GList **handlers )
 }
 
 /*
+ * Proxy the signals from myMenuManager via the ofaISignaler interface
+ *
+ * myMenuManager::my-menu-manager-register -> ofaISignaler::ofa-signaler-menu-available
+ * (only map and scope arguments are proxyed)
+ */
+static void
+menu_manager_on_register( myMenuManager *manager, myIActionMap *map, const gchar *scope, GMenuModel *menu, ofaHub *self )
+{
+	ofaISignaler *signaler = OFA_ISIGNALER( self );
+	ofaIGetter *getter = OFA_IGETTER( self );
+
+	g_signal_emit_by_name( signaler, "ofa-signaler-menu-available", getter, map, scope );
+}
+
+/*
  * myICollector interface management
  */
 static void
@@ -1283,4 +1193,202 @@ static guint
 icollector_get_interface_version( void )
 {
 	return( 1 );
+}
+
+/*
+ * ofaIGetter interface management
+ */
+static void
+igetter_iface_init( ofaIGetterInterface *iface )
+{
+	static const gchar *thisfn = "ofa_hub_igetter_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	/* non-UI related */
+	iface->get_application = igetter_get_application;
+	iface->get_auth_settings = igetter_get_auth_settings;
+	iface->get_collector = igetter_get_collector;
+	iface->get_dossier_collection = igetter_get_dossier_collection;
+	iface->get_dossier_settings = igetter_get_dossier_settings;
+	iface->get_extender_collection = igetter_get_extender_collection;
+	iface->get_for_type = igetter_get_for_type;
+	iface->get_hub = igetter_get_hub;
+	iface->get_openbook_props = igetter_get_openbook_props;
+	iface->get_runtime_dir = igetter_get_runtime_dir;
+	iface->get_signaler = igetter_get_signaler;
+	iface->get_user_settings = igetter_get_user_settings;
+
+	/* ui-related */
+	iface->get_main_window = igetter_get_main_window;
+	iface->get_menu_manager = igetter_get_menu_manager;
+	iface->get_page_manager = igetter_get_page_manager;
+}
+
+static GApplication *
+igetter_get_application( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( priv->application );
+}
+
+static myISettings *
+igetter_get_auth_settings( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( MY_ISETTINGS( priv->iauth_settings ));
+}
+
+static myICollector *
+igetter_get_collector( const ofaIGetter *getter )
+{
+	return( MY_ICOLLECTOR( getter ));
+}
+
+static ofaDossierCollection *
+igetter_get_dossier_collection( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( priv->dossiers_collection );
+}
+
+static myISettings *
+igetter_get_dossier_settings( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( MY_ISETTINGS( priv->dossier_settings ));
+}
+
+static ofaExtenderCollection *
+igetter_get_extender_collection( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( priv->extenders_collection );
+}
+
+static GList *
+igetter_get_for_type( const ofaIGetter *getter, GType type )
+{
+	ofaHubPrivate *priv;
+	GList *objects, *it, *extender_objects;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	/* requests first the objects registered from core library */
+	objects = NULL;
+	for( it=priv->core_objects ; it ; it=it->next ){
+		if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( it->data ), type )){
+			objects = g_list_prepend( objects, it->data );
+		}
+	}
+
+	/* requests then same type from loaded modules */
+	extender_objects = ofa_extender_collection_get_for_type( priv->extenders_collection, type );
+	for( it=extender_objects ; it ; it=it->next ){
+		objects = g_list_append( objects, it->data );
+	}
+	ofa_extender_collection_free_types( extender_objects );
+
+	return( objects );
+}
+
+static ofaHub *
+igetter_get_hub( const ofaIGetter *getter )
+{
+	return( OFA_HUB( getter ));
+}
+
+static ofaOpenbookProps *
+igetter_get_openbook_props( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( priv->openbook_props );
+}
+
+static const gchar *
+igetter_get_runtime_dir( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return(( const gchar * ) priv->runtime_dir );
+}
+
+static ofaISignaler *
+igetter_get_signaler( const ofaIGetter *getter )
+{
+	return( OFA_ISIGNALER( igetter_get_hub( getter )));
+}
+
+static myISettings *
+igetter_get_user_settings( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( MY_ISETTINGS( priv->user_settings ));
+}
+
+static GtkApplicationWindow *
+igetter_get_main_window( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( priv->main_window );
+}
+
+static myMenuManager *
+igetter_get_menu_manager( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( priv->menu_manager );
+}
+
+/*
+ * the themes are managed by the main window
+ */
+static ofaIPageManager *
+igetter_get_page_manager( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( priv->page_manager );
+}
+
+/*
+ * ofaISignaler interface management
+ */
+static void
+isignaler_iface_init( ofaISignalerInterface *iface )
+{
+	static const gchar *thisfn = "ofa_hub_isignaler_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }

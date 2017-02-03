@@ -37,7 +37,7 @@
 #include "my/my-iprogress.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-stream-format.h"
@@ -90,10 +90,10 @@ static void             iident_iface_init( myIIdentInterface *iface );
 static gchar           *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static gchar           *iident_get_version( const myIIdent *instance, void *user_data );
 static void             iimporter_iface_init( ofaIImporterInterface *iface );
-static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub );
-static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar *uri, GType type );
-static gboolean         is_willing_to_parse( const ofaImporterPdfLcl *self, ofaHub *hub, const gchar *uri );
-static ofaStreamFormat *iimporter_get_default_format( const ofaIImporter *instance, ofaHub *hub, gboolean *is_updatable );
+static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance, ofaIGetter *getter );
+static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, ofaIGetter *getter, const gchar *uri, GType type );
+static gboolean         is_willing_to_parse( const ofaImporterPdfLcl *self, ofaIGetter *getter, const gchar *uri );
+static ofaStreamFormat *iimporter_get_default_format( const ofaIImporter *instance, ofaIGetter *getter, gboolean *is_updatable );
 static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList          *do_parse( ofaImporterPdfLcl *self, ofsImporterParms *parms, gchar **msgerr );
 static gboolean         lcl_pdf_v1_check( const ofaImporterPdfLcl *self, const sParser *parser, const ofaStreamFormat *format, const gchar *uri );
@@ -103,7 +103,7 @@ static GList           *lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, c
 static GList           *lcl_pdf_v1_parse_lines_merge( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *rough_list );
 static GSList          *lcl_pdf_v1_parse_lines_build( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *filtered_list );
 static sParser         *get_willing_to_parser( const ofaImporterPdfLcl *self, const ofaStreamFormat *format, const gchar *uri );
-static ofaStreamFormat *get_default_stream_format( const ofaImporterPdfLcl *self, ofaHub *hub );
+static ofaStreamFormat *get_default_stream_format( const ofaImporterPdfLcl *self, ofaIGetter *getter );
 static sLine           *find_line( GList **lines, gdouble acceptable_diff, gdouble y );
 static void             free_line( sLine *line );
 static gchar           *get_amount( ofsPdfRC *rc );
@@ -235,7 +235,7 @@ iimporter_iface_init( ofaIImporterInterface *iface )
 }
 
 static const GList *
-iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub )
+iimporter_get_accepted_contents( const ofaIImporter *instance, ofaIGetter *getter )
 {
 	if( !st_accepted_contents ){
 		st_accepted_contents = g_list_prepend( NULL, "application/pdf" );
@@ -245,13 +245,13 @@ iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub )
 }
 
 static gboolean
-iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar *uri, GType type )
+iimporter_is_willing_to( const ofaIImporter *instance, ofaIGetter *getter, const gchar *uri, GType type )
 {
 	gboolean ok;
 
-	ok = ofa_importer_pdf_is_willing_to( OFA_IMPORTER_PDF( instance ), hub, uri, iimporter_get_accepted_contents( instance, hub )) &&
+	ok = ofa_importer_pdf_is_willing_to( OFA_IMPORTER_PDF( instance ), getter, uri, iimporter_get_accepted_contents( instance, getter )) &&
 			type == OFO_TYPE_BAT &&
-			is_willing_to_parse( OFA_IMPORTER_PDF_LCL( instance ), hub, uri );
+			is_willing_to_parse( OFA_IMPORTER_PDF_LCL( instance ), getter, uri );
 
 	return( ok );
 }
@@ -262,12 +262,12 @@ iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar 
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-is_willing_to_parse( const ofaImporterPdfLcl *self, ofaHub *hub, const gchar *uri )
+is_willing_to_parse( const ofaImporterPdfLcl *self, ofaIGetter *getter, const gchar *uri )
 {
 	ofaStreamFormat *format;
 	sParser *parser;
 
-	format = get_default_stream_format( self, hub );
+	format = get_default_stream_format( self, getter );
 
 	parser = get_willing_to_parser( self, format, uri );
 
@@ -277,11 +277,11 @@ is_willing_to_parse( const ofaImporterPdfLcl *self, ofaHub *hub, const gchar *ur
 }
 
 static ofaStreamFormat *
-iimporter_get_default_format( const ofaIImporter *instance, ofaHub *hub, gboolean *updatable )
+iimporter_get_default_format( const ofaIImporter *instance, ofaIGetter *getter, gboolean *updatable )
 {
 	ofaStreamFormat *format;
 
-	format = get_default_stream_format( OFA_IMPORTER_PDF_LCL( instance ), hub );
+	format = get_default_stream_format( OFA_IMPORTER_PDF_LCL( instance ), getter );
 
 	if( updatable ){
 		*updatable = FALSE;
@@ -293,7 +293,7 @@ iimporter_get_default_format( const ofaIImporter *instance, ofaHub *hub, gboolea
 static GSList *
 iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr )
 {
-	g_return_val_if_fail( parms->hub && OFA_IS_HUB( parms->hub ), NULL );
+	g_return_val_if_fail( parms->getter && OFA_IS_IGETTER( parms->getter ), NULL );
 	g_return_val_if_fail( my_strlen( parms->uri ), NULL );
 	g_return_val_if_fail( parms->format && OFA_IS_STREAM_FORMAT( parms->format ), NULL );
 
@@ -746,11 +746,11 @@ get_willing_to_parser( const ofaImporterPdfLcl *self, const ofaStreamFormat *for
 }
 
 static ofaStreamFormat *
-get_default_stream_format( const ofaImporterPdfLcl *self, ofaHub *hub )
+get_default_stream_format( const ofaImporterPdfLcl *self, ofaIGetter *getter )
 {
 	ofaStreamFormat *format;
 
-	format = ofa_stream_format_new( hub, NULL, OFA_SFMODE_IMPORT );
+	format = ofa_stream_format_new( getter, NULL, OFA_SFMODE_IMPORT );
 
 	ofa_stream_format_set( format,
 			TRUE,  "UTF-8",

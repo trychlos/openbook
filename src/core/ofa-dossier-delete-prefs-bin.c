@@ -31,29 +31,29 @@
 #include "my/my-isettings.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 
 #include "ofa-dossier-delete-prefs-bin.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean   dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub    *hub;
+	ofaIGetter *getter;
 
 	/* data
 	 */
-	gint       db_mode;
-	gboolean   account_mode;
+	gint        db_mode;
+	gboolean    account_mode;
 
 	/* UI
 	 */
-	GtkWidget *p2_db_drop;
-	GtkWidget *p2_db_keep;
-	GtkWidget *p3_account;
+	GtkWidget  *p2_db_drop;
+	GtkWidget  *p2_db_keep;
+	GtkWidget  *p3_account;
 }
 	ofaDossierDeletePrefsBinPrivate;
 
@@ -67,7 +67,6 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-dossier-delete-prefs-bin.ui";
-
 static const gchar *st_delete_prefs     = "DossierDeletePrefs";
 
 static void setup_bin( ofaDossierDeletePrefsBin *self );
@@ -169,23 +168,23 @@ ofa_dossier_delete_prefs_bin_class_init( ofaDossierDeletePrefsBinClass *klass )
 
 /**
  * ofa_dossier_delete_prefs_bin_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaDossierDeletePrefsBin object.
  */
 ofaDossierDeletePrefsBin *
-ofa_dossier_delete_prefs_bin_new( ofaHub *hub )
+ofa_dossier_delete_prefs_bin_new( ofaIGetter *getter )
 {
 	ofaDossierDeletePrefsBin *bin;
 	ofaDossierDeletePrefsBinPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	bin = g_object_new( OFA_TYPE_DOSSIER_DELETE_PREFS_BIN, NULL );
 
 	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	setup_bin( bin );
 	read_settings( bin );
@@ -411,7 +410,7 @@ read_settings( ofaDossierDeletePrefsBin *self )
 
 	priv = ofa_dossier_delete_prefs_bin_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_delete_prefs );
 
 	it = strlist;
@@ -440,7 +439,7 @@ write_settings( ofaDossierDeletePrefsBin *self )
 
 	priv = ofa_dossier_delete_prefs_bin_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 
 	str = g_strdup_printf( "%d;%s;",
 			priv->db_mode,

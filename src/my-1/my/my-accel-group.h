@@ -35,6 +35,8 @@
 
 #include <gtk/gtk.h>
 
+#include "my/my-menu-manager.h"
+
 G_BEGIN_DECLS
 
 #define MY_TYPE_ACCEL_GROUP                ( my_accel_group_get_type())
@@ -61,8 +63,8 @@ GType         my_accel_group_get_type              ( void ) G_GNUC_CONST;
 myAccelGroup *my_accel_group_new                   ( void );
 
 void          my_accel_group_setup_accels_from_menu( myAccelGroup *group,
-															GActionMap *map,
-															GMenuModel *menu );
+															GMenuModel *menu,
+															myMenuManager *menu_manager );
 
 G_END_DECLS
 

@@ -61,20 +61,13 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void                  do_setup_page( ofaPage *page );
-static void                  igetter_iface_init( ofaIGetterInterface *iface );
-static ofaIGetter           *igetter_get_permanent_getter( const ofaIGetter *instance );
-static GApplication         *igetter_get_application( const ofaIGetter *instance );
-static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
-static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
-static ofaIPageManager      *igetter_get_page_manager( const ofaIGetter *instance );
-static void                  iactionable_iface_init( ofaIActionableInterface *iface );
-static guint                 iactionable_get_interface_version( void );
+static void  do_setup_page( ofaPage *page );
+static void  iactionable_iface_init( ofaIActionableInterface *iface );
+static guint iactionable_get_interface_version( void );
 
 G_DEFINE_TYPE_EXTENDED( ofaPage, ofa_page, GTK_TYPE_GRID, 0,
 		G_ADD_PRIVATE( ofaPage )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACTIONABLE, iactionable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IGETTER, igetter_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACTIONABLE, iactionable_iface_init ))
 
 static void
 page_finalize( GObject *instance )
@@ -242,7 +235,7 @@ ofa_page_class_init( ofaPageClass *klass )
 			G_OBJECT_CLASS( klass ),
 			PROP_GETTER_ID,
 			g_param_spec_pointer(
-					PAGE_PROP_GETTER,
+					"ofa-page-getter",
 					"Getter",
 					"A ofaIGetter instance, to be provided by the instantiator",
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
@@ -306,86 +299,24 @@ ofa_page_get_top_focusable_widget( const ofaPage *page )
 	return( NULL );
 }
 
-/*
- * ofaIGetter interface management
+/**
+ * ofa_page_get_getter:
+ * @page: this #ofaPage instance.
+ *
+ * Returns: the #ofaIGetter instance which has been set by the #ofaMainWindow
+ *  at instanciation time.
  */
-static void
-igetter_iface_init( ofaIGetterInterface *iface )
-{
-	static const gchar *thisfn = "ofa_page_igetter_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_permanent = igetter_get_permanent_getter;
-	iface->get_application = igetter_get_application;
-	iface->get_hub = igetter_get_hub;
-	iface->get_main_window = igetter_get_main_window;
-	iface->get_page_manager = igetter_get_page_manager;
-}
-
-/*
- * #ofaPage's life is not expected to be as long as those of the
- * #ofoDossier, so asks to the main window.
- */
-static ofaIGetter *
-igetter_get_permanent_getter( const ofaIGetter *instance )
-{
-	GtkApplicationWindow *main_window;
-
-	g_return_val_if_fail( !OFA_PAGE( instance )->prot->dispose_has_run, NULL );
-
-	main_window = igetter_get_main_window( instance );
-	g_return_val_if_fail( main_window && OFA_IS_IGETTER( main_window ), NULL );
-
-	return( ofa_igetter_get_permanent_getter( OFA_IGETTER( main_window )));
-}
-
-static GApplication *
-igetter_get_application( const ofaIGetter *instance )
+ofaIGetter *
+ofa_page_get_getter( ofaPage *page )
 {
 	ofaPagePrivate *priv;
 
-	g_return_val_if_fail( !OFA_PAGE( instance )->prot->dispose_has_run, NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+	g_return_val_if_fail( !page->prot->dispose_has_run, NULL );
 
-	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
+	priv = ofa_page_get_instance_private( page );
 
-	return( ofa_igetter_get_application( priv->getter ));
-}
-
-static ofaHub *
-igetter_get_hub( const ofaIGetter *instance )
-{
-	ofaPagePrivate *priv;
-
-	g_return_val_if_fail( !OFA_PAGE( instance )->prot->dispose_has_run, NULL );
-
-	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
-
-	return( ofa_igetter_get_hub( priv->getter ));
-}
-
-static GtkApplicationWindow *
-igetter_get_main_window( const ofaIGetter *instance )
-{
-	ofaPagePrivate *priv;
-
-	g_return_val_if_fail( !OFA_PAGE( instance )->prot->dispose_has_run, NULL );
-
-	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
-
-	return( ofa_igetter_get_main_window( priv->getter ));
-}
-
-static ofaIPageManager *
-igetter_get_page_manager( const ofaIGetter *instance )
-{
-	ofaPagePrivate *priv;
-
-	g_return_val_if_fail( !OFA_PAGE( instance )->prot->dispose_has_run, NULL );
-
-	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
-
-	return( ofa_igetter_get_page_manager( priv->getter ));
+	return( priv->getter );
 }
 
 /*

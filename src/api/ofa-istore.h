@@ -52,7 +52,7 @@
 
 #include <glib-object.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 
 G_BEGIN_DECLS
@@ -126,7 +126,7 @@ void     ofa_istore_load_dataset              ( ofaIStore *istore );
  * ----- Manage ofaITreeAdder interface
  */
 void     ofa_istore_set_column_types          ( ofaIStore *istore,
-													ofaHub *hub,
+													ofaIGetter *getter,
 													guint columns_count,
 													GType *columns_type );
 

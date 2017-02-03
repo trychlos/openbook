@@ -273,7 +273,7 @@ ofa_dossier_properties_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -308,7 +308,7 @@ iwindow_init( myIWindow *instance )
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -354,7 +354,6 @@ idialog_init( myIDialog *instance )
 
 	priv->msgerr = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "px-msgerr" );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
 	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
@@ -445,7 +444,7 @@ init_properties_page( ofaDossierProperties *self )
 	c_combo = ofa_currency_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( c_combo ));
 	ofa_currency_combo_set_columns( c_combo, st_currency_cols );
-	ofa_currency_combo_set_hub( c_combo, priv->hub );
+	ofa_currency_combo_set_getter( c_combo, priv->getter );
 	g_signal_connect( c_combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	ofa_currency_combo_set_selected( c_combo, ofo_dossier_get_default_currency( priv->dossier ));
 
@@ -459,7 +458,7 @@ init_properties_page( ofaDossierProperties *self )
 	l_combo = ofa_ledger_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( l_combo ));
 	ofa_ledger_combo_set_columns( l_combo, st_ledger_cols );
-	ofa_ledger_combo_set_hub( l_combo, priv->hub );
+	ofa_ledger_combo_set_getter( l_combo, priv->getter );
 	g_signal_connect( l_combo, "ofa-changed", G_CALLBACK( on_import_ledger_changed ), self );
 	ofa_ledger_combo_set_selected( l_combo, ofo_dossier_get_import_ledger( priv->dossier ));
 
@@ -501,10 +500,10 @@ init_properties_page( ofaDossierProperties *self )
 	my_date_set_from_date( &priv->begin, ofo_dossier_get_exe_begin( priv->dossier ));
 	priv->begin_empty = !my_date_is_valid( &priv->begin );
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
 
@@ -529,10 +528,10 @@ init_properties_page( ofaDossierProperties *self )
 	my_date_set_from_date( &priv->end, ofo_dossier_get_exe_end( priv->dossier ));
 	priv->end_empty = !my_date_is_valid( &priv->end );
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
 
@@ -543,7 +542,7 @@ init_properties_page( ofaDossierProperties *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	last_closed = ofo_dossier_get_last_closing_date( priv->dossier );
-	str = my_date_is_valid( last_closed ) ? my_date_to_str( last_closed, ofa_prefs_date_display( priv->hub )) : NULL;
+	str = my_date_is_valid( last_closed ) ? my_date_to_str( last_closed, ofa_prefs_date_display( priv->getter )) : NULL;
 	gtk_label_set_text( GTK_LABEL( label ), str ? str : "" );
 	g_free( str );
 
@@ -551,13 +550,13 @@ init_properties_page( ofaDossierProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-closed" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	str = my_date_is_valid( &priv->prevexe_end ) ? my_date_to_str( &priv->prevexe_end, ofa_prefs_date_display( priv->hub )) : NULL;
+	str = my_date_is_valid( &priv->prevexe_end ) ? my_date_to_str( &priv->prevexe_end, ofa_prefs_date_display( priv->getter )) : NULL;
 	gtk_label_set_text( GTK_LABEL( label ), str ? str : "" );
 	g_free( str );
 
 	/* the end of the exercice cannot be rewinded back before the last
 	 * close of the ledgers or the last closed period */
-	ofo_ledger_get_max_last_close( &priv->min_end, priv->hub );
+	ofo_ledger_get_max_last_close( priv->getter, &priv->min_end );
 	if( my_date_is_valid( last_closed ) && my_date_compare( last_closed, &priv->min_end ) > 0 ){
 		my_date_set_from_date( &priv->min_end, last_closed );
 	}
@@ -614,49 +613,49 @@ init_counters_page( ofaDossierProperties *self )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-bat" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_dossier_get_last_bat( priv->dossier ), priv->hub );
+	str = ofa_counter_to_str( ofo_dossier_get_last_bat( priv->dossier ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-batline" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_dossier_get_last_batline( priv->dossier ), priv->hub );
+	str = ofa_counter_to_str( ofo_dossier_get_last_batline( priv->dossier ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-entry" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_dossier_get_last_entry( priv->dossier ), priv->hub );
+	str = ofa_counter_to_str( ofo_dossier_get_last_entry( priv->dossier ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-ope" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_dossier_get_last_ope( priv->dossier ), priv->hub );
+	str = ofa_counter_to_str( ofo_dossier_get_last_ope( priv->dossier ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-settlement" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_dossier_get_last_settlement( priv->dossier ), priv->hub );
+	str = ofa_counter_to_str( ofo_dossier_get_last_settlement( priv->dossier ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-concil" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_dossier_get_last_concil( priv->dossier ), priv->hub );
+	str = ofa_counter_to_str( ofo_dossier_get_last_concil( priv->dossier ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-last-entry" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_dossier_get_prevexe_last_entry( priv->dossier ), priv->hub );
+	str = ofa_counter_to_str( ofo_dossier_get_prevexe_last_entry( priv->dossier ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-version" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	model = ofa_idbmodel_get_by_name( priv->hub, "CORE" );
+	model = ofa_idbmodel_get_by_name( priv->getter, "CORE" );
 	if( model ){
 		connect = ofa_hub_get_connect( priv->hub );
 		str = ofa_idbmodel_get_version( model, OFA_IDBCONNECT( connect ));
@@ -923,7 +922,7 @@ is_dialog_valid( ofaDossierProperties *self )
 			return( FALSE );
 
 		} else if( my_date_is_valid( &priv->min_end ) && my_date_compare( &priv->min_end, &priv->end ) >=0 ){
-			sdate = my_date_to_str( &priv->min_end, ofa_prefs_date_display( priv->hub ));
+			sdate = my_date_to_str( &priv->min_end, ofa_prefs_date_display( priv->getter ));
 			msg = g_strdup_printf( _( "Invalid end of the exercice before or equal to the ledger last closure %s" ), sdate );
 			set_msgerr( self, msg, MSG_ERROR );
 			g_free( msg );
@@ -1057,7 +1056,7 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 
 	if( date_has_changed ){
 		count = ofo_entry_get_exe_changed_count(
-				priv->hub, &priv->begin_init, &priv->end_init, &priv->begin, &priv->end );
+				priv->getter, &priv->begin_init, &priv->end_init, &priv->begin, &priv->end );
 		if( count > 0 && !confirm_remediation( self, count )){
 			*msgerr = g_strdup( _( "Update has been cancelled by the user" ));
 			return( FALSE );

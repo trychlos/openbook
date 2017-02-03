@@ -67,7 +67,6 @@
 #include "my/my-iprogress.h"
 #include "my/my-iwindow.h"
 
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
@@ -160,7 +159,7 @@ typedef struct {
 	/**
 	 * ddl_update:
 	 * @instance: the #ofaIDBModel provider.
-	 * @hub: the #ofaHub instance which manages the connection
+	 * @getter: a #ofaIGetter instance.
 	 *  (required to be able to import files to collections).
 	 * @window: the #myIProgress which displays the update.
 	 *
@@ -172,13 +171,13 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean      ( *ddl_update )           ( ofaIDBModel *instance,
-													ofaHub *hub,
+													ofaIGetter *getter,
 													myIProgress *window );
 
 	/**
 	 * check_dbms_integrity:
 	 * @instance: the #ofaIDBModel provider.
-	 * @hub: the #ofaHub instance which manages the connection.
+	 * @getter: a #ofaIGetter instance.
 	 * @progress: [alllow-none]: the #myIProgress implementation which
 	 *  handles the display; %NULL means no display.
 	 *
@@ -187,7 +186,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gulong        ( *check_dbms_integrity ) ( const ofaIDBModel *instance,
-													ofaHub *hub,
+													ofaIGetter *getter,
 													myIProgress *progress );
 }
 	ofaIDBModelInterface;
@@ -210,7 +209,7 @@ guint        ofa_idbmodel_get_interface_version     ( GType type );
 gboolean     ofa_idbmodel_update                    ( ofaIGetter *getter,
 															GtkWindow *parent );
 
-ofaIDBModel *ofa_idbmodel_get_by_name               ( ofaHub *hub,
+ofaIDBModel *ofa_idbmodel_get_by_name               ( ofaIGetter *getter,
 															const gchar *name );
 
 guint        ofa_idbmodel_get_current_version       ( const ofaIDBModel *instance,

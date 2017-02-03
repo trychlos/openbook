@@ -51,7 +51,7 @@
  * - 'amount': the DEBIT and CREDIT columns are defined as twins.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 #include "api/ofo-entry.h"
 
@@ -86,7 +86,7 @@ enum {
 
 GType             ofa_entry_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaEntryTreeview *ofa_entry_treeview_new               ( ofaHub *hub );
+ofaEntryTreeview *ofa_entry_treeview_new               ( ofaIGetter *getter );
 
 void              ofa_entry_treeview_set_settings_key  ( ofaEntryTreeview *view,
 																const gchar *key );

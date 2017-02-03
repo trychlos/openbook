@@ -34,11 +34,11 @@
 
 #include "api/ofa-dossier-collection.h"
 #include "api/ofa-extender-collection.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-igetter.h"
 
 /* private instance data
  */
@@ -47,7 +47,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub        *hub;
+	ofaIGetter    *getter;
 
 	/* runtime data
 	 */
@@ -172,22 +172,24 @@ ofa_dossier_collection_class_init( ofaDossierCollectionClass *klass )
 
 /**
  * ofa_dossier_collection_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new reference to an #ofaDossierCollection object which should be
  * #g_object_unref() by the caller.
  */
 ofaDossierCollection *
-ofa_dossier_collection_new( ofaHub *hub )
+ofa_dossier_collection_new( ofaIGetter *getter )
 {
 	ofaDossierCollection *collection;
 	ofaDossierCollectionPrivate *priv;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	collection = g_object_new( OFA_TYPE_DOSSIER_COLLECTION, NULL );
 
 	priv = ofa_dossier_collection_get_instance_private( collection );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	setup_settings( collection );
 	priv->list = load_dossiers( collection, NULL );
@@ -203,7 +205,7 @@ setup_settings( ofaDossierCollection *self )
 
 	priv = ofa_dossier_collection_get_instance_private( self );
 
-	priv->dossier_settings = ofa_hub_get_dossier_settings( priv->hub );
+	priv->dossier_settings = ofa_igetter_get_dossier_settings( priv->getter );
 
 	filename = my_isettings_get_filename( priv->dossier_settings );
 	priv->monitor = my_file_monitor_new( filename );
@@ -312,7 +314,7 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 				continue;
 			}
 			g_debug( "%s: dossier_name=%s is new, provider=%s", thisfn, dos_name, prov_name );
-			idbprovider = ofa_idbprovider_get_by_name( priv->hub, prov_name );
+			idbprovider = ofa_idbprovider_get_by_name( priv->getter, prov_name );
 			if( idbprovider ){
 				meta = ofa_idbprovider_new_dossier_meta( idbprovider, dos_name );
 				set_dossier_meta_properties( self, meta, cstr );

@@ -84,6 +84,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-iprogress.c										\
 	my-isettings.c										\
 	my-iwindow.c										\
+	my-menu-manager.c									\
 	my-progress-bar.c									\
 	my-settings.c										\
 	my-signal.c											\

@@ -32,7 +32,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-account-editable.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -52,7 +51,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub      *hub;
 	myISettings *settings;
 	ofoAccount  *account;
 	GDate        date;
@@ -198,7 +196,7 @@ ofa_reconcil_args_new( ofaIGetter *getter, const gchar *settings_prefix )
 
 	priv = ofa_reconcil_args_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 
 	g_free( priv->settings_prefix );
 	priv->settings_prefix = g_strdup( settings_prefix );
@@ -221,10 +219,7 @@ setup_runtime( ofaReconcilArgs *self )
 
 	priv = ofa_reconcil_args_get_instance_private( self );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	priv->settings = ofa_hub_get_user_settings( priv->hub );
+	priv->settings = ofa_igetter_get_user_settings( priv->getter );
 }
 
 static void
@@ -286,10 +281,10 @@ setup_date_selection( ofaReconcilArgs *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), TRUE );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 }
@@ -312,7 +307,7 @@ on_account_changed( GtkEntry *entry, ofaReconcilArgs *self )
 
 	cstr = gtk_entry_get_text( entry );
 	if( my_strlen( cstr )){
-		priv->account = ofo_account_get_by_number( priv->hub, cstr );
+		priv->account = ofo_account_get_by_number( priv->getter, cstr );
 		if( priv->account ){
 			gtk_label_set_text(
 					GTK_LABEL( priv->account_label ), ofo_account_get_label( priv->account ));

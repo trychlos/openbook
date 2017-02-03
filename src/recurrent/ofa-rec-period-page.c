@@ -54,7 +54,7 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub               *hub;
+	ofaIGetter           *getter;
 	gboolean              is_writable;
 	gchar                *settings_prefix;
 
@@ -180,14 +180,18 @@ action_page_v_setup_view( ofaActionPage *page )
 	static const gchar *thisfn = "ofa_rec_period_page_v_setup_view";
 	ofaRecPeriodPagePrivate *priv;
 	GtkWidget *widget;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_rec_period_page_get_instance_private( OFA_REC_PERIOD_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	widget = setup_treeview( OFA_REC_PERIOD_PAGE( page ));
 
@@ -201,7 +205,7 @@ setup_treeview( ofaRecPeriodPage *self )
 
 	priv = ofa_rec_period_page_get_instance_private( self );
 
-	priv->tview = ofa_rec_period_treeview_new( priv->hub );
+	priv->tview = ofa_rec_period_treeview_new( priv->getter );
 	ofa_rec_period_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_rec_period_treeview_setup_columns( priv->tview );
 
@@ -286,7 +290,7 @@ action_page_v_init_view( ofaActionPage *page )
 	/* install the store at the very end of the initialization
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
-	store = ofa_rec_period_store_new( priv->hub );
+	store = ofa_rec_period_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( store ));
 	g_object_unref( store );
 }
@@ -353,12 +357,15 @@ on_delete_key( ofaRecPeriodTreeview *view, ofoRecPeriod *period, ofaRecPeriodPag
 static void
 action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecPeriodPage *self )
 {
+	ofaRecPeriodPagePrivate *priv;
 	ofoRecPeriod *model;
 	GtkWindow *toplevel;
 
-	model = ofo_rec_period_new();
+	priv = ofa_rec_period_page_get_instance_private( self );
+
+	model = ofo_rec_period_new( priv->getter );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_rec_period_properties_run( OFA_IGETTER( self ), toplevel, model );
+	ofa_rec_period_properties_run( priv->getter, toplevel, model );
 }
 
 /*
@@ -376,7 +383,7 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecPeriod
 	model = ofa_rec_period_treeview_get_selected( priv->tview );
 	g_return_if_fail( model && OFO_IS_REC_PERIOD( model ));
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_rec_period_properties_run( OFA_IGETTER( self ), toplevel, model );
+	ofa_rec_period_properties_run( priv->getter, toplevel, model );
 }
 
 /*

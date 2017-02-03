@@ -200,7 +200,7 @@
 
 #include <glib.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -303,7 +303,7 @@ struct _ofsFormulaHelper {
 
 GType             ofa_formula_engine_get_type         ( void ) G_GNUC_CONST;
 
-ofaFormulaEngine *ofa_formula_engine_new              ( ofaHub *hub );
+ofaFormulaEngine *ofa_formula_engine_new              ( ofaIGetter *getter );
 
 void              ofa_formula_engine_set_auto_eval    ( ofaFormulaEngine *engine,
 															gboolean auto_eval );
@@ -319,7 +319,7 @@ gchar            *ofa_formula_engine_eval             ( ofaFormulaEngine *engine
 															void *user_data,
 															GList **msg );
 
-void              ofa_formula_test                    ( ofaHub *hub );
+void              ofa_formula_test                    ( ofaIGetter *getter );
 
 G_END_DECLS
 

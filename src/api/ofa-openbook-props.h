@@ -26,7 +26,7 @@
 #define __OPENBOOK_API_OFA_OPENBOOK_PROPS_H__
 
 /**
- * SECTION: ofahub
+ * SECTION: ofaOpenbookProps
  * @title: ofaOpenbookProps
  * @short_description: The #ofaOpenbookProps Class Definition
  * @include: openbook/ofa-openbook-props.h
@@ -40,7 +40,7 @@
 
 #include <glib-object.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -66,9 +66,9 @@ typedef struct {
 
 GType             ofa_openbook_props_get_type            ( void ) G_GNUC_CONST;
 
-ofaOpenbookProps *ofa_openbook_props_new                 ( ofaHub *hub );
+ofaOpenbookProps *ofa_openbook_props_new                 ( ofaIGetter *getter );
 
-ofaOpenbookProps *ofa_openbook_props_new_from_string     ( ofaHub *hub,
+ofaOpenbookProps *ofa_openbook_props_new_from_string     ( ofaIGetter *getter,
 																const gchar *string );
 
 const gchar      *ofa_openbook_props_get_openbook_version( ofaOpenbookProps *props );

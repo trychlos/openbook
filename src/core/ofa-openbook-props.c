@@ -33,7 +33,7 @@
 
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-extender-module.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-ijson.h"
 #include "api/ofa-openbook-props.h"
@@ -78,7 +78,7 @@ static const gchar *st_id               = "id";
 
 static const gchar *st_props_title      = "OpenbookProps";
 
-static ofaOpenbookProps *new_from_node( ofaHub *hub, JsonNode *node );
+static ofaOpenbookProps *new_from_node( ofaIGetter *getter, JsonNode *node );
 static void              set_plugins_from_array( ofaOpenbookProps *self, JsonArray *array );
 static void              set_dbms_from_array( ofaOpenbookProps *self, JsonArray *array );
 static void              free_plugin( sPlugin *sdata );
@@ -164,14 +164,14 @@ ofa_openbook_props_class_init( ofaOpenbookPropsClass *klass )
 
 /**
  * ofa_openbook_props_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: an #ofaIGetter instance.
  *
  * Allocates and initializes a #ofaOpenbookProps object.
  *
  * Returns: a new #ofaOpenbookProps object.
  */
 ofaOpenbookProps *
-ofa_openbook_props_new( ofaHub *hub )
+ofa_openbook_props_new( ofaIGetter *getter )
 {
 	ofaOpenbookProps *props;
 	ofaExtenderCollection *extenders;
@@ -180,11 +180,11 @@ ofa_openbook_props_new( ofaHub *hub )
 	GList *dbmodels, *itb;
 	gchar *canon, *display, *version, *id;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	props = g_object_new( OFA_TYPE_OPENBOOK_PROPS, NULL );
 
-	extenders = ofa_hub_get_extender_collection( hub );
+	extenders = ofa_igetter_get_extender_collection( getter );
 	modules = ofa_extender_collection_get_modules( extenders );
 
 	for( itm=modules ; itm ; itm=itm->next ){
@@ -198,7 +198,7 @@ ofa_openbook_props_new( ofaHub *hub )
 		g_free( canon );
 	}
 
-	dbmodels = ofa_hub_get_for_type( hub, OFA_TYPE_IDBMODEL );
+	dbmodels = ofa_igetter_get_for_type( getter, OFA_TYPE_IDBMODEL );
 
 	for( itb=dbmodels ; itb ; itb=itb->next ){
 		if( MY_IS_IIDENT( itb->data )){
@@ -210,14 +210,14 @@ ofa_openbook_props_new( ofaHub *hub )
 		}
 	}
 
-	g_list_free_full( dbmodels, ( GDestroyNotify ) g_object_unref );
+	g_list_free( dbmodels );
 
 	return( props );
 }
 
 /**
  * ofa_openbook_props_new_from_string:
- * @hub: the #ofaHub object of the application.
+ * @getter: an #ofaIGetter instance.
  * @string: a JSON string.
  *
  * Try to parse the provided JSON string.
@@ -226,7 +226,7 @@ ofa_openbook_props_new( ofaHub *hub )
  * successfully parsed, or %NULL.
  */
 ofaOpenbookProps *
-ofa_openbook_props_new_from_string( ofaHub *hub, const gchar *string )
+ofa_openbook_props_new_from_string( ofaIGetter *getter, const gchar *string )
 {
 	static const gchar *thisfn = "ofa_openbook_props_new_from_string";
 	ofaOpenbookProps *props;
@@ -234,7 +234,7 @@ ofa_openbook_props_new_from_string( ofaHub *hub, const gchar *string )
 	JsonNode *root;
 	GError *error;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	error = NULL;
 	parser = json_parser_new();
@@ -245,14 +245,14 @@ ofa_openbook_props_new_from_string( ofaHub *hub, const gchar *string )
 	}
 
 	root = json_parser_get_root( parser );
-	props = new_from_node( hub, root );
+	props = new_from_node( getter, root );
 	g_object_unref( parser );
 
 	return( props );
 }
 
 static ofaOpenbookProps *
-new_from_node( ofaHub *hub, JsonNode *root )
+new_from_node( ofaIGetter *getter, JsonNode *root )
 {
 	static const gchar *thisfn = "ofa_openbook_props_new_from_node";
 	ofaOpenbookProps *props;
@@ -263,7 +263,7 @@ new_from_node( ofaHub *hub, JsonNode *root )
 	GList *members, *itm;
 	const gchar *cname, *cvalue;
 
-	props = ofa_openbook_props_new( hub );
+	props = ofa_openbook_props_new( getter );
 	root_type = json_node_get_node_type( root );
 
 	switch( root_type ){

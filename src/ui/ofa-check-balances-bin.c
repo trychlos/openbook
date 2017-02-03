@@ -34,6 +34,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -49,9 +50,12 @@
 typedef struct {
 	gboolean    dispose_has_run;
 
+	/* initialization
+	 */
+	ofaIGetter *getter;
+
 	/* runtime data
 	 */
-	ofaHub     *hub;
 	gboolean    display;
 
 	gboolean    entries_ok;
@@ -240,21 +244,21 @@ ofa_check_balances_bin_set_display( ofaCheckBalancesBin *bin, gboolean display )
 }
 
 /**
- * ofa_check_balances_bin_set_hub:
+ * ofa_check_balances_bin_set_getter:
  */
 void
-ofa_check_balances_bin_set_hub( ofaCheckBalancesBin *bin, ofaHub *hub )
+ofa_check_balances_bin_set_getter( ofaCheckBalancesBin *bin, ofaIGetter *getter )
 {
 	ofaCheckBalancesBinPrivate *priv;
 
 	g_return_if_fail( bin && OFA_IS_CHECK_BALANCES_BIN( bin ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	priv = ofa_check_balances_bin_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	if( priv->display ){
 		g_idle_add(( GSourceFunc ) do_run, bin );
@@ -304,6 +308,7 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 	ofoEntry *entry;
 	const gchar *currency;
 	ofsCurrency *sbal;
+	ofaHub *hub;
 
 	priv = ofa_check_balances_bin_get_instance_private( self );
 
@@ -314,11 +319,12 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 		gtk_widget_show_all( GTK_WIDGET( self ) );
 	}
 
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 
 	priv->entries_list = NULL;
 	dbegin = ofo_dossier_get_exe_begin( dossier );
-	entries = ofo_entry_get_dataset_for_print_by_account( priv->hub, NULL, NULL, dbegin, NULL );
+	entries = ofo_entry_get_dataset_for_print_by_account( priv->getter, NULL, NULL, dbegin, NULL );
 	count = g_list_length( entries );
 	g_debug( "%s: dbegin=%s, count=%u", thisfn, my_date_to_str( dbegin, MY_DATE_SQL ), count );
 
@@ -331,7 +337,7 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 		currency = ofo_entry_get_currency( entry );
 
 		sbal = ofs_currency_add_by_code(
-					&priv->entries_list, priv->hub, currency,
+					&priv->entries_list, priv->getter, currency,
 					ofo_entry_get_debit( entry ), ofo_entry_get_credit( entry ));
 
 		if( priv->display ){
@@ -378,7 +384,7 @@ check_ledgers_balance_run( ofaCheckBalancesBin *self )
 	}
 
 	priv->ledgers_list = NULL;
-	ledgers = ofo_ledger_get_dataset( priv->hub );
+	ledgers = ofo_ledger_get_dataset( priv->getter );
 	count = g_list_length( ledgers );
 	g_debug( "%s: count=%u", thisfn, count );
 
@@ -395,7 +401,7 @@ check_ledgers_balance_run( ofaCheckBalancesBin *self )
 			currency = ( const gchar * ) ic->data;
 
 			sbal = ofs_currency_add_by_code(
-						&priv->ledgers_list, priv->hub, currency,
+						&priv->ledgers_list, priv->getter, currency,
 						ofo_ledger_get_val_debit( ledger, currency )
 							+ ofo_ledger_get_rough_debit( ledger, currency )
 							+ ofo_ledger_get_futur_debit( ledger, currency ),
@@ -445,7 +451,7 @@ check_accounts_balance_run( ofaCheckBalancesBin *self )
 	}
 
 	priv->accounts_list = NULL;
-	accounts = ofo_account_get_dataset( priv->hub );
+	accounts = ofo_account_get_dataset( priv->getter );
 	count = g_list_length( accounts );
 	g_debug( "%s: count=%u", thisfn, count );
 
@@ -468,7 +474,7 @@ check_accounts_balance_run( ofaCheckBalancesBin *self )
 						+ ofo_account_get_futur_credit( account );
 
 			if( debit || credit ){
-				sbal = ofs_currency_add_by_code( &priv->accounts_list, priv->hub, currency, debit, credit );
+				sbal = ofs_currency_add_by_code( &priv->accounts_list, priv->getter, currency, debit, credit );
 				if( priv->display ){
 					g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
 				}
@@ -559,7 +565,7 @@ get_new_balance_grid_bin( ofaCheckBalancesBin *self, const gchar *w_name )
 		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), w_name );
 		g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
 
-		grid = ofa_balance_grid_bin_new( priv->hub );
+		grid = ofa_balance_grid_bin_new( priv->getter );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( grid ));
 	}
 

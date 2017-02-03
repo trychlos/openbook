@@ -75,7 +75,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-bat-def.h"
@@ -120,12 +120,12 @@ typedef struct {
 
 GType           ofo_bat_get_type                   ( void ) G_GNUC_CONST;
 
-GList          *ofo_bat_get_dataset                ( ofaHub *hub );
+GList          *ofo_bat_get_dataset                ( ofaIGetter *getter );
 
-ofoBat         *ofo_bat_get_by_id                  ( ofaHub *hub, ofxCounter id );
-ofoBat         *ofo_bat_get_most_recent_for_account( ofaHub *hub, const gchar *account_id );
+ofoBat         *ofo_bat_get_by_id                  ( ofaIGetter *getter, ofxCounter id );
+ofoBat         *ofo_bat_get_most_recent_for_account( ofaIGetter *getter, const gchar *account_id );
 
-ofoBat         *ofo_bat_new                        ( void );
+ofoBat         *ofo_bat_new                        ( ofaIGetter *getter );
 
 ofxCounter      ofo_bat_get_id                     ( ofoBat *bat );
 const gchar    *ofo_bat_get_uri                    ( ofoBat *bat );
@@ -143,7 +143,7 @@ const gchar    *ofo_bat_get_account                ( ofoBat *bat );
 const gchar    *ofo_bat_get_upd_user               ( ofoBat *bat );
 const GTimeVal *ofo_bat_get_upd_stamp              ( ofoBat *bat );
 
-gboolean        ofo_bat_exists                     ( ofaHub *hub, const gchar *rib, const GDate *begin, const GDate *end );
+gboolean        ofo_bat_exists                     ( ofaIGetter *getter, const gchar *rib, const GDate *begin, const GDate *end );
 gboolean        ofo_bat_is_deletable               ( ofoBat *bat );
 gint            ofo_bat_get_lines_count            ( ofoBat *bat );
 gint            ofo_bat_get_used_count             ( ofoBat *bat );
@@ -161,7 +161,7 @@ void            ofo_bat_set_currency               ( ofoBat *bat, const gchar *c
 void            ofo_bat_set_notes                  ( ofoBat *bat, const gchar *notes );
 void            ofo_bat_set_account                ( ofoBat *bat, const gchar *account );
 
-gboolean        ofo_bat_insert                     ( ofoBat *bat, ofaHub *hub );
+gboolean        ofo_bat_insert                     ( ofoBat *bat );
 gboolean        ofo_bat_update                     ( ofoBat *bat );
 gboolean        ofo_bat_delete                     ( ofoBat *bat );
 

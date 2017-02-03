@@ -35,18 +35,19 @@
 #include "api/ofa-backup-props.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-ijson.h"
 #include "api/ofa-openbook-props.h"
 #include "api/ofo-dossier.h"
 
-static gboolean write_backup_props_header( struct archive *archive, struct archive_entry *entry, ofaHub *hub, const gchar *comment );
-static gboolean write_dossier_props_header( struct archive *archive, struct archive_entry *entry, ofaHub *hub, const gchar *comment );
-static gboolean write_openbook_props_header( struct archive *archive, struct archive_entry *entry, ofaHub *hub, const gchar *comment );
+static gboolean write_backup_props_header( struct archive *archive, struct archive_entry *entry, ofaIGetter *getter, const gchar *comment );
+static gboolean write_dossier_props_header( struct archive *archive, struct archive_entry *entry, ofaIGetter *getter, const gchar *comment );
+static gboolean write_openbook_props_header( struct archive *archive, struct archive_entry *entry, ofaIGetter *getter, const gchar *comment );
 static gboolean write_header( struct archive *archive, struct archive_entry *entry, const gchar *title, const gchar *json );
 
 /**
  * ofa_backup_header_write_headers:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @comment: a user comment.
  * @archive: an archive file opened in write mode.
  *
@@ -56,13 +57,13 @@ static gboolean write_header( struct archive *archive, struct archive_entry *ent
  * Returns: %TRUE if all the headers have been successfully written.
  */
 gboolean
-ofa_backup_header_write_headers( ofaHub *hub, const gchar *comment, struct archive *archive )
+ofa_backup_header_write_headers( ofaIGetter *getter, const gchar *comment, struct archive *archive )
 {
 	static const gchar *thisfn = "ofa_backup_header_write_headers";
 	struct archive_entry *entry;
 	gboolean ok;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	entry = archive_entry_new();
 	if( !entry ){
@@ -73,9 +74,9 @@ ofa_backup_header_write_headers( ofaHub *hub, const gchar *comment, struct archi
 	/* order is (must be) unimportant and unrelevant
 	 * just for convenience, write the headers in alphabetical order
 	 */
-	ok = write_backup_props_header( archive, entry, hub, comment ) &&
-			write_dossier_props_header( archive, entry, hub, comment ) &&
-			write_openbook_props_header( archive, entry, hub, comment );
+	ok = write_backup_props_header( archive, entry, getter, comment ) &&
+			write_dossier_props_header( archive, entry, getter, comment ) &&
+			write_openbook_props_header( archive, entry, getter, comment );
 
 	archive_entry_free( entry );
 
@@ -83,13 +84,15 @@ ofa_backup_header_write_headers( ofaHub *hub, const gchar *comment, struct archi
 }
 
 static gboolean
-write_backup_props_header( struct archive *archive, struct archive_entry *entry, ofaHub *hub, const gchar *comment )
+write_backup_props_header( struct archive *archive, struct archive_entry *entry, ofaIGetter *getter, const gchar *comment )
 {
 	ofaBackupProps *props;
 	const ofaIDBConnect *connect;
 	gchar *json, *title;
 	gboolean ok;
+	ofaHub *hub;
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 	props = ofa_backup_props_new();
 	ofa_backup_props_set_comment( props, comment);
@@ -108,13 +111,15 @@ write_backup_props_header( struct archive *archive, struct archive_entry *entry,
 }
 
 static gboolean
-write_dossier_props_header( struct archive *archive, struct archive_entry *entry, ofaHub *hub, const gchar *comment )
+write_dossier_props_header( struct archive *archive, struct archive_entry *entry, ofaIGetter *getter, const gchar *comment )
 {
 	ofaDossierProps *props;
 	ofoDossier *dossier;
 	gchar *json, *title;
 	gboolean ok;
+	ofaHub *hub;
 
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	props = ofa_dossier_props_new_from_dossier( dossier );
 
@@ -131,13 +136,13 @@ write_dossier_props_header( struct archive *archive, struct archive_entry *entry
 }
 
 static gboolean
-write_openbook_props_header( struct archive *archive, struct archive_entry *entry, ofaHub *hub, const gchar *comment )
+write_openbook_props_header( struct archive *archive, struct archive_entry *entry, ofaIGetter *getter, const gchar *comment )
 {
 	const ofaOpenbookProps *props;
 	gchar *json, *title;
 	gboolean ok;
 
-	props = ofa_hub_get_openbook_props( hub );
+	props = ofa_igetter_get_openbook_props( getter );
 
 	title = ofa_ijson_get_title( G_OBJECT_TYPE( props ));
 	json = ofa_ijson_get_as_string( OFA_IJSON( props ));

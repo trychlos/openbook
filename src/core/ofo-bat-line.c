@@ -36,6 +36,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-bat-line.h"
@@ -62,12 +63,12 @@ typedef struct {
 }
 	ofoBatLinePrivate;
 
-static GList       *bat_line_load_dataset( ofaHub *hub, const gchar *where );
+static GList       *bat_line_load_dataset( ofaIGetter *getter, const gchar *where );
 static const GDate *bat_line_get_dope( ofoBatLine *bat );
 static const gchar *bat_line_get_label( ofoBatLine *bat );
 static void         bat_line_set_line_id( ofoBatLine *batline, ofxCounter id );
-static gboolean     bat_line_do_insert( ofoBatLine *bat, ofaHub *hub );
-static gboolean     bat_line_insert_main( ofoBatLine *bat, ofaHub *hub );
+static gboolean     bat_line_do_insert( ofoBatLine *bat, ofaIGetter *getter );
+static gboolean     bat_line_insert_main( ofoBatLine *bat, ofaIGetter *getter );
 static void         iconcil_iface_init( ofaIConcilInterface *iface );
 static guint        iconcil_get_interface_version( void );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
@@ -143,25 +144,25 @@ ofo_bat_line_class_init( ofoBatLineClass *klass )
 
 /**
  * ofo_bat_line_get_dataset:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of lines imported in the specified bank account
  * transaction list.
  */
 GList *
-ofo_bat_line_get_dataset( ofaHub *hub, ofxCounter bat_id )
+ofo_bat_line_get_dataset( ofaIGetter *getter, ofxCounter bat_id )
 {
 	static const gchar *thisfn = "ofo_bat_line_get_dataset";
 	GList *dataset;
 	gchar *where;
 
-	g_debug( "%s: hub=%p, bat_id=%lu", thisfn, ( void * ) hub, bat_id );
+	g_debug( "%s: getter=%p, bat_id=%lu", thisfn, ( void * ) getter, bat_id );
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	where = g_strdup_printf( "WHERE BAT_ID=%ld", bat_id );
 
-	dataset = bat_line_load_dataset( hub, where );
+	dataset = bat_line_load_dataset( getter, where );
 
 	g_free( where );
 
@@ -173,8 +174,9 @@ ofo_bat_line_get_dataset( ofaHub *hub, ofxCounter bat_id )
  * where and/or order clauses may be provided by the caller
  */
 static GList *
-bat_line_load_dataset( ofaHub *hub, const gchar *where )
+bat_line_load_dataset( ofaIGetter *getter, const gchar *where )
 {
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gchar *query;
 	GSList *result, *irow, *icol;
@@ -184,6 +186,7 @@ bat_line_load_dataset( ofaHub *hub, const gchar *where )
 	GDate date;
 
 	dataset = NULL;
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	query = g_strdup_printf(
@@ -196,7 +199,7 @@ bat_line_load_dataset( ofaHub *hub, const gchar *where )
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			bat_id = atol(( gchar * ) icol->data );
-			line = ofo_bat_line_new();
+			line = ofo_bat_line_new( getter );
 			ofo_bat_line_set_bat_id( line, bat_id );
 			icol = icol->next;
 			bat_line_set_line_id( line, atol(( gchar * ) icol->data ));
@@ -222,7 +225,6 @@ bat_line_load_dataset( ofaHub *hub, const gchar *where )
 			ofo_bat_line_set_amount( line,
 					my_double_set_from_sql(( const gchar * ) icol->data ));
 
-			ofo_base_set_hub( OFO_BASE( line ), hub );
 			dataset = g_list_prepend( dataset, line );
 		}
 		ofa_idbconnect_free_results( result );
@@ -234,7 +236,7 @@ bat_line_load_dataset( ofaHub *hub, const gchar *where )
 
 /**
  * ofo_bat_line_get_orphans:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of BAT children identifiers which no more
  * have a parent.
@@ -243,12 +245,15 @@ bat_line_load_dataset( ofaHub *hub, const gchar *where )
  * the caller.
  */
 GList *
-ofo_bat_line_get_orphans( ofaHub *hub )
+ofo_bat_line_get_orphans( ofaIGetter *getter )
 {
+	ofaHub *hub;
 	GList *orphans;
 	GSList *result, *irow, *icol;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	hub = ofa_igetter_get_hub( getter );
 
 	if( !ofa_idbconnect_query_ex(
 			ofa_hub_get_connect( hub ),
@@ -269,22 +274,22 @@ ofo_bat_line_get_orphans( ofaHub *hub )
 
 /**
  * ofo_bat_line_get_dataset_for_print_reconcil:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @account: the reconciliated account.
  *
  * Returns: the list of unconciliated lines on the specified account,
  * ordered by ascending effect date.
  */
 GList *
-ofo_bat_line_get_dataset_for_print_reconcil( ofaHub *hub, const gchar *account_id )
+ofo_bat_line_get_dataset_for_print_reconcil( ofaIGetter *getter, const gchar *account_id )
 {
 	static const gchar *thisfn = "ofo_bat_line_get_dataset_for_print_reconcil";
 	GList *dataset;
 	gchar *where;
 
-	g_debug( "%s: hub=%p, account_id=%s", thisfn, ( void * ) hub, account_id );
+	g_debug( "%s: getter=%p, account_id=%s", thisfn, ( void * ) getter, account_id );
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( account_id ), NULL );
 
 	where = g_strdup_printf(
@@ -292,27 +297,31 @@ ofo_bat_line_get_dataset_for_print_reconcil( ofaHub *hub, const gchar *account_i
 				"	AND BAT_ID IN (SELECT BAT_ID FROM OFA_T_BAT WHERE BAT_ACCOUNT='%s') "
 				"	ORDER BY BAT_LINE_DEFFECT ASC", account_id );
 
-	dataset = bat_line_load_dataset( hub, where );
+	dataset = bat_line_load_dataset( getter, where );
 
 	return( dataset );
 }
 
 /**
  * ofo_bat_line_get_bat_id_from_bat_line_id:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @line_id: the #ofoBatLine identifier.
  *
  * Returns: the BAT file identifier to which the @id line is attached.
  */
 ofxCounter
-ofo_bat_line_get_bat_id_from_bat_line_id( ofaHub *hub, ofxCounter line_id )
+ofo_bat_line_get_bat_id_from_bat_line_id( ofaIGetter *getter, ofxCounter line_id )
 {
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	GString *query;
 	GSList *result, *icol;
 	ofxCounter bat_id;
 
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
+
 	bat_id = 0;
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	query = g_string_new( "SELECT BAT_ID FROM OFA_T_BAT_LINES " );
@@ -330,13 +339,16 @@ ofo_bat_line_get_bat_id_from_bat_line_id( ofaHub *hub, ofxCounter line_id )
 
 /**
  * ofo_bat_line_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoBatLine *
-ofo_bat_line_new( void )
+ofo_bat_line_new( ofaIGetter *getter )
 {
 	ofoBatLine *bat;
 
-	bat = g_object_new( OFO_TYPE_BAT_LINE, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	bat = g_object_new( OFO_TYPE_BAT_LINE, "ofo-base-getter", getter, NULL );
 
 	return( bat );
 }
@@ -650,24 +662,26 @@ ofo_bat_line_set_amount( ofoBatLine *bat, ofxAmount amount )
  *  these fields
  */
 gboolean
-ofo_bat_line_insert( ofoBatLine *bat_line, ofaHub *hub )
+ofo_bat_line_insert( ofoBatLine *bat_line )
 {
 	static const gchar *thisfn = "ofo_bat_line_insert";
+	ofaIGetter *getter;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	gboolean ok;
 
-	g_debug( "%s: bat=%p, hub=%p",
-			thisfn, ( void * ) bat_line, ( void * ) hub );
+	g_debug( "%s: batline=%p", thisfn, ( void * ) bat_line );
 
 	g_return_val_if_fail( bat_line && OFO_IS_BAT_LINE( bat_line ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( bat_line )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( bat_line ));
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	bat_line_set_line_id( bat_line, ofo_dossier_get_next_batline( dossier ));
 
-	if( bat_line_do_insert( bat_line, hub )){
+	if( bat_line_do_insert( bat_line, getter )){
 		ok = TRUE;
 	}
 
@@ -675,14 +689,15 @@ ofo_bat_line_insert( ofoBatLine *bat_line, ofaHub *hub )
 }
 
 static gboolean
-bat_line_do_insert( ofoBatLine *bat, ofaHub *hub )
+bat_line_do_insert( ofoBatLine *bat, ofaIGetter *getter )
 {
-	return( bat_line_insert_main( bat, hub ));
+	return( bat_line_insert_main( bat, getter ));
 }
 
 static gboolean
-bat_line_insert_main( ofoBatLine *bat, ofaHub *hub )
+bat_line_insert_main( ofoBatLine *bat, ofaIGetter *getter )
 {
+	ofaHub *hub;
 	GString *query;
 	gchar *str;
 	const GDate *dope;
@@ -692,9 +707,10 @@ bat_line_insert_main( ofoBatLine *bat, ofaHub *hub )
 	const ofaIDBConnect *connect;
 
 	cur_code = ofo_bat_line_get_currency( bat );
-	cur_obj = my_strlen( cur_code ) ? ofo_currency_get_by_code( hub, cur_code ) : NULL;
+	cur_obj = my_strlen( cur_code ) ? ofo_currency_get_by_code( getter, cur_code ) : NULL;
 	g_return_val_if_fail( !cur_obj || OFO_IS_CURRENCY( cur_obj ), FALSE );
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	query = g_string_new( "INSERT INTO OFA_T_BAT_LINES" );

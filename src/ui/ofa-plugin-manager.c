@@ -36,7 +36,6 @@
 
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-extender-module.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-iabout.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iproperties.h"
@@ -58,7 +57,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub        *hub;
 	gchar         *settings_prefix;
 
 	/* UI
@@ -214,7 +212,7 @@ ofa_plugin_manager_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_plugin_manager_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -246,10 +244,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -429,7 +424,7 @@ plugin_set_properties_page( ofaPluginManager *self, ofaExtenderModule *plugin, c
 			label = gtk_label_new_with_mnemonic( _( "_Properties" ));
 			priv->properties_page = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 			gtk_notebook_prepend_page( GTK_NOTEBOOK( priv->plugin_book ), priv->properties_page, label );
-			content = ofa_iproperties_init( OFA_IPROPERTIES( it->data ), priv->hub );
+			content = ofa_iproperties_init( OFA_IPROPERTIES( it->data ), priv->getter );
 			gtk_box_pack_start( GTK_BOX( priv->properties_page ), content, TRUE, TRUE, 0 );
 			break;
 		}
@@ -534,7 +529,7 @@ plugins_load( ofaPluginManager *self )
 	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->plugin_tview ));
 	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
-	extenders = ofa_hub_get_extender_collection( priv->hub );
+	extenders = ofa_igetter_get_extender_collection( priv->getter );
 	modules = ofa_extender_collection_get_modules( extenders );
 
 	for( it=modules ; it ; it=it->next ){
@@ -670,7 +665,7 @@ read_settings( ofaPluginManager *self )
 
 	priv = ofa_plugin_manager_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -698,7 +693,7 @@ write_settings( ofaPluginManager *self )
 	str = g_strdup_printf( "%d;",
 				gtk_paned_get_position( GTK_PANED( priv->plugin_pane )));
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

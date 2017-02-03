@@ -93,7 +93,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar                  *settings_prefix;
-	ofaHub                 *hub;
 
 	/* p1: select file to be restored
 	 */
@@ -400,7 +399,7 @@ ofa_restore_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -432,10 +431,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 
@@ -462,7 +458,7 @@ iassistant_is_willing_to_quit( myIAssistant *instance, guint keyval )
 
 	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
 
-	return( ofa_prefs_assistant_is_willing_to_quit( priv->hub, keyval ));
+	return( ofa_prefs_assistant_is_willing_to_quit( priv->getter, keyval ));
 }
 
 /*
@@ -1113,7 +1109,7 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	/* admin credentials */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-admin-credentials" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p4_admin_credentials = ofa_admin_credentials_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_RESTORE );
+	priv->p4_admin_credentials = ofa_admin_credentials_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_RESTORE );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_admin_credentials ));
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p4_admin_credentials ), 0 ))){
 		my_utils_size_group_add_size_group( priv->p4_hgroup, group_bin );
@@ -1125,7 +1121,7 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	/* open, and action on open */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-actions" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p4_actions = ofa_dossier_actions_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_RESTORE );
+	priv->p4_actions = ofa_dossier_actions_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_RESTORE );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_actions ));
 	g_signal_connect( priv->p4_actions, "ofa-changed", G_CALLBACK( p4_on_actions_changed ), self );
 
@@ -1360,6 +1356,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_display";
 	ofaRestoreAssistantPrivate *priv;
 	ofaDossierCollection *collection;
+	ofaHub *hub;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
@@ -1372,11 +1369,11 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	if( !p6_restore_confirmed( self )){
 
 		if( priv->p2_new_dossier ){
-			collection = ofa_hub_get_dossier_collection( priv->hub );
+			collection = ofa_igetter_get_dossier_collection( priv->getter );
 			ofa_dossier_collection_delete_period( collection, priv->p2_connect, NULL, TRUE, NULL );
 
 		} else if( priv->p2_new_exercice ){
-			collection = ofa_hub_get_dossier_collection( priv->hub );
+			collection = ofa_igetter_get_dossier_collection( priv->getter );
 			ofa_dossier_collection_delete_period( collection, priv->p2_connect, priv->p2_exercice_meta, TRUE, NULL );
 		}
 
@@ -1389,7 +1386,8 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 		/* prevent the window manager to close this assistant */
 		my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
-		ofa_hub_close_dossier( priv->hub );
+		hub = ofa_igetter_get_hub( priv->getter );
+		ofa_hub_close_dossier( hub );
 		my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
 
 		g_idle_add(( GSourceFunc ) p6_do_restore, self );
@@ -1718,7 +1716,7 @@ read_settings( ofaRestoreAssistant *self )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -1748,7 +1746,7 @@ write_settings( ofaRestoreAssistant *self )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 
 	str = g_strdup_printf( "%s;%d;",

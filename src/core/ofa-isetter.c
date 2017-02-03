@@ -200,7 +200,7 @@ ofa_isetter_set_getter( ofaISetter *instance, ofaIGetter *getter )
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	if( OFA_ISETTER_GET_INTERFACE( instance )->set_getter ){
-		permanent_getter = ofa_igetter_get_permanent_getter( getter );
+		permanent_getter = getter;
 		OFA_ISETTER_GET_INTERFACE( instance )->set_getter( instance, permanent_getter );
 		return;
 	}

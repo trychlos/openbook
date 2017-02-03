@@ -49,8 +49,8 @@ typedef struct {
 	ofsLedgerBalance;
 
 ofsLedgerBalance *ofs_ledger_balance_find_currency( GList *list,
-															const gchar *ledger,
-															const gchar *currency );
+														const gchar *ledger,
+														const gchar *currency );
 
 void              ofs_ledger_balance_list_free    ( GList **list );
 

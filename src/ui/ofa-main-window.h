@@ -60,7 +60,7 @@
  */
 
 #include "api/ofa-idbconnect-def.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-page-def.h"
 #include "api/ofo-dossier-def.h"
 
@@ -118,7 +118,7 @@ enum {
 
 GType          ofa_main_window_get_type             ( void ) G_GNUC_CONST;
 
-ofaMainWindow *ofa_main_window_new                  ( ofaApplication *application );
+ofaMainWindow *ofa_main_window_new                  ( ofaIGetter *getter );
 
 gboolean       ofa_main_window_is_willing_to_quit   ( const ofaMainWindow *window );
 

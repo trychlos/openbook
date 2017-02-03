@@ -30,8 +30,11 @@
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
+#include "my/my-iaction-map.h"
+
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
+#include "api/ofa-isignaler.h"
 
 #include "tva/ofa-tva-form-page.h"
 #include "tva/ofa-tva-main.h"
@@ -57,9 +60,9 @@ typedef struct {
 }
 	sThemeDef;
 
-static void on_menu_available( GApplication *application, GActionMap *map, const gchar *prefix, void *empty );
+static void on_menu_available( ofaISignaler *signaler, ofaIGetter *getter, myIActionMap *map, const gchar *scope, void *empty );
 static void menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder );
-static void on_theme_available( GApplication *application, ofaIPageManager *manager, void *empty );
+static void on_page_manager_available( ofaISignaler *signaler, ofaIGetter *getter, void *empty );
 static void on_tva_declare( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_tva_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
@@ -100,12 +103,18 @@ static sThemeDef st_theme_defs[] = {
 void
 ofa_tva_main_signal_connect( ofaIGetter *getter )
 {
-	GApplication *application;
+	static const gchar *thisfn = "tva/ofa_tva_main_signal_connect";
+	ofaISignaler *signaler;
 
-	application = ofa_igetter_get_application( getter );
+	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
-	g_signal_connect( application, "menu-available", G_CALLBACK( on_menu_available ), NULL );
-	g_signal_connect( application, "theme-available", G_CALLBACK( on_theme_available ), NULL );
+	signaler = ofa_igetter_get_signaler( getter );
+
+	g_signal_connect( signaler,
+			"ofa-signaler-page-manager-available", G_CALLBACK( on_page_manager_available ), NULL );
+
+	g_signal_connect( signaler,
+			"ofa-signaler-menu-available", G_CALLBACK( on_menu_available ), NULL );
 }
 
 /*
@@ -114,16 +123,16 @@ ofa_tva_main_signal_connect( ofaIGetter *getter )
  * actions
  */
 static void
-on_menu_available( GApplication *application, GActionMap *map, const gchar *prefix, void *empty )
+on_menu_available( ofaISignaler *signaler, ofaIGetter *getter, myIActionMap *map, const gchar *scope, void *empty )
 {
 	static const gchar *thisfn = "tva/ofa_tva_main_on_menu_available";
 
-	g_debug( "%s: application=%p, map=%p, prefix=%s, empty=%p",
-			thisfn, ( void * ) application, ( void * ) map, prefix, ( void * ) empty );
+	g_debug( "%s: signaler=%p, getter=%p, map=%p, scope=%s, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) getter, ( void * ) map, scope, ( void * ) empty );
 
 	if( GTK_IS_APPLICATION_WINDOW( map )){
 		g_action_map_add_action_entries(
-				map, st_win_entries, G_N_ELEMENTS( st_win_entries ), map );
+				G_ACTION_MAP( map ), st_win_entries, G_N_ELEMENTS( st_win_entries ), map );
 
 		menu_add_section( G_OBJECT( map ), st_items_ope2, "plugins_win_ope2" );
 		menu_add_section( G_OBJECT( map ), st_items_ref, "plugins_win_ref" );
@@ -162,13 +171,16 @@ menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placehol
 }
 
 static void
-on_theme_available( GApplication *application, ofaIPageManager *manager, void *empty )
+on_page_manager_available( ofaISignaler *signaler, ofaIGetter *getter, void *empty )
 {
-	static const gchar *thisfn = "tva/ofa_tva_main_on_theme_available";
+	static const gchar *thisfn = "tva/ofa_tva_main_on_page_manager_available";
+	ofaIPageManager *manager;
 	guint i;
 
-	g_debug( "%s: application=%p, manager=%p, empty=%p",
-			thisfn, ( void * ) application, ( void * ) manager, empty );
+	g_debug( "%s: signaler=%p, getter=%p, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) getter, empty );
+
+	manager = ofa_igetter_get_page_manager( getter );
 
 	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
 		ofa_ipage_manager_define( manager, ( *st_theme_defs[i].fntype )(), st_theme_defs[i].theme_label );

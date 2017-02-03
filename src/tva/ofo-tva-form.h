@@ -67,7 +67,7 @@
  * The opening parenthesis must immediately follow the function name.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
@@ -93,13 +93,13 @@ typedef struct {
 
 GType           ofo_tva_form_get_type               ( void ) G_GNUC_CONST;
 
-GList          *ofo_tva_form_get_dataset            ( ofaHub *hub );
+GList          *ofo_tva_form_get_dataset            ( ofaIGetter *getter );
 
-ofoTVAForm     *ofo_tva_form_get_by_mnemo           ( ofaHub *hub, const gchar *mnemo );
+ofoTVAForm     *ofo_tva_form_get_by_mnemo           ( ofaIGetter *getter, const gchar *mnemo );
 
-gboolean        ofo_tva_form_use_ope_template       ( ofaHub *hub, const gchar *ope_template );
+gboolean        ofo_tva_form_use_ope_template       ( ofaIGetter *getter, const gchar *ope_template );
 
-ofoTVAForm     *ofo_tva_form_new                    ( void );
+ofoTVAForm     *ofo_tva_form_new                    ( ofaIGetter *getter );
 ofoTVAForm     *ofo_tva_form_new_from_form          ( ofoTVAForm *form );
 
 const gchar    *ofo_tva_form_get_mnemo              ( const ofoTVAForm *form );
@@ -154,7 +154,7 @@ void            ofo_tva_form_boolean_free_all       ( ofoTVAForm *form );
 guint           ofo_tva_form_boolean_get_count      ( ofoTVAForm *form );
 const gchar    *ofo_tva_form_boolean_get_label      ( ofoTVAForm *form, guint idx );
 
-gboolean        ofo_tva_form_insert                 ( ofoTVAForm *form, ofaHub *hub );
+gboolean        ofo_tva_form_insert                 ( ofoTVAForm *form );
 gboolean        ofo_tva_form_update                 ( ofoTVAForm *form, const gchar *prev_mnemo );
 gboolean        ofo_tva_form_delete                 ( ofoTVAForm *form );
 

@@ -33,7 +33,6 @@
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbsuperuser.h"
 #include "api/ofa-igetter.h"
@@ -55,7 +54,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub          *hub;
 	ofaIDBSuperuser *su_bin;
 
 	/* UI
@@ -203,7 +201,7 @@ ofa_dbsu_run( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefi
 
 	priv = ofa_dbsu_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->provider = provider;
 	priv->rule = rule;
@@ -255,10 +253,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 static gchar *

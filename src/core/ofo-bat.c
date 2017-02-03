@@ -40,6 +40,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -79,8 +80,8 @@ static ofoBat     *bat_find_by_id( GList *set, ofxCounter id );
 static void        bat_set_id( ofoBat *bat, ofxCounter id );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
-static gboolean    bat_do_insert( ofoBat *bat, ofaHub *hub );
-static gboolean    bat_insert_main( ofoBat *bat, ofaHub *hub );
+static gboolean    bat_do_insert( ofoBat *bat, ofaIGetter *getter );
+static gboolean    bat_insert_main( ofoBat *bat, ofaIGetter *getter );
 static gboolean    bat_do_update( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_by_where( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect );
@@ -186,7 +187,7 @@ ofo_bat_class_init( ofoBatClass *klass )
 
 /**
  * ofo_bat_get_dataset:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the full #ofoBat dataset.
  *
@@ -194,16 +195,21 @@ ofo_bat_class_init( ofoBatClass *klass )
  * be released by the caller.
  */
 GList *
-ofo_bat_get_dataset( ofaHub *hub )
+ofo_bat_get_dataset( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	myICollector * collector;
 
-	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_BAT, hub ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_BAT, getter ));
 }
 
 /**
  * ofo_bat_get_by_id:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
+ * @id: the requested identifier.
  *
  * Returns: the searched BAT object, or %NULL.
  *
@@ -211,14 +217,14 @@ ofo_bat_get_dataset( ofaHub *hub )
  * not be unreffed by the caller.
  */
 ofoBat *
-ofo_bat_get_by_id( ofaHub *hub, ofxCounter id )
+ofo_bat_get_by_id( ofaIGetter *getter, ofxCounter id )
 {
 	GList *dataset;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( id > 0, NULL );
 
-	dataset = ofo_bat_get_dataset( hub );
+	dataset = ofo_bat_get_dataset( getter );
 
 	return( bat_find_by_id( dataset, id ));
 }
@@ -238,7 +244,7 @@ bat_find_by_id( GList *set, ofxCounter id )
 
 /**
  * ofo_bat_get_most_recent_for_account:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @account_id: the searched account identifier.
  *
  * Returns: the searched BAT object, or %NULL.
@@ -247,16 +253,16 @@ bat_find_by_id( GList *set, ofxCounter id )
  * not be unreffed by the caller.
  */
 ofoBat *
-ofo_bat_get_most_recent_for_account( ofaHub *hub, const gchar *account_id )
+ofo_bat_get_most_recent_for_account( ofaIGetter *getter, const gchar *account_id )
 {
 	GList *dataset, *acc_list, *it;
 	ofoBat *bat;
 	const gchar *bat_account;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( account_id ), NULL );
 
-	dataset = ofo_bat_get_dataset( hub );
+	dataset = ofo_bat_get_dataset( getter );
 
 	acc_list = NULL;
 	for( it=dataset ; it ; it=it->next ){
@@ -274,13 +280,16 @@ ofo_bat_get_most_recent_for_account( ofaHub *hub, const gchar *account_id )
 
 /**
  * ofo_bat_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoBat *
-ofo_bat_new( void )
+ofo_bat_new( ofaIGetter *getter )
 {
 	ofoBat *bat;
 
-	bat = g_object_new( OFO_TYPE_BAT, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	bat = g_object_new( OFO_TYPE_BAT, "ofo-base-getter", getter, NULL );
 
 	return( bat );
 }
@@ -527,7 +536,7 @@ ofo_bat_get_upd_stamp( ofoBat *bat )
 
 /**
  * ofo_bat_exists:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @rib:
  * @begin:
  * @end:
@@ -536,8 +545,9 @@ ofo_bat_get_upd_stamp( ofoBat *bat )
  * imported, and display a message dialog box in this case.
  */
 gboolean
-ofo_bat_exists( ofaHub *hub, const gchar *rib, const GDate *begin, const GDate *end )
+ofo_bat_exists( ofaIGetter *getter, const gchar *rib, const GDate *begin, const GDate *end )
 {
+	ofaHub *hub;
 	gboolean exists;
 	gchar *sbegin, *send;
 	GString *query;
@@ -545,9 +555,10 @@ ofo_bat_exists( ofaHub *hub, const gchar *rib, const GDate *begin, const GDate *
 	gchar *primary, *secondary;
 	GtkWidget *dialog;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	exists = FALSE;
+	hub = ofa_igetter_get_hub( getter );
 
 	sbegin = my_date_to_str( begin, MY_DATE_SQL );
 	send = my_date_to_str( end, MY_DATE_SQL );
@@ -627,6 +638,7 @@ ofo_bat_is_deletable( ofoBat *bat )
 gint
 ofo_bat_get_lines_count( ofoBat *bat )
 {
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gchar *query;
 	gint count;
@@ -638,8 +650,11 @@ ofo_bat_get_lines_count( ofoBat *bat )
 					"SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld",
 					ofo_bat_get_id( bat ));
 
-	hub = ofo_base_get_hub( OFO_BASE( bat ));
+	getter = ofo_base_get_getter( OFO_BASE( bat ));
+	hub = ofa_igetter_get_hub( getter );
+
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
 	g_free( query );
 
 	return( count );
@@ -656,6 +671,7 @@ gint
 ofo_bat_get_used_count( ofoBat *bat )
 {
 	gchar *query;
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gint count;
 
@@ -668,8 +684,11 @@ ofo_bat_get_used_count( ofoBat *bat )
 			"		(SELECT BAT_LINE_ID FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld)",
 			CONCIL_TYPE_BAT, ofo_bat_get_id( bat ));
 
-	hub = ofo_base_get_hub( OFO_BASE( bat ));
+	getter = ofo_base_get_getter( OFO_BASE( bat ));
+	hub = ofa_igetter_get_hub( getter );
+
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
 	g_free( query );
 
 	return( count );
@@ -925,7 +944,6 @@ bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
 /**
  * ofo_bat_insert:
  * @bat: a new #ofoBat instance to be added to the database.
- * @hub: the current #ofaHub object.
  *
  * Insert the new object in the database, updating simultaneously the
  * global dataset.
@@ -933,28 +951,29 @@ bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
  * Returns: %TRUE if insertion is successful, %FALSE else.
  */
 gboolean
-ofo_bat_insert( ofoBat *bat, ofaHub *hub )
+ofo_bat_insert( ofoBat *bat )
 {
 	static const gchar *thisfn = "ofo_bat_insert";
+	ofaIGetter *getter;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	gboolean ok;
 
-	g_debug( "%s: bat=%p, hub=%p",
-			thisfn, ( void * ) bat, ( void * ) hub );
+	g_debug( "%s: bat=%p", thisfn, ( void * ) bat );
 
 	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 
+	getter = ofo_base_get_getter( OFO_BASE( bat ));
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	bat_set_id( bat, ofo_dossier_get_next_bat( dossier ));
 
-	if( bat_do_insert( bat, hub )){
-		ofo_base_set_hub( OFO_BASE( bat ), hub );
+	if( bat_do_insert( bat, getter )){
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( bat ), NULL, hub );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( bat ), NULL, getter );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, bat );
 		ok = TRUE;
 	}
@@ -963,15 +982,16 @@ ofo_bat_insert( ofoBat *bat, ofaHub *hub )
 }
 
 static gboolean
-bat_do_insert( ofoBat *bat, ofaHub *hub )
+bat_do_insert( ofoBat *bat, ofaIGetter *getter )
 {
-	return( bat_insert_main( bat, hub ));
+	return( bat_insert_main( bat, getter ));
 }
 
 static gboolean
-bat_insert_main( ofoBat *bat, ofaHub *hub )
+bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 {
 	GString *query;
+	ofaHub *hub;
 	gchar *suri, *str, *stamp_str;
 	const GDate *begin, *end;
 	gboolean ok;
@@ -981,9 +1001,10 @@ bat_insert_main( ofoBat *bat, ofaHub *hub )
 	const ofaIDBConnect *connect;
 
 	cur_code = ofo_bat_get_currency( bat );
-	cur_obj = my_strlen( cur_code ) ? ofo_currency_get_by_code( hub, cur_code ) : NULL;
+	cur_obj = my_strlen( cur_code ) ? ofo_currency_get_by_code( getter, cur_code ) : NULL;
 	g_return_val_if_fail( !cur_obj || OFO_IS_CURRENCY( cur_obj ), FALSE );
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	ok = FALSE;
@@ -1087,6 +1108,7 @@ gboolean
 ofo_bat_update( ofoBat *bat )
 {
 	static const gchar *thisfn = "ofo_bat_update";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1096,7 +1118,8 @@ ofo_bat_update( ofoBat *bat )
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( bat ));
+	getter = ofo_base_get_getter( OFO_BASE( bat ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( bat_do_update( bat, ofa_hub_get_connect( hub ))){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, bat, NULL );
@@ -1163,6 +1186,7 @@ gboolean
 ofo_bat_delete( ofoBat *bat )
 {
 	static const gchar *thisfn = "ofo_bat_delete";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gboolean ok;
@@ -1174,12 +1198,13 @@ ofo_bat_delete( ofoBat *bat )
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( bat ));
+	getter = ofo_base_get_getter( OFO_BASE( bat ));
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	if( bat_do_delete_main( bat, connect ) &&  bat_do_delete_lines( bat, connect )){
 		g_object_ref( bat );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( bat ));
+		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( bat ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, bat );
 		g_object_unref( bat );
 		ok = TRUE;
@@ -1295,6 +1320,8 @@ icollectionable_get_interface_version( void )
 static GList *
 icollectionable_load_collection( void *user_data )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	GSList *result, *irow, *icol;
 	ofoBat *bat;
@@ -1302,10 +1329,12 @@ icollectionable_load_collection( void *user_data )
 	GTimeVal timeval;
 	GDate date;
 
-	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
 	dataset = NULL;
-	connect = ofa_hub_get_connect( OFA_HUB( user_data ));
+	getter = OFA_IGETTER( user_data );
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
 
 	if( ofa_idbconnect_query_ex( connect,
 			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_ACCOUNT,"
@@ -1315,7 +1344,7 @@ icollectionable_load_collection( void *user_data )
 
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
-			bat = ofo_bat_new();
+			bat = ofo_bat_new( getter );
 			bat_set_id( bat, atol(( gchar * ) icol->data ));
 			icol = icol->next;
 			ofo_bat_set_uri( bat, ( gchar * ) icol->data );
@@ -1371,7 +1400,6 @@ icollectionable_load_collection( void *user_data )
 			bat_set_upd_stamp( bat,
 					my_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
-			ofo_base_set_hub( OFO_BASE( bat ), OFA_HUB( user_data ));
 			dataset = g_list_prepend( dataset, bat );
 		}
 
@@ -1422,23 +1450,25 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaHub *hub;
 	GList *dataset;
 	gchar *bck_table, *bck_det_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+	hub = ofa_igetter_get_hub( parms->getter );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "OFA_T_BAT" );
-		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "OFA_T_BAT_LINES" );
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_BAT" );
+		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_BAT_LINES" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_BAT );
-			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_BAT );
+			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_BAT );
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_BAT );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "OFA_T_BAT" );
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_det_table, "OFA_T_BAT_LINES" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_BAT" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_det_table, "OFA_T_BAT_LINES" );
 		}
 
 		g_free( bck_table );
@@ -1577,7 +1607,7 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	ofoBat *bat;
 	GDate date;
 
-	bat = ofo_bat_new();
+	bat = ofo_bat_new( parms->getter );
 
 	/* uri */
 	itf = fields ? fields->next : NULL;
@@ -1665,7 +1695,7 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 	ofoBatLine *batline;
 	ofxAmount amount;
 
-	batline = ofo_bat_line_new();
+	batline = ofo_bat_line_new( parms->getter );
 
 	sref = NULL;
 	slabel = NULL;
@@ -1745,6 +1775,7 @@ static void
 iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
 {
 	GList *it;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gboolean insert, skipped;
 	guint total;
@@ -1758,7 +1789,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	bat_id = 0;
 	skipped = FALSE;
 	total = g_list_length( dataset );
-	connect = ofa_hub_get_connect( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && total > 0 ){
@@ -1784,8 +1816,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				parms->duplicate_count += 1;
 
 				rib = ofo_bat_get_rib( OFO_BAT( object ));
-				sdbegin = my_date_to_str( ofo_bat_get_begin_date( OFO_BAT( object )), ofa_prefs_date_display( parms->hub ));
-				sdend = my_date_to_str( ofo_bat_get_end_date( OFO_BAT( object )), ofa_prefs_date_display( parms->hub ));
+				sdbegin = my_date_to_str( ofo_bat_get_begin_date( OFO_BAT( object )), ofa_prefs_date_display( parms->getter ));
+				sdend = my_date_to_str( ofo_bat_get_end_date( OFO_BAT( object )), ofa_prefs_date_display( parms->getter ));
 
 				switch( parms->mode ){
 					case OFA_IDUPLICATE_REPLACE:
@@ -1814,9 +1846,9 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			}
 
 			if( insert ){
-				dossier = ofa_hub_get_dossier( parms->hub );
+				dossier = ofa_hub_get_dossier( hub );
 				bat_set_id( OFO_BAT( object ), ofo_dossier_get_next_bat( dossier ));
-				if( bat_do_insert( OFO_BAT( object ), parms->hub )){
+				if( bat_do_insert( OFO_BAT( object ), parms->getter )){
 					parms->inserted_count += 1;
 					bat_id = ofo_bat_get_id( OFO_BAT( object ));
 					if( parms->importable_data ){
@@ -1831,7 +1863,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			g_return_if_fail( OFO_IS_BAT_LINE( it->data ));
 
 			if( bat_id <= 0 ){
-				sdate = my_date_to_str( ofo_bat_line_get_dope( OFO_BAT_LINE( it->data )), ofa_prefs_date_display( parms->hub ));
+				sdate = my_date_to_str( ofo_bat_line_get_dope( OFO_BAT_LINE( it->data )), ofa_prefs_date_display( parms->getter ));
 				label = ofo_bat_line_get_label( OFO_BAT_LINE( it->data ));
 				if( skipped ){
 					str = g_strdup_printf( _( "%s %s: line ignored due to previous BAT being have been skipped" ), sdate, label );
@@ -1845,7 +1877,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 
 			} else {
 				ofo_bat_line_set_bat_id( OFO_BAT_LINE( it->data ), bat_id );
-				if( ofo_bat_line_insert( OFO_BAT_LINE( object ), parms->hub )){
+				if( ofo_bat_line_insert( OFO_BAT_LINE( object ))){
 					parms->inserted_count += 1;
 				} else {
 					parms->insert_errs += 1;

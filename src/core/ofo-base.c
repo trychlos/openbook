@@ -28,6 +28,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 
@@ -35,19 +36,23 @@
  */
 typedef struct {
 
-	/* the current #ofaHub object which handles the connection this
-	 * #ofoBase -derived object comes from; it may be %NULL when the
-	 * object has just been instanciated.
+	/* initialization
 	 */
-	ofaHub  *hub;
+	ofaIGetter *getter;
 }
 	ofoBasePrivate;
+
+/* class properties
+ */
+enum {
+	PROP_GETTER_ID = 1,
+};
 
 G_DEFINE_TYPE_EXTENDED( ofoBase, ofo_base, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofoBase ))
 
 static void
-ofo_base_finalize( GObject *instance )
+base_finalize( GObject *instance )
 {
 	ofoBaseProtected *prot;
 
@@ -66,7 +71,7 @@ ofo_base_finalize( GObject *instance )
 }
 
 static void
-ofo_base_dispose( GObject *instance )
+base_dispose( GObject *instance )
 {
 	ofoBase *self;
 	ofoBaseProtected *prot;
@@ -85,6 +90,64 @@ ofo_base_dispose( GObject *instance )
 	G_OBJECT_CLASS( ofo_base_parent_class )->dispose( instance );
 }
 
+/*
+ * user asks for a property
+ * we have so to put the corresponding data into the provided GValue
+ */
+static void
+base_get_property( GObject *instance, guint property_id, GValue *value, GParamSpec *spec )
+{
+	ofoBasePrivate *priv;
+	ofoBaseProtected *prot;
+
+	g_return_if_fail( OFO_IS_BASE( instance ));
+
+	priv = ofo_base_get_instance_private( OFO_BASE( instance ));
+	prot = OFO_BASE( instance )->prot;
+
+	if( !prot->dispose_has_run ){
+
+		switch( property_id ){
+			case PROP_GETTER_ID:
+				g_value_set_pointer( value, priv->getter );
+				break;
+
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
+				break;
+		}
+	}
+}
+
+/*
+ * the user asks to set a property and provides it into a GValue
+ * read the content of the provided GValue and set our instance datas
+ */
+static void
+base_set_property( GObject *instance, guint property_id, const GValue *value, GParamSpec *spec )
+{
+	ofoBasePrivate *priv;
+	ofoBaseProtected *prot;
+
+	g_return_if_fail( OFO_IS_BASE( instance ));
+
+	priv = ofo_base_get_instance_private( OFO_BASE( instance ));
+	prot = OFO_BASE( instance )->prot;
+
+	if( !prot->dispose_has_run ){
+
+		switch( property_id ){
+			case PROP_GETTER_ID:
+				priv->getter = g_value_get_pointer( value );
+				break;
+
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
+				break;
+		}
+	}
+}
+
 static void
 ofo_base_init( ofoBase *self )
 {
@@ -100,8 +163,19 @@ ofo_base_class_init( ofoBaseClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = ofo_base_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ofo_base_finalize;
+	G_OBJECT_CLASS( klass )->get_property = base_get_property;
+	G_OBJECT_CLASS( klass )->set_property = base_set_property;
+	G_OBJECT_CLASS( klass )->dispose = base_dispose;
+	G_OBJECT_CLASS( klass )->finalize = base_finalize;
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_GETTER_ID,
+			g_param_spec_pointer(
+					"ofo-base-getter",
+					"ofaIGetter instance",
+					"ofaIGetter instance",
+					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
 }
 
 /**
@@ -123,33 +197,32 @@ ofo_base_init_fields_list( const ofsBoxDef *defs )
  * @defs: the #ofsBoxDefs list of field definitions for this object
  * @from: the 'from' part of the query
  * @type: the #GType of the #ofoBase -derived object to be allocated
- * @hub: the #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Load the full dataset for the specified @type class.
  *
  * Returns: the ordered list of loaded objects.
  */
 GList *
-ofo_base_load_dataset( const ofsBoxDef *defs, const gchar *from, GType type, ofaHub *hub )
+ofo_base_load_dataset( const ofsBoxDef *defs, const gchar *from, GType type, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofo_base_load_dataset";
 	const ofaIDBConnect *connect;
 	ofoBase *object;
-	ofoBasePrivate *priv;
 	GList *rows, *dataset, *it;
+	ofaHub *hub;
 
 	g_return_val_if_fail( defs, NULL );
 	g_return_val_if_fail( type, NULL );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	dataset = NULL;
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 	rows = ofo_base_load_rows( defs, connect, from );
 
 	for( it=rows ; it ; it=it->next ){
-		object = g_object_new( type, NULL );
-		priv = ofo_base_get_instance_private( object );
-		priv->hub = hub;
+		object = g_object_new( type, "ofo-base-getter", getter, NULL );
 		object->prot->fields = it->data;
 		dataset = g_list_prepend( dataset, object );
 	}
@@ -163,7 +236,6 @@ ofo_base_load_dataset( const ofsBoxDef *defs, const gchar *from, GType type, ofa
 /**
  * ofo_base_load_rows:
  * @defs: the #ofsBoxDefs list of field definitions for this object
- * @dossier: the currently opened dossier
  * @cnx: the #ofaIDBConnect connection object
  * @from: the 'from' part of the query
  *
@@ -198,7 +270,7 @@ ofo_base_load_rows( const ofsBoxDef *defs, const ofaIDBConnect *cnx, const gchar
 }
 
 /**
- * ofo_base_get_hub:
+ * ofo_base_get_getter:
  * @base: this #ofoBase object.
  *
  * Returns: the current #ofaHub object attach to @base.
@@ -206,8 +278,8 @@ ofo_base_load_rows( const ofsBoxDef *defs, const ofaIDBConnect *cnx, const gchar
  * The current #ofaHub is expected to be attached to the #ofoBase
  * object when this later is loaded from the database.
  */
-ofaHub *
-ofo_base_get_hub( ofoBase *base )
+ofaIGetter *
+ofo_base_get_getter( ofoBase *base )
 {
 	ofoBasePrivate *priv;
 
@@ -216,29 +288,28 @@ ofo_base_get_hub( ofoBase *base )
 
 	priv = ofo_base_get_instance_private( base );
 
-	return( priv->hub );
+	return( priv->getter );
 }
 
+#if 0
 /**
- * ofo_base_set_hub:
+ * ofo_base_set_getter:
  * @base: this #ofoBase object.
- * @hub: [allow-none]: the current #ofaHub object to be set.
+ * @getter: [allow-none]: a #ofaIGetter instance.
  *
- * Attach the @hub object to the @base one.
- *
- * The current #ofaHub is expected to be attached to the #ofoBase
- * object when this later is loaded from the database.
+ * Attach the @getter object to the @base one.
  */
 void
-ofo_base_set_hub( ofoBase *base, ofaHub *hub )
+ofo_base_set_getter( ofoBase *base, ofaIGetter *getter )
 {
 	ofoBasePrivate *priv;
 
 	g_return_if_fail( base && OFO_IS_BASE( base ));
-	g_return_if_fail( !hub || OFA_IS_HUB( hub ));
+	g_return_if_fail( !getter || OFA_IS_IGETTER( getter ));
 	g_return_if_fail( !base->prot->dispose_has_run);
 
 	priv = ofo_base_get_instance_private( base );
 
-	priv->hub = hub;
+	priv->getter = getter;
 }
+#endif

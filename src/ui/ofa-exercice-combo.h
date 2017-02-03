@@ -37,9 +37,9 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -64,7 +64,7 @@ typedef struct {
 
 GType             ofa_exercice_combo_get_type    ( void ) G_GNUC_CONST;
 
-ofaExerciceCombo *ofa_exercice_combo_new         ( ofaHub *hub );
+ofaExerciceCombo *ofa_exercice_combo_new         ( ofaIGetter *getter );
 
 void              ofa_exercice_combo_set_dossier ( ofaExerciceCombo *combo,
 															ofaIDBDossierMeta *meta );

@@ -160,10 +160,10 @@ openbook_SOURCES = \
 	ofa-entry-properties.h								\
 	ofa-entry-treeview.c								\
 	ofa-entry-treeview.h								\
-	ofa-exercice-combo.c								\
-	ofa-exercice-combo.h								\
 	ofa-exercice-close-assistant.c						\
 	ofa-exercice-close-assistant.h						\
+	ofa-exercice-combo.c								\
+	ofa-exercice-combo.h								\
 	ofa-exercice-edit-bin.c								\
 	ofa-exercice-edit-bin.h								\
 	ofa-exercice-meta-bin.c								\

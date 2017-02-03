@@ -43,6 +43,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
@@ -231,7 +232,7 @@ static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *
 static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
 static gboolean     account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
 static gboolean     account_do_update_arc( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
-static gboolean     account_do_update_amounts( ofoAccount *account, ofaHub *hub );
+static gboolean     account_do_update_amounts( ofoAccount *account, ofaIGetter *getter );
 static gboolean     account_do_delete( ofoAccount *account, const ofaIDBConnect *connect );
 static gint         account_cmp_by_number( const ofoAccount *a, const gchar *number );
 static void         icollectionable_iface_init( myICollectionableInterface *iface );
@@ -240,7 +241,7 @@ static GList       *icollectionable_load_collection( void *user_data );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
-static gboolean     iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gboolean     iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static gchar       *export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( void );
@@ -342,7 +343,7 @@ ofo_account_class_init( ofoAccountClass *klass )
 
 /**
  * ofo_account_get_dataset:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the full #ofoAccount dataset.
  *
@@ -350,28 +351,32 @@ ofo_account_class_init( ofoAccountClass *klass )
  * be released by the caller.
  */
 GList *
-ofo_account_get_dataset( ofaHub *hub )
+ofo_account_get_dataset( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	myICollector * collector;
 
-	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_ACCOUNT, hub ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_ACCOUNT, getter ));
 }
 
 /**
  * ofo_account_get_dataset_for_solde:
- * @hub: the #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the #ofoAccount dataset, without the solde accounts.
  *
  * The returned list should be #ofo_account_free_dataset() by the caller.
  */
 GList *
-ofo_account_get_dataset_for_solde( ofaHub *hub )
+ofo_account_get_dataset_for_solde( ofaIGetter *getter )
 {
 	GList *dataset;
 	gchar *query;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	query = g_strdup_printf( "OFA_T_ACCOUNTS WHERE "
 			"	ACC_ROOT!='Y' AND "
@@ -381,7 +386,7 @@ ofo_account_get_dataset_for_solde( ofaHub *hub )
 					st_boxed_defs,
 					query,
 					OFO_TYPE_ACCOUNT,
-					hub );
+					getter );
 
 	g_free( query );
 
@@ -390,7 +395,7 @@ ofo_account_get_dataset_for_solde( ofaHub *hub )
 
 /**
  * ofo_account_get_by_number:
- * @hub: the #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @number: the required account number.
  *
  * Returns: the searched #ofoAccount account, or %NULL.
@@ -401,17 +406,17 @@ ofo_account_get_dataset_for_solde( ofaHub *hub )
  * The whole account dataset is loaded from DBMS if not already done.
  */
 ofoAccount *
-ofo_account_get_by_number( ofaHub *hub, const gchar *number )
+ofo_account_get_by_number( ofaIGetter *getter, const gchar *number )
 {
 	GList *dataset;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	if( !my_strlen( number )){
 		return( NULL );
 	}
 
-	dataset = ofo_account_get_dataset( hub );
+	dataset = ofo_account_get_dataset( getter );
 
 	return( account_find_by_number( dataset, number ));
 }
@@ -432,15 +437,18 @@ account_find_by_number( GList *set, const gchar *number )
 
 /**
  * ofo_account_new:
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofoAccount object.
  */
 ofoAccount *
-ofo_account_new( void )
+ofo_account_new( ofaIGetter *getter )
 {
 	ofoAccount *account;
 
-	account = g_object_new( OFO_TYPE_ACCOUNT, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	account = g_object_new( OFO_TYPE_ACCOUNT, "ofo-base-getter", getter, NULL );
 	OFO_BASE( account )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( account );
@@ -671,17 +679,18 @@ ofo_account_get_futur_credit( const ofoAccount *account )
 gboolean
 ofo_account_is_deletable( const ofoAccount *account )
 {
-	ofaHub *hub;
+	ofaIGetter *getter;
 	gboolean deletable;
 	GList *children, *it;
+	ofaHub *hub;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	deletable = TRUE;
-	hub = ofo_base_get_hub( OFO_BASE( account ));
+	getter = ofo_base_get_getter( OFO_BASE( account ));
 
-	if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children( hub )){
+	if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children( getter )){
 		children = ofo_account_get_children( account );
 		for( it=children ; it && deletable ; it=it->next ){
 			deletable &= ofo_account_is_deletable( OFO_ACCOUNT( it->data ));
@@ -689,7 +698,8 @@ ofo_account_is_deletable( const ofoAccount *account )
 		g_list_free( children );
 	}
 
-	if( hub && deletable ){
+	if( getter && deletable ){
+		hub = ofa_igetter_get_hub( getter );
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, account, &deletable );
 	}
 
@@ -894,16 +904,16 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 GDate *
 ofo_account_get_global_deffect( const ofoAccount *account, GDate *date )
 {
-	ofaHub *hub;
+	ofaIGetter *getter;
 	GDate max_val, max_rough, max_futur;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
-	hub = ofo_base_get_hub( OFO_BASE( account ));
+	getter = ofo_base_get_getter( OFO_BASE( account ));
 
-	ofo_entry_get_max_val_deffect( hub, ofo_account_get_number( account ), &max_val );
-	ofo_entry_get_max_rough_deffect( hub, ofo_account_get_number( account ), &max_rough );
-	ofo_entry_get_max_futur_deffect( hub, ofo_account_get_number( account ), &max_futur );
+	ofo_entry_get_max_val_deffect( getter, ofo_account_get_number( account ), &max_val );
+	ofo_entry_get_max_rough_deffect( getter, ofo_account_get_number( account ), &max_rough );
+	ofo_entry_get_max_futur_deffect( getter, ofo_account_get_number( account ), &max_futur );
 
 	my_date_clear( date );
 
@@ -1011,7 +1021,7 @@ account_get_children( const ofoAccount *account, sChildren *child_str )
 	child_str->children_count = 0;
 	child_str->children_list = NULL;
 
-	dataset = ofo_account_get_dataset( ofo_base_get_hub( OFO_BASE( account )));
+	dataset = ofo_account_get_dataset( ofo_base_get_getter( OFO_BASE( account )));
 
 	g_list_foreach( dataset, ( GFunc ) account_iter_children, child_str );
 }
@@ -1118,10 +1128,14 @@ ofo_account_is_allowed( const ofoAccount *account, gint allowed )
 gboolean
 ofo_account_archive_balances( ofoAccount *account, const GDate *archive_date )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	const GDate *exe_begin;
 
-	dossier = ofa_hub_get_dossier( ofo_base_get_hub( OFO_BASE( account )));
+	getter = ofo_base_get_getter( OFO_BASE( account ));
+	hub = ofa_igetter_get_hub( getter );
+	dossier = ofa_hub_get_dossier( hub );
 	exe_begin = ofo_dossier_get_exe_begin( dossier );
 
 	return( ofo_account_archive_balances_ex( account, exe_begin, archive_date ));
@@ -1139,7 +1153,7 @@ gboolean
 ofo_account_archive_balances_ex( ofoAccount *account, const GDate *exe_begin, const GDate *archive_date )
 {
 	gboolean ok;
-	ofaHub *hub;
+	ofaIGetter *getter;
 	ofxAmount debit, credit;
 	gint last_index;
 	GDate from_date;
@@ -1152,7 +1166,7 @@ ofo_account_archive_balances_ex( ofoAccount *account, const GDate *exe_begin, co
 	g_return_val_if_fail( !ofo_account_is_root( account ), FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( account ));
+	getter = ofo_base_get_getter( OFO_BASE( account ));
 	my_date_clear( &from_date );
 	last_index = archive_get_last_index( account, archive_date );
 
@@ -1172,7 +1186,7 @@ ofo_account_archive_balances_ex( ofoAccount *account, const GDate *exe_begin, co
 	 *   one line for this account
 	 * It is up to the caller to take care of having no rough entries left here */
 	acc_id = ofo_account_get_number( account );
-	list = ofo_entry_get_dataset_account_balance( hub, acc_id, acc_id, &from_date, archive_date );
+	list = ofo_entry_get_dataset_account_balance( getter, acc_id, acc_id, &from_date, archive_date );
 	sbal = list ? ( ofsAccountBalance * ) list->data : NULL;
 	debit = sbal ? sbal->debit : 0;
 	credit = sbal ? sbal->credit : 0;
@@ -1195,6 +1209,7 @@ ofo_account_archive_balances_ex( ofoAccount *account, const GDate *exe_begin, co
 static gboolean
 archive_do_add_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit )
 {
+	ofaIGetter *getter;
 	ofaHub *hub;
 	const gchar *cur_code;
 	ofoCurrency *cur_obj;
@@ -1202,12 +1217,13 @@ archive_do_add_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, of
 	gchar *query, *sdate, *sdebit, *scredit;
 	gboolean ok;
 
-	hub = ofo_base_get_hub( OFO_BASE( account ));
+	getter = ofo_base_get_getter( OFO_BASE( account ));
 
 	cur_code = ofo_account_get_currency( account );
-	cur_obj = ofo_currency_get_by_code( hub, cur_code );
+	cur_obj = ofo_currency_get_by_code( getter, cur_code );
 	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	sdate = my_date_to_str( date, MY_DATE_SQL );
@@ -1553,7 +1569,6 @@ ofo_account_set_futur_credit( ofoAccount *account, ofxAmount amount )
 /**
  * ofo_account_insert:
  * @account: the new #ofoAccount account to be inserted.
- * @hub: the #ofaHub object.
  *
  * This function is only of use when the user creates a new account.
  * It is no worth to deal here with amounts and/or debit/credit agregates.
@@ -1561,26 +1576,27 @@ ofo_account_set_futur_credit( ofoAccount *account, ofxAmount amount )
  * Returns: %TRUE if the insertion has been successful.
  */
 gboolean
-ofo_account_insert( ofoAccount *account, ofaHub *hub )
+ofo_account_insert( ofoAccount *account )
 {
 	static const gchar *thisfn = "ofo_account_insert";
 	const ofaIDBConnect *connect;
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gboolean ok;
 
-	g_debug( "%s: account=%p, hub=%p",
-			thisfn, ( void * ) account, ( void * ) hub );
+	g_debug( "%s: account=%p", thisfn, ( void * ) account );
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( account ));
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	if( account_do_insert( account, connect )){
-		ofo_base_set_hub( OFO_BASE( account ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( account ), NULL, hub );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( account ), NULL, getter );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, account );
 		ok = TRUE;
 	}
@@ -1664,6 +1680,7 @@ gboolean
 ofo_account_update( ofoAccount *account, const gchar *prev_number )
 {
 	static const gchar *thisfn = "ofo_account_update";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1674,7 +1691,8 @@ ofo_account_update( ofoAccount *account, const gchar *prev_number )
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( account ));
+	getter = ofo_base_get_getter( OFO_BASE( account ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( account_do_update( account, ofa_hub_get_connect( hub ), prev_number ) &&
 			account_do_update_arc( account, ofa_hub_get_connect( hub ), prev_number )){
@@ -1800,6 +1818,7 @@ gboolean
 ofo_account_update_amounts( ofoAccount *account )
 {
 	static const gchar *thisfn = "ofo_account_do_update_amounts";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1809,9 +1828,10 @@ ofo_account_update_amounts( ofoAccount *account )
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( account ));
+	getter = ofo_base_get_getter( OFO_BASE( account ));
+	hub = ofa_igetter_get_hub( getter );
 
-	if( account_do_update_amounts( account, hub )){
+	if( account_do_update_amounts( account, getter )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, account, NULL );
 		ok = TRUE;
 	}
@@ -1820,9 +1840,10 @@ ofo_account_update_amounts( ofoAccount *account )
 }
 
 static gboolean
-account_do_update_amounts( ofoAccount *account, ofaHub *hub )
+account_do_update_amounts( ofoAccount *account, ofaIGetter *getter )
 {
 	GString *query;
+	ofaHub *hub;
 	gboolean ok;
 	gchar *samount;
 	ofxAmount amount;
@@ -1831,9 +1852,10 @@ account_do_update_amounts( ofoAccount *account, ofaHub *hub )
 	const ofaIDBConnect *connect;
 
 	cur_code = ofo_account_get_currency( account );
-	cur_obj = ofo_currency_get_by_code( hub, cur_code );
+	cur_obj = ofo_currency_get_by_code( getter, cur_code );
 	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
@@ -1915,6 +1937,7 @@ gboolean
 ofo_account_delete( ofoAccount *account )
 {
 	static const gchar *thisfn = "ofo_account_delete";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1925,11 +1948,12 @@ ofo_account_delete( ofoAccount *account )
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( account ));
+	getter = ofo_base_get_getter( OFO_BASE( account ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( account_do_delete( account, ofa_hub_get_connect( hub ))){
 		g_object_ref( account );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( account ));
+		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( account ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, account );
 		g_object_unref( account );
 		ok = TRUE;
@@ -1985,6 +2009,8 @@ icollectionable_get_interface_version( void )
 static GList *
 icollectionable_load_collection( void *user_data )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	GList *dataset, *it;
 	ofoAccount *account;
 	ofoAccountPrivate *priv;
@@ -1992,11 +2018,16 @@ icollectionable_load_collection( void *user_data )
 
 	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
 
+	getter = ( ofaIGetter * ) user_data;
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	hub = ofa_igetter_get_hub( getter );
+
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_ACCOUNTS",
 					OFO_TYPE_ACCOUNT,
-					OFA_HUB( user_data ));
+					getter );
 
 	for( it=dataset ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
@@ -2005,7 +2036,7 @@ icollectionable_load_collection( void *user_data )
 				"OFA_T_ACCOUNTS_ARC WHERE ACC_NUMBER='%s'",
 				ofo_account_get_number( account ));
 		priv->archives =
-				ofo_base_load_rows( st_archive_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );
+				ofo_base_load_rows( st_archive_defs, ofa_hub_get_connect( hub ), from );
 		g_free( from );
 	}
 
@@ -2047,7 +2078,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	gchar *str;
 	GList *dataset, *it;
@@ -2056,7 +2087,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHu
 	ofoCurrency *currency;
 	const gchar *cur_code;
 
-	dataset = ofo_account_get_dataset( hub );
+	dataset = ofo_account_get_dataset( getter );
 	with_headers = ofa_stream_format_get_with_headers( settings );
 
 	count = ( gulong ) g_list_length( dataset );
@@ -2077,7 +2108,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHu
 	for( it=dataset ; it ; it=it->next ){
 		cur_code = ofo_account_get_currency( OFO_ACCOUNT( it->data ));
 		if( my_strlen( cur_code )){
-			currency = ofo_currency_get_by_code( hub, cur_code );
+			currency = ofo_currency_get_by_code( getter, cur_code );
 			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 			str = ofa_box_csv_get_line_ex( OFO_BASE( it->data )->prot->fields, settings, ( CSVExportFunc ) export_cb, currency );
 		} else {
@@ -2170,21 +2201,23 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaHub *hub;
 	GList *dataset;
 	gchar *bck_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+	hub = ofa_igetter_get_hub( parms->getter );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "OFA_T_ACCOUNTS" );
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_ACCOUNTS" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_ACCOUNT );
-			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
+			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_ACCOUNT );
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "OFA_T_ACCOUNTS" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_ACCOUNTS" );
 		}
 
 		g_free( bck_table );
@@ -2200,6 +2233,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 static GList *
 iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaHub *hub;
 	GList *dataset;
 	guint class_num, numline, total;
 	ofoDossier *dossier;
@@ -2214,10 +2248,11 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	numline = 0;
 	dataset = NULL;
 	total = g_slist_length( lines );
+	hub = ofa_igetter_get_hub( parms->getter );
 
 	/* may be NULL
 	 * eg. when importing accounts on dossier creation */
-	dossier = ofa_hub_get_dossier( parms->hub );
+	dossier = ofa_hub_get_dossier( hub );
 	def_dev_code = dossier ? ofo_dossier_get_default_currency( dossier ) : NULL;
 
 	ofa_iimporter_progress_start( importer, parms );
@@ -2230,7 +2265,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 		numline += 1;
 		fields = ( GSList * ) itl->data;
-		account = ofo_account_new();
+		account = ofo_account_new( parms->getter );
 
 		/* account number */
 		itf = fields;
@@ -2241,7 +2276,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			continue;
 		}
 		class_num = ofo_account_get_class_from_number( cstr );
-		class_obj = ofo_class_get_by_number( parms->hub, class_num );
+		class_obj = ofo_class_get_by_number( parms->getter, class_num );
 		if( !class_obj && !OFO_IS_CLASS( class_obj )){
 			str = g_strdup_printf( _( "invalid class number for account %s" ), cstr );
 			ofa_iimporter_progress_num_text( importer, parms, numline, str );
@@ -2295,7 +2330,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				parms->parse_errs += 1;
 				continue;
 			}
-			currency = ofo_currency_get_by_code( parms->hub, dev_code );
+			currency = ofo_currency_get_by_code( parms->getter, dev_code );
 			if( !currency ){
 				str = g_strdup_printf( _( "invalid account currency: %s" ), dev_code );
 				ofa_iimporter_progress_num_text( importer, parms, numline, str );
@@ -2397,6 +2432,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 static void
 iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
 {
+	ofaHub *hub;
 	GList *it;
 	const ofaIDBConnect *connect;
 	const gchar *acc_id;
@@ -2406,7 +2442,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	gchar *str;
 
 	total = g_list_length( dataset );
-	connect = ofa_hub_get_connect( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && total > 0 ){
@@ -2596,9 +2633,12 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, void *empty )
 static void
 hub_on_new_object_entry( ofaHub *hub, ofoEntry *entry )
 {
+	ofaIGetter *getter;
 	ofaEntryStatus status;
 	ofoAccount *account;
 	gdouble debit, credit, prev;
+
+	getter = ofo_base_get_getter( OFO_BASE( entry ));
 
 	/* the only case where an entry is created with a 'past' status
 	 *  is an imported entry in the past (before the beginning of the
@@ -2609,7 +2649,7 @@ hub_on_new_object_entry( ofaHub *hub, ofoEntry *entry )
 	g_return_if_fail( status != ENT_STATUS_PAST );
 	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
 
-	account = ofo_account_get_by_number( hub, ofo_entry_get_account( entry ));
+	account = ofo_account_get_by_number( getter, ofo_entry_get_account( entry ));
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
 	debit = ofo_entry_get_debit( entry );
@@ -2657,13 +2697,15 @@ static void
 hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
 {
 	static const gchar *thisfn = "ofo_account_hub_on_entry_status_change";
+	ofaIGetter *getter;
 	ofoAccount *account;
 	ofxAmount debit, credit, amount;
 
 	g_debug( "%s: hub=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
 			thisfn, ( void * ) hub, ( void * ) entry, prev_status, new_status, ( void * ) empty );
 
-	account = ofo_account_get_by_number( hub, ofo_entry_get_account( entry ));
+	getter = ofo_base_get_getter( OFO_BASE( entry ));
+	account = ofo_account_get_by_number( getter, ofo_entry_get_account( entry ));
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
 	debit = ofo_entry_get_debit( entry );
@@ -2715,7 +2757,7 @@ hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 			break;
 	}
 
-	ofo_ledger_get_dataset( hub );
+	ofo_ledger_get_dataset( ofo_base_get_getter( OFO_BASE( account )));
 	ofo_account_update_amounts( account );
 }
 

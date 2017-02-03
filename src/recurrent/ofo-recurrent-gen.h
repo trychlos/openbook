@@ -33,7 +33,7 @@
  * This file defines the #ofoRecurrentGen class behavior.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
@@ -61,13 +61,13 @@ typedef struct {
 
 GType        ofo_recurrent_gen_get_type           ( void ) G_GNUC_CONST;
 
-const GDate *ofo_recurrent_gen_get_last_run_date  ( ofaHub *hub );
+const GDate *ofo_recurrent_gen_get_last_run_date  ( ofaIGetter *getter );
 
-void         ofo_recurrent_gen_set_last_run_date  ( ofaHub *hub, const GDate *date );
+void         ofo_recurrent_gen_set_last_run_date  ( ofaIGetter *getter, const GDate *date );
 
-ofxCounter   ofo_recurrent_gen_get_next_numseq    ( ofaHub *hub );
+ofxCounter   ofo_recurrent_gen_get_next_numseq    ( ofaIGetter *getter );
 
-ofxCounter   ofo_recurrent_gen_get_next_per_det_id( ofaHub *hub );
+ofxCounter   ofo_recurrent_gen_get_next_per_det_id( ofaIGetter *getter );
 
 G_END_DECLS
 

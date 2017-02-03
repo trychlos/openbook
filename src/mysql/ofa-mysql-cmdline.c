@@ -47,7 +47,6 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
@@ -136,7 +135,7 @@ ofa_mysql_cmdline_backup_db_run( ofaMysqlConnect *connect, const gchar *uri, ofa
 	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBExerciceMeta *exercice_meta;
 	ofaIDBProvider *provider;
-	ofaHub *hub;
+	ofaIGetter *getter;
 	gboolean ok;
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
@@ -145,8 +144,8 @@ ofa_mysql_cmdline_backup_db_run( ofaMysqlConnect *connect, const gchar *uri, ofa
 
 	dossier_meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
 	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
-	hub = ofa_idbprovider_get_hub( provider );
-	template = ofa_mysql_user_prefs_get_backup_command( hub );
+	getter = ofa_idbprovider_get_getter( provider );
+	template = ofa_mysql_user_prefs_get_backup_command( getter );
 	exercice_meta = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
 
 	/* the command we are executing here sends its data flow to stdout
@@ -204,7 +203,7 @@ ofa_mysql_cmdline_restore_db_run( ofaMysqlConnect *connect, ofaMysqlExerciceMeta
 	gchar *template;
 	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBProvider *provider;
-	ofaHub *hub;
+	ofaIGetter *getter;
 
 	g_debug( "%s: connect=%p, period=%p, uri=%s, format=%u, msg_cb=%p, data_cb=%p, user_data=%p",
 			thisfn, ( void * ) connect, ( void * ) period,
@@ -217,8 +216,8 @@ ofa_mysql_cmdline_restore_db_run( ofaMysqlConnect *connect, ofaMysqlExerciceMeta
 
 	dossier_meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
 	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
-	hub = ofa_idbprovider_get_hub( provider );
-	template = ofa_mysql_user_prefs_get_restore_command( hub, format );
+	getter = ofa_idbprovider_get_getter( provider );
+	template = ofa_mysql_user_prefs_get_restore_command( getter, format );
 
 	/* the command we are executing here takes its input from stdin
 	 * we get messages to be displayed both in stdout and stderr
@@ -375,7 +374,7 @@ cmdline_build_from_connect( const gchar *template,
 	gchar *cmdline;
 	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBProvider *provider;
-	ofaHub *hub;
+	ofaIGetter *getter;
 	const gchar *host, *socket, *period_database, *account, *password, *runtime_dir;
 	guint port;
 
@@ -386,8 +385,8 @@ cmdline_build_from_connect( const gchar *template,
 	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_DOSSIER_META( dossier_meta ), NULL );
 
 	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
-	hub = ofa_idbprovider_get_hub( provider );
-	runtime_dir = ofa_hub_get_runtime_dir( hub );
+	getter = ofa_idbprovider_get_getter( provider );
+	runtime_dir = ofa_igetter_get_runtime_dir( getter );
 
 	host = ofa_mysql_dossier_meta_get_host( OFA_MYSQL_DOSSIER_META( dossier_meta ));
 	socket = ofa_mysql_dossier_meta_get_socket( OFA_MYSQL_DOSSIER_META( dossier_meta ));

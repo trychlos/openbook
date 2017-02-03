@@ -29,7 +29,7 @@
 #include <gtk/gtk.h>
 #include <string.h>
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-istore.h"
 #include "api/ofa-itree-adder.h"
 #include "api/ofo-dossier.h"
@@ -37,7 +37,10 @@
 /* data associated to each implementor object
  */
 typedef struct {
-	ofaHub *hub;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 }
 	sIStore;
 
@@ -269,7 +272,7 @@ ofa_istore_load_dataset( ofaIStore *istore )
 /**
  * ofa_istore_set_column_types:
  * @store: this #ofaIStore instance.
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @columns_count: the initial count of columns.
  * @columns_type: the initial GType's array.
  *
@@ -279,24 +282,24 @@ ofa_istore_load_dataset( ofaIStore *istore )
  * This method must be called once per instance.
  */
 void
-ofa_istore_set_column_types( ofaIStore *store, ofaHub *hub, guint columns_count, GType *columns_type )
+ofa_istore_set_column_types( ofaIStore *store, ofaIGetter *getter, guint columns_count, GType *columns_type )
 {
 	static const gchar *thisfn = "ofa_istore_set_column_types";
 	sIStore *sdata;
 	GType *final_array;
 	guint final_count;
 
-	g_debug( "%s: store=%p, hub=%p, columns_count=%u, columns_type=%p",
-			thisfn, ( void * ) store, ( void * ) hub, columns_count, ( void * ) columns_type );
+	g_debug( "%s: store=%p, getter=%p, columns_count=%u, columns_type=%p",
+			thisfn, ( void * ) store, ( void * ) getter, columns_count, ( void * ) columns_type );
 
 	g_return_if_fail( store && OFA_IS_ISTORE( store ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( store ), ISTORE_DATA );
 	if( sdata ){
-		sdata->hub = hub;
+		sdata->getter = getter;
 
-		final_array = ofa_itree_adder_get_column_types( hub, store, columns_count, columns_type, &final_count );
+		final_array = ofa_itree_adder_get_column_types( getter, store, columns_count, columns_type, &final_count );
 
 		if( GTK_IS_LIST_STORE( store )){
 			gtk_list_store_set_column_types( GTK_LIST_STORE( store ), final_count, final_array );
@@ -325,7 +328,7 @@ ofa_istore_set_values( ofaIStore *store, GtkTreeIter *iter, void *object )
 
 	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( store ), ISTORE_DATA );
 	if( sdata ){
-		ofa_itree_adder_set_values( sdata->hub, store, iter, object );
+		ofa_itree_adder_set_values( sdata->getter, store, iter, object );
 	}
 }
 
@@ -353,7 +356,7 @@ ofa_istore_sort( ofaIStore *store, GtkTreeModel *model, GtkTreeIter *a, GtkTreeI
 
 	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( store ), ISTORE_DATA );
 	if( sdata ){
-		return( ofa_itree_adder_sort( sdata->hub, store, model, a, b, column_id, cmp ));
+		return( ofa_itree_adder_sort( sdata->getter, store, model, a, b, column_id, cmp ));
 	}
 
 	return( FALSE );
@@ -379,7 +382,7 @@ ofa_istore_add_columns( ofaIStore *store, ofaTVBin *bin )
 
 	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( store ), ISTORE_DATA );
 	if( sdata ){
-		ofa_itree_adder_add_columns( sdata->hub, store, bin );
+		ofa_itree_adder_add_columns( sdata->getter, store, bin );
 	}
 }
 

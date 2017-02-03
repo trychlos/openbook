@@ -33,7 +33,6 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofo-paimean.h"
@@ -47,7 +46,7 @@
 typedef struct {
 	gboolean            dispose_has_run;
 
-	/* input data
+	/* initialization
 	 */
 	ofaIGetter         *getter;
 	GtkWindow          *parent;
@@ -55,7 +54,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar              *settings_prefix;
-	ofaHub             *hub;
 
 	/* UI
 	 */
@@ -169,11 +167,9 @@ paimean_select_new( ofaIGetter *getter, GtkWindow *parent )
 {
 	ofaPaimeanSelect *dialog;
 	ofaPaimeanSelectPrivate *priv;
-	ofaHub *hub;
 	myICollector *collector;
 
-	hub = ofa_igetter_get_hub( getter );
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 
 	dialog = ( ofaPaimeanSelect * ) my_icollector_single_get_object( collector, OFA_TYPE_PAIMEAN_SELECT );
 
@@ -182,7 +178,7 @@ paimean_select_new( ofaIGetter *getter, GtkWindow *parent )
 
 		priv = ofa_paimean_select_get_instance_private( dialog );
 
-		priv->getter = ofa_igetter_get_permanent_getter( getter );
+		priv->getter = getter;
 		priv->parent = parent;
 
 		/* setup a permanent getter before initialization */
@@ -261,10 +257,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*

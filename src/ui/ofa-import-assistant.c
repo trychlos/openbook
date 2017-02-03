@@ -103,7 +103,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar               *settings_prefix;
-	ofaHub              *hub;
 
 	/* p0: introduction
 	 */
@@ -339,11 +338,12 @@ import_assistant_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		priv->dispose_has_run = TRUE;
 		write_settings( OFA_IMPORT_ASSISTANT( instance ));
 
+		priv->dispose_has_run = TRUE;
+
 		/* unref object members here */
-		g_list_free_full( priv->p2_importables, ( GDestroyNotify ) g_object_unref );
+		g_list_free( priv->p2_importables );
 		g_list_free_full( priv->p3_importers, ( GDestroyNotify ) g_object_unref );
 		g_clear_object( &priv->p5_import_settings );
 	}
@@ -408,7 +408,7 @@ ofa_import_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -433,6 +433,7 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_import_assistant_iwindow_init";
 	ofaImportAssistantPrivate *priv;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -441,14 +442,12 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
 	priv->dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
 
 	read_settings( OFA_IMPORT_ASSISTANT( instance ));
@@ -474,7 +473,7 @@ iassistant_is_willing_to_quit( myIAssistant *instance, guint keyval )
 
 	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
 
-	return( ofa_prefs_assistant_is_willing_to_quit( priv->hub, keyval ));
+	return( ofa_prefs_assistant_is_willing_to_quit( priv->getter, keyval ));
 }
 
 static void
@@ -617,7 +616,7 @@ p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	my_style_add( priv->p2_content, "labelinfo" );
 
 	/* expected data */
-	priv->p2_importables = ofa_hub_get_for_type( priv->hub, OFA_TYPE_IIMPORTABLE );
+	priv->p2_importables = ofa_igetter_get_for_type( priv->getter, OFA_TYPE_IIMPORTABLE );
 	g_debug( "%s: importables count=%d", thisfn, g_list_length( priv->p2_importables ));
 	priv->p2_col = 1;
 	priv->p2_row = 0;
@@ -830,7 +829,7 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 		gtk_list_store_clear( priv->p3_import_store );
 	}
 
-	priv->p3_importers = ofa_iimporter_find_willing_to( priv->hub, priv->p1_furi, priv->p2_selected_type );
+	priv->p3_importers = ofa_iimporter_find_willing_to( priv->getter, priv->p1_furi, priv->p2_selected_type );
 	for( it=priv->p3_importers ; it ; it=it->next ){
 		label = ofa_iimporter_get_display_name( OFA_IIMPORTER( it->data ));
 		version = ofa_iimporter_get_version( OFA_IIMPORTER( it->data ));
@@ -1223,15 +1222,15 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	priv->p5_updatable = TRUE;
 	g_clear_object( &priv->p5_import_settings );
 
-	priv->p5_import_settings = ofa_iimporter_get_default_format( priv->p3_importer_obj, priv->hub, &priv->p5_updatable );
+	priv->p5_import_settings = ofa_iimporter_get_default_format( priv->p3_importer_obj, priv->getter, &priv->p5_updatable );
 
 	if( !priv->p5_import_settings ){
 		found_key = NULL;
 		class_name = g_type_name( priv->p2_selected_type );
-		if( ofa_stream_format_exists( priv->hub, class_name, OFA_SFMODE_IMPORT )){
+		if( ofa_stream_format_exists( priv->getter, class_name, OFA_SFMODE_IMPORT )){
 			found_key = class_name;
 		}
-		priv->p5_import_settings = ofa_stream_format_new( priv->hub, found_key, OFA_SFMODE_IMPORT );
+		priv->p5_import_settings = ofa_stream_format_new( priv->getter, found_key, OFA_SFMODE_IMPORT );
 		if( !found_key ){
 			ofa_stream_format_set_name( priv->p5_import_settings, class_name );
 		}
@@ -1473,7 +1472,7 @@ p7_do_import( ofaImportAssistant *self )
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.version = 1;
-	parms.hub = priv->hub;
+	parms.getter = priv->getter;
 	parms.empty = priv->p4_empty;
 	parms.mode = priv->p4_import_mode;
 	parms.stop = priv->p4_stop;
@@ -1559,7 +1558,7 @@ read_settings( ofaImportAssistant *self )
 
 	/* user settings
 	 */
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -1589,7 +1588,7 @@ read_settings( ofaImportAssistant *self )
 
 	/* dossier settings
 	 */
-	settings = ofa_hub_get_dossier_settings( priv->hub );
+	settings = ofa_igetter_get_dossier_settings( priv->getter );
 	group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
 	priv->p1_folder = my_isettings_get_string( settings, group, st_import_folder );
@@ -1613,7 +1612,7 @@ write_settings( ofaImportAssistant *self )
 			priv->p4_import_mode,
 			priv->p4_stop ? "True":"False" );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
@@ -1622,7 +1621,7 @@ write_settings( ofaImportAssistant *self )
 
 	/* dossier settings
 	 */
-	settings = ofa_hub_get_dossier_settings( priv->hub );
+	settings = ofa_igetter_get_dossier_settings( priv->getter );
 	group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
 	if( my_strlen( priv->p1_folder )){

@@ -116,9 +116,9 @@ libofa_core_la_SOURCES = \
 	ofa-idbexercice-meta.c								\
 	ofa-idbmodel.c										\
 	ofa-idbprovider.c									\
-	ofa-iexe-close.c									\
 	ofa-idbexercice-editor.c							\
 	ofa-idbsuperuser.c									\
+	ofa-iexe-close.c									\
 	ofa-iexportable.c									\
 	ofa-igetter.c										\
 	ofa-iimporter.c										\
@@ -132,6 +132,7 @@ libofa_core_la_SOURCES = \
 	ofa-irenderable.c									\
 	ofa-isetter.c										\
 	ofa-isignal-hub.c									\
+	ofa-isignaler.c										\
 	ofa-istore.c										\
 	ofa-itree-adder.c									\
 	ofa-itvcolumnable.c									\

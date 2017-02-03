@@ -36,7 +36,7 @@
  * selected currency changes.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 #include "core/ofa-currency-store.h"
 
@@ -68,8 +68,8 @@ ofaCurrencyCombo *ofa_currency_combo_new         ( void );
 void              ofa_currency_combo_set_columns ( ofaCurrencyCombo *combo,
 														const gint *columns );
 
-void              ofa_currency_combo_set_hub     ( ofaCurrencyCombo *combo,
-														ofaHub *hub );
+void              ofa_currency_combo_set_getter  ( ofaCurrencyCombo *combo,
+														ofaIGetter *getter );
 
 gchar            *ofa_currency_combo_get_selected( ofaCurrencyCombo *combo );
 

@@ -39,6 +39,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofo-base.h"
@@ -145,7 +146,7 @@ static GList             *icollectionable_load_collection( void *user_data );
 static void               iexportable_iface_init( ofaIExportableInterface *iface );
 static guint              iexportable_get_interface_version( void );
 static gchar             *iexportable_get_label( const ofaIExportable *instance );
-static gboolean           iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gboolean           iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static void               iimportable_iface_init( ofaIImportableInterface *iface );
 static guint              iimportable_get_interface_version( void );
 static gchar             *iimportable_get_label( const ofaIImportable *instance );
@@ -159,7 +160,7 @@ static void               isignal_hub_connect( ofaHub *hub );
 static gboolean           hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean           hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void               hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean           hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean           hub_on_updated_ope_template_mnemo( ofaHub *hub, ofoBase *object, const gchar *mnemo, const gchar *prev_id );
 static void               hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentModel, ofo_recurrent_model, OFO_TYPE_BASE, 0,
@@ -222,7 +223,7 @@ ofo_recurrent_model_class_init( ofoRecurrentModelClass *klass )
 
 /**
  * ofo_recurrent_model_get_dataset:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the full #ofoRecurrentModel dataset.
  *
@@ -230,16 +231,20 @@ ofo_recurrent_model_class_init( ofoRecurrentModelClass *klass )
  * be released by the caller.
  */
 GList *
-ofo_recurrent_model_get_dataset( ofaHub *hub )
+ofo_recurrent_model_get_dataset( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	myICollector *collector;
 
-	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_MODEL, hub ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_RECURRENT_MODEL, getter ));
 }
 
 /**
  * ofo_recurrent_model_get_by_mnemo:
- * @hub:
+ * @getter: a #ofaIGetter instance.
  * @mnemo:
  *
  * Returns: the searched recurrent model, or %NULL.
@@ -248,16 +253,16 @@ ofo_recurrent_model_get_dataset( ofaHub *hub )
  * not be unreffed by the caller.
  */
 ofoRecurrentModel *
-ofo_recurrent_model_get_by_mnemo( ofaHub *hub, const gchar *mnemo )
+ofo_recurrent_model_get_by_mnemo( ofaIGetter *getter, const gchar *mnemo )
 {
 	GList *dataset;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 
 	/*g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );*/
 
-	dataset = ofo_recurrent_model_get_dataset( hub );
+	dataset = ofo_recurrent_model_get_dataset( getter );
 
 	return( model_find_by_mnemo( dataset, mnemo ));
 }
@@ -278,24 +283,27 @@ model_find_by_mnemo( GList *set, const gchar *mnemo )
 
 /**
  * ofo_recurrent_model_use_ope_template:
- * @hub: the #ofaHub of the application.
+ * @getter: a #ofaIGetter instance.
  * @ope_template: the #ofoOpeTemplate mnemonic.
  *
  * Returns: %TRUE if any #ofoRecurrentModel use this @ope_template
  *  operation template.
  */
 gboolean
-ofo_recurrent_model_use_ope_template( ofaHub *hub, const gchar *ope_template )
+ofo_recurrent_model_use_ope_template( ofaIGetter *getter, const gchar *ope_template )
 {
+	ofaHub *hub;
 	gchar *query;
 	gint count;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( my_strlen( ope_template ), FALSE );
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM REC_T_MODELS WHERE REC_OPE_TEMPLATE='%s'",
 			ope_template );
+
+	hub = ofa_igetter_get_hub( getter );
 
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
 
@@ -306,13 +314,16 @@ ofo_recurrent_model_use_ope_template( ofaHub *hub, const gchar *ope_template )
 
 /**
  * ofo_recurrent_model_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoRecurrentModel *
-ofo_recurrent_model_new( void )
+ofo_recurrent_model_new( ofaIGetter *getter )
 {
 	ofoRecurrentModel *model;
 
-	model = g_object_new( OFO_TYPE_RECURRENT_MODEL, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	model = g_object_new( OFO_TYPE_RECURRENT_MODEL, "ofo-base-getter", getter, NULL );
 	OFO_BASE( model )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( model );
@@ -331,13 +342,16 @@ ofo_recurrent_model_new( void )
 ofoRecurrentModel *
 ofo_recurrent_model_new_from_model( const ofoRecurrentModel *model )
 {
+	ofaIGetter *getter;
 	ofoRecurrentModel *dest;
 	gchar *new_mnemo, *new_label;
 
 	g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), NULL );
 	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
 
-	dest = ofo_recurrent_model_new();
+	getter = ofo_base_get_getter( OFO_BASE( model ));
+
+	dest = ofo_recurrent_model_new( getter );
 
 	new_mnemo = get_mnemo_new_from( model );
 	ofo_recurrent_model_set_mnemo( dest, new_mnemo );
@@ -375,16 +389,17 @@ ofo_recurrent_model_get_mnemo( const ofoRecurrentModel *model )
 static gchar *
 get_mnemo_new_from( const ofoRecurrentModel *model )
 {
-	ofaHub *hub;
+	ofaIGetter *getter;
 	const gchar *mnemo;
 	gint len_mnemo;
 	gchar *str;
 	gint i, maxlen;
 
 	str = NULL;
-	hub = ofo_base_get_hub( OFO_BASE( model ));
+	getter = ofo_base_get_getter( OFO_BASE( model ));
 	mnemo = ofo_recurrent_model_get_mnemo( model );
 	len_mnemo = my_strlen( mnemo );
+
 	for( i=2 ; ; ++i ){
 		/* if we are greater than 9999, there is a problem... */
 		maxlen = ( i < 10 ? RECM_MNEMO_MAX_LENGTH-1 :
@@ -395,7 +410,7 @@ get_mnemo_new_from( const ofoRecurrentModel *model )
 		} else {
 			str = g_strdup_printf( "%s%d", mnemo, i );
 		}
-		if( !ofo_recurrent_model_get_by_mnemo( hub, str )){
+		if( !ofo_recurrent_model_get_by_mnemo( getter, str )){
 			break;
 		}
 		g_free( str );
@@ -527,6 +542,7 @@ gboolean
 ofo_recurrent_model_is_deletable( const ofoRecurrentModel *model )
 {
 	gboolean deletable;
+	ofaIGetter *getter;
 	ofaHub *hub;
 
 	g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), FALSE );
@@ -534,7 +550,8 @@ ofo_recurrent_model_is_deletable( const ofoRecurrentModel *model )
 	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
 	deletable = TRUE;
-	hub = ofo_base_get_hub( OFO_BASE( model ));
+	getter = ofo_base_get_getter( OFO_BASE( model ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( hub ){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, model, &deletable );
@@ -717,24 +734,25 @@ ofo_recurrent_model_set_is_enabled( ofoRecurrentModel *model, gboolean is_enable
  * ofo_recurrent_model_insert:
  */
 gboolean
-ofo_recurrent_model_insert( ofoRecurrentModel *recurrent_model, ofaHub *hub )
+ofo_recurrent_model_insert( ofoRecurrentModel *recurrent_model )
 {
 	static const gchar *thisfn = "ofo_recurrent_model_insert";
 	gboolean ok;
+	ofaIGetter *getter;
+	ofaHub *hub;
 
-	g_debug( "%s: model=%p, hub=%p",
-			thisfn, ( void * ) recurrent_model, ( void * ) hub );
+	g_debug( "%s: model=%p", thisfn, ( void * ) recurrent_model );
 
 	g_return_val_if_fail( recurrent_model && OFO_IS_RECURRENT_MODEL( recurrent_model ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( recurrent_model )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( recurrent_model ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( model_do_insert( recurrent_model, ofa_hub_get_connect( hub ))){
-		ofo_base_set_hub( OFO_BASE( recurrent_model ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( recurrent_model ), NULL, hub );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( recurrent_model ), NULL, getter );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, recurrent_model );
 		ok = TRUE;
 	}
@@ -854,6 +872,7 @@ gboolean
 ofo_recurrent_model_update( ofoRecurrentModel *recurrent_model, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_recurrent_model_update";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -865,7 +884,8 @@ ofo_recurrent_model_update( ofoRecurrentModel *recurrent_model, const gchar *pre
 	g_return_val_if_fail( !OFO_BASE( recurrent_model )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( recurrent_model ));
+	getter = ofo_base_get_getter( OFO_BASE( recurrent_model ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( model_do_update( recurrent_model, ofa_hub_get_connect( hub ), prev_mnemo )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, recurrent_model, prev_mnemo );
@@ -990,6 +1010,7 @@ gboolean
 ofo_recurrent_model_delete( ofoRecurrentModel *recurrent_model )
 {
 	static const gchar *thisfn = "ofo_recurrent_model_delete";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1000,11 +1021,12 @@ ofo_recurrent_model_delete( ofoRecurrentModel *recurrent_model )
 	g_return_val_if_fail( !OFO_BASE( recurrent_model )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( recurrent_model ));
+	getter = ofo_base_get_getter( OFO_BASE( recurrent_model ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( model_do_delete( recurrent_model, ofa_hub_get_connect( hub ))){
 		g_object_ref( recurrent_model );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( recurrent_model ));
+		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( recurrent_model ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, recurrent_model );
 		g_object_unref( recurrent_model );
 		ok = TRUE;
@@ -1062,13 +1084,13 @@ icollectionable_load_collection( void *user_data )
 {
 	GList *dataset;
 
-	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"REC_T_MODELS",
 					OFO_TYPE_RECURRENT_MODEL,
-					OFA_HUB( user_data ));
+					OFA_IGETTER( user_data ));
 
 	return( dataset );
 }
@@ -1108,14 +1130,14 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	gchar *str;
 	GList *dataset, *it;
 	gboolean with_headers, ok;
 	gulong count;
 
-	dataset = ofo_recurrent_model_get_dataset( hub );
+	dataset = ofo_recurrent_model_get_dataset( getter );
 	with_headers = ofa_stream_format_get_with_headers( settings );
 
 	count = ( gulong ) g_list_length( dataset );
@@ -1197,21 +1219,23 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaHub *hub;
 	GList *dataset;
 	gchar *bck_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+	hub = ofa_igetter_get_hub( parms->getter );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "REC_T_MODELS" );
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "REC_T_MODELS" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_RECURRENT_MODEL );
-			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RECURRENT_MODEL );
+			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_RECURRENT_MODEL );
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RECURRENT_MODEL );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "REC_T_MODELS" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "REC_T_MODELS" );
 		}
 
 		g_free( bck_table );
@@ -1251,7 +1275,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 		numline += 1;
 		fields = ( GSList * ) itl->data;
-		model = ofo_recurrent_model_new();
+		model = ofo_recurrent_model_new( parms->getter );
 
 		/* mnemo */
 		itf = fields;
@@ -1292,7 +1316,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			continue;
 		}
 		perid = cstr;
-		period = ofo_rec_period_get_by_id( parms->hub, perid );
+		period = ofo_rec_period_get_by_id( parms->getter, perid );
 		if( !period ){
 			str = g_strdup_printf( _( "unknown periodicity identifier: %s" ), perid );
 			ofa_iimporter_progress_num_text( importer, parms, numline, str );
@@ -1389,6 +1413,7 @@ static void
 iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
 {
 	GList *it;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	const gchar *model_id;
 	gboolean insert;
@@ -1397,7 +1422,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	gchar *str;
 
 	total = g_list_length( dataset );
-	connect = ofa_hub_get_connect( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && total > 0 ){
@@ -1527,7 +1553,11 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 static gboolean
 hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
 {
-	return( !ofo_recurrent_model_use_ope_template( hub, ofo_ope_template_get_mnemo( template )));
+	ofaIGetter *getter;
+
+	getter = ofo_base_get_getter( OFO_BASE( template ));
+
+	return( !ofo_recurrent_model_use_ope_template( getter, ofo_ope_template_get_mnemo( template )));
 }
 
 /*
@@ -1550,19 +1580,21 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
 			if( my_collate( mnemo, prev_id )){
-				hub_on_updated_ope_template_mnemo( hub, mnemo, prev_id );
+				hub_on_updated_ope_template_mnemo( hub, object, mnemo, prev_id );
 			}
 		}
 	}
 }
 
 static gboolean
-hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+hub_on_updated_ope_template_mnemo( ofaHub *hub, ofoBase *object, const gchar *mnemo, const gchar *prev_id )
 {
 	static const gchar *thisfn = "ofo_recurrent_model_hub_on_updated_ope_template_mnemo";
 	gchar *query;
 	const ofaIDBConnect *connect;
 	gboolean ok;
+	ofaIGetter *getter;
+	myICollector *collector;
 
 	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
 			thisfn, ( void * ) hub, mnemo, prev_id );
@@ -1579,7 +1611,9 @@ hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar 
 
 	g_free( query );
 
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_MODEL );
+	getter = ofo_base_get_getter( object );
+	collector = ofa_igetter_get_collector( getter );
+	my_icollector_collection_free( collector, OFO_TYPE_RECURRENT_MODEL );
 
 	return( ok );
 }
@@ -1592,6 +1626,7 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty )
 {
 	static const gchar *thisfn = "ofo_recurrent_model_hub_on_deleted_object";
 	ofoOpeTemplate *template_obj;
+	ofaIGetter *getter;
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -1599,8 +1634,10 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty )
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) empty );
 
+	getter = ofo_base_get_getter( object );
+
 	if( OFO_IS_RECURRENT_MODEL( object )){
-		template_obj = ofo_ope_template_get_by_mnemo( hub, ofo_recurrent_model_get_ope_template( OFO_RECURRENT_MODEL( object )));
+		template_obj = ofo_ope_template_get_by_mnemo( getter, ofo_recurrent_model_get_ope_template( OFO_RECURRENT_MODEL( object )));
 		if( template_obj ){
 			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
 		}

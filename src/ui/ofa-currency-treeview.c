@@ -30,7 +30,7 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofo-currency.h"
@@ -46,7 +46,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub           *hub;
+	ofaIGetter       *getter;
 
 	/* UI
 	 */
@@ -225,26 +225,26 @@ ofa_currency_treeview_class_init( ofaCurrencyTreeviewClass *klass )
 
 /**
  * ofa_currency_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaCurrencyTreeview instance.
  */
 ofaCurrencyTreeview *
-ofa_currency_treeview_new( ofaHub *hub )
+ofa_currency_treeview_new( ofaIGetter *getter )
 {
 	ofaCurrencyTreeview *view;
 	ofaCurrencyTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_CURRENCY_TREEVIEW,
-					"ofa-tvbin-hub",    hub,
+					"ofa-tvbin-getter", getter,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 
 	priv = ofa_currency_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoCurrency object instead of just the raw GtkTreeSelection
@@ -351,7 +351,7 @@ ofa_currency_treeview_setup_store( ofaCurrencyTreeview *view )
 		setup_columns( view );
 	}
 
-	priv->store = ofa_currency_store_new( priv->hub );
+	priv->store = ofa_currency_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

@@ -38,6 +38,7 @@
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -59,7 +60,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub        *hub;
+	ofaIGetter    *getter;
 	gchar         *settings_prefix;
 
 	/* runtime
@@ -252,24 +253,24 @@ ofa_check_integrity_bin_class_init( ofaCheckIntegrityBinClass *klass )
 
 /**
  * ofa_check_integrity_bin_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @settings_prefix: the prefix of the name where to save the settings.
  *
  * Returns: a new #ofaCheckIntegrityBin instance.
  */
 ofaCheckIntegrityBin *
-ofa_check_integrity_bin_new( ofaHub *hub, const gchar *settings_prefix )
+ofa_check_integrity_bin_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
 	ofaCheckIntegrityBin *bin;
 	ofaCheckIntegrityBinPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	bin = g_object_new( OFA_TYPE_CHECK_INTEGRITY_BIN, NULL );
 
 	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
-	priv->hub = hub;
+	priv->getter = getter;
 	priv->settings_prefix = g_strdup( settings_prefix );
 
 	setup_bin( bin );
@@ -327,7 +328,7 @@ read_settings( ofaCheckIntegrityBin *self )
 
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = get_settings_key( self );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -354,7 +355,7 @@ write_settings( ofaCheckIntegrityBin *self )
 
 	str = g_strdup_printf( "%d;", pos );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = get_settings_key( self );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
@@ -427,12 +428,12 @@ do_run( ofaCheckIntegrityBin *self )
 		( *st_fn[i] )( self );
 	}
 
-	extenders = ofa_hub_get_extender_collection( priv->hub );
+	extenders = ofa_igetter_get_extender_collection( priv->getter );
 	plugins = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
 	for( it=plugins ; it ; it=it->next ){
 		instance = OFA_IDBMODEL( it->data );
 		if( OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity ){
-			priv->others_errs += OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity( instance, priv->hub, priv->display ? MY_IPROGRESS( self ) : NULL );
+			priv->others_errs += OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity( instance, priv->getter, priv->display ? MY_IPROGRESS( self ) : NULL );
 		}
 	}
 	ofa_extender_collection_free_types( plugins );
@@ -462,6 +463,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 	ofoOpeTemplate *ope_obj;
 	ofoAccount *acc_obj;
 	gchar *str;
+	ofaHub *hub;
 
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
@@ -474,7 +476,8 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 	}
 
 	/* progress */
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 	priv->dossier_errs = 0;
 	currencies = ofo_dossier_get_currencies( dossier );
 	count = 3+g_slist_length( currencies );
@@ -486,7 +489,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "Dossier has no default currency" ));
 		priv->dossier_errs += 1;
 	} else {
-		cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+		cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
 		if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 			str = g_strdup_printf( _( "Dossier default currency '%s' doesn't exist" ), cur_code );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
@@ -503,7 +506,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "Dossier has no forward operation template" ));
 		priv->dossier_errs += 1;
 	} else {
-		ope_obj = ofo_ope_template_get_by_mnemo( priv->hub, for_ope );
+		ope_obj = ofo_ope_template_get_by_mnemo( priv->getter, for_ope );
 		if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 			str = g_strdup_printf( _( "Dossier forward operation template '%s' doesn't exist" ), for_ope );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
@@ -519,7 +522,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "Dossier has no solde operation template" ));
 		priv->dossier_errs += 1;
 	} else {
-		ope_obj = ofo_ope_template_get_by_mnemo( priv->hub, sld_ope );
+		ope_obj = ofo_ope_template_get_by_mnemo( priv->getter, sld_ope );
 		if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 			str = g_strdup_printf( _( "Dossier solde operation template '%s' doesn't exist" ), sld_ope );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
@@ -538,7 +541,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "Dossier solde account has no currency" ));
 			priv->dossier_errs += 1;
 		} else {
-			cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+			cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
 			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 				str = g_strdup_printf( _( "Dossier solde account currency '%s' doesn't exist" ), cur_code );
 				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
@@ -552,7 +555,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 				g_free( str );
 				priv->dossier_errs += 1;
 			} else {
-				acc_obj = ofo_account_get_by_number( priv->hub, acc_number );
+				acc_obj = ofo_account_get_by_number( priv->getter, acc_number );
 				if( !acc_obj || !OFO_IS_ACCOUNT( acc_obj )){
 					str = g_strdup_printf( _( "Dossier solde account '%s' for currency '%s' doesn't exist" ),
 							acc_number, cur_code );
@@ -600,7 +603,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 	}
 
 	priv->bat_lines_errs = 0;
-	bats = ofo_bat_get_dataset( priv->hub );
+	bats = ofo_bat_get_dataset( priv->getter );
 	count = g_list_length( bats );
 
 	if( count == 0 ){
@@ -614,7 +617,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 			/* it is ok for a BAT file to not have a currency set */
 			cur_code = ofo_bat_get_currency( bat );
 			if( my_strlen( cur_code )){
-				cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+				cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 					str = g_strdup_printf( _( "BAT file %lu currency '%s' doesn't exist" ), id, cur_code );
 					my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
@@ -623,7 +626,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 				}
 			}
 
-			lines = ofo_bat_line_get_dataset( priv->hub, id );
+			lines = ofo_bat_line_get_dataset( priv->getter, id );
 
 			for( itl=lines ; itl ; itl=itl->next ){
 				line = OFO_BAT_LINE( itl->data );
@@ -632,7 +635,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 				/* it is ok for a BAT line to not have a currency */
 				cur_code = ofo_bat_line_get_currency( line );
 				if( my_strlen( cur_code )){
-					cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+					cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
 					if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 						str = g_strdup_printf(
 								_( "BAT line %lu (from BAT file %lu) currency '%s' doesn't exist" ),
@@ -651,7 +654,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 		}
 
 		/* check that all details have a parent */
-		orphans = ofo_bat_line_get_orphans( priv->hub );
+		orphans = ofo_bat_line_get_orphans( priv->getter );
 		for( it=orphans ; it ; it=it->next ){
 			str = g_strdup_printf( _( "Found orphan BAT line: %s" ), ( const gchar * ) it->data );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
@@ -696,7 +699,7 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 	}
 
 	priv->accounts_errs = 0;
-	accounts = ofo_account_get_dataset( priv->hub );
+	accounts = ofo_account_get_dataset( priv->getter );
 	count = g_list_length( accounts );
 
 	if( count == 0 ){
@@ -708,7 +711,7 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 		acc_num = ofo_account_get_number( account );
 
 		cla_num = ofo_account_get_class( account );
-		cla_obj = ofo_class_get_by_number( priv->hub, cla_num );
+		cla_obj = ofo_class_get_by_number( priv->getter, cla_num );
 		if( !cla_obj || !OFO_IS_CLASS( cla_obj )){
 			str = g_strdup_printf(
 					_( "Class %d doesn't exist for account %s" ), cla_num, acc_num );
@@ -725,7 +728,7 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 				g_free( str );
 				priv->accounts_errs += 1;
 			} else {
-				cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+				cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 					str = g_strdup_printf(
 							_( "Account %s currency '%s' doesn't exist" ), acc_num, cur_code );
@@ -770,7 +773,7 @@ check_concil_run( ofaCheckIntegrityBin *self )
 	priv->concil_errs = 0;
 
 	/* check that all details have a parent */
-	orphans = ofo_concil_get_orphans( priv->hub );
+	orphans = ofo_concil_get_orphans( priv->getter );
 	for( it=orphans ; it ; it=it->next ){
 		str = g_strdup_printf( _( "Found orphan conciliation member: %s" ), ( const gchar * ) it->data );
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
@@ -816,7 +819,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 	}
 
 	priv->entries_errs = 0;
-	entries = ofo_entry_get_dataset_for_store( priv->hub, NULL, NULL );
+	entries = ofo_entry_get_dataset_for_store( priv->getter, NULL, NULL );
 	count = g_list_length( entries );
 
 	if( count == 0 ){
@@ -835,7 +838,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->entries_errs += 1;
 		} else {
-			acc_obj = ofo_account_get_by_number( priv->hub, acc_number );
+			acc_obj = ofo_account_get_by_number( priv->getter, acc_number );
 			if( !acc_obj || !OFO_IS_ACCOUNT( acc_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has account %s which doesn't exist" ), number, acc_number );
@@ -852,7 +855,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->entries_errs += 1;
 		} else {
-			cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+			cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
 			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has currency '%s' which doesn't exist" ), number, cur_code );
@@ -869,7 +872,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->entries_errs += 1;
 		} else {
-			led_obj = ofo_ledger_get_by_mnemo( priv->hub, led_mnemo );
+			led_obj = ofo_ledger_get_by_mnemo( priv->getter, led_mnemo );
 			if( !led_obj || !OFO_IS_LEDGER( led_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has ledger '%s' which doesn't exist" ), number, led_mnemo );
@@ -882,7 +885,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 		/* ope template is not mandatory */
 		ope_mnemo = ofo_entry_get_ope_template( entry );
 		if( my_strlen( ope_mnemo )){
-			ope_obj = ofo_ope_template_get_by_mnemo( priv->hub, ope_mnemo );
+			ope_obj = ofo_ope_template_get_by_mnemo( priv->getter, ope_mnemo );
 			if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has operation template '%s' which doesn't exist" ), number, ope_mnemo );
@@ -927,7 +930,7 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 	}
 
 	priv->ledgers_errs = 0;
-	ledgers = ofo_ledger_get_dataset( priv->hub );
+	ledgers = ofo_ledger_get_dataset( priv->getter );
 	count = g_list_length( ledgers );
 
 	if( count == 0 ){
@@ -946,7 +949,7 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 				g_free( str );
 				priv->ledgers_errs += 1;
 			} else {
-				cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+				cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 					str = g_strdup_printf(
 							_( "Ledger %s has currency '%s' which doesn't exist" ), mnemo, cur_code );
@@ -992,7 +995,7 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 	}
 
 	priv->ope_templates_errs = 0;
-	ope_templates = ofo_ope_template_get_dataset( priv->hub );
+	ope_templates = ofo_ope_template_get_dataset( priv->getter );
 	count = g_list_length( ope_templates );
 
 	if( count == 0 ){
@@ -1006,7 +1009,7 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 			/* ledger is optional here */
 			led_mnemo = ofo_ope_template_get_ledger( ope_template );
 			if( my_strlen( led_mnemo )){
-				led_obj = ofo_ledger_get_by_mnemo( priv->hub, led_mnemo );
+				led_obj = ofo_ledger_get_by_mnemo( priv->getter, led_mnemo );
 				if( !led_obj || !OFO_IS_LEDGER( led_obj )){
 					str = g_strdup_printf(
 							_( "Operation template %s has ledger '%s' which doesn't exist" ), mnemo, led_mnemo );
@@ -1029,7 +1032,7 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 		}
 
 		/* check that all details have a parent */
-		orphans = ofo_ope_template_get_orphans( priv->hub );
+		orphans = ofo_ope_template_get_orphans( priv->getter );
 		for( it=orphans ; it ; it=it->next ){
 			str = g_strdup_printf( _( "Found orphan operation template: %s" ), ( const gchar * ) it->data );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );

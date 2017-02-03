@@ -59,8 +59,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub            *hub;
-	GList             *hub_handlers;
+	ofaIGetter        *getter;
 	gchar             *settings_prefix;
 
 	/* UI
@@ -217,8 +216,6 @@ settlement_page_dispose( GObject *instance )
 		/* unref object members here */
 		priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( instance ));
 
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
-
 		g_object_unref( priv->store );
 
 		g_object_unref( priv->settle_action );
@@ -273,8 +270,7 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 
 	priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
 	priv->paned = GTK_WIDGET( paned );
 
@@ -339,7 +335,7 @@ setup_treeview( ofaSettlementPage *self, GtkContainer *parent )
 	tview_parent = my_utils_container_get_child_by_name( parent, "entry-treeview" );
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
-	priv->tview = ofa_entry_treeview_new( priv->hub );
+	priv->tview = ofa_entry_treeview_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 	ofa_entry_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_entry_treeview_setup_columns( priv->tview );
@@ -489,13 +485,13 @@ tview_on_row_selected( ofaEntryTreeview *view, GList *selected, ofaSettlementPag
 	}
 
 	samount = priv->account_currency
-			? ofa_amount_to_str( ses.debit, priv->account_currency, priv->hub )
+			? ofa_amount_to_str( ses.debit, priv->account_currency, priv->getter )
 			: g_strdup( "" );
 	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
 	g_free( samount );
 
 	samount = priv->account_currency
-			? ofa_amount_to_str( ses.credit, priv->account_currency, priv->hub )
+			? ofa_amount_to_str( ses.credit, priv->account_currency, priv->getter )
 			: g_strdup( "" );
 	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
 	g_free( samount );
@@ -678,7 +674,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 
 	/* install an empty store before setting up the initial values */
-	priv->store = ofa_entry_store_new( priv->hub );
+	priv->store = ofa_entry_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
 
 	/* as GTK_SELECTION_MULTIPLE is set, we have to explicitely
@@ -703,13 +699,13 @@ on_account_changed( GtkEntry *entry, ofaSettlementPage *self )
 	g_free( priv->account_number );
 	priv->account_number = g_strdup( gtk_entry_get_text( entry ));
 
-	account = ofo_account_get_by_number( priv->hub, priv->account_number );
+	account = ofo_account_get_by_number( priv->getter, priv->account_number );
 
 	if( account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account )){
 		cur_code = ofo_account_get_currency( account );
 
 		if( my_strlen( cur_code )){
-			priv->account_currency = ofo_currency_get_by_code( priv->hub, cur_code );
+			priv->account_currency = ofo_currency_get_by_code( priv->getter, cur_code );
 			g_return_if_fail( priv->account_currency && OFO_IS_CURRENCY( priv->account_currency ));
 		}
 
@@ -778,6 +774,7 @@ update_selection( ofaSettlementPage *self, gboolean settle )
 {
 	ofaSettlementPagePrivate *priv;
 	sEnumSelected ses;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	GList *selected;
 
@@ -786,7 +783,8 @@ update_selection( ofaSettlementPage *self, gboolean settle )
 	memset( &ses, '\0', sizeof( sEnumSelected ));
 	ses.self = self;
 	if( settle ){
-		dossier = ofa_hub_get_dossier( priv->hub );
+		hub = ofa_igetter_get_hub( priv->getter );
+		dossier = ofa_hub_get_dossier( hub );
 		ses.set_number = ofo_dossier_get_next_settlement( dossier );
 	} else {
 		ses.set_number = -1;
@@ -853,7 +851,7 @@ read_settings( ofaSettlementPage *self )
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -898,7 +896,7 @@ write_settings( ofaSettlementPage *self )
 			priv->account_number,
 			gtk_paned_get_position( GTK_PANED( priv->paned )));
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

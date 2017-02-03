@@ -41,7 +41,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -85,14 +85,14 @@ struct _ofaIPropertiesInterface {
 	/**
 	 * init:
 	 * @instance: the #ofaIProperties provider.
-	 * @hub: the #ofaHub object of the application.
+	 * @getter: a #ofaIGetter instance.
 	 *
 	 * Returns: the newly created GtkNotebook page.
 	 *
 	 * Since: version 1
 	 */
 	GtkWidget * ( *init )                 ( ofaIProperties *instance,
-												ofaHub *hub );
+												ofaIGetter *getter );
 
 	/**
 	 * is_valid:
@@ -140,7 +140,7 @@ guint      ofa_iproperties_get_interface_version     ( GType type );
  * Instance-wide
  */
 GtkWidget *ofa_iproperties_init                      ( ofaIProperties *instance,
-															ofaHub *hub );
+															ofaIGetter *getter );
 
 gboolean   ofa_iproperties_is_valid                  ( GtkWidget *widget,
 															gchar **msgerr );

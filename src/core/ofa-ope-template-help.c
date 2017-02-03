@@ -30,7 +30,6 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 
 #include "core/ofa-ope-template-help.h"
@@ -52,7 +51,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub     *hub;
 	GList      *parents;
 }
 	ofaOpeTemplateHelpPrivate;
@@ -166,7 +164,7 @@ ofa_ope_template_help_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_ope_template_help_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -199,10 +197,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*

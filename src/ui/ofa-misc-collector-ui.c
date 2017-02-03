@@ -33,7 +33,6 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 
 #include "ui/ofa-misc-collector-ui.h"
@@ -50,7 +49,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub     *hub;
 
 	/* UI
 	 */
@@ -180,7 +178,7 @@ ofa_misc_collector_ui_run( ofaIGetter *getter )
 
 	priv = ofa_misc_collector_ui_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = GTK_WINDOW( ofa_igetter_get_main_window( getter ));
 
 	/* after this call, @self may be invalid */
@@ -212,10 +210,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -323,7 +318,7 @@ collection_set_data( ofaMiscCollectorUI *self )
 
 	priv = ofa_misc_collector_ui_get_instance_private( self );
 
-	collector = ofa_hub_get_collector( priv->hub );
+	collector = ofa_igetter_get_collector( priv->getter );
 	g_return_if_fail( collector && MY_IS_ICOLLECTOR( collector ));
 
 	list = my_icollector_collection_get_list( collector );
@@ -414,7 +409,7 @@ single_set_data( ofaMiscCollectorUI *self )
 
 	priv = ofa_misc_collector_ui_get_instance_private( self );
 
-	collector = ofa_hub_get_collector( priv->hub );
+	collector = ofa_igetter_get_collector( priv->getter );
 	g_return_if_fail( collector && MY_IS_ICOLLECTOR( collector ));
 
 	list = my_icollector_single_get_list( collector );

@@ -37,6 +37,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -205,14 +206,14 @@ ofs_ope_apply_template( ofsOpe *ope )
 {
 	static const gchar *thisfn = "ofs_ope_apply_template";
 	sOpeHelper *helper;
-	ofaHub *hub;
+	ofaIGetter *getter;
 
 	g_debug( "%s: entering:", thisfn );
 	ofs_ope_dump( ope );
 
 	if( !st_engine ){
-		hub = ofo_base_get_hub( OFO_BASE( ope->ope_template ));
-		st_engine = ofa_formula_engine_new( hub );
+		getter = ofo_base_get_getter( OFO_BASE( ope->ope_template ));
+		st_engine = ofa_formula_engine_new( getter );
 		ofa_formula_engine_set_auto_eval( st_engine, FALSE );
 	}
 
@@ -236,11 +237,11 @@ compute_simple_formulas( sOpeHelper *helper )
 	ofsOpeDetail *detail;
 	gint i, count;
 	gchar *str;
-	ofaHub *hub;
+	ofaIGetter *getter;
 
 	ope = helper->ope;
 	template = ope->ope_template;
-	hub = ofo_base_get_hub( OFO_BASE( template ));
+	getter = ofo_base_get_getter( OFO_BASE( template ));
 	helper->row = -1;
 	helper->column = -1;
 
@@ -277,14 +278,14 @@ compute_simple_formulas( sOpeHelper *helper )
 		if( !detail->debit_user_set ){
 			helper->column = OPE_COL_DEBIT;
 			str = compute_formula( ofo_ope_template_get_detail_debit( template, i ), helper );
-			detail->debit = ofa_amount_from_str( str, hub );
+			detail->debit = ofa_amount_from_str( str, getter );
 			g_free( str );
 		}
 
 		if( !detail->credit_user_set ){
 			helper->column = OPE_COL_CREDIT;
 			str = compute_formula( ofo_ope_template_get_detail_credit( template, i ), helper );
-			detail->credit = ofa_amount_from_str( str, hub );
+			detail->credit = ofa_amount_from_str( str, getter );
 			g_free( str );
 		}
 	}
@@ -294,6 +295,7 @@ static void
 compute_dates( sOpeHelper *helper )
 {
 	ofsOpe *ope;
+	ofaIGetter *getter;
 	ofaHub *hub;
 	ofoDossier *dossier;
 	GDate date;
@@ -305,9 +307,10 @@ compute_dates( sOpeHelper *helper )
 	 * set minimal deffect depending of dossier and ledger
 	 */
 	if( ope->dope_user_set && !ope->deffect_user_set && my_date_is_valid( &ope->dope )){
-		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+		getter = ofo_base_get_getter( OFO_BASE( helper->ope->ope_template ));
+		hub = ofa_igetter_get_hub( getter );
 		dossier = ofa_hub_get_dossier( hub );
-		ledger = ofo_ledger_get_by_mnemo( hub, ope->ledger );
+		ledger = ofo_ledger_get_by_mnemo( getter, ope->ledger );
 		if( ledger ){
 			ofo_dossier_get_min_deffect( dossier, ledger, &date );
 			if( my_date_is_valid( &date )){
@@ -364,7 +367,7 @@ get_formula_eval_fn( const gchar *name, gint *min_count, gint *max_count, GMatch
 {
 	static const gchar *thisfn = "ofs_ope_get_formula_eval_fn";
 	gint i;
-	ofaHub *hub;
+	ofaIGetter *getter;
 	ofoRate *rate;
 	GError *error;
 
@@ -383,8 +386,8 @@ get_formula_eval_fn( const gchar *name, gint *min_count, gint *max_count, GMatch
 	/* if not a predefined name, is it a rate ?
 	 * because we do accept %TVAN as a shortcut to %RATE( TVAN )
 	 */
-	hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
-	rate = ofo_rate_get_by_mnemo( hub, name );
+	getter = ofo_base_get_getter( OFO_BASE( helper->ope->ope_template ));
+	rate = ofo_rate_get_by_mnemo( getter, name );
 	if( rate ){
 		*min_count = 0;
 		*max_count = 0;
@@ -486,11 +489,11 @@ eval_c_shortcut( ofsFormulaHelper *helper, const gchar *rowstr )
 {
 	gchar *res;
 	ofsOpeDetail *detail;
-	ofaHub *hub;
+	ofaIGetter *getter;
 
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 	detail = my_strlen( rowstr ) ? get_ope_detail( rowstr, helper ) : NULL;
-	res = detail ? ofa_amount_to_str( detail->credit, detail->currency, hub ) : NULL;
+	res = detail ? ofa_amount_to_str( detail->credit, detail->currency, getter ) : NULL;
 
 	return( res );
 }
@@ -504,11 +507,11 @@ eval_d_shortcut( ofsFormulaHelper *helper, const gchar *rowstr )
 {
 	gchar *res;
 	ofsOpeDetail *detail;
-	ofaHub *hub;
+	ofaIGetter *getter;
 
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 	detail = my_strlen( rowstr ) ? get_ope_detail( rowstr, helper ) : NULL;
-	res = detail ? ofa_amount_to_str( detail->debit, detail->currency, hub ) : NULL;
+	res = detail ? ofa_amount_to_str( detail->debit, detail->currency, getter ) : NULL;
 
 	return( res );
 }
@@ -559,15 +562,18 @@ eval_accl( ofsFormulaHelper *helper )
 	gchar *res;
 	GList *it;
 	const gchar *cstr;
-	ofaHub *hub;
 	ofoAccount *account;
 	const gchar *currency, *solding;
+	ofaIGetter *getter;
+	ofaHub *hub;
 	ofoDossier * dossier;
+
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	hub = ofa_igetter_get_hub( getter );
 
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
-	account = ( hub && my_strlen( cstr )) ? ofo_account_get_by_number( hub, cstr ) : NULL;
+	account = my_strlen( cstr ) ? ofo_account_get_by_number( getter, cstr ) : NULL;
 	currency = ( account && !ofo_account_is_root( account )) ? ofo_account_get_currency( account ) : NULL;
 	dossier = ofa_hub_get_dossier( hub );
 	solding = currency ? ofo_dossier_get_sld_account( dossier, currency ) : NULL;
@@ -586,14 +592,15 @@ eval_accu( ofsFormulaHelper *helper )
 	gchar *res;
 	GList *it;
 	const gchar *cstr;
-	ofaHub *hub;
+	ofaIGetter *getter;
 	ofoAccount *account;
 	const gchar *currency;
 
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
-	account = ( hub && my_strlen( cstr )) ? ofo_account_get_by_number( hub, cstr ) : NULL;
+	account = my_strlen( cstr ) ? ofo_account_get_by_number( getter, cstr ) : NULL;
 	currency = ( account && !ofo_account_is_root( account )) ? ofo_account_get_currency( account ) : NULL;
 	res = g_strdup( currency ? currency : "" );
 
@@ -610,14 +617,15 @@ eval_acla( ofsFormulaHelper *helper )
 	gchar *res;
 	GList *it;
 	const gchar *cstr;
-	ofaHub *hub;
+	ofaIGetter *getter;
 	ofoAccount *account;
 	const gchar *label;
 
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
-	account = ( hub && my_strlen( cstr )) ? ofo_account_get_by_number( hub, cstr ) : NULL;
+	account = my_strlen( cstr ) ? ofo_account_get_by_number( getter, cstr ) : NULL;
 	label = account ? ofo_account_get_label( account ) : NULL;
 	res = g_strdup( label ? label : "" );
 
@@ -656,14 +664,15 @@ eval_balcr( ofsFormulaHelper *helper )
 	gchar *res;
 	GList *it;
 	const gchar *cstr;
-	ofaHub *hub;
+	ofaIGetter *getter;
 	ofoAccount *account;
 	ofxAmount solde;
 
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
-	account = ( hub && my_strlen( cstr )) ? ofo_account_get_by_number( hub, cstr ) : NULL;
+	account = my_strlen( cstr ) ? ofo_account_get_by_number( getter, cstr ) : NULL;
 	solde = 0;
 	if( account ){
 		solde = ofo_account_get_val_credit( account ) + ofo_account_get_rough_credit( account )
@@ -672,7 +681,7 @@ eval_balcr( ofsFormulaHelper *helper )
 			solde = 0;
 		}
 	}
-	res = ofa_amount_to_str( solde, NULL, hub );
+	res = ofa_amount_to_str( solde, NULL, getter );
 
 	return( res );
 }
@@ -689,14 +698,15 @@ eval_baldb( ofsFormulaHelper *helper )
 	gchar *res;
 	GList *it;
 	const gchar *cstr;
-	ofaHub *hub;
+	ofaIGetter *getter;
 	ofoAccount *account;
 	ofxAmount solde;
 
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
-	account = ( hub && my_strlen( cstr )) ? ofo_account_get_by_number( hub, cstr ) : NULL;
+	account = my_strlen( cstr ) ? ofo_account_get_by_number( getter, cstr ) : NULL;
 	solde = 0;
 	if( account ){
 		solde = ofo_account_get_val_credit( account ) + ofo_account_get_rough_credit( account )
@@ -705,7 +715,7 @@ eval_baldb( ofsFormulaHelper *helper )
 			solde = 0;
 		}
 	}
-	res = ofa_amount_to_str( solde, NULL, hub );
+	res = ofa_amount_to_str( solde, NULL, getter );
 
 	return( res );
 }
@@ -739,13 +749,13 @@ eval_credit( ofsFormulaHelper *helper )
 	GList *it;
 	const gchar *cstr;
 	ofsOpeDetail *detail;
-	ofaHub *hub;
+	ofaIGetter *getter;
 
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	detail = my_strlen( cstr ) ? get_ope_detail( cstr, helper ) : NULL;
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
-	res = detail ? ofa_amount_to_str( detail->credit, detail->currency, hub ) : NULL;
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	res = detail ? ofa_amount_to_str( detail->credit, detail->currency, getter ) : NULL;
 
 	return( res );
 }
@@ -760,13 +770,13 @@ eval_debit( ofsFormulaHelper *helper )
 	GList *it;
 	const gchar *cstr;
 	ofsOpeDetail *detail;
-	ofaHub *hub;
+	ofaIGetter *getter;
 
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	detail = my_strlen( cstr ) ? get_ope_detail( cstr, helper ) : NULL;
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
-	res = detail ? ofa_amount_to_str( detail->debit, detail->currency, hub ) : NULL;
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	res = detail ? ofa_amount_to_str( detail->debit, detail->currency, getter ) : NULL;
 
 	return( res );
 }
@@ -786,11 +796,11 @@ eval_domy( ofsFormulaHelper *helper )
 static gchar *
 eval_dope( ofsFormulaHelper *helper )
 {
-	ofaHub *hub;
+	ofaIGetter *getter;
 
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 
-	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->dope, ofa_prefs_date_display( hub )));
+	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->dope, ofa_prefs_date_display( getter )));
 }
 
 /*
@@ -799,11 +809,11 @@ eval_dope( ofsFormulaHelper *helper )
 static gchar *
 eval_deffect( ofsFormulaHelper *helper )
 {
-	ofaHub *hub;
+	ofaIGetter *getter;
 
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 
-	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->deffect, ofa_prefs_date_display( hub )));
+	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->deffect, ofa_prefs_date_display( getter )));
 }
 
 /*
@@ -832,11 +842,11 @@ eval_idem( ofsFormulaHelper *helper )
 	sOpeHelper *ope_helper;
 	ofsOpeDetail *prev;
 	gchar *res;
-	ofaHub *hub;
+	ofaIGetter *getter;
 
 	res = NULL;
 	ope_helper = ( sOpeHelper * ) helper->user_data;
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 
 	if( ope_helper->row > 0 ){
 		prev = ( ofsOpeDetail * ) g_list_nth_data( ope_helper->ope->detail, ope_helper->row-1 );
@@ -848,10 +858,10 @@ eval_idem( ofsFormulaHelper *helper )
 				res = g_strdup( prev->label );
 				break;
 			case OPE_COL_DEBIT:
-				res = ofa_amount_to_str( prev->debit, prev->currency, hub );
+				res = ofa_amount_to_str( prev->debit, prev->currency, getter );
 				break;
 			case OPE_COL_CREDIT:
-				res = ofa_amount_to_str( prev->credit, prev->currency, hub );
+				res = ofa_amount_to_str( prev->credit, prev->currency, getter );
 				break;
 		}
 	}
@@ -889,11 +899,11 @@ static gchar *
 eval_lela( ofsFormulaHelper *helper )
 {
 	gchar *res;
-	ofaHub *hub;
+	ofaIGetter *getter;
 	ofoLedger *ledger;
 
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
-	ledger = ofo_ledger_get_by_mnemo( hub, (( sOpeHelper * ) helper->user_data )->ope->ledger );
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	ledger = ofo_ledger_get_by_mnemo( getter, (( sOpeHelper * ) helper->user_data )->ope->ledger );
 	res = ledger ? g_strdup( ofo_ledger_get_label( ledger )) : NULL;
 
 	return( res );
@@ -979,12 +989,12 @@ eval_solde( ofsFormulaHelper *helper )
 	gdouble dsold, csold, solde;
 	ofsOpeDetail *detail;
 	gint i;
-	ofaHub *hub;
+	ofaIGetter *getter;
 
 	csold = 0.0;
 	dsold = 0.0;
 	ope_helper = ( sOpeHelper * ) helper->user_data;
-	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 
 	for( i=0 ; i<g_list_length( ope_helper->ope->detail ) ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope_helper->ope->detail, i );
@@ -997,7 +1007,7 @@ eval_solde( ofsFormulaHelper *helper )
 	}
 
 	solde = fabs( csold-dsold );
-	res = ofa_amount_to_str( solde, NULL, hub );
+	res = ofa_amount_to_str( solde, NULL, getter );
 
 	return( res );
 }
@@ -1030,7 +1040,7 @@ get_rate_by_name( const gchar *name, ofsFormulaHelper *helper )
 	static const gchar *thisfn = "ofs_ope_get_rate_by_name";
 	gchar *res;
 	sOpeHelper *ope_helper;
-	ofaHub *hub;
+	ofaIGetter *getter;
 	ofoRate *rate;
 	ofxAmount amount;
 	gchar *str;
@@ -1038,14 +1048,14 @@ get_rate_by_name( const gchar *name, ofsFormulaHelper *helper )
 	res = NULL;
 	g_debug( "%s: rate=%s", thisfn, name );
 	ope_helper = ( sOpeHelper * ) helper->user_data;
-	hub = ofo_base_get_hub( OFO_BASE( ope_helper->ope->ope_template ));
-	rate = ofo_rate_get_by_mnemo( hub, name );
+	getter = ofo_base_get_getter( OFO_BASE( ope_helper->ope->ope_template ));
+	rate = ofo_rate_get_by_mnemo( getter, name );
 	if( rate ){
 		if( my_date_is_valid( &ope_helper->ope->dope )){
 			amount = ofo_rate_get_rate_at_date( rate, &ope_helper->ope->dope )/( gdouble ) 100;
 			res = my_double_to_str( amount,
-						g_utf8_get_char( ofa_prefs_amount_thousand_sep( hub )),
-						g_utf8_get_char( ofa_prefs_amount_decimal_sep( hub )), HUB_DEFAULT_DECIMALS_RATE );
+						g_utf8_get_char( ofa_prefs_amount_thousand_sep( getter )),
+						g_utf8_get_char( ofa_prefs_amount_decimal_sep( getter )), HUB_DEFAULT_DECIMALS_RATE );
 
 		} else {
 			str = g_strdup_printf( _( "%s: unable to get a rate value while operation date is invalid" ), thisfn );
@@ -1121,7 +1131,7 @@ check_for_ledger( sChecker *checker )
 {
 	const ofsOpe *ope;
 	gboolean ok;
-	ofaHub *hub;
+	ofaIGetter *getter;
 	ofoLedger *ledger;
 
 	ok = FALSE;
@@ -1132,8 +1142,8 @@ check_for_ledger( sChecker *checker )
 		checker->message = g_strdup( _( "Ledger is empty" ));
 
 	} else {
-		hub = ofo_base_get_hub( OFO_BASE( checker->ope->ope_template ));
-		ledger = ofo_ledger_get_by_mnemo( hub, ope->ledger );
+		getter = ofo_base_get_getter( OFO_BASE( checker->ope->ope_template ));
+		ledger = ofo_ledger_get_by_mnemo( getter, ope->ledger );
 		if( !ledger || !OFO_IS_LEDGER( ledger )){
 			g_free( checker->message );
 			checker->message = g_strdup_printf( _( "Unknown ledger: %s" ), ope->ledger );
@@ -1158,6 +1168,7 @@ static gboolean
 check_for_dates( sChecker *checker )
 {
 	const ofsOpe *ope;
+	ofaIGetter *getter;
 	ofaHub *hub;
 	ofoDossier *dossier;
 	gboolean ok;
@@ -1166,7 +1177,8 @@ check_for_dates( sChecker *checker )
 	gchar *str;
 
 	ope = checker->ope;
-	hub = ofo_base_get_hub( OFO_BASE( ope->ope_template ));
+	getter = ofo_base_get_getter( OFO_BASE( ope->ope_template ));
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	ok = FALSE;
 
@@ -1183,7 +1195,7 @@ check_for_dates( sChecker *checker )
 		if( my_date_is_valid( &dmin )){
 			cmp = my_date_compare( &dmin, &ope->deffect );
 			if( cmp > 0 ){
-				str = my_date_to_str( &dmin, ofa_prefs_date_display( hub ));
+				str = my_date_to_str( &dmin, ofa_prefs_date_display( getter ));
 				g_free( checker->message );
 				checker->message = g_strdup_printf(
 						_( "Effect date less than the minimum allowed on this ledger: %s" ), str );
@@ -1258,7 +1270,7 @@ check_for_all_entries( sChecker *checker )
 static gboolean
 check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 {
-	ofaHub *hub;
+	ofaIGetter *getter;
 	ofoAccount *account;
 	const gchar *currency;
 	gboolean ok;
@@ -1270,14 +1282,14 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 	detail->label_is_valid = FALSE;
 	detail->amounts_are_valid = FALSE;
 	detail->currency = NULL;
-	hub = ofo_base_get_hub( OFO_BASE( checker->ope->ope_template ));
+	getter = ofo_base_get_getter( OFO_BASE( checker->ope->ope_template ));
 
 	if( my_strlen( detail->label )){
 		detail->label_is_valid = TRUE;
 	}
 
 	if( my_strlen( detail->account )){
-		account = ofo_account_get_by_number( hub, detail->account );
+		account = ofo_account_get_by_number( getter, detail->account );
 		if( !account || !OFO_IS_ACCOUNT( account )){
 			g_free( checker->message );
 			checker->message = g_strdup_printf(
@@ -1306,7 +1318,7 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 
 			} else {
 				detail->account_is_valid = TRUE;
-				detail->currency = ofo_currency_get_by_code( hub, currency );
+				detail->currency = ofo_currency_get_by_code( getter, currency );
 				g_return_val_if_fail( detail->currency && OFO_IS_CURRENCY( detail->currency ), FALSE );
 			}
 		}
@@ -1481,7 +1493,7 @@ GList *
 ofs_ope_generate_entries( const ofsOpe *ope )
 {
 	static const gchar *thisfn = "ofs_ope_generate_entries";
-	ofaHub *hub;
+	ofaIGetter *getter;
 	GList *entries;
 	ofsOpeDetail *detail;
 	gint i, count;
@@ -1497,7 +1509,7 @@ ofs_ope_generate_entries( const ofsOpe *ope )
 
 	entries = NULL;
 	count = g_list_length( ope->detail );
-	hub = ofo_base_get_hub( OFO_BASE( ope->ope_template ));
+	getter = ofo_base_get_getter( OFO_BASE( ope->ope_template ));
 
 	for( i=0 ; i<count ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
@@ -1505,7 +1517,7 @@ ofs_ope_generate_entries( const ofsOpe *ope )
 				detail->label_is_valid &&
 				detail->amounts_are_valid ){
 
-			account = ofo_account_get_by_number( hub, detail->account );
+			account = ofo_account_get_by_number( getter, detail->account );
 			g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
 			currency = ofo_account_get_currency( account );
@@ -1513,7 +1525,7 @@ ofs_ope_generate_entries( const ofsOpe *ope )
 
 			entries = g_list_append( entries,
 					ofo_entry_new_with_data(
-							hub,
+							getter,
 							&ope->deffect, &ope->dope, detail->label,
 							ope->ref, detail->account,
 							currency,
@@ -1533,12 +1545,12 @@ void
 ofs_ope_dump( const ofsOpe *ope )
 {
 	static const gchar *thisfn = "ofs_ope_dump";
-	ofaHub *hub;
+	ofaIGetter *getter;
 	gchar *sdope, *sdeffect;
 
-	hub = ofo_base_get_hub( OFO_BASE( ope->ope_template ));
-	sdope = my_date_to_str( &ope->dope, ofa_prefs_date_display( hub ));
-	sdeffect = my_date_to_str( &ope->deffect, ofa_prefs_date_display( hub ));
+	getter = ofo_base_get_getter( OFO_BASE( ope->ope_template ));
+	sdope = my_date_to_str( &ope->dope, ofa_prefs_date_display( getter ));
+	sdeffect = my_date_to_str( &ope->deffect, ofa_prefs_date_display( getter ));
 
 	g_debug( "%s: ope=%p, template=%s, ledger=%s, ledger_user_set=%s,"
 			" dope=%s, dope_user_set=%s, deffect=%s, deffect_user_set=%s,"

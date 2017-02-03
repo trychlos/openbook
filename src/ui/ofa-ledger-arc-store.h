@@ -38,7 +38,7 @@
  * The #ofaLedgerArcStore is managed with #ofaLedgerProperties.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-list-store.h"
 #include "api/ofo-ledger-def.h"
 
@@ -93,7 +93,7 @@ enum {
 
 GType              ofa_ledger_arc_store_get_type( void );
 
-ofaLedgerArcStore *ofa_ledger_arc_store_new     ( ofaHub *hub,
+ofaLedgerArcStore *ofa_ledger_arc_store_new     ( ofaIGetter *getter,
 														ofoLedger *ledger );
 
 G_END_DECLS

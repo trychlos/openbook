@@ -123,8 +123,6 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
-
 #include "ofa-application-def.h"
 
 G_BEGIN_DECLS
@@ -184,19 +182,13 @@ enum {
 	OFA_EXIT_CODE_PROGRAM
 };
 
-GType               ofa_application_get_type          ( void ) G_GNUC_CONST;
+GType           ofa_application_get_type     ( void ) G_GNUC_CONST;
 
-ofaApplication     *ofa_application_new               ( void );
+ofaApplication *ofa_application_new          ( void );
 
-int                 ofa_application_run_with_args     ( ofaApplication *application,
-																	int argc,
-																	GStrv argv );
-
-ofaHub             *ofa_application_get_hub           ( ofaApplication *application );
-
-GMenuModel         *ofa_application_get_menu_model    ( ofaApplication *application );
-
-const GActionEntry *ofa_application_get_action_entries( ofaApplication *application );
+int             ofa_application_run_with_args( ofaApplication *application,
+													int argc,
+													GStrv argv );
 
 G_END_DECLS
 

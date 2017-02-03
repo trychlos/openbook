@@ -44,7 +44,7 @@
  *    +------------------+--------------+
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 
 #include "recurrent/ofo-rec-period.h"
@@ -72,7 +72,7 @@ typedef struct {
 
 GType                 ofa_rec_period_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaRecPeriodTreeview *ofa_rec_period_treeview_new             ( ofaHub *hub );
+ofaRecPeriodTreeview *ofa_rec_period_treeview_new             ( ofaIGetter *getter );
 
 void                  ofa_rec_period_treeview_set_settings_key( ofaRecPeriodTreeview *view,
 																			const gchar *settings_key );

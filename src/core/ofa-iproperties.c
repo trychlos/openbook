@@ -28,12 +28,16 @@
 
 #include "my/my-iident.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iproperties.h"
 
 /* some data attached to each widget returned by init().
  */
 typedef struct {
+
+	/* initialization
+	 */
+	ofaIGetter     *getter;
 	ofaIProperties *instance;
 }
 	sIProperties;
@@ -46,8 +50,8 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIPropertiesInterface *klass );
 static void          interface_base_finalize( ofaIPropertiesInterface *klass );
-static sIProperties *get_iproperties_data( GtkWidget *widget );
-static void          on_widget_finalized( sIProperties *data, GObject *finalized_widget );
+static sIProperties *get_instance_data( GtkWidget *widget );
+static void          on_instance_finalized( sIProperties *data, GObject *finalized_widget );
 
 /**
  * ofa_iproperties_get_type:
@@ -178,28 +182,29 @@ ofa_iproperties_get_interface_version( GType type )
 /**
  * ofa_iproperties_init:
  * @instance: this #ofaIProperties instance.
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the newly created page.
  */
 GtkWidget *
-ofa_iproperties_init( ofaIProperties *instance, ofaHub *hub )
+ofa_iproperties_init( ofaIProperties *instance, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_iproperties_init";
 	GtkWidget *widget;
 	sIProperties *sdata;
 
-	g_debug( "%s: instance=%p (%s), hub=%p",
+	g_debug( "%s: instance=%p (%s), getter=%p",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			( void * ) hub );
+			( void * ) getter );
 
 	g_return_val_if_fail( instance && OFA_IS_IPROPERTIES( instance ), NULL );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	if( OFA_IPROPERTIES_GET_INTERFACE( instance )->init ){
-		widget = OFA_IPROPERTIES_GET_INTERFACE( instance )->init( instance, hub );
+		widget = OFA_IPROPERTIES_GET_INTERFACE( instance )->init( instance, getter );
 		if( widget ){
-			sdata = get_iproperties_data( widget );
+			sdata = get_instance_data( widget );
+			sdata->getter = getter;
 			sdata->instance = instance;
 		}
 		return( widget );
@@ -228,7 +233,7 @@ ofa_iproperties_is_valid( GtkWidget *widget, gchar **msgerr )
 
 	g_return_val_if_fail( widget && GTK_IS_WIDGET( widget ), FALSE );
 
-	sdata = get_iproperties_data( widget );
+	sdata = get_instance_data( widget );
 
 	if( sdata && sdata->instance ){
 		if( OFA_IPROPERTIES_GET_INTERFACE( sdata->instance )->is_valid ){
@@ -263,7 +268,7 @@ ofa_iproperties_apply( GtkWidget *widget )
 
 	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
 
-	sdata = get_iproperties_data( widget );
+	sdata = get_instance_data( widget );
 
 	if( sdata && sdata->instance ){
 		if( OFA_IPROPERTIES_GET_INTERFACE( sdata->instance )->apply ){
@@ -302,7 +307,7 @@ ofa_iproperties_get_title( const ofaIProperties *instance )
 }
 
 static sIProperties *
-get_iproperties_data( GtkWidget *widget )
+get_instance_data( GtkWidget *widget )
 {
 	sIProperties *data;
 
@@ -311,16 +316,16 @@ get_iproperties_data( GtkWidget *widget )
 	if( !data ){
 		data = g_new0( sIProperties, 1 );
 		g_object_set_data( G_OBJECT( widget ), IPROPERTIES_DATA, data );
-		g_object_weak_ref( G_OBJECT( widget ), ( GWeakNotify ) on_widget_finalized, data );
+		g_object_weak_ref( G_OBJECT( widget ), ( GWeakNotify ) on_instance_finalized, data );
 	}
 
 	return( data );
 }
 
 static void
-on_widget_finalized( sIProperties *sdata, GObject *finalized_widget )
+on_instance_finalized( sIProperties *sdata, GObject *finalized_widget )
 {
-	static const gchar *thisfn = "ofa_iproperties_on_widget_finalized";
+	static const gchar *thisfn = "ofa_iproperties_on_instance_finalized";
 
 	g_debug( "%s: sdata=%p, finalized_widget=%p", thisfn, ( void * ) sdata, ( void * ) finalized_widget );
 

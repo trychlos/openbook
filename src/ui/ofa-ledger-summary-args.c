@@ -50,7 +50,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub             *hub;
 	myISettings        *settings;
 
 	/* UI
@@ -209,10 +208,7 @@ setup_runtime( ofaLedgerSummaryArgs *self )
 
 	priv = ofa_ledger_summary_args_get_instance_private( self );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	priv->settings = ofa_hub_get_user_settings( priv->hub );
+	priv->settings = ofa_igetter_get_user_settings( priv->getter );
 }
 
 static void
@@ -246,7 +242,7 @@ setup_date_selection( ofaLedgerSummaryArgs *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	filter = ofa_date_filter_hv_bin_new( ofa_igetter_get_hub( priv->getter ));
+	filter = ofa_date_filter_hv_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
 	/* instead of "effect dates filter" */

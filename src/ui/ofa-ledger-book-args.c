@@ -32,7 +32,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-date-filter-hv-bin.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
@@ -54,7 +53,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub              *hub;
 	myISettings         *settings;
 	gboolean             all_ledgers;
 	gboolean             new_page;
@@ -205,7 +203,7 @@ ofa_ledger_book_args_new( ofaIGetter *getter, const gchar *settings_prefix )
 
 	priv = ofa_ledger_book_args_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 
 	g_free( priv->settings_prefix );
 	priv->settings_prefix = g_strdup( settings_prefix );
@@ -229,10 +227,7 @@ setup_runtime( ofaLedgerBookArgs *self )
 
 	priv = ofa_ledger_book_args_get_instance_private( self );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	priv->settings = ofa_hub_get_user_settings( priv->hub );
+	priv->settings = ofa_igetter_get_user_settings( priv->getter );
 }
 
 static void
@@ -266,7 +261,7 @@ setup_ledger_selection( ofaLedgerBookArgs *self )
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 	priv->ledgers_parent = widget;
 
-	priv->tview = ofa_ledger_treeview_new( priv->hub );
+	priv->tview = ofa_ledger_treeview_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 	ofa_tvbin_set_hexpand( OFA_TVBIN( priv->tview ), FALSE );
 	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
@@ -296,7 +291,7 @@ setup_date_selection( ofaLedgerBookArgs *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	filter = ofa_date_filter_hv_bin_new( ofa_igetter_get_hub( priv->getter ));
+	filter = ofa_date_filter_hv_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
 	/* instead of "effect dates filter" */

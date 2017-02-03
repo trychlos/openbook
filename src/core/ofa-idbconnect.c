@@ -42,6 +42,7 @@
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-igetter.h"
 
 /* some data attached to each IDBConnect instance
  * we store here the data provided by the application
@@ -1013,13 +1014,13 @@ backup_write_headers( const ofaIDBConnect *self, const gchar *comment, sBackup *
 {
 	sIDBConnect *sdata;
 	ofaIDBProvider *provider;
-	ofaHub *hub;
+	ofaIGetter *getter;
 
 	sdata = get_instance_data( self );
 	provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
-	hub = ofa_idbprovider_get_hub( provider );
+	getter = ofa_idbprovider_get_getter( provider );
 
-	return( ofa_backup_header_write_headers( hub, comment, sope->archive ));
+	return( ofa_backup_header_write_headers( getter, comment, sope->archive ));
 }
 
 /*

@@ -33,6 +33,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 
 #include "ui/ofa-misc-audit-store.h"
 
@@ -43,7 +44,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub     *hub;
+	ofaIGetter *getter;
 
 	/* runtime
 	 */
@@ -138,7 +139,7 @@ ofa_misc_audit_store_class_init( ofaMiscAuditStoreClass *klass )
 
 /**
  * ofa_misc_audit_store_new:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new #ofaMiscAuditStore.
  *
@@ -146,17 +147,18 @@ ofa_misc_audit_store_class_init( ofaMiscAuditStoreClass *klass )
  * #g_object_unref() by the caller after use.
  */
 ofaMiscAuditStore *
-ofa_misc_audit_store_new( ofaHub *hub )
+ofa_misc_audit_store_new( ofaIGetter *getter )
 {
 	ofaMiscAuditStore *store;
 	ofaMiscAuditStorePrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	store = g_object_new( OFA_TYPE_MISC_AUDIT_STORE, NULL );
 
 	priv = ofa_misc_audit_store_get_instance_private( store );
-	priv->hub = hub;
+
+	priv->getter = getter;
 
 	gtk_list_store_set_column_types(
 			GTK_LIST_STORE( store ), AUDIT_N_COLUMNS, st_col_types );
@@ -176,6 +178,7 @@ guint
 ofa_misc_audit_store_get_pages_count( ofaMiscAuditStore *store, guint page_size )
 {
 	ofaMiscAuditStorePrivate *priv;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gint rows;
 
@@ -187,7 +190,8 @@ ofa_misc_audit_store_get_pages_count( ofaMiscAuditStore *store, guint page_size 
 
 	priv->page_size = page_size;
 
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
 	ofa_idbconnect_query_int( connect, "SELECT COUNT(*) FROM OFA_T_AUDIT", &rows, TRUE );
 	priv->pages_count = ( guint ) ceil(( gdouble ) rows/ page_size );
 
@@ -231,6 +235,7 @@ load_dataset( ofaMiscAuditStore *self, guint pageno )
 {
 	ofaMiscAuditStorePrivate *priv;
 	GList *dataset;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gchar *query;
 	GSList *result, *irow, *icol;
@@ -239,7 +244,8 @@ load_dataset( ofaMiscAuditStore *self, guint pageno )
 	priv = ofa_misc_audit_store_get_instance_private( self );
 
 	dataset = NULL;
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
 
 	query = g_strdup_printf(
 					"SELECT AUD_STAMP,AUD_QUERY FROM OFA_T_AUDIT ORDER BY AUD_STAMP ASC LIMIT %u,%u",

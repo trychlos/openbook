@@ -31,11 +31,11 @@
 #include "my/my-ibin.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-editor.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-igetter.h"
 
 #include "ui/ofa-exercice-edit-bin.h"
 #include "ui/ofa-exercice-meta-bin.h"
@@ -47,7 +47,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub                 *hub;
+	ofaIGetter             *getter;
 	gchar                  *settings_prefix;
 	guint                   rule;
 
@@ -193,7 +193,7 @@ ofa_exercice_edit_bin_class_init( ofaExerciceEditBinClass *klass )
 
 /**
  * ofa_exercice_edit_bin_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @settings_prefix: [allow-none]: the prefix of the key in user settings;
  *  if %NULL, then rely on this class name;
  *  when set, then this class automatically adds its name as a suffix.
@@ -202,24 +202,24 @@ ofa_exercice_edit_bin_class_init( ofaExerciceEditBinClass *klass )
  * Returns: a newly defined composite widget.
  */
 ofaExerciceEditBin *
-ofa_exercice_edit_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule )
+ofa_exercice_edit_bin_new( ofaIGetter *getter, const gchar *settings_prefix, guint rule )
 {
 	static const gchar *thisfn = "ofa_exercice_edit_bin_new";
 	ofaExerciceEditBin *bin;
 	ofaExerciceEditBinPrivate *priv;
 	gchar *str;
 
-	g_debug( "%s: hub=%p, settings_prefix=%s, rule=%u",
-			thisfn, ( void * ) hub, settings_prefix, rule );
+	g_debug( "%s: getter=%p, settings_prefix=%s, rule=%u",
+			thisfn, ( void * ) getter, settings_prefix, rule );
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( settings_prefix ), NULL );
 
 	bin = g_object_new( OFA_TYPE_EXERCICE_EDIT_BIN, NULL );
 
 	priv = ofa_exercice_edit_bin_get_instance_private( bin );
 
-	priv->hub = hub;
+	priv->getter = getter;
 	priv->rule = rule;
 
 	if( my_strlen( settings_prefix )){
@@ -255,7 +255,7 @@ setup_bin( ofaExerciceEditBin *self )
 	/* exercice meta datas */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "eeb-exercice-meta-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->exercice_meta_bin = ofa_exercice_meta_bin_new( priv->hub, priv->settings_prefix, priv->rule );
+	priv->exercice_meta_bin = ofa_exercice_meta_bin_new( priv->getter, priv->settings_prefix, priv->rule );
 	g_signal_connect( priv->exercice_meta_bin, "ofa-changed", G_CALLBACK( on_exercice_meta_changed ), self );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_meta_bin ));
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->exercice_meta_bin ), 0 ))){

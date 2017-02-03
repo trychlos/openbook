@@ -32,13 +32,17 @@
  * @include: openbook/ofo-base.h
  *
  * The ofoBase class is the class base for application objects.
+ *
+ * Properties:
+ * - ofo-base-getter:
+ *   a #ofaIGetter instance;
+ *   no default, will be %NULL if has not been previously set.
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -106,23 +110,25 @@ typedef struct {
  */
 #define OFO_BASE_UNSET_ID               -1
 
-GType   ofo_base_get_type        ( void ) G_GNUC_CONST;
+GType       ofo_base_get_type        ( void ) G_GNUC_CONST;
 
-GList  *ofo_base_init_fields_list( const ofsBoxDef *defs );
+GList      *ofo_base_init_fields_list( const ofsBoxDef *defs );
 
-GList  *ofo_base_load_dataset    ( const ofsBoxDef *defs,
-										const gchar *from,
-										GType type,
-										ofaHub *hub );
+GList      *ofo_base_load_dataset    ( const ofsBoxDef *defs,
+											const gchar *from,
+											GType type,
+											ofaIGetter *getter );
 
-GList  *ofo_base_load_rows       ( const ofsBoxDef *defs,
-										const ofaIDBConnect *connect,
-										const gchar *from );
+GList      *ofo_base_load_rows       ( const ofsBoxDef *defs,
+											const ofaIDBConnect *connect,
+											const gchar *from );
 
-ofaHub *ofo_base_get_hub         ( ofoBase *base );
+ofaIGetter *ofo_base_get_getter      ( ofoBase *base );
 
-void    ofo_base_set_hub         ( ofoBase *base,
-										ofaHub *hub );
+#if 0
+void        ofo_base_set_getter      ( ofoBase *base,
+											ofaIGetter *getter );
+#endif
 
 G_END_DECLS
 

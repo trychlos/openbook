@@ -35,6 +35,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 
 #include "ofa-tva-dbmodel.h"
 #include "ofo-tva-form.h"
@@ -47,7 +48,7 @@ typedef struct {
 
 	/* update setup
 	 */
-	ofaHub              *hub;
+	ofaIGetter          *getter;
 	const ofaIDBConnect *connect;
 	myIProgress         *window;
 
@@ -102,12 +103,12 @@ static guint      idbmodel_get_interface_version( void );
 static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      get_last_version( void );
-static gboolean   idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
+static gboolean   idbmodel_ddl_update( ofaIDBModel *instance, ofaIGetter *getter, myIProgress *window );
 static gboolean   upgrade_to( ofaTvaDBModel *self, sMigration *smig );
 static gboolean   exec_query( ofaTvaDBModel *self, const gchar *query );
 static gboolean   version_begin( ofaTvaDBModel *self, gint version );
 static gboolean   version_end( ofaTvaDBModel *self, gint version );
-static gulong     idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
+static gulong     idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
 
 G_DEFINE_TYPE_EXTENDED( ofaTvaDBModel, ofa_tva_dbmodel, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaTvaDBModel )
@@ -271,17 +272,19 @@ get_last_version( void )
 }
 
 static gboolean
-idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
+idbmodel_ddl_update( ofaIDBModel *instance, ofaIGetter *getter, myIProgress *window )
 {
 	ofaTvaDBModelPrivate *priv;
 	guint i, cur_version, last_version;
 	GtkWidget *label;
 	gchar *str;
 	gboolean ok;
+	ofaHub *hub;
 
 	ok = TRUE;
 	priv = ofa_tva_dbmodel_get_instance_private( OFA_TVA_DBMODEL( instance ));
-	priv->hub = hub;
+	priv->getter = getter;
+	hub = ofa_igetter_get_hub( getter );
 	priv->connect = ofa_hub_get_connect( hub );
 	priv->window = window;
 
@@ -764,7 +767,7 @@ count_v6( ofaTvaDBModel *self )
  * Should at least check for operation template(s)..
  */
 static gulong
-idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
+idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
 	return( 0 );
 }

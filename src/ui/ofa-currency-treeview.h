@@ -44,7 +44,7 @@
  *    +------------------+--------------+
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 #include "api/ofo-currency-def.h"
 
@@ -71,7 +71,7 @@ typedef struct {
 
 GType                ofa_currency_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaCurrencyTreeview *ofa_currency_treeview_new             ( ofaHub *hub );
+ofaCurrencyTreeview *ofa_currency_treeview_new             ( ofaIGetter *getter );
 
 void                 ofa_currency_treeview_set_settings_key( ofaCurrencyTreeview *view,
 																	const gchar *key );

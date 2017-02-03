@@ -52,7 +52,7 @@
 
 #include "my/my-iprogress.h"
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-import-duplicate.h"
 #include "api/ofa-stream-format.h"
 
@@ -98,19 +98,19 @@ typedef struct {
 	/**
 	 * get_accepted_contents:
 	 * @instance: the #ofaIImporter provider.
-	 * @hub: the #ofaHub object of the application.
+	 * @getter: a #ofaIGetter instance.
 	 *
 	 * Returns: a list of accepted mimetypes content.
 	 *
 	 * Since: version 1.
 	 */
 	const GList *     ( *get_accepted_contents )( const ofaIImporter *instance,
-														ofaHub *hub );
+														ofaIGetter *getter );
 
 	/**
 	 * is_willing_to:
 	 * @instance: the #ofaIImporter provider.
-	 * @hub: the #ofaHub object of the application.
+	 * @getter: a #ofaIGetter instance.
 	 * @uri: [allow-none]: the imported uri.
 	 * @type: [allow-none]: the candidate GType.
 	 *
@@ -119,14 +119,14 @@ typedef struct {
 	 * Since: version 1.
 	 */
 	gboolean          ( *is_willing_to )        ( const ofaIImporter *instance,
-														ofaHub *hub,
+														ofaIGetter *getter,
 														const gchar *uri,
 														GType type );
 
 	/**
 	 * get_default_format:
 	 * @instance: the #ofaIImporter provider.
-	 * @hub: the #ofaHub object of the application.
+	 * @getter: a #ofaIGetter instance.
 	 * @is_user_modifiable: whether the returned format is modifiable
 	 *  by the user.
 	 *
@@ -135,7 +135,7 @@ typedef struct {
 	 * Since: version 1.
 	 */
 	ofaStreamFormat * ( *get_default_format )   ( const ofaIImporter *instance,
-														ofaHub *hub,
+														ofaIGetter *getter,
 														gboolean *is_user_modifiable );
 
 	/**
@@ -157,7 +157,7 @@ typedef struct {
 /**
  * ofsImporterParms:
  * @version: the version number of this structure.
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @empty: whether to empty the target table before insertion.
  * @mode: the behavior regarding duplicates.
  * @stop: whether to stop on first error.
@@ -180,7 +180,7 @@ typedef struct {
 struct _ofsImporterParms {
 	guint              version;
 										/* v 1 */
-	ofaHub            *hub;
+	ofaIGetter        *getter;
 	gboolean           empty;
 	ofeImportDuplicate mode;
 	gboolean           stop;
@@ -204,7 +204,7 @@ GType            ofa_iimporter_get_type                  ( void );
 
 guint            ofa_iimporter_get_interface_last_version( void );
 
-GList           *ofa_iimporter_find_willing_to           ( ofaHub *hub,
+GList           *ofa_iimporter_find_willing_to           ( ofaIGetter *getter,
 																const gchar *uri,
 																GType type );
 
@@ -223,19 +223,19 @@ gchar           *ofa_iimporter_get_display_name          ( const ofaIImporter *i
 gchar           *ofa_iimporter_get_version               ( const ofaIImporter *instance );
 
 const GList     *ofa_iimporter_get_accepted_contents     ( const ofaIImporter *instance,
-																ofaHub *hub );
+																ofaIGetter *getter );
 
 gboolean         ofa_iimporter_get_accept_content        ( const ofaIImporter *instance,
-																ofaHub *hub,
+																ofaIGetter *getter,
 																const gchar *content );
 
 gboolean         ofa_iimporter_is_willing_to             ( const ofaIImporter *instance,
-																ofaHub *hub,
+																ofaIGetter *getter,
 																const gchar *uri,
 																GType type );
 
 ofaStreamFormat *ofa_iimporter_get_default_format        ( const ofaIImporter *instance,
-																ofaHub *hub,
+																ofaIGetter *getter,
 																gboolean *is_user_modifiable );
 
 guint            ofa_iimporter_import                    ( ofaIImporter *instance,

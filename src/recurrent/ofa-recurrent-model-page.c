@@ -57,7 +57,7 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub            *hub;
+	ofaIGetter        *getter;
 	gboolean           is_writable;
 	gchar             *settings_prefix;
 
@@ -192,14 +192,18 @@ action_page_v_setup_view( ofaActionPage *page )
 	static const gchar *thisfn = "ofa_recurrent_model_page_v_setup_view";
 	ofaRecurrentModelPagePrivate *priv;
 	GtkWidget *widget;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_recurrent_model_page_get_instance_private( OFA_RECURRENT_MODEL_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	widget = setup_treeview( OFA_RECURRENT_MODEL_PAGE( page ));
 
@@ -213,7 +217,7 @@ setup_treeview( ofaRecurrentModelPage *self )
 
 	priv = ofa_recurrent_model_page_get_instance_private( self );
 
-	priv->tview = ofa_recurrent_model_treeview_new( priv->hub );
+	priv->tview = ofa_recurrent_model_treeview_new( priv->getter );
 	ofa_recurrent_model_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_recurrent_model_treeview_setup_columns( priv->tview );
 
@@ -474,12 +478,15 @@ ofa_recurrent_model_page_unselect( ofaRecurrentModelPage *page, ofoRecurrentMode
 static void
 action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self )
 {
+	ofaRecurrentModelPagePrivate *priv;
 	ofoRecurrentModel *model;
 	GtkWindow *toplevel;
 
-	model = ofo_recurrent_model_new();
+	priv = ofa_recurrent_model_page_get_instance_private( self );
+
+	model = ofo_recurrent_model_new( priv->getter );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_recurrent_model_properties_run( OFA_IGETTER( self ), toplevel, model );
+	ofa_recurrent_model_properties_run( priv->getter, toplevel, model );
 }
 
 /*
@@ -501,7 +508,7 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecurrent
 		model = ( ofoRecurrentModel * ) selected->data;
 		g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-		ofa_recurrent_model_properties_run( OFA_IGETTER( self ), toplevel, model );
+		ofa_recurrent_model_properties_run( priv->getter, toplevel, model );
 	}
 
 	ofa_recurrent_model_treeview_free_selected( selected );
@@ -523,7 +530,7 @@ action_on_duplicate_activated( GSimpleAction *action, GVariant *empty, ofaRecurr
 		model = ( ofoRecurrentModel * ) selected->data;
 		g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 		duplicate = ofo_recurrent_model_new_from_model( model );
-		if( !ofo_recurrent_model_insert( duplicate, priv->hub )){
+		if( !ofo_recurrent_model_insert( duplicate )){
 			g_object_unref( duplicate );
 		}
 	}

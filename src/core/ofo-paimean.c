@@ -40,6 +40,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
@@ -114,7 +115,7 @@ static GList      *icollectionable_load_collection( void *user_data );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( void );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
@@ -188,7 +189,7 @@ ofo_paimean_class_init( ofoPaimeanClass *klass )
 
 /**
  * ofo_paimean_get_dataset:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the full #ofoPaimean dataset.
  *
@@ -196,15 +197,20 @@ ofo_paimean_class_init( ofoPaimeanClass *klass )
  * be released by the caller.
  */
 GList *
-ofo_paimean_get_dataset( ofaHub *hub )
+ofo_paimean_get_dataset( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	myICollector *collector;
 
-	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_PAIMEAN, hub ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_PAIMEAN, getter ));
 }
 
 /**
  * ofo_paimean_get_by_code:
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the searched paimean, or %NULL.
  *
@@ -212,14 +218,14 @@ ofo_paimean_get_dataset( ofaHub *hub )
  * not be unreffed by the caller.
  */
 ofoPaimean *
-ofo_paimean_get_by_code( ofaHub *hub, const gchar *code )
+ofo_paimean_get_by_code( ofaIGetter *getter, const gchar *code )
 {
 	GList *dataset;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( code ), NULL );
 
-	dataset = ofo_paimean_get_dataset( hub );
+	dataset = ofo_paimean_get_dataset( getter );
 
 	return( paimean_find_by_code( dataset, code ));
 }
@@ -240,13 +246,16 @@ paimean_find_by_code( GList *set, const gchar *code )
 
 /**
  * ofo_paimean_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoPaimean *
-ofo_paimean_new( void )
+ofo_paimean_new( ofaIGetter *getter )
 {
 	ofoPaimean *paimean;
 
-	paimean = g_object_new( OFO_TYPE_PAIMEAN, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	paimean = g_object_new( OFO_TYPE_PAIMEAN, "ofo-base-getter", getter, NULL );
 	OFO_BASE( paimean )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( paimean );
@@ -404,24 +413,25 @@ paimean_set_upd_stamp( ofoPaimean *paimean, const GTimeVal *upd_stamp )
  * First creation of a new #ofoPaimean.
  */
 gboolean
-ofo_paimean_insert( ofoPaimean *paimean, ofaHub *hub )
+ofo_paimean_insert( ofoPaimean *paimean )
 {
 	static const gchar *thisfn = "ofo_paimean_insert";
 	gboolean ok;
+	ofaIGetter *getter;
+	ofaHub *hub;
 
-	g_debug( "%s: paimean=%p, hub=%p",
-			thisfn, ( void * ) paimean, ( void * ) hub );
+	g_debug( "%s: paimean=%p", thisfn, ( void * ) paimean );
 
 	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( paimean )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( paimean ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( paimean_do_insert( paimean, ofa_hub_get_connect( hub ))){
-		ofo_base_set_hub( OFO_BASE( paimean ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( paimean ), NULL, hub );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( paimean ), NULL, getter );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, paimean );
 		ok = TRUE;
 	}
@@ -496,6 +506,7 @@ gboolean
 ofo_paimean_update( ofoPaimean *paimean, const gchar *prev_code )
 {
 	static const gchar *thisfn = "ofo_paimean_update";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -506,8 +517,9 @@ ofo_paimean_update( ofoPaimean *paimean, const gchar *prev_code )
 	g_return_val_if_fail( my_strlen( prev_code ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( paimean )->prot->dispose_has_run, FALSE );
 
-	hub = ofo_base_get_hub( OFO_BASE( paimean ));
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( paimean ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( paimean_do_update( paimean, prev_code, ofa_hub_get_connect( hub ))){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, paimean, prev_code );
@@ -581,6 +593,7 @@ gboolean
 ofo_paimean_delete( ofoPaimean *paimean )
 {
 	static const gchar *thisfn = "ofo_paimean_delete";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -589,12 +602,13 @@ ofo_paimean_delete( ofoPaimean *paimean )
 	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( paimean )->prot->dispose_has_run, FALSE );
 
-	hub = ofo_base_get_hub( OFO_BASE( paimean ));
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( paimean ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( paimean_do_delete( paimean, ofa_hub_get_connect( hub ))){
 		g_object_ref( paimean );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( paimean ));
+		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( paimean ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, paimean );
 		g_object_unref( paimean );
 		ok = TRUE;
@@ -651,13 +665,13 @@ icollectionable_load_collection( void *user_data )
 {
 	GList *dataset;
 
-	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_PAIMEANS",
 					OFO_TYPE_PAIMEAN,
-					OFA_HUB( user_data ));
+					OFA_IGETTER( user_data ));
 
 	return( dataset );
 }
@@ -697,14 +711,14 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	GList *dataset, *it;
 	gchar *str;
 	gboolean ok, with_headers;
 	gulong count;
 
-	dataset = ofo_paimean_get_dataset( hub );
+	dataset = ofo_paimean_get_dataset( getter );
 	with_headers = ofa_stream_format_get_with_headers( settings );
 
 	count = ( gulong ) g_list_length( dataset );
@@ -784,19 +798,21 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 {
 	GList *dataset;
 	gchar *bck_table;
+	ofaHub *hub;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+	hub = ofa_igetter_get_hub( parms->getter );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "OFA_T_PAIMEANS" );
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_PAIMEANS" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_PAIMEAN );
-			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_PAIMEAN );
+			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_PAIMEAN );
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_PAIMEAN );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "OFA_T_PAIMEANS" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_PAIMEANS" );
 		}
 
 		g_free( bck_table );
@@ -860,7 +876,7 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	gchar *splitted;
 	ofoPaimean *paimean;
 
-	paimean = ofo_paimean_new();
+	paimean = ofo_paimean_new( parms->getter );
 
 	/* paimean code */
 	itf = fields ? fields->next : NULL;
@@ -905,6 +921,7 @@ static void
 iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
 {
 	GList *it;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	const gchar *code;
 	gboolean insert;
@@ -913,7 +930,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	ofoPaimean *paimean;
 
 	total = g_list_length( dataset );
-	connect = ofa_hub_get_connect( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && total > 0 ){

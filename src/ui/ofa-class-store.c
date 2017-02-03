@@ -33,6 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
@@ -45,6 +46,10 @@ typedef struct {
 	gboolean    dispose_has_run;
 
 	/* initialization
+	 */
+	ofaIGetter *getter;
+
+	/* runtime
 	 */
 	ofaHub     *hub;
 	GList      *hub_handlers;
@@ -143,7 +148,7 @@ ofa_class_store_class_init( ofaClassStoreClass *klass )
 
 /**
  * ofa_class_store_new:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new #ofaClassStore and attached it to the @hub
  * if not already done. Else get the already allocated #ofaClassStore
@@ -159,15 +164,15 @@ ofa_class_store_class_init( ofaClassStoreClass *klass )
  * Returns: a new reference to the #ofaClassStore object.
  */
 ofaClassStore *
-ofa_class_store_new( ofaHub *hub )
+ofa_class_store_new( ofaIGetter *getter )
 {
 	ofaClassStore *store;
 	ofaClassStorePrivate *priv;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	store = ( ofaClassStore * ) my_icollector_single_get_object( collector, OFA_TYPE_CLASS_STORE );
 
 	if( store ){
@@ -177,7 +182,9 @@ ofa_class_store_new( ofaHub *hub )
 		store = g_object_new( OFA_TYPE_CLASS_STORE, NULL );
 
 		priv = ofa_class_store_get_instance_private( store );
-		priv->hub = hub;
+
+		priv->getter = getter;
+		priv->hub = ofa_igetter_get_hub( getter );;
 
 		st_col_types[CLASS_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
@@ -223,7 +230,7 @@ load_dataset( ofaClassStore *self )
 
 	priv = ofa_class_store_get_instance_private( self );
 
-	dataset = ofo_class_get_dataset( priv->hub );
+	dataset = ofo_class_get_dataset( priv->getter );
 
 	for( it=dataset ; it ; it=it->next ){
 		class = OFO_CLASS( it->data );

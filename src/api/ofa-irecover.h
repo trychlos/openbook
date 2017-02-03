@@ -37,8 +37,8 @@
 
 #include <glib-object.h>
 
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-stream-format.h"
 
 G_BEGIN_DECLS
@@ -78,7 +78,7 @@ typedef struct {
 	/**
 	 * import_uris:
 	 * @instance: the #ofaIRecover provider.
-	 * @hub: the #ofaHub object of the application.
+	 * @getter: a #ofaIGetter instance.
 	 * @uris: a #GList of #ofsRecoverFile structures to be imported.
 	 * @format: the input stream format.
 	 * @connect: the target connection.
@@ -92,7 +92,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean      ( *import_uris )          ( ofaIRecover *instance,
-													ofaHub *hub,
+													ofaIGetter *getter,
 													GList *uris,
 													ofaStreamFormat *format,
 													ofaIDBConnect *connect,
@@ -134,7 +134,7 @@ guint        ofa_irecover_get_interface_version     ( GType type );
  * Instance-wide
  */
 gboolean     ofa_irecover_import_uris               ( ofaIRecover *instance,
-															ofaHub *hub,
+															ofaIGetter *getter,
 															GList *uris,
 															ofaStreamFormat *format,
 															ofaIDBConnect *connect,

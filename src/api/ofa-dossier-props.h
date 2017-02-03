@@ -26,7 +26,7 @@
 #define __OPENBOOK_API_OFA_DOSSIER_PROPS_H__
 
 /**
- * SECTION: ofahub
+ * SECTION: ofaDossierProps
  * @title: ofaDossierProps
  * @short_description: The #ofaDossierProps Class Definition
  * @include: openbook/ofa-dossier-props.h
@@ -38,9 +38,6 @@
  * can thus be exported as a JSON string.
  */
 
-#include <glib-object.h>
-
-#include "api/ofa-hub-def.h"
 #include "api/ofo-dossier.h"
 
 G_BEGIN_DECLS

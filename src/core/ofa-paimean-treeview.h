@@ -44,7 +44,7 @@
  *    +------------------+-------------+
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 #include "api/ofo-paimean.h"
 
@@ -71,7 +71,7 @@ typedef struct {
 
 GType               ofa_paimean_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaPaimeanTreeview *ofa_paimean_treeview_new             ( ofaHub *hub );
+ofaPaimeanTreeview *ofa_paimean_treeview_new             ( ofaIGetter *getter );
 
 void                ofa_paimean_treeview_set_settings_key( ofaPaimeanTreeview *view,
 																const gchar *key );

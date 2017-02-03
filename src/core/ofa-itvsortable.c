@@ -32,7 +32,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvsortable.h"
 
 /* data structure associated to the instance
@@ -42,7 +42,7 @@ typedef struct {
 	/* input
 	 */
 	gchar             *name;
-	ofaHub            *hub;
+	ofaIGetter        *getter;
 	GtkTreeView       *treeview;
 	gint               def_column;
 	GtkSortType        def_order;
@@ -253,12 +253,12 @@ ofa_itvsortable_sort_str_amount( ofaITVSortable *instance, const gchar *a, const
 		}
 		return( -1 );
 	}
-	amounta = ofa_amount_from_str( a, sdata->hub );
+	amounta = ofa_amount_from_str( a, sdata->getter );
 
 	if( !my_strlen( b )){
 		return( 1 );
 	}
-	amountb = ofa_amount_from_str( b, sdata->hub );
+	amountb = ofa_amount_from_str( b, sdata->getter );
 
 	return( amounta < amountb ? -1 : ( amounta > amountb ? 1 : 0 ));
 }
@@ -292,27 +292,27 @@ ofa_itvsortable_sort_str_int( const gchar *a, const gchar *b )
 }
 
 /**
- * ofa_itvsortable_set_name:
+ * ofa_itvsortable_set_getter:
  * @instance: this #ofaIStorable instance.
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
- * Set the @hub.
+ * Set the @getter.
  */
 void
-ofa_itvsortable_set_hub( ofaITVSortable *instance, ofaHub *hub )
+ofa_itvsortable_set_getter( ofaITVSortable *instance, ofaIGetter *getter )
 {
 	sITVSortable *sdata;
 
 	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	sdata = get_itvsortable_data( instance );
 
-	sdata->hub = hub;
+	sdata->getter = getter;
 }
 
 /**
- * ofa_itvsortable_set_hub:
+ * ofa_itvsortable_set_name:
  * @instance: this #ofaIStorable instance.
  * @name: the identifier name which is to be used as a prefix key in the
  *  user settings.
@@ -619,7 +619,7 @@ read_settings( ofaITVSortable *self, sITVSortable *sdata )
 
 	/* get the settings (if any)
 	 */
-	settings = ofa_hub_get_user_settings( sdata->hub );
+	settings = ofa_igetter_get_user_settings( sdata->getter );
 	key = g_strdup_printf( "%s-sort", sdata->name );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -657,7 +657,7 @@ write_settings( ofaITVSortable *instance, sITVSortable *sdata )
 	myISettings *settings;
 	gchar *str, *key;
 
-	settings = ofa_hub_get_user_settings( sdata->hub );
+	settings = ofa_igetter_get_user_settings( sdata->getter );
 	key = g_strdup_printf( "%s-sort", sdata->name );
 	str = g_strdup_printf( "%d;%d;", sdata->sort_column_id, sdata->sort_order );
 

@@ -38,7 +38,7 @@
  * The #ofaAccountArcStore is managed with #ofaAccountProperties.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-list-store.h"
 #include "api/ofo-account-def.h"
 
@@ -91,7 +91,7 @@ enum {
 
 GType               ofa_account_arc_store_get_type( void );
 
-ofaAccountArcStore *ofa_account_arc_store_new     ( ofaHub *hub,
+ofaAccountArcStore *ofa_account_arc_store_new     ( ofaIGetter *getter,
 														ofoAccount *account );
 
 G_END_DECLS

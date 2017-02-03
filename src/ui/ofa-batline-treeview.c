@@ -35,9 +35,9 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-counter.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
@@ -60,7 +60,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub       *hub;
+	ofaIGetter   *getter;
 
 	/* runtime
 	 */
@@ -245,25 +245,25 @@ ofa_batline_treeview_class_init( ofaBatlineTreeviewClass *klass )
 
 /**
  * ofa_batline_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofoBatlineTreeview object.
  */
 ofaBatlineTreeview *
-ofa_batline_treeview_new( ofaHub *hub )
+ofa_batline_treeview_new( ofaIGetter *getter )
 {
 	ofaBatlineTreeview *view;
 	ofaBatlineTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_BATLINE_TREEVIEW,
-					"ofa-tvbin-hub", hub,
+					"ofa-tvbin-getter", getter,
 					NULL );
 
 	priv = ofa_batline_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoBatLine object instead of just the raw GtkTreeSelection
@@ -395,16 +395,13 @@ ofa_batline_treeview_set_bat( ofaBatlineTreeview *view, ofoBat *bat )
 		gtk_list_store_clear( priv->store );
 	}
 
-	priv->hub = ofo_base_get_hub( OFO_BASE( bat ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
 	priv->currency = NULL;
 	cur_code = ofo_bat_get_currency( bat );
 	if( my_strlen( cur_code )){
-		priv->currency = ofo_currency_get_by_code( priv->hub, cur_code );
+		priv->currency = ofo_currency_get_by_code( priv->getter, cur_code );
 	}
 
-	dataset = ofo_bat_line_get_dataset( priv->hub, ofo_bat_get_id( bat ));
+	dataset = ofo_bat_line_get_dataset( priv->getter, ofo_bat_get_id( bat ));
 	for( it=dataset ; it ; it=it->next ){
 		store_batline( view, OFO_BAT_LINE( it->data ));
 	}
@@ -463,16 +460,16 @@ store_batline( ofaBatlineTreeview *self, ofoBatLine *line )
 
 	sbatid = g_strdup_printf( "%lu", ofo_bat_line_get_bat_id( line ));
 	slineid = g_strdup_printf( "%lu", ofo_bat_line_get_line_id( line ));
-	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_display( priv->hub ));
-	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_display( priv->hub ));
+	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_display( priv->getter ));
+	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_display( priv->getter ));
 
 	if( !priv->currency ){
 		cur_code = ofo_bat_line_get_currency( line );
-		priv->currency = cur_code ? ofo_currency_get_by_code( priv->hub, cur_code ) : NULL;
+		priv->currency = cur_code ? ofo_currency_get_by_code( priv->getter, cur_code ) : NULL;
 		g_return_if_fail( !priv->currency || OFO_IS_CURRENCY( priv->currency ));
 	}
 
-	samount = ofa_amount_to_str( ofo_bat_line_get_amount( line ), priv->currency, priv->hub );
+	samount = ofa_amount_to_str( ofo_bat_line_get_amount( line ), priv->currency, priv->getter );
 
 	concil = ofa_iconcil_get_concil( OFA_ICONCIL( line ));
 	snumbers = g_string_new( "" );
@@ -632,10 +629,10 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			cmp = ofa_itvsortable_sort_str_int( lineida, lineidb );
 			break;
 		case BAL_COL_DEFFECT:
-			cmp = my_date_compare_by_str( deffecta, deffectb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( deffecta, deffectb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case BAL_COL_DOPE:
-			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case BAL_COL_REF:
 			cmp = my_collate( refa, refb );

@@ -56,7 +56,7 @@
  *    +-----------+-------------------------+
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -112,7 +112,7 @@ enum {
 
 GType            ofa_dossier_store_get_type( void );
 
-ofaDossierStore *ofa_dossier_store_new     ( ofaHub *hub );
+ofaDossierStore *ofa_dossier_store_new     ( ofaIGetter *getter );
 
 G_END_DECLS
 

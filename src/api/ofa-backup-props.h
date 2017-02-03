@@ -26,7 +26,7 @@
 #define __OPENBOOK_API_OFA_BACKUP_PROPS_H__
 
 /**
- * SECTION: ofahub
+ * SECTION: ofaBackupProps
  * @title: ofaBackupProps
  * @short_description: The #ofaBackupProps Class Definition
  * @include: openbook/ofa-backup-props.h
@@ -38,8 +38,6 @@
  */
 
 #include <glib-object.h>
-
-#include "api/ofa-hub-def.h"
 
 G_BEGIN_DECLS
 

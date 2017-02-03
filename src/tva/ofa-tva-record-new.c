@@ -34,7 +34,6 @@
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-preferences.h"
@@ -60,7 +59,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub       *hub;
 	ofoTVAForm   *form;
 
 	/* UI
@@ -181,7 +179,7 @@ ofa_tva_record_new_run( ofaIGetter *getter, GtkWindow *parent, ofoTVARecord *rec
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->tva_record = record;
 
@@ -215,10 +213,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -277,7 +272,7 @@ idialog_init( myIDialog *instance )
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;
 
-	priv->form = ofo_tva_form_get_by_mnemo( priv->hub, ofo_tva_record_get_mnemo( priv->tva_record ));
+	priv->form = ofo_tva_form_get_by_mnemo( priv->getter, ofo_tva_record_get_mnemo( priv->tva_record ));
 	g_return_if_fail( priv->form && OFO_IS_TVA_FORM( priv->form ));
 
 	mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
@@ -331,9 +326,9 @@ init_properties( ofaTVARecordNew *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), NULL );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 }
@@ -374,7 +369,7 @@ check_for_enable_dlg( ofaTVARecordNew *self )
 		msgerr = g_strdup( _( "End date is not valid" ));
 	} else {
 		mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-		exists = ( ofo_tva_record_get_by_key( priv->hub, mnemo, dend ) != NULL );
+		exists = ( ofo_tva_record_get_by_key( priv->getter, mnemo, dend ) != NULL );
 		if( exists ){
 			msgerr = g_strdup( _( "End date overlaps with an already defined declaration" ));
 		} else {
@@ -428,13 +423,13 @@ do_update( ofaTVARecordNew *self, gchar **msgerr )
 	/* setup a default begin date
 	 * = previous end date + 1 */
 	mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-	ofo_tva_record_get_last_end( priv->hub, mnemo, &last_end );
+	ofo_tva_record_get_last_end( priv->getter, mnemo, &last_end );
 	if( my_date_is_valid( &last_end )){
 		g_date_add_days( &last_end, 1 );
 		ofo_tva_record_set_begin( priv->tva_record, &last_end );
 	}
 
-	ok = ofo_tva_record_insert( priv->tva_record, priv->hub );
+	ok = ofo_tva_record_insert( priv->tva_record );
 	if( !ok ){
 		*msgerr = g_strdup( _( "Unable to create this new VAT declaration" ));
 	}

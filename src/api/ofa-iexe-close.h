@@ -58,7 +58,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -121,7 +121,7 @@ typedef struct {
 	 * @rowtype: whether we insert on closing exercice N, or on opening
 	 *  exercice N+1.
 	 * @box: a #GtkBox available to the plugin.
-	 * @hub: the current #ofaHub object.
+	 * @getter: a #ofaIGetter instance.
 	 *
 	 * Returns: %TRUE if the plugin tasks are successful, %FALSE else.
 	 *
@@ -130,7 +130,7 @@ typedef struct {
 	gboolean ( *do_task )              ( ofaIExeClose *instance,
 											guint rowtype,
 											GtkWidget *box,
-											ofaHub *hub );
+											ofaIGetter *getter );
 }
 	ofaIExeCloseInterface;
 
@@ -164,7 +164,7 @@ gchar   *ofa_iexe_close_add_row                   ( ofaIExeClose *instance,
 gboolean ofa_iexe_close_do_task                   ( ofaIExeClose *instance,
 															guint rowtype,
 															GtkWidget *box,
-															ofaHub *hub );
+															ofaIGetter *getter );
 
 G_END_DECLS
 

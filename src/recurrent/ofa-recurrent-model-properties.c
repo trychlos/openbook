@@ -62,7 +62,6 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub            *hub;
 	gboolean           is_writable;
 	ofoRecurrentModel *recurrent_model;
 	gboolean           is_new;
@@ -221,7 +220,7 @@ ofa_recurrent_model_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoRe
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->recurrent_model = model;
 
@@ -254,11 +253,7 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_recurrent_model_properties_get_instance_private( OFA_RECURRENT_MODEL_PROPERTIES( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -303,6 +298,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_properties_idialog_init";
 	ofaRecurrentModelPropertiesPrivate *priv;
+	ofaHub *hub;
 	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -315,7 +311,8 @@ idialog_init( myIDialog *instance )
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	init_title( OFA_RECURRENT_MODEL_PROPERTIES( instance ));
 	init_page_properties( OFA_RECURRENT_MODEL_PROPERTIES( instance ));
@@ -403,7 +400,7 @@ init_page_properties( ofaRecurrentModelProperties *self )
 	/* periodicity */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-periodicity-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->periodicity_bin = ofa_rec_period_bin_new( priv->hub );
+	priv->periodicity_bin = ofa_rec_period_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->periodicity_bin ));
 	g_signal_connect( priv->periodicity_bin, "ofa-perchanged", G_CALLBACK( on_periodicity_changed ), self );
 	g_signal_connect( priv->periodicity_bin, "ofa-detchanged", G_CALLBACK( on_periodicity_detail_changed ), self );
@@ -509,7 +506,7 @@ on_ope_template_changed( GtkEntry *entry, ofaRecurrentModelProperties *self )
 	g_free( priv->ope_template );
 	priv->ope_template = g_strdup( gtk_entry_get_text( entry ));
 
-	priv->template_obj = ofo_ope_template_get_by_mnemo( priv->hub, priv->ope_template );
+	priv->template_obj = ofo_ope_template_get_by_mnemo( priv->getter, priv->ope_template );
 	gtk_label_set_text(
 			GTK_LABEL( priv->ope_template_label ),
 			priv->template_obj ? ofo_ope_template_get_label( priv->template_obj ) : "" );
@@ -628,7 +625,7 @@ check_for_mnemo( ofaRecurrentModelProperties *self, gchar **msgerr )
 		*msgerr = g_strdup( _( "Mnemonic is empty" ));
 
 	} else {
-		exists = ( ofo_recurrent_model_get_by_mnemo( priv->hub, priv->mnemo ) != NULL );
+		exists = ( ofo_recurrent_model_get_by_mnemo( priv->getter, priv->mnemo ) != NULL );
 		subok = !priv->is_new &&
 						!my_collate( priv->mnemo, ofo_recurrent_model_get_mnemo( priv->recurrent_model ));
 		ok = !exists || subok;
@@ -664,6 +661,7 @@ static gboolean
 do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
+	ofaHub *hub;
 	gchar *prev_mnemo;
 	gboolean ok, is_enabled;
 	const gchar *cstr;
@@ -672,6 +670,8 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	msgerr = NULL;
 	prev_mnemo = g_strdup( ofo_recurrent_model_get_mnemo( priv->recurrent_model ));
@@ -697,7 +697,7 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( GTK_WINDOW( self ), recurrent_model );
 
 	if( priv->is_new ){
-		ok = ofo_recurrent_model_insert( priv->recurrent_model, priv->hub );
+		ok = ofo_recurrent_model_insert( priv->recurrent_model );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new recurrent model" ));
 		}
@@ -715,15 +715,15 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	 */
 	if( ok ){
 		if( my_strlen( priv->orig_template )){
-			template_obj = ofo_ope_template_get_by_mnemo( priv->hub, priv->orig_template );
+			template_obj = ofo_ope_template_get_by_mnemo( priv->getter, priv->orig_template );
 			if( template_obj ){
-				g_signal_emit_by_name( G_OBJECT( priv->hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+				g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
 			}
 		}
 		if( my_strlen( priv->ope_template ) && my_collate( priv->ope_template, priv->orig_template )){
-			template_obj = ofo_ope_template_get_by_mnemo( priv->hub, priv->ope_template );
+			template_obj = ofo_ope_template_get_by_mnemo( priv->getter, priv->ope_template );
 			if( template_obj ){
-				g_signal_emit_by_name( G_OBJECT( priv->hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+				g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
 			}
 		}
 	}

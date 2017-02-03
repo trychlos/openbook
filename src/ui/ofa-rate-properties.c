@@ -59,7 +59,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub     *hub;
 	gboolean    is_writable;
 	gboolean    is_new;
 
@@ -218,7 +217,7 @@ ofa_rate_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoRate *rate )
 
 	priv = ofa_rate_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->rate = rate;
 
@@ -252,10 +251,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -300,6 +296,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_rate_properties_idialog_init";
 	ofaRatePropertiesPrivate *priv;
+	ofaHub *hub;
 	gint count, idx;
 	gchar *title;
 	const gchar *mnemo;
@@ -316,7 +313,8 @@ idialog_init( myIDialog *instance )
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	mnemo = ofo_rate_get_mnemo( priv->rate );
 	if( !mnemo ){
@@ -422,7 +420,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
@@ -430,7 +428,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 			entry, 1+COL_BEGIN, row, 1, 1 );
 
 	label = gtk_label_new( "" );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );
@@ -442,7 +440,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
@@ -450,7 +448,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 			entry, 1+COL_END, row, 1, 1 );
 
 	label = gtk_label_new( "" );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );
@@ -462,10 +460,10 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub )),
-			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub )),
-			ofa_prefs_amount_accept_dot( priv->hub ),
-			ofa_prefs_amount_accept_comma( priv->hub ),
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
+			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
+			ofa_prefs_amount_accept_dot( priv->getter ),
+			ofa_prefs_amount_accept_comma( priv->getter ),
 			HUB_DEFAULT_DECIMALS_RATE );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_rate_changed ), self );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
@@ -642,7 +640,7 @@ is_dialog_validable( ofaRateProperties *self )
 	g_list_free_full( valids, ( GDestroyNotify ) g_free );
 
 	if( ok ){
-		exists = ofo_rate_get_by_mnemo( priv->hub, priv->mnemo );
+		exists = ofo_rate_get_by_mnemo( priv->getter, priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new &&
 						!g_utf8_collate( priv->mnemo, ofo_rate_get_mnemo( priv->rate )));
@@ -719,7 +717,7 @@ do_update( ofaRateProperties *self, gchar **msgerr )
 	}
 
 	if( priv->is_new ){
-		ok = ofo_rate_insert( priv->rate, priv->hub );
+		ok = ofo_rate_insert( priv->rate );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new rate" ));
 		}

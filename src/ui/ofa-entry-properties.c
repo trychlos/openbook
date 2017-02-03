@@ -37,7 +37,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-account-editable.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ope-template-editable.h"
 #include "api/ofa-preferences.h"
@@ -68,7 +67,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub         *hub;
 	gboolean        is_writable;		/* this are needed by macros, but not used in the code */
 	gboolean        is_new;				/* this are needed by macros, but not used in the code */
 
@@ -242,7 +240,7 @@ ofa_entry_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoEntry *entry
 
 	priv = ofa_entry_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->entry = entry;
 	priv->editable = editable;
@@ -276,10 +274,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -354,9 +349,9 @@ setup_ui_properties( ofaEntryProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->dope );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 	priv->dope_entry = entry;
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_dope_changed ), self );
@@ -369,9 +364,9 @@ setup_ui_properties( ofaEntryProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-deffect-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->deffect );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 	priv->deffect_entry = entry;
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_deffect_changed ), self );
@@ -397,7 +392,7 @@ setup_ui_properties( ofaEntryProperties *self )
 	priv->ledger_combo = ofa_ledger_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->ledger_combo ));
 	ofa_ledger_combo_set_columns( priv->ledger_combo, st_ledger_cols );
-	ofa_ledger_combo_set_hub( priv->ledger_combo, priv->hub );
+	ofa_ledger_combo_set_getter( priv->ledger_combo, priv->getter );
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), GTK_WIDGET( priv->ledger_combo ));
 	g_signal_connect( priv->ledger_combo, "ofa-changed", G_CALLBACK( on_ledger_changed ), self );
 
@@ -443,10 +438,10 @@ setup_ui_properties( ofaEntryProperties *self )
 	priv->account_currency = label;
 	gtk_container_add( GTK_CONTAINER( parent ), priv->sens_combo );
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub )),
-			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub )),
-			ofa_prefs_amount_accept_dot( priv->hub ),
-			ofa_prefs_amount_accept_comma( priv->hub ),
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
+			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
+			ofa_prefs_amount_accept_dot( priv->getter ),
+			ofa_prefs_amount_accept_comma( priv->getter ),
 			HUB_DEFAULT_DECIMALS_AMOUNT );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_amount_changed ), self );
 
@@ -599,12 +594,12 @@ on_account_changed( GtkEntry *entry, ofaEntryProperties *self )
 
 	cstr = gtk_entry_get_text( entry );
 	if( my_strlen( cstr )){
-		priv->account = ofo_account_get_by_number( priv->hub, cstr );
+		priv->account = ofo_account_get_by_number( priv->getter, cstr );
 		if( priv->account ){
 			gtk_label_set_text( GTK_LABEL( priv->account_label ), ofo_account_get_label( priv->account ));
 			if( !ofo_account_is_root( priv->account )){
 				cstr = ofo_account_get_currency( priv->account );
-				priv->currency = ofo_currency_get_by_code( priv->hub, cstr );
+				priv->currency = ofo_currency_get_by_code( priv->getter, cstr );
 				if( priv->currency ){
 					gtk_label_set_text( GTK_LABEL( priv->account_currency ), ofo_currency_get_label( priv->currency ));
 				}
@@ -624,7 +619,7 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryProperties
 
 	priv->ledger = NULL;
 	if( my_strlen( mnemo )){
-		priv->ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
+		priv->ledger = ofo_ledger_get_by_mnemo( priv->getter, mnemo );
 	}
 
 	check_for_enable_dlg( self );
@@ -647,7 +642,7 @@ on_template_changed( GtkEntry *entry, ofaEntryProperties *self )
 	priv->template = NULL;
 	cstr = gtk_entry_get_text( entry );
 	if( my_strlen( cstr )){
-		priv->template = ofo_ope_template_get_by_mnemo( priv->hub, cstr );
+		priv->template = ofo_ope_template_get_by_mnemo( priv->getter, cstr );
 	}
 
 	check_for_enable_dlg( self );

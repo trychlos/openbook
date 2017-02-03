@@ -35,7 +35,7 @@
  * derives from #GtkListStore.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-list-store.h"
 
 G_BEGIN_DECLS
@@ -82,7 +82,7 @@ enum {
 
 GType              ofa_misc_audit_store_get_type       ( void );
 
-ofaMiscAuditStore *ofa_misc_audit_store_new            ( ofaHub *hub );
+ofaMiscAuditStore *ofa_misc_audit_store_new            ( ofaIGetter *getter );
 
 guint              ofa_misc_audit_store_get_pages_count( ofaMiscAuditStore *store,
 																guint page_size );

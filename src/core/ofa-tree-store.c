@@ -26,7 +26,6 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-hub.h"
 #include "api/ofa-istore.h"
 #include "api/ofa-tree-store.h"
 

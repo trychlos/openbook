@@ -26,8 +26,8 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-irecover.h"
 
 #define IRECOVER_LAST_VERSION             1
@@ -166,7 +166,7 @@ ofa_irecover_get_interface_version( GType type )
 /**
  * ofa_irecover_import_uris:
  * @instance: this #ofaIRecover instance.
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @uris: a #GList of #ofsRecoverFile structures to be imported.
  * @format: the input stream format.
  * @connect: the target connection.
@@ -178,20 +178,21 @@ ofa_irecover_get_interface_version( GType type )
  * Returns: %TRUE if the recovery was successfull, %FALSE else.
  */
 gboolean
-ofa_irecover_import_uris( ofaIRecover *instance, ofaHub *hub, GList *uris, ofaStreamFormat *format, ofaIDBConnect *connect, ofaMsgCb msg_cb, void *msg_data )
+ofa_irecover_import_uris( ofaIRecover *instance, ofaIGetter *getter, GList *uris, ofaStreamFormat *format, ofaIDBConnect *connect, ofaMsgCb msg_cb, void *msg_data )
 {
 	static const gchar *thisfn = "ofa_irecover_import_uris";
 
-	g_debug( "%s: instance=%p, hub=%p, uris=%p, format=%p, connect=%p, msg_cb=%p, msg_data=%p",
-			thisfn, ( void * ) instance, ( void * ) hub,
+	g_debug( "%s: instance=%p, getter=%p, uris=%p, format=%p, connect=%p, msg_cb=%p, msg_data=%p",
+			thisfn, ( void * ) instance, ( void * ) getter,
 			( void * ) uris, ( void * ) format, ( void * ) connect, ( void * ) msg_cb, msg_data );
 
 	g_return_val_if_fail( instance && OFA_IS_IRECOVER( instance ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), FALSE );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	if( OFA_IRECOVER_GET_INTERFACE( instance )->import_uris ){
-		return( OFA_IRECOVER_GET_INTERFACE( instance )->import_uris( instance, hub, uris, format, connect, msg_cb, msg_data ));
+		return( OFA_IRECOVER_GET_INTERFACE( instance )->import_uris( instance, getter, uris, format, connect, msg_cb, msg_data ));
 	}
 
 	g_info( "%s: ofaIRecover's %s implementation does not provide 'import_uris()' method",

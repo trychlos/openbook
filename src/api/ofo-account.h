@@ -35,7 +35,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-account-def.h"
 
@@ -89,13 +89,13 @@ typedef enum {
 
 GType           ofo_account_get_type                ( void ) G_GNUC_CONST;
 
-GList          *ofo_account_get_dataset             ( ofaHub *hub );
-GList          *ofo_account_get_dataset_for_solde   ( ofaHub *hub );
+GList          *ofo_account_get_dataset             ( ofaIGetter *getter );
+GList          *ofo_account_get_dataset_for_solde   ( ofaIGetter *getter );
 #define         ofo_account_free_dataset( L )       g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-ofoAccount     *ofo_account_get_by_number           ( ofaHub *hub, const gchar *number );
+ofoAccount     *ofo_account_get_by_number           ( ofaIGetter *getter, const gchar *number );
 
-ofoAccount     *ofo_account_new                     ( void );
+ofoAccount     *ofo_account_new                     ( ofaIGetter *getter );
 
 gint            ofo_account_get_class               ( const ofoAccount *account );
 const gchar    *ofo_account_get_number              ( const ofoAccount *account );
@@ -152,7 +152,7 @@ void            ofo_account_set_rough_credit        ( ofoAccount *account, ofxAm
 void            ofo_account_set_futur_debit         ( ofoAccount *account, ofxAmount amount );
 void            ofo_account_set_futur_credit        ( ofoAccount *account, ofxAmount amount );
 
-gboolean        ofo_account_insert                  ( ofoAccount *account, ofaHub *hub );
+gboolean        ofo_account_insert                  ( ofoAccount *account );
 gboolean        ofo_account_update                  ( ofoAccount *account, const gchar *prev_number );
 gboolean        ofo_account_update_amounts          ( ofoAccount *account );
 gboolean        ofo_account_delete                  ( ofoAccount *account );

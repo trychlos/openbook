@@ -49,6 +49,7 @@ typedef struct {
 
 	/* internals
 	 */
+	ofaIGetter           *getter;
 	gchar                *settings_prefix;
 	ofaHub               *hub;
 	GList                *hub_handlers;
@@ -220,7 +221,9 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 
 	priv = ofa_guided_ex_get_instance_private( OFA_GUIDED_EX( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->paned = GTK_WIDGET( paned );
@@ -545,12 +548,12 @@ left_init_view( ofaGuidedEx *self )
 
 	priv = ofa_guided_ex_get_instance_private( self );
 
-	dataset = ofo_ledger_get_dataset( priv->hub );
+	dataset = ofo_ledger_get_dataset( priv->getter );
 	for( it=dataset ; it ; it=it->next ){
 		ledger_insert_row( self, OFO_LEDGER( it->data ));
 	}
 
-	dataset = ofo_ope_template_get_dataset( priv->hub );
+	dataset = ofo_ope_template_get_dataset( priv->getter );
 	for( it=dataset ; it ; it=it->next ){
 		model_insert_row( self, OFO_OPE_TEMPLATE( it->data ));
 	}
@@ -949,7 +952,7 @@ read_settings( ofaGuidedEx *self )
 
 	priv = ofa_guided_ex_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -978,7 +981,7 @@ write_settings( ofaGuidedEx *self )
 	str = g_strdup_printf( "%d;",
 				gtk_paned_get_position( GTK_PANED( priv->paned )));
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

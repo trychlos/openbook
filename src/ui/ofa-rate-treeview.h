@@ -44,7 +44,7 @@
  *    +------------------+----------+
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 #include "api/ofo-rate-def.h"
 
@@ -71,7 +71,7 @@ typedef struct {
 
 GType            ofa_rate_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaRateTreeview *ofa_rate_treeview_new             ( ofaHub *hub );
+ofaRateTreeview *ofa_rate_treeview_new             ( ofaIGetter *getter );
 
 void             ofa_rate_treeview_set_settings_key( ofaRateTreeview *view,
 															const gchar *key );

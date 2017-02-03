@@ -59,7 +59,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub        *hub;
 	gboolean       is_writable;
 	gboolean       is_new;
 
@@ -193,7 +192,7 @@ ofa_paimean_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoPaimean *p
 
 	priv = ofa_paimean_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->paimean = paimean;
 
@@ -226,11 +225,7 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_paimean_properties_get_instance_private( OFA_PAIMEAN_PROPERTIES( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -306,12 +301,14 @@ static void
 init_dialog( ofaPaimeanProperties *self )
 {
 	ofaPaimeanPropertiesPrivate *priv;
+	ofaHub *hub;
 	const gchar *code;
 	gchar *title;
 
 	priv = ofa_paimean_properties_get_instance_private( self );
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	code = ofo_paimean_get_code( priv->paimean );
 	if( !code ){
@@ -415,7 +412,7 @@ on_account_changed( GtkEntry *entry, ofaPaimeanProperties *self )
 	priv = ofa_paimean_properties_get_instance_private( self );
 
 	number = gtk_entry_get_text( entry );
-	account = my_strlen( number ) ? ofo_account_get_by_number( priv->hub, number ) : NULL;
+	account = my_strlen( number ) ? ofo_account_get_by_number( priv->getter, number ) : NULL;
 	label = account ? ofo_account_get_label( account ) : "";
 	gtk_label_set_text( GTK_LABEL( priv->account_label ), label );
 
@@ -454,7 +451,7 @@ is_dialog_validable( ofaPaimeanProperties *self )
 	ok = ofo_paimean_is_valid_data( code, &msgerr );
 
 	if( ok ){
-		exists = ofo_paimean_get_by_code( priv->hub, code );
+		exists = ofo_paimean_get_by_code( priv->getter, code );
 		ok &= !exists ||
 				( !priv->is_new && !my_collate( code, ofo_paimean_get_code( priv->paimean )));
 		if( !ok ){
@@ -469,7 +466,7 @@ is_dialog_validable( ofaPaimeanProperties *self )
 	 * but does not prevent to save */
 	if( ok ){
 		number = gtk_entry_get_text( GTK_ENTRY( priv->account_entry ));
-		account = my_strlen( number ) ? ofo_account_get_by_number( priv->hub, number ) : NULL;
+		account = my_strlen( number ) ? ofo_account_get_by_number( priv->getter, number ) : NULL;
 		if( !account ){
 			msgerr = g_strdup( _( "Account does not exist" ));
 
@@ -527,7 +524,7 @@ do_update( ofaPaimeanProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( self, paimean );
 
 	if( priv->is_new ){
-		ok = ofo_paimean_insert( priv->paimean, priv->hub );
+		ok = ofo_paimean_insert( priv->paimean );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new mean of paiement" ));
 		}

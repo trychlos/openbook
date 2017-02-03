@@ -29,6 +29,7 @@
 #include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-igetter.h"
 #include "api/ofo-currency.h"
 #include "api/ofs-currency.h"
 
@@ -40,18 +41,18 @@ static void currency_free( ofsCurrency *cur );
  * ofs_currency_add_by_code:
  */
 ofsCurrency *
-ofs_currency_add_by_code( GList **list, ofaHub *hub, const gchar *currency, gdouble debit, gdouble credit )
+ofs_currency_add_by_code( GList **list, ofaIGetter *getter, const gchar *currency, gdouble debit, gdouble credit )
 {
 	ofsCurrency *found;
 	ofoCurrency *cur_object;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( currency ), NULL );
 
 	found = ofs_currency_get_by_code( *list, currency );
 
 	if( !found ){
-		cur_object = ofo_currency_get_by_code( hub, currency );
+		cur_object = ofo_currency_get_by_code( getter, currency );
 		g_return_val_if_fail( cur_object && OFO_IS_CURRENCY( cur_object ), NULL );
 		found = g_new0( ofsCurrency, 1 );
 		found->currency = g_object_ref( cur_object );

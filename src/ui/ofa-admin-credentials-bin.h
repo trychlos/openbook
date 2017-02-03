@@ -55,7 +55,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 
 G_BEGIN_DECLS
@@ -81,7 +81,7 @@ typedef struct {
 
 GType                   ofa_admin_credentials_bin_get_type              ( void ) G_GNUC_CONST;
 
-ofaAdminCredentialsBin *ofa_admin_credentials_bin_new                   ( ofaHub *hub,
+ofaAdminCredentialsBin *ofa_admin_credentials_bin_new                   ( ofaIGetter *getter,
 																				const gchar *settings_prefix,
 																				guint rule );
 

@@ -56,7 +56,7 @@ typedef struct {
 
 	/* runtime data
 	 */
-	ofaHub         *hub;
+	ofaIGetter     *getter;
 	gboolean        is_writable;		/* whether the dossier is current */
 	gchar          *settings_prefix;
 
@@ -181,16 +181,18 @@ action_page_v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_bat_page_v_setup_view";
 	ofaBatPagePrivate *priv;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
-	priv->tview = ofa_bat_treeview_new( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
+
+	priv->tview = ofa_bat_treeview_new( priv->getter );
 	ofa_bat_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_bat_treeview_setup_columns( priv->tview );
 

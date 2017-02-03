@@ -67,7 +67,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar              *settings_prefix;
-	ofaHub             *hub;
 	gboolean            apply_actions;
 
 	/* UI
@@ -216,7 +215,7 @@ ofa_dossier_manager_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -248,10 +247,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -292,7 +288,7 @@ setup_treeview( ofaDossierManager *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "tview-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->dossier_tview = ofa_dossier_treeview_new( priv->hub );
+	priv->dossier_tview = ofa_dossier_treeview_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_tview ));
 	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, priv->settings_prefix );
 	ofa_dossier_treeview_setup_columns( priv->dossier_tview );
@@ -396,12 +392,14 @@ static void
 on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaDossierManager *self )
 {
 	ofaDossierManagerPrivate *priv;
+	ofaHub *hub;
 	gboolean have_data, is_opened;
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
 	have_data = meta && period;
-	is_opened = have_data && ofa_hub_is_opened_dossier( priv->hub, period );
+	hub = ofa_igetter_get_hub( priv->getter );
+	is_opened = have_data && ofa_hub_is_opened_dossier( hub, period );
 
 	if( priv->open_action ){
 		g_simple_action_set_enabled( priv->open_action, have_data && !is_opened );
@@ -494,6 +492,7 @@ action_on_close_activated( GSimpleAction *action, GVariant *empty, ofaDossierMan
 {
 	static const gchar *thisfn = "ofa_dossier_manager_action_on_close_activated";
 	ofaDossierManagerPrivate *priv;
+	ofaHub *hub;
 	ofaIDBDossierMeta *meta;
 	ofaIDBExerciceMeta *period;
 
@@ -504,11 +503,12 @@ action_on_close_activated( GSimpleAction *action, GVariant *empty, ofaDossierMan
 
 	meta = NULL;
 	period = NULL;
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period ) &&
-			ofa_hub_is_opened_dossier( priv->hub, period )){
+			ofa_hub_is_opened_dossier( hub, period )){
 
-		ofa_hub_close_dossier( priv->hub );
+		ofa_hub_close_dossier( hub );
 	}
 }
 
@@ -517,6 +517,7 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 {
 	static const gchar *thisfn = "ofa_dossier_manager_action_on_delete_activated";
 	ofaDossierManagerPrivate *priv;
+	ofaHub *hub;
 	ofaIDBProvider *provider;
 	ofaIDBDossierMeta *meta;
 	ofaIDBExerciceMeta *period;
@@ -533,6 +534,8 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 
 	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period )){
 
+		hub = ofa_igetter_get_hub( priv->getter );
+
 		/* delete the exercice
 		 * delete the dossier when deleting the last exercice */
 		provider = ofa_idbdossier_meta_get_provider( meta );
@@ -542,15 +545,15 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 			confirm_delete( self, meta, period )){
 
 			/* close the currently opened dossier/exercice if we are about to delete it */
-			if( ofa_hub_is_opened_dossier( priv->hub, period )){
-				ofa_hub_close_dossier( priv->hub );
+			if( ofa_hub_is_opened_dossier( hub, period )){
+				ofa_hub_close_dossier( hub );
 			}
 
 			connect = ofa_idbdossier_meta_new_connect( meta, NULL );
 			if( ofa_idbconnect_open_with_superuser( connect, su_bin )){
 
 				msgerr = NULL;
-				collection = ofa_hub_get_dossier_collection( priv->hub );
+				collection = ofa_igetter_get_dossier_collection( priv->getter );
 
 				if( !ofa_dossier_collection_delete_period( collection, connect, period, TRUE, &msgerr )){
 					toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));

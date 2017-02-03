@@ -34,12 +34,11 @@
  * The #myIActionMap interface let complete the #GActionMap interface
  * in order to associate the current #GMenuModel to the map.
  *
- * This association is mainly used by the #myAccelGroup class when
+ * This association is for example used by the #myAccelGroup class when
  * defining the accelerators exposed by a menu.
  *
- * As this interface is used by the #myAccelGroup class, implementing
- * it has only sense when the implementation has accelerators, and has
- * chosen to manage them with the #myAccelGroup class.
+ * This interface is also used by #myMenuManager to provide dynamic
+ * menu management.
  */
 
 #include <gio/gio.h>
@@ -79,15 +78,6 @@ typedef struct {
 	guint                ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
-	/**
-	 * get_menu_model:
-	 * @instance: the #myIActionMap instance.
-	 *
-	 * Returns: the current #GMenuModel of the @instance.
-	 *
-	 * Since: version 1.
-	 */
-	GMenuModel *         ( *get_menu_model )       ( const myIActionMap *instance );
 }
 	myIActionMapInterface;
 
@@ -108,10 +98,11 @@ myIActionMap       *my_iaction_map_lookup_map                ( const gchar *targ
 /*
  * Instance-wide
  */
-void                my_iaction_map_register                  ( myIActionMap *instance,
-																	const gchar *target );
+void                my_iaction_map_register                  ( myIActionMap *map,
+																	const gchar *scope,
+																	GMenuModel *menu_model );
 
-GMenuModel         *my_iaction_map_get_menu_model            ( const myIActionMap *instance );
+GMenuModel         *my_iaction_map_get_menu_model            ( const myIActionMap *map );
 
 G_END_DECLS
 

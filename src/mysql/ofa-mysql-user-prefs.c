@@ -30,7 +30,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-backup-header.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 
 #include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-user-prefs.h"
@@ -52,12 +52,12 @@ static const gchar *get_restore_key( guint format );
  * backup command.
  */
 gchar *
-ofa_mysql_user_prefs_get_backup_command( ofaHub *hub )
+ofa_mysql_user_prefs_get_backup_command( ofaIGetter *getter )
 {
 	myISettings *settings;
 	gchar *cmdline;
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 	cmdline = my_isettings_get_string( settings, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
 	if( !my_strlen( cmdline )){
 		cmdline = g_strdup( ofa_mysql_cmdline_backup_get_default_command());
@@ -73,24 +73,24 @@ ofa_mysql_user_prefs_get_backup_command( ofaHub *hub )
  * Records the backup command @command in the user settings.
  */
 void
-ofa_mysql_user_prefs_set_backup_command( ofaHub *hub, const gchar *command )
+ofa_mysql_user_prefs_set_backup_command( ofaIGetter *getter, const gchar *command )
 {
 	myISettings *settings;
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 	my_isettings_set_string( settings, PREFS_GROUP, PREFS_BACKUP_CMDLINE, command );
 }
 
 /**
  * ofa_mysql_user_prefs_get_restore_command:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @format: the archive format (from #ofaBackupHeader header).
  *
  * Returns: the restore command from the user settings, as a newly
  * allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_mysql_user_prefs_get_restore_command( ofaHub *hub, guint format )
+ofa_mysql_user_prefs_get_restore_command( ofaIGetter *getter, guint format )
 {
 	myISettings *settings;
 	const gchar *key;
@@ -100,7 +100,7 @@ ofa_mysql_user_prefs_get_restore_command( ofaHub *hub, guint format )
 
 	key = get_restore_key( format );
 	if( my_strlen( key )){
-		settings = ofa_hub_get_user_settings( hub );
+		settings = ofa_igetter_get_user_settings( getter );
 		cmdline = my_isettings_get_string( settings, PREFS_GROUP, key );
 		if( !my_strlen( cmdline )){
 			cmdline = g_strdup( ofa_mysql_cmdline_restore_get_default_command());
@@ -112,19 +112,21 @@ ofa_mysql_user_prefs_get_restore_command( ofaHub *hub, guint format )
 
 /**
  * ofa_mysql_user_prefs_set_restore_command:
+ * @getter: a #ofaIGetter instance.
+ * @format:
  * @command: the restore command to be set.
  *
  * Records the restore command @command in the user settings.
  */
 void
-ofa_mysql_user_prefs_set_restore_command( ofaHub *hub, guint format, const gchar *command )
+ofa_mysql_user_prefs_set_restore_command( ofaIGetter *getter, guint format, const gchar *command )
 {
 	myISettings *settings;
 	const gchar *key;
 
 	key = get_restore_key( format );
 	if( my_strlen( key )){
-		settings = ofa_hub_get_user_settings( hub );
+		settings = ofa_igetter_get_user_settings( getter );
 		my_isettings_set_string( settings, PREFS_GROUP, key, command );
 	}
 }

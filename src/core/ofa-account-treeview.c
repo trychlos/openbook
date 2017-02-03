@@ -33,8 +33,8 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-icontext.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
@@ -49,12 +49,12 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub  *hub;
-	gint     class_num;
+	ofaIGetter *getter;
+	gint        class_num;
 }
 	ofaAccountTreeviewPrivate;
 
@@ -307,7 +307,7 @@ ofa_account_treeview_class_init( ofaAccountTreeviewClass *klass )
 
 /**
  * ofa_account_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @class_number: the filtered class number.
  *  It must be set at instanciation time as it is also used as a
  *  qualifier for the actions group name.
@@ -315,20 +315,20 @@ ofa_account_treeview_class_init( ofaAccountTreeviewClass *klass )
  * Returns: a new instance.
  */
 ofaAccountTreeview *
-ofa_account_treeview_new( ofaHub *hub, gint class_number )
+ofa_account_treeview_new( ofaIGetter *getter, gint class_number )
 {
 	ofaAccountTreeview *view;
 	ofaAccountTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_ACCOUNT_TREEVIEW,
-				"ofa-tvbin-hub",  hub,
+				"ofa-tvbin-getter",  getter,
 				NULL );
 
 	priv = ofa_account_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 	priv->class_num = class_number;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
@@ -663,6 +663,7 @@ void
 ofa_account_treeview_cell_data_render( ofaAccountTreeview *view,
 				GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter )
 {
+	ofaAccountTreeviewPrivate *priv;
 	gchar *account_num;
 	ofoAccount *account_obj;
 	GString *number;
@@ -670,20 +671,18 @@ ofa_account_treeview_cell_data_render( ofaAccountTreeview *view,
 	gint column_id;
 	ofoCurrency *currency;
 	gboolean is_root, is_error;
-	ofaHub *hub;
 
 	g_return_if_fail( view && OFA_IS_ACCOUNT_TREEVIEW( view ));
 	g_return_if_fail( column && GTK_IS_TREE_VIEW_COLUMN( column ));
 	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER( renderer ));
 	g_return_if_fail( model && GTK_IS_TREE_MODEL( model ));
 
+	priv = ofa_account_treeview_get_instance_private( view );
+
 	gtk_tree_model_get( model, iter,
 			ACCOUNT_COL_NUMBER, &account_num, ACCOUNT_COL_OBJECT, &account_obj, -1 );
 	g_return_if_fail( account_obj && OFO_IS_ACCOUNT( account_obj ));
 	g_object_unref( account_obj );
-
-	hub = ofo_base_get_hub( OFO_BASE( account_obj ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	level = ofo_account_get_level_from_number( ofo_account_get_number( account_obj ));
 	g_return_if_fail( level >= 2 );
@@ -692,7 +691,7 @@ ofa_account_treeview_cell_data_render( ofaAccountTreeview *view,
 
 	is_error = FALSE;
 	if( !is_root ){
-		currency = ofo_currency_get_by_code( hub, ofo_account_get_currency( account_obj ));
+		currency = ofo_currency_get_by_code( priv->getter, ofo_account_get_currency( account_obj ));
 		is_error |= !currency;
 	}
 
@@ -757,7 +756,7 @@ cell_data_render_text( GtkCellRendererText *renderer, gboolean is_root, gint lev
 
 /*
  * Returns :
- * TRUE to stop other hub_handlers from being invoked for the event.
+ * TRUE to stop other handlers from being invoked for the event.
  * FALSE to propagate the event further.
  */
 static gboolean

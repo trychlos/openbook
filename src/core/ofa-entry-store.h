@@ -45,7 +45,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-list-store.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -138,7 +138,7 @@ enum {
 
 GType          ofa_entry_store_get_type( void );
 
-ofaEntryStore *ofa_entry_store_new     ( ofaHub *hub );
+ofaEntryStore *ofa_entry_store_new     ( ofaIGetter *getter );
 
 ofxCounter     ofa_entry_store_load    ( ofaEntryStore *store,
 												const gchar *account,

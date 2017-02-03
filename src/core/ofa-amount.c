@@ -32,26 +32,28 @@
 #include "my/my-double.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-currency.h"
 
 /**
  * ofa_amount_from_str:
  * @str: a localized, decorated, string.
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the evaluated amount.
  */
 ofxAmount
-ofa_amount_from_str( const gchar *str, ofaHub *hub )
+ofa_amount_from_str( const gchar *str, ofaIGetter *getter )
 {
 	ofxAmount amount;
 
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
+
 	amount = my_double_set_from_str(
 					str,
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep( hub )),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep( hub )));
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep( getter )),
+					g_utf8_get_char( ofa_prefs_amount_decimal_sep( getter )));
 
 	return( amount );
 }
@@ -120,23 +122,25 @@ ofa_amount_to_sql( ofxAmount amount, ofoCurrency *currency )
  * ofa_amount_to_str:
  * @amount: the amount to be displayed.
  * @currency: [allow-none]: the display currency if any.
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the amount as a displayable, localized, decorated newly
  * allocated string, which should be g_free() by the caller.
  */
 gchar *
-ofa_amount_to_str( ofxAmount amount, ofoCurrency *currency, ofaHub *hub )
+ofa_amount_to_str( ofxAmount amount, ofoCurrency *currency, ofaIGetter *getter )
 {
 	gchar *str;
 	guint digits;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	digits = currency && OFO_IS_CURRENCY( currency ) ?
 					ofo_currency_get_digits( currency ) : HUB_DEFAULT_DECIMALS_AMOUNT;
 
 	str = my_double_to_str( amount,
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep( hub )),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep( hub )), digits );
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep( getter )),
+					g_utf8_get_char( ofa_prefs_amount_decimal_sep( getter )), digits );
 
 	return( str );
 }

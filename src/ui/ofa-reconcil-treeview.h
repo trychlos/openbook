@@ -50,7 +50,7 @@
  * decide whether an action may apply or not on a multiple selection.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 #include "api/ofo-entry.h"
 
@@ -77,7 +77,7 @@ typedef struct {
 
 GType                ofa_reconcil_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaReconcilTreeview *ofa_reconcil_treeview_new               ( ofaHub *hub );
+ofaReconcilTreeview *ofa_reconcil_treeview_new               ( ofaIGetter *getter );
 
 void                 ofa_reconcil_treeview_set_settings_key  ( ofaReconcilTreeview *view,
 																const gchar *key );
@@ -98,11 +98,6 @@ void                 ofa_reconcil_treeview_expand_all        ( ofaReconcilTreevi
 
 void                 ofa_reconcil_treeview_collapse_by_iter  ( ofaReconcilTreeview *view,
 																	GtkTreeIter *iter );
-
-#if 0
-void                 ofa_reconcil_treeview_set_selected      ( ofaReconcilTreeview *view,
-																	ofxCounter entry );
-#endif
 
 G_END_DECLS
 

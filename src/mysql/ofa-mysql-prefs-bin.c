@@ -33,10 +33,10 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-backup-header.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 
-#include "ofa-mysql-prefs-bin.h"
-#include "ofa-mysql-user-prefs.h"
+#include "mysql/ofa-mysql-prefs-bin.h"
+#include "mysql/ofa-mysql-user-prefs.h"
 
 /* private instance data
  */
@@ -45,7 +45,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub       *hub;
+	ofaIGetter   *getter;
 
 	/* UI
 	 */
@@ -174,23 +174,23 @@ ofa_mysql_prefs_bin_class_init( ofaMySQLPrefsBinClass *klass )
 
 /**
  * ofa_mysql_prefs_bin_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaMySQLPrefsBin instance as a #GtkWidget.
  */
 GtkWidget *
-ofa_mysql_prefs_bin_new( ofaHub *hub )
+ofa_mysql_prefs_bin_new( ofaIGetter *getter )
 {
 	ofaMySQLPrefsBin *bin;
 	ofaMySQLPrefsBinPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	bin = g_object_new( OFA_TYPE_MYSQL_PREFS_BIN, NULL );
 
 	priv = ofa_mysql_prefs_bin_get_instance_private( bin );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	setup_bin( bin );
 
@@ -226,7 +226,7 @@ setup_bin( ofaMySQLPrefsBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-backup-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-	cmdline = ofa_mysql_user_prefs_get_backup_command( priv->hub );
+	cmdline = ofa_mysql_user_prefs_get_backup_command( priv->getter );
 	gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	g_free( cmdline );
 
@@ -236,7 +236,7 @@ setup_bin( ofaMySQLPrefsBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-gz-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-	cmdline = ofa_mysql_user_prefs_get_restore_command( priv->hub, OFA_BACKUP_HEADER_GZ );
+	cmdline = ofa_mysql_user_prefs_get_restore_command( priv->getter, OFA_BACKUP_HEADER_GZ );
 	gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	g_free( cmdline );
 
@@ -246,7 +246,7 @@ setup_bin( ofaMySQLPrefsBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-zip-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-	cmdline = ofa_mysql_user_prefs_get_restore_command( priv->hub, OFA_BACKUP_HEADER_ZIP );
+	cmdline = ofa_mysql_user_prefs_get_restore_command( priv->getter, OFA_BACKUP_HEADER_ZIP );
 	gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	g_free( cmdline );
 
@@ -354,7 +354,7 @@ do_apply( ofaMySQLPrefsBin *self )
 
 	priv = ofa_mysql_prefs_bin_get_instance_private( self );
 
-	ofa_mysql_user_prefs_set_backup_command( priv->hub, priv->backup_cmdline );
-	ofa_mysql_user_prefs_set_restore_command( priv->hub, OFA_BACKUP_HEADER_GZ, priv->restore_gz );
-	ofa_mysql_user_prefs_set_restore_command( priv->hub, OFA_BACKUP_HEADER_ZIP, priv->restore_zip );
+	ofa_mysql_user_prefs_set_backup_command( priv->getter, priv->backup_cmdline );
+	ofa_mysql_user_prefs_set_restore_command( priv->getter, OFA_BACKUP_HEADER_GZ, priv->restore_gz );
+	ofa_mysql_user_prefs_set_restore_command( priv->getter, OFA_BACKUP_HEADER_ZIP, priv->restore_zip );
 }

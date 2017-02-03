@@ -33,7 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
@@ -47,11 +47,11 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub  *hub;
+	ofaIGetter *getter;
 }
 	ofaAccountArcTreeviewPrivate;
 
@@ -129,7 +129,7 @@ ofa_account_arc_treeview_class_init( ofaAccountArcTreeviewClass *klass )
 
 /**
  * ofa_account_arc_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @account: the #ofoAccount.
  *
  * Define the treeview along with the subjacent store.
@@ -137,21 +137,21 @@ ofa_account_arc_treeview_class_init( ofaAccountArcTreeviewClass *klass )
  * Returns: a new instance.
  */
 ofaAccountArcTreeview *
-ofa_account_arc_treeview_new( ofaHub *hub, ofoAccount *account )
+ofa_account_arc_treeview_new( ofaIGetter *getter, ofoAccount *account )
 {
 	ofaAccountArcTreeview *view;
 	ofaAccountArcTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
 	view = g_object_new( OFA_TYPE_ACCOUNT_ARC_TREEVIEW,
-				"ofa-tvbin-hub", hub,
+				"ofa-tvbin-getter", getter,
 				NULL );
 
 	priv = ofa_account_arc_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	setup_columns( view );
 	setup_store( view, account );
@@ -186,7 +186,7 @@ setup_store( ofaAccountArcTreeview *self, ofoAccount *account )
 
 	priv = ofa_account_arc_treeview_get_instance_private( self );
 
-	store = ofa_account_arc_store_new( priv->hub, account );
+	store = ofa_account_arc_store_new( priv->getter, account );
 
 	ofa_tvbin_set_store( OFA_TVBIN( self ), GTK_TREE_MODEL( store ));
 }
@@ -224,7 +224,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 
 	switch( column_id ){
 		case ACCOUNT_ARC_COL_DATE:
-			cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case ACCOUNT_ARC_COL_DEBIT:
 			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), debita, debitb );

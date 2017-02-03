@@ -64,7 +64,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -89,7 +89,7 @@ typedef struct {
 
 GType                ofa_check_integrity_bin_get_type   ( void ) G_GNUC_CONST;
 
-ofaCheckIntegrityBin *ofa_check_integrity_bin_new       ( ofaHub *hub,
+ofaCheckIntegrityBin *ofa_check_integrity_bin_new       ( ofaIGetter *getter,
 																const gchar *settings_prefix );
 
 void                 ofa_check_integrity_bin_set_display( ofaCheckIntegrityBin *bin,

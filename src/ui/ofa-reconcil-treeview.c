@@ -33,8 +33,8 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-icontext.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
@@ -56,7 +56,8 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub                       *hub;
+	ofaIGetter                   *getter;
+
 	/* runtime
 	 */
 	GtkTreeModelFilterVisibleFunc filter_fn;
@@ -221,28 +222,28 @@ ofa_reconcil_treeview_class_init( ofaReconcilTreeviewClass *klass )
 
 /**
  * ofa_reconcil_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaReconcilTreeview instance.
  */
 ofaReconcilTreeview *
-ofa_reconcil_treeview_new( ofaHub *hub )
+ofa_reconcil_treeview_new( ofaIGetter *getter )
 {
 	ofaReconcilTreeview *view;
 	ofaReconcilTreeviewPrivate *priv;
 	GtkWidget *treeview;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_RECONCIL_TREEVIEW,
-				"ofa-tvbin-hub",     hub,
+				"ofa-tvbin-getter",  getter,
 				"ofa-tvbin-selmode", GTK_SELECTION_MULTIPLE,
 				"ofa-tvbin-shadow",  GTK_SHADOW_IN,
 				NULL );
 
 	priv = ofa_reconcil_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * the selected objects instead of just the raw GtkTreeSelection
@@ -440,7 +441,7 @@ get_hierarchy_concil_id_by_path( ofaReconcilTreeview *self, GtkTreeModel *tmodel
 
 /*
  * Returns :
- * TRUE to stop other hub_handlers from being invoked for the event.
+ * TRUE to stop other handlers from being invoked for the event.
  * FALSE to propagate the event further.
  *
  * Handles left and right arrows to expand/collapse nodes
@@ -927,10 +928,10 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 
 	switch( column_id ){
 		case RECONCIL_COL_DOPE:
-			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case RECONCIL_COL_DEFFECT:
-			cmp = my_date_compare_by_str( deffa, deffb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( deffa, deffb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case RECONCIL_COL_LABEL:
 			cmp = my_collate( labela, labelb );
@@ -984,7 +985,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			cmp = ofa_itvsortable_sort_str_int( concilnuma, concilnumb );
 			break;
 		case RECONCIL_COL_CONCIL_DATE:
-			cmp = my_date_compare_by_str( concildatea, concildateb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( concildatea, concildateb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case RECONCIL_COL_CONCIL_TYPE:
 			cmp = my_collate( typea, typeb );

@@ -30,7 +30,7 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-istore.h"
 #include "api/ofa-itree-adder.h"
 #include "api/ofa-itvsortable.h"
@@ -76,9 +76,9 @@ static const gchar *st_resource_recurrent_png = "/org/trychlos/openbook/recurren
 
 static void     itree_adder_iface_init( ofaITreeAdderInterface *iface );
 static GType   *itree_adder_get_column_types( ofaITreeAdder *instance, ofaIStore *store, guint orig_cols_count, guint *add_cols );
-static void     itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, void *object );
-static void     ope_template_set_is_recurrent( ofaRecurrentTreeAdder *self, sStore *store_data, ofaHub *hub, GtkTreeIter *iter, guint col_id, ofoOpeTemplate *template );
-static gboolean itree_adder_sort( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, gint *cmp );
+static void     itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaIGetter *getter, GtkTreeIter *iter, void *object );
+static void     ope_template_set_is_recurrent( ofaRecurrentTreeAdder *self, sStore *store_data, ofaIGetter *getter, GtkTreeIter *iter, guint col_id, ofoOpeTemplate *template );
+static gboolean itree_adder_sort( ofaITreeAdder *instance, ofaIStore *store, ofaIGetter *getter, GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, gint *cmp );
 static gint     ope_template_sort( GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, sStore *store_data );
 static void     itree_adder_add_columns( ofaITreeAdder *instance, ofaIStore *store, ofaTVBin *bin );
 static void     ope_template_add_columns( ofaRecurrentTreeAdder *self, ofaTVBin *bin, sStore *store_data );
@@ -196,7 +196,7 @@ itree_adder_get_column_types( ofaITreeAdder *instance, ofaIStore *store, guint o
 }
 
 static void
-itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, void *object )
+itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaIGetter *getter, GtkTreeIter *iter, void *object )
 {
 	sStore *store_data;
 	gint i;
@@ -207,7 +207,7 @@ itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, 
 			for( i=0 ; i<REC_OPE_TEMPLATE_N_COLUMNS ; ++i ){
 				if( i==REC_OPE_TEMPLATE_COL_RECURRENT ){
 					ope_template_set_is_recurrent(
-							OFA_RECURRENT_TREE_ADDER( instance ), store_data, hub, iter, i, OFO_OPE_TEMPLATE( object ));
+							OFA_RECURRENT_TREE_ADDER( instance ), store_data, getter, iter, i, OFO_OPE_TEMPLATE( object ));
 				}
 			}
 		}
@@ -220,14 +220,14 @@ itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, 
  */
 static void
 ope_template_set_is_recurrent( ofaRecurrentTreeAdder *self,
-		sStore *store_data, ofaHub *hub, GtkTreeIter *iter, guint col_id, ofoOpeTemplate *template )
+		sStore *store_data, ofaIGetter *getter, GtkTreeIter *iter, guint col_id, ofoOpeTemplate *template )
 {
 	gboolean is_recurrent;
 	GdkPixbuf *png;
 	const gchar *mnemo;
 
 	mnemo = ofo_ope_template_get_mnemo( template );
-	is_recurrent = ofo_recurrent_model_use_ope_template( hub, mnemo );
+	is_recurrent = ofo_recurrent_model_use_ope_template( getter, mnemo );
 	png = gdk_pixbuf_new_from_resource( is_recurrent ? st_resource_recurrent_png : st_resource_filler_png, NULL );
 
 	if( GTK_IS_LIST_STORE( store_data->store )){
@@ -239,7 +239,7 @@ ope_template_set_is_recurrent( ofaRecurrentTreeAdder *self,
 
 static gboolean
 itree_adder_sort( ofaITreeAdder *instance, ofaIStore *store,
-		ofaHub *hub, GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, gint *cmp )
+		ofaIGetter *getter, GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, gint *cmp )
 {
 	sStore *store_data;
 

@@ -70,6 +70,10 @@
  * Columns may be dynamically made visible/invisible.
  *
  * Properties:
+ * - ofa-tvbin-getter:
+ *   a #ofaIGetter instance;
+ *   no default, will be %NULL if has not been previously set.
+ *
  * - ofa-tvbin-headers:
  *   whether the columns headers are visible;
  *   defaults to be visible.
@@ -81,10 +85,6 @@
  * - ofa-tvbin-hpolicy:
  *   horizontal scrollbar policy;
  *   will typically be NEVER for pages, AUTOMATIC (default) for dialogs.
- *
- * - ofa-tvbin-hub:
- *   the #ofaHub object of the application;
- *   no default, will be %NULL if has not been previously set.
  *
  * - ofa-tvbin-name:
  *   the identifier name of this class;
@@ -113,7 +113,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -180,6 +180,11 @@ typedef struct {
 
 GType             ofa_tvbin_get_type                   ( void ) G_GNUC_CONST;
 
+ofaIGetter       *ofa_tvbin_get_getter                 ( ofaTVBin *bin );
+
+void              ofa_tvbin_set_getter                 ( ofaTVBin *bin,
+																ofaIGetter *getter );
+
 gboolean          ofa_tvbin_get_headers                ( ofaTVBin *bin );
 
 void              ofa_tvbin_set_headers                ( ofaTVBin *bin,
@@ -194,11 +199,6 @@ GtkPolicyType     ofa_tvbin_get_hpolicy                ( ofaTVBin *bin );
 
 void              ofa_tvbin_set_hpolicy                ( ofaTVBin *bin,
 																GtkPolicyType policy );
-
-ofaHub           *ofa_tvbin_get_hub                    ( ofaTVBin *bin );
-
-void              ofa_tvbin_set_hub                    ( ofaTVBin *bin,
-																ofaHub *hub );
 
 const gchar      *ofa_tvbin_get_name                   ( ofaTVBin *bin );
 

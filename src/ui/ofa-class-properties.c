@@ -54,7 +54,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub     *hub;
 	gboolean    is_writable;
 	gboolean    is_new;
 
@@ -187,7 +186,7 @@ ofa_class_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoClass *class
 
 	priv = ofa_class_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->class = class;
 
@@ -221,10 +220,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -269,6 +265,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_class_properties_idialog_init";
 	ofaClassPropertiesPrivate *priv;
+	ofaHub *hub;
 	gchar *title;
 	gint number;
 	GtkEntry *entry;
@@ -285,7 +282,8 @@ idialog_init( myIDialog *instance )
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	number = ofo_class_get_number( priv->class );
 	if( number < 1 ){
@@ -387,7 +385,7 @@ is_dialog_validable( ofaClassProperties *self )
 
 	ok = ofo_class_is_valid_data( priv->number, priv->label, &msgerr );
 	if( ok ){
-		exists = ofo_class_get_by_number( priv->hub, priv->number );
+		exists = ofo_class_get_by_number( priv->getter, priv->number );
 		ok &= !exists ||
 				( ofo_class_get_number( exists ) == ofo_class_get_number( priv->class ));
 		if( !ok ){
@@ -434,7 +432,7 @@ do_update( ofaClassProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( self, class );
 
 	if( priv->is_new ){
-		ok = ofo_class_insert( priv->class, priv->hub );
+		ok = ofo_class_insert( priv->class );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new account class" ));
 		}

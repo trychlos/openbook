@@ -326,11 +326,8 @@ setup_currency_accounts( ofaClosingParmsBin *bin )
 	gint i;
 	GSList *currencies, *it;
 	const gchar *currency, *account;
-	ofaHub *hub;
 
 	priv = ofa_closing_parms_bin_get_instance_private( bin );
-
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	priv->grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-grid" ));
 	priv->count = 1;
@@ -338,7 +335,7 @@ setup_currency_accounts( ofaClosingParmsBin *bin )
 
 	/* display all used currencies (from entries)
 	 * then display the corresponding account number (if set) */
-	priv->currencies = ofo_entry_get_currencies( hub );
+	priv->currencies = ofo_entry_get_currencies( priv->getter );
 	for( i=1, it=priv->currencies ; it ; ++i, it=it->next ){
 		add_empty_row( bin );
 		set_currency( bin, i, ( const gchar * ) it->data );
@@ -379,14 +376,10 @@ on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label )
 {
 	ofaClosingParmsBinPrivate *priv;
 	ofoOpeTemplate *template;
-	ofaHub *hub;
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	template = ofo_ope_template_get_by_mnemo( hub, gtk_entry_get_text( GTK_ENTRY( entry )));
+	template = ofo_ope_template_get_by_mnemo( priv->getter, gtk_entry_get_text( GTK_ENTRY( entry )));
 	gtk_label_set_text( GTK_LABEL( label ), template ? ofo_ope_template_get_label( template ) : "" );
 
 	check_bin( self );
@@ -404,13 +397,11 @@ add_empty_row( ofaClosingParmsBin *self )
 	GtkWidget *widget;
 	ofaCurrencyCombo *combo;
 	gint row;
-	ofaHub *hub;
 	static const gint st_currency_cols[] = { CURRENCY_COL_CODE, -1 };
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	row = priv->count;
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	gtk_widget_destroy( gtk_grid_get_child_at( priv->grid, COL_ADD, row ));
 
@@ -420,7 +411,7 @@ add_empty_row( ofaClosingParmsBin *self )
 	combo = ofa_currency_combo_new();
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( combo ));
 	ofa_currency_combo_set_columns( combo, st_currency_cols );
-	ofa_currency_combo_set_hub( combo, hub );
+	ofa_currency_combo_set_getter( combo, priv->getter );
 	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	g_object_set_data( G_OBJECT( combo ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_object_set_data( G_OBJECT( widget ), DATA_COMBO, combo);
@@ -666,7 +657,6 @@ check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg )
 	ofaClosingParmsBinPrivate *priv;
 	const gchar *cstr;
 	ofoOpeTemplate *template;
-	ofaHub *hub;
 	ofsOpe *ope;
 	GDate date;
 	ofsOpeDetail *detail;
@@ -676,8 +666,6 @@ check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg )
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-
 	cstr = gtk_entry_get_text( GTK_ENTRY( entry ));
 	if( !my_strlen( cstr )){
 		if( msg ){
@@ -685,7 +673,7 @@ check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg )
 		}
 		return( FALSE );
 	}
-	template = ofo_ope_template_get_by_mnemo( hub, cstr );
+	template = ofo_ope_template_get_by_mnemo( priv->getter, cstr );
 	if( !template ){
 		if( msg ){
 			*msg = g_strdup_printf( _( "Operation template not found: %s" ), cstr );
@@ -722,15 +710,13 @@ static gchar *
 get_detail_account( ofaClosingParmsBin *self )
 {
 	ofaClosingParmsBinPrivate *priv;
-	ofaHub *hub;
 	GList *dataset, *it;
 	ofoAccount *account;
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	if( !priv->detail_account ){
-		hub = ofa_igetter_get_hub( priv->getter );
-		dataset = ofo_account_get_dataset( hub );
+		dataset = ofo_account_get_dataset( priv->getter );
 		for( it=dataset ; it ; it=it->next ){
 			account = OFO_ACCOUNT( it->data );
 			if( !ofo_account_is_root( account )){
@@ -756,13 +742,11 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 	gchar *code;
 	GSList *cursets, *find;
 	gboolean ok;
-	ofaHub *hub;
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	ok = TRUE;
 	cursets = NULL;
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	for( row=1 ; row<priv->count ; ++row ){
 		combo = get_currency_combo_at( self, row );
@@ -783,7 +767,7 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 				break;
 			}
 
-			account = ofo_account_get_by_number( hub, acc_number );
+			account = ofo_account_get_by_number( priv->getter, acc_number );
 			if( !account ){
 				if( msg ){
 					*msg = g_strdup_printf(

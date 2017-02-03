@@ -39,7 +39,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 #include "recurrent/ofo-rec-period.h"
 
@@ -66,7 +66,7 @@ typedef struct {
 
 GType            ofa_rec_period_bin_get_type             ( void ) G_GNUC_CONST;
 
-ofaRecPeriodBin *ofa_rec_period_bin_new                  ( ofaHub *hub );
+ofaRecPeriodBin *ofa_rec_period_bin_new                  ( ofaIGetter *getter );
 
 void             ofa_rec_period_bin_get_selected         ( ofaRecPeriodBin *bin,
 																ofoRecPeriod **period,

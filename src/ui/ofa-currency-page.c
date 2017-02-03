@@ -55,6 +55,7 @@ typedef struct {
 
 	/* internals
 	 */
+	ofaIGetter          *getter;
 	ofaHub              *hub;
 	GList               *hub_handlers;
 	gboolean             is_writable;
@@ -193,11 +194,14 @@ action_page_v_setup_view( ofaActionPage *page )
 
 	priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
 	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
 
-	priv->tview = ofa_currency_treeview_new( priv->hub );
+	priv->tview = ofa_currency_treeview_new( priv->getter );
 	ofa_currency_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_currency_treeview_setup_columns( priv->tview );
 
@@ -357,12 +361,15 @@ on_insert_key( ofaCurrencyTreeview *tview, ofaCurrencyPage *self )
 static void
 action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaCurrencyPage *self )
 {
+	ofaCurrencyPagePrivate *priv;
 	ofoCurrency *currency;
 	GtkWindow *toplevel;
 
-	currency = ofo_currency_new();
+	priv = ofa_currency_page_get_instance_private( self );
+
+	currency = ofo_currency_new( priv->getter );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_currency_properties_run( OFA_IGETTER( self ), toplevel, currency );
+	ofa_currency_properties_run( priv->getter, toplevel, currency );
 }
 
 static void
@@ -377,7 +384,7 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaCurrencyP
 	currency = ofa_currency_treeview_get_selected( priv->tview );
 	if( currency ){
 		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-		ofa_currency_properties_run( OFA_IGETTER( self ), toplevel, currency );
+		ofa_currency_properties_run( priv->getter, toplevel, currency );
 	}
 }
 

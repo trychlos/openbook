@@ -57,7 +57,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub             *hub;
 	gboolean            is_writable;		/* whether the dossier is writable */
 	gchar              *settings_prefix;
 
@@ -253,6 +252,7 @@ ofa_paimean_frame_bin_new( ofaIGetter *getter, const gchar *key  )
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	self = g_object_new( OFA_TYPE_PAIMEAN_FRAME_BIN, NULL );
+
 	priv = ofa_paimean_frame_bin_get_instance_private( self );
 
 	g_free( priv->settings_prefix );
@@ -274,15 +274,16 @@ static void
 setup_getter( ofaPaimeanFrameBin *self, ofaIGetter *getter )
 {
 	ofaPaimeanFrameBinPrivate *priv;
+	ofaHub *hub;
 
 	priv = ofa_paimean_frame_bin_get_instance_private( self );
 
 	priv->getter = getter;
 
-	/* hub-related initialization */
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 }
 
 /*
@@ -307,7 +308,7 @@ setup_bin( ofaPaimeanFrameBin *self )
 	gtk_container_add( GTK_CONTAINER( self ), grid );
 
 	/* treeview */
-	priv->tview = ofa_paimean_treeview_new( priv->hub );
+	priv->tview = ofa_paimean_treeview_new( priv->getter );
 	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( priv->tview ), 0, 0, 1, 1 );
 	ofa_paimean_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_paimean_treeview_setup_columns( priv->tview );
@@ -543,7 +544,7 @@ action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanFrame
 
 	priv = ofa_paimean_frame_bin_get_instance_private( self );
 
-	paimean = ofo_paimean_new();
+	paimean = ofo_paimean_new( priv->getter );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_paimean_properties_run( priv->getter, toplevel, paimean );
 }

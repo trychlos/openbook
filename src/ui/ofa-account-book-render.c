@@ -61,8 +61,8 @@ typedef struct {
 
 	/* runtime
 	 */
+	ofaIGetter        *getter;
 	gchar             *settings_prefix;
-	ofaHub            *hub;
 	gchar             *from_account;
 	gchar             *to_account;
 	gboolean           all_accounts;
@@ -274,8 +274,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
 	on_args_changed( priv->args_bin, OFA_ACCOUNT_BOOK_RENDER( page ));
 
@@ -317,7 +316,7 @@ render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( page ));
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	*keyfile = my_isettings_get_keyfile( settings );
 	*group_name = g_strdup_printf( "%s-print", priv->settings_prefix );
 }
@@ -358,7 +357,7 @@ render_page_v_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
 	dataset = ofo_entry_get_dataset_for_print_by_account(
-						priv->hub,
+						priv->getter,
 						priv->all_accounts ? NULL : priv->from_account,
 						priv->all_accounts ? NULL : priv->to_account,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
@@ -487,13 +486,15 @@ static gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
 	ofaAccountBookRenderPrivate *priv;
-	const ofaIDBConnect *connect;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
 	ofaIDBDossierMeta *dossier_meta;
 	const gchar *dossier_name;
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
 	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( dossier_meta );
 
@@ -539,8 +540,8 @@ irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
 	if( !my_date_is_valid( &priv->from_date ) && !my_date_is_valid( &priv->to_date )){
 		stitle = g_string_append( stitle, "All effect dates" );
 	} else {
-		sfrom_date = my_date_to_str( &priv->from_date, ofa_prefs_date_display( priv->hub ));
-		sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_display( priv->hub ));
+		sfrom_date = my_date_to_str( &priv->from_date, ofa_prefs_date_display( priv->getter ));
+		sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_display( priv->getter ));
 		if( my_date_is_valid( &priv->from_date )){
 			g_string_append_printf( stitle, _( "From %s" ), sfrom_date );
 			if( my_date_is_valid( &priv->to_date )){
@@ -656,12 +657,12 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	priv->account_debit = 0;
 	priv->account_credit = 0;
 
-	priv->account_object = ofo_account_get_by_number( priv->hub, priv->account_number );
+	priv->account_object = ofo_account_get_by_number( priv->getter, priv->account_number );
 	g_return_if_fail( priv->account_object && OFO_IS_ACCOUNT( priv->account_object ));
 
 	priv->currency_code = g_strdup( ofo_account_get_currency( priv->account_object ));
 
-	priv->currency_object = ofo_currency_get_by_code( priv->hub, priv->currency_code );
+	priv->currency_object = ofo_currency_get_by_code( priv->getter, priv->currency_code );
 	g_return_if_fail( priv->currency_object && OFO_IS_CURRENCY( priv->currency_object ));
 
 	priv->currency_digits = ofo_currency_get_digits( priv->currency_object );
@@ -722,12 +723,12 @@ draw_account_report( ofaAccountBookRender *self, gboolean with_solde )
 				ofo_account_get_label( priv->account_object ), priv->body_acclabel_max_size );
 
 		/* current account balance */
-		str = ofa_amount_to_str( priv->account_debit, priv->currency_object, priv->hub );
+		str = ofa_amount_to_str( priv->account_debit, priv->currency_object, priv->getter );
 		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = ofa_amount_to_str( priv->account_credit, priv->currency_object, priv->hub );
+		str = ofa_amount_to_str( priv->account_credit, priv->currency_object, priv->getter );
 		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -755,7 +756,7 @@ draw_account_solde_debit_credit( ofaAccountBookRender *self, gdouble y )
 	 * if current balance is zero, then also print it */
 	amount = priv->account_credit - priv->account_debit;
 	if( amount >= 0 ){
-		str = ofa_amount_to_str( amount, priv->currency_object, priv->hub );
+		str = ofa_amount_to_str( amount, priv->currency_object, priv->getter );
 		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
 				priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -763,7 +764,7 @@ draw_account_solde_debit_credit( ofaAccountBookRender *self, gdouble y )
 				priv->body_solde_sens_rtab, y, _( "CR" ), PANGO_ALIGN_RIGHT );
 
 	} else {
-		str = ofa_amount_to_str( -1*amount, priv->currency_object, priv->hub );
+		str = ofa_amount_to_str( -1*amount, priv->currency_object, priv->getter );
 		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
 				priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -794,13 +795,13 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	entry = OFO_ENTRY( current->data );
 
 	/* operation date */
-	str = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->hub ));
+	str = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->getter ));
 	ofa_irenderable_set_text( instance,
 			priv->body_dope_ltab, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
 
 	/* effect date */
-	str = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->hub ));
+	str = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->getter ));
 	ofa_irenderable_set_text( instance,
 			priv->body_deffect_ltab, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
@@ -838,7 +839,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	/* debit */
 	amount = ofo_entry_get_debit( entry );
 	if( amount ){
-		str = ofa_amount_to_str( amount, priv->currency_object, priv->hub );
+		str = ofa_amount_to_str( amount, priv->currency_object, priv->getter );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -848,7 +849,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	/* credit */
 	amount = ofo_entry_get_credit( entry );
 	if( amount ){
-		str = ofa_amount_to_str( amount, priv->currency_object, priv->hub );
+		str = ofa_amount_to_str( amount, priv->currency_object, priv->getter );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -899,13 +900,13 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 		g_free( str );
 
 		/* solde debit */
-		str = ofa_amount_to_str( priv->account_debit, priv->currency_object, priv->hub );
+		str = ofa_amount_to_str( priv->account_debit, priv->currency_object, priv->getter );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
 		/* solde credit */
-		str = ofa_amount_to_str( priv->account_credit, priv->currency_object, priv->hub );
+		str = ofa_amount_to_str( priv->account_credit, priv->currency_object, priv->getter );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -968,12 +969,12 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 			first = FALSE;
 		}
 
-		str = ofa_amount_to_str( scur->debit, scur->currency, priv->hub );
+		str = ofa_amount_to_str( scur->debit, scur->currency, priv->getter );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = ofa_amount_to_str( scur->credit, scur->currency, priv->hub );
+		str = ofa_amount_to_str( scur->credit, scur->currency, priv->getter );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -1003,7 +1004,7 @@ read_settings( ofaAccountBookRender *self )
 
 	priv = ofa_account_book_render_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -1035,7 +1036,7 @@ write_settings( ofaAccountBookRender *self )
 	str = g_strdup_printf( "%d;",
 			gtk_paned_get_position( GTK_PANED( paned )));
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

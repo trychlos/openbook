@@ -34,7 +34,7 @@
 #include "my/my-iident.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-stream-format.h"
@@ -60,10 +60,10 @@ static void             iident_iface_init( myIIdentInterface *iface );
 static gchar           *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static gchar           *iident_get_version( const myIIdent *instance, void *user_data );
 static void             iimporter_iface_init( ofaIImporterInterface *iface );
-static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub );
-static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar *uri, GType type );
-static gboolean         is_willing_to_parse( const ofaImporterTxtBourso *self, ofaHub *hub, const gchar *uri );
-static ofaStreamFormat *iimporter_get_default_format( const ofaIImporter *instance, ofaHub *hub, gboolean *is_updatable );
+static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance, ofaIGetter *getter );
+static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, ofaIGetter *getter, const gchar *uri, GType type );
+static gboolean         is_willing_to_parse( const ofaImporterTxtBourso *self, ofaIGetter *getter, const gchar *uri );
+static ofaStreamFormat *iimporter_get_default_format( const ofaIImporter *instance, ofaIGetter *getter, gboolean *is_updatable );
 static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList          *do_parse( ofaImporterTxtBourso *self, ofsImporterParms *parms, gchar **msgerr );
 static gboolean         bourso_excel2002_v2_check( const ofaImporterTxtBourso *self, const sParser *parser, ofaStreamFormat *format, GSList *lines );
@@ -78,7 +78,7 @@ static gboolean         parse_v1_line_2( const gchar *line, gchar **rib, gchar *
 static GSList          *parse_v1_header_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, GSList **lines );
 static GSList          *parse_v1_line_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, const gchar *line );
 static sParser         *get_willing_to_parser( const ofaImporterTxtBourso *self, ofaStreamFormat *format, GSList *lines );
-static ofaStreamFormat *get_default_stream_format( const ofaImporterTxtBourso *self, ofaHub *hub );
+static ofaStreamFormat *get_default_stream_format( const ofaImporterTxtBourso *self, ofaIGetter *getter );
 static GSList          *split_by_field( const gchar *line, ofaStreamFormat *settings );
 
 G_DEFINE_TYPE_EXTENDED( ofaImporterTxtBourso, ofa_importer_txt_bourso, OFA_TYPE_IMPORTER_TXT, 0,
@@ -209,7 +209,7 @@ iimporter_iface_init( ofaIImporterInterface *iface )
 }
 
 static const GList *
-iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub )
+iimporter_get_accepted_contents( const ofaIImporter *instance, ofaIGetter *getter )
 {
 	if( !st_accepted_contents ){
 		st_accepted_contents = g_list_prepend( NULL, "application/vnd.ms-excel" );
@@ -219,13 +219,13 @@ iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub )
 }
 
 static gboolean
-iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar *uri, GType type )
+iimporter_is_willing_to( const ofaIImporter *instance, ofaIGetter *getter, const gchar *uri, GType type )
 {
 	gboolean ok;
 
-	ok = ofa_importer_txt_is_willing_to( OFA_IMPORTER_TXT( instance ), hub, uri, iimporter_get_accepted_contents( instance, hub )) &&
+	ok = ofa_importer_txt_is_willing_to( OFA_IMPORTER_TXT( instance ), getter, uri, iimporter_get_accepted_contents( instance, getter )) &&
 			type == OFO_TYPE_BAT &&
-			is_willing_to_parse( OFA_IMPORTER_TXT_BOURSO( instance ), hub, uri );
+			is_willing_to_parse( OFA_IMPORTER_TXT_BOURSO( instance ), getter, uri );
 
 	return( ok );
 }
@@ -236,14 +236,14 @@ iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar 
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-is_willing_to_parse( const ofaImporterTxtBourso *self, ofaHub *hub, const gchar *uri )
+is_willing_to_parse( const ofaImporterTxtBourso *self, ofaIGetter *getter, const gchar *uri )
 {
 	ofaStreamFormat *format;
 	GSList *lines;
 	sParser *parser;
 
 	parser = NULL;
-	format = get_default_stream_format( self, hub );
+	format = get_default_stream_format( self, getter );
 	lines = my_utils_uri_get_lines( uri, ofa_stream_format_get_charmap( format ), NULL, NULL );
 
 	if( lines ){
@@ -257,11 +257,11 @@ is_willing_to_parse( const ofaImporterTxtBourso *self, ofaHub *hub, const gchar 
 }
 
 static ofaStreamFormat *
-iimporter_get_default_format( const ofaIImporter *instance, ofaHub *hub, gboolean *updatable )
+iimporter_get_default_format( const ofaIImporter *instance, ofaIGetter *getter, gboolean *updatable )
 {
 	ofaStreamFormat *format;
 
-	format = get_default_stream_format( OFA_IMPORTER_TXT_BOURSO( instance ), hub );
+	format = get_default_stream_format( OFA_IMPORTER_TXT_BOURSO( instance ), getter );
 
 	if( updatable ){
 		*updatable = FALSE;
@@ -273,7 +273,7 @@ iimporter_get_default_format( const ofaIImporter *instance, ofaHub *hub, gboolea
 static GSList *
 iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr )
 {
-	g_return_val_if_fail( parms->hub && OFA_IS_HUB( parms->hub ), NULL );
+	g_return_val_if_fail( parms->getter && OFA_IS_IGETTER( parms->getter ), NULL );
 	g_return_val_if_fail( my_strlen( parms->uri ), NULL );
 	g_return_val_if_fail( parms->format && OFA_IS_STREAM_FORMAT( parms->format ), NULL );
 
@@ -622,11 +622,11 @@ get_willing_to_parser( const ofaImporterTxtBourso *self, ofaStreamFormat *format
 }
 
 static ofaStreamFormat *
-get_default_stream_format( const ofaImporterTxtBourso *self, ofaHub *hub )
+get_default_stream_format( const ofaImporterTxtBourso *self, ofaIGetter *getter )
 {
 	ofaStreamFormat *format;
 
-	format = ofa_stream_format_new( hub, NULL, OFA_SFMODE_IMPORT );
+	format = ofa_stream_format_new( getter, NULL, OFA_SFMODE_IMPORT );
 
 	ofa_stream_format_set( format,
 			TRUE,  "ISO-8859-15",			/* Western Europe */

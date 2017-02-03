@@ -32,8 +32,8 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 
 #define ITVCOLUMNABLE_LAST_VERSION  1
@@ -44,7 +44,7 @@
 
 typedef struct {
 	gchar             *name;
-	ofaHub            *hub;
+	ofaIGetter        *getter;
 	GList             *columns_list;
 	GtkTreeView       *treeview;
 	gint               visible_count;
@@ -334,25 +334,25 @@ ofa_itvcolumnable_set_name( ofaITVColumnable *instance, const gchar *name )
 }
 
 /**
- * ofa_itvcolumnable_set_hub:
+ * ofa_itvcolumnable_set_getter:
  * @instance: the #ofaITVColumnable instance.
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
- * Set the @hub.
+ * Set the @getter.
  *
  * This is needed in order to be able to access to user settings.
  */
 void
-ofa_itvcolumnable_set_hub( ofaITVColumnable *instance, ofaHub *hub )
+ofa_itvcolumnable_set_getter( ofaITVColumnable *instance, ofaIGetter *getter )
 {
 	sITVColumnable *sdata;
 
 	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	sdata = get_instance_data( instance );
 
-	sdata->hub = hub;
+	sdata->getter = getter;
 }
 
 /**
@@ -1102,7 +1102,7 @@ read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 	GtkTreeViewColumn *prev;
 	GActionGroup *action_group;
 
-	settings = ofa_hub_get_user_settings( sdata->hub );
+	settings = ofa_igetter_get_user_settings( sdata->getter );
 	key = g_strdup_printf( "%s-columns", sdata->name );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -1150,7 +1150,7 @@ write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 
 	if( sdata->treeview ){
 
-		settings = ofa_hub_get_user_settings( sdata->hub );
+		settings = ofa_igetter_get_user_settings( sdata->getter );
 		key = g_strdup_printf( "%s-columns", sdata->name );
 		count = gtk_tree_view_get_n_columns( sdata->treeview );
 		str = g_string_new( "" );

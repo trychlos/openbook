@@ -119,7 +119,7 @@
  *    - the '%RATE( TVAN )' is the same that '%TVAN'
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-ope-template-def.h"
 
@@ -155,15 +155,15 @@ typedef struct {
 
 GType           ofo_ope_template_get_type                 ( void ) G_GNUC_CONST;
 
-GList          *ofo_ope_template_get_dataset              ( ofaHub *hub );
+GList          *ofo_ope_template_get_dataset              ( ofaIGetter *getter );
 #define         ofo_ope_template_free_dataset( L )        g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-GList          *ofo_ope_template_get_orphans              ( ofaHub *hub );
+GList          *ofo_ope_template_get_orphans              ( ofaIGetter *getter );
 #define         ofo_ope_template_free_orphans( L )        g_list_free_full(( L ),( GDestroyNotify ) g_free )
 
-ofoOpeTemplate *ofo_ope_template_get_by_mnemo             ( ofaHub *hub, const gchar *mnemo );
+ofoOpeTemplate *ofo_ope_template_get_by_mnemo             ( ofaIGetter *getter, const gchar *mnemo );
 
-ofoOpeTemplate *ofo_ope_template_new                      ( void );
+ofoOpeTemplate *ofo_ope_template_new                      ( ofaIGetter *getter );
 ofoOpeTemplate *ofo_ope_template_new_from_template        ( ofoOpeTemplate *model );
 
 const gchar    *ofo_ope_template_get_mnemo                ( const ofoOpeTemplate *model );
@@ -211,7 +211,7 @@ gboolean        ofo_ope_template_get_detail_credit_locked ( ofoOpeTemplate *mode
 
 void            ofo_ope_template_update_account           ( ofoOpeTemplate *model, const gchar *prev_id, const gchar *new_id );
 
-gboolean        ofo_ope_template_insert                   ( ofoOpeTemplate *model, ofaHub *hub );
+gboolean        ofo_ope_template_insert                   ( ofoOpeTemplate *model );
 gboolean        ofo_ope_template_update                   ( ofoOpeTemplate *model, const gchar *prev_mnemo );
 gboolean        ofo_ope_template_delete                   ( ofoOpeTemplate *model );
 

@@ -33,7 +33,7 @@
  * Manage a treeview which displays the DBMS audit trace.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 
 #include "ui/ofa-misc-audit-store.h"
@@ -61,7 +61,7 @@ typedef struct {
 
 GType                 ofa_misc_audit_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaMiscAuditTreeview *ofa_misc_audit_treeview_new             ( ofaHub *hub );
+ofaMiscAuditTreeview *ofa_misc_audit_treeview_new             ( ofaIGetter *getter );
 
 void                  ofa_misc_audit_treeview_set_settings_key( ofaMiscAuditTreeview *view,
 																	const gchar *key );

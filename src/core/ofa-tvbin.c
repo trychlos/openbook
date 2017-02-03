@@ -32,9 +32,9 @@
 #include "my/my-double-renderer.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
@@ -48,10 +48,10 @@ typedef struct {
 
 	/* properties
 	 */
+	ofaIGetter      *getter;
 	gboolean         headers_visible;
 	gboolean         hexpand;
 	GtkPolicyType    hpolicy;
-	ofaHub          *hub;
 	gchar           *name;
 	GtkSelectionMode selection_mode;
 	GtkShadowType    shadow;
@@ -69,10 +69,10 @@ typedef struct {
 /* class properties
  */
 enum {
-	PROP_HEADERS_ID = 1,
+	PROP_GETTER_ID = 1,
+	PROP_HEADERS_ID,
 	PROP_HEXPAND_ID,
 	PROP_HPOLICY_ID,
-	PROP_HUB_ID,
 	PROP_NAME_ID,
 	PROP_SELMODE_ID,
 	PROP_SHADOW_ID,
@@ -185,6 +185,10 @@ tvbin_get_property( GObject *instance, guint property_id, GValue *value, GParamS
 	if( !priv->dispose_has_run ){
 
 		switch( property_id ){
+			case PROP_GETTER_ID:
+				g_value_set_pointer( value, priv->getter );
+				break;
+
 			case PROP_HEADERS_ID:
 				g_value_set_boolean( value, priv->headers_visible );
 				break;
@@ -195,10 +199,6 @@ tvbin_get_property( GObject *instance, guint property_id, GValue *value, GParamS
 
 			case PROP_HPOLICY_ID:
 				g_value_set_int( value, priv->hpolicy );
-				break;
-
-			case PROP_HUB_ID:
-				g_value_set_pointer( value, priv->hub );
 				break;
 
 			case PROP_NAME_ID:
@@ -244,6 +244,10 @@ tvbin_set_property( GObject *instance, guint property_id, const GValue *value, G
 	if( !priv->dispose_has_run ){
 
 		switch( property_id ){
+			case PROP_GETTER_ID:
+				priv->getter = g_value_get_pointer( value );
+				break;
+
 			case PROP_HEADERS_ID:
 				priv->headers_visible = g_value_get_boolean( value );
 				break;
@@ -254,10 +258,6 @@ tvbin_set_property( GObject *instance, guint property_id, const GValue *value, G
 
 			case PROP_HPOLICY_ID:
 				priv->hpolicy = g_value_get_int( value );
-				break;
-
-			case PROP_HUB_ID:
-				priv->hub = g_value_get_pointer( value );
 				break;
 
 			case PROP_NAME_ID:
@@ -348,7 +348,7 @@ init_top_widget( ofaTVBin *self )
 	selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
 	g_signal_connect( selection, "changed", G_CALLBACK( tview_on_row_selected ), self );
 
-	ofa_tvbin_set_hub( self, priv->hub );
+	ofa_tvbin_set_getter( self, priv->getter );
 }
 
 static void
@@ -382,6 +382,15 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
+			PROP_GETTER_ID,
+			g_param_spec_pointer(
+					"ofa-tvbin-getter",
+					"ofaIGetter instance",
+					"ofaIGetter instance",
+					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
 			PROP_HEADERS_ID,
 			g_param_spec_boolean(
 					"ofa-tvbin-headers",
@@ -409,15 +418,6 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 					"Horizontal scrollbar policy",
 					0, 99, GTK_POLICY_AUTOMATIC,
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
-
-	g_object_class_install_property(
-			G_OBJECT_CLASS( klass ),
-			PROP_HUB_ID,
-			g_param_spec_pointer(
-					"ofa-tvbin-hub",
-					"ofaHub object of the application",
-					"ofaHub object of the application",
-					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -618,6 +618,53 @@ tview_on_key_pressed( GtkWidget *treeview, GdkEventKey *event, ofaTVBin *self )
 }
 
 /**
+ * ofa_tvbin_get_getter:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Returns: the #ofaIGetter instance.
+ */
+ofaIGetter *
+ofa_tvbin_get_getter( ofaTVBin *bin )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), NULL );
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->getter );
+}
+
+/*
+ * ofa_tvbin_set_getter:
+ * @bin: this #ofaTVBin instance.
+ * @getter: a #ofaIGetter instance.
+ *
+ * Set the @getter.
+ *
+ * This is needed in order to be able to access to user settings.
+ */
+void
+ofa_tvbin_set_getter( ofaTVBin *bin, ofaIGetter *getter )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->getter = getter;
+
+	ofa_itvcolumnable_set_getter( OFA_ITVCOLUMNABLE( bin ), getter );
+	ofa_itvsortable_set_getter( OFA_ITVSORTABLE( bin ), getter );
+}
+
+/**
  * ofa_tvbin_get_headers:
  * @bin: this #ofaTVBin instance.
  *
@@ -757,53 +804,6 @@ ofa_tvbin_set_hpolicy( ofaTVBin *bin, GtkPolicyType policy )
 	priv->hpolicy = policy;
 	gtk_scrolled_window_set_policy(
 			GTK_SCROLLED_WINDOW( priv->scrolled ), priv->hpolicy, GTK_POLICY_AUTOMATIC );
-}
-
-/**
- * ofa_tvbin_get_hub:
- * @bin: this #ofaTVBin instance.
- *
- * Returns: the #ofaHub object of the application.
- */
-ofaHub *
-ofa_tvbin_get_hub( ofaTVBin *bin )
-{
-	ofaTVBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), NULL );
-
-	priv = ofa_tvbin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->hub );
-}
-
-/*
- * ofa_tvbin_set_hub:
- * @bin: this #ofaTVBin instance.
- * @hub: the #ofaHub object of the application.
- *
- * Set the @hub.
- *
- * This is needed in order to be able to access to user settings.
- */
-void
-ofa_tvbin_set_hub( ofaTVBin *bin, ofaHub *hub )
-{
-	ofaTVBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	priv = ofa_tvbin_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->hub = hub;
-
-	ofa_itvcolumnable_set_hub( OFA_ITVCOLUMNABLE( bin ), hub );
-	ofa_itvsortable_set_hub( OFA_ITVSORTABLE( bin ), hub );
 }
 
 /**
@@ -1082,10 +1082,10 @@ ofa_tvbin_add_column_amount( ofaTVBin *bin, gint column_id, const gchar *header,
 	gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
 
 	my_double_renderer_init( cell,
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub )),
-			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub )),
-			ofa_prefs_amount_accept_dot( priv->hub ),
-			ofa_prefs_amount_accept_comma( priv->hub ),
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
+			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
+			ofa_prefs_amount_accept_dot( priv->getter ),
+			ofa_prefs_amount_accept_comma( priv->getter ),
 			HUB_DEFAULT_DECIMALS_AMOUNT );
 
 	column = gtk_tree_view_column_new_with_attributes(

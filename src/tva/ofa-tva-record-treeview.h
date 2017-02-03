@@ -44,7 +44,7 @@
  *    +------------------+----------------+
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 
 #include "tva/ofo-tva-record.h"
@@ -72,7 +72,7 @@ typedef struct {
 
 GType                 ofa_tva_record_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaTVARecordTreeview *ofa_tva_record_treeview_new             ( ofaHub *hub );
+ofaTVARecordTreeview *ofa_tva_record_treeview_new             ( ofaIGetter *getter );
 
 void                  ofa_tva_record_treeview_set_settings_key( ofaTVARecordTreeview *view,
 																		const gchar *key );

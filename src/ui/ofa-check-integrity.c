@@ -30,7 +30,6 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 
 #include "ui/ofa-check-integrity.h"
@@ -48,7 +47,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub               *hub;
 
 	/* UI
 	 */
@@ -158,7 +156,7 @@ ofa_check_integrity_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_check_integrity_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -190,10 +188,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -225,7 +220,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	/* have the class name as settings key */
-	priv->bin = ofa_check_integrity_bin_new( priv->hub, G_OBJECT_TYPE_NAME( instance ));
+	priv->bin = ofa_check_integrity_bin_new( priv->getter, G_OBJECT_TYPE_NAME( instance ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bin ));
 	gtk_widget_show_all( GTK_WIDGET( parent ));
 
@@ -247,22 +242,22 @@ on_checks_done( ofaCheckIntegrityBin *bin, gboolean ok, ofaCheckIntegrity *self 
 
 /**
  * ofa_check_integrity_check:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Check the DBMS integrity without display.
  *
  * Returns: %TRUE if DBMS is safe, %FALSE else.
  */
 gboolean
-ofa_check_integrity_check( ofaHub *hub )
+ofa_check_integrity_check( ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_check_integrity_check";
 	gboolean ok;
 	ofaCheckIntegrityBin *bin;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	bin = ofa_check_integrity_bin_new( hub, "ofaCheckIntegrity" );
+	bin = ofa_check_integrity_bin_new( getter, "ofaCheckIntegrity" );
 	ofa_check_integrity_bin_set_display( bin, FALSE );
 	ofa_check_integrity_bin_check( bin );
 	ok = ofa_check_integrity_bin_get_status( bin );

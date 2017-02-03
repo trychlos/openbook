@@ -25,8 +25,6 @@
 #ifndef __OPENBOOK_API_OFA_BOX_H__
 #define __OPENBOOK_API_OFA_BOX_H__
 
-#include <glib.h>
-
 #include "api/ofa-stream-format.h"
 
 /**

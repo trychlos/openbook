@@ -33,12 +33,12 @@
  *
  * The #ofaHub class manages and maintains all objects which are globally
  * used by the application:
- * - the extenders collection (aka plugins),
+ * - the extenders collection (aka dynamically loadable modules, aka plugins),
  * - the opened dossier (if any),
  * - etc.
  *
- * The #ofaHub class defines a "hub signaling system" which emits
- * dedicated messages on new, updated or deleted objects.
+ * The #ofaHub class defines a signaling system which emits dedicated
+ * messages on new, updated or deleted objects.
  *
  * There is only one globally unique #ofaHub object, and it is
  * instanciated at application_new() time.
@@ -46,18 +46,11 @@
  * The #ofaHub object is available through the #ofaIGetter interface.
  */
 
-#include "my/my-icollector.h"
-#include "my/my-isettings.h"
-
-#include "api/ofa-dossier-collection.h"
-#include "api/ofa-extender-collection.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
-#include "api/ofa-igetter-def.h"
-#include "api/ofa-iimportable.h"
-#include "api/ofa-openbook-props.h"
-#include "api/ofa-stream-format.h"
+#include "api/ofa-iimporter.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
@@ -83,18 +76,6 @@ typedef struct {
 	GObjectClass parent;
 }
 	ofaHubClass;
-
-/**
- * The group name for user preferences.
- */
-#define HUB_USER_SETTINGS_GROUP         "General"
-
-/**
- * The default decimals count for a rate.
- * The default decimals count for an amount.
- */
-#define HUB_DEFAULT_DECIMALS_AMOUNT      2
-#define HUB_DEFAULT_DECIMALS_RATE        3
 
 /**
  * Rules when defining a new dossier and/or a new exercice:
@@ -124,53 +105,45 @@ enum {
 #define SIGNAL_HUB_STATUS_CHANGE        "hub-status-change"
 #define SIGNAL_HUB_EXE_DATES_CHANGED    "hub-exe-dates-changed"
 
-GType                  ofa_hub_get_type                  ( void ) G_GNUC_CONST;
+GType          ofa_hub_get_type             ( void ) G_GNUC_CONST;
 
-ofaHub                *ofa_hub_new                       ( GApplication *application,
-																const gchar *argv_0 );
+ofaHub        *ofa_hub_new                  ( void );
 
-GApplication          *ofa_hub_get_application           ( ofaHub *hub );
+void           ofa_hub_set_application      ( ofaHub *hub,
+													GApplication *application);
 
-ofaExtenderCollection *ofa_hub_get_extender_collection   ( ofaHub *hub );
+void           ofa_hub_set_runtime_command  ( ofaHub *hub,
+													const gchar *argv_0 );
 
-myICollector          *ofa_hub_get_collector             ( const ofaHub *hub );
+void           ofa_hub_set_main_window      ( ofaHub *hub,
+													GtkApplicationWindow *main_window );
 
-GList                 *ofa_hub_get_for_type              ( ofaHub *hub,
-																GType type );
+void           ofa_hub_set_page_manager     ( ofaHub *hub,
+													ofaIPageManager *page_manager );
 
-ofaDossierCollection  *ofa_hub_get_dossier_collection    ( ofaHub *hub );
+gboolean       ofa_hub_open_dossier         ( ofaHub *hub,
+													GtkWindow *parent,
+													ofaIDBConnect *connect,
+													gboolean read_only,
+													gboolean remediate_settings );
 
-myISettings           *ofa_hub_get_dossier_settings      ( ofaHub *hub );
+ofaIDBConnect *ofa_hub_get_connect          ( ofaHub *hub );
 
-myISettings           *ofa_hub_get_user_settings         ( ofaHub *hub );
+ofoDossier    *ofa_hub_get_dossier          ( ofaHub *hub );
 
-ofaOpenbookProps      *ofa_hub_get_openbook_props        ( ofaHub *hub );
+gboolean       ofa_hub_is_opened_dossier    ( ofaHub *hub,
+													ofaIDBExerciceMeta *exercice_meta );
 
-const gchar           *ofa_hub_get_runtime_dir           ( ofaHub *hub );
+gboolean       ofa_hub_is_writable_dossier  ( ofaHub *hub );
 
-gboolean               ofa_hub_open_dossier              ( ofaHub *hub,
-																GtkWindow *parent,
-																ofaIDBConnect *connect,
-																gboolean read_only,
-																gboolean remediate_settings );
+void           ofa_hub_close_dossier        ( ofaHub *hub );
 
-ofaIDBConnect         *ofa_hub_get_connect               ( ofaHub *hub );
+ofaIImporter  *ofa_hub_get_willing_to_import( ofaHub *hub,
+													const gchar *uri,
+													GType type );
 
-ofoDossier            *ofa_hub_get_dossier               ( ofaHub *hub );
-
-gboolean               ofa_hub_is_opened_dossier         ( ofaHub *hub,
-																ofaIDBExerciceMeta *exercice_meta );
-
-gboolean               ofa_hub_is_writable_dossier       ( ofaHub *hub );
-
-void                   ofa_hub_close_dossier             ( ofaHub *hub );
-
-ofaIImporter          *ofa_hub_get_willing_to_import     ( ofaHub *hub,
-																const gchar *uri,
-																GType type );
-
-void                   ofa_hub_disconnect_handlers       ( ofaHub *hub,
-																GList **handlers );
+void           ofa_hub_disconnect_handlers  ( ofaHub *hub,
+													GList **handlers );
 
 G_END_DECLS
 

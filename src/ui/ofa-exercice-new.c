@@ -62,7 +62,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar               *settings_prefix;
-	ofaHub              *hub;
 	gboolean             exercice_created;
 
 	/* UI
@@ -208,7 +207,7 @@ ofa_exercice_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *
 
 	priv = ofa_exercice_new_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->dossier_meta = dossier_meta;
 	priv->exercice_meta = exercice_meta;
@@ -256,10 +255,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 static gchar *
@@ -308,7 +304,7 @@ idialog_init( myIDialog *instance )
 	/* create the composite widget and attach it to the dialog */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "edit-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->edit_bin = ofa_exercice_edit_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_EXERCICE_NEW );
+	priv->edit_bin = ofa_exercice_edit_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_EXERCICE_NEW );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->edit_bin ));
 	ofa_exercice_edit_bin_set_dossier_meta( priv->edit_bin, priv->dossier_meta );
 	g_signal_connect( priv->edit_bin, "ofa-changed", G_CALLBACK( on_edit_bin_changed ), instance );

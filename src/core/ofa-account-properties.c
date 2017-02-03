@@ -61,7 +61,6 @@ typedef struct {
 
 	/* runtime data
 	 */
-	ofaHub       *hub;
 	ofoDossier   *dossier;
 	gboolean      is_writable;
 	gboolean      is_new;
@@ -245,7 +244,7 @@ ofa_account_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoAccount *a
 
 	priv = ofa_account_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->account = account;
 
@@ -278,11 +277,7 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_account_properties_get_instance_private( OFA_ACCOUNT_PROPERTIES( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -327,6 +322,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_account_properties_idialog_init";
 	ofaAccountPropertiesPrivate *priv;
+	ofaHub *hub;
 	gchar *title;
 	const gchar *acc_number;
 	GtkWidget *btn;
@@ -353,12 +349,15 @@ idialog_init( myIDialog *instance )
 	gtk_window_set_title( GTK_WINDOW( instance ), title );
 
 	/* dossier */
-	priv->dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+
+	priv->dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	/* account */
-	priv->has_entries = ofo_entry_use_account( priv->hub, acc_number );
+	priv->has_entries = ofo_entry_use_account( priv->getter, acc_number );
 	g_debug( "%s: has_entries=%s", thisfn, priv->has_entries ? "True":"False" );
 	priv->number = g_strdup( acc_number );
 	priv->label = g_strdup( ofo_account_get_label( priv->account ));
@@ -499,7 +498,7 @@ init_ui( ofaAccountProperties *dialog )
 	g_return_if_fail( priv->currency_parent && GTK_IS_CONTAINER( priv->currency_parent ));
 	gtk_container_add( GTK_CONTAINER( priv->currency_parent ), GTK_WIDGET( combo ));
 	ofa_currency_combo_set_columns( combo, st_currency_cols );
-	ofa_currency_combo_set_hub( combo, priv->hub );
+	ofa_currency_combo_set_getter( combo, priv->getter );
 	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), dialog );
 	priv->currency_etiq = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-currency-label" );
 	g_return_if_fail( priv->currency_etiq && GTK_IS_LABEL( priv->currency_etiq ));
@@ -594,7 +593,7 @@ init_balances_page( ofaAccountProperties *self )
 			ofo_account_get_futur_credit( priv->account ),
 			"p2-futur-credit", "p2-fut-credit-cur", priv->p2_group3, priv->p2_group4 );
 
-	tview = ofa_account_arc_treeview_new( priv->hub, priv->account );
+	tview = ofa_account_arc_treeview_new( priv->getter, priv->account );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-archives" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( tview ));
@@ -611,7 +610,7 @@ set_current_amount( ofaAccountProperties *self,
 	priv = ofa_account_properties_get_instance_private( self );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), wname );
-	str = ofa_amount_to_str( amount, priv->cur_object, priv->hub );
+	str = ofa_amount_to_str( amount, priv->cur_object, priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 	gtk_size_group_add_widget( sg_amount, label );
@@ -662,11 +661,11 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountPrope
 	g_free( priv->currency );
 	priv->currency = g_strdup( code );
 
-	priv->cur_object = ofo_currency_get_by_code( priv->hub, code );
+	priv->cur_object = ofo_currency_get_by_code( priv->getter, code );
 
 	if( !priv->cur_object || !OFO_IS_CURRENCY( priv->cur_object )){
 		iso3a = ofo_dossier_get_default_currency( priv->dossier );
-		priv->cur_object = ofo_currency_get_by_code( priv->hub, iso3a );
+		priv->cur_object = ofo_currency_get_by_code( priv->getter, iso3a );
 	}
 
 	priv->cur_digits = 2;
@@ -754,7 +753,7 @@ is_dialog_validable( ofaAccountProperties *self )
 	 */
 	if( ok && !priv->number_ok ){
 
-		exists = ofo_account_get_by_number( priv->hub, priv->number );
+		exists = ofo_account_get_by_number( priv->getter, priv->number );
 		if( exists ){
 			prev = ofo_account_get_number( priv->account );
 			priv->number_ok = prev && g_utf8_collate( prev, priv->number ) == 0;
@@ -798,6 +797,7 @@ do_update( ofaAccountProperties *self, gchar **msgerr )
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_account_properties_get_instance_private( self );
+
 	prev_number = g_strdup( ofo_account_get_number( priv->account ));
 
 	ofo_account_set_number( priv->account, priv->number );
@@ -815,7 +815,7 @@ do_update( ofaAccountProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( self, account );
 
 	if( priv->is_new ){
-		ok = ofo_account_insert( priv->account, priv->hub );
+		ok = ofo_account_insert( priv->account );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new account" ));
 		}

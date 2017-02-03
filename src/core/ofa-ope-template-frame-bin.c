@@ -338,11 +338,12 @@ setup_getter( ofaOpeTemplateFrameBin *self, ofaIGetter *getter )
 	/* hub-related initialization */
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
 	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
 	hub_connect_to_signaling_system( self );
 
 	/* then initialize the store */
-	priv->store = ofa_ope_template_store_new( priv->hub );
+	priv->store = ofa_ope_template_store_new( priv->getter );
 	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
 	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 }
@@ -447,15 +448,13 @@ book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-
 	/* get ledger label */
 	if( !my_collate( ledger, UNKNOWN_LEDGER_MNEMO )){
 		ledger_label = UNKNOWN_LEDGER_LABEL;
 		ledger_obj = NULL;
 
 	} else {
-		ledger_obj = ofo_ledger_get_by_mnemo( priv->hub, ledger );
+		ledger_obj = ofo_ledger_get_by_mnemo( priv->getter, ledger );
 		if( ledger_obj ){
 			g_return_val_if_fail( OFO_IS_LEDGER( ledger_obj ), NULL );
 			ledger_label = ofo_ledger_get_label( ledger_obj );
@@ -465,7 +464,7 @@ book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
 		}
 	}
 
-	view = ofa_ope_template_treeview_new( priv->hub, ledger );
+	view = ofa_ope_template_treeview_new( priv->getter, ledger );
 	ofa_ope_template_treeview_set_settings_key( view, priv->settings_key );
 	ofa_ope_template_treeview_setup_columns( view );
 	ofa_istore_add_columns( OFA_ISTORE( priv->store ), OFA_TVBIN( view ));
@@ -633,7 +632,7 @@ ofa_ope_template_frame_bin_set_selected( ofaOpeTemplateFrameBin *bin, const gcha
 	g_return_if_fail( !priv->dispose_has_run );
 
 	if( my_strlen( mnemo )){
-		template = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
+		template = ofo_ope_template_get_by_mnemo( priv->getter, mnemo );
 		if( !template ){
 			return;
 		}
@@ -918,7 +917,7 @@ do_insert_ope_template( ofaOpeTemplateFrameBin *self )
 		page_ledger = ofa_ope_template_treeview_get_ledger( OFA_OPE_TEMPLATE_TREEVIEW( page_w ));
 	}
 
-	ope = ofo_ope_template_new();
+	ope = ofo_ope_template_new( priv->getter );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_ope_template_properties_run( priv->getter, toplevel, ope, page_ledger );
 }
@@ -987,14 +986,11 @@ delete_confirmed( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *ope )
 static void
 do_duplicate_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
 	ofoOpeTemplate *duplicate;
-
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	duplicate = ofo_ope_template_new_from_template( template );
 
-	if( !ofo_ope_template_insert( duplicate, priv->hub )){
+	if( !ofo_ope_template_insert( duplicate )){
 		g_object_unref( duplicate );
 	}
 }
@@ -1089,7 +1085,7 @@ ofa_ope_template_frame_bin_load_dataset( ofaOpeTemplateFrameBin *bin )
 	 * if strlist is set, then create one page per ledger
 	 * other needed pages will be created on fly
 	 * nb: if the ledger no more exists, no page is created */
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-pages", priv->settings_key );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 	for( it=strlist ; it ; it=it->next ){
@@ -1252,7 +1248,7 @@ write_settings( ofaOpeTemplateFrameBin *self )
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-pages", priv->settings_key );
 	strlist = NULL;
 

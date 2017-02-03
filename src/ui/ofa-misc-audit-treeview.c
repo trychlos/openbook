@@ -30,7 +30,7 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 
@@ -43,7 +43,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub            *hub;
+	ofaIGetter        *getter;
 
 	/* UI
 	 */
@@ -126,26 +126,26 @@ ofa_misc_audit_treeview_class_init( ofaMiscAuditTreeviewClass *klass )
 
 /**
  * ofa_misc_audit_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaMiscAuditTreeview instance.
  */
 ofaMiscAuditTreeview *
-ofa_misc_audit_treeview_new( ofaHub *hub )
+ofa_misc_audit_treeview_new( ofaIGetter *getter )
 {
 	ofaMiscAuditTreeview *view;
 	ofaMiscAuditTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_MISC_AUDIT_TREEVIEW,
-					"ofa-tvbin-hub",    hub,
+					"ofa-tvbin-getter", getter,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 
 	priv = ofa_misc_audit_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	return( view );
 }
@@ -237,7 +237,7 @@ ofa_misc_audit_treeview_setup_store( ofaMiscAuditTreeview *view )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	if( !priv->store ){
-		priv->store = ofa_misc_audit_store_new( priv->hub );
+		priv->store = ofa_misc_audit_store_new( priv->getter );
 		ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	}
 

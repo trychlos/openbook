@@ -34,19 +34,19 @@
 
 #include <glib.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
-gchar *ofa_mysql_user_prefs_get_backup_command ( ofaHub *hub );
+gchar *ofa_mysql_user_prefs_get_backup_command ( ofaIGetter *getter );
 
-void   ofa_mysql_user_prefs_set_backup_command ( ofaHub *hub,
+void   ofa_mysql_user_prefs_set_backup_command ( ofaIGetter *getter,
 													const gchar *command );
 
-gchar *ofa_mysql_user_prefs_get_restore_command( ofaHub *hub,
+gchar *ofa_mysql_user_prefs_get_restore_command( ofaIGetter *getter,
 													guint format );
 
-void   ofa_mysql_user_prefs_set_restore_command( ofaHub *hub,
+void   ofa_mysql_user_prefs_set_restore_command( ofaIGetter *getter,
 													guint format,
 													const gchar *command );
 

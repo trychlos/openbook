@@ -46,7 +46,6 @@
 
 #include "my/my-isettings.h"
 
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-editor-def.h"
 #include "api/ofa-idbdossier-meta-def.h"

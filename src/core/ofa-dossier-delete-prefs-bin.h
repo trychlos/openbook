@@ -41,7 +41,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -89,7 +89,7 @@ typedef enum {
 
 GType                     ofa_dossier_delete_prefs_bin_get_type        ( void ) G_GNUC_CONST;
 
-ofaDossierDeletePrefsBin *ofa_dossier_delete_prefs_bin_new             ( ofaHub *hub );
+ofaDossierDeletePrefsBin *ofa_dossier_delete_prefs_bin_new             ( ofaIGetter *getter );
 
 gint                      ofa_dossier_delete_prefs_bin_get_db_mode     ( ofaDossierDeletePrefsBin *bin );
 

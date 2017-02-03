@@ -30,6 +30,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-currency.h"
 
 #include "core/ofa-currency-store.h"
@@ -37,12 +38,16 @@
 /* private instance data
  */
 typedef struct {
-	gboolean   dispose_has_run;
+	gboolean    dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 
 	/* runtime
 	 */
-	ofaHub    *hub;
-	GList     *hub_handlers;
+	ofaHub     *hub;
+	GList      *hub_handlers;
 }
 	ofaCurrencyStorePrivate;
 
@@ -138,7 +143,7 @@ ofa_currency_store_class_init( ofaCurrencyStoreClass *klass )
 
 /**
  * ofa_currency_store_new:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new #ofaCurrencyStore and attached it to the @dossier
  * if not already done. Else get the already allocated #ofaCurrencyStore
@@ -154,15 +159,15 @@ ofa_currency_store_class_init( ofaCurrencyStoreClass *klass )
  * Returns: a new reference to the #ofaCurrencyStore object.
  */
 ofaCurrencyStore *
-ofa_currency_store_new( ofaHub *hub )
+ofa_currency_store_new( ofaIGetter *getter )
 {
 	ofaCurrencyStore *store;
 	ofaCurrencyStorePrivate *priv;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	store = ( ofaCurrencyStore * ) my_icollector_single_get_object( collector, OFA_TYPE_CURRENCY_STORE );
 
 	if( store ){
@@ -172,7 +177,9 @@ ofa_currency_store_new( ofaHub *hub )
 		store = g_object_new( OFA_TYPE_CURRENCY_STORE, NULL );
 
 		priv = ofa_currency_store_get_instance_private( store );
-		priv->hub = hub;
+
+		priv->getter = getter;
+		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[CURRENCY_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
@@ -221,7 +228,7 @@ load_dataset( ofaCurrencyStore *self )
 
 	priv = ofa_currency_store_get_instance_private( self );
 
-	dataset = ofo_currency_get_dataset( priv->hub );
+	dataset = ofo_currency_get_dataset( priv->getter );
 
 	for( it=dataset ; it ; it=it->next ){
 		currency = OFO_CURRENCY( it->data );

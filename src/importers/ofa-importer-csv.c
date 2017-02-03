@@ -31,7 +31,7 @@
 #include "my/my-iident.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimporter.h"
 
 #include "importers/ofa-importer-csv.h"
@@ -52,8 +52,8 @@ static void         iident_iface_init( myIIdentInterface *iface );
 static gchar       *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static gchar       *iident_get_version( const myIIdent *instance, void *user_data );
 static void         iimporter_iface_init( ofaIImporterInterface *iface );
-static const GList *iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub );
-static gboolean     iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar *uri, GType type );
+static const GList *iimporter_get_accepted_contents( const ofaIImporter *instance, ofaIGetter *getter );
+static gboolean     iimporter_is_willing_to( const ofaIImporter *instance, ofaIGetter *getter, const gchar *uri, GType type );
 static GSList      *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList      *do_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList      *split_lines_by_field( GSList *lines, ofaStreamFormat *settings, gchar **msgerr );
@@ -169,7 +169,7 @@ iimporter_iface_init( ofaIImporterInterface *iface )
 }
 
 static const GList *
-iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub )
+iimporter_get_accepted_contents( const ofaIImporter *instance, ofaIGetter *getter )
 {
 	if( !st_accepted_contents ){
 		st_accepted_contents = g_list_prepend( NULL, "text/csv" );
@@ -182,7 +182,7 @@ iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub )
  * just check that the provided file is a csv one
  */
 static gboolean
-iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar *uri, GType type )
+iimporter_is_willing_to( const ofaIImporter *instance, ofaIGetter *getter, const gchar *uri, GType type )
 {
 	gchar *filename, *content;
 	gboolean ok;
@@ -200,7 +200,7 @@ iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar 
 static GSList *
 iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr )
 {
-	g_return_val_if_fail( parms->hub && OFA_IS_HUB( parms->hub ), NULL );
+	g_return_val_if_fail( parms->getter && OFA_IS_IGETTER( parms->getter ), NULL );
 	g_return_val_if_fail( my_strlen( parms->uri ), NULL );
 	g_return_val_if_fail( parms->format && OFA_IS_STREAM_FORMAT( parms->format ), NULL );
 	g_return_val_if_fail( ofa_stream_format_get_has_field( parms->format ), NULL );

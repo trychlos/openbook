@@ -35,7 +35,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-ledger-def.h"
 
@@ -71,12 +71,12 @@ typedef struct {
 
 GType           ofo_ledger_get_type            ( void ) G_GNUC_CONST;
 
-GList          *ofo_ledger_get_dataset         ( ofaHub *hub );
+GList          *ofo_ledger_get_dataset         ( ofaIGetter *getter );
 #define         ofo_ledger_free_dataset( L )   g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-ofoLedger      *ofo_ledger_get_by_mnemo        ( ofaHub *hub, const gchar *mnemo );
+ofoLedger      *ofo_ledger_get_by_mnemo        ( ofaIGetter *getter, const gchar *mnemo );
 
-ofoLedger      *ofo_ledger_new                 ( void );
+ofoLedger      *ofo_ledger_new                 ( ofaIGetter *getter );
 
 const gchar    *ofo_ledger_get_mnemo           ( const ofoLedger *ledger );
 const gchar    *ofo_ledger_get_label           ( const ofoLedger *ledger );
@@ -96,7 +96,7 @@ ofxAmount       ofo_ledger_get_rough_credit    ( ofoLedger *ledger, const gchar 
 ofxAmount       ofo_ledger_get_futur_debit     ( ofoLedger *ledger, const gchar *currency );
 ofxAmount       ofo_ledger_get_futur_credit    ( ofoLedger *ledger, const gchar *currency );
 
-GDate          *ofo_ledger_get_max_last_close  ( GDate *date, ofaHub *hub );
+GDate          *ofo_ledger_get_max_last_close  ( ofaIGetter *getter, GDate *date );
 gboolean        ofo_ledger_has_entries         ( const ofoLedger *ledger );
 gboolean        ofo_ledger_is_deletable        ( const ofoLedger *ledger );
 gboolean        ofo_ledger_is_valid_data       ( const gchar *mnemo, const gchar *label, gchar **msgerr );
@@ -122,7 +122,7 @@ void            ofo_ledger_set_futur_credit    ( ofoLedger *ledger, ofxAmount am
 
 gboolean        ofo_ledger_close               ( ofoLedger *ledger, const GDate *closing );
 
-gboolean        ofo_ledger_insert              ( ofoLedger *ledger, ofaHub *hub );
+gboolean        ofo_ledger_insert              ( ofoLedger *ledger );
 gboolean        ofo_ledger_update              ( ofoLedger *ledger, const gchar *prev_mnemo );
 gboolean        ofo_ledger_update_balance      ( ofoLedger *ledger, const gchar *currency );
 gboolean        ofo_ledger_delete              ( ofoLedger *ledger );

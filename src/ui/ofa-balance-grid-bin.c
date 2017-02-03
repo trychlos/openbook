@@ -29,22 +29,22 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 
 #include "ui/ofa-balance-grid-bin.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub  *hub;
+	ofaIGetter *getter;
 
 	/* UI
 	 */
-	GtkGrid *grid;						/* top grid */
+	GtkGrid    *grid;						/* top grid */
 }
 	ofaBalanceGridBinPrivate;
 
@@ -162,23 +162,23 @@ ofa_balance_grid_bin_class_init( ofaBalanceGridBinClass *klass )
 
 /**
  * ofa_balance_grid_bin_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaBalanceGridBin instance.
  */
 ofaBalanceGridBin *
-ofa_balance_grid_bin_new( ofaHub *hub )
+ofa_balance_grid_bin_new( ofaIGetter *getter )
 {
 	ofaBalanceGridBin *self;
 	ofaBalanceGridBinPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	self = g_object_new( OFA_TYPE_BALANCE_GRID_BIN, NULL );
 
 	priv = ofa_balance_grid_bin_get_instance_private( self );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	setup_grid( self );
 
@@ -279,7 +279,7 @@ write_double( ofaBalanceGridBin *self, gdouble amount, gint left, gint top )
 	widget = gtk_grid_get_child_at( priv->grid, left, top );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 
-	str = ofa_amount_to_str( amount, NULL, priv->hub );
+	str = ofa_amount_to_str( amount, NULL, priv->getter );
 	gtk_label_set_text( GTK_LABEL( widget ), str );
 	g_free( str );
 }

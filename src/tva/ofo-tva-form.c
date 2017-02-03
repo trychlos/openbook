@@ -38,6 +38,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofa-stream-format.h"
@@ -205,7 +206,7 @@ static GList      *icollectionable_load_collection( void *user_data );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( void );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
@@ -332,7 +333,7 @@ ofo_tva_form_class_init( ofoTVAFormClass *klass )
 
 /**
  * ofo_tva_form_get_dataset:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the full #ofoTVAForm dataset.
  *
@@ -340,16 +341,20 @@ ofo_tva_form_class_init( ofoTVAFormClass *klass )
  * be released by the caller.
  */
 GList *
-ofo_tva_form_get_dataset( ofaHub *hub )
+ofo_tva_form_get_dataset( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	myICollector *collector;
 
-	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_TVA_FORM, hub ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_TVA_FORM, getter ));
 }
 
 /**
  * ofo_tva_form_get_by_mnemo:
- * @hub:
+ * @getter: a #ofaIGetter instance.
  * @mnemo:
  *
  * Returns: the searched tva form, or %NULL.
@@ -358,16 +363,16 @@ ofo_tva_form_get_dataset( ofaHub *hub )
  * not be unreffed by the caller.
  */
 ofoTVAForm *
-ofo_tva_form_get_by_mnemo( ofaHub *hub, const gchar *mnemo )
+ofo_tva_form_get_by_mnemo( ofaIGetter *getter, const gchar *mnemo )
 {
 	GList *dataset;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 
 	/*g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );*/
 
-	dataset = ofo_tva_form_get_dataset( hub );
+	dataset = ofo_tva_form_get_dataset( getter );
 
 	return( form_find_by_mnemo( dataset, mnemo ));
 }
@@ -388,24 +393,27 @@ form_find_by_mnemo( GList *set, const gchar *mnemo )
 
 /**
  * ofo_tva_form_use_ope_template:
- * @hub: the #ofaHub of the application.
+ * @getter: a #ofaIGetter instance.
  * @ope_template: the #ofoOpeTemplate mnemonic.
  *
  * Returns: %TRUE if any #ofoTVAForm use this @ope_template operation
  * template.
  */
 gboolean
-ofo_tva_form_use_ope_template( ofaHub *hub, const gchar *ope_template )
+ofo_tva_form_use_ope_template( ofaIGetter *getter, const gchar *ope_template )
 {
 	gchar *query;
 	gint count;
+	ofaHub *hub;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( my_strlen( ope_template ), FALSE );
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM TVA_T_FORMS_DET WHERE TFO_DET_TEMPLATE='%s'",
 			ope_template );
+
+	hub = ofa_igetter_get_hub( getter );
 
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
 
@@ -416,13 +424,16 @@ ofo_tva_form_use_ope_template( ofaHub *hub, const gchar *ope_template )
 
 /**
  * ofo_tva_form_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoTVAForm *
-ofo_tva_form_new( void )
+ofo_tva_form_new( ofaIGetter *getter )
 {
 	ofoTVAForm *form;
 
-	form = g_object_new( OFO_TYPE_TVA_FORM, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	form = g_object_new( OFO_TYPE_TVA_FORM, "ofo-base-getter", getter, NULL );
 	OFO_BASE( form )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( form );
@@ -439,15 +450,17 @@ ofoTVAForm *
 ofo_tva_form_new_from_form( ofoTVAForm *form )
 {
 	ofoTVAForm *dest;
+	ofaIGetter *getter;
 	gint count, i;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
 
 	dest = NULL;
+	getter = ofo_base_get_getter( OFO_BASE( form ));
 
 	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, NULL );
 
-	dest = ofo_tva_form_new();
+	dest = ofo_tva_form_new( getter );
 
 	ofo_tva_form_set_mnemo( dest, ofo_tva_form_get_mnemo( form ));
 	ofo_tva_form_set_label( dest, ofo_tva_form_get_label( form ));
@@ -552,6 +565,7 @@ gboolean
 ofo_tva_form_is_deletable( const ofoTVAForm *form )
 {
 	gboolean deletable;
+	ofaIGetter *getter;
 	ofaHub *hub;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
@@ -559,7 +573,8 @@ ofo_tva_form_is_deletable( const ofoTVAForm *form )
 	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, FALSE );
 
 	deletable = TRUE;
-	hub = ofo_base_get_hub( OFO_BASE( form ));
+	getter = ofo_base_get_getter( OFO_BASE( form ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( hub ){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, form, &deletable );
@@ -1094,24 +1109,25 @@ ofo_tva_form_boolean_get_label( ofoTVAForm *form, guint idx )
  * ofo_tva_form_insert:
  */
 gboolean
-ofo_tva_form_insert( ofoTVAForm *tva_form, ofaHub *hub )
+ofo_tva_form_insert( ofoTVAForm *tva_form )
 {
 	static const gchar *thisfn = "ofo_tva_form_insert";
 	gboolean ok;
+	ofaIGetter *getter;
+	ofaHub *hub;
 
-	g_debug( "%s: form=%p, hub=%p",
-			thisfn, ( void * ) tva_form, ( void * ) hub );
+	g_debug( "%s: form=%p", thisfn, ( void * ) tva_form );
 
 	g_return_val_if_fail( tva_form && OFO_IS_TVA_FORM( tva_form ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( tva_form )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( tva_form ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( form_do_insert( tva_form, ofa_hub_get_connect( hub ))){
-		ofo_base_set_hub( OFO_BASE( tva_form ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( tva_form ), NULL, hub );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( tva_form ), NULL, getter );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, tva_form );
 		ok = TRUE;
 	}
@@ -1325,6 +1341,7 @@ gboolean
 ofo_tva_form_update( ofoTVAForm *tva_form, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_tva_form_update";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1336,7 +1353,8 @@ ofo_tva_form_update( ofoTVAForm *tva_form, const gchar *prev_mnemo )
 	g_return_val_if_fail( !OFO_BASE( tva_form )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( tva_form ));
+	getter = ofo_base_get_getter( OFO_BASE( tva_form ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( form_do_update( tva_form, ofa_hub_get_connect( hub ), prev_mnemo )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, tva_form, prev_mnemo );
@@ -1418,6 +1436,7 @@ gboolean
 ofo_tva_form_delete( ofoTVAForm *tva_form )
 {
 	static const gchar *thisfn = "ofo_tva_form_delete";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1428,11 +1447,12 @@ ofo_tva_form_delete( ofoTVAForm *tva_form )
 	g_return_val_if_fail( !OFO_BASE( tva_form )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( tva_form ));
+	getter = ofo_base_get_getter( OFO_BASE( tva_form ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( form_do_delete( tva_form, ofa_hub_get_connect( hub ))){
 		g_object_ref( tva_form );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( tva_form ));
+		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( tva_form ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, tva_form );
 		g_object_unref( tva_form );
 		ok = TRUE;
@@ -1517,17 +1537,19 @@ icollectionable_load_collection( void *user_data )
 	GList *dataset, *it, *ir;
 	ofoTVAForm *form;
 	gchar *from;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 
-	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"TVA_T_FORMS",
 					OFO_TYPE_TVA_FORM,
-					OFA_HUB( user_data ));
+					OFA_IGETTER( user_data ));
 
-	connect = ofa_hub_get_connect( OFA_HUB( user_data ));
+	hub = ofa_igetter_get_hub( OFA_IGETTER( user_data ));
+	connect = ofa_hub_get_connect( hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		form = OFO_TVA_FORM( it->data );
@@ -1594,7 +1616,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	ofoTVAFormPrivate *priv;
 	GList *dataset, *it, *det;
@@ -1604,7 +1626,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHu
 	gulong count;
 	gchar field_sep;
 
-	dataset = ofo_tva_form_get_dataset( hub );
+	dataset = ofo_tva_form_get_dataset( getter );
 
 	with_headers = ofa_stream_format_get_with_headers( settings );
 	field_sep = ofa_stream_format_get_field_sep( settings );
@@ -1758,25 +1780,27 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaHub *hub;
 	GList *dataset;
 	gchar *bck_table, *bck_det_table, *bck_bool_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+	hub = ofa_igetter_get_hub( parms->getter );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "TVA_T_FORMS" );
-		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "TVA_T_FORMS_DET" );
-		bck_bool_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "TVA_T_FORMS_BOOL" );
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "TVA_T_FORMS" );
+		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "TVA_T_FORMS_DET" );
+		bck_bool_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "TVA_T_FORMS_BOOL" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_TVA_FORM );
-			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_TVA_FORM );
+			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_TVA_FORM );
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_TVA_FORM );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "TVA_T_FORMS" );
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_det_table, "TVA_T_FORMS_DET" );
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_bool_table, "TVA_T_FORMS_BOOL" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "TVA_T_FORMS" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_det_table, "TVA_T_FORMS_DET" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_bool_table, "TVA_T_FORMS_BOOL" );
 		}
 
 		g_free( bck_table );
@@ -1896,7 +1920,7 @@ iimportable_import_parse_form( ofaIImporter *importer, ofsImporterParms *parms, 
 	GSList *itf;
 	gchar *splitted;
 
-	form = ofo_tva_form_new();
+	form = ofo_tva_form_new( parms->getter );
 
 	/* mnemo */
 	itf = fields ? fields->next : NULL;
@@ -2086,6 +2110,7 @@ static void
 iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
 {
 	GList *it;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	const gchar *mnemo;
 	ofoTVAForm *form;
@@ -2094,7 +2119,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	gchar *str;
 
 	total = g_list_length( dataset );
-	connect = ofa_hub_get_connect( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && total > 0 ){
@@ -2247,7 +2273,11 @@ hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
 static gboolean
 hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
 {
-	return( !ofo_tva_form_use_ope_template( hub, ofo_ope_template_get_mnemo( template )));
+	ofaIGetter *getter;
+
+	getter = ofo_base_get_getter( OFO_BASE( template ));
+
+	return( !ofo_tva_form_use_ope_template( getter, ofo_ope_template_get_mnemo( template )));
 }
 
 /*
@@ -2410,6 +2440,7 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty )
 	ofoOpeTemplate *template_obj;
 	guint count, i;
 	const gchar *cstr;
+	ofaIGetter *getter;
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -2423,7 +2454,8 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty )
 			cstr = ofo_tva_form_detail_get_has_template( OFO_TVA_FORM( object ), i ) ?
 					ofo_tva_form_detail_get_template( OFO_TVA_FORM( object ), i ) : NULL;
 			if( my_strlen( cstr )){
-				template_obj = ofo_ope_template_get_by_mnemo( hub, cstr );
+				getter = ofo_base_get_getter( object );
+				template_obj = ofo_ope_template_get_by_mnemo( getter , cstr );
 				if( template_obj ){
 					g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
 				}

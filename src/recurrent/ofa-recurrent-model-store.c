@@ -32,6 +32,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-ope-template.h"
 
 #include "recurrent/ofa-recurrent-model-store.h"
@@ -41,12 +42,16 @@
 /* private instance data
  */
 typedef struct {
-	gboolean  dispose_has_run;
+	gboolean    dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 
 	/* runtime
 	 */
-	ofaHub   *hub;
-	GList    *hub_handlers;
+	ofaHub     *hub;
+	GList      *hub_handlers;
 }
 	ofaRecurrentModelStorePrivate;
 
@@ -146,7 +151,7 @@ ofa_recurrent_model_store_class_init( ofaRecurrentModelStoreClass *klass )
 
 /**
  * ofa_recurrent_model_store_new:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new #ofaRecurrentModelStore and attached it to the @hub
  * if not already done. Else get the already allocated #ofaRecurrentModelStore
@@ -162,15 +167,15 @@ ofa_recurrent_model_store_class_init( ofaRecurrentModelStoreClass *klass )
  * Returns: a new reference to the #ofaRecurrentStore object.
  */
 ofaRecurrentModelStore *
-ofa_recurrent_model_store_new( ofaHub *hub )
+ofa_recurrent_model_store_new( ofaIGetter *getter )
 {
 	ofaRecurrentModelStore *store;
 	ofaRecurrentModelStorePrivate *priv;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	store = ( ofaRecurrentModelStore * ) my_icollector_single_get_object( collector, OFA_TYPE_RECURRENT_MODEL_STORE );
 
 	if( store ){
@@ -180,7 +185,9 @@ ofa_recurrent_model_store_new( ofaHub *hub )
 		store = g_object_new( OFA_TYPE_RECURRENT_MODEL_STORE, NULL );
 
 		priv = ofa_recurrent_model_store_get_instance_private( store );
-		priv->hub = hub;
+
+		priv->getter = getter;
+		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[REC_MODEL_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
@@ -229,7 +236,7 @@ load_dataset( ofaRecurrentModelStore *self )
 
 	priv = ofa_recurrent_model_store_get_instance_private( self );
 
-	dataset = ofo_recurrent_model_get_dataset( priv->hub );
+	dataset = ofo_recurrent_model_get_dataset( priv->getter );
 
 	for( it=dataset ; it ; it=it->next ){
 		model = OFO_RECURRENT_MODEL( it->data );
@@ -266,7 +273,7 @@ set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, G
 	stamp  = my_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
 
 	csper = ofo_recurrent_model_get_periodicity( model );
-	period = ofo_rec_period_get_by_id( priv->hub, csper );
+	period = ofo_rec_period_get_by_id( priv->getter, csper );
 
 	csdet = "";
 	perdetid = 0;

@@ -36,6 +36,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
@@ -58,7 +59,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub             *hub;
+	ofaIGetter         *getter;
 
 	/* UI
 	 */
@@ -161,23 +162,23 @@ ofa_bat_properties_bin_class_init( ofaBatPropertiesBinClass *klass )
 
 /**
  * ofa_bat_properties_bin_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaBatPropertiesBin instance.
  */
 ofaBatPropertiesBin *
-ofa_bat_properties_bin_new( ofaHub *hub )
+ofa_bat_properties_bin_new( ofaIGetter *getter )
 {
 	ofaBatPropertiesBin *bin;
 	ofaBatPropertiesBinPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	bin = g_object_new( OFA_TYPE_BAT_PROPERTIES_BIN, NULL );
 
 	priv = ofa_bat_properties_bin_get_instance_private( bin );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	setup_bin( bin );
 	setup_treeview( bin );
@@ -254,7 +255,7 @@ setup_treeview( ofaBatPropertiesBin *self )
 	box = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-boxview" );
 	g_return_if_fail( box && GTK_IS_CONTAINER( box ));
 
-	priv->tview = ofa_batline_treeview_new( priv->hub );
+	priv->tview = ofa_batline_treeview_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( priv->tview ));
 }
 
@@ -289,11 +290,12 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	const gchar *cstr;
 	gchar *str;
 	gint total, used;
+	ofaHub *hub;
 
 	priv = ofa_bat_properties_bin_get_instance_private( self );
 
 	bat_id = ofo_bat_get_id( bat );
-	str = ofa_counter_to_str( bat_id, priv->hub );
+	str = ofa_counter_to_str( bat_id, priv->getter );
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_id ), str );
 	g_free( str );
 
@@ -314,11 +316,11 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_unused ), str );
 	g_free( str );
 
-	str = my_date_to_str( ofo_bat_get_begin_date( bat ), ofa_prefs_date_display( priv->hub ));
+	str = my_date_to_str( ofo_bat_get_begin_date( bat ), ofa_prefs_date_display( priv->getter ));
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_begin ), str );
 	g_free( str );
 
-	str = my_date_to_str( ofo_bat_get_end_date( bat ), ofa_prefs_date_display( priv->hub ));
+	str = my_date_to_str( ofo_bat_get_end_date( bat ), ofa_prefs_date_display( priv->getter ));
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_end ), str );
 	g_free( str );
 
@@ -331,11 +333,11 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 
 	cstr = ofo_bat_get_currency( bat );
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_currency ), cstr ? cstr : "" );
-	priv->currency = cstr ? ofo_currency_get_by_code( priv->hub, cstr ) : NULL;
+	priv->currency = cstr ? ofo_currency_get_by_code( priv->getter, cstr ) : NULL;
 	g_return_if_fail( !priv->currency || OFO_IS_CURRENCY( priv->currency ));
 
 	if( ofo_bat_get_begin_solde_set( bat )){
-		str = ofa_amount_to_str( ofo_bat_get_begin_solde( bat ), priv->currency, priv->hub );
+		str = ofa_amount_to_str( ofo_bat_get_begin_solde( bat ), priv->currency, priv->getter );
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_begin ), str );
 		g_free( str );
 	} else {
@@ -343,7 +345,7 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	}
 
 	if( ofo_bat_get_end_solde_set( bat )){
-		str = ofa_amount_to_str( ofo_bat_get_end_solde( bat ), priv->currency, priv->hub );
+		str = ofa_amount_to_str( ofo_bat_get_end_solde( bat ), priv->currency, priv->getter );
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_end ), str );
 		g_free( str );
 	} else {
@@ -357,9 +359,11 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_account ), "" );
 	}
 
+	hub = ofa_igetter_get_hub( priv->getter );
+
 	my_utils_container_notes_setup_full(
 				GTK_CONTAINER( self ),
-				"pn-notes", ofo_bat_get_notes( bat ), ofa_hub_is_writable_dossier( priv->hub ));
+				"pn-notes", ofo_bat_get_notes( bat ), ofa_hub_is_writable_dossier( hub ));
 	my_utils_container_updstamp_init( self, bat );
 }
 

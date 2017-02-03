@@ -73,6 +73,7 @@ typedef struct {
 
 	/* internals
 	 */
+	ofaIGetter          *getter;
 	ofaHub              *hub;
 	GList               *hub_handlers;
 	ofoDossier          *dossier;					/* dossier */
@@ -348,7 +349,9 @@ page_v_setup_page( ofaPage *page )
 
 	priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
@@ -440,7 +443,7 @@ setup_ledger_selection( ofaEntryPage *self )
 	priv->ledger_combo = ofa_ledger_combo_new();
 	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
 	ofa_ledger_combo_set_columns( priv->ledger_combo, st_ledger_cols );
-	ofa_ledger_combo_set_hub( priv->ledger_combo, priv->hub );
+	ofa_ledger_combo_set_getter( priv->ledger_combo, priv->getter );
 
 	g_signal_connect( priv->ledger_combo, "ofa-changed", G_CALLBACK( ledger_on_changed ), self );
 }
@@ -454,7 +457,7 @@ setup_dates_filter( ofaEntryPage *self )
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	priv->effect_filter = ofa_date_filter_hv_bin_new( priv->hub );
+	priv->effect_filter = ofa_date_filter_hv_bin_new( priv->getter );
 	settings_key = g_strdup_printf( "%s-effect", priv->settings_prefix );
 	ofa_idate_filter_set_settings_key( OFA_IDATE_FILTER( priv->effect_filter ), settings_key );
 	g_free( settings_key );
@@ -537,7 +540,7 @@ setup_treeview( ofaEntryPage *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "entries-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->tview = ofa_entry_treeview_new( priv->hub );
+	priv->tview = ofa_entry_treeview_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
 	ofa_entry_treeview_set_settings_key( priv->tview, priv->settings_prefix );
@@ -552,7 +555,7 @@ setup_treeview( ofaEntryPage *self )
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( tview_on_row_insert ), self );
 	g_signal_connect( priv->tview, "ofa-seldelete", G_CALLBACK( tview_on_row_delete ), self );
 
-	priv->store = ofa_entry_store_new( priv->hub );
+	priv->store = ofa_entry_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
 }
 
@@ -619,7 +622,7 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *sel
 		}
 
 		if( visible ){
-			my_date_set_from_str( &deffect, sdate, ofa_prefs_date_display( priv->hub ));
+			my_date_set_from_str( &deffect, sdate, ofa_prefs_date_display( priv->getter ));
 			effect_filter = ofa_idate_filter_get_date(
 					OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_FROM );
 			ok = !my_date_is_valid( effect_filter ) ||
@@ -956,7 +959,7 @@ account_on_changed( GtkEntry *entry, ofaEntryPage *self )
 	g_free( priv->acc_number );
 	priv->acc_number = g_strdup( gtk_entry_get_text( entry ));
 
-	account = ofo_account_get_by_number( priv->hub, priv->acc_number );
+	account = ofo_account_get_by_number( priv->getter, priv->acc_number );
 
 	if( account && !ofo_account_is_root( account )){
 		gtk_label_set_text( GTK_LABEL( priv->f1_label ), ofo_account_get_label( account ));
@@ -1178,8 +1181,8 @@ edit_on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, of
 
 		/* reformat amounts before storing them */
 		if( column_id == ENTRY_COL_DEBIT || column_id == ENTRY_COL_CREDIT ){
-			amount = ofa_amount_from_str( text, priv->hub );
-			str = ofa_amount_to_str( amount, NULL, priv->hub );
+			amount = ofa_amount_from_str( text, priv->getter );
+			str = ofa_amount_to_str( amount, NULL, priv->getter );
 		} else {
 			str = g_strdup( text );
 		}
@@ -1332,8 +1335,8 @@ balances_compute( ofaEntryPage *self )
 
 			if( my_strlen( dev_code ) && ( my_strlen( sdeb ) || my_strlen( scre ))){
 				ofs_currency_add_by_code(
-						&priv->balances, priv->hub, dev_code,
-						ofa_amount_from_str( sdeb, priv->hub ), ofa_amount_from_str( scre, priv->hub ));
+						&priv->balances, priv->getter, dev_code,
+						ofa_amount_from_str( sdeb, priv->getter ), ofa_amount_from_str( scre, priv->getter ));
 			}
 
 			g_free( sdeb );
@@ -1370,12 +1373,12 @@ balance_display( ofsCurrency *pc, ofaEntryPage *self )
 		cstyle = ofs_currency_is_balanced( pc ) ? "labelbalance" : "labelwarning";
 
 		my_style_add( priv->bottom_debit, cstyle );
-		str = ofa_amount_to_str( pc->debit, pc->currency, priv->hub );
+		str = ofa_amount_to_str( pc->debit, pc->currency, priv->getter );
 		gtk_label_set_text( GTK_LABEL( priv->bottom_debit ), str );
 		g_free( str );
 
 		my_style_add( priv->bottom_credit, cstyle );
-		str = ofa_amount_to_str( pc->credit, pc->currency, priv->hub );
+		str = ofa_amount_to_str( pc->credit, pc->currency, priv->getter );
 		gtk_label_set_text( GTK_LABEL( priv->bottom_credit ), str );
 		g_free( str );
 
@@ -1455,7 +1458,7 @@ check_row_for_valid_dope( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_DOPE, &sdope, -1 );
 
 	if( my_strlen( sdope )){
-		my_date_set_from_str( &date, sdope, ofa_prefs_date_display( priv->hub ));
+		my_date_set_from_str( &date, sdope, ofa_prefs_date_display( priv->getter ));
 		if( my_date_is_valid( &date )){
 			is_valid = TRUE;
 
@@ -1493,7 +1496,7 @@ check_row_for_valid_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_DEFFECT, &sdeffect, -1 );
 
 	if( my_strlen( sdeffect )){
-		my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display( priv->hub ));
+		my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display( priv->getter ));
 		if( my_date_is_valid( &deff )){
 			is_valid = TRUE;
 
@@ -1535,7 +1538,7 @@ check_row_for_valid_ledger( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_LEDGER, &str, -1 );
 
 	if( my_strlen( str )){
-		if( ofo_ledger_get_by_mnemo( priv->hub, str )){
+		if( ofo_ledger_get_by_mnemo( priv->getter, str )){
 			is_valid = TRUE;
 
 		} else {
@@ -1568,7 +1571,7 @@ check_row_for_valid_account( ofaEntryPage *self, GtkTreeIter *iter )
 			ENTRY_COL_ACCOUNT, &acc_number, ENTRY_COL_CURRENCY, &cur_code, -1 );
 
 	if( my_strlen( acc_number )){
-		account = ofo_account_get_by_number( priv->hub, acc_number );
+		account = ofo_account_get_by_number( priv->getter, acc_number );
 		if( account ){
 			if( !ofo_account_is_root( account )){
 				is_valid = TRUE;
@@ -1637,7 +1640,7 @@ check_row_for_valid_currency( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_CURRENCY, &code, -1 );
 
 	if( my_strlen( code )){
-		if( ofo_currency_get_by_code( priv->hub, code )){
+		if( ofo_currency_get_by_code( priv->getter, code )){
 			is_valid = TRUE;
 
 		} else {
@@ -1667,8 +1670,8 @@ check_row_for_valid_amounts( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_DEBIT, &sdeb, ENTRY_COL_CREDIT, &scre, -1 );
 
 	if( my_strlen( sdeb ) || my_strlen( scre )){
-		debit = ofa_amount_from_str( sdeb, priv->hub );
-		credit = ofa_amount_from_str( scre, priv->hub );
+		debit = ofa_amount_from_str( sdeb, priv->getter );
+		credit = ofa_amount_from_str( scre, priv->getter );
 		if(( debit && !credit ) || ( !debit && credit )){
 			is_valid = TRUE;
 
@@ -1707,14 +1710,14 @@ check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 				ENTRY_COL_LEDGER,  &mnemo,
 				-1 );
 
-	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->hub ));
+	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->getter ));
 	g_return_if_fail( my_date_is_valid( &dope ));
 
-	my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display( priv->hub ));
+	my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display( priv->getter ));
 	g_return_if_fail( my_date_is_valid( &deff ));
 
 	g_return_if_fail( my_strlen( mnemo ));
-	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
+	ledger = ofo_ledger_get_by_mnemo( priv->getter, mnemo );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	ofo_dossier_get_min_deffect( priv->dossier, ledger, &deff_min );
@@ -1726,8 +1729,8 @@ check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 	 * the row, then it is valid and will normally apply to account and
 	 * ledger */
 	if( my_date_compare( &deff, &deff_min ) < 0 ){
-		sdmin = my_date_to_str( &deff_min, ofa_prefs_date_display( priv->hub ));
-		sdeff = my_date_to_str( &deff, ofa_prefs_date_display( priv->hub ));
+		sdmin = my_date_to_str( &deff_min, ofa_prefs_date_display( priv->getter ));
+		sdeff = my_date_to_str( &deff, ofa_prefs_date_display( priv->getter ));
 		msg = g_strdup_printf(
 				_( "Effect date %s is less than the min effect date %s" ),
 				sdeff, sdmin );
@@ -1771,11 +1774,11 @@ set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 					ENTRY_COL_LEDGER, &mnemo,
 					-1 );
 
-		my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->hub ));
+		my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->getter ));
 		g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 
 		g_return_val_if_fail( my_strlen( mnemo ), FALSE );
-		ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
+		ledger = ofo_ledger_get_by_mnemo( priv->getter, mnemo );
 		g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 
 		ofo_dossier_get_min_deffect( priv->dossier, ledger, &deff_min );
@@ -1783,7 +1786,7 @@ set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 			my_date_set_from_date( &deff_min, &dope );
 		}
 
-		sdeff = my_date_to_str( &deff_min, ofa_prefs_date_display( priv->hub ));
+		sdeff = my_date_to_str( &deff_min, ofa_prefs_date_display( priv->getter ));
 		gtk_list_store_set( GTK_LIST_STORE( priv->store ), iter, ENTRY_COL_DEFFECT, sdeff, -1 );
 		g_free( sdeff );
 
@@ -1815,7 +1818,7 @@ check_row_for_cross_currency( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_ACCOUNT, &number, ENTRY_COL_CURRENCY, &code, -1 );
 
 	g_return_val_if_fail( my_strlen( number ), FALSE );
-	account = ofo_account_get_by_number( priv->hub, number );
+	account = ofo_account_get_by_number( priv->getter, number );
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !ofo_account_is_root( account ), FALSE );
 
@@ -1940,11 +1943,11 @@ save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 		prev_credit = ofo_entry_get_credit( entry );
 	}
 
-	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->hub ));
+	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->getter ));
 	g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 	ofo_entry_set_dope( entry, &dope );
 
-	my_date_set_from_str( &deff, sdeff, ofa_prefs_date_display( priv->hub ));
+	my_date_set_from_str( &deff, sdeff, ofa_prefs_date_display( priv->getter ));
 	g_return_val_if_fail( my_date_is_valid( &deff ), FALSE );
 	ofo_entry_set_deffect( entry, &deff );
 
@@ -1952,12 +1955,12 @@ save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	ofo_entry_set_label( entry, label );
 	ofo_entry_set_ledger( entry, ledger );
 	ofo_entry_set_account( entry, account );
-	ofo_entry_set_debit( entry, ofa_amount_from_str( sdeb, priv->hub ));
-	ofo_entry_set_credit( entry, ofa_amount_from_str( scre, priv->hub ));
+	ofo_entry_set_debit( entry, ofa_amount_from_str( sdeb, priv->getter ));
+	ofo_entry_set_credit( entry, ofa_amount_from_str( scre, priv->getter ));
 	ofo_entry_set_currency( entry, currency );
 
 	if( is_new ){
-		ok = ofo_entry_insert( entry, priv->hub );
+		ok = ofo_entry_insert( entry );
 	} else {
 		ok = ofo_entry_update( entry );
 		remediate_entry_account( self, entry, prev_account, prev_debit, prev_credit );
@@ -2015,10 +2018,10 @@ remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_
 	if( cmp != 0 || debit != prev_debit || credit != prev_credit ){
 
 		remediate = TRUE;
-		account_new = ofo_account_get_by_number( priv->hub, account );
+		account_new = ofo_account_get_by_number( priv->getter, account );
 		g_return_if_fail( account_new && OFO_IS_ACCOUNT( account_new ));
 		if( cmp != 0 ){
-			account_prev = ofo_account_get_by_number( priv->hub, prev_account );
+			account_prev = ofo_account_get_by_number( priv->getter, prev_account );
 			g_return_if_fail( account_prev && OFO_IS_ACCOUNT( account_prev ));
 		} else {
 			account_prev = account_new;
@@ -2087,10 +2090,10 @@ remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_l
 	/* if ledger has changed or debit has changed or credit has changed */
 	if( ledger_has_changed || debit != prev_debit || credit != prev_credit ){
 
-		ledger_new = ofo_ledger_get_by_mnemo( priv->hub, ledger );
+		ledger_new = ofo_ledger_get_by_mnemo( priv->getter, ledger );
 		g_return_if_fail( ledger_new && OFO_IS_LEDGER( ledger_new ));
 		if( ledger_has_changed ){
-			ledger_prev = ofo_ledger_get_by_mnemo( priv->hub, prev_ledger );
+			ledger_prev = ofo_ledger_get_by_mnemo( priv->getter, prev_ledger );
 			g_return_if_fail( ledger_prev && OFO_IS_LEDGER( ledger_prev ));
 		} else {
 			ledger_prev = ledger_new;
@@ -2147,7 +2150,7 @@ insert_new_row( ofaEntryPage *self )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	/* set default values that we are able to guess */
-	entry = ofo_entry_new();
+	entry = ofo_entry_new( priv->getter );
 
 	if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ))){
 		if( my_strlen( priv->jou_mnemo )){
@@ -2390,7 +2393,7 @@ read_settings( ofaEntryPage *self )
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 
 	read_settings_selection( self, settings );
 	read_settings_status( self, settings );
@@ -2512,7 +2515,7 @@ write_settings( ofaEntryPage *self )
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 
 	write_settings_selection( self, settings );
 	write_settings_status( self, settings );

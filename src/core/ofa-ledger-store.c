@@ -31,6 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -41,12 +42,16 @@
 /* private instance data
  */
 typedef struct {
-	gboolean  dispose_has_run;
+	gboolean    dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 
 	/* runtime
 	 */
-	ofaHub   *hub;
-	GList    *hub_handlers;
+	ofaHub     *hub;
+	GList      *hub_handlers;
 }
 	ofaLedgerStorePrivate;
 
@@ -142,7 +147,7 @@ ofa_ledger_store_class_init( ofaLedgerStoreClass *klass )
 
 /**
  * ofa_ledger_store_new:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new #ofaLedgerStore and attached it to the @hub
  * if not already done. Else get the already allocated #ofaLedgerStore
@@ -158,15 +163,15 @@ ofa_ledger_store_class_init( ofaLedgerStoreClass *klass )
  * Returns: a new reference to the #ofaLedgerStore object.
  */
 ofaLedgerStore *
-ofa_ledger_store_new( ofaHub *hub )
+ofa_ledger_store_new( ofaIGetter *getter )
 {
 	ofaLedgerStore *store;
 	ofaLedgerStorePrivate *priv;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	store = ( ofaLedgerStore * ) my_icollector_single_get_object( collector, OFA_TYPE_LEDGER_STORE );
 
 	if( store ){
@@ -176,7 +181,9 @@ ofa_ledger_store_new( ofaHub *hub )
 		store = g_object_new( OFA_TYPE_LEDGER_STORE, NULL );
 
 		priv = ofa_ledger_store_get_instance_private( store );
-		priv->hub = hub;
+
+		priv->getter = getter;
+		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[LEDGER_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
@@ -225,7 +232,7 @@ load_dataset( ofaLedgerStore *self )
 
 	priv = ofa_ledger_store_get_instance_private( self );
 
-	dataset = ofo_ledger_get_dataset( priv->hub );
+	dataset = ofo_ledger_get_dataset( priv->getter );
 
 	for( it=dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
@@ -257,9 +264,9 @@ set_row_by_iter( ofaLedgerStore *self, const ofoLedger *ledger, GtkTreeIter *ite
 	priv = ofa_ledger_store_get_instance_private( self );
 
 	ofo_ledger_get_last_entry( ledger, &dentry );
-	sdentry = my_date_to_str( &dentry, ofa_prefs_date_display( priv->hub ));
+	sdentry = my_date_to_str( &dentry, ofa_prefs_date_display( priv->getter ));
 	dclose = ofo_ledger_get_last_close( ledger );
-	sdclose = my_date_to_str( dclose, ofa_prefs_date_display( priv->hub ));
+	sdclose = my_date_to_str( dclose, ofa_prefs_date_display( priv->getter ));
 	stamp  = my_stamp_to_str( ofo_ledger_get_upd_stamp( ledger ), MY_STAMP_DMYYHM );
 
 	notes = ofo_ledger_get_notes( ledger );

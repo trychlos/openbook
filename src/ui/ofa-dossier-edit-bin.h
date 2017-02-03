@@ -65,10 +65,10 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbprovider-def.h"
 #include "api/ofa-idbsuperuser-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -93,7 +93,7 @@ typedef struct {
 
 GType              ofa_dossier_edit_bin_get_type    ( void ) G_GNUC_CONST;
 
-ofaDossierEditBin *ofa_dossier_edit_bin_new         ( ofaHub *hub,
+ofaDossierEditBin *ofa_dossier_edit_bin_new         ( ofaIGetter *getter,
 															const gchar *settings_prefix,
 															guint rule,
 															gboolean with_su );

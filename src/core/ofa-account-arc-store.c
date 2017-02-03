@@ -30,7 +30,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -45,7 +45,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub     *hub;
+	ofaIGetter *getter;
 	ofoAccount *account;
 }
 	ofaAccountArcStorePrivate;
@@ -129,7 +129,7 @@ ofa_account_arc_store_class_init( ofaAccountArcStoreClass *klass )
 
 /**
  * ofa_account_arc_store_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @account: the #ofoAccount.
  *
  * Load the archived soldes of the account.
@@ -137,19 +137,19 @@ ofa_account_arc_store_class_init( ofaAccountArcStoreClass *klass )
  * Returns: a new reference to the #ofaAccountArcStore object.
  */
 ofaAccountArcStore *
-ofa_account_arc_store_new( ofaHub *hub, ofoAccount *account )
+ofa_account_arc_store_new( ofaIGetter *getter, ofoAccount *account )
 {
 	ofaAccountArcStore *store;
 	ofaAccountArcStorePrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
 	store = g_object_new( OFA_TYPE_ACCOUNT_ARC_STORE, NULL );
 
 	priv = ofa_account_arc_store_get_instance_private( store );
 
-	priv->hub = hub;
+	priv->getter = getter;
 	priv->account = account;
 
 	gtk_list_store_set_column_types(
@@ -181,7 +181,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountA
 	gtk_tree_model_get( tmodel, a, ACCOUNT_ARC_COL_DATE, &sdatea, -1 );
 	gtk_tree_model_get( tmodel, b, ACCOUNT_ARC_COL_DATE, &sdateb, -1 );
 
-	cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->hub ));
+	cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->getter ));
 
 	g_free( sdatea );
 	g_free( sdateb );
@@ -220,13 +220,13 @@ set_row_by_iter( ofaAccountArcStore *self, ofoAccount *account, gint i, GtkTreeI
 
 	priv = ofa_account_arc_store_get_instance_private( self );
 
-	currency = ofo_currency_get_by_code( priv->hub, ofo_account_get_currency( account ));
+	currency = ofo_currency_get_by_code( priv->getter, ofo_account_get_currency( account ));
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 	symbol = ofo_currency_get_symbol( currency );
 
-	sdate = my_date_to_str( ofo_account_archive_get_date( account, i ), ofa_prefs_date_display( priv->hub ));
-	sdebit = ofa_amount_to_str( ofo_account_archive_get_debit( account, i ), currency, priv->hub );
-	scredit = ofa_amount_to_str( ofo_account_archive_get_credit( account, i ), currency, priv->hub );
+	sdate = my_date_to_str( ofo_account_archive_get_date( account, i ), ofa_prefs_date_display( priv->getter ));
+	sdebit = ofa_amount_to_str( ofo_account_archive_get_debit( account, i ), currency, priv->getter );
+	scredit = ofa_amount_to_str( ofo_account_archive_get_credit( account, i ), currency, priv->getter );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),

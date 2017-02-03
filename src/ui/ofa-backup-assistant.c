@@ -75,10 +75,7 @@ typedef struct {
 	/* runtime
 	 */
 	gchar               *settings_prefix;
-	ofaHub              *hub;
-	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta   *dossier_meta;
-	ofaIDBExerciceMeta  *exercice_meta;
 
 	/* p1: select destination file
 	 */
@@ -285,7 +282,7 @@ ofa_backup_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_backup_assistant_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -310,23 +307,21 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_backup_assistant_iwindow_init";
 	ofaBackupAssistantPrivate *priv;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_backup_assistant_get_instance_private( OFA_BACKUP_ASSISTANT( instance ));
 
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
+	priv->dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
+
 	my_iwindow_set_parent( instance, priv->parent );
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
-
-	priv->connect = ofa_hub_get_connect( priv->hub );
-	priv->dossier_meta = ofa_idbconnect_get_dossier_meta( priv->connect );
-	priv->exercice_meta = ofa_idbconnect_get_exercice_meta( priv->connect );
 
 	read_settings( OFA_BACKUP_ASSISTANT( instance ));
 }
@@ -351,7 +346,7 @@ iassistant_is_willing_to_quit( myIAssistant *instance, guint keyval )
 
 	priv = ofa_backup_assistant_get_instance_private( OFA_BACKUP_ASSISTANT( instance ));
 
-	return( ofa_prefs_assistant_is_willing_to_quit( priv->hub, keyval ));
+	return( ofa_prefs_assistant_is_willing_to_quit( priv->getter, keyval ));
 }
 
 /*
@@ -418,6 +413,8 @@ static gchar *
 p1_get_default_name( ofaBackupAssistant *self )
 {
 	ofaBackupAssistantPrivate *priv;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
 	ofaIDBExerciceMeta *exercice_meta;
 	GRegex *regex;
 	gchar *name, *fname, *sdate, *result;
@@ -426,7 +423,9 @@ p1_get_default_name( ofaBackupAssistant *self )
 	priv = ofa_backup_assistant_get_instance_private( self );
 
 	/* get name without spaces */
-	exercice_meta = ofa_idbconnect_get_exercice_meta( priv->connect );
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
+	exercice_meta = ofa_idbconnect_get_exercice_meta( connect );
 	name = ofa_idbexercice_meta_get_name( exercice_meta );
 
 	regex = g_regex_new( " ", 0, 0, NULL );
@@ -720,6 +719,8 @@ static gboolean
 p4_do_backup( ofaBackupAssistant *self )
 {
 	ofaBackupAssistantPrivate *priv;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
 	gboolean ok;
 	gchar *msg;
 	GtkWidget *dlg;
@@ -727,7 +728,10 @@ p4_do_backup( ofaBackupAssistant *self )
 
 	priv = ofa_backup_assistant_get_instance_private( self );
 
-	ok = ofa_idbconnect_backup_db( priv->connect, priv->p2_comment, priv->p1_uri, ( ofaMsgCb ) p4_msg_cb, self );
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
+
+	ok = ofa_idbconnect_backup_db( connect, priv->p2_comment, priv->p1_uri, ( ofaMsgCb ) p4_msg_cb, self );
 
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->dossier_meta );
 
@@ -827,7 +831,7 @@ read_settings( ofaBackupAssistant *self )
 
 	priv = ofa_backup_assistant_get_instance_private( self );
 
-	settings = ofa_hub_get_dossier_settings( priv->hub );
+	settings = ofa_igetter_get_dossier_settings( priv->getter );
 	cgroup = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 	g_free( priv->p1_folder );
 	priv->p1_folder = my_isettings_get_string( settings, cgroup, st_backup_folder );
@@ -842,7 +846,7 @@ write_settings( ofaBackupAssistant *self )
 
 	priv = ofa_backup_assistant_get_instance_private( self );
 
-	settings = ofa_hub_get_dossier_settings( priv->hub );
+	settings = ofa_igetter_get_dossier_settings( priv->getter );
 	cgroup = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
 	my_isettings_set_string( settings, cgroup, st_backup_folder, priv->p1_folder );

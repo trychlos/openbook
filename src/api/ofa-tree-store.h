@@ -40,8 +40,6 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_TREE_STORE                ( ofa_tree_store_get_type())

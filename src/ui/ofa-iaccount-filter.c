@@ -44,8 +44,6 @@
 typedef struct {
 	ofaIGetter          *getter;
 	gchar               *resource_name;
-	ofaHub              *hub;
-	ofoDossier          *dossier;
 	GtkSizeGroup        *group0;
 
 	GtkWidget           *from_prompt;
@@ -242,12 +240,6 @@ ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, ofaIGetter *getter, co
 	sdata = get_iaccount_filter_data( filter );
 	sdata->getter = getter;
 	sdata->resource_name = g_strdup( resource_name );
-
-	sdata->hub = ofa_igetter_get_hub( getter );
-	g_return_if_fail( sdata->hub && OFA_IS_HUB( sdata->hub ));
-
-	sdata->dossier = ofa_hub_get_dossier( sdata->hub );
-	g_return_if_fail( sdata->dossier && OFO_IS_DOSSIER( sdata->dossier ));
 
 	setup_composite( filter, sdata );
 }
@@ -537,7 +529,7 @@ is_account_valid( const ofaIAccountFilter *filter, gint who, GtkEntry *entry, Gt
 	cstr = gtk_entry_get_text( entry );
 	if( my_strlen( cstr )){
 		*account = g_strdup( cstr );
-		account_obj = ofo_account_get_by_number( sdata->hub, cstr );
+		account_obj = ofo_account_get_by_number( sdata->getter, cstr );
 		if( account_obj && OFO_IS_ACCOUNT( account_obj )){
 			gtk_label_set_text( GTK_LABEL( label ), ofo_account_get_label( account_obj ));
 			valid = TRUE;

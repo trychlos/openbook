@@ -39,6 +39,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbmodel.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-account.h"
@@ -54,7 +55,7 @@ typedef struct {
 
 	/* update setup
 	 */
-	ofaHub              *hub;
+	ofaIGetter          *getter;
 	const ofaIDBConnect *connect;
 	myIProgress         *window;
 
@@ -91,7 +92,7 @@ static void     idbmodel_iface_init( ofaIDBModelInterface *iface );
 static guint    idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint    idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint    get_last_version( void );
-static gboolean idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
+static gboolean idbmodel_ddl_update( ofaIDBModel *instance, ofaIGetter *getter, myIProgress *window );
 static gboolean upgrade_to( ofaMysqlDBModel *self, sMigration *smig );
 static gboolean exec_query( ofaMysqlDBModel *self, const gchar *query );
 static gboolean version_begin( ofaMysqlDBModel *self, gint version );
@@ -300,18 +301,20 @@ get_last_version( void )
 }
 
 static gboolean
-idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
+idbmodel_ddl_update( ofaIDBModel *instance, ofaIGetter *getter, myIProgress *window )
 {
 	ofaMysqlDBModelPrivate *priv;
 	guint i, cur_version, last_version;
 	gboolean ok;
 	GtkWidget *label;
 	gchar *str;
+	ofaHub *hub;
 
 	priv = ofa_mysql_dbmodel_get_instance_private( OFA_MYSQL_DBMODEL( instance ));
 
 	ok = TRUE;
-	priv->hub = hub;
+	priv->getter = getter;
+	hub = ofa_igetter_get_hub( getter );
 	priv->connect = ofa_hub_get_connect( hub );
 	priv->window = window;
 
@@ -1868,7 +1871,7 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 	 * but for the first day of the exercice */
 	for( ita=priv->v33_accounts ; ita ; ita=ita->next ){
 		cstr = ( const gchar * ) ita->data;
-		account = ofo_account_get_by_number( priv->hub, cstr );
+		account = ofo_account_get_by_number( priv->getter, cstr );
 		if( account ){
 			if( ofo_account_is_root( account )){
 				priv->current += g_list_length( priv->v33_dates );

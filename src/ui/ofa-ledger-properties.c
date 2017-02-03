@@ -58,7 +58,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub              *hub;
 	gboolean             is_writable;
 	gboolean             is_new;
 
@@ -206,7 +205,7 @@ ofa_ledger_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoLedger *led
 
 	priv = ofa_ledger_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->ledger = ledger;
 
@@ -240,10 +239,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -288,6 +284,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_properties_idialog_init";
 	ofaLedgerPropertiesPrivate *priv;
+	ofaHub *hub;
 	gchar *title, *str;
 	const gchar *jou_mnemo;
 	GtkWidget *entry, *label, *last_close_entry, *btn;
@@ -302,7 +299,8 @@ idialog_init( myIDialog *instance )
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	jou_mnemo = ofo_ledger_get_mnemo( priv->ledger );
 	if( !jou_mnemo ){
@@ -342,7 +340,7 @@ idialog_init( myIDialog *instance )
 	my_date_set_from_date( &priv->closing, ofo_ledger_get_last_close( priv->ledger ));
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-last-close" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	str = my_date_to_str( &priv->closing, ofa_prefs_date_display( priv->hub ));
+	str = my_date_to_str( &priv->closing, ofa_prefs_date_display( priv->getter ));
 	gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	g_free( str );
 	last_close_entry = entry;
@@ -381,7 +379,7 @@ init_balances_page( ofaLedgerProperties *self )
 
 	priv = ofa_ledger_properties_get_instance_private( self );
 
-	tview = ofa_ledger_arc_treeview_new( priv->hub, priv->ledger );
+	tview = ofa_ledger_arc_treeview_new( priv->getter, priv->ledger );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-archives" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( tview ));
@@ -438,7 +436,7 @@ is_dialog_validable( ofaLedgerProperties *self )
 	ok = ofo_ledger_is_valid_data( priv->mnemo, priv->label, &msgerr );
 
 	if( ok ){
-		exists = ofo_ledger_get_by_mnemo( priv->hub, priv->mnemo );
+		exists = ofo_ledger_get_by_mnemo( priv->getter, priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ledger_get_mnemo( priv->ledger )));
 		if( !ok ){
@@ -492,7 +490,7 @@ do_update( ofaLedgerProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( self, ledger );
 
 	if( priv->is_new ){
-		ok = ofo_ledger_insert( priv->ledger, priv->hub );
+		ok = ofo_ledger_insert( priv->ledger );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new ledger" ));
 		}

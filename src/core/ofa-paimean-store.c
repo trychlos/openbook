@@ -32,6 +32,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-paimean.h"
 
 #include "core/ofa-paimean-store.h"
@@ -39,12 +40,16 @@
 /* private instance data
  */
 typedef struct {
-	gboolean   dispose_has_run;
+	gboolean    dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 
 	/* runtime
 	 */
-	ofaHub    *hub;
-	GList     *hub_handlers;
+	ofaHub     *hub;
+	GList      *hub_handlers;
 }
 	ofaPaimeanStorePrivate;
 
@@ -139,7 +144,7 @@ ofa_paimean_store_class_init( ofaPaimeanStoreClass *klass )
 
 /**
  * ofa_paimean_store_new:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new #ofaPaimeanStore and attached it to the @dossier
  * if not already done. Else get the already allocated #ofaPaimeanStore
@@ -155,15 +160,15 @@ ofa_paimean_store_class_init( ofaPaimeanStoreClass *klass )
  * Returns: a new reference to the #ofaPaimeanStore object.
  */
 ofaPaimeanStore *
-ofa_paimean_store_new( ofaHub *hub )
+ofa_paimean_store_new( ofaIGetter *getter )
 {
 	ofaPaimeanStore *store;
 	ofaPaimeanStorePrivate *priv;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	store = ( ofaPaimeanStore * ) my_icollector_single_get_object( collector, OFA_TYPE_PAIMEAN_STORE );
 
 	if( store ){
@@ -173,7 +178,9 @@ ofa_paimean_store_new( ofaHub *hub )
 		store = g_object_new( OFA_TYPE_PAIMEAN_STORE, NULL );
 
 		priv = ofa_paimean_store_get_instance_private( store );
-		priv->hub = hub;
+
+		priv->getter = getter;
+		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[PAM_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
@@ -222,7 +229,7 @@ load_dataset( ofaPaimeanStore *self )
 
 	priv = ofa_paimean_store_get_instance_private( self );
 
-	dataset = ofo_paimean_get_dataset( priv->hub );
+	dataset = ofo_paimean_get_dataset( priv->getter );
 
 	for( it=dataset ; it ; it=it->next ){
 		paimean = OFO_PAIMEAN( it->data );

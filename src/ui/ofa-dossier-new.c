@@ -75,7 +75,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar                  *settings_prefix;
-	ofaHub                 *hub;
 	gboolean                dossier_created;
 	gboolean                apply_actions;
 
@@ -226,7 +225,7 @@ ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -275,7 +274,7 @@ ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *s
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->rule = rule;
 	priv->with_su = with_su;
@@ -327,10 +326,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 static gchar *
@@ -390,7 +386,7 @@ idialog_init( myIDialog *instance )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->dossier_bin = ofa_dossier_edit_bin_new(
-			priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_su );
+			priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_su );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_bin ));
 	g_signal_connect( priv->dossier_bin, "ofa-changed", G_CALLBACK( on_dossier_bin_changed ), instance );
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->dossier_bin ), 0 ))){
@@ -400,7 +396,7 @@ idialog_init( myIDialog *instance )
 	/* exercice edition */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "exercice-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->exercice_bin = ofa_exercice_edit_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
+	priv->exercice_bin = ofa_exercice_edit_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
 	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), instance );
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->exercice_bin ), 0 ))){
@@ -411,7 +407,7 @@ idialog_init( myIDialog *instance )
 	if( priv->with_admin ){
 		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "admin-parent" );
 		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-		priv->admin_bin = ofa_admin_credentials_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
+		priv->admin_bin = ofa_admin_credentials_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_bin ));
 		g_signal_connect( priv->admin_bin, "ofa-changed", G_CALLBACK( on_admin_bin_changed ), instance );
 		if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->admin_bin ), 0 ))){
@@ -423,7 +419,7 @@ idialog_init( myIDialog *instance )
 	if( priv->with_actions ){
 		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "actions-parent" );
 		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-		priv->actions_bin = ofa_dossier_actions_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
+		priv->actions_bin = ofa_dossier_actions_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->actions_bin ));
 		g_signal_connect( priv->actions_bin, "ofa-changed", G_CALLBACK( on_actions_bin_changed ), instance );
 	}
@@ -572,7 +568,7 @@ do_create( ofaDossierNew *self )
 	}
 
 	/* copy user preferences for actions on open */
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	prefs = ofa_open_prefs_new( settings, HUB_USER_SETTINGS_GROUP, OPEN_PREFS_USER_KEY );
 	settings = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
 	group = ofa_idbdossier_meta_get_settings_group( dossier_meta );
@@ -598,7 +594,7 @@ do_create( ofaDossierNew *self )
 		}
 
 		if( !ret ){
-			collection = ofa_hub_get_dossier_collection( priv->hub );
+			collection = ofa_igetter_get_dossier_collection( priv->getter );
 			ofa_dossier_collection_delete_period( collection, connect, NULL, TRUE, NULL );
 			if( !my_strlen( msgerr )){
 				msgerr = g_strdup( _( "Unable to create the new dossier" ));

@@ -63,7 +63,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar              *settings_prefix;
-	ofaHub             *hub;
 	gboolean            done;				/* whether we have actually done something */
 	GDate               closing;
 	gboolean            all_ledgers;
@@ -89,7 +88,7 @@ typedef struct {
  * in order to be able to close ledgers without running the dialog
  */
 typedef struct {
-	ofaHub        *hub;
+	ofaIGetter    *getter;
 	GList         *hub_handlers;
 	GtkWindow     *parent;
 	GDate          closing_date;
@@ -236,7 +235,7 @@ ofa_ledger_close_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_ledger_close_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -265,8 +264,8 @@ ofa_ledger_close_do_close_all( ofaIGetter *getter, GtkWindow *parent, const GDat
 	g_return_if_fail( my_date_is_valid( closing_date ));
 
 	sclose = g_new0( sClose, 1 );
-	sclose->hub = ofa_igetter_get_hub( getter );
-	sclose->ledgers = ofo_ledger_get_dataset( sclose->hub );
+	sclose->getter = getter;
+	sclose->ledgers = ofo_ledger_get_dataset( getter );
 	sclose->parent = parent;
 	my_date_set_from_date( &sclose->closing_date, closing_date );
 	sclose->with_archive = with_archive;
@@ -301,10 +300,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -363,7 +359,7 @@ setup_treeview( ofaLedgerClose *self )
 	tview_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-treeview-parent" );
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
-	priv->tview = ofa_ledger_treeview_new( priv->hub );
+	priv->tview = ofa_ledger_treeview_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 
@@ -394,9 +390,9 @@ setup_date( ofaLedgerClose *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->closing_entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( priv->closing_entry ), label, ofa_prefs_date_check( priv->hub ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->closing_entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( priv->closing_entry, "changed", G_CALLBACK( on_date_changed ), self );
 }
@@ -528,6 +524,7 @@ static gboolean
 is_dialog_validable( ofaLedgerClose *self, GList *selected )
 {
 	ofaLedgerClosePrivate *priv;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	GList *it;
 	gboolean ok;
@@ -538,7 +535,9 @@ is_dialog_validable( ofaLedgerClose *self, GList *selected )
 
 	ok = FALSE;
 	gtk_label_set_text( GTK_LABEL( priv->message_label ), "" );
-	dossier = ofa_hub_get_dossier( priv->hub );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 
 	/* do we have a intrinsically valid proposed closing date
 	 * + compare it to the limits of the exercice */
@@ -640,13 +639,13 @@ do_ok( ofaLedgerClose *self )
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
 	/* check balances and dbms integrity */
-	if( !ofa_check_balances_check( priv->hub )){
+	if( !ofa_check_balances_check( priv->getter )){
 		my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING,
 				_( "We have detected losses of balance in your books.\n\n"
 					"In this current state, we will be unable to close any "
 					"ledger until you fix your balances." ));
 
-	} else if( !ofa_check_integrity_check( priv->hub )){
+	} else if( !ofa_check_integrity_check( priv->getter )){
 		my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING,
 				_( "Integrity check of the DBMS has failed.\\"
 					"In this current state, we will be unable to close any "
@@ -670,7 +669,7 @@ do_close( ofaLedgerClose *self )
 	priv = ofa_ledger_close_get_instance_private( self );
 
 	sclose = g_new0( sClose, 1 );
-	sclose->hub = priv->hub;
+	sclose->getter = priv->getter;
 	sclose->parent = GTK_WINDOW( self );
 	my_date_set_from_date( &sclose->closing_date, &priv->closing );
 	sclose->ledgers = ofa_ledger_treeview_get_selected( priv->tview );
@@ -694,11 +693,14 @@ do_close_ledgers( sClose *sclose )
 	GList *it;
 	GtkWidget *dialog, *content, *button;
 	gulong handler;
+	ofaHub *hub;
 
-	handler = g_signal_connect( sclose->hub, SIGNAL_HUB_STATUS_COUNT, G_CALLBACK( hub_on_entry_status_count ), sclose );
+	hub = ofa_igetter_get_hub( sclose->getter );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_STATUS_COUNT, G_CALLBACK( hub_on_entry_status_count ), sclose );
 	sclose->hub_handlers = g_list_prepend( sclose->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( sclose->hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( hub_on_entry_status_change ), sclose );
+	handler = g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( hub_on_entry_status_change ), sclose );
 	sclose->hub_handlers = g_list_prepend( sclose->hub_handlers, ( gpointer ) handler );
 
 	/* the dialog which hosts the progress bars */
@@ -709,7 +711,7 @@ do_close_ledgers( sClose *sclose )
 					_( "_Close" ), GTK_RESPONSE_OK,
 					NULL );
 
-	settings = ofa_hub_get_user_settings( sclose->hub );
+	settings = ofa_igetter_get_user_settings( sclose->getter );
 	my_utils_window_position_restore( GTK_WINDOW( dialog ), settings, "ofaLedgerClosing" );
 	gtk_container_set_border_width( GTK_CONTAINER( dialog ), 4 );
 
@@ -744,7 +746,7 @@ do_close_ledgers( sClose *sclose )
 	my_utils_window_position_save( GTK_WINDOW( dialog ), settings, "ofaLedgerClosing" );
 	gtk_widget_destroy( dialog );
 
-	ofa_hub_disconnect_handlers( sclose->hub, &sclose->hub_handlers );
+	ofa_hub_disconnect_handlers( hub, &sclose->hub_handlers );
 }
 
 static void
@@ -824,7 +826,7 @@ read_settings( ofaLedgerClose *self )
 
 	priv = ofa_ledger_close_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -861,7 +863,7 @@ write_settings( ofaLedgerClose *self )
 			priv->all_ledgers ? "True":"False",
 			priv->archive_ledgers ? "True":"False" );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

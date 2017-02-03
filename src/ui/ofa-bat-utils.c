@@ -31,7 +31,6 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-stream-format.h"
@@ -58,7 +57,6 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 	GtkWidget *file_chooser;
 	GList *importers;
 	ofaIImporter *importer;
-	ofaHub *hub;
 	gchar *uri, *str;
 	ofsImporterParms parms;
 	ofsImportedBat sbat;
@@ -81,23 +79,20 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 		/* take the uri before clearing bat lines */
 		uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( file_chooser ));
 
-		hub = ofa_igetter_get_hub( getter );
-		g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
-
-		importers = ofa_iimporter_find_willing_to( hub, uri, OFO_TYPE_BAT );
+		importers = ofa_iimporter_find_willing_to( getter, uri, OFO_TYPE_BAT );
 		importer = importers ? g_object_ref( importers->data ) : NULL;
 		g_list_free_full( importers, ( GDestroyNotify ) g_object_unref );
 
 		if( importer ){
 			memset( &parms, '\0', sizeof( parms ));
 			parms.version = 1;
-			parms.hub = hub;
+			parms.getter = getter;
 			parms.empty = FALSE;
 			parms.mode = OFA_IDUPLICATE_ABORT;
 			parms.stop = TRUE;
 			parms.uri = uri;
 			parms.type = OFO_TYPE_BAT;
-			parms.format = ofa_iimporter_get_default_format( importer, hub, NULL );
+			parms.format = ofa_iimporter_get_default_format( importer, getter, NULL );
 			parms.importable_data = &sbat;
 
 			if( ofa_iimporter_import( importer, &parms ) == 0 ){

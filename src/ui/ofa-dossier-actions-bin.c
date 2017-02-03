@@ -32,6 +32,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 
 #include "ui/ofa-dossier-actions-bin.h"
 
@@ -42,7 +43,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub       *hub;
+	ofaIGetter   *getter;
 	gchar        *settings_prefix;
 	guint         rule;
 
@@ -192,7 +193,7 @@ ofa_dossier_actions_bin_class_init( ofaDossierActionsBinClass *klass )
 
 /**
  * ofa_dossier_actions_bin_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @settings_prefix: [allow-none]: the prefix of the key in user settings;
  *  if %NULL, then rely on this class name;
  *  when set, then this class automatically adds its name as a suffix.
@@ -204,24 +205,24 @@ ofa_dossier_actions_bin_class_init( ofaDossierActionsBinClass *klass )
  * whether to apply standard actions.
  */
 ofaDossierActionsBin *
-ofa_dossier_actions_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule )
+ofa_dossier_actions_bin_new( ofaIGetter *getter, const gchar *settings_prefix, guint rule )
 {
 	static const gchar *thisfn = "ofa_dossier_actions_bin_new";
 	ofaDossierActionsBin *bin;
 	ofaDossierActionsBinPrivate *priv;
 	gchar *str;
 
-	g_debug( "%s: hub=%p, settings_prefix=%s, guint=%u",
-			thisfn, ( void * ) hub, settings_prefix, rule );
+	g_debug( "%s: getter=%p, settings_prefix=%s, guint=%u",
+			thisfn, ( void * ) getter, settings_prefix, rule );
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( settings_prefix ), NULL );
 
 	bin = g_object_new( OFA_TYPE_DOSSIER_ACTIONS_BIN, NULL );
 
 	priv = ofa_dossier_actions_bin_get_instance_private( bin );
 
-	priv->hub = hub;
+	priv->getter = getter;
 	priv->rule = rule;
 
 	if( my_strlen( settings_prefix )){
@@ -354,7 +355,7 @@ read_settings( ofaDossierActionsBin *self )
 
 	priv = ofa_dossier_actions_bin_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -387,7 +388,7 @@ write_settings( ofaDossierActionsBin *self )
 				gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_btn )) ? "True":"False",
 				gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->standard_btn )) ? "True":"False" );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

@@ -43,8 +43,8 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-dossier-def.h"
 #include "api/ofo-ledger-def.h"
@@ -83,7 +83,7 @@ typedef struct {
 
 GType                ofo_dossier_get_type                  ( void ) G_GNUC_CONST;
 
-ofoDossier          *ofo_dossier_new                       ( ofaHub *hub );
+ofoDossier          *ofo_dossier_new                       ( ofaIGetter *getter );
 
 const gchar         *ofo_dossier_get_default_currency      ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_exe_begin             ( const ofoDossier *dossier );

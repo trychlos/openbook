@@ -34,6 +34,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -51,6 +52,10 @@
  */
 typedef struct {
 	gboolean     dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter  *getter;
 
 	/* runtime
 	 */
@@ -192,23 +197,24 @@ ofa_reconcil_store_class_init( ofaReconcilStoreClass *klass )
 
 /**
  * ofa_reconcil_store_new:
- * hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a reference to a new #ofaReconcilStore, which should be
  * released by the caller.
  */
 ofaReconcilStore *
-ofa_reconcil_store_new( ofaHub *hub )
+ofa_reconcil_store_new( ofaIGetter *getter )
 {
 	ofaReconcilStore *store;
 	ofaReconcilStorePrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	store = g_object_new( OFA_TYPE_RECONCIL_STORE, NULL );
 
 	priv = ofa_reconcil_store_get_instance_private( store );
-	priv->hub = hub;
+
+	priv->getter = getter;
 
 	gtk_tree_store_set_column_types(
 			GTK_TREE_STORE( store ), RECONCIL_N_COLUMNS, st_col_types );
@@ -281,15 +287,15 @@ ofa_reconcil_store_load_by_account( ofaReconcilStore *store, const gchar *accoun
 	g_free( priv->acc_currency );
 	priv->acc_currency = NULL;
 
-	priv->account = ofo_account_get_by_number( priv->hub, account );
+	priv->account = ofo_account_get_by_number( priv->getter, account );
 	if( priv->account ){
 		priv->acc_number = g_strdup( account );
 		priv->acc_currency = g_strdup( ofo_account_get_currency( priv->account ));
-		priv->currency = ofo_currency_get_by_code( priv->hub, priv->acc_currency );
+		priv->currency = ofo_currency_get_by_code( priv->getter, priv->acc_currency );
 	}
 
 	/* load the entries for this account */
-	dataset = ofo_entry_get_dataset_for_store( priv->hub, account, NULL );
+	dataset = ofo_entry_get_dataset_for_store( priv->getter, account, NULL );
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
@@ -367,8 +373,8 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 
 	priv = ofa_reconcil_store_get_instance_private( self );
 
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->hub ));
-	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->hub ));
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->getter ));
+	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->getter ));
 
 	cstr = ofo_entry_get_ref( entry );
 	cref = cstr ? cstr : "";
@@ -442,10 +448,10 @@ entry_get_amount_strs( ofaReconcilStore *self, const ofoEntry *entry, gchar **sd
 	priv = ofa_reconcil_store_get_instance_private( self );
 
 	amount = ofo_entry_get_debit( entry );
-	*sdebit = amount ? ofa_amount_to_str( amount, priv->currency, priv->hub ) : g_strdup( "" );
+	*sdebit = amount ? ofa_amount_to_str( amount, priv->currency, priv->getter ) : g_strdup( "" );
 
 	amount = ofo_entry_get_credit( entry );
-	*scredit = amount ? ofa_amount_to_str( amount, priv->currency, priv->hub ) : g_strdup( "" );
+	*scredit = amount ? ofa_amount_to_str( amount, priv->currency, priv->getter ) : g_strdup( "" );
 }
 
 /**
@@ -472,7 +478,7 @@ ofa_reconcil_store_load_by_bat( ofaReconcilStore *store, ofxCounter bat_id )
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
-	dataset = ofo_bat_line_get_dataset( priv->hub, bat_id );
+	dataset = ofo_bat_line_get_dataset( priv->getter, bat_id );
 
 	for( it=dataset ; it ; it=it->next ){
 		batline = OFO_BAT_LINE( it->data );
@@ -548,8 +554,8 @@ bat_set_row_by_iter( ofaReconcilStore *self, ofoBatLine *batline, GtkTreeIter *i
 
 	priv = ofa_reconcil_store_get_instance_private( self );
 
-	sdeff = my_date_to_str( ofo_bat_line_get_deffect( batline ), ofa_prefs_date_display( priv->hub ));
-	sdope = my_date_to_str( ofo_bat_line_get_dope( batline ), ofa_prefs_date_display( priv->hub ));
+	sdeff = my_date_to_str( ofo_bat_line_get_deffect( batline ), ofa_prefs_date_display( priv->getter ));
+	sdope = my_date_to_str( ofo_bat_line_get_dope( batline ), ofa_prefs_date_display( priv->getter ));
 
 	bat_get_amount_strs( self, batline, &sdeb, &scre );
 
@@ -594,11 +600,11 @@ bat_get_amount_strs( ofaReconcilStore *self, ofoBatLine *batline, gchar **sdebit
 
 	amount = ofo_bat_line_get_amount( batline );
 	if( amount < 0 ){
-		*sdebit = ofa_amount_to_str( -amount, priv->currency, priv->hub );
+		*sdebit = ofa_amount_to_str( -amount, priv->currency, priv->getter );
 		*scredit = g_strdup( "" );
 	} else {
 		*sdebit = g_strdup( "" );
-		*scredit = ofa_amount_to_str( amount, priv->currency, priv->hub );
+		*scredit = ofa_amount_to_str( amount, priv->currency, priv->getter );
 	}
 }
 
@@ -648,7 +654,7 @@ concil_set_row_with_data( ofaReconcilStore *self, ofxCounter id, const GDate *da
 
 	priv = ofa_reconcil_store_get_instance_private( self );
 
-	srappro = date ? my_date_to_str( date, ofa_prefs_date_display( priv->hub )) : g_strdup( "" );
+	srappro = date ? my_date_to_str( date, ofa_prefs_date_display( priv->getter )) : g_strdup( "" );
 	snum = id > 0 ? g_strdup_printf( "%lu", id ) : g_strdup( "" );
 
 	/* g_debug( "concil_number=%s", snum ); */

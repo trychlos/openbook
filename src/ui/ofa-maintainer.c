@@ -81,7 +81,7 @@ old_functions( void )
 
 	/* test formula engine */
 	if( 0 ){
-		ofa_formula_test( priv->hub );
+		ofa_formula_test( priv->getter );
 	}
 
 	/* generate 100 pseudo random integers */

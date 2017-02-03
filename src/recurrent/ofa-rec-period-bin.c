@@ -30,7 +30,7 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 
 #include "recurrent/ofa-rec-period-bin.h"
 #include "recurrent/ofa-rec-period-store.h"
@@ -42,7 +42,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub       *hub;
+	ofaIGetter   *getter;
 
 	/* UI
 	 */
@@ -209,18 +209,21 @@ ofa_rec_period_bin_class_init( ofaRecPeriodBinClass *klass )
 
 /**
  * ofa_rec_period_bin_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofaRecPeriodBin *
-ofa_rec_period_bin_new( ofaHub *hub )
+ofa_rec_period_bin_new( ofaIGetter *getter )
 {
 	ofaRecPeriodBin *self;
 	ofaRecPeriodBinPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	self = g_object_new( OFA_TYPE_REC_PERIOD_BIN, NULL );
+
 	priv = ofa_rec_period_bin_get_instance_private( self );
-	priv->hub = hub;
+
+	priv->getter = getter;
 
 	setup_bin( self );
 
@@ -261,7 +264,7 @@ period_create_combo( ofaRecPeriodBin *self )
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", PER_COL_LABEL );
 
-	store = ofa_rec_period_store_new( priv->hub );
+	store = ofa_rec_period_store_new( priv->getter );
 	sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( store ));
 	/* the sortable model maintains its own reference on the store */
 	g_object_unref( store );

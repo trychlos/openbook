@@ -31,7 +31,9 @@
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 
 #include "ofa-tva-execlose.h"
 
@@ -42,7 +44,7 @@ typedef struct {
 	/* initialization
 	 */
 	const ofaIExeClose   *instance;
-	ofaHub              *hub;
+	ofaIGetter          *getter;
 	const ofaIDBConnect *connect;
 
 	/* progression bar
@@ -55,9 +57,9 @@ typedef struct {
 
 static guint    iexe_close_get_interface_version( void );
 static gchar   *iexe_close_add_row( ofaIExeClose *instance, guint rowtype );
-static gboolean iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub );
-static gboolean do_task_closing( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub );
-static gboolean do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub );
+static gboolean iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter );
+static gboolean do_task_closing( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter );
+static gboolean do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter );
 static void     update_bar( myProgressBar *bar, guint *count, guint total );
 
 /*
@@ -105,16 +107,16 @@ iexe_close_add_row( ofaIExeClose *instance, guint rowtype )
 }
 
 static gboolean
-iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub )
+iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter )
 {
 	gboolean ok;
 
 	switch( rowtype ){
 		case EXECLOSE_CLOSING:
-			ok = do_task_closing( instance, box, hub );
+			ok = do_task_closing( instance, box, getter );
 			break;
 		case EXECLOSE_OPENING:
-			ok = do_task_opening( instance, box, hub );
+			ok = do_task_opening( instance, box, getter );
 			break;
 		default:
 			g_return_val_if_reached( FALSE );
@@ -128,7 +130,7 @@ iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHu
  * %NULL label from add_row() method
  */
 static gboolean
-do_task_closing( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub )
+do_task_closing( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 {
 	GtkWidget *label;
 
@@ -146,13 +148,14 @@ do_task_closing( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub )
  * ARCHTVA_T_DELETED_RECORDS table
  */
 static gboolean
-do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub )
+do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 {
 	gboolean ok;
 	const ofaIDBConnect *connect;
 	gchar *query;
 	myProgressBar *bar;
 	guint count, total;
+	ofaHub *hub;
 
 	bar = my_progress_bar_new();
 	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( bar ));
@@ -161,6 +164,7 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub )
 	total = 12;							/* queries count */
 	count = 0;
 	ok = TRUE;
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	/* cleanup obsolete tables

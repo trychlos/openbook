@@ -52,7 +52,7 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub            *hub;
+	ofaIGetter        *getter;
 	gboolean           is_writable;
 	gint               exe_id;			/* internal identifier of the current exercice */
 	gchar             *settings_prefix;
@@ -182,14 +182,18 @@ action_page_v_setup_view( ofaActionPage *page )
 	static const gchar *thisfn = "ofa_ledger_page_v_setup_view";
 	ofaLedgerPagePrivate *priv;
 	GtkWidget *frame;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	frame = setup_treeview( OFA_LEDGER_PAGE( page ));
 
@@ -203,7 +207,7 @@ setup_treeview( ofaLedgerPage *page )
 
 	priv = ofa_ledger_page_get_instance_private( page );
 
-	priv->tview = ofa_ledger_treeview_new( priv->hub );
+	priv->tview = ofa_ledger_treeview_new( priv->getter );
 	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_ledger_treeview_setup_columns( priv->tview );
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
@@ -368,12 +372,15 @@ on_delete_key( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self )
 static void
 action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self )
 {
+	ofaLedgerPagePrivate *priv;
 	ofoLedger *ledger;
 	GtkWindow *toplevel;
 
-	ledger = ofo_ledger_new();
+	priv = ofa_ledger_page_get_instance_private( self );
+
+	ledger = ofo_ledger_new( priv->getter );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_ledger_properties_run( OFA_IGETTER( self ), toplevel, ledger );
+	ofa_ledger_properties_run( priv->getter, toplevel, ledger );
 }
 
 /*
@@ -395,7 +402,7 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPag
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_ledger_properties_run( OFA_IGETTER( self ), toplevel, ledger );
+	ofa_ledger_properties_run( priv->getter, toplevel, ledger );
 
 	ofa_ledger_treeview_free_selected( selected );
 }

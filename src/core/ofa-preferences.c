@@ -39,7 +39,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iproperties.h"
 #include "api/ofa-preferences.h"
@@ -58,10 +57,6 @@ typedef struct {
 	 */
 	ofaIGetter               *getter;
 	GtkWindow                *parent;
-
-	/* runtime
-	 */
-	ofaHub                   *hub;
 
 	/* UI - General
 	 */
@@ -165,15 +160,15 @@ static void     on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences
 static void     check_for_activable_dlg( ofaPreferences *self );
 static void     on_ok_clicked( ofaPreferences *self );
 static gboolean do_update_user_interface_page( ofaPreferences *self, gchar **msgerr );
-static gchar   *dnd_main_tabs_read_settings( ofaHub *hub );
+static gchar   *dnd_main_tabs_read_settings( ofaIGetter *getter );
 static void     dnd_main_tabs_write_settings( ofaPreferences *self, GtkWidget *reorder_btn );
 static gboolean is_willing_to_quit( void );
 static gboolean do_update_dossier_page( ofaPreferences *self, gchar **msgerr );
 static gboolean do_update_account_page( ofaPreferences *self, gchar **msgerr );
 static gboolean do_update_locales_page( ofaPreferences *self, gchar **msgerr );
 /*static void     error_decimal_sep( ofaPreferences *self );*/
-static void     setup_date_formats( ofaHub *hub );
-static void     setup_amount_formats( ofaHub *hub );
+static void     setup_date_formats( ofaIGetter *getter );
+static void     setup_amount_formats( ofaIGetter *getter );
 static gboolean do_update_export_page( ofaPreferences *self, gchar **msgerr );
 static gboolean do_update_import_page( ofaPreferences *self, gchar **msgerr );
 static gboolean update_prefs_plugin( ofaPreferences *self, gchar **msgerr );
@@ -279,7 +274,7 @@ ofa_preferences_run( ofaIGetter *getter, GtkWindow *parent, ofaExtenderModule *p
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->plugin = plugin;
 	priv->object_page = NULL;
@@ -313,10 +308,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -382,42 +374,42 @@ init_user_interface_page( ofaPreferences *self )
 	/* reorder vs. detach man tabs */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-reorder" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
-	bvalue = ofa_prefs_dnd_reorder( priv->hub );
+	bvalue = ofa_prefs_dnd_reorder( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-detach" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
-	bvalue = ofa_prefs_dnd_detach( priv->hub );
+	bvalue = ofa_prefs_dnd_detach( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 
 	/* priv->confirm_on_escape_btn is set before acting on
 	 *  quit-on-escape button as triggered signal use the variable */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-confirm-on-escape" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	bvalue = ofa_prefs_assistant_confirm_on_escape( priv->hub );
+	bvalue = ofa_prefs_assistant_confirm_on_escape( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	priv->confirm_on_escape_btn = GTK_CHECK_BUTTON( button );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-quit-on-escape" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( button, "toggled", G_CALLBACK( on_quit_on_escape_toggled ), self );
-	bvalue = ofa_prefs_assistant_quit_on_escape( priv->hub );
+	bvalue = ofa_prefs_assistant_quit_on_escape( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	on_quit_on_escape_toggled( GTK_TOGGLE_BUTTON( button ), self );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-confirm-on-cancel" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	bvalue = ofa_prefs_assistant_confirm_on_cancel( priv->hub );
+	bvalue = ofa_prefs_assistant_confirm_on_cancel( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-confirm-altf4" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	bvalue = ofa_prefs_appli_confirm_on_altf4( priv->hub );
+	bvalue = ofa_prefs_appli_confirm_on_altf4( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-confirm-quit" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	bvalue = ofa_prefs_appli_confirm_on_quit( priv->hub );
+	bvalue = ofa_prefs_appli_confirm_on_quit( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 }
 
@@ -430,7 +422,7 @@ init_dossier_page( ofaPreferences *self )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	priv->open_prefs = ofa_open_prefs_new( settings, HUB_USER_SETTINGS_GROUP, OPEN_PREFS_USER_KEY );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "prefs-parent" );
@@ -440,7 +432,7 @@ init_dossier_page( ofaPreferences *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dossier-delete-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->dd_prefs = ofa_dossier_delete_prefs_bin_new( priv->hub );
+	priv->dd_prefs = ofa_dossier_delete_prefs_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dd_prefs ));
 }
 
@@ -455,7 +447,7 @@ init_account_page( ofaPreferences *self )
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-delete-with-child" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	bvalue = ofa_prefs_account_delete_root_with_children( priv->hub );
+	bvalue = ofa_prefs_account_delete_root_with_children( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 }
 
@@ -472,14 +464,14 @@ init_locales_page( ofaPreferences *self )
 	init_locale_date( self,
 			&priv->p4_display_combo,
 			"p4-display-label", "p4-display-parent",
-			ofa_prefs_date_display( priv->hub ));
+			ofa_prefs_date_display( priv->getter ));
 	g_signal_connect( priv->p4_display_combo, "changed", G_CALLBACK( on_display_date_changed ), self );
 	on_display_date_changed( GTK_COMBO_BOX( priv->p4_display_combo ), self );
 
 	init_locale_date( self,
 			&priv->p4_check_combo,
 			"p4-check-label",  "p4-check-parent",
-			ofa_prefs_date_check( priv->hub ));
+			ofa_prefs_date_check( priv->getter ));
 	g_signal_connect( priv->p4_check_combo, "changed", G_CALLBACK( on_check_date_changed ), self );
 	on_check_date_changed( GTK_COMBO_BOX( priv->p4_check_combo ), self );
 
@@ -487,7 +479,7 @@ init_locales_page( ofaPreferences *self )
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
 	priv->p4_date_over = check;
 	g_signal_connect( check, "toggled", G_CALLBACK( on_date_overwrite_toggled ), self );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_date_overwrite( priv->hub ));
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_date_overwrite( priv->getter ));
 	on_date_overwrite_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* decimal display */
@@ -497,7 +489,7 @@ init_locales_page( ofaPreferences *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_decimal_sep ));
-	my_decimal_combo_set_selected( priv->p4_decimal_sep, ofa_prefs_amount_decimal_sep( priv->hub ));
+	my_decimal_combo_set_selected( priv->p4_decimal_sep, ofa_prefs_amount_decimal_sep( priv->getter ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-decimal-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -508,7 +500,7 @@ init_locales_page( ofaPreferences *self )
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
 	priv->p4_accept_dot = check;
 	g_signal_connect( check, "toggled", G_CALLBACK( on_accept_dot_toggled ), self );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_accept_dot( priv->hub ));
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_accept_dot( priv->getter ));
 	on_accept_dot_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* accept comma decimal separator */
@@ -516,14 +508,14 @@ init_locales_page( ofaPreferences *self )
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
 	priv->p4_accept_comma = check;
 	g_signal_connect( check, "toggled", G_CALLBACK( on_accept_comma_toggled ), self );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_accept_comma( priv->hub ));
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_accept_comma( priv->getter ));
 	on_accept_comma_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* thousand separator */
 	init_locale_sep( self,
 			&priv->p4_thousand_sep,
 			"p4-thousand-label", "p4-thousand-sep",
-			ofa_prefs_amount_thousand_sep( priv->hub ));
+			ofa_prefs_amount_thousand_sep( priv->getter ));
 }
 
 #if 0
@@ -612,7 +604,7 @@ init_export_page( ofaPreferences *self )
 	target = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-export-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	format = ofa_stream_format_new( priv->hub, NULL, OFA_SFMODE_EXPORT );
+	format = ofa_stream_format_new( priv->getter, NULL, OFA_SFMODE_EXPORT );
 	priv->export_settings = ofa_stream_format_bin_new( format );
 	g_object_unref( format );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->export_settings ));
@@ -623,7 +615,7 @@ init_export_page( ofaPreferences *self )
 	ofa_stream_format_bin_set_mode_sensitive( priv->export_settings, FALSE );
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p52-folder" ));
-	str = ofa_prefs_export_default_folder( priv->hub );
+	str = ofa_prefs_export_default_folder( priv->getter );
 	if( my_strlen( str )){
 		gtk_file_chooser_set_current_folder_uri( priv->p5_chooser, str );
 	}
@@ -649,7 +641,7 @@ init_import_page( ofaPreferences *self )
 	target = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-import-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	settings = ofa_stream_format_new( priv->hub, NULL, OFA_SFMODE_IMPORT );
+	settings = ofa_stream_format_new( priv->getter, NULL, OFA_SFMODE_IMPORT );
 	priv->import_settings = ofa_stream_format_bin_new( settings );
 	g_object_unref( settings );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->import_settings ));
@@ -669,7 +661,7 @@ enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn )
 	priv = ofa_preferences_get_instance_private( self );
 
 	ok = TRUE;
-	extenders = ofa_hub_get_extender_collection( priv->hub );
+	extenders = ofa_igetter_get_extender_collection( priv->getter );
 	list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IPROPERTIES );
 
 	for( it=list ; it ; it=it->next ){
@@ -703,7 +695,7 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *instance
 	priv = ofa_preferences_get_instance_private( self );
 
 	ok = FALSE;
-	page = ofa_iproperties_init( instance, priv->hub );
+	page = ofa_iproperties_init( instance, priv->getter );
 	label = ofa_iproperties_get_title( instance );
 
 	if( page && my_strlen( label )){
@@ -900,7 +892,7 @@ do_update_user_interface_page( ofaPreferences *self, gchar **msgerr )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-reorder" );
 	g_return_val_if_fail( button && GTK_IS_RADIO_BUTTON( button ), FALSE );
@@ -944,19 +936,19 @@ do_update_user_interface_page( ofaPreferences *self, gchar **msgerr )
 
 /**
  * ofa_prefs_dnd_reorder:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: %TRUE if the user can reorder the main tabs.
  */
 gboolean
-ofa_prefs_dnd_reorder( ofaHub *hub )
+ofa_prefs_dnd_reorder( ofaIGetter *getter )
 {
 	gchar *str;
 	gboolean reorder;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	str = dnd_main_tabs_read_settings( hub );
+	str = dnd_main_tabs_read_settings( getter );
 	reorder = ( my_collate( str, SETTINGS_REORDER ) == 0 );
 	g_free( str );
 
@@ -965,19 +957,19 @@ ofa_prefs_dnd_reorder( ofaHub *hub )
 
 /**
  * ofa_prefs_dnd_detach:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: %TRUE if the user can detach the main tabs.
  */
 gboolean
-ofa_prefs_dnd_detach( ofaHub *hub )
+ofa_prefs_dnd_detach( ofaIGetter *getter )
 {
 	gchar *str;
 	gboolean detach;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	str = dnd_main_tabs_read_settings( hub );
+	str = dnd_main_tabs_read_settings( getter );
 	detach = ( my_collate( str, SETTINGS_DETACH ) == 0 );
 	g_free( str );
 
@@ -989,14 +981,14 @@ ofa_prefs_dnd_detach( ofaHub *hub )
  * Defaults is Reorder
  */
 static gchar *
-dnd_main_tabs_read_settings( ofaHub *hub )
+dnd_main_tabs_read_settings( ofaIGetter *getter )
 {
 	myISettings *settings;
 	GList *strlist, *it;
 	const gchar *cstr;
 	gchar *str;
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_dnd_main_tabs );
 
@@ -1023,7 +1015,7 @@ dnd_main_tabs_write_settings( ofaPreferences *self, GtkWidget *reorder_btn )
 	str = g_strdup_printf( "%s;",
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( reorder_btn )) ? SETTINGS_REORDER : SETTINGS_DETACH );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_dnd_main_tabs, str );
 
 	g_free( str );
@@ -1031,82 +1023,82 @@ dnd_main_tabs_write_settings( ofaPreferences *self, GtkWidget *reorder_btn )
 
 /**
  * ofa_prefs_assistant_quit_on_escape:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: %TRUE if assistant can be quit on Escape key.
  */
 gboolean
-ofa_prefs_assistant_quit_on_escape( ofaHub *hub )
+ofa_prefs_assistant_quit_on_escape( ofaIGetter *getter )
 {
 	myISettings *settings;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 
 	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_assistant_quit_on_escape ));
 }
 
 /**
  * ofa_prefs_assistant_confirm_on_escape:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: %TRUE if confirmation is required when quitting an assistant
  * on Escape key.
  */
 gboolean
-ofa_prefs_assistant_confirm_on_escape( ofaHub *hub )
+ofa_prefs_assistant_confirm_on_escape( ofaIGetter *getter )
 {
 	myISettings *settings;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 
 	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_assistant_confirm_on_escape ));
 }
 
 /**
  * ofa_prefs_assistant_confirm_on_cancel:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: %TRUE if confirmation is required when quitting an assistant
  * on Cancel key.
  */
 gboolean
-ofa_prefs_assistant_confirm_on_cancel( ofaHub *hub )
+ofa_prefs_assistant_confirm_on_cancel( ofaIGetter *getter )
 {
 	myISettings *settings;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 
 	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_assistant_confirm_on_cancel ));
 }
 
 /**
  * ofa_prefs_assistant_is_willing_to_quit:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @keyval: the hit key.
  *
  * Returns: %TRUE if the assistant can quit.
  */
 gboolean
-ofa_prefs_assistant_is_willing_to_quit( ofaHub *hub, guint keyval )
+ofa_prefs_assistant_is_willing_to_quit( ofaIGetter *getter, guint keyval )
 {
 	static const gchar *thisfn = "ofa_prefs_assistant_is_willing_to_quit";
 	gboolean ok_escape, ok_cancel;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	ok_escape = ( keyval == GDK_KEY_Escape &&
-					ofa_prefs_assistant_quit_on_escape( hub ) &&
-					(!ofa_prefs_assistant_confirm_on_escape( hub ) || is_willing_to_quit()));
+					ofa_prefs_assistant_quit_on_escape( getter ) &&
+					(!ofa_prefs_assistant_confirm_on_escape( getter ) || is_willing_to_quit()));
 	g_debug( "%s: ok_escape=%s", thisfn, ok_escape ? "True":"False" );
 
 	ok_cancel = ( keyval == GDK_KEY_Cancel &&
-					(!ofa_prefs_assistant_confirm_on_cancel( hub ) || is_willing_to_quit()));
+					(!ofa_prefs_assistant_confirm_on_cancel( getter ) || is_willing_to_quit()));
 	g_debug( "%s: ok_cancel=%s", thisfn, ok_cancel ? "True":"False" );
 
 	return( ok_escape || ok_cancel );
@@ -1127,38 +1119,38 @@ is_willing_to_quit( void )
 
 /**
  * ofa_prefs_appli_confirm_on_altf4:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: %TRUE if a confirmation is required when quitting the
  * application on Alt+F4 key.
  */
 gboolean
-ofa_prefs_appli_confirm_on_altf4( ofaHub *hub )
+ofa_prefs_appli_confirm_on_altf4( ofaIGetter *getter )
 {
 	myISettings *settings;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 
 	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_appli_confirm_on_altf4 ));
 }
 
 /**
  * ofa_prefs_appli_confirm_on_quit:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: %TRUE if a confirmation is required when quitting the
  * application.
  */
 gboolean
-ofa_prefs_appli_confirm_on_quit( ofaHub *hub )
+ofa_prefs_appli_confirm_on_quit( ofaIGetter *getter )
 {
 	myISettings *settings;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 
 	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_appli_confirm_on_quit ));
 }
@@ -1189,7 +1181,7 @@ do_update_account_page( ofaPreferences *self, gchar **msgerrr )
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-delete-with-child" );
 	g_return_val_if_fail( button && GTK_IS_CHECK_BUTTON( button ), FALSE );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	my_isettings_set_boolean(
 			settings, HUB_USER_SETTINGS_GROUP,
 			st_account_delete_root_with_child,
@@ -1200,15 +1192,18 @@ do_update_account_page( ofaPreferences *self, gchar **msgerrr )
 
 /**
  * ofa_prefs_account_delete_root_with_child:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: %TRUE if deleting a root account also deletes its children.
  */
 gboolean
-ofa_prefs_account_delete_root_with_children( ofaHub *hub )
+ofa_prefs_account_delete_root_with_children( ofaIGetter *getter )
 {
 	myISettings *settings;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 
 	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_account_delete_root_with_child ));
 }
@@ -1225,7 +1220,7 @@ do_update_locales_page( ofaPreferences *self, gchar **msgerr )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 
 	str = g_strdup_printf( "%d;%d;%s;",
 			my_date_combo_get_selected( priv->p4_display_combo ),
@@ -1260,17 +1255,17 @@ do_update_locales_page( ofaPreferences *self, gchar **msgerr )
 
 /**
  * ofa_prefs_date_display:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the prefered format for displaying the dates
  */
 myDateFormat
-ofa_prefs_date_display( ofaHub *hub )
+ofa_prefs_date_display( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), MY_DATE_YYMD );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), MY_DATE_YYMD );
 
 	if( !st_date_prefs_set ){
-		setup_date_formats( hub );
+		setup_date_formats( getter );
 	}
 
 	return( st_date_display );
@@ -1278,17 +1273,17 @@ ofa_prefs_date_display( ofaHub *hub )
 
 /**
  * ofa_prefs_date_check:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the prefered format for visually checking the dates
  */
 myDateFormat
-ofa_prefs_date_check( ofaHub *hub )
+ofa_prefs_date_check( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), MY_DATE_YYMD );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), MY_DATE_YYMD );
 
 	if( !st_date_prefs_set ){
-		setup_date_formats( hub );
+		setup_date_formats( getter );
 	}
 
 	return( st_date_check );
@@ -1296,17 +1291,17 @@ ofa_prefs_date_check( ofaHub *hub )
 
 /**
  * ofa_prefs_date_overwrite:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: whether the edition should start in overwrite mode.
  */
 gboolean
-ofa_prefs_date_overwrite( ofaHub *hub )
+ofa_prefs_date_overwrite( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	if( !st_date_prefs_set ){
-		setup_date_formats( hub );
+		setup_date_formats( getter );
 	}
 
 	return( st_date_overwrite );
@@ -1316,13 +1311,13 @@ ofa_prefs_date_overwrite( ofaHub *hub )
  * settings = display_format(i); check_format(i); overwrite(b);
  */
 static void
-setup_date_formats( ofaHub *hub )
+setup_date_formats( ofaIGetter *getter )
 {
 	myISettings *settings;
 	GList *strlist, *it;
 	const gchar *cstr;
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 
 	/* have a suitable default value */
 	st_date_display = MY_DATE_DMYY;
@@ -1355,19 +1350,19 @@ setup_date_formats( ofaHub *hub )
 
 /**
  * ofa_prefs_amount_decimal_sep:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the prefered decimal separator (for display)
  *
  * The returned string should be g_free() by the caller.
  */
 const gchar *
-ofa_prefs_amount_decimal_sep( ofaHub *hub )
+ofa_prefs_amount_decimal_sep( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	if( !st_amount_prefs_set ){
-		setup_amount_formats( hub );
+		setup_amount_formats( getter );
 	}
 
 	return( st_amount_decimal );
@@ -1375,19 +1370,19 @@ ofa_prefs_amount_decimal_sep( ofaHub *hub )
 
 /**
  * ofa_prefs_amount_thousand_sep:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the prefered thousand separator (for display)
  *
  * The returned string should be g_free() by the caller.
  */
 const gchar *
-ofa_prefs_amount_thousand_sep( ofaHub *hub )
+ofa_prefs_amount_thousand_sep( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	if( !st_amount_prefs_set ){
-		setup_amount_formats( hub );
+		setup_amount_formats( getter );
 	}
 
 	return( st_amount_thousand );
@@ -1395,17 +1390,17 @@ ofa_prefs_amount_thousand_sep( ofaHub *hub )
 
 /**
  * ofa_prefs_amount_accept_dot:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: whether the user accepts dot as a decimal separator
  */
 gboolean
-ofa_prefs_amount_accept_dot( ofaHub *hub )
+ofa_prefs_amount_accept_dot( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	if( !st_amount_prefs_set ){
-		setup_amount_formats( hub );
+		setup_amount_formats( getter );
 	}
 
 	return( st_amount_accept_dot );
@@ -1413,17 +1408,17 @@ ofa_prefs_amount_accept_dot( ofaHub *hub )
 
 /**
  * ofa_prefs_amount_accept_comma:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: whether the user accepts comma as a decimal separator
  */
 gboolean
-ofa_prefs_amount_accept_comma( ofaHub *hub )
+ofa_prefs_amount_accept_comma( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	if( !st_amount_prefs_set ){
-		setup_amount_formats( hub );
+		setup_amount_formats( getter );
 	}
 
 	return( st_amount_accept_comma );
@@ -1433,7 +1428,7 @@ ofa_prefs_amount_accept_comma( ofaHub *hub )
  * settings = decimal_char;thousand_char;accept_dot;accept_comma;
  */
 static void
-setup_amount_formats( ofaHub *hub )
+setup_amount_formats( ofaIGetter *getter )
 {
 	myISettings *settings;
 	GList *strlist, *it;
@@ -1445,7 +1440,7 @@ setup_amount_formats( ofaHub *hub )
 	st_amount_accept_dot = TRUE;
 	st_amount_accept_comma = TRUE;
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, SETTINGS_AMOUNT );
 
 	it = strlist;
@@ -1491,7 +1486,7 @@ do_update_export_page( ofaPreferences *self, gchar **msgerr )
 
 	text = gtk_file_chooser_get_uri( priv->p5_chooser );
 	if( my_strlen( text )){
-		settings = ofa_hub_get_user_settings( priv->hub );
+		settings = ofa_igetter_get_user_settings( priv->getter );
 		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_export_default_folder, text );
 	}
 	g_free( text );
@@ -1501,19 +1496,19 @@ do_update_export_page( ofaPreferences *self, gchar **msgerr )
 
 /**
  * ofa_prefs_export_default_folder:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the default export folder as a newly allocated string which
  * should be #g_free() by the caller.
  */
 gchar *
-ofa_prefs_export_default_folder( ofaHub *hub )
+ofa_prefs_export_default_folder( ofaIGetter *getter )
 {
 	myISettings *settings;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 
 	return( my_isettings_get_string( settings, HUB_USER_SETTINGS_GROUP, st_export_default_folder ));
 }

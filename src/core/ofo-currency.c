@@ -42,6 +42,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
@@ -126,7 +127,7 @@ static GList       *icollectionable_load_collection( void *user_data );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
-static gboolean     iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gboolean     iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( void );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
@@ -199,7 +200,7 @@ ofo_currency_class_init( ofoCurrencyClass *klass )
 
 /**
  * ofo_currency_get_dataset:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the full #ofoCurrency dataset.
  *
@@ -207,16 +208,20 @@ ofo_currency_class_init( ofoCurrencyClass *klass )
  * be released by the caller.
  */
 GList *
-ofo_currency_get_dataset( ofaHub *hub )
+ofo_currency_get_dataset( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	myICollector *collector;
 
-	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_CURRENCY, hub ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_CURRENCY, getter ));
 }
 
 /**
  * ofo_currency_get_by_code:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the searched currency, or %NULL.
  *
@@ -224,14 +229,14 @@ ofo_currency_get_dataset( ofaHub *hub )
  * not be unreffed by the caller.
  */
 ofoCurrency *
-ofo_currency_get_by_code( ofaHub *hub, const gchar *code )
+ofo_currency_get_by_code( ofaIGetter *getter, const gchar *code )
 {
 	GList *dataset;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( code ), NULL );
 
-	dataset = ofo_currency_get_dataset( hub );
+	dataset = ofo_currency_get_dataset( getter );
 
 	return( currency_find_by_code( dataset, code ));
 }
@@ -252,13 +257,17 @@ currency_find_by_code( GList *set, const gchar *code )
 
 /**
  * ofo_currency_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoCurrency *
-ofo_currency_new( void )
+ofo_currency_new( ofaIGetter *getter )
 {
 	ofoCurrency *currency;
 
-	currency = g_object_new( OFO_TYPE_CURRENCY, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	currency = g_object_new( OFO_TYPE_CURRENCY, "ofo-base-getter", getter, NULL );
+
 	OFO_BASE( currency )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( currency );
@@ -355,6 +364,7 @@ ofo_currency_get_precision( const ofoCurrency *currency )
 gboolean
 ofo_currency_is_deletable( const ofoCurrency *currency )
 {
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean deletable;
 
@@ -362,7 +372,8 @@ ofo_currency_is_deletable( const ofoCurrency *currency )
 	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, FALSE );
 
 	deletable = TRUE;
-	hub = ofo_base_get_hub( OFO_BASE( currency ));
+	getter = ofo_base_get_getter( OFO_BASE( currency ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( hub && deletable ){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, currency, &deletable );
@@ -478,25 +489,26 @@ currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp )
 /**
  * ofo_currency_insert:
  * @currency:
- * @hub: the current #ofaHub object.
  */
 gboolean
-ofo_currency_insert( ofoCurrency *currency, ofaHub *hub )
+ofo_currency_insert( ofoCurrency *currency )
 {
 	static const gchar *thisfn = "ofo_currency_insert";
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gboolean ok;
 
-	g_debug( "%s: currency=%p, hub=%p",
-			thisfn, ( void * ) currency, ( void * ) hub );
+	g_debug( "%s: currency=%p", thisfn, ( void * ) currency );
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, FALSE );
 
+	getter = ofo_base_get_getter( OFO_BASE( currency ));
+	hub = ofa_igetter_get_hub( getter );
+
 	if( currency_do_insert( currency, ofa_hub_get_connect( hub ))){
-		ofo_base_set_hub( OFO_BASE( currency ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( currency ), NULL, hub );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( currency ), NULL, getter );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, currency );
 		ok = TRUE;
 	}
@@ -570,6 +582,7 @@ ofo_currency_update( ofoCurrency *currency, const gchar *prev_code )
 {
 	static const gchar *thisfn = "ofo_currency_update";
 	gboolean ok;
+	ofaIGetter *getter;
 	ofaHub *hub;
 
 	g_debug( "%s: currency=%p, prev_code=%s",
@@ -579,7 +592,8 @@ ofo_currency_update( ofoCurrency *currency, const gchar *prev_code )
 	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( currency ));
+	getter = ofo_base_get_getter( OFO_BASE( currency ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( currency_do_update( currency, prev_code, ofa_hub_get_connect( hub ))){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, currency, prev_code );
@@ -646,6 +660,7 @@ ofo_currency_delete( ofoCurrency *currency )
 {
 	static const gchar *thisfn = "ofo_currency_delete";
 	gboolean ok;
+	ofaIGetter *getter;
 	ofaHub *hub;
 
 	g_debug( "%s: currency=%p", thisfn, ( void * ) currency );
@@ -655,11 +670,12 @@ ofo_currency_delete( ofoCurrency *currency )
 	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( currency ));
+	getter = ofo_base_get_getter( OFO_BASE( currency ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( currency_do_delete( currency, ofa_hub_get_connect( hub ))){
 		g_object_ref( currency );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( currency ));
+		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( currency ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, currency );
 		g_object_unref( currency );
 		ok = TRUE;
@@ -717,13 +733,13 @@ icollectionable_load_collection( void *user_data )
 {
 	GList *list;
 
-	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
 	list = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_CURRENCIES",
 					OFO_TYPE_CURRENCY,
-					OFA_HUB( user_data ));
+					OFA_IGETTER( user_data ));
 
 	return( list );
 }
@@ -763,14 +779,14 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	gchar *str;
 	GList *dataset, *it;
 	gboolean with_headers, ok;
 	gulong count;
 
-	dataset = ofo_currency_get_dataset( hub );
+	dataset = ofo_currency_get_dataset( getter );
 	with_headers = ofa_stream_format_get_with_headers( settings );
 
 	count = ( gulong ) g_list_length( dataset );
@@ -847,21 +863,23 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaHub *hub;
 	GList *dataset;
 	gchar *bck_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+	hub = ofa_igetter_get_hub( parms->getter );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "OFA_T_CURRENCIES" );
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_CURRENCIES" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_CURRENCY );
-			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_CURRENCY );
+			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_CURRENCY );
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_CURRENCY );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "OFA_T_CURRENCIES" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_CURRENCIES" );
 		}
 
 		g_free( bck_table );
@@ -898,7 +916,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 		numline += 1;
 		fields = ( GSList * ) itl->data;
-		currency = ofo_currency_new();
+		currency = ofo_currency_new( parms->getter );
 
 		/* currency code */
 		itf = fields;
@@ -955,6 +973,7 @@ static void
 iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
 {
 	GList *it;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gboolean insert;
 	guint total;
@@ -963,7 +982,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	const gchar *cur_id;
 
 	total = g_list_length( dataset );
-	connect = ofa_hub_get_connect( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && total > 0 ){

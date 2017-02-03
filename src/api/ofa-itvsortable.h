@@ -37,7 +37,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -157,8 +157,8 @@ gint          ofa_itvsortable_sort_str_int              ( const gchar *a, const 
 void          ofa_itvsortable_set_name                  ( ofaITVSortable *instance,
 																const gchar *name );
 
-void          ofa_itvsortable_set_hub                   ( ofaITVSortable *instance,
-																ofaHub *hub );
+void          ofa_itvsortable_set_getter                ( ofaITVSortable *instance,
+																ofaIGetter *getter );
 
 void          ofa_itvsortable_set_treeview              ( ofaITVSortable *instance,
 																GtkTreeView *treeview );

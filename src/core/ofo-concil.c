@@ -36,6 +36,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-concil.h"
@@ -59,7 +60,7 @@ typedef struct {
 }
 	ofoConcilPrivate;
 
-static ofoConcil *concil_get_by_query( const gchar *query, ofaHub *hub );
+static ofoConcil *concil_get_by_query( const gchar *query, ofaIGetter *getter );
 static void       concil_set_id( ofoConcil *concil, ofxCounter id );
 static void       concil_add_other_id( ofoConcil *concil, const gchar *type, ofxCounter id );
 static gboolean   concil_do_insert( ofoConcil *concil, const ofaIDBConnect *connect );
@@ -133,7 +134,7 @@ ofo_concil_class_init( ofoConcilClass *klass )
 
 /**
  * ofo_concil_get_orphans:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of conciliation children identifiers which no more
  * have a parent.
@@ -142,12 +143,15 @@ ofo_concil_class_init( ofoConcilClass *klass )
  * the caller.
  */
 GList *
-ofo_concil_get_orphans( ofaHub *hub )
+ofo_concil_get_orphans( ofaIGetter *getter )
 {
+	ofaHub *hub;
 	GList *orphans;
 	GSList *result, *irow, *icol;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	hub = ofa_igetter_get_hub( getter );
 
 	if( !ofa_idbconnect_query_ex(
 			ofa_hub_get_connect( hub ),
@@ -168,7 +172,7 @@ ofo_concil_get_orphans( ofaHub *hub )
 
 /**
  * ofo_concil_get_by_id:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @rec_id: the identifier of the requested conciliation group.
  *
  * Returns: a newly allocated object, or %NULL.
@@ -176,18 +180,18 @@ ofo_concil_get_orphans( ofaHub *hub )
  * Only the group header is loaded. The list of individuals are not.
  */
 ofoConcil *
-ofo_concil_get_by_id( ofaHub *hub, ofxCounter rec_id )
+ofo_concil_get_by_id( ofaIGetter *getter, ofxCounter rec_id )
 {
 	ofoConcil *concil;
 	gchar *query;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	query = g_strdup_printf(
 				"SELECT REC_ID,REC_DVAL,REC_USER,REC_STAMP FROM OFA_T_CONCIL "
 				"	WHERE REC_ID=%ld", rec_id );
 
-	concil = concil_get_by_query( query, hub );
+	concil = concil_get_by_query( query, getter );
 
 	g_free( query );
 
@@ -196,7 +200,7 @@ ofo_concil_get_by_id( ofaHub *hub, ofxCounter rec_id )
 
 /**
  * ofo_concil_get_by_other_id:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @type: the seatched type, an entry or a BAT line.
  * @other_id: the identifier of the searched type.
  *
@@ -204,12 +208,12 @@ ofo_concil_get_by_id( ofaHub *hub, ofxCounter rec_id )
  * list associated to the specified @other_id, or %NULL.
  */
 ofoConcil *
-ofo_concil_get_by_other_id( ofaHub *hub, const gchar *type, ofxCounter other_id )
+ofo_concil_get_by_other_id( ofaIGetter *getter, const gchar *type, ofxCounter other_id )
 {
 	ofoConcil *concil;
 	gchar *query;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( type ), NULL );
 
 	query = g_strdup_printf(
@@ -218,7 +222,7 @@ ofo_concil_get_by_other_id( ofaHub *hub, const gchar *type, ofxCounter other_id 
 				"		(SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL_IDS "
 				"		WHERE REC_IDS_TYPE='%s' AND REC_IDS_OTHER=%ld)", type, other_id );
 
-	concil = concil_get_by_query( query, hub );
+	concil = concil_get_by_query( query, getter );
 
 	g_free( query );
 
@@ -228,8 +232,9 @@ ofo_concil_get_by_other_id( ofaHub *hub, const gchar *type, ofxCounter other_id 
 /*
  */
 static ofoConcil *
-concil_get_by_query( const gchar *query, ofaHub *hub )
+concil_get_by_query( const gchar *query, ofaIGetter *getter )
 {
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	ofoConcil *concil;
 	GSList *result, *irow, *icol;
@@ -240,12 +245,13 @@ concil_get_by_query( const gchar *query, ofaHub *hub )
 	ofxCounter id;
 
 	concil = NULL;
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	if( ofa_idbconnect_query_ex( connect, query, &result, TRUE )){
 		if( g_slist_length( result ) == 1 ){
 			irow=result;
-			concil = ofo_concil_new();
+			concil = ofo_concil_new( getter );
 			icol = ( GSList * ) irow->data;
 			concil_set_id( concil, atol(( gchar * ) icol->data ));
 			icol = icol->next;
@@ -256,7 +262,6 @@ concil_get_by_query( const gchar *query, ofaHub *hub )
 			icol = icol->next;
 			ofo_concil_set_stamp( concil,
 					my_stamp_set_from_sql( &stamp, ( const gchar * ) icol->data ));
-			ofo_base_set_hub( OFO_BASE( concil ), hub );
 		}
 		ofa_idbconnect_free_results( result );
 	}
@@ -279,8 +284,9 @@ concil_get_by_query( const gchar *query, ofaHub *hub )
 		g_free( query2 );
 
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr, hub );
+				ofa_igetter_get_collector( getter ),
+				MY_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr, getter );
+
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, concil );
 	}
 
@@ -289,13 +295,16 @@ concil_get_by_query( const gchar *query, ofaHub *hub )
 
 /**
  * ofo_concil_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoConcil *
-ofo_concil_new( void )
+ofo_concil_new( ofaIGetter *getter )
 {
 	ofoConcil *concil;
 
-	concil = g_object_new( OFO_TYPE_CONCIL, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	concil = g_object_new( OFO_TYPE_CONCIL, "ofo-base-getter", getter, NULL );
 
 	return( concil );
 }
@@ -534,30 +543,30 @@ concil_add_other_id( ofoConcil *concil, const gchar *type, ofxCounter id )
 /**
  * ofo_concil_insert:
  * @concil:
- * @dossier:
  */
 gboolean
-ofo_concil_insert( ofoConcil *concil, ofaHub *hub )
+ofo_concil_insert( ofoConcil *concil )
 {
 	static const gchar *thisfn = "ofo_concil_insert";
+	ofaIGetter *getter;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	gboolean ok;
 
-	g_debug( "%s: concil=%p, hub=%p",
-			thisfn, ( void * ) concil, ( void * ) hub );
+	g_debug( "%s: concil=%p", thisfn, ( void * ) concil );
 
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( concil ));
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	concil_set_id( concil, ofo_dossier_get_next_concil( dossier ));
 
 	if( concil_do_insert( concil, ofa_hub_get_connect( hub ))){
-		ofo_base_set_hub( OFO_BASE( concil ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( concil ), NULL, hub );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( concil ), NULL, getter );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, concil );
 		ok = TRUE;
 	}
@@ -615,6 +624,7 @@ ofo_concil_add_id( ofoConcil *concil, const gchar *type, ofxCounter id )
 {
 	static const gchar *thisfn = "ofo_concil_add_id";
 	gboolean ok;
+	ofaIGetter *getter;
 	ofaHub *hub;
 
 	g_debug( "%s: concil=%p, type=%s, id=%lu",
@@ -625,7 +635,9 @@ ofo_concil_add_id( ofoConcil *concil, const gchar *type, ofxCounter id )
 	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( concil ));
+	getter = ofo_base_get_getter( OFO_BASE( concil ));
+	hub = ofa_igetter_get_hub( getter );
+
 	concil_add_other_id( concil, type, id );
 
 	if( concil_do_insert_id( concil, type, id, ofa_hub_get_connect( hub ))){
@@ -664,6 +676,7 @@ ofo_concil_delete( ofoConcil *concil )
 {
 	static const gchar *thisfn = "ofo_concil_delete";
 	gboolean ok;
+	ofaIGetter *getter;
 	ofaHub *hub;
 
 	g_debug( "%s: concil=%p", thisfn, ( void * ) concil );
@@ -672,11 +685,12 @@ ofo_concil_delete( ofoConcil *concil )
 	g_return_val_if_fail( !OFO_BASE( concil )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( concil ));
+	getter = ofo_base_get_getter( OFO_BASE( concil ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( concil_do_delete( concil, ofa_hub_get_connect( hub ))){
 		g_object_ref( concil );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( concil ));
+		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( concil ));
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETED, concil );
 		g_object_unref( concil );
 		ok = TRUE;

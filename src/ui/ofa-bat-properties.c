@@ -54,7 +54,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar               *settings_prefix;
-	ofaHub              *hub;
 	gboolean             is_writable;
 	gboolean             is_new;			/* always FALSE here */
 	ofaBatPropertiesBin *bat_bin;
@@ -182,7 +181,7 @@ ofa_bat_properties_run( ofaIGetter *getter, GtkWindow *parent , ofoBat *bat )
 
 	priv = ofa_bat_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->bat = bat;
 
@@ -216,10 +215,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -264,6 +260,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_bat_properties_idialog_init";
 	ofaBatPropertiesPrivate *priv;
+	ofaHub *hub;
 	gchar *title, *key;
 	GtkWidget *parent, *btn;
 	ofaBatlineTreeview *line_tview;
@@ -278,14 +275,15 @@ idialog_init( myIDialog *instance )
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	title = g_strdup( _( "Updating the BAT properties" ));
 	gtk_window_set_title( GTK_WINDOW( instance ), title );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "properties-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->bat_bin = ofa_bat_properties_bin_new( priv->hub );
+	priv->bat_bin = ofa_bat_properties_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bat_bin ));
 
 	key = g_strdup_printf( "%s-BatLine", priv->settings_prefix );

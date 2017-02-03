@@ -32,7 +32,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-date-filter-hv-bin.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofo-account.h"
 
@@ -51,7 +50,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub                *hub;
 	myISettings           *settings;
 	gboolean               new_page;
 
@@ -222,10 +220,7 @@ setup_runtime( ofaAccountBookArgs *self )
 
 	priv = ofa_account_book_args_get_instance_private( self );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	priv->settings = ofa_hub_get_user_settings( priv->hub );
+	priv->settings = ofa_igetter_get_user_settings( priv->getter );
 }
 
 static void
@@ -278,7 +273,7 @@ setup_date_selection( ofaAccountBookArgs *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	filter = ofa_date_filter_hv_bin_new( ofa_igetter_get_hub( priv->getter ));
+	filter = ofa_date_filter_hv_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 	priv->date_filter = filter;
 

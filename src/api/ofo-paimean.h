@@ -35,7 +35,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
@@ -66,12 +66,12 @@ typedef struct {
 
 GType           ofo_paimean_get_type          ( void ) G_GNUC_CONST;
 
-GList          *ofo_paimean_get_dataset       ( ofaHub *hub );
+GList          *ofo_paimean_get_dataset       ( ofaIGetter *getter );
 #define         ofo_paimean_free_dataset( L ) g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-ofoPaimean     *ofo_paimean_get_by_code       ( ofaHub *hub, const gchar *code );
+ofoPaimean     *ofo_paimean_get_by_code       ( ofaIGetter *getter, const gchar *code );
 
-ofoPaimean     *ofo_paimean_new               ( void );
+ofoPaimean     *ofo_paimean_new               ( ofaIGetter *getter );
 
 const gchar    *ofo_paimean_get_code          ( const ofoPaimean *paimean );
 const gchar    *ofo_paimean_get_label         ( const ofoPaimean *paimean );
@@ -88,7 +88,7 @@ void            ofo_paimean_set_label         ( ofoPaimean *paimean, const gchar
 void            ofo_paimean_set_account       ( ofoPaimean *paimean, const gchar *account );
 void            ofo_paimean_set_notes         ( ofoPaimean *paimean, const gchar *notes );
 
-gboolean        ofo_paimean_insert            ( ofoPaimean *paimean, ofaHub *hub );
+gboolean        ofo_paimean_insert            ( ofoPaimean *paimean );
 gboolean        ofo_paimean_update            ( ofoPaimean *paimean, const gchar *prev_code );
 gboolean        ofo_paimean_delete            ( ofoPaimean *paimean );
 

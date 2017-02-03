@@ -55,10 +55,15 @@
  *
  * c/ without any customization at all, the entire page being directly
  *    managed by the derived class (e.g. the #ofaEntryPage).
+ *
+ * Properties:
+ * - 'ofa-page-getter': a #ofaIGetter instance which has been set by
+ *   the #ofaMain Window at instanciation time.
  */
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-page-def.h"
 #include "api/ofa-page-prot.h"
 
@@ -82,9 +87,11 @@ typedef struct _ofaPageProtected      ofaPageProtected;
  */
 #define PAGE_PROP_GETTER                     "page-prop-getter"
 
-GType      ofa_page_get_type                ( void ) G_GNUC_CONST;
+GType       ofa_page_get_type                ( void ) G_GNUC_CONST;
 
-GtkWidget *ofa_page_get_top_focusable_widget( const ofaPage *page );
+GtkWidget  *ofa_page_get_top_focusable_widget( const ofaPage *page );
+
+ofaIGetter *ofa_page_get_getter              ( ofaPage *page );
 
 G_END_DECLS
 

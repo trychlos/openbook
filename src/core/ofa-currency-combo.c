@@ -28,7 +28,7 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-base.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -43,6 +43,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	ofaIGetter       *getter;
 	ofaCurrencyStore *store;
 
 	/* sorted combo
@@ -230,24 +231,27 @@ create_combo_columns( ofaCurrencyCombo *self, const gint *columns )
 }
 
 /**
- * ofa_currency_combo_set_hub:
+ * ofa_currency_combo_set_getter:
+ * @combo: this #ofaCurrencyCombo object.
+ * @getter: a #ofaIGetter instance.
  *
  * This is required in order to get the dossier which will permit to
  * create the underlying tree store.
  */
 void
-ofa_currency_combo_set_hub( ofaCurrencyCombo *combo, ofaHub *hub )
+ofa_currency_combo_set_getter( ofaCurrencyCombo *combo, ofaIGetter *getter )
 {
 	ofaCurrencyComboPrivate *priv;
 
 	g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	priv = ofa_currency_combo_get_instance_private( combo );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->store = ofa_currency_store_new( hub );
+	priv->getter = getter;
+	priv->store = ofa_currency_store_new( getter );
 
 	priv->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
 	/* the sortable model maintains its own reference on the store */

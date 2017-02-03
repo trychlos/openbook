@@ -37,6 +37,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 
 #include "ui/ofa-application.h"
@@ -49,7 +50,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub             *hub;
+	ofaIGetter         *getter;
 	gchar              *settings_prefix;
 	guint               rule;
 
@@ -190,7 +191,7 @@ ofa_exercice_meta_bin_class_init( ofaExerciceMetaBinClass *klass )
 
 /**
  * ofa_exercice_meta_bin_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @settings_prefix: the prefix of the key in user settings.
  * @rule: the usage of this widget.
  *
@@ -198,23 +199,23 @@ ofa_exercice_meta_bin_class_init( ofaExerciceMetaBinClass *klass )
  * meta datas: name and DBMS provider.
  */
 ofaExerciceMetaBin *
-ofa_exercice_meta_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule )
+ofa_exercice_meta_bin_new( ofaIGetter *getter, const gchar *settings_prefix, guint rule )
 {
 	static const gchar *thisfn = "ofa_exercice_meta_bin_new";
 	ofaExerciceMetaBin *self;
 	ofaExerciceMetaBinPrivate *priv;
 
-	g_debug( "%s: hub=%p, settings_prefix=%s, rule=%u",
-			thisfn, ( void * ) hub, settings_prefix, rule );
+	g_debug( "%s: getter=%p, settings_prefix=%s, rule=%u",
+			thisfn, ( void * ) getter, settings_prefix, rule );
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( settings_prefix ), NULL );
 
 	self = g_object_new( OFA_TYPE_EXERCICE_META_BIN, NULL );
 
 	priv = ofa_exercice_meta_bin_get_instance_private( self );
 
-	priv->hub = hub;
+	priv->getter = getter;
 	priv->rule = rule;
 
 	g_free( priv->settings_prefix );
@@ -253,8 +254,8 @@ setup_bin( ofaExerciceMetaBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-begin-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-begin-prompt" );
@@ -267,8 +268,8 @@ setup_bin( ofaExerciceMetaBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-end-prompt" );

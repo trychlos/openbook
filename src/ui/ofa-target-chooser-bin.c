@@ -55,7 +55,6 @@ typedef struct {
 
 	/* runtime data
 	 */
-	ofaHub              *hub;
 	ofaIDBDossierMeta   *dossier_meta;
 	ofaIDBExerciceMeta  *exercice_meta;
 	gulong               collection_handler;
@@ -221,7 +220,7 @@ ofa_target_chooser_bin_new( ofaIGetter *getter, const gchar *settings_prefix, gu
 
 	priv = ofa_target_chooser_bin_get_instance_private( bin );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->rule = rule;
 
 	if( my_strlen( settings_prefix )){
@@ -247,9 +246,6 @@ setup_bin( ofaTargetChooserBin *self )
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "TargetChooserWindow" );
@@ -260,7 +256,7 @@ setup_bin( ofaTargetChooserBin *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->dossier_tview = ofa_dossier_treeview_new( priv->hub );
+	priv->dossier_tview = ofa_dossier_treeview_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_tview ));
 	settings_prefix = g_strdup_printf( "%s-%s", priv->settings_prefix, G_OBJECT_TYPE_NAME( priv->dossier_tview ));
 	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, settings_prefix );
@@ -278,7 +274,7 @@ setup_bin( ofaTargetChooserBin *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-period-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	settings_prefix = g_strdup_printf( "%s-%s", priv->settings_prefix, g_type_name( OFA_TYPE_EXERCICE_TREEVIEW ));
-	priv->exercice_tview = ofa_exercice_treeview_new( priv->hub, settings_prefix );
+	priv->exercice_tview = ofa_exercice_treeview_new( priv->getter, settings_prefix );
 	g_free( settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_tview ));
 	g_signal_connect( priv->exercice_tview, "ofa-exechanged", G_CALLBACK( exercice_on_selection_changed ), self );
@@ -426,7 +422,7 @@ set_collection_handler( ofaTargetChooserBin *self )
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
 	if( !priv->collection_handler ){
-		collection = ofa_hub_get_dossier_collection( priv->hub );
+		collection = ofa_igetter_get_dossier_collection( priv->getter );
 		priv->collection_handler = g_signal_connect( collection, "changed", G_CALLBACK( on_collection_changed ), self );
 	}
 }
@@ -440,7 +436,7 @@ remove_collection_handler( ofaTargetChooserBin *self )
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
 	if( priv->collection_handler ){
-		collection = ofa_hub_get_dossier_collection( priv->hub );
+		collection = ofa_igetter_get_dossier_collection( priv->getter );
 		g_signal_handler_disconnect( collection, priv->collection_handler );
 	}
 }

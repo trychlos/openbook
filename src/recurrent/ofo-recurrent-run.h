@@ -36,7 +36,7 @@
  * operation template.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
@@ -69,11 +69,11 @@ typedef struct {
 
 GType            ofo_recurrent_run_get_type        ( void ) G_GNUC_CONST;
 
-GList           *ofo_recurrent_run_get_dataset     ( ofaHub *hub );
+GList           *ofo_recurrent_run_get_dataset     ( ofaIGetter *getter );
 
-ofoRecurrentRun *ofo_recurrent_run_get_by_id       ( ofaHub *hub, const gchar *mnemo, const GDate *date );
+ofoRecurrentRun *ofo_recurrent_run_get_by_id       ( ofaIGetter *getter, const gchar *mnemo, const GDate *date );
 
-ofoRecurrentRun *ofo_recurrent_run_new             ( void );
+ofoRecurrentRun *ofo_recurrent_run_new             ( ofaIGetter *getter );
 
 const gchar     *ofo_recurrent_run_get_mnemo       ( const ofoRecurrentRun *model );
 const GDate     *ofo_recurrent_run_get_date        ( const ofoRecurrentRun *model );
@@ -95,7 +95,7 @@ void             ofo_recurrent_run_set_amount1     ( ofoRecurrentRun *model, gdo
 void             ofo_recurrent_run_set_amount2     ( ofoRecurrentRun *model, gdouble amount );
 void             ofo_recurrent_run_set_amount3     ( ofoRecurrentRun *model, gdouble amount );
 
-gboolean         ofo_recurrent_run_insert          ( ofoRecurrentRun *model, ofaHub *hub );
+gboolean         ofo_recurrent_run_insert          ( ofoRecurrentRun *model );
 gboolean         ofo_recurrent_run_update          ( ofoRecurrentRun *model );
 
 G_END_DECLS

@@ -48,7 +48,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub            *hub;
+	ofaIGetter        *getter;
 	gchar             *settings_prefix;
 	guint              rule;
 
@@ -205,7 +205,7 @@ ofa_dossier_meta_bin_class_init( ofaDossierMetaBinClass *klass )
 
 /**
  * ofa_dossier_meta_bin_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @settings_prefix: the prefix of the key in user settings.
  * @rule: the usage of this widget.
  *
@@ -213,23 +213,23 @@ ofa_dossier_meta_bin_class_init( ofaDossierMetaBinClass *klass )
  * meta datas: name and DBMS provider.
  */
 ofaDossierMetaBin *
-ofa_dossier_meta_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule )
+ofa_dossier_meta_bin_new( ofaIGetter *getter, const gchar *settings_prefix, guint rule )
 {
 	static const gchar *thisfn = "ofa_dossier_meta_bin_new";
 	ofaDossierMetaBin *bin;
 	ofaDossierMetaBinPrivate *priv;
 
-	g_debug( "%s: hub=%p, settings_prefix=%s, guint=%u",
-			thisfn, ( void * ) hub, settings_prefix, rule );
+	g_debug( "%s: getter=%p, settings_prefix=%s, guint=%u",
+			thisfn, ( void * ) getter, settings_prefix, rule );
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( settings_prefix ), NULL );
 
 	bin = g_object_new( OFA_TYPE_DOSSIER_META_BIN, NULL );
 
 	priv = ofa_dossier_meta_bin_get_instance_private( bin );
 
-	priv->hub = hub;
+	priv->getter = getter;
 	priv->rule = rule;
 
 	g_free( priv->settings_prefix );
@@ -308,7 +308,7 @@ setup_dbms_provider( ofaDossierMetaBin *self )
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", DBMS_COL_NAME );
 
-	extenders = ofa_hub_get_extender_collection( priv->hub );
+	extenders = ofa_igetter_get_extender_collection( priv->getter );
 	modules = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBPROVIDER );
 
 	for( it=modules ; it ; it=it->next ){
@@ -390,7 +390,7 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierMetaBin *self )
 	canon_name = gtk_combo_box_get_active_id( combo );
 	g_free( priv->provider_name );
 	priv->provider_name = g_strdup( canon_name );
-	priv->provider = ofa_idbprovider_get_by_name( priv->hub, canon_name );
+	priv->provider = ofa_idbprovider_get_by_name( priv->getter, canon_name );
 
 	changed_composite( self );
 }
@@ -431,7 +431,7 @@ is_valid( ofaDossierMetaBin *self, gchar **msgerr )
 
 	/* check against rule */
 	if( ok ){
-		collection = ofa_hub_get_dossier_collection( priv->hub );
+		collection = ofa_igetter_get_dossier_collection( priv->getter );
 		meta = ofa_dossier_collection_get_by_name( collection, priv->dossier_name );
 
 		switch( priv->rule ){
@@ -476,7 +476,7 @@ ofa_dossier_meta_bin_apply( ofaDossierMetaBin *bin )
 	switch( priv->rule ){
 		case HUB_RULE_DOSSIER_NEW:
 			dossier_meta = ofa_idbprovider_new_dossier_meta( priv->provider, priv->dossier_name );
-			collection = ofa_hub_get_dossier_collection( priv->hub );
+			collection = ofa_igetter_get_dossier_collection( priv->getter );
 			ofa_dossier_collection_add_meta( collection, dossier_meta );
 			break;
 		default:
@@ -523,7 +523,7 @@ read_settings( ofaDossierMetaBin *self )
 
 	priv = ofa_dossier_meta_bin_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-dossier-meta", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -549,7 +549,7 @@ write_settings( ofaDossierMetaBin *self )
 	str = g_strdup_printf( "%s;",
 				priv->provider_name );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-dossier-meta", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

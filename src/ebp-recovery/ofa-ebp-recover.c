@@ -34,8 +34,8 @@
 #include "my/my-iident.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-irecover.h"
 #include "api/ofo-account.h"
 #include "api/ofo-entry.h"
@@ -50,7 +50,7 @@ typedef struct {
 
 	/* from interface
 	 */
-	ofaHub          *hub;
+	ofaIGetter      *getter;
 	ofaStreamFormat *format;
 	ofaIDBConnect   *connect;
 	ofaMsgCb         msg_cb;
@@ -63,7 +63,7 @@ static gchar   *iident_get_canon_name( const myIIdent *instance, void *msg_data 
 static gchar   *iident_get_version( const myIIdent *instance, void *msg_data );
 static void     irecover_iface_init( ofaIRecoverInterface *iface );
 static guint    irecover_get_interface_version( void );
-static gboolean irecover_import_uris( ofaIRecover *instance, ofaHub *hub, GList *uris, ofaStreamFormat *format, ofaIDBConnect *connect, ofaMsgCb msg_cb, void *msg_data );
+static gboolean irecover_import_uris( ofaIRecover *instance, ofaIGetter *getter, GList *uris, ofaStreamFormat *format, ofaIDBConnect *connect, ofaMsgCb msg_cb, void *msg_data );
 static gboolean import_entries( ofaEbpRecover *self, GSList *slines );
 static gboolean import_accounts( ofaEbpRecover *self, GSList *slines );
 static gboolean create_account( ofaEbpRecover *self, const gchar *account );
@@ -188,7 +188,7 @@ irecover_get_interface_version( void )
 
 
 static gboolean
-irecover_import_uris( ofaIRecover *instance, ofaHub *hub, GList *uris, ofaStreamFormat *format, ofaIDBConnect *connect, ofaMsgCb msg_cb, void *msg_data )
+irecover_import_uris( ofaIRecover *instance, ofaIGetter *getter, GList *uris, ofaStreamFormat *format, ofaIDBConnect *connect, ofaMsgCb msg_cb, void *msg_data )
 {
 	static const gchar *thisfn = "ofa_ebp_recover_irecover_import_uris";
 	ofaEbpRecoverPrivate *priv;
@@ -201,7 +201,7 @@ irecover_import_uris( ofaIRecover *instance, ofaHub *hub, GList *uris, ofaStream
 
 	priv = ofa_ebp_recover_get_instance_private( OFA_EBP_RECOVER( instance ));
 
-	priv->hub = hub;
+	priv->getter = getter;
 	priv->format = format;
 	priv->connect = connect;
 	priv->msg_cb = msg_cb;
@@ -385,7 +385,7 @@ import_entries( ofaEbpRecover *self, GSList *slines )
 		itf += 1;
 		g_strfreev( fields );
 
-		entry = ofo_entry_new();
+		entry = ofo_entry_new( priv->getter );
 		ofo_entry_set_label( entry, label );
 		ofo_entry_set_deffect( entry, &deffect );
 		ofo_entry_set_dope( entry, &dope );

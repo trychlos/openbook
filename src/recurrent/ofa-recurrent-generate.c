@@ -36,7 +36,6 @@
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
@@ -69,7 +68,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar                   *settings_prefix;
-	ofaHub                  *hub;
 	GDate                    begin_date;
 	GDate                    end_date;
 	GList                   *dataset;
@@ -232,7 +230,6 @@ ofa_recurrent_generate_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentM
 	static const gchar *thisfn = "ofa_recurrent_generate_run";
 	ofaRecurrentGenerate *self;
 	ofaRecurrentGeneratePrivate *priv;
-	ofaHub *hub;
 	myICollector *collector;
 	myIWindow *shown;
 
@@ -242,8 +239,7 @@ ofa_recurrent_generate_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentM
 	g_debug( "%s: getter=%p, parent=%p, page=%p",
 			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) page );
 
-	hub = ofa_igetter_get_hub( getter );
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	self = ( ofaRecurrentGenerate * ) my_icollector_single_get_object( collector, OFA_TYPE_RECURRENT_GENERATE );
 
 	if( self ){
@@ -262,9 +258,8 @@ ofa_recurrent_generate_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentM
 
 		priv = ofa_recurrent_generate_get_instance_private( self );
 
-		priv->getter = ofa_igetter_get_permanent_getter( getter );
+		priv->getter = getter;
 		priv->parent = parent;
-		priv->hub = hub;
 		priv->model_page = page;
 
 		/* after this call, @self may be invalid */
@@ -296,7 +291,7 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_recurrent_generate_get_instance_private( OFA_RECURRENT_GENERATE( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -357,7 +352,7 @@ init_treeview( ofaRecurrentGenerate *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "tview-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->tview = ofa_recurrent_run_treeview_new( priv->hub );
+	priv->tview = ofa_recurrent_run_treeview_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 	ofa_recurrent_run_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_recurrent_run_treeview_setup_columns( priv->tview );
@@ -382,13 +377,13 @@ init_dates( ofaRecurrentGenerate *self )
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	/* previous date */
-	last_date = ofo_recurrent_gen_get_last_run_date( priv->hub );
+	last_date = ofo_recurrent_gen_get_last_run_date( priv->getter );
 
 	if( my_date_is_valid( last_date )){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p22-last-date" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-		str = my_date_to_str( last_date, ofa_prefs_date_display( priv->hub ));
+		str = my_date_to_str( last_date, ofa_prefs_date_display( priv->getter ));
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
@@ -410,10 +405,10 @@ init_dates( ofaRecurrentGenerate *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_date_changed ), self );
 
@@ -430,10 +425,10 @@ init_dates( ofaRecurrentGenerate *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end_date );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_date_changed ), self );
 }
@@ -488,7 +483,7 @@ init_data( ofaRecurrentGenerate *self )
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
-	priv->store = ofa_recurrent_run_store_new( priv->hub, REC_MODE_FROM_LIST );
+	priv->store = ofa_recurrent_run_store_new( priv->getter, REC_MODE_FROM_LIST );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 }
@@ -604,7 +599,7 @@ generate_do( ofaRecurrentGenerate *self )
 	count = 0;
 	opes = NULL;
 	messages = NULL;
-	last_date = ofo_recurrent_gen_get_last_run_date( priv->hub );
+	last_date = ofo_recurrent_gen_get_last_run_date( priv->getter );
 
 	if( !my_date_is_valid( last_date ) ||
 			my_date_compare( &priv->begin_date, last_date ) > 0 ||
@@ -676,8 +671,8 @@ confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date )
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
-	sbegin = my_date_to_str( &priv->begin_date, ofa_prefs_date_display( priv->hub ));
-	slast = my_date_to_str( last_date, ofa_prefs_date_display( priv->hub ));
+	sbegin = my_date_to_str( &priv->begin_date, ofa_prefs_date_display( priv->getter ));
+	slast = my_date_to_str( last_date, ofa_prefs_date_display( priv->getter ));
 
 	str = g_strdup_printf(
 			_( "Beginning date %s is less or equal to previous generation date %s.\n"
@@ -718,10 +713,10 @@ generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GD
 	if( ofo_recurrent_model_get_is_enabled( model )){
 
 		sdata.model = model;
-		sdata.template = ofo_ope_template_get_by_mnemo( priv->hub, ofo_recurrent_model_get_ope_template( model ));
+		sdata.template = ofo_ope_template_get_by_mnemo( priv->getter, ofo_recurrent_model_get_ope_template( model ));
 
 		per_id = ofo_recurrent_model_get_periodicity( model );
-		period = ofo_rec_period_get_by_id( priv->hub, per_id );
+		period = ofo_rec_period_get_by_id( priv->getter, per_id );
 		if( period ){
 			perdetid = ofo_recurrent_model_get_periodicity_detail( model );
 			ofo_rec_period_enum_between(
@@ -760,15 +755,14 @@ generate_enum_dates_cb( const GDate *date, sEnumBetween *data )
 
 	mnemo = ofo_recurrent_model_get_mnemo( data->model );
 
-	recrun = ofo_recurrent_run_get_by_id( priv->hub, mnemo, date );
+	recrun = ofo_recurrent_run_get_by_id( priv->getter, mnemo, date );
 	if( recrun ){
 		data->already += 1;
 
 	} else {
-		recrun = ofo_recurrent_run_new();
+		recrun = ofo_recurrent_run_new( priv->getter );
 		ofo_recurrent_run_set_mnemo( recrun, mnemo );
 		ofo_recurrent_run_set_date( recrun, date );
-		ofo_base_set_hub( OFO_BASE( recrun ), priv->hub );
 
 		valid = TRUE;
 		ope = ofs_ope_new( data->template );
@@ -864,7 +858,7 @@ on_ok_clicked( ofaRecurrentGenerate *self )
 
 	for( it=priv->dataset ; it ; it=it->next ){
 		object = OFO_RECURRENT_RUN( it->data );
-		if( !ofo_recurrent_run_insert( object, priv->hub )){
+		if( !ofo_recurrent_run_insert( object )){
 			ok = FALSE;
 			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to insert a new operation" ));
 			break;
@@ -875,7 +869,7 @@ on_ok_clicked( ofaRecurrentGenerate *self )
 
 	if( ok ){
 		count = g_list_length( priv->dataset );
-		ofo_recurrent_gen_set_last_run_date( priv->hub, &priv->end_date );
+		ofo_recurrent_gen_set_last_run_date( priv->getter, &priv->end_date );
 
 		if( count == 1 ){
 			str = g_strdup( _( "One successfully inserted operation" ));
@@ -904,7 +898,7 @@ read_settings( ofaRecurrentGenerate *self )
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -932,7 +926,7 @@ write_settings( ofaRecurrentGenerate *self )
 	str = g_strdup_printf( "%d;",
 			gtk_paned_get_position( GTK_PANED( priv->top_paned )));
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

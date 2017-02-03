@@ -29,7 +29,7 @@
 #include "my/my-icollector.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 
 #include "tva/ofa-tva-style.h"
 
@@ -113,21 +113,21 @@ ofa_tva_style_class_init( ofaTVAStyleClass *klass )
 
 /**
  * ofa_tva_style_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
- * Instanciates a new #ofaTVAStyle and attached it to the @hub
+ * Instanciates a new #ofaTVAStyle and attached it to the #myICollector
  * if not already done. Else get the already allocated #ofaTVAStyle
- * from the @hub.
+ * from the #myICollector.
  */
 ofaTVAStyle *
-ofa_tva_style_new( ofaHub *hub )
+ofa_tva_style_new( ofaIGetter *getter )
 {
 	ofaTVAStyle *provider;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	provider = ( ofaTVAStyle * ) my_icollector_single_get_object( collector, OFA_TYPE_TVA_STYLE );
 
 	if( provider ){

@@ -33,7 +33,6 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
@@ -54,7 +53,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub            *hub;
 
 	/* UI
 	 */
@@ -172,7 +170,7 @@ ofa_guided_input_run( ofaIGetter *getter, GtkWindow *parent, ofoOpeTemplate *mod
 
 	priv = ofa_guided_input_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->model = model;
 
@@ -205,11 +203,7 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_guided_input_get_instance_private( OFA_GUIDED_INPUT( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*

@@ -30,9 +30,9 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
@@ -48,7 +48,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub            *hub;
+	ofaIGetter        *getter;
 	gchar             *settings_prefix;
 
 	/* runtime
@@ -231,28 +231,28 @@ ofa_exercice_treeview_class_init( ofaExerciceTreeviewClass *klass )
 
 /**
  * ofa_exercice_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @settings_prefix: the prefix of the user preferences in settings.
  *
  * Returns: a new #ofaExerciceTreeview instance.
  */
 ofaExerciceTreeview *
-ofa_exercice_treeview_new( ofaHub *hub, const gchar *settings_prefix )
+ofa_exercice_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
 	ofaExerciceTreeview *view;
 	ofaExerciceTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_EXERCICE_TREEVIEW,
-					"ofa-tvbin-hub",    hub,
+					"ofa-tvbin-getter", getter,
 					"ofa-tvbin-name",   settings_prefix,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 
 	priv = ofa_exercice_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	g_free( priv->settings_prefix );
 	priv->settings_prefix = g_strdup( settings_prefix );
@@ -272,7 +272,7 @@ ofa_exercice_treeview_new( ofaHub *hub, const gchar *settings_prefix )
 
 	setup_columns( view );
 
-	priv->store = ofa_exercice_store_new( hub );
+	priv->store = ofa_exercice_store_new( getter );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 
 	return( view );
@@ -514,10 +514,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( labela, labelb );
 			break;
 		case EXERCICE_COL_END:
-			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case EXERCICE_COL_BEGIN:
-			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case EXERCICE_COL_STATUS:
 			cmp = my_collate( stata, statb );

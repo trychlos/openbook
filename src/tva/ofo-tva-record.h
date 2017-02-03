@@ -43,7 +43,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 
 #include "tva/ofo-tva-form.h"
@@ -71,13 +71,13 @@ typedef struct {
 
 GType           ofo_tva_record_get_type               ( void ) G_GNUC_CONST;
 
-GList          *ofo_tva_record_get_dataset            ( ofaHub *hub );
+GList          *ofo_tva_record_get_dataset            ( ofaIGetter *getter );
 
-GDate          *ofo_tva_record_get_last_end           ( ofaHub *hub, const gchar *mnemo, GDate * );
-ofoTVARecord   *ofo_tva_record_get_by_key             ( ofaHub *hub, const gchar *mnemo, const GDate *candidate_end );
-ofoTVARecord   *ofo_tva_record_get_by_begin           ( ofaHub *hub, const gchar *mnemo, const GDate *candidate_begin, const GDate *end );
+GDate          *ofo_tva_record_get_last_end           ( ofaIGetter *getter, const gchar *mnemo, GDate * );
+ofoTVARecord   *ofo_tva_record_get_by_key             ( ofaIGetter *getter, const gchar *mnemo, const GDate *candidate_end );
+ofoTVARecord   *ofo_tva_record_get_by_begin           ( ofaIGetter *getter, const gchar *mnemo, const GDate *candidate_begin, const GDate *end );
 
-ofoTVARecord   *ofo_tva_record_new                    ( void );
+ofoTVARecord   *ofo_tva_record_new                    ( ofaIGetter *getter );
 ofoTVARecord   *ofo_tva_record_new_from_form          ( ofoTVAForm *form );
 
 void            ofo_tva_record_dump                   ( const ofoTVARecord *record );
@@ -130,7 +130,7 @@ void            ofo_tva_record_boolean_free_all       ( ofoTVARecord *record );
 guint           ofo_tva_record_boolean_get_count      ( ofoTVARecord *record );
 gboolean        ofo_tva_record_boolean_get_is_true    ( ofoTVARecord *record, guint idx );
 
-gboolean        ofo_tva_record_insert                 ( ofoTVARecord *record, ofaHub *hub );
+gboolean        ofo_tva_record_insert                 ( ofoTVARecord *record );
 gboolean        ofo_tva_record_update                 ( ofoTVARecord *record );
 gboolean        ofo_tva_record_delete                 ( ofoTVARecord *record );
 

@@ -29,24 +29,29 @@
 #include "my/my-iaction-map.h"
 #include "my/my-utils.h"
 
+#define IACTION_MAP_DATA                 "my-iaction-map-data"
 #define IACTION_MAP_LAST_VERSION          1
 
 static guint  st_initializations        = 0;	/* interface initialization count */
 static GList *st_registered             = NULL;
 
-/* a data structure allocated for each instance, and attached to the
+/* a data structure attached to each instance, and attached to the
  * registered list
  */
 typedef struct {
 	myIActionMap *map;
-	gchar        *target;
+	gchar        *scope;
+	GMenuModel   *menu_model;
 }
 	sMap;
 
-static GType   register_type( void );
-static void    interface_base_init( myIActionMapInterface *klass );
-static void    interface_base_finalize( myIActionMapInterface *klass );
-static void    on_instance_finalized( sMap *smap, GObject *finalized_instance );
+static GType register_type( void );
+static void  interface_base_init( myIActionMapInterface *klass );
+static void  interface_base_finalize( myIActionMapInterface *klass );
+static sMap *do_lookup_for_scope( const gchar *scope );
+//static sMap *do_lookup_for_map( const myIActionMap *self );
+static sMap *get_instance_data( const myIActionMap *self, gboolean create );
+static void  on_instance_finalized( sMap *smap, GObject *finalized_instance );
 
 /**
  * my_iaction_map_get_type:
@@ -175,75 +180,137 @@ my_iaction_map_get_interface_version( GType type )
 
 /**
  * my_iaction_map_lookup_map:
- * @target: the searched target.
+ * @scope: the searched scope.
  *
- * Returns: the #myIActionMap instance which manages this @target.
+ * Returns: the #myIActionMap instance which manages this @scope.
  */
 myIActionMap *
-my_iaction_map_lookup_map( const gchar *target )
+my_iaction_map_lookup_map( const gchar *scope )
+{
+	sMap *smap;
+
+	g_return_val_if_fail( my_strlen( scope ), NULL );
+
+	smap = do_lookup_for_scope( scope );
+
+	return( smap ? smap->map : NULL );
+}
+
+/*
+ * my_iaction_map_lookup_map:
+ * @scope: the searched scope.
+ *
+ * Returns: the #myIActionMap instance which manages this @scope.
+ */
+static sMap *
+do_lookup_for_scope( const gchar *scope )
 {
 	GList *it;
 	sMap *smap;
 
-	g_return_val_if_fail( my_strlen( target ), NULL );
-
 	for( it=st_registered ; it ; it=it->next ){
 		smap = ( sMap * ) it->data;
-		if( !my_collate( smap->target, target )){
-			return( smap->map );
+		if( !my_collate( smap->scope, scope )){
+			return( smap );
 		}
 	}
 
 	return( NULL );
 }
 
-/**
- * my_iaction_map_register:
- * @instance: this #myIActionMap instance.
- * @target: the target which is managed by this @instance.
- *
- * Register the @instance for this @target.
+#if 0
+/*
+ * Search for the given myIActionMap
  */
-void
-my_iaction_map_register( myIActionMap *instance, const gchar *target )
+static sMap *
+do_lookup_for_map( const myIActionMap *map )
 {
-	static const gchar *thisfn = "my_iaction_map_register";
+	GList *it;
 	sMap *smap;
 
-	g_debug( "%s: instance=%p (%s), target=%s",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), target );
+	for( it=st_registered ; it ; it=it->next ){
+		smap = ( sMap * ) it->data;
+		if( smap->map == map ){
+			return( smap );
+		}
+	}
 
-	g_return_if_fail( instance && MY_IS_IACTION_MAP( instance ));
-	g_return_if_fail( my_strlen( target ));
+	return( NULL );
+}
+#endif
 
-	smap = g_new0( sMap, 1 );
-	smap->map = instance;
-	smap->target = g_strdup( target );
-	g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, smap );
+/**
+ * my_iaction_map_register:
+ * @map: this #myIActionMap map.
+ * @menu_model: the #GMenuModel associated with the @map.
+ * @scope: the scope which is managed by this @map.
+ *
+ * Register the @map for this @scope.
+ *
+ * The #myIActionMap interfaces takes its own reference on the provided
+ * @menu_model, so that the caller may release it.
+ */
+void
+my_iaction_map_register( myIActionMap *map, const gchar *scope, GMenuModel *menu_model )
+{
+	static const gchar *thisfn = "my_iaction_map_register";
+	sMap *sdata;
 
-	st_registered = g_list_prepend( st_registered, smap );
+	g_debug( "%s: map=%p (%s), scope=%s, menu_model=%p",
+			thisfn, ( void * ) map, G_OBJECT_TYPE_NAME( map ), scope, ( void * ) menu_model );
+
+	g_return_if_fail( map && MY_IS_IACTION_MAP( map ));
+	g_return_if_fail( my_strlen( scope ));
+	g_return_if_fail( menu_model && G_IS_MENU_MODEL( menu_model ));
+
+	sdata = get_instance_data( map, FALSE );
+
+	if( sdata ){
+		g_warning( "%s: map=%p is already registered", thisfn, ( void * ) map );
+
+	} else {
+		sdata = get_instance_data( map, TRUE );
+		sdata->map = map;
+		sdata->scope = g_strdup( scope );
+		sdata->menu_model = g_object_ref( menu_model );
+	}
 }
 
 /**
  * my_iaction_map_get_menu_model:
- * @instance: this #myIActionMap instance.
+ * @map: this #myIActionMap instance.
  *
- * Returns: the #GMenuModel menu of the @instance.
+ * Returns: the #GMenuModel menu of the @map.
+ *
+ * The returned reference is owned by the @map, and should not be released
+ * by the caller.
  */
 GMenuModel *
-my_iaction_map_get_menu_model( const myIActionMap *instance )
+my_iaction_map_get_menu_model( const myIActionMap *map )
 {
-	static const gchar *thisfn = "my_iaction_map_get_menu_model";
+	sMap *sdata;
 
-	g_return_val_if_fail( instance && MY_IS_IACTION_MAP( instance ), NULL );
+	g_return_val_if_fail( map && MY_IS_IACTION_MAP( map ), NULL );
 
-	if( MY_IACTION_MAP_GET_INTERFACE( instance )->get_menu_model ){
-		return( MY_IACTION_MAP_GET_INTERFACE( instance )->get_menu_model( instance ));
+	sdata = get_instance_data( map, FALSE );
+
+	return( sdata ? sdata->menu_model : NULL );
+}
+
+static sMap *
+get_instance_data( const myIActionMap *self, gboolean create )
+{
+	sMap *sdata;
+
+	sdata = ( sMap * ) g_object_get_data( G_OBJECT( self ), IACTION_MAP_DATA );
+
+	if( !sdata && create ){
+		sdata = g_new0( sMap, 1 );
+		g_object_set_data( G_OBJECT( self ), IACTION_MAP_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( self ), ( GWeakNotify ) on_instance_finalized, sdata );
 	}
 
-	g_info( "%s: myIActionMap's %s implementation does not provide 'get_menu_model()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( NULL );
+	return( sdata );
 }
 
 static void
@@ -256,6 +323,7 @@ on_instance_finalized( sMap *smap, GObject *finalized_instance )
 
 	st_registered = g_list_remove( st_registered, smap );
 
-	g_free( smap->target );
+	g_free( smap->scope );
+	g_object_unref( smap->menu_model );
 	g_free( smap );
 }

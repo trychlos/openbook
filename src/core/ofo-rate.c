@@ -42,6 +42,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofa-stream-format.h"
@@ -159,7 +160,7 @@ static GList    *icollectionable_load_collection( void *user_data );
 static void      iexportable_iface_init( ofaIExportableInterface *iface );
 static guint     iexportable_get_interface_version( void );
 static gchar    *iexportable_get_label( const ofaIExportable *instance );
-static gboolean  iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gboolean  iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static void      iimportable_iface_init( ofaIImportableInterface *iface );
 static guint     iimportable_get_interface_version( void );
 static gchar    *iimportable_get_label( const ofaIImportable *instance );
@@ -253,7 +254,7 @@ ofo_rate_class_init( ofoRateClass *klass )
 
 /**
  * ofo_rate_get_dataset:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the full #ofoRate dataset.
  *
@@ -261,15 +262,20 @@ ofo_rate_class_init( ofoRateClass *klass )
  * be released by the caller.
  */
 GList *
-ofo_rate_get_dataset( ofaHub *hub )
+ofo_rate_get_dataset( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	myICollector *collector;
 
-	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_RATE, hub ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_RATE, getter ));
 }
 
 /**
  * ofo_rate_get_by_mnemo:
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the searched rate, or %NULL.
  *
@@ -277,14 +283,14 @@ ofo_rate_get_dataset( ofaHub *hub )
  * not be unreffed by the caller.
  */
 ofoRate *
-ofo_rate_get_by_mnemo( ofaHub *hub, const gchar *mnemo )
+ofo_rate_get_by_mnemo( ofaIGetter *getter, const gchar *mnemo )
 {
 	GList *dataset;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 
-	dataset = ofo_rate_get_dataset( hub );
+	dataset = ofo_rate_get_dataset( getter );
 
 	return( rate_find_by_mnemo( dataset, mnemo ));
 }
@@ -305,13 +311,16 @@ rate_find_by_mnemo( GList *set, const gchar *mnemo )
 
 /**
  * ofo_rate_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoRate *
-ofo_rate_new( void )
+ofo_rate_new( ofaIGetter *getter )
 {
 	ofoRate *rate;
 
-	rate = g_object_new( OFO_TYPE_RATE, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	rate = g_object_new( OFO_TYPE_RATE, "ofo-base-getter", getter, NULL );
 	OFO_BASE( rate )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( rate );
@@ -571,6 +580,7 @@ ofo_rate_get_rate_at_date( ofoRate *rate, const GDate *date )
 gboolean
 ofo_rate_is_deletable( const ofoRate *rate )
 {
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean deletable;
 
@@ -578,9 +588,10 @@ ofo_rate_is_deletable( const ofoRate *rate )
 	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, FALSE );
 
 	deletable = TRUE;
-	hub = ofo_base_get_hub( OFO_BASE( rate ));
+	getter = ofo_base_get_getter( OFO_BASE( rate ));
+	hub = ofa_igetter_get_hub( getter );
 
-	if( hub && deletable ){
+	if( deletable ){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, rate, &deletable );
 	}
 
@@ -750,24 +761,25 @@ rate_val_add_detail( ofoRate *rate, GList *detail )
  * previously existing old validity rows.
  */
 gboolean
-ofo_rate_insert( ofoRate *rate, ofaHub *hub )
+ofo_rate_insert( ofoRate *rate )
 {
 	static const gchar *thisfn = "ofo_rate_insert";
 	gboolean ok;
+	ofaIGetter *getter;
+	ofaHub *hub;
 
-	g_debug( "%s: rate=%p, hub=%p",
-			thisfn, ( void * ) rate, ( void * ) hub );
+	g_debug( "%s: rate=%p", thisfn, ( void * ) rate );
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( rate ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( rate_do_insert( rate, ofa_hub_get_connect( hub ))){
-		ofo_base_set_hub( OFO_BASE( rate ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( rate ), NULL, hub );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( rate ), NULL, getter );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, rate );
 		ok = TRUE;
 	}
@@ -929,6 +941,7 @@ gboolean
 ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_rate_update";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -939,8 +952,9 @@ ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 	g_return_val_if_fail( my_strlen( prev_mnemo ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, FALSE );
 
-	hub = ofo_base_get_hub( OFO_BASE( rate ));
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( rate ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( rate_do_update( rate, prev_mnemo, ofa_hub_get_connect( hub ))){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, rate, prev_mnemo );
@@ -1015,6 +1029,7 @@ gboolean
 ofo_rate_delete( ofoRate *rate )
 {
 	static const gchar *thisfn = "ofo_rate_delete";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1023,12 +1038,13 @@ ofo_rate_delete( ofoRate *rate )
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, FALSE );
 
-	hub = ofo_base_get_hub( OFO_BASE( rate ));
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( rate ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( rate_do_delete( rate, ofa_hub_get_connect( hub ))){
 		g_object_ref( rate );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( rate ));
+		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( rate ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, rate );
 		g_object_unref( rate );
 		ok = TRUE;
@@ -1189,14 +1205,17 @@ icollectionable_load_collection( void *user_data )
 	GList *dataset, *it;
 	ofoRate *rate;
 	gchar *from;
+	ofaHub *hub;
 
-	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_RATES",
 					OFO_TYPE_RATE,
-					OFA_HUB( user_data ));
+					OFA_IGETTER( user_data ));
+
+	hub = ofa_igetter_get_hub( OFA_IGETTER( user_data ));
 
 	for( it=dataset ; it ; it=it->next ){
 		rate = OFO_RATE( it->data );
@@ -1205,7 +1224,7 @@ icollectionable_load_collection( void *user_data )
 				"OFA_T_RATES_VAL WHERE RAT_MNEMO='%s'",
 				ofo_rate_get_mnemo( rate ));
 		priv->validities =
-				ofo_base_load_rows( st_validity_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );
+				ofo_base_load_rows( st_validity_defs, ofa_hub_get_connect( hub ), from );
 		g_free( from );
 	}
 
@@ -1247,7 +1266,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	ofoRatePrivate *priv;
 	GList *dataset, *it, *det;
@@ -1257,7 +1276,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHu
 	gulong count;
 	gchar field_sep;
 
-	dataset = ofo_rate_get_dataset( hub );
+	dataset = ofo_rate_get_dataset( getter );
 
 	with_headers = ofa_stream_format_get_with_headers( settings );
 	field_sep = ofa_stream_format_get_field_sep( settings );
@@ -1379,21 +1398,23 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 {
 	GList *dataset;
 	gchar *bck_table, *bck_det_table;
+	ofaHub *hub;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+	hub = ofa_igetter_get_hub( parms->getter );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "OFA_T_RATES" );
-		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "OFA_T_RATES_VAL" );
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_RATES" );
+		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_RATES_VAL" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_RATE );
-			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RATE );
+			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_RATE );
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RATE );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "OFA_T_RATES" );
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_det_table, "OFA_T_RATES_VAL" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_RATES" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_det_table, "OFA_T_RATES_VAL" );
 		}
 
 		g_free( bck_table );
@@ -1484,7 +1505,7 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	gchar *splitted;
 	ofoRate *rate;
 
-	rate = ofo_rate_new();
+	rate = ofo_rate_new( parms->getter );
 
 	/* rate mnemo */
 	itf = fields ? fields->next : NULL;
@@ -1577,9 +1598,11 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	guint total;
 	gchar *str;
 	ofoRate *rate;
+	ofaHub *hub;
 
 	total = g_list_length( dataset );
-	connect = ofa_hub_get_connect( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && total > 0 ){

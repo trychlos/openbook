@@ -29,9 +29,9 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 
 #include "ui/ofa-exercice-store.h"
@@ -39,11 +39,11 @@
 /* private instance data
  */
 typedef struct {
-	gboolean  dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub   *hub;
+	ofaIGetter *getter;
 }
 	ofaExerciceStorePrivate;
 
@@ -125,23 +125,23 @@ ofa_exercice_store_class_init( ofaExerciceStoreClass *klass )
 
 /**
  * ofa_exercice_store_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaExerciceStore instance.
  */
 ofaExerciceStore *
-ofa_exercice_store_new( ofaHub *hub )
+ofa_exercice_store_new( ofaIGetter *getter )
 {
 	ofaExerciceStore *store;
 	ofaExerciceStorePrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	store = g_object_new( OFA_TYPE_EXERCICE_STORE, NULL );
 
 	priv = ofa_exercice_store_get_instance_private( store );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	gtk_list_store_set_column_types(
 			GTK_LIST_STORE( store ), EXERCICE_N_COLUMNS, st_col_types );
@@ -213,10 +213,10 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBDossierMeta *meta
 			status = ofa_idbexercice_meta_get_status( period );
 			begin = my_date_to_str(
 							ofa_idbexercice_meta_get_begin_date( period ),
-							ofa_prefs_date_display( priv->hub ));
+							ofa_prefs_date_display( priv->getter ));
 			end = my_date_to_str(
 							ofa_idbexercice_meta_get_end_date( period ),
-							ofa_prefs_date_display( priv->hub ));
+							ofa_prefs_date_display( priv->getter ));
 
 			gtk_list_store_insert_with_values(
 					GTK_LIST_STORE( store ),

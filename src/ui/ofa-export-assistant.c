@@ -77,7 +77,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar               *settings_prefix;
-	ofaHub              *hub;
 	ofaIDBDossierMeta   *dossier_meta;
 
 	/* p0: introduction
@@ -263,12 +262,13 @@ export_assistant_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		priv->dispose_has_run = TRUE;
 		write_settings( OFA_EXPORT_ASSISTANT( instance ));
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 
-		g_list_free_full( priv->p1_exportables, ( GDestroyNotify ) g_object_unref );
+		g_list_free( priv->p1_exportables );
 		g_clear_object( &priv->p2_export_settings );
 	}
 
@@ -334,7 +334,7 @@ ofa_export_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -359,7 +359,8 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_export_assistant_iwindow_init";
 	ofaExportAssistantPrivate *priv;
-	const ofaIDBConnect *connect;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -367,14 +368,12 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
 	priv->dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
 
 	read_settings( OFA_EXPORT_ASSISTANT( instance ));
@@ -400,7 +399,7 @@ iassistant_is_willing_to_quit( myIAssistant *instance, guint keyval )
 
 	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
 
-	return( ofa_prefs_assistant_is_willing_to_quit( priv->hub, keyval ));
+	return( ofa_prefs_assistant_is_willing_to_quit( priv->getter, keyval ));
 }
 
 /*
@@ -442,7 +441,7 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	priv->p1_exportables = ofa_hub_get_for_type( priv->hub, OFA_TYPE_IEXPORTABLE );
+	priv->p1_exportables = ofa_igetter_get_for_type( priv->getter, OFA_TYPE_IEXPORTABLE );
 	g_debug( "%s: exportables count=%d", thisfn, g_list_length( priv->p1_exportables ));
 	priv->p1_selected_btn = NULL;
 	priv->p1_row = 0;
@@ -621,12 +620,12 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	/* get a suitable format */
 	found_key = NULL;
-	if( ofa_stream_format_exists( priv->hub, priv->p1_selected_class, OFA_SFMODE_EXPORT )){
+	if( ofa_stream_format_exists( priv->getter, priv->p1_selected_class, OFA_SFMODE_EXPORT )){
 		found_key = priv->p1_selected_class;
 	}
 
 	g_clear_object( &priv->p2_export_settings );
-	priv->p2_export_settings = ofa_stream_format_new( priv->hub, found_key, OFA_SFMODE_EXPORT );
+	priv->p2_export_settings = ofa_stream_format_new( priv->getter, found_key, OFA_SFMODE_EXPORT );
 	ofa_stream_format_bin_set_format( priv->p2_settings_prefs, priv->p2_export_settings );
 
 	p2_check_for_complete( self );
@@ -1017,7 +1016,7 @@ p5_export_data( ofaExportAssistant *self )
 
 	/* first, export */
 	ok = ofa_iexportable_export_to_uri(
-			priv->p5_base, priv->p3_output_file_uri, priv->p2_export_settings, priv->hub, MY_IPROGRESS( self ));
+			priv->p5_base, priv->p3_output_file_uri, priv->p2_export_settings, priv->getter, MY_IPROGRESS( self ));
 
 	/* then display the result */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-label" );
@@ -1065,7 +1064,7 @@ read_settings( ofaExportAssistant *self )
 
 	/* user settings
 	 */
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -1080,13 +1079,13 @@ read_settings( ofaExportAssistant *self )
 
 	/* dossier settings
 	 */
-	settings = ofa_hub_get_dossier_settings( priv->hub );
+	settings = ofa_igetter_get_dossier_settings( priv->getter );
 	group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
 	priv->p3_folder_uri = my_isettings_get_string( settings, group, st_export_folder );
 	if( !my_strlen( priv->p3_folder_uri )){
 		g_free( priv->p3_folder_uri );
-		priv->p3_folder_uri = ofa_prefs_export_default_folder( priv->hub );
+		priv->p3_folder_uri = ofa_prefs_export_default_folder( priv->getter );
 	}
 	if( !my_strlen( priv->p3_folder_uri )){
 		g_free( priv->p3_folder_uri );
@@ -1110,7 +1109,7 @@ write_settings( ofaExportAssistant *self )
 	str = g_strdup_printf( "%s;",
 			priv->p1_selected_class ? priv->p1_selected_class : "" );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
@@ -1119,7 +1118,7 @@ write_settings( ofaExportAssistant *self )
 
 	/* dossier settings
 	 */
-	settings = ofa_hub_get_dossier_settings( priv->hub );
+	settings = ofa_igetter_get_dossier_settings( priv->getter );
 	group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
 	if( my_strlen( priv->p3_folder_uri )){

@@ -30,7 +30,6 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 
 #include "ui/ofa-check-balances.h"
@@ -48,7 +47,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub              *hub;
 
 	/* UI
 	 */
@@ -157,7 +155,7 @@ ofa_check_balances_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_check_balances_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -189,10 +187,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -229,7 +224,7 @@ idialog_init( myIDialog *instance )
 
 	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), instance );
 
-	ofa_check_balances_bin_set_hub( priv->bin, priv->hub );
+	ofa_check_balances_bin_set_getter( priv->bin, priv->getter );
 }
 
 static void
@@ -245,25 +240,25 @@ on_checks_done( ofaCheckBalancesBin *bin, gboolean ok, ofaCheckBalances *self )
 
 /**
  * ofa_check_balances_check:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Check the balances without display.
  *
  * Returns: %TRUE if balances are well balanced, %FALSE else.
  */
 gboolean
-ofa_check_balances_check( ofaHub *hub )
+ofa_check_balances_check( ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_check_balances_check";
 	gboolean ok;
 	ofaCheckBalancesBin *bin;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	bin = ofa_check_balances_bin_new();
 
 	ofa_check_balances_bin_set_display( bin, FALSE );
-	ofa_check_balances_bin_set_hub( bin, hub );
+	ofa_check_balances_bin_set_getter( bin, getter );
 
 	ok = ofa_check_balances_bin_get_status( bin );
 

@@ -33,7 +33,7 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-stream-format.h"
 
 /* private instance data
@@ -43,7 +43,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub      *hub;
+	ofaIGetter  *getter;
 
 	/* when serialized in user preferences
 	 */
@@ -235,7 +235,7 @@ ofa_stream_format_get_mode_localestr( ofeSFMode mode )
 
 /**
  * ofa_stream_format_exists:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @name: the user-provided name for this format.
  * @mode: the target mode for this format.
  *
@@ -243,16 +243,16 @@ ofa_stream_format_get_mode_localestr( ofeSFMode mode )
  * settings.
  */
 gboolean
-ofa_stream_format_exists( ofaHub *hub, const gchar *name, ofeSFMode mode )
+ofa_stream_format_exists( ofaIGetter *getter, const gchar *name, ofeSFMode mode )
 {
 	myISettings *settings;
 	gboolean exists;
 	gchar *key, *str;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	exists = FALSE;
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 	key = get_key_name( name, mode );
 	if( my_strlen( key )){
 		str = my_isettings_get_string( settings, HUB_USER_SETTINGS_GROUP, key );
@@ -266,7 +266,7 @@ ofa_stream_format_exists( ofaHub *hub, const gchar *name, ofeSFMode mode )
 
 /**
  * ofa_stream_format_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @name: [allow-none]: the user-provided name for this format;
  *  defaults to 'Default'.
  * @mode: [allow-none]: the target mode for this format;
@@ -275,18 +275,18 @@ ofa_stream_format_exists( ofaHub *hub, const gchar *name, ofeSFMode mode )
  * Returns: a newly allocated #ofaStreamFormat object.
  */
 ofaStreamFormat *
-ofa_stream_format_new( ofaHub *hub, const gchar *name, ofeSFMode mode )
+ofa_stream_format_new( ofaIGetter *getter, const gchar *name, ofeSFMode mode )
 {
 	ofaStreamFormat *self;
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	self = g_object_new( OFA_TYPE_STREAM_FORMAT, NULL );
 
 	priv = ofa_stream_format_get_instance_private( self );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	do_init( self, name, mode );
 
@@ -325,7 +325,7 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 	key = get_key_name( priv->name, priv->mode );
 	g_return_if_fail( my_strlen( key ));
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	/* indicators */
@@ -864,7 +864,7 @@ ofa_stream_format_set( ofaStreamFormat *format,
 	prefs_list = g_list_prepend( prefs_list, sinds );
 
 	/* save in user preferences */
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	keyname = get_key_name( priv->name, priv->mode );
 	g_debug( "%s: keyname=%s", thisfn, keyname );
 	g_return_if_fail( my_strlen( keyname ));

@@ -356,7 +356,20 @@
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 
-1339
+1339 2017- 2- 1 deprecate IGetter interface elsewhere that the Hub
+
+1340 2017- 2- 1 review ExtenderCollection to move to my library ?
+
+1341 2017- 2- 1 ofa_extender_collection_get_for_type: does not return a new ref
+
+1342 2017- 2- 2 isolate hub signaling system in a dedicated interface
+                ISignaler + renamed ISignalHub to ISignalable
+
+1343 2017- 2- 2 dossier store should be owned by the Hub, not by the appli
+
+1344 2017- 2- 3 re-authorize dossier open from command-line
+
+1345
 
 -----------------------------------------------------------------------
  DONE

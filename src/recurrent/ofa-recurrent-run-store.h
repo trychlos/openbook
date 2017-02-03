@@ -44,7 +44,7 @@
  *   itself ends up.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-list-store.h"
 
 #include "recurrent/ofo-recurrent-run.h"
@@ -113,7 +113,7 @@ enum {
 
 GType                 ofa_recurrent_run_store_get_type     ( void );
 
-ofaRecurrentRunStore *ofa_recurrent_run_store_new          ( ofaHub *hub,
+ofaRecurrentRunStore *ofa_recurrent_run_store_new          ( ofaIGetter *getter,
 																	gint mode );
 
 void                  ofa_recurrent_run_store_set_from_list( ofaRecurrentRunStore *store,

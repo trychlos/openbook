@@ -40,7 +40,6 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -69,7 +68,7 @@ GType    ofa_check_balances_get_type( void ) G_GNUC_CONST;
 void     ofa_check_balances_run     ( ofaIGetter *getter,
 											GtkWindow *parent );
 
-gboolean ofa_check_balances_check   ( ofaHub *hub );
+gboolean ofa_check_balances_check   ( ofaIGetter *getter );
 
 G_END_DECLS
 

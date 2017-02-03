@@ -31,7 +31,7 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iexe-close.h"
 
 #define IEXECLOSE_LAST_VERSION    1
@@ -202,24 +202,25 @@ ofa_iexe_close_add_row( ofaIExeClose *instance, guint rowtype )
  *  exercice N+1.
  * @box: a #GtkBox in which the plugin may display a text, a progress
  *  bar, or whatever...
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Ask @instance to do its tasks.
  *
  * Returns: %TRUE if the plugin tasks are successful, %FALSE else.
  */
 gboolean
-ofa_iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub )
+ofa_iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_iexe_close_do_task";
 
-	g_debug( "%s: instance=%p, rowtype=%u, box=%p, hub=%p",
-			thisfn, ( void * ) instance, rowtype, ( void * ) box, ( void * ) hub );
+	g_debug( "%s: instance=%p, rowtype=%u, box=%p, getter=%p",
+			thisfn, ( void * ) instance, rowtype, ( void * ) box, ( void * ) getter );
 
 	g_return_val_if_fail( instance && OFA_IS_IEXECLOSE( instance ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	if( OFA_IEXECLOSE_GET_INTERFACE( instance )->do_task ){
-		return( OFA_IEXECLOSE_GET_INTERFACE( instance )->do_task( instance, rowtype, box, hub ));
+		return( OFA_IEXECLOSE_GET_INTERFACE( instance )->do_task( instance, rowtype, box, getter ));
 	}
 
 	g_info( "%s: ofaIExeClose's %s implementation does not provide 'do_task()' method",

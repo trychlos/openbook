@@ -68,7 +68,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub       *hub;
 	ofoTVAForm   *form;
 	ofaTVAStyle  *style_provider;
 	gboolean      is_writable;
@@ -280,7 +279,7 @@ ofa_tva_record_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoTVAReco
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->tva_record = record;
 
@@ -314,10 +313,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -362,12 +358,15 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_idialog_init";
 	ofaTVARecordPropertiesPrivate *priv;
+	ofaHub *hub;
 	const gchar *cstr;
 	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( instance ));
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	/* update properties on OK + always terminates */
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
@@ -387,10 +386,10 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->validate_btn && GTK_IS_BUTTON( priv->validate_btn ));
 	g_signal_connect( priv->validate_btn, "clicked", G_CALLBACK( on_validate_clicked ), instance );
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub ) && !ofo_tva_record_get_is_validated( priv->tva_record );
-	priv->style_provider = ofa_tva_style_new( priv->hub );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub ) && !ofo_tva_record_get_is_validated( priv->tva_record );
+	priv->style_provider = ofa_tva_style_new( priv->getter );
 
-	priv->form = ofo_tva_form_get_by_mnemo( priv->hub, ofo_tva_record_get_mnemo( priv->tva_record ));
+	priv->form = ofo_tva_form_get_by_mnemo( priv->getter, ofo_tva_record_get_mnemo( priv->tva_record ));
 	g_return_if_fail( priv->form && OFO_IS_TVA_FORM( priv->form ));
 
 	my_date_set_from_date( &priv->init_end_date, ofo_tva_record_get_end( priv->tva_record ));
@@ -478,8 +477,8 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
 
@@ -505,8 +504,8 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 
@@ -528,8 +527,8 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_dope_changed ), self );
 
@@ -635,10 +634,10 @@ init_taxes( ofaTVARecordProperties *self )
 			entry = gtk_entry_new();
 			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 			my_double_editable_init_ex( GTK_EDITABLE( entry ),
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub )),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub )),
-					ofa_prefs_amount_accept_dot( priv->hub ),
-					ofa_prefs_amount_accept_comma( priv->hub ),
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
+					g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
+					ofa_prefs_amount_accept_dot( priv->getter ),
+					ofa_prefs_amount_accept_comma( priv->getter ),
 					0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
 			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 16 );
@@ -658,10 +657,10 @@ init_taxes( ofaTVARecordProperties *self )
 			entry = gtk_entry_new();
 			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 			my_double_editable_init_ex( GTK_EDITABLE( entry ),
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub )),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub )),
-					ofa_prefs_amount_accept_dot( priv->hub ),
-					ofa_prefs_amount_accept_comma( priv->hub ),
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
+					g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
+					ofa_prefs_amount_accept_dot( priv->getter ),
+					ofa_prefs_amount_accept_comma( priv->getter ),
 					0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
 			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 16 );
@@ -815,7 +814,7 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 		}
 
 		if( is_computable ){
-			if( ofo_tva_record_get_by_begin( priv->hub, priv->mnemo, &priv->begin_date, &priv->end_date ) != NULL ){
+			if( ofo_tva_record_get_by_begin( priv->getter, priv->mnemo, &priv->begin_date, &priv->end_date ) != NULL ){
 				msgerr = g_strdup( _( "Begin date overlaps with an already defined declaration" ));
 				is_valid = FALSE;
 				is_computable = FALSE;
@@ -923,7 +922,7 @@ setup_tva_record( ofaTVARecordProperties *self )
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_BASE, row );
 			g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 			str = my_double_editable_get_string( GTK_EDITABLE( entry ));
-			amount = ofa_amount_from_str( str, priv->hub );
+			amount = ofa_amount_from_str( str, priv->getter );
 			ofo_tva_record_detail_set_base( priv->tva_record, idx, amount );
 			g_free( str );
 		}
@@ -931,7 +930,7 @@ setup_tva_record( ofaTVARecordProperties *self )
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_AMOUNT, row );
 			g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 			str = my_double_editable_get_string( GTK_EDITABLE( entry ));
-			amount = ofa_amount_from_str( str, priv->hub );
+			amount = ofa_amount_from_str( str, priv->getter );
 			ofo_tva_record_detail_set_amount( priv->tva_record, idx, amount );
 			g_free( str );
 		}
@@ -1008,7 +1007,7 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 
 	if( resp == GTK_RESPONSE_OK ){
 		if( !st_engine ){
-			st_engine = ofa_formula_engine_new( priv->hub );
+			st_engine = ofa_formula_engine_new( priv->getter );
 			ofa_formula_engine_set_auto_eval( st_engine, TRUE );
 		}
 		count = ofo_tva_record_detail_get_count( priv->tva_record );
@@ -1096,7 +1095,7 @@ eval_account( ofsFormulaHelper *helper )
 	DEBUG( "%s: begin=%s, end=%s", thisfn, cbegin, cend );
 
 	dataset = ofo_entry_get_dataset_account_balance(
-					priv->hub, cbegin, cend, &priv->begin_date, &priv->end_date );
+					priv->getter, cbegin, cend, &priv->begin_date, &priv->end_date );
 	amount = 0;
 	for( it=dataset ; it ; it=it->next ){
 		sbal = ( ofsAccountBalance * ) it->data;
@@ -1105,7 +1104,7 @@ eval_account( ofsFormulaHelper *helper )
 		amount += sbal->debit;
 	}
 
-	res = ofa_amount_to_str( amount, NULL, priv->hub );
+	res = ofa_amount_to_str( amount, NULL, priv->getter );
 
 	DEBUG( "%s: ACCOUNT(%s[;%s])=%s", thisfn, cbegin, cend, res );
 
@@ -1135,7 +1134,7 @@ eval_amount( ofsFormulaHelper *helper )
 	row = cstr ? atoi( cstr ) : 0;
 	if( row > 0 && ofo_tva_form_detail_get_has_amount( priv->form, row-1 )){
 		amount = ofo_tva_record_detail_get_amount( priv->tva_record, row-1 );
-		res = ofa_amount_to_str( amount, NULL, priv->hub );
+		res = ofa_amount_to_str( amount, NULL, priv->getter );
 	}
 
 	DEBUG( "%s: cstr=%s, res=%s", thisfn, cstr, res );
@@ -1170,7 +1169,7 @@ eval_balance( ofsFormulaHelper *helper )
 	}
 	DEBUG( "%s: begin=%s, end=%s", thisfn, cbegin, cend );
 
-	dataset = ofo_account_get_dataset( priv->hub );
+	dataset = ofo_account_get_dataset( priv->getter );
 	amount = 0;
 	for( it=dataset ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
@@ -1184,7 +1183,7 @@ eval_balance( ofsFormulaHelper *helper )
 		}
 	}
 
-	res = ofa_amount_to_str( amount, NULL, priv->hub );
+	res = ofa_amount_to_str( amount, NULL, priv->getter );
 
 	DEBUG( "%s: BALANCE(%s[;%s])=%s", thisfn, cbegin, cend, res );
 
@@ -1213,7 +1212,7 @@ eval_base( ofsFormulaHelper *helper )
 	row = cstr ? atoi( cstr ) : 0;
 	if( row > 0 && ofo_tva_form_detail_get_has_base( priv->form, row-1 )){
 		amount = ofo_tva_record_detail_get_base( priv->tva_record, row-1 );
-		res = ofa_amount_to_str( amount, NULL, priv->hub );
+		res = ofa_amount_to_str( amount, NULL, priv->getter );
 	}
 
 	return( res );
@@ -1297,6 +1296,7 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_do_generate_opes";
 	ofaTVARecordPropertiesPrivate *priv;
+	ofaHub *hub;
 	guint count, rec_idx, tmpl_count, tmpl_idx;
 	ofxAmount amount;
 	const gchar *cstr;
@@ -1311,7 +1311,9 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
+
 	*ope_count = 0;
 	*ent_count = 0;
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
@@ -1322,7 +1324,7 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 			if( amount > 0 && my_strlen( cstr )){
 				g_debug( "%s: amount=%lf, template=%s", thisfn, amount, cstr );
 				done = FALSE;
-				template = ofo_ope_template_get_by_mnemo( priv->hub, cstr );
+				template = ofo_ope_template_get_by_mnemo( priv->getter, cstr );
 				g_return_val_if_fail( template && OFO_IS_OPE_TEMPLATE( template ), FALSE );
 				/*
 				 * generate an operation when the amount is greater thant zero
@@ -1371,7 +1373,7 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 						for( it=entries ; it ; it=it->next ){
 							entry = OFO_ENTRY( it->data );
 							ofo_entry_set_ope_number( entry, ope_number );
-							ofo_entry_insert( entry, priv->hub );
+							ofo_entry_insert( entry );
 							*ent_count += 1;
 						}
 						g_list_free_full( entries, ( GDestroyNotify ) g_object_unref );

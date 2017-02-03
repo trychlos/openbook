@@ -51,6 +51,7 @@
 #include <my/my-iprogress.h>
 #include <my/my-isettings.h>
 #include <my/my-iwindow.h>
+#include <my/my-menu-manager.h>
 #include <my/my-progress-bar.h>
 #include <my/my-settings.h>
 #include <my/my-signal.h>

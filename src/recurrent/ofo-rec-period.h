@@ -36,7 +36,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
@@ -84,12 +84,12 @@ typedef void (*RecPeriodEnumBetweenCb)( const GDate *date, void *user_data );
 
 GType           ofo_rec_period_get_type          ( void ) G_GNUC_CONST;
 
-GList          *ofo_rec_period_get_dataset       ( ofaHub *hub );
+GList          *ofo_rec_period_get_dataset       ( ofaIGetter *getter );
 #define         ofo_rec_period_free_dataset( L ) g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-ofoRecPeriod   *ofo_rec_period_get_by_id         ( ofaHub *hub, const gchar *id );
+ofoRecPeriod   *ofo_rec_period_get_by_id         ( ofaIGetter *getter, const gchar *id );
 
-ofoRecPeriod   *ofo_rec_period_new               ( void );
+ofoRecPeriod   *ofo_rec_period_new               ( ofaIGetter *getter );
 
 const gchar    *ofo_rec_period_get_id            ( ofoRecPeriod *period );
 guint           ofo_rec_period_get_order         ( ofoRecPeriod *period );
@@ -125,7 +125,7 @@ void            ofo_rec_period_set_notes         ( ofoRecPeriod *period, const g
 void            ofo_rec_period_free_detail_all   ( ofoRecPeriod *period );
 void            ofo_rec_period_add_detail        ( ofoRecPeriod *period, guint order, const gchar *label, guint number, guint value );
 
-gboolean        ofo_rec_period_insert            ( ofoRecPeriod *period, ofaHub *hub );
+gboolean        ofo_rec_period_insert            ( ofoRecPeriod *period );
 gboolean        ofo_rec_period_update            ( ofoRecPeriod *period );
 gboolean        ofo_rec_period_delete            ( ofoRecPeriod *period );
 

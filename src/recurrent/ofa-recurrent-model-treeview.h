@@ -48,7 +48,7 @@
  * decide whether an action may apply or not on a multiple selection.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 
 #include "recurrent/ofo-recurrent-model.h"
@@ -76,7 +76,7 @@ typedef struct {
 
 GType                      ofa_recurrent_model_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaRecurrentModelTreeview *ofa_recurrent_model_treeview_new               ( ofaHub *hub );
+ofaRecurrentModelTreeview *ofa_recurrent_model_treeview_new               ( ofaIGetter *getter );
 
 void                       ofa_recurrent_model_treeview_set_settings_key  ( ofaRecurrentModelTreeview *view,
 																					const gchar *key );

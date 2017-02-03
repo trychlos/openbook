@@ -569,13 +569,13 @@ ofa_idbexercice_meta_get_label( const ofaIDBExerciceMeta *period )
 	gchar *sdate;
 	const GDate *begin, *end;
 	ofaIDBProvider *provider;
-	ofaHub *hub;
+	ofaIGetter *getter;
 
 	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 
 	sdata = get_instance_data( period );
 	provider = ofa_idbdossier_meta_get_provider( sdata->dossier_meta );
-	hub = ofa_idbprovider_get_hub( provider );
+	getter = ofa_idbprovider_get_getter( provider );
 
 	svalue = g_string_new( ofa_idbexercice_meta_get_current( period )
 					? _( "Current exercice" )
@@ -583,14 +583,14 @@ ofa_idbexercice_meta_get_label( const ofaIDBExerciceMeta *period )
 
 	begin = ofa_idbexercice_meta_get_begin_date( period );
 	if( my_date_is_valid( begin )){
-		sdate = my_date_to_str( begin, ofa_prefs_date_display( hub ));
+		sdate = my_date_to_str( begin, ofa_prefs_date_display( getter ));
 		g_string_append_printf( svalue, _( " from %s" ), sdate );
 		g_free( sdate );
 	}
 
 	end = ofa_idbexercice_meta_get_end_date( period );
 	if( my_date_is_valid( end )){
-		sdate = my_date_to_str( end, ofa_prefs_date_display( hub ));
+		sdate = my_date_to_str( end, ofa_prefs_date_display( getter ));
 		g_string_append_printf( svalue, _( " to %s" ), sdate );
 		g_free( sdate );
 	}

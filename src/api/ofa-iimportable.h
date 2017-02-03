@@ -47,7 +47,6 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-dossier-def.h"

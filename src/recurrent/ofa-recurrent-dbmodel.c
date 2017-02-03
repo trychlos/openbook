@@ -33,8 +33,10 @@
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-ope-template.h"
 
 #include "ofa-recurrent-dbmodel.h"
@@ -49,7 +51,7 @@ typedef struct {
 
 	/* update setup
 	 */
-	ofaHub              *hub;
+	ofaIGetter          *getter;
 	const ofaIDBConnect *connect;
 	myIProgress         *window;
 
@@ -107,14 +109,14 @@ static guint      idbmodel_get_interface_version( void );
 static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      get_last_version( void );
-static gboolean   idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
+static gboolean   idbmodel_ddl_update( ofaIDBModel *instance, ofaIGetter *getter, myIProgress *window );
 static gboolean   upgrade_to( ofaRecurrentDBModel *self, sMigration *smig );
 static gboolean   exec_query( ofaRecurrentDBModel *self, const gchar *query );
 static gboolean   version_begin( ofaRecurrentDBModel *self, gint version );
 static gboolean   version_end( ofaRecurrentDBModel *self, gint version );
-static gulong     idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
-static gulong     check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
-static gulong     check_run( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
+static gulong     idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
+static gulong     check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
+static gulong     check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentDBModel, ofa_recurrent_dbmodel, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaRecurrentDBModel )
@@ -278,17 +280,19 @@ get_last_version( void )
 }
 
 static gboolean
-idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
+idbmodel_ddl_update( ofaIDBModel *instance, ofaIGetter *getter, myIProgress *window )
 {
 	ofaRecurrentDBModelPrivate *priv;
 	guint i, cur_version, last_version;
 	GtkWidget *label;
 	gchar *str;
 	gboolean ok;
+	ofaHub *hub;
 
 	ok = TRUE;
 	priv = ofa_recurrent_dbmodel_get_instance_private( OFA_RECURRENT_DBMODEL( instance ));
-	priv->hub = hub;
+	priv->getter = getter;
+	hub = ofa_igetter_get_hub( getter );
 	priv->connect = ofa_hub_get_connect( hub );
 	priv->window = window;
 
@@ -1428,19 +1432,19 @@ count_v7( ofaRecurrentDBModel *self )
 }
 
 static gulong
-idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
+idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
 	gulong errs;
 
 	errs = 0;
-	errs += check_model( instance, hub, progress );
-	errs += check_run( instance, hub, progress );
+	errs += check_model( instance, getter, progress );
+	errs += check_run( instance, getter, progress );
 
 	return( errs );
 }
 
 static gulong
-check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
+check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
 	gulong errs;
 	void *worker;
@@ -1461,7 +1465,7 @@ check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 	}
 
 	errs = 0;
-	records = ofo_recurrent_model_get_dataset( hub );
+	records = ofo_recurrent_model_get_dataset( getter );
 	count = g_list_length( records );
 
 	if( count == 0 ){
@@ -1485,7 +1489,7 @@ check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 				}
 				errs += 1;
 			} else {
-				ope_object = ofo_ope_template_get_by_mnemo( hub, ope_mnemo );
+				ope_object = ofo_ope_template_get_by_mnemo( getter, ope_mnemo );
 				if( !ope_object || !OFO_IS_OPE_TEMPLATE( ope_object )){
 					if( progress ){
 						str = g_strdup_printf(
@@ -1512,7 +1516,7 @@ check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 }
 
 static gulong
-check_run( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
+check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
 	gulong errs;
 	void *worker;
@@ -1533,7 +1537,7 @@ check_run( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 	}
 
 	errs = 0;
-	records = ofo_recurrent_run_get_dataset( hub );
+	records = ofo_recurrent_run_get_dataset( getter );
 	count = g_list_length( records );
 
 	if( count == 0 ){
@@ -1547,7 +1551,7 @@ check_run( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 		mnemo = ofo_recurrent_run_get_mnemo( obj );
 
 		/* recurrent model */
-		model_object = ofo_recurrent_model_get_by_mnemo( hub, mnemo );
+		model_object = ofo_recurrent_model_get_by_mnemo( getter, mnemo );
 		if( !model_object || !OFO_IS_RECURRENT_MODEL( model_object )){
 			if( progress ){
 				str = g_strdup_printf(

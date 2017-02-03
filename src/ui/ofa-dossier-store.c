@@ -34,6 +34,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 
@@ -42,11 +43,11 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub  *hub;
+	ofaIGetter *getter;
 }
 	ofaDossierStorePrivate;
 
@@ -168,7 +169,7 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
 
 /**
  * ofa_dossier_store_new:
- * @hub: [allow-none]: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *  This must be non-null at first call (instanciation time), while
  *  is not used on successive calls.
  *
@@ -181,7 +182,7 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
  * must be g_object_unref() by the caller.
  */
 ofaDossierStore *
-ofa_dossier_store_new( ofaHub *hub )
+ofa_dossier_store_new( ofaIGetter *getter )
 {
 	ofaDossierStore *store;
 	ofaDossierStorePrivate *priv;
@@ -191,13 +192,13 @@ ofa_dossier_store_new( ofaHub *hub )
 		store = g_object_ref( st_store );
 
 	} else {
-		g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+		g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 		store = g_object_new( OFA_TYPE_DOSSIER_STORE, NULL );
 
 		priv = ofa_dossier_store_get_instance_private( store );
 
-		priv->hub = hub;
+		priv->getter = getter;
 
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), DOSSIER_N_COLUMNS, st_col_types );
@@ -209,7 +210,7 @@ ofa_dossier_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		collection = ofa_hub_get_dossier_collection( hub );
+		collection = ofa_igetter_get_dossier_collection( getter );
 		g_signal_connect( collection, "changed", G_CALLBACK( on_dossier_collection_changed ), store );
 		load_dataset( store, collection );
 		st_store = store;
@@ -320,8 +321,8 @@ set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofa
 	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 	provname = ofa_idbprovider_get_canon_name( provider );
 
-	begin = my_date_to_str( ofa_idbexercice_meta_get_begin_date( period ), ofa_prefs_date_display( priv->hub ));
-	end = my_date_to_str( ofa_idbexercice_meta_get_end_date( period ), ofa_prefs_date_display( priv->hub ));
+	begin = my_date_to_str( ofa_idbexercice_meta_get_begin_date( period ), ofa_prefs_date_display( priv->getter ));
+	end = my_date_to_str( ofa_idbexercice_meta_get_end_date( period ), ofa_prefs_date_display( priv->getter ));
 	status = ofa_idbexercice_meta_get_status( period );
 	pername = ofa_idbexercice_meta_get_name( period );
 

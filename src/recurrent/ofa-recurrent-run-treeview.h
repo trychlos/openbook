@@ -49,7 +49,7 @@
  * to decide whether an action may apply or not on a multiple selection.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 
 #include "recurrent/ofo-recurrent-run.h"
@@ -87,7 +87,7 @@ enum {
 
 GType                    ofa_recurrent_run_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaRecurrentRunTreeview *ofa_recurrent_run_treeview_new               ( ofaHub *hub );
+ofaRecurrentRunTreeview *ofa_recurrent_run_treeview_new               ( ofaIGetter *getter );
 
 void                     ofa_recurrent_run_treeview_set_settings_key  ( ofaRecurrentRunTreeview *view,
 																			const gchar *settings_key );

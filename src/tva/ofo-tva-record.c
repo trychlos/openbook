@@ -40,6 +40,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -193,7 +194,7 @@ static void          isignal_hub_connect( ofaHub *hub );
 static gboolean      hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean      hub_is_deletable_tva_form( ofaHub *hub, ofoTVAForm *form );
 static void          hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean      hub_on_updated_tva_form_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean      hub_on_updated_tva_form_mnemo( ofaHub *hub, ofoBase *object, const gchar *mnemo, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVARecord, ofo_tva_record, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVARecord )
@@ -299,7 +300,7 @@ ofo_tva_record_class_init( ofoTVARecordClass *klass )
 
 /**
  * ofo_tva_record_get_dataset:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the full #ofoTVARecord dataset.
  *
@@ -307,16 +308,20 @@ ofo_tva_record_class_init( ofoTVARecordClass *klass )
  * be released by the caller.
  */
 GList *
-ofo_tva_record_get_dataset( ofaHub *hub )
+ofo_tva_record_get_dataset( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	myICollector *collector;
 
-	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_TVA_RECORD, hub ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_TVA_RECORD, getter ));
 }
 
 /**
  * ofo_tva_record_get_last_end:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @mnemo: the VAT record mnemonic.
  * @date: [out]: the date to be set.
  *
@@ -325,18 +330,20 @@ ofo_tva_record_get_dataset( ofaHub *hub )
  * Returns: the provided @date.
  */
 GDate *
-ofo_tva_record_get_last_end( ofaHub *hub, const gchar *mnemo, GDate *date )
+ofo_tva_record_get_last_end( ofaIGetter *getter, const gchar *mnemo, GDate *date )
 {
 	gchar *query;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	GSList *result, *irow, *icol;
 	const gchar *cstr;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 	g_return_val_if_fail( date, NULL );
 
 	query = g_strdup_printf( "SELECT MAX(TFO_END) FROM TVA_T_RECORDS WHERE TFO_MNEMO='%s'", mnemo );
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 	my_date_clear( date );
 
@@ -355,7 +362,7 @@ ofo_tva_record_get_last_end( ofaHub *hub, const gchar *mnemo, GDate *date )
 
 /**
  * ofo_tva_record_get_by_key:
- * @dossier:
+ * @getter: a #ofaIGetter instance.
  * @mnemo:
  * @candidate_end: a valid date as candidate end.
  *
@@ -370,18 +377,18 @@ ofo_tva_record_get_last_end( ofaHub *hub, const gchar *mnemo, GDate *date )
  * not be unreffed by the caller.
  */
 ofoTVARecord *
-ofo_tva_record_get_by_key( ofaHub *hub, const gchar *mnemo, const GDate *candidate_end )
+ofo_tva_record_get_by_key( ofaIGetter *getter, const gchar *mnemo, const GDate *candidate_end )
 {
 	GList *dataset, *it;
 	ofoTVARecord *record;
 	const gchar *cmnemo;
 	const GDate *dbegin, *dend;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 	g_return_val_if_fail( my_date_is_valid( candidate_end ), NULL );
 
-	dataset = ofo_tva_record_get_dataset( hub );
+	dataset = ofo_tva_record_get_dataset( getter );
 
 	for( it=dataset ; it ; it=it->next ){
 		record = OFO_TVA_RECORD( it->data );
@@ -401,7 +408,7 @@ ofo_tva_record_get_by_key( ofaHub *hub, const gchar *mnemo, const GDate *candida
 
 /**
  * ofo_tva_record_get_by_begin:
- * @dossier:
+ * @getter: a #ofaIGetter instance.
  * @mnemo:
  * @candidate_begin: a valid date as candidate begin.
  * @end: the end date of the candidate record.
@@ -413,19 +420,19 @@ ofo_tva_record_get_by_key( ofaHub *hub, const gchar *mnemo, const GDate *candida
  * not be unreffed by the caller.
  */
 ofoTVARecord *
-ofo_tva_record_get_by_begin( ofaHub *hub, const gchar *mnemo, const GDate *candidate_begin, const GDate *end )
+ofo_tva_record_get_by_begin( ofaIGetter *getter, const gchar *mnemo, const GDate *candidate_begin, const GDate *end )
 {
 	GList *dataset, *it;
 	ofoTVARecord *record;
 	const gchar *cmnemo;
 	const GDate *dbegin, *dend;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 	g_return_val_if_fail( my_date_is_valid( candidate_begin ), NULL );
 	g_return_val_if_fail( my_date_is_valid( end ), NULL );
 
-	dataset = ofo_tva_record_get_dataset( hub );
+	dataset = ofo_tva_record_get_dataset( getter );
 
 	for( it=dataset ; it ; it=it->next ){
 		record = OFO_TVA_RECORD( it->data );
@@ -445,13 +452,16 @@ ofo_tva_record_get_by_begin( ofaHub *hub, const gchar *mnemo, const GDate *candi
 
 /**
  * ofo_tva_record_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoTVARecord *
-ofo_tva_record_new( void )
+ofo_tva_record_new( ofaIGetter *getter )
 {
 	ofoTVARecord *record;
 
-	record = g_object_new( OFO_TYPE_TVA_RECORD, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	record = g_object_new( OFO_TYPE_TVA_RECORD, "ofo-base-getter", getter, NULL );
 	OFO_BASE( record )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( record );
@@ -468,12 +478,14 @@ ofoTVARecord *
 ofo_tva_record_new_from_form( ofoTVAForm *form )
 {
 	ofoTVARecord *dest;
+	ofaIGetter *getter;
 	gint count, i;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
 	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, NULL );
 
-	dest = ofo_tva_record_new();
+	getter = ofo_base_get_getter( OFO_BASE( form ));
+	dest = ofo_tva_record_new( getter );
 
 	record_set_mnemo( dest, ofo_tva_form_get_mnemo( form ));
 
@@ -1088,24 +1100,25 @@ ofo_tva_record_boolean_get_is_true( ofoTVARecord *record, guint idx )
  * ofo_tva_record_insert:
  */
 gboolean
-ofo_tva_record_insert( ofoTVARecord *tva_record, ofaHub *hub )
+ofo_tva_record_insert( ofoTVARecord *tva_record )
 {
 	static const gchar *thisfn = "ofo_tva_record_insert";
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gboolean ok;
 
-	g_debug( "%s: record=%p, hub=%p",
-			thisfn, ( void * ) tva_record, ( void * ) hub );
+	g_debug( "%s: record=%p", thisfn, ( void * ) tva_record );
 
 	g_return_val_if_fail( tva_record && OFO_IS_TVA_RECORD( tva_record ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( tva_record )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( tva_record ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( record_do_insert( tva_record, ofa_hub_get_connect( hub ))){
-		ofo_base_set_hub( OFO_BASE( tva_record ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( tva_record ), NULL, hub );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( tva_record ), NULL, getter );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, tva_record );
 		ok = TRUE;
 	}
@@ -1350,6 +1363,7 @@ gboolean
 ofo_tva_record_update( ofoTVARecord *tva_record )
 {
 	static const gchar *thisfn = "ofo_tva_record_update";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1359,7 +1373,8 @@ ofo_tva_record_update( ofoTVARecord *tva_record )
 	g_return_val_if_fail( !OFO_BASE( tva_record )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( tva_record ));
+	getter = ofo_base_get_getter( OFO_BASE( tva_record ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( record_do_update( tva_record, ofa_hub_get_connect( hub ))){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, tva_record, NULL );
@@ -1454,6 +1469,7 @@ gboolean
 ofo_tva_record_delete( ofoTVARecord *tva_record )
 {
 	static const gchar *thisfn = "ofo_tva_record_delete";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1464,11 +1480,12 @@ ofo_tva_record_delete( ofoTVARecord *tva_record )
 	g_return_val_if_fail( !OFO_BASE( tva_record )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( tva_record ));
+	getter = ofo_base_get_getter( OFO_BASE( tva_record ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( record_do_delete( tva_record, ofa_hub_get_connect( hub ))){
 		g_object_ref( tva_record );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( tva_record ));
+		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( tva_record ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, tva_record );
 		g_object_unref( tva_record );
 		ok = TRUE;
@@ -1551,17 +1568,19 @@ icollectionable_load_collection( void *user_data )
 	GList *dataset, *it, *ir;
 	ofoTVARecord *record;
 	gchar *from, *send;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 
-	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"TVA_T_RECORDS",
 					OFO_TYPE_TVA_RECORD,
-					OFA_HUB( user_data ));
+					OFA_IGETTER( user_data ));
 
-	connect = ofa_hub_get_connect( OFA_HUB( user_data ));
+	hub = ofa_igetter_get_hub( OFA_IGETTER( user_data ));
+	connect = ofa_hub_get_connect( hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		record = OFO_TVA_RECORD( it->data );
@@ -1681,19 +1700,21 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			mnemo = ofo_tva_form_get_mnemo( OFO_TVA_FORM( object ));
 			if( my_collate( mnemo, prev_id )){
-				hub_on_updated_tva_form_mnemo( hub, mnemo, prev_id );
+				hub_on_updated_tva_form_mnemo( hub, object, mnemo, prev_id );
 			}
 		}
 	}
 }
 
 static gboolean
-hub_on_updated_tva_form_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+hub_on_updated_tva_form_mnemo( ofaHub *hub, ofoBase *object, const gchar *mnemo, const gchar *prev_id )
 {
 	static const gchar *thisfn = "ofo_tva_record_hub_on_updated_tva_form_mnemo";
 	gchar *query;
 	const ofaIDBConnect *connect;
 	gboolean ok;
+	ofaIGetter *getter;
+	myICollector *collector;
 
 	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
 			thisfn, ( void * ) hub, mnemo, prev_id );
@@ -1724,7 +1745,9 @@ hub_on_updated_tva_form_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *pre
 	ok = ofa_idbconnect_query( connect, query, TRUE );
 	g_free( query );
 
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_TVA_RECORD );
+	getter = ofo_base_get_getter( object );
+	collector = ofa_igetter_get_collector( getter );
+	my_icollector_collection_free( collector, OFO_TYPE_TVA_RECORD );
 
 	return( ok );
 }

@@ -100,7 +100,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar                  *settings_prefix;
-	ofaHub                 *hub;
 
 	/* p1: select source files
 	 */
@@ -442,7 +441,7 @@ ofa_recovery_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_recovery_assistant_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -474,10 +473,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 
@@ -504,7 +500,7 @@ iassistant_is_willing_to_quit( myIAssistant *instance, guint keyval )
 
 	priv = ofa_recovery_assistant_get_instance_private( OFA_RECOVERY_ASSISTANT( instance ));
 
-	return( ofa_prefs_assistant_is_willing_to_quit( priv->hub, keyval ));
+	return( ofa_prefs_assistant_is_willing_to_quit( priv->getter, keyval ));
 }
 
 /*
@@ -635,7 +631,7 @@ p2_do_init( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 	/* input format */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-format-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p2_format_st = ofa_stream_format_new( priv->hub, priv->p2_format_name, OFA_SFMODE_IMPORT );
+	priv->p2_format_st = ofa_stream_format_new( priv->getter, priv->p2_format_name, OFA_SFMODE_IMPORT );
 	priv->p2_format_bin = ofa_stream_format_bin_new( priv->p2_format_st );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_format_bin ));
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p2_format_bin ), 0 ))){
@@ -762,7 +758,7 @@ p3_do_init( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 	g_signal_connect( selection, "changed", G_CALLBACK( p3_on_selection_changed ), self );
 	g_signal_connect( priv->p3_tview, "row-activated", G_CALLBACK( p3_on_selection_activated ), self );
 
-	collection = ofa_hub_get_extender_collection( priv->hub );
+	collection = ofa_igetter_get_extender_collection( priv->getter );
 	priv->p3_recoverers = ofa_extender_collection_get_for_type( collection, OFA_TYPE_IRECOVER );
 	for( it=priv->p3_recoverers ; it ; it=it->next ){
 		if( MY_IS_IIDENT( it->data )){
@@ -1312,7 +1308,7 @@ p6_do_init( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 	/* admin credentials */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-admin-credentials" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p6_admin_credentials = ofa_admin_credentials_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_RECOVERY );
+	priv->p6_admin_credentials = ofa_admin_credentials_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_RECOVERY );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p6_admin_credentials ));
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p6_admin_credentials ), 0 ))){
 		my_utils_size_group_add_size_group( priv->p6_hgroup, group_bin );
@@ -1324,7 +1320,7 @@ p6_do_init( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 	/* open, and action on open */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-actions" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p6_actions = ofa_dossier_actions_bin_new( priv->hub, priv->settings_prefix, HUB_RULE_DOSSIER_RECOVERY );
+	priv->p6_actions = ofa_dossier_actions_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_RECOVERY );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p6_actions ));
 	g_signal_connect( priv->p6_actions, "ofa-changed", G_CALLBACK( p6_on_actions_changed ), self );
 
@@ -1592,11 +1588,11 @@ p8_do_display( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 	if( !p8_recovery_confirmed( self )){
 
 		if( priv->p4_new_dossier ){
-			collection = ofa_hub_get_dossier_collection( priv->hub );
+			collection = ofa_igetter_get_dossier_collection( priv->getter );
 			ofa_dossier_collection_delete_period( collection, priv->p4_connect, NULL, TRUE, NULL );
 
 		} else if( priv->p4_new_exercice ){
-			collection = ofa_hub_get_dossier_collection( priv->hub );
+			collection = ofa_igetter_get_dossier_collection( priv->getter );
 			ofa_dossier_collection_delete_period( collection, priv->p4_connect, priv->p4_exercice_meta, TRUE, NULL );
 		}
 
@@ -1671,7 +1667,7 @@ p8_do_recover( ofaRecoveryAssistant *self )
 		uris = ofa_irecover_add_file( uris, OFA_RECOVER_ACCOUNT, priv->p1_accounts_uri );
 
 		ok = ofa_irecover_import_uris( priv->p3_recoverer,
-					priv->hub, uris, priv->p2_format_st, connect, ( ofaMsgCb ) p8_msg_cb, self );
+					priv->getter, uris, priv->p2_format_st, connect, ( ofaMsgCb ) p8_msg_cb, self );
 	}
 
 	if( ok ){
@@ -1947,7 +1943,7 @@ read_settings( ofaRecoveryAssistant *self )
 
 	priv = ofa_recovery_assistant_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -1978,7 +1974,7 @@ write_settings( ofaRecoveryAssistant *self )
 
 	priv = ofa_recovery_assistant_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 
 	str = g_strdup_printf( "%s;%s;",

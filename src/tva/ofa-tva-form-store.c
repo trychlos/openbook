@@ -28,10 +28,12 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-icollector.h"
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-ope-template.h"
 
 #include "tva/ofa-tva-form-store.h"
@@ -40,12 +42,16 @@
 /* private instance data
  */
 typedef struct {
-	gboolean  dispose_has_run;
+	gboolean    dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 
 	/* runtime
 	 */
-	ofaHub   *hub;
-	GList    *hub_handlers;
+	ofaHub     *hub;
+	GList      *hub_handlers;
 }
 	ofaTVAFormStorePrivate;
 
@@ -141,7 +147,7 @@ ofa_tva_form_store_class_init( ofaTVAFormStoreClass *klass )
 
 /**
  * ofa_tva_form_store_new:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new #ofaTVAFormStore and attached it to the @dossier
  * if not already done. Else get the already allocated #ofaTVAFormStore
@@ -153,15 +159,15 @@ ofa_tva_form_store_class_init( ofaTVAFormStoreClass *klass )
  * Returns: a new reference to the #ofaTVAFormStore object.
  */
 ofaTVAFormStore *
-ofa_tva_form_store_new( ofaHub *hub )
+ofa_tva_form_store_new( ofaIGetter *getter )
 {
 	ofaTVAFormStore *store;
 	ofaTVAFormStorePrivate *priv;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	store = ( ofaTVAFormStore * ) my_icollector_single_get_object( collector, OFA_TYPE_TVA_FORM_STORE );
 
 	if( store ){
@@ -171,7 +177,9 @@ ofa_tva_form_store_new( ofaHub *hub )
 		store = g_object_new( OFA_TYPE_TVA_FORM_STORE, NULL );
 
 		priv = ofa_tva_form_store_get_instance_private( store );
-		priv->hub = hub;
+
+		priv->getter = getter;
+		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[TVA_FORM_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
@@ -220,7 +228,7 @@ load_dataset( ofaTVAFormStore *self )
 
 	priv = ofa_tva_form_store_get_instance_private( self );
 
-	dataset = ofo_tva_form_get_dataset( priv->hub );
+	dataset = ofo_tva_form_get_dataset( priv->getter );
 
 	for( it=dataset ; it ; it=it->next ){
 		form = OFO_TVA_FORM( it->data );

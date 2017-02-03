@@ -124,7 +124,6 @@ struct _ofaDBModelWindowPrivate {
 	/* runtime
 	 */
 	gchar         *settings_prefix;
-	ofaHub        *hub;
 	GList         *plugins_list;
 	GList         *workers;
 	gboolean       work_started;
@@ -163,7 +162,7 @@ static GType    register_type( void );
 static void     interface_base_init( ofaIDBModelInterface *klass );
 static void     interface_base_finalize( ofaIDBModelInterface *klass );
 static gboolean idbmodel_get_needs_update( const ofaIDBModel *instance, const ofaIDBConnect *connect );
-static gboolean idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *dialog );
+static gboolean idbmodel_ddl_update( ofaIDBModel *instance, ofaIGetter *getter, myIProgress *dialog );
 
 /* dialog management */
 static GType    ofa_dbmodel_window_get_type( void ) G_GNUC_CONST;
@@ -357,7 +356,7 @@ ofa_idbmodel_update( ofaIGetter *getter, GtkWindow *parent )
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 	g_return_val_if_fail( ofa_idbconnect_is_opened( connect ), FALSE );
 
-	extenders = ofa_hub_get_extender_collection( hub );
+	extenders = ofa_igetter_get_extender_collection( getter );
 	plugins_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
 	g_debug( "%s: IDBModel plugins count=%u", thisfn, g_list_length( plugins_list ));
 
@@ -370,7 +369,7 @@ ofa_idbmodel_update( ofaIGetter *getter, GtkWindow *parent )
 
 		priv = ofa_dbmodel_window_get_instance_private( window );
 
-		priv->getter = ofa_igetter_get_permanent_getter( getter );
+		priv->getter = getter;
 		priv->parent = parent;
 		priv->plugins_list = plugins_list;
 
@@ -388,7 +387,7 @@ ofa_idbmodel_update( ofaIGetter *getter, GtkWindow *parent )
 
 /**
  * ofa_idbmodel_get_by_name:
- * @hub: the #ofaHub object.
+ * @getter: the #ofaIGetter instance.
  * @name: the searched for identification name.
  *
  * Returns: the #ofaIDBModel instance which delivers this canonical
@@ -401,7 +400,7 @@ ofa_idbmodel_update( ofaIGetter *getter, GtkWindow *parent )
  * be unreffed by the caller.
  */
 ofaIDBModel *
-ofa_idbmodel_get_by_name( ofaHub *hub, const gchar *name )
+ofa_idbmodel_get_by_name( ofaIGetter *getter, const gchar *name )
 {
 	ofaExtenderCollection *extenders;
 	GList *plugins_list, *it;
@@ -409,10 +408,11 @@ ofa_idbmodel_get_by_name( ofaHub *hub, const gchar *name )
 	gchar *it_name;
 	gint cmp;
 
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( name ), NULL );
 
 	found = NULL;
-	extenders = ofa_hub_get_extender_collection( hub );
+	extenders = ofa_igetter_get_extender_collection( getter );
 	plugins_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
 
 	for( it=plugins_list ; it ; it=it->next ){
@@ -498,12 +498,12 @@ idbmodel_get_needs_update( const ofaIDBModel *instance, const ofaIDBConnect *con
 }
 
 static gboolean
-idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
+idbmodel_ddl_update( ofaIDBModel *instance, ofaIGetter *getter, myIProgress *window )
 {
 	static const gchar *thisfn = "ofa_idbmodel_ddl_update";
 
 	if( OFA_IDBMODEL_GET_INTERFACE( instance )->ddl_update ){
-		return( OFA_IDBMODEL_GET_INTERFACE( instance )->ddl_update( instance, hub, window ));
+		return( OFA_IDBMODEL_GET_INTERFACE( instance )->ddl_update( instance, getter, window ));
 	}
 
 	g_info( "%s: ofaIDBModel's %s implementation does not provide 'ddl_update()' method",
@@ -648,10 +648,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	read_settings( OFA_DBMODEL_WINDOW( instance ));
 }
@@ -760,12 +757,12 @@ do_update_model( ofaDBModelWindow *self )
 
 	priv = ofa_dbmodel_window_get_instance_private( self );
 
-	core_model = ofa_idbmodel_get_by_name( priv->hub, "CORE" );
-	ok = core_model ? idbmodel_ddl_update( core_model, priv->hub, MY_IPROGRESS( self )) : TRUE;
+	core_model = ofa_idbmodel_get_by_name( priv->getter, "CORE" );
+	ok = core_model ? idbmodel_ddl_update( core_model, priv->getter, MY_IPROGRESS( self )) : TRUE;
 
 	for( it=priv->plugins_list ; it && ok ; it=it->next ){
 		if( it->data != ( void * ) core_model ){
-			ok &= idbmodel_ddl_update( OFA_IDBMODEL( it->data ), priv->hub, MY_IPROGRESS( self ));
+			ok &= idbmodel_ddl_update( OFA_IDBMODEL( it->data ), priv->getter, MY_IPROGRESS( self ));
 		}
 	}
 
@@ -806,6 +803,7 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 	ofsImporterParms parms;
 	ofaStreamFormat *settings;
 	GtkWidget *label;
+	ofaHub *hub;
 
 	priv = ofa_dbmodel_window_get_instance_private( self );
 
@@ -818,7 +816,8 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 		uri = g_filename_to_uri( fname, NULL, NULL );
 		g_free( fname );
 		type = import->typefn();
-		importer = ofa_hub_get_willing_to_import( priv->hub, uri, type );
+		hub = ofa_igetter_get_hub( priv->getter );
+		importer = ofa_hub_get_willing_to_import( hub, uri, type );
 
 		/* if found, then import data */
 		if( importer ){
@@ -835,7 +834,7 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 			g_free( str );
 			my_iprogress_start_progress( MY_IPROGRESS( self ), self, label, FALSE );
 
-			settings = ofa_stream_format_new( priv->hub, NULL, OFA_SFMODE_IMPORT );
+			settings = ofa_stream_format_new( priv->getter, NULL, OFA_SFMODE_IMPORT );
 			ofa_stream_format_set( settings,
 										TRUE,  "UTF-8", 				/* charmap */
 										TRUE,  MY_DATE_SQL, 			/* date format */
@@ -847,7 +846,7 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 
 			memset( &parms, '\0', sizeof( parms ));
 			parms.version = 1;
-			parms.hub = priv->hub;
+			parms.getter = priv->getter;
 			parms.empty = TRUE;
 			parms.mode = OFA_IDUPLICATE_ABORT;
 			parms.stop = FALSE;
@@ -882,10 +881,12 @@ count_rows( ofaDBModelWindow *self, const gchar *table )
 	const ofaIDBConnect *connect;
 	gint count;
 	gchar *query;
+	ofaHub *hub;
 
 	priv = ofa_dbmodel_window_get_instance_private( self );
 
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
 	query = g_strdup_printf( "SELECT COUNT(*) FROM %s", table );
 	ofa_idbconnect_query_int( connect, query, &count, TRUE );
 	g_free( query );
@@ -946,7 +947,7 @@ read_settings( ofaDBModelWindow *self )
 
 	priv = ofa_dbmodel_window_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -973,7 +974,7 @@ write_settings( ofaDBModelWindow *self )
 	str = g_strdup_printf( "%d;",
 				gtk_paned_get_position( GTK_PANED( priv->paned )));
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

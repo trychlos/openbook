@@ -26,9 +26,9 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
+#include "api/ofa-igetter.h"
 
 #include "ui/ofa-exercice-combo.h"
 #include "ui/ofa-exercice-store.h"
@@ -40,7 +40,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub           *hub;
+	ofaIGetter       *getter;
 
 	/* UI
 	 */
@@ -152,21 +152,23 @@ ofa_exercice_combo_class_init( ofaExerciceComboClass *klass )
 
 /**
  * ofa_exercice_combo_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaExerciceCombo instance.
  */
 ofaExerciceCombo *
-ofa_exercice_combo_new( ofaHub *hub )
+ofa_exercice_combo_new( ofaIGetter *getter )
 {
 	ofaExerciceCombo *combo;
 	ofaExerciceComboPrivate *priv;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	combo = g_object_new( OFA_TYPE_EXERCICE_COMBO, NULL );
 
 	priv = ofa_exercice_combo_get_instance_private( combo );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	setup_combo( combo );
 
@@ -181,7 +183,7 @@ setup_combo( ofaExerciceCombo *combo )
 
 	priv = ofa_exercice_combo_get_instance_private( combo );
 
-	priv->store = ofa_exercice_store_new( priv->hub );
+	priv->store = ofa_exercice_store_new( priv->getter );
 	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

@@ -31,8 +31,8 @@
 #include "my/my-ibin.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-igetter.h"
 
 #include "ui/ofa-admin-credentials-bin.h"
 
@@ -43,7 +43,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub            *hub;
+	ofaIGetter        *getter;
 	gchar             *settings_prefix;
 	guint              rule;
 
@@ -197,7 +197,7 @@ ofa_admin_credentials_bin_class_init( ofaAdminCredentialsBinClass *klass )
 
 /**
  * ofa_admin_credentials_bin_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @settings_prefix: [allow-none]: the prefix of the key in user settings;
  *  not used here.
  * @rule: the usage of this widget.
@@ -205,18 +205,18 @@ ofa_admin_credentials_bin_class_init( ofaAdminCredentialsBinClass *klass )
  * Returns: a new #ofaAdminCredentialsBin widget.
  */
 ofaAdminCredentialsBin *
-ofa_admin_credentials_bin_new( ofaHub *hub, const gchar *settings_prefix, guint rule )
+ofa_admin_credentials_bin_new( ofaIGetter *getter, const gchar *settings_prefix, guint rule )
 {
 	ofaAdminCredentialsBin *bin;
 	ofaAdminCredentialsBinPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	bin = g_object_new( OFA_TYPE_ADMIN_CREDENTIALS_BIN, NULL );
 
 	priv = ofa_admin_credentials_bin_get_instance_private( bin );
 
-	priv->hub = hub;
+	priv->getter = getter;
 	priv->rule = rule;
 
 	setup_bin( bin );
@@ -432,7 +432,7 @@ read_settings( ofaAdminCredentialsBin *self )
 
 	priv = ofa_admin_credentials_bin_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -462,7 +462,7 @@ write_settings( ofaAdminCredentialsBin *self )
 
 	str = g_strdup_printf( "%s;", priv->remember_account ? priv->account : "" );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

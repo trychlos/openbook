@@ -191,9 +191,10 @@ am_liborgtrychlosmy1_la_OBJECTS = my-accel-group.lo my-char.lo \
 	my-file-monitor.lo my-iaction-map.lo my-iassistant.lo \
 	my-ibin.lo my-icollectionable.lo my-icollector.lo \
 	my-idialog.lo my-iident.lo my-igridlist.lo my-iprogress.lo \
-	my-isettings.lo my-iwindow.lo my-progress-bar.lo \
-	my-settings.lo my-signal.lo my-stamp.lo my-style.lo my-tab.lo \
-	my-thousand-combo.lo my-timeout.lo my-utils.lo
+	my-isettings.lo my-iwindow.lo my-menu-manager.lo \
+	my-progress-bar.lo my-settings.lo my-signal.lo my-stamp.lo \
+	my-style.lo my-tab.lo my-thousand-combo.lo my-timeout.lo \
+	my-utils.lo
 liborgtrychlosmy1_la_OBJECTS = $(am_liborgtrychlosmy1_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -498,6 +499,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-iprogress.c										\
 	my-isettings.c										\
 	my-iwindow.c										\
+	my-menu-manager.c									\
 	my-progress-bar.c									\
 	my-settings.c										\
 	my-signal.c											\
@@ -634,6 +636,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iprogress.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-isettings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iwindow.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-menu-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-progress-bar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-settings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-signal.Plo@am__quote@

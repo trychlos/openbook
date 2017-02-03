@@ -45,8 +45,8 @@
  *    +------------------+----------+
  */
 
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
-#include "api/ofa-hub-def.h"
 #include "api/ofo-bat-def.h"
 
 G_BEGIN_DECLS
@@ -72,7 +72,7 @@ typedef struct {
 
 GType           ofa_bat_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaBatTreeview *ofa_bat_treeview_new             ( ofaHub *hub );
+ofaBatTreeview *ofa_bat_treeview_new             ( ofaIGetter *getter );
 
 void            ofa_bat_treeview_set_settings_key( ofaBatTreeview *view,
 														const gchar *key );

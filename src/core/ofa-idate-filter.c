@@ -32,7 +32,7 @@
 #include "my/my-date-editable.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-idate-filter.h"
 #include "api/ofa-preferences.h"
 
@@ -42,7 +42,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub       *hub;
+	ofaIGetter   *getter;
 	gchar        *ui_resource;
 
 	/* runtime
@@ -268,14 +268,14 @@ ofa_idate_filter_get_interface_version( GType type )
 /**
  * ofa_idate_filter_setup_bin:
  * @filter: this #ofaIDateFilter instance.
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @ui_resource: the path of the binary resource which holds the user
  *  interface XML description.
  *
  * Initialize the widget which implements this interface.
  */
 void
-ofa_idate_filter_setup_bin( ofaIDateFilter *filter, ofaHub *hub, const gchar *ui_resource )
+ofa_idate_filter_setup_bin( ofaIDateFilter *filter, ofaIGetter *getter, const gchar *ui_resource )
 {
 	static const gchar *thisfn = "ofa_idate_filter_setup_bin";
 	sIDateFilter *sdata;
@@ -284,11 +284,11 @@ ofa_idate_filter_setup_bin( ofaIDateFilter *filter, ofaHub *hub, const gchar *ui
 
 	g_return_if_fail( filter && OFA_IS_IDATE_FILTER( filter ));
 	g_return_if_fail( G_IS_OBJECT( filter ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	sdata = get_idate_filter_data( filter );
 
-	sdata->hub = hub;
+	sdata->getter = getter;
 	sdata->ui_resource = g_strdup( ui_resource );
 	sdata->mandatory = DEFAULT_MANDATORY;
 
@@ -371,10 +371,10 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( sdata->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( sdata->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( sdata->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( sdata->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_from_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_from_focus_out ), filter );
@@ -392,10 +392,10 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( sdata->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( sdata->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( sdata->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( sdata->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_to_focus_out ), filter );
@@ -744,7 +744,7 @@ read_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 	GList *strlist, *it;
 	const gchar *cstr;
 
-	settings = ofa_hub_get_user_settings( sdata->hub );
+	settings = ofa_igetter_get_user_settings( sdata->getter );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, sdata->settings_key );
 
 	it = strlist;
@@ -772,7 +772,7 @@ write_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 
 	if( my_strlen( sdata->settings_key )){
 
-		settings = ofa_hub_get_user_settings( sdata->hub );
+		settings = ofa_igetter_get_user_settings( sdata->getter );
 
 		sfrom = my_date_to_str( &sdata->from_date, MY_DATE_SQL );
 		sto = my_date_to_str( &sdata->to_date, MY_DATE_SQL );

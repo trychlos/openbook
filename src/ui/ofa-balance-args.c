@@ -52,7 +52,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub                *hub;
 	myISettings           *settings;
 	gboolean               per_class;
 	gboolean               new_page;
@@ -223,10 +222,7 @@ setup_runtime( ofaBalanceArgs *self )
 
 	priv = ofa_balance_args_get_instance_private( self );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	priv->settings = ofa_hub_get_user_settings( priv->hub );
+	priv->settings = ofa_igetter_get_user_settings( priv->getter );
 }
 
 static void
@@ -281,7 +277,7 @@ setup_date_selection( ofaBalanceArgs *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	filter = ofa_date_filter_hv_bin_new( ofa_igetter_get_hub( priv->getter ));
+	filter = ofa_date_filter_hv_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
 	/* instead of "effect dates filter" */
@@ -362,6 +358,7 @@ static void
 on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceArgs *self )
 {
 	ofaBalanceArgsPrivate *priv;
+	ofaHub *hub;
 	gboolean active;
 	const GDate *begin;
 	ofoDossier *dossier;
@@ -369,8 +366,10 @@ on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceArgs *self )
 	priv = ofa_balance_args_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( button );
+
 	if( active ){
-		dossier = ofa_hub_get_dossier( priv->hub );
+		hub = ofa_igetter_get_hub( priv->getter );
+		dossier = ofa_hub_get_dossier( hub );
 		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 		begin = ofo_dossier_get_exe_begin( dossier );

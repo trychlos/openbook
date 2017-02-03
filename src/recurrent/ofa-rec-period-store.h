@@ -34,7 +34,7 @@
  * A #ofaListStore -derived class which handles the periodicities.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-list-store.h"
 
 G_BEGIN_DECLS
@@ -94,7 +94,7 @@ enum {
 
 GType              ofa_rec_period_store_get_type( void );
 
-ofaRecPeriodStore *ofa_rec_period_store_new     ( ofaHub *hub );
+ofaRecPeriodStore *ofa_rec_period_store_new     ( ofaIGetter *getter );
 
 G_END_DECLS
 

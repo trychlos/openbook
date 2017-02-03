@@ -55,7 +55,6 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub         *hub;
 	gboolean        is_writable;
 	gboolean        is_new;
 
@@ -222,7 +221,7 @@ ofa_rec_period_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoRecPeri
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->rec_period = period;
 
@@ -254,11 +253,7 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_rec_period_properties_get_instance_private( OFA_REC_PERIOD_PROPERTIES( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -279,6 +274,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_rec_period_properties_idialog_init";
 	ofaRecPeriodPropertiesPrivate *priv;
+	ofaHub *hub;
 	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -291,7 +287,8 @@ idialog_init( myIDialog *instance )
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	init_dialog( OFA_REC_PERIOD_PROPERTIES( instance ));
 	init_properties( OFA_REC_PERIOD_PROPERTIES( instance ));
@@ -627,7 +624,7 @@ do_update( ofaRecPeriodProperties *self, gchar **msgerr )
 	}
 
 	if( priv->is_new ){
-		ok = ofo_rec_period_insert( priv->rec_period, priv->hub );
+		ok = ofo_rec_period_insert( priv->rec_period );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new periodicity" ));
 		}

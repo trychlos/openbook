@@ -36,6 +36,7 @@
 #include "my/my-dnd-window.h"
 #include "my/my-iaction-map.h"
 #include "my/my-iwindow.h"
+#include "my/my-menu-manager.h"
 #include "my/my-style.h"
 #include "my/my-tab.h"
 #include "my/my-utils.h"
@@ -88,9 +89,14 @@
 typedef struct {
 	gboolean         dispose_has_run;
 
+	/* initialization
+	 */
+	ofaIGetter      *getter;
+
 	/* runtime
 	 */
 	gchar           *settings_prefix;
+	GMenuModel      *menu_model;
 	gchar           *orig_title;
 	GtkWidget       *grid;
 	GtkMenuBar      *menubar;
@@ -99,7 +105,6 @@ typedef struct {
 
 	/* when a dossier is opened
 	 */
-	GMenuModel      *menu;
 	GtkWidget       *pane;
 	guint            last_theme;
 	cairo_surface_t *background_image;
@@ -279,18 +284,18 @@ static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *eve
 static void                  menubar_setup( ofaMainWindow *window, myIActionMap *map );
 static void                  menubar_update_items( ofaMainWindow *self );
 static void                  set_window_title( ofaMainWindow *window, gboolean with_dossier );
-static void                  warning_exercice_unset( const ofaMainWindow *window );
+static void                  warning_exercice_unset( ofaMainWindow *window );
 static void                  pane_left_add_treeview( ofaMainWindow *window );
 static void                  pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
-static void                  pane_right_add_empty_notebook( ofaMainWindow *window, ofaHub *hub );
-static void                  background_image_update( ofaMainWindow *self, ofaHub *hub );
+static void                  pane_right_add_empty_notebook( ofaMainWindow *window );
+static void                  background_image_update( ofaMainWindow *self );
 static void                  background_image_set_uri( ofaMainWindow *self, const gchar *uri );
 static void                  do_backup( ofaMainWindow *self );
-static void                  do_properties( const ofaMainWindow *self );
+static void                  do_properties( ofaMainWindow *self );
 static GtkNotebook          *notebook_get_book( ofaMainWindow *window );
 static ofaPage              *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
-static ofaPage              *notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def );
-static void                  book_attach_page( const ofaMainWindow *main, GtkNotebook *book, GtkWidget *page, const gchar *title );
+static ofaPage              *notebook_create_page( ofaMainWindow *self, GtkNotebook *book, const sThemeDef *def );
+static void                  book_attach_page( ofaMainWindow *self, GtkNotebook *book, GtkWidget *page, const gchar *title );
 static void                  notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
 static gboolean              notebook_on_draw( GtkWidget *widget, cairo_t *cr, ofaMainWindow *self );
 static gboolean              book_on_append_page( myDndBook *book, GtkWidget *page, const gchar *title, ofaMainWindow *self );
@@ -300,24 +305,16 @@ static void                  on_page_removed( GtkNotebook *book, GtkWidget *page
 static void                  close_all_pages( ofaMainWindow *self );
 static void                  read_settings( ofaMainWindow *self );
 static void                  write_settings( ofaMainWindow *self );
-static void                  igetter_iface_init( ofaIGetterInterface *iface );
-static ofaIGetter           *igetter_get_permanent_getter( const ofaIGetter *instance );
-static GApplication         *igetter_get_application( const ofaIGetter *instance );
-static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
-static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
-static ofaIPageManager     *igetter_get_page_manager( const ofaIGetter *instance );
 static void                  ipage_manager_iface_init( ofaIPageManagerInterface *iface );
 static void                  ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label );
 static ofaPage              *ipage_manager_activate( ofaIPageManager *instance, GType type );
 static sThemeDef            *theme_get_by_type( GList **list, GType type );
 static void                  theme_free( sThemeDef *def );
 static void                  iaction_map_iface_init( myIActionMapInterface *iface );
-static GMenuModel           *iaction_map_get_menu_model( const myIActionMap *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW, 0,
 		G_ADD_PRIVATE( ofaMainWindow )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IACTION_MAP, iaction_map_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IGETTER, igetter_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPAGE_MANAGER, ipage_manager_iface_init ))
 
 static void
@@ -357,10 +354,10 @@ main_window_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
+		hub = ofa_igetter_get_hub( priv->getter );
 		ofa_hub_close_dossier( hub );
 
-		settings = ofa_hub_get_user_settings( hub );
+		settings = ofa_igetter_get_user_settings( priv->getter );
 		my_utils_window_position_save( GTK_WINDOW( instance ), settings, priv->settings_prefix );
 
 		write_settings( OFA_MAIN_WINDOW( instance ));
@@ -368,7 +365,7 @@ main_window_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->menu );
+		g_clear_object( &priv->menu_model );
 		g_list_free_full( priv->themes, ( GDestroyNotify ) theme_free );
 
 		my_style_free();
@@ -416,7 +413,6 @@ main_window_constructed( GObject *instance )
 		builder = gtk_builder_new_from_resource( st_resource_dosmenu );
 		menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_dosmenu_id ));
 		if( menu ){
-			priv->menu = g_object_ref( menu );
 			g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
 					thisfn, st_resource_dosmenu, ( void * ) menu, g_menu_model_get_n_items( menu ));
 
@@ -433,6 +429,11 @@ main_window_constructed( GObject *instance )
 		} else {
 			g_warning( "%s: unable to find '%s' object in '%s' resource", thisfn, st_dosmenu_id, st_resource_dosmenu );
 		}
+
+		/* register the IActionMap with its menu before releasing the builder */
+		//my_iaction_map_register( MY_IACTION_MAP( instance ), menu, "win" );
+		priv->menu_model = g_object_ref( menu );
+
 		g_object_unref( builder );
 
 		/* application (GtkWindow's property) is not set here because
@@ -506,36 +507,46 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 }
 
 /**
+ * ofa_main_window_new:
+ * @getter: a #ofaIGetter instance.
+ *
  * Returns a newly allocated ofaMainWindow object.
  */
 ofaMainWindow *
-ofa_main_window_new( ofaApplication *application )
+ofa_main_window_new( ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_main_window_new";
 	ofaMainWindow *window;
 	ofaMainWindowPrivate *priv;
-	ofaHub *hub;
+	GApplication *application;
 	myISettings *settings;
+	ofaHub *hub;
+	myMenuManager *menu_manager;
 
-	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	g_debug( "%s: application=%p", thisfn, application );
+	g_debug( "%s: getter=%p", thisfn, getter );
 
 	/* 'application' is a GtkWindow property
 	 *  because it is not defined as a construction property, it is only
 	 *  available after g_object_new() has returned
 	 */
+	application = ofa_igetter_get_application( getter );
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW, "application", application, NULL );
 
 	priv = ofa_main_window_get_instance_private( window );
+	priv->getter = getter;
 
 	/* restore window geometry
 	 * (here because application is not yet set in constructed()
 	 */
-	hub = ofa_igetter_get_hub( OFA_IGETTER( window ));
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( getter );
 	my_utils_window_position_restore( GTK_WINDOW( window ), settings, priv->settings_prefix );
 	read_settings( window );
+
+	hub = ofa_igetter_get_hub( getter );
+	ofa_hub_set_main_window( hub, GTK_APPLICATION_WINDOW( window ));
+	ofa_hub_set_page_manager( hub, OFA_IPAGE_MANAGER( window ));
 
 	/* connect to the ofaHub signals
 	 */
@@ -545,16 +556,14 @@ ofa_main_window_new( ofaApplication *application )
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_PREVIEW, G_CALLBACK( hub_on_dossier_preview ), window );
 
 	/* let the plugins update these menu map/model
-	 * (here because application is not yet set in constructed()
 	 */
-	g_signal_emit_by_name(( gpointer ) application, "menu-available", window, "win" );
+	menu_manager = ofa_igetter_get_menu_manager( getter );
+	my_menu_manager_register( menu_manager, MY_IACTION_MAP( window ), "win", priv->menu_model );
 
 	/* let the plugins update the managed themes */
 	init_themes( window );
 
 	g_object_get( G_OBJECT( application ), OFA_PROP_APPLICATION_NAME, &priv->orig_title, NULL );
-
-	my_iaction_map_register( MY_IACTION_MAP( window ), "win" );
 
 	/* install the application menubar
 	 */
@@ -628,7 +637,7 @@ hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self )
 	gtk_grid_attach( GTK_GRID( priv->grid ), priv->pane, 0, 1, 1, 1 );
 	gtk_paned_set_position( GTK_PANED( priv->pane ), priv->paned_position );
 	pane_left_add_treeview( self );
-	pane_right_add_empty_notebook( self, hub );
+	pane_right_add_empty_notebook( self );
 
 	/* install the application menubar
 	 */
@@ -692,7 +701,7 @@ hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *self )
 
 	set_window_title( self, TRUE );
 	menubar_update_items( self );
-	background_image_update( self, hub );
+	background_image_update( self );
 }
 
 /*
@@ -719,8 +728,8 @@ static gboolean
 on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_delete_event";
+	ofaMainWindowPrivate *priv;
 	gboolean ok_to_quit;
-	ofaHub *hub;
 
 	g_debug( "%s: toplevel=%p (%s), event=%p, user_data=%p",
 			thisfn,
@@ -728,12 +737,12 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 			( void * ) event,
 			( void * ) user_data );
 
+
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( toplevel ), FALSE );
 
-	hub = igetter_get_hub( OFA_IGETTER( toplevel ));
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( toplevel ));
 
-	ok_to_quit = !ofa_prefs_appli_confirm_on_altf4( hub ) ||
+	ok_to_quit = !ofa_prefs_appli_confirm_on_altf4( priv->getter ) ||
 					ofa_main_window_is_willing_to_quit( OFA_MAIN_WINDOW( toplevel ));
 
 	return( !ok_to_quit );
@@ -772,7 +781,7 @@ ofa_main_window_dossier_apply_actions( ofaMainWindow *main_window )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	hub = igetter_get_hub( OFA_IGETTER( main_window ));
+	hub = ofa_igetter_get_hub( priv->getter );
 	connect = ofa_hub_get_connect( hub );
 	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
 	settings = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
@@ -792,16 +801,16 @@ ofa_main_window_dossier_apply_actions( ofaMainWindow *main_window )
 				thisfn, empty ? "True":"False", only_non_empty ? "True":"False" );
 
 		if( !empty || !only_non_empty ){
-			ofa_dossier_display_notes_run( OFA_IGETTER( main_window ), GTK_WINDOW( main_window ), main_notes, exe_notes );
+			ofa_dossier_display_notes_run( priv->getter, GTK_WINDOW( main_window ), main_notes, exe_notes );
 		}
 	}
 
 	/* check balances and DBMS integrity ? */
 	if( ofa_open_prefs_get_check_balances( prefs )){
-		ofa_check_balances_run( OFA_IGETTER( main_window ), GTK_WINDOW( main_window ));
+		ofa_check_balances_run( priv->getter, GTK_WINDOW( main_window ));
 	}
 	if( ofa_open_prefs_get_check_integrity( prefs )){
-		ofa_check_integrity_run( OFA_IGETTER( main_window ), GTK_WINDOW( main_window ));
+		ofa_check_integrity_run( priv->getter, GTK_WINDOW( main_window ));
 	}
 
 	/* display dossier properties ? */
@@ -868,7 +877,7 @@ menubar_setup( ofaMainWindow *window, myIActionMap *map )
 	model = my_iaction_map_get_menu_model( map );
 	if( model ){
 		priv->accel_group = my_accel_group_new();
-		my_accel_group_setup_accels_from_menu( priv->accel_group, G_ACTION_MAP( map ), model );
+		my_accel_group_setup_accels_from_menu( priv->accel_group, model, ofa_igetter_get_menu_manager( priv->getter ));
 		gtk_window_add_accel_group( GTK_WINDOW( window ), GTK_ACCEL_GROUP( priv->accel_group ));
 
 		menubar = gtk_menu_bar_new_from_model( model );
@@ -898,7 +907,7 @@ menubar_update_items( ofaMainWindow *self )
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+	hub = ofa_igetter_get_hub( priv->getter );
 	is_writable = ofa_hub_is_writable_dossier( hub );
 
 	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_guided_input,   "guided",     is_writable );
@@ -932,7 +941,7 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+	hub = ofa_igetter_get_hub( priv->getter );
 	dossier = with_dossier ? ofa_hub_get_dossier( hub ) : NULL;
 
 	if( dossier ){
@@ -964,7 +973,7 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
  * warning_exercice_unset:
  */
 static void
-warning_exercice_unset( const ofaMainWindow *self )
+warning_exercice_unset( ofaMainWindow *self )
 {
 	GtkWidget *dialog;
 	gchar *str;
@@ -1075,7 +1084,7 @@ pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewCo
 }
 
 static void
-pane_right_add_empty_notebook( ofaMainWindow *self, ofaHub *hub )
+pane_right_add_empty_notebook( ofaMainWindow *self )
 {
 	ofaMainWindowPrivate *priv;
 	GtkWidget *book;
@@ -1083,7 +1092,7 @@ pane_right_add_empty_notebook( ofaMainWindow *self, ofaHub *hub )
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	detacheable = ofa_prefs_dnd_detach( hub );
+	detacheable = ofa_prefs_dnd_detach( priv->getter );
 	if( detacheable ){
 		book = GTK_WIDGET( my_dnd_book_new());
 		g_signal_connect( book, "my-append-page", G_CALLBACK( book_on_append_page ), self );
@@ -1104,14 +1113,19 @@ pane_right_add_empty_notebook( ofaMainWindow *self, ofaHub *hub )
 }
 
 static void
-background_image_update( ofaMainWindow *self, ofaHub *hub )
+background_image_update( ofaMainWindow *self )
 {
+	ofaMainWindowPrivate *priv;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *dossier_meta;
 	myISettings *settings;
 	const gchar *group;
 	gchar *background_uri;
 
+	priv = ofa_main_window_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 	connect = ofa_hub_get_connect( hub );
 	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
 	settings = ofa_idbdossier_meta_get_settings_iface( dossier_meta );
@@ -1238,22 +1252,29 @@ on_properties( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 }
 
 static void
-do_properties( const ofaMainWindow *self )
+do_properties( ofaMainWindow *self )
 {
-	ofa_dossier_properties_run( OFA_IGETTER( self ), GTK_WINDOW( self ));
+	ofaMainWindowPrivate *priv;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	ofa_dossier_properties_run( priv->getter, GTK_WINDOW( self ));
 }
 
 static void
 on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_close";
+	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_hub_close_dossier( ofa_igetter_get_hub( OFA_IGETTER( user_data )));
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
+
+	ofa_hub_close_dossier( ofa_igetter_get_hub( priv->getter ));
 }
 
 static void
@@ -1312,65 +1333,80 @@ static void
 on_ope_ledger_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_ope_ledger_close";
+	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_ledger_close_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
+
+	ofa_ledger_close_run( priv->getter, GTK_WINDOW( user_data ));
 }
 
 static void
 on_ope_period_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_ope_period_close";
+	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_period_close_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
+
+	ofa_period_close_run( priv->getter, GTK_WINDOW( user_data ));
 }
 
 static void
 on_ope_exercice_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_ope_exercice_close";
+	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_exercice_close_assistant_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
+
+	ofa_exercice_close_assistant_run( priv->getter, GTK_WINDOW( user_data ));
 }
 
 static void
 on_ope_import( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_ope_import";
+	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_import_assistant_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
+
+	ofa_import_assistant_run( priv->getter, GTK_WINDOW( user_data ));
 }
 
 static void
 on_ope_export( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_ope_export";
+	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_export_assistant_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
+
+	ofa_export_assistant_run( priv->getter, GTK_WINDOW( user_data ));
 }
 
 static void
@@ -1546,26 +1582,32 @@ static void
 on_check_balances( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_misc_check_balances";
+	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_check_balances_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
+
+	ofa_check_balances_run( priv->getter, GTK_WINDOW( user_data ));
 }
 
 static void
 on_check_integrity( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_misc_check_integrity";
+	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_check_integrity_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
+
+	ofa_check_integrity_run( priv->getter, GTK_WINDOW( user_data ));
 }
 
 static GtkNotebook *
@@ -1610,21 +1652,24 @@ notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeD
  * so, create it here
  */
 static ofaPage *
-notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def )
+notebook_create_page( ofaMainWindow *self, GtkNotebook *book, const sThemeDef *def )
 {
+	ofaMainWindowPrivate *priv;
 	ofaPage *page;
 	const gchar *title;
 
-	page = g_object_new( def->type, PAGE_PROP_GETTER, main, NULL );
+	priv = ofa_main_window_get_instance_private( self );
+
+	page = g_object_new( def->type, "ofa-page-getter", priv->getter, NULL );
 	title = gettext( def->label );
 
-	book_attach_page( main, book, GTK_WIDGET( page ), title );
+	book_attach_page( self, book, GTK_WIDGET( page ), title );
 
 	return( page );
 }
 
 static void
-book_attach_page( const ofaMainWindow *main, GtkNotebook *book, GtkWidget *page, const gchar *title )
+book_attach_page( ofaMainWindow *self, GtkNotebook *book, GtkWidget *page, const gchar *title )
 {
 	myTab *tab;
 	GtkWidget *label;
@@ -1787,7 +1832,6 @@ static void
 read_settings( ofaMainWindow *self )
 {
 	ofaMainWindowPrivate *priv;
-	ofaHub *hub;
 	myISettings *settings;
 	GList *strlist, *it;
 	const gchar *cstr;
@@ -1795,8 +1839,7 @@ read_settings( ofaMainWindow *self )
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	hub = igetter_get_hub( OFA_IGETTER( self ));
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -1816,7 +1859,6 @@ static void
 write_settings( ofaMainWindow *self )
 {
 	ofaMainWindowPrivate *priv;
-	ofaHub *hub;
 	myISettings *settings;
 	gchar *str, *key;
 
@@ -1825,71 +1867,12 @@ write_settings( ofaMainWindow *self )
 	str = g_strdup_printf( "%d;",
 			priv->paned_position );
 
-	hub = igetter_get_hub( OFA_IGETTER( self ));
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
 	g_free( key );
-}
-
-/*
- * ofaIGetter interface management
- */
-static void
-igetter_iface_init( ofaIGetterInterface *iface )
-{
-	static const gchar *thisfn = "ofa_main_window_igetter_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_permanent = igetter_get_permanent_getter;
-	iface->get_application = igetter_get_application;
-	iface->get_hub = igetter_get_hub;
-	iface->get_main_window = igetter_get_main_window;
-	iface->get_page_manager = igetter_get_page_manager;
-}
-
-static ofaIGetter *
-igetter_get_permanent_getter( const ofaIGetter *instance )
-{
-	return( OFA_IGETTER( instance ));
-}
-
-static GApplication *
-igetter_get_application( const ofaIGetter *instance )
-{
-	GtkApplication *application;
-
-	application = gtk_window_get_application( GTK_WINDOW( instance ));
-
-	return( G_APPLICATION( application ));
-}
-
-static ofaHub *
-igetter_get_hub( const ofaIGetter *instance )
-{
-	GtkApplication *application;
-
-	application = gtk_window_get_application( GTK_WINDOW( instance ));
-
-	return( ofa_application_get_hub( OFA_APPLICATION( application )));
-}
-
-static GtkApplicationWindow *
-igetter_get_main_window( const ofaIGetter *instance )
-{
-	return( GTK_APPLICATION_WINDOW( instance ));
-}
-
-/*
- * the themes are managed by the main window
- */
-static ofaIPageManager *
-igetter_get_page_manager( const ofaIGetter *instance )
-{
-	return( OFA_IPAGE_MANAGER( instance ));
 }
 
 /*
@@ -1997,16 +1980,4 @@ iaction_map_iface_init( myIActionMapInterface *iface )
 	static const gchar *thisfn = "ofa_main_window_iaction_map_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_menu_model = iaction_map_get_menu_model;
-}
-
-static GMenuModel *
-iaction_map_get_menu_model( const myIActionMap *instance )
-{
-	ofaMainWindowPrivate *priv;
-
-	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
-
-	return( priv->menu );
 }

@@ -44,7 +44,7 @@
  * system to maintain itself up to date.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tree-store.h"
 
 G_BEGIN_DECLS
@@ -129,7 +129,7 @@ enum {
 
 GType            ofa_account_store_get_type     ( void );
 
-ofaAccountStore *ofa_account_store_new          ( ofaHub *hub );
+ofaAccountStore *ofa_account_store_new          ( ofaIGetter *getter );
 
 G_END_DECLS
 

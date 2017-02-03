@@ -33,6 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-dossier.h"
 
 /* data set against the exported object
@@ -60,7 +61,7 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIExportableInterface *klass );
 static void          interface_base_finalize( ofaIExportableInterface *klass );
-static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, ofaStreamFormat *settings, ofaHub *hub );
+static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, ofaStreamFormat *settings, ofaIGetter *getter );
 static sIExportable *get_iexportable_data( ofaIExportable *exportable );
 static void          on_exportable_finalized( sIExportable *sdata, GObject *finalized_object );
 
@@ -228,7 +229,7 @@ ofa_iexportable_get_label( const ofaIExportable *instance )
  * @uri: the output URI,
  *  will be overriden without any further confirmation if already exists.
  * @settings: a #ofaStreamFormat object.
- * @hub: the current  #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @progress: the #myIProgress instance which display the export progress.
  *
  * Export the specified dataset to the named file.
@@ -238,14 +239,15 @@ ofa_iexportable_get_label( const ofaIExportable *instance )
 gboolean
 ofa_iexportable_export_to_uri( ofaIExportable *exportable,
 									const gchar *uri, ofaStreamFormat *settings,
-									ofaHub *hub, myIProgress *progress )
+									ofaIGetter *getter, myIProgress *progress )
 {
 	GFile *output_file;
 	sIExportable *sdata;
 	GOutputStream *output_stream;
 	gboolean ok;
 
-	g_return_val_if_fail( OFA_IS_IEXPORTABLE( exportable ), FALSE );
+	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	sdata = get_iexportable_data( exportable );
 	g_return_val_if_fail( sdata, FALSE );
@@ -258,7 +260,7 @@ ofa_iexportable_export_to_uri( ofaIExportable *exportable,
 	}
 	g_return_val_if_fail( G_IS_FILE_OUTPUT_STREAM( output_stream ), FALSE );
 
-	ok = iexportable_export_to_stream( exportable, output_stream, settings, hub );
+	ok = iexportable_export_to_stream( exportable, output_stream, settings, getter );
 
 	g_output_stream_close( output_stream, NULL, NULL );
 	g_object_unref( output_file );
@@ -269,7 +271,7 @@ ofa_iexportable_export_to_uri( ofaIExportable *exportable,
 static gboolean
 iexportable_export_to_stream( ofaIExportable *exportable,
 									GOutputStream *stream, ofaStreamFormat *settings,
-									ofaHub *hub )
+									ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_iexportable_export_to_stream";
 	sIExportable *sdata;
@@ -282,7 +284,7 @@ iexportable_export_to_stream( ofaIExportable *exportable,
 	my_iprogress_start_work( sdata->instance, exportable, NULL );
 
 	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export ){
-		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export( exportable, settings, hub ));
+		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export( exportable, settings, getter ));
 	}
 
 	g_info( "%s: ofaIExportable's %s implementation does not provide 'export()' method",

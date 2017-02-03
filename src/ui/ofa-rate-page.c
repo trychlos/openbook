@@ -52,7 +52,7 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub          *hub;
+	ofaIGetter      *getter;
 	gboolean         is_writable;
 	gchar           *settings_prefix;
 
@@ -176,16 +176,20 @@ action_page_v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_rate_page_v_setup_view";
 	ofaRatePagePrivate *priv;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
-	priv->tview = ofa_rate_treeview_new( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
+
+	priv->tview = ofa_rate_treeview_new( priv->getter );
 	ofa_rate_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_rate_treeview_setup_columns( priv->tview );
 
@@ -341,12 +345,15 @@ on_delete_key( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self )
 static void
 action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self )
 {
+	ofaRatePagePrivate *priv;
 	ofoRate *rate;
 	GtkWindow *toplevel;
 
-	rate = ofo_rate_new();
+	priv = ofa_rate_page_get_instance_private( self );
+
+	rate = ofo_rate_new( priv->getter );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_rate_properties_run( OFA_IGETTER( self ), toplevel, rate );
+	ofa_rate_properties_run( priv->getter, toplevel, rate );
 }
 
 static void
@@ -362,7 +369,7 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRatePage 
 	g_return_if_fail( rate && OFO_IS_RATE( rate ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_rate_properties_run( OFA_IGETTER( self ), toplevel, rate );
+	ofa_rate_properties_run( priv->getter, toplevel, rate );
 }
 
 static void

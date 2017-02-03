@@ -34,7 +34,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -62,7 +62,7 @@ typedef struct {
 
 GType        ofa_tva_style_get_type ( void );
 
-ofaTVAStyle *ofa_tva_style_new      ( ofaHub *hub );
+ofaTVAStyle *ofa_tva_style_new      ( ofaIGetter *getter );
 
 void         ofa_tva_style_set_style( ofaTVAStyle *provider,
 											GtkWidget *widget,

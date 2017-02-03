@@ -34,8 +34,8 @@
  * exercices available on a dossier.
  */
 
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -79,7 +79,7 @@ enum {
 
 GType             ofa_exercice_store_get_type    ( void ) G_GNUC_CONST;
 
-ofaExerciceStore *ofa_exercice_store_new         ( ofaHub *hub );
+ofaExerciceStore *ofa_exercice_store_new         ( ofaIGetter *getter );
 
 void              ofa_exercice_store_set_dossier ( ofaExerciceStore *combo,
 															ofaIDBDossierMeta *meta );

@@ -30,6 +30,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itree-adder.h"
 #include "api/ofa-ope-template-store.h"
 #include "api/ofo-account.h"
@@ -40,13 +41,17 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 
 	/* runtime data
 	 */
-	ofaHub  *hub;
-	GList   *hub_handlers;
-	gboolean dataset_is_loaded;
+	ofaHub     *hub;
+	GList      *hub_handlers;
+	gboolean    dataset_is_loaded;
 }
 	ofaOpeTemplateStorePrivate;
 
@@ -149,7 +154,7 @@ ofa_ope_template_store_class_init( ofaOpeTemplateStoreClass *klass )
 
 /**
  * ofa_ope_template_store_new:
- * @hub: the current #ofaHub.
+ * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new #ofaOpeTemplateStore and attached it to the
  * @hub if not already done. Else get the already allocated
@@ -162,16 +167,16 @@ ofa_ope_template_store_class_init( ofaOpeTemplateStoreClass *klass )
  * the caller.
  */
 ofaOpeTemplateStore *
-ofa_ope_template_store_new( ofaHub *hub )
+ofa_ope_template_store_new( ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_new";
 	ofaOpeTemplateStore *store;
 	ofaOpeTemplateStorePrivate *priv;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	store = ( ofaOpeTemplateStore * ) my_icollector_single_get_object( collector, OFA_TYPE_OPE_TEMPLATE_STORE );
 
 	if( store ){
@@ -183,10 +188,12 @@ ofa_ope_template_store_new( ofaHub *hub )
 		g_debug( "%s: returning newly allocated store=%p", thisfn, ( void * ) store );
 
 		priv = ofa_ope_template_store_get_instance_private( store );
-		priv->hub = hub;
+
+		priv->getter = getter;
+		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[OPE_TEMPLATE_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
-		ofa_istore_set_column_types( OFA_ISTORE( store ), hub, OPE_TEMPLATE_N_COLUMNS, st_col_types );
+		ofa_istore_set_column_types( OFA_ISTORE( store ), getter, OPE_TEMPLATE_N_COLUMNS, st_col_types );
 
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ),
@@ -242,7 +249,7 @@ list_store_v_load_dataset( ofaListStore *store )
 		ofa_list_store_loading_simulate( store );
 
 	} else {
-		dataset = ofo_ope_template_get_dataset( priv->hub );
+		dataset = ofo_ope_template_get_dataset( priv->getter );
 
 		for( it=dataset ; it ; it=it->next ){
 			ope = OFO_OPE_TEMPLATE( it->data );

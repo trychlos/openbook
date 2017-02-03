@@ -26,7 +26,9 @@
  Other changes:
 
    - ofaDossierPrefs: deprecated class.
+   - ofaIGetter: review interface to be the only one which accesses to ofaHub (todo #1339).
    - ofaIRecover: new interface.
+   - ofaISignaler: new interface (todo #1342).
    - ofaOpenPrefs: new class.
    - ofaRecoveryAssistant: new class.
 

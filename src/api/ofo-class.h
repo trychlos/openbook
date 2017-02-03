@@ -39,7 +39,7 @@
  * any class.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-class-def.h"
 
@@ -69,12 +69,12 @@ typedef struct {
 
 GType           ofo_class_get_type          ( void ) G_GNUC_CONST;
 
-GList          *ofo_class_get_dataset       ( ofaHub *hub );
+GList          *ofo_class_get_dataset       ( ofaIGetter *getter );
 #define         ofo_class_free_dataset( L ) g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-ofoClass       *ofo_class_get_by_number     ( ofaHub *hub, gint number );
+ofoClass       *ofo_class_get_by_number     ( ofaIGetter *getter, gint number );
 
-ofoClass       *ofo_class_new               ( void );
+ofoClass       *ofo_class_new               ( ofaIGetter *getter );
 
 gint            ofo_class_get_number        ( const ofoClass *class );
 const gchar    *ofo_class_get_label         ( const ofoClass *class );
@@ -91,7 +91,7 @@ void            ofo_class_set_number        ( ofoClass *class, gint number );
 void            ofo_class_set_label         ( ofoClass *class, const gchar *label );
 void            ofo_class_set_notes         ( ofoClass *class, const gchar *notes );
 
-gboolean        ofo_class_insert            ( ofoClass *class, ofaHub *hub );
+gboolean        ofo_class_insert            ( ofoClass *class );
 gboolean        ofo_class_update            ( ofoClass *class, gint prev_id );
 gboolean        ofo_class_delete            ( ofoClass *class );
 

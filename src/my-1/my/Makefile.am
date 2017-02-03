@@ -51,6 +51,7 @@ my_include_HEADERS = \
 	my-iprogress.h										\
 	my-isettings.h										\
 	my-iwindow.h										\
+	my-menu-manager.h									\
 	my-progress-bar.h									\
 	my-settings.h										\
 	my-signal.h											\

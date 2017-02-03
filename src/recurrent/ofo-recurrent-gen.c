@@ -33,6 +33,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 
@@ -79,8 +80,8 @@ typedef struct {
 }
 	ofoRecurrentGenPrivate;
 
-static ofoRecurrentGen *get_this( ofaHub *hub );
-static ofoRecurrentGen *gen_do_read( ofaHub *hub );
+static ofoRecurrentGen *get_this( ofaIGetter *getter );
+static ofoRecurrentGen *gen_do_read( ofaIGetter *getter );
 static ofxCounter       recurrent_gen_get_last_numseq( ofoRecurrentGen *gen );
 static void             recurrent_gen_set_last_numseq( ofoRecurrentGen *gen, ofxCounter counter );
 static ofxCounter       recurrent_gen_get_last_per_det_id( ofoRecurrentGen *gen );
@@ -142,23 +143,23 @@ ofo_recurrent_gen_class_init( ofoRecurrentGenClass *klass )
 }
 
 static ofoRecurrentGen *
-get_this( ofaHub *hub )
+get_this( ofaIGetter *getter )
 {
 	ofoRecurrentGen *gen;
 	myICollector *collector;
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	gen = ( ofoRecurrentGen * ) my_icollector_single_get_object( collector, OFO_TYPE_RECURRENT_GEN );
 
 	if( !gen ){
-		gen = gen_do_read( hub );
+		gen = gen_do_read( getter );
 		my_icollector_single_set_object( collector, gen );
 	}
 
 	return( gen );
 }
 static ofoRecurrentGen *
-gen_do_read( ofaHub *hub )
+gen_do_read( ofaIGetter *getter )
 {
 	ofoRecurrentGen *gen;
 	gchar *where;
@@ -171,7 +172,7 @@ gen_do_read( ofaHub *hub )
 					st_boxed_defs,
 					where,
 					OFO_TYPE_RECURRENT_GEN,
-					hub );
+					getter );
 	g_free( where );
 
 	if( g_list_length( list ) > 0 ){
@@ -186,9 +187,9 @@ gen_do_read( ofaHub *hub )
  * ofo_recurrent_gen_get_last_run_date:
  */
 const GDate *
-ofo_recurrent_gen_get_last_run_date( ofaHub *hub )
+ofo_recurrent_gen_get_last_run_date( ofaIGetter *getter )
 {
-	ofoRecurrentGen *gen = get_this( hub );
+	ofoRecurrentGen *gen = get_this( getter );
 	g_return_val_if_fail( gen && OFO_IS_RECURRENT_GEN( gen ), NULL );
 
 	ofo_base_getter( RECURRENT_GEN, gen, date, NULL, REC_LAST_RUN );
@@ -198,9 +199,9 @@ ofo_recurrent_gen_get_last_run_date( ofaHub *hub )
  * ofo_recurrent_gen_set_last_run_date:
  */
 void
-ofo_recurrent_gen_set_last_run_date( ofaHub *hub, const GDate *date )
+ofo_recurrent_gen_set_last_run_date( ofaIGetter *getter, const GDate *date )
 {
-	ofoRecurrentGen *gen = get_this( hub );
+	ofoRecurrentGen *gen = get_this( getter );
 	g_return_if_fail( gen && OFO_IS_RECURRENT_GEN( gen ));
 
 	ofo_base_setter( RECURRENT_GEN, gen, date, REC_LAST_RUN, date );
@@ -211,11 +212,11 @@ ofo_recurrent_gen_set_last_run_date( ofaHub *hub, const GDate *date )
  * ofo_recurrent_gen_get_next_numseq:
  */
 ofxCounter
-ofo_recurrent_gen_get_next_numseq( ofaHub *hub )
+ofo_recurrent_gen_get_next_numseq( ofaIGetter *getter )
 {
 	ofxCounter last, next;
 
-	ofoRecurrentGen *gen = get_this( hub );
+	ofoRecurrentGen *gen = get_this( getter );
 	g_return_val_if_fail( gen && OFO_IS_RECURRENT_GEN( gen ), 0 );
 
 	last = recurrent_gen_get_last_numseq( gen );
@@ -252,11 +253,11 @@ recurrent_gen_set_last_numseq( ofoRecurrentGen *gen, ofxCounter counter )
  * ofo_recurrent_gen_get_next_per_det_id:
  */
 ofxCounter
-ofo_recurrent_gen_get_next_per_det_id( ofaHub *hub )
+ofo_recurrent_gen_get_next_per_det_id( ofaIGetter *getter )
 {
 	ofxCounter last, next;
 
-	ofoRecurrentGen *gen = get_this( hub );
+	ofoRecurrentGen *gen = get_this( getter );
 	g_return_val_if_fail( gen && OFO_IS_RECURRENT_GEN( gen ), 0 );
 
 	last = recurrent_gen_get_last_per_det_id( gen );
@@ -293,6 +294,7 @@ static gboolean
 gen_do_update( ofoRecurrentGen *gen )
 {
 	gboolean ok;
+	ofaIGetter *getter;
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	GString *query;
@@ -300,12 +302,13 @@ gen_do_update( ofoRecurrentGen *gen )
 	gchar *slastrun;
 	ofxCounter last_numseq, last_perdetid;
 
-	hub = ofo_base_get_hub( OFO_BASE( gen ));
+	getter = ofo_base_get_getter( OFO_BASE( gen ));
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	query = g_string_new( "UPDATE REC_T_GEN SET " );
 
-	lastrun = ofo_recurrent_gen_get_last_run_date( hub );
+	lastrun = ofo_recurrent_gen_get_last_run_date( getter );
 	if( my_date_is_valid( lastrun )){
 		slastrun = my_date_to_str( lastrun, MY_DATE_SQL );
 		g_string_append_printf( query, "REC_LAST_RUN='%s'", slastrun );

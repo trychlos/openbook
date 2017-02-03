@@ -44,7 +44,7 @@
  * system to maintain itself up to date.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-list-store.h"
 
 #include "recurrent/ofo-recurrent-model.h"
@@ -116,7 +116,7 @@ enum {
 
 GType                   ofa_recurrent_model_store_get_type( void );
 
-ofaRecurrentModelStore *ofa_recurrent_model_store_new     ( ofaHub *hub );
+ofaRecurrentModelStore *ofa_recurrent_model_store_new     ( ofaIGetter *getter );
 
 gboolean                ofa_recurrent_model_store_get_iter( ofaRecurrentModelStore *store,
 																ofoRecurrentModel *model,

@@ -34,7 +34,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
@@ -50,7 +50,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub          *hub;
+	ofaIGetter      *getter;
 
 	/* UI
 	 */
@@ -229,26 +229,26 @@ ofa_tva_form_treeview_class_init( ofaTVAFormTreeviewClass *klass )
 
 /**
  * ofa_tva_form_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaTVAFormTreeview instance.
  */
 ofaTVAFormTreeview *
-ofa_tva_form_treeview_new( ofaHub *hub )
+ofa_tva_form_treeview_new( ofaIGetter *getter )
 {
 	ofaTVAFormTreeview *view;
 	ofaTVAFormTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_TVA_FORM_TREEVIEW,
-				"ofa-tvbin-hub",    hub,
+				"ofa-tvbin-getter", getter,
 				"ofa-tvbin-shadow", GTK_SHADOW_IN,
 				NULL );
 
 	priv = ofa_tva_form_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoCurrency object instead of just the raw GtkTreeSelection
@@ -351,7 +351,7 @@ ofa_tva_form_treeview_setup_store( ofaTVAFormTreeview *view )
 		setup_columns( view );
 	}
 
-	priv->store = ofa_tva_form_store_new( priv->hub );
+	priv->store = ofa_tva_form_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

@@ -31,7 +31,9 @@
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 
 #include "ofa-recurrent-execlose.h"
 
@@ -41,22 +43,22 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaIExeClose *instance;
-	ofaHub                  *hub;
-	const ofaIDBConnect     *connect;
+	const ofaIExeClose  *instance;
+	ofaIGetter          *getter;
+	const ofaIDBConnect *connect;
 
 	/* progression bar
 	 */
-	GtkWidget               *bar;
-	gulong                   total;
-	gulong                   current;
+	GtkWidget           *bar;
+	gulong               total;
+	gulong               current;
 }
 	sUpdate;
 
 static guint    iexe_close_get_interface_version( void );
 static gchar   *iexe_close_add_row( ofaIExeClose *instance, guint rowtype );
-static gboolean iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub );
-static gboolean do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub );
+static gboolean iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter );
+static gboolean do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter );
 static void     update_bar( myProgressBar *bar, guint *count, guint total );
 
 /*
@@ -102,7 +104,7 @@ iexe_close_add_row( ofaIExeClose *instance, guint rowtype )
 }
 
 static gboolean
-iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub )
+iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter )
 {
 	gboolean ok;
 
@@ -110,7 +112,7 @@ iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHu
 
 	switch( rowtype ){
 		case EXECLOSE_OPENING:
-			ok = do_task_opening( instance, box, hub );
+			ok = do_task_opening( instance, box, getter );
 			break;
 		default:
 			break;;
@@ -124,9 +126,10 @@ iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHu
  * the pushed ones, to the ARCHREC_T_DELETED_RECORDS table
  */
 static gboolean
-do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub )
+do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 {
 	gboolean ok;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gchar *query;
 	myProgressBar *bar;
@@ -139,6 +142,7 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub )
 	total = 3;							/* queries count */
 	count = 0;
 	ok = TRUE;
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	/* cleanup obsolete tables

@@ -33,7 +33,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"

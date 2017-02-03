@@ -55,7 +55,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub      *hub;
 	gboolean     is_writable;
 	gboolean     is_new;
 
@@ -194,7 +193,7 @@ ofa_currency_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoCurrency 
 
 	priv = ofa_currency_properties_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->currency = currency;
 
@@ -228,10 +227,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -276,6 +272,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_currency_properties_idialog_init";
 	ofaCurrencyPropertiesPrivate *priv;
+	ofaHub *hub;
 	gchar *title;
 	const gchar *code;
 	GtkEntry *entry;
@@ -292,7 +289,8 @@ idialog_init( myIDialog *instance )
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	code = ofo_currency_get_code( priv->currency );
 	if( !code ){
@@ -445,7 +443,7 @@ is_dialog_validable( ofaCurrencyProperties *self )
 
 	ok = ofo_currency_is_valid_data( priv->code, priv->label, priv->symbol, priv->digits, &msgerr );
 	if( ok ){
-		exists = ofo_currency_get_by_code( priv->hub, priv->code );
+		exists = ofo_currency_get_by_code( priv->getter, priv->code );
 		ok = !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->code, ofo_currency_get_code( priv->currency )));
 		if( !ok ){
@@ -494,7 +492,7 @@ do_update( ofaCurrencyProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( self, currency );
 
 	if( priv->is_new ){
-		ok = ofo_currency_insert( priv->currency, priv->hub );
+		ok = ofo_currency_insert( priv->currency );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new currency" ));
 		}

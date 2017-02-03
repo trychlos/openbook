@@ -45,10 +45,10 @@
 
 #include <glib-object.h>
 
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -73,7 +73,7 @@ typedef struct {
 
 GType                 ofa_dossier_collection_get_type     ( void ) G_GNUC_CONST;
 
-ofaDossierCollection *ofa_dossier_collection_new          ( ofaHub *hub );
+ofaDossierCollection *ofa_dossier_collection_new          ( ofaIGetter *getter );
 
 GList                *ofa_dossier_collection_get_list     ( ofaDossierCollection *collection );
 

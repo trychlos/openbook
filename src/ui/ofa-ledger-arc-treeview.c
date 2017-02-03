@@ -33,7 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
@@ -47,11 +47,11 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub  *hub;
+	ofaIGetter *getter;
 }
 	ofaLedgerArcTreeviewPrivate;
 
@@ -129,7 +129,7 @@ ofa_ledger_arc_treeview_class_init( ofaLedgerArcTreeviewClass *klass )
 
 /**
  * ofa_ledger_arc_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getterter: a #ofaIGetter instance.
  * @ledger: the #ofoLedger.
  *
  * Define the treeview along with the subjacent store.
@@ -137,21 +137,21 @@ ofa_ledger_arc_treeview_class_init( ofaLedgerArcTreeviewClass *klass )
  * Returns: a new instance.
  */
 ofaLedgerArcTreeview *
-ofa_ledger_arc_treeview_new( ofaHub *hub, ofoLedger *ledger )
+ofa_ledger_arc_treeview_new( ofaIGetter *getter, ofoLedger *ledger )
 {
 	ofaLedgerArcTreeview *view;
 	ofaLedgerArcTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
 
 	view = g_object_new( OFA_TYPE_LEDGER_ARC_TREEVIEW,
-					"ofa-tvbin-hub", hub,
+					"ofa-tvbin-getter", getter,
 					NULL );
 
 	priv = ofa_ledger_arc_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	setup_columns( view );
 	setup_store( view, ledger );
@@ -187,7 +187,7 @@ setup_store( ofaLedgerArcTreeview *self, ofoLedger *ledger )
 
 	priv = ofa_ledger_arc_treeview_get_instance_private( self );
 
-	store = ofa_ledger_arc_store_new( priv->hub, ledger );
+	store = ofa_ledger_arc_store_new( priv->getter, ledger );
 
 	ofa_tvbin_set_store( OFA_TVBIN( self ), GTK_TREE_MODEL( store ));
 }
@@ -227,7 +227,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 
 	switch( column_id ){
 		case LEDGER_ARC_COL_DATE:
-			cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case LEDGER_ARC_COL_ISO:
 			cmp = my_collate( isoa, isob );

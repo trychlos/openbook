@@ -26,7 +26,7 @@
 #define __OPENBOOK_API_OFA_BACKUP_HEADER_H__
 
 /**
- * SECTION: ofahub
+ * SECTION: ofaBackupHeader
  * @title: ofaBackupHeader
  * @short_description: The #ofaBackupHeader Class Definition
  * @include: openbook/ofa-backup-header.h
@@ -53,6 +53,7 @@
 #include <archive.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-dossier-props.h"
 
 G_BEGIN_DECLS
@@ -71,7 +72,7 @@ enum {
 #define OFA_BACKUP_HEADER_HEADER        "[HDR] "
 #define OFA_BACKUP_HEADER_DATA          "[DAT] "
 
-gboolean  ofa_backup_header_write_headers   ( ofaHub *hub,
+gboolean  ofa_backup_header_write_headers   ( ofaIGetter *getter,
 													const gchar *comment,
 													struct archive *archive );
 

@@ -56,13 +56,13 @@
 
 #include <glib-object.h>
 
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbdossier-editor-def.h"
 #include "api/ofa-idbexercice-editor-def.h"
 #include "api/ofa-idbprovider-def.h"
 #include "api/ofa-idbsuperuser-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -170,9 +170,9 @@ GType                 ofa_idbprovider_get_type                  ( void );
 
 guint                 ofa_idbprovider_get_interface_last_version( void );
 
-GList                *ofa_idbprovider_get_all                   ( ofaHub *hub );
+GList                *ofa_idbprovider_get_all                   ( ofaIGetter *getter );
 
-ofaIDBProvider       *ofa_idbprovider_get_by_name               ( ofaHub *hub,
+ofaIDBProvider       *ofa_idbprovider_get_by_name               ( ofaIGetter *getter,
 																		const gchar *provider_name );
 
 /*
@@ -187,7 +187,7 @@ gchar                *ofa_idbprovider_get_canon_name            ( const ofaIDBPr
 
 gchar                *ofa_idbprovider_get_display_name          ( const ofaIDBProvider *provider );
 
-ofaHub               *ofa_idbprovider_get_hub                   ( ofaIDBProvider *provider );
+ofaIGetter           *ofa_idbprovider_get_getter                ( ofaIDBProvider *provider );
 
 ofaIDBDossierMeta    *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider *provider,
 																		const gchar *dossier_name );

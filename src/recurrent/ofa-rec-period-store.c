@@ -32,6 +32,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 
 #include "recurrent/ofa-rec-period-store.h"
@@ -40,12 +41,16 @@
 /* private instance data
  */
 typedef struct {
-	gboolean  dispose_has_run;
+	gboolean    dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 
 	/* runtime
 	 */
-	ofaHub   *hub;
-	GList    *hub_handlers;
+	ofaHub     *hub;
+	GList      *hub_handlers;
 }
 	ofaRecPeriodStorePrivate;
 
@@ -142,7 +147,7 @@ ofa_rec_period_store_class_init( ofaRecPeriodStoreClass *klass )
 
 /**
  * ofa_rec_period_store_new:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new #ofaRecPeriodStore and attached it to the @dossier
  * if not already done. Else get the already allocated #ofaRecPeriodStore
@@ -158,15 +163,15 @@ ofa_rec_period_store_class_init( ofaRecPeriodStoreClass *klass )
  * Returns: a new reference to the #ofaRecPeriodStore object.
  */
 ofaRecPeriodStore *
-ofa_rec_period_store_new( ofaHub *hub )
+ofa_rec_period_store_new( ofaIGetter *getter )
 {
 	ofaRecPeriodStore *store;
 	ofaRecPeriodStorePrivate *priv;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	store = ( ofaRecPeriodStore * ) my_icollector_single_get_object( collector, OFA_TYPE_REC_PERIOD_STORE );
 
 	if( store ){
@@ -176,7 +181,9 @@ ofa_rec_period_store_new( ofaHub *hub )
 		store = g_object_new( OFA_TYPE_REC_PERIOD_STORE, NULL );
 
 		priv = ofa_rec_period_store_get_instance_private( store );
-		priv->hub = hub;
+
+		priv->getter = getter;
+		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[PER_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
@@ -224,7 +231,7 @@ load_dataset( ofaRecPeriodStore *self )
 
 	priv = ofa_rec_period_store_get_instance_private( self );
 
-	dataset = ofo_rec_period_get_dataset( priv->hub );
+	dataset = ofo_rec_period_get_dataset( priv->getter );
 	do_insert_dataset( self, dataset );
 }
 

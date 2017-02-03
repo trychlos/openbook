@@ -40,6 +40,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
@@ -190,9 +191,9 @@ static sStatus st_status[] = {
 		{ 0 },
 };
 
-static gchar       *effect_in_exercice( ofaHub *hub );
-static GList       *entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order );
-static GDate       *entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaHub *hub );
+static gchar       *effect_in_exercice( ofaIGetter *getter );
+static GList       *entry_load_dataset( ofaIGetter *getter, const gchar *where, const gchar *order );
+static GDate       *entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaIGetter *getter );
 static gboolean     entry_get_import_settled( ofoEntry *entry );
 static void         entry_set_number( ofoEntry *entry, ofxCounter number );
 static void         entry_set_status( ofoEntry *entry, ofaEntryStatus status );
@@ -201,8 +202,8 @@ static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_st
 static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
 static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static void         entry_set_import_settled( ofoEntry *entry, gboolean settled );
-static gboolean     entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaHub *hub );
-static gboolean     entry_do_insert( ofoEntry *entry, ofaHub *hub );
+static gboolean     entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaIGetter *getter );
+static gboolean     entry_do_insert( ofoEntry *entry, ofaIGetter *getter );
 static void         error_ledger( const gchar *ledger );
 static void         error_ope_template( const gchar *model );
 static void         error_currency( const gchar *currency );
@@ -210,7 +211,7 @@ static void         error_acc_number( void );
 static void         error_account( const gchar *number );
 static void         error_acc_currency( const gchar *currency, ofoAccount *account );
 static void         error_amounts( ofxAmount debit, ofxAmount credit );
-static gboolean     entry_do_update( ofoEntry *entry, ofaHub *hub );
+static gboolean     entry_do_update( ofoEntry *entry, ofaIGetter *getter );
 static gboolean     do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter number );
 static void         iconcil_iface_init( ofaIConcilInterface *iface );
 static guint        iconcil_get_interface_version( void );
@@ -219,7 +220,7 @@ static const gchar *iconcil_get_object_type( const ofaIConcil *instance );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
-static gboolean     iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gboolean     iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static gchar       *export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( void );
@@ -239,9 +240,9 @@ static gboolean     hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *
 static void         hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty );
 static void         hub_on_deleted_entry( ofaHub *hub, ofoEntry *entry );
 static void         hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
-static gint         check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
-static gint         check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate *new_end, gboolean remediate );
-static gint         remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
+static gint         check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
+static gint         check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, const GDate *new_end, gboolean remediate );
+static gint         remediate_status( ofaIGetter *getter, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
 static void         hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static void         hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static void         hub_on_updated_account_number( ofaHub *hub, const gchar *prev_id, const gchar *number );
@@ -307,7 +308,7 @@ ofo_entry_class_init( ofoEntryClass *klass )
 
 /**
  * ofo_entry_get_dataset_account_balance:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @from_account: the starting account.
  * @to_account: the ending account.
  * @from_date: the starting effect date.
@@ -321,11 +322,12 @@ ofo_entry_class_init( ofoEntryClass *klass )
  * The returned dataset is ordered by ascending account.
  */
 GList *
-ofo_entry_get_dataset_account_balance( ofaHub *hub,
+ofo_entry_get_dataset_account_balance( ofaIGetter *getter,
 											const gchar *from_account, const gchar *to_account,
 											const GDate *from_date, const GDate *to_date )
 {
 	static const gchar *thisfn = "ofo_entry_get_dataset_account_balance";
+	ofaHub *hub;
 	GList *dataset;
 	GString *query;
 	gboolean first;
@@ -333,7 +335,7 @@ ofo_entry_get_dataset_account_balance( ofaHub *hub,
 	GSList *result, *irow, *icol;
 	ofsAccountBalance *sbal;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	query = g_string_new(
 				"SELECT ENT_ACCOUNT,ENT_CURRENCY,SUM(ENT_DEBIT),SUM(ENT_CREDIT) "
@@ -376,6 +378,8 @@ ofo_entry_get_dataset_account_balance( ofaHub *hub,
 	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 	query = g_string_append( query, "GROUP BY ENT_ACCOUNT ORDER BY ENT_ACCOUNT ASC " );
 
+	hub = ofa_igetter_get_hub( getter );
+
 	if( ofa_idbconnect_query_ex( ofa_hub_get_connect( hub ), query->str, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			sbal = g_new0( ofsAccountBalance, 1 );
@@ -400,7 +404,7 @@ ofo_entry_get_dataset_account_balance( ofaHub *hub,
 
 /**
  * ofo_entry_get_dataset_ledger_balance:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @ledger: the #ofoLedger mnemonic identifier.
  * @from_date: the starting effect date.
  * @to_date: the ending effect date.
@@ -413,7 +417,9 @@ ofo_entry_get_dataset_account_balance( ofaHub *hub,
  * The returned dataset is ordered by ascending currency.
  */
 GList *
-ofo_entry_get_dataset_ledger_balance( ofaHub *hub, const gchar *ledger, const GDate *from_date, const GDate *to_date )
+ofo_entry_get_dataset_ledger_balance( ofaIGetter *getter,
+										const gchar *ledger,
+										const GDate *from_date, const GDate *to_date )
 {
 	static const gchar *thisfn = "ofo_entry_get_dataset_ledger_balance";
 	GList *dataset;
@@ -422,8 +428,9 @@ ofo_entry_get_dataset_ledger_balance( ofaHub *hub, const gchar *ledger, const GD
 	gchar *str;
 	GSList *result, *irow, *icol;
 	ofsLedgerBalance *sbal;
+	ofaHub *hub;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	query = g_string_new(
 				"SELECT ENT_LEDGER,ENT_CURRENCY,SUM(ENT_DEBIT),SUM(ENT_CREDIT) "
@@ -458,6 +465,8 @@ ofo_entry_get_dataset_ledger_balance( ofaHub *hub, const gchar *ledger, const GD
 	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 	query = g_string_append( query, "GROUP BY ENT_LEDGER,ENT_CURRENCY ORDER BY ENT_LEDGER,ENT_CURRENCY ASC " );
 
+	hub = ofa_igetter_get_hub( getter );
+
 	if( ofa_idbconnect_query_ex( ofa_hub_get_connect( hub ), query->str, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			sbal = g_new0( ofsLedgerBalance, 1 );
@@ -482,7 +491,7 @@ ofo_entry_get_dataset_ledger_balance( ofaHub *hub, const gchar *ledger, const GD
 
 /**
  * ofo_entry_get_dataset_for_print_by_account:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @from_account: the starting account.
  * @to_account: the ending account.
  * @from_date: the starting effect date.
@@ -495,7 +504,7 @@ ofo_entry_get_dataset_ledger_balance( ofaHub *hub, const gchar *ledger, const GD
  * The returned dataset is ordered by ascending account/dope/deffect/number.
  */
 GList *
-ofo_entry_get_dataset_for_print_by_account( ofaHub *hub,
+ofo_entry_get_dataset_for_print_by_account( ofaIGetter *getter,
 												const gchar *from_account, const gchar *to_account,
 												const GDate *from_date, const GDate *to_date )
 {
@@ -504,7 +513,7 @@ ofo_entry_get_dataset_for_print_by_account( ofaHub *hub,
 	gboolean first;
 	gchar *str;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	query = g_string_new( "" );
 	first = TRUE;
@@ -544,7 +553,7 @@ ofo_entry_get_dataset_for_print_by_account( ofaHub *hub,
 	}
 	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 
-	dataset = entry_load_dataset( hub,  query->str,
+	dataset = entry_load_dataset( getter,  query->str,
 			"ORDER BY ENT_ACCOUNT ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC" );
 
 	g_string_free( query, TRUE );
@@ -554,7 +563,7 @@ ofo_entry_get_dataset_for_print_by_account( ofaHub *hub,
 
 /**
  * ofo_entry_get_dataset_for_print_by_ledger:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @mnemos: a list of requested ledger mnemos.
  * @from_date: the starting effect date.
  * @to_date: the ending effect date.
@@ -566,7 +575,7 @@ ofo_entry_get_dataset_for_print_by_account( ofaHub *hub,
  * The returned dataset is ordered by ascending ledger/dope/deffect/number.
  */
 GList *
-ofo_entry_get_dataset_for_print_by_ledger( ofaHub *hub,
+ofo_entry_get_dataset_for_print_by_ledger( ofaIGetter *getter,
 												const GSList *mnemos,
 												const GDate *from_date, const GDate *to_date )
 {
@@ -576,7 +585,7 @@ ofo_entry_get_dataset_for_print_by_ledger( ofaHub *hub,
 	gchar *str;
 	const GSList *it;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	query = g_string_new( "" );
 	dataset = NULL;
@@ -603,7 +612,7 @@ ofo_entry_get_dataset_for_print_by_ledger( ofaHub *hub,
 	}
 	g_string_append_printf( query, "AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 
-	dataset = entry_load_dataset( hub, query->str,
+	dataset = entry_load_dataset( getter, query->str,
 			"ORDER BY ENT_LEDGER ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC" );
 
 	g_string_free( query, TRUE );
@@ -613,7 +622,7 @@ ofo_entry_get_dataset_for_print_by_ledger( ofaHub *hub,
 
 /**
  * ofo_entry_get_dataset_for_print_reconcil:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @account: the reconciliated account.
  * @date: the greatest effect date to be returned.
  *
@@ -623,14 +632,14 @@ ofo_entry_get_dataset_for_print_by_ledger( ofaHub *hub,
  * The returned dataset is ordered by ascending dope/deffect/number.
  */
 GList *
-ofo_entry_get_dataset_for_print_reconcil( ofaHub *hub,
+ofo_entry_get_dataset_for_print_reconcil( ofaIGetter *getter,
 											const gchar *account, const GDate *date )
 {
 	GList *dataset;
 	GString *where;
 	gchar *str;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( account ), NULL );
 
 	where = g_string_new( "" );
@@ -647,7 +656,7 @@ ofo_entry_get_dataset_for_print_reconcil( ofaHub *hub,
 
 	g_string_append_printf( where, " AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 
-	dataset = entry_load_dataset( hub, where->str, NULL );
+	dataset = entry_load_dataset( getter, where->str, NULL );
 
 	g_string_free( where, TRUE );
 
@@ -666,21 +675,21 @@ ofo_entry_get_dataset_for_print_reconcil( ofaHub *hub,
  * be #ofo_entry_free_dataset() by the caller.
  */
 GList *
-ofo_entry_get_dataset_for_exercice_by_status( ofaHub *hub, ofaEntryStatus status )
+ofo_entry_get_dataset_for_exercice_by_status( ofaIGetter *getter, ofaEntryStatus status )
 {
 	GList *dataset;
 	GString *where;
 	gchar *str;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	where = g_string_new( "" );
 
-	str = effect_in_exercice( hub);
+	str = effect_in_exercice( getter);
 	g_string_append_printf( where, "%s AND ENT_STATUS=%u ", str, status );
 	g_free( str );
 
-	dataset = entry_load_dataset( hub, where->str, NULL );
+	dataset = entry_load_dataset( getter, where->str, NULL );
 
 	g_string_free( where, TRUE );
 
@@ -691,14 +700,16 @@ ofo_entry_get_dataset_for_exercice_by_status( ofaHub *hub, ofaEntryStatus status
  * build a where string for the exercice on the effect date
  */
 static gchar *
-effect_in_exercice( ofaHub *hub )
+effect_in_exercice( ofaIGetter *getter )
 {
+	ofaHub *hub;
 	ofoDossier *dossier;
 	GString *where;
 	const GDate *begin, *end;
 	gchar *str;
 
 	where = g_string_new( "" );
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 
 	begin = ofo_dossier_get_exe_begin( dossier );
@@ -718,20 +729,20 @@ effect_in_exercice( ofaHub *hub )
 
 /**
  * ofo_entry_get_dataset_for_store:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @account: [allow-none]: the searched account.
  * @ledger: [allow-none]: the searched ledger.
  *
  * Returns *all* entries for the specified @account and/or @ledger.
  */
 GList *
-ofo_entry_get_dataset_for_store( ofaHub *hub, const gchar *account, const gchar *ledger )
+ofo_entry_get_dataset_for_store( ofaIGetter *getter, const gchar *account, const gchar *ledger )
 {
 	static const gchar *thisfn = "ofo_entry_get_dataset_for_store";
 	GString *where;
 	GList *dataset;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	where = g_string_new( "" );
 
@@ -745,7 +756,7 @@ ofo_entry_get_dataset_for_store( ofaHub *hub, const gchar *account, const gchar 
 		g_string_append_printf( where, "ENT_LEDGER='%s' ", ledger );
 	}
 
-	dataset = entry_load_dataset( hub, where->str, "ORDER BY ENT_NUMBER ASC");
+	dataset = entry_load_dataset( getter, where->str, "ORDER BY ENT_NUMBER ASC");
 
 	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
 
@@ -758,7 +769,7 @@ ofo_entry_get_dataset_for_store( ofaHub *hub, const gchar *account, const gchar 
  * returns a #GList * of all #ofoEntry's which satisfy the @where clause
  */
 static GList *
-entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order )
+entry_load_dataset( ofaIGetter *getter, const gchar *where, const gchar *order )
 {
 	GList *dataset;
 	GString *query;
@@ -783,7 +794,7 @@ entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order )
 					st_boxed_defs,
 					query->str,
 					OFO_TYPE_ENTRY,
-					hub );
+					getter );
 
 	g_string_free( query, TRUE );
 
@@ -792,16 +803,18 @@ entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order )
 
 /**
  * ofo_entry_use_account:
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: %TRUE if a recorded entry makes use of the specified account.
  */
 gboolean
-ofo_entry_use_account( ofaHub *hub, const gchar *account )
+ofo_entry_use_account( ofaIGetter *getter, const gchar *account )
 {
+	ofaHub *hub;
 	gchar *query;
 	gint count;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	if( !my_strlen( account )){
 		return( FALSE );
@@ -810,6 +823,8 @@ ofo_entry_use_account( ofaHub *hub, const gchar *account )
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_ACCOUNT='%s'",
 			account );
+
+	hub = ofa_igetter_get_hub( getter );
 
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
 
@@ -820,16 +835,18 @@ ofo_entry_use_account( ofaHub *hub, const gchar *account )
 
 /**
  * ofo_entry_use_ledger:
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: %TRUE if a recorded entry makes use of the specified ledger.
  */
 gboolean
-ofo_entry_use_ledger( ofaHub *hub, const gchar *ledger )
+ofo_entry_use_ledger( ofaIGetter *getter, const gchar *ledger )
 {
+	ofaHub *hub;
 	gchar *query;
 	gint count;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	if( !my_strlen( ledger )){
 		return( FALSE );
@@ -838,6 +855,8 @@ ofo_entry_use_ledger( ofaHub *hub, const gchar *ledger )
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_LEDGER='%s'",
 			ledger );
+
+	hub = ofa_igetter_get_hub( getter );
 
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
 
@@ -848,13 +867,16 @@ ofo_entry_use_ledger( ofaHub *hub, const gchar *ledger )
 
 /**
  * ofo_entry_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoEntry *
-ofo_entry_new( void )
+ofo_entry_new( ofaIGetter *getter )
 {
 	ofoEntry *entry;
 
-	entry = g_object_new( OFO_TYPE_ENTRY, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	entry = g_object_new( OFO_TYPE_ENTRY, "ofo-base-getter", getter, NULL );
 	OFO_BASE( entry )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	entry_set_number( entry, OFO_BASE_UNSET_ID );
@@ -1090,18 +1112,26 @@ ofo_entry_get_upd_stamp( const ofoEntry *entry )
 
 /**
  * ofo_entry_get_exe_changed_count:
+ * @getter: a #ofaIGetter instance.
+ * @prev_begin:
+ * @prev_end:
+ * @new_begin:
+ * @new_end:
+ *
+ * Returns: the count of entries whose the status is changed by the
+ * closing of the financial period.
  */
 gint
-ofo_entry_get_exe_changed_count( ofaHub *hub,
+ofo_entry_get_exe_changed_count( ofaIGetter *getter,
 									const GDate *prev_begin, const GDate *prev_end,
 									const GDate *new_begin, const GDate *new_end )
 {
 	gint count_begin, count_end;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
 
-	count_begin = check_for_changed_begin_exe_dates( hub, prev_begin, new_begin, FALSE );
-	count_end = check_for_changed_end_exe_dates( hub, prev_end, new_end, FALSE );
+	count_begin = check_for_changed_begin_exe_dates( getter, prev_begin, new_begin, FALSE );
+	count_end = check_for_changed_end_exe_dates( getter, prev_end, new_end, FALSE );
 
 	return( count_begin+count_end );
 }
@@ -1110,7 +1140,7 @@ ofo_entry_get_exe_changed_count( ofaHub *hub,
  * entry_get_min_deffect:
  * @entry: this #ofoEntry entry.
  * @date: [out]: the outputed date.
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the minimal allowed effect date on the dossier for the
  * ledger on which the entry is imputed.
@@ -1120,8 +1150,9 @@ ofo_entry_get_exe_changed_count( ofaHub *hub,
  * would not work).
  */
 static GDate *
-entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaHub *hub )
+entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaIGetter *getter )
 {
+	ofaHub *hub;
 	ofoDossier *dossier;
 	const gchar *mnemo;
 	ofoLedger *ledger;
@@ -1132,10 +1163,12 @@ entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaHub *hub )
 	g_date_clear( date, 1 );
 	ledger = NULL;
 
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	mnemo = ofo_entry_get_ledger( entry );
+
 	if( my_strlen( mnemo )){
-		ledger = ofo_ledger_get_by_mnemo( hub, mnemo );
+		ledger = ofo_ledger_get_by_mnemo( getter, mnemo );
 		g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
 		ofo_dossier_get_min_deffect( dossier, ledger, date );
 	}
@@ -1145,18 +1178,22 @@ entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaHub *hub )
 
 /**
  * ofo_entry_get_max_val_deffect:
+ * @getter: a #ofaIGetter instance.
+ * @account:
+ * @date:
  *
  * Returns: the greatest effect date of validated entries on the account.
  *
  * The returned value may be %NULL.
  */
 GDate *
-ofo_entry_get_max_val_deffect( ofaHub *hub, const gchar *account, GDate *date )
+ofo_entry_get_max_val_deffect( ofaIGetter *getter, const gchar *account, GDate *date )
 {
+	ofaHub *hub;
 	gchar *query;
 	GSList *result, *icol;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( account ), NULL );
 	g_return_val_if_fail( date, NULL );
 
@@ -1166,6 +1203,8 @@ ofo_entry_get_max_val_deffect( ofaHub *hub, const gchar *account, GDate *date )
 			"SELECT MAX(ENT_DEFFECT) FROM OFA_T_ENTRIES WHERE "
 			"	ENT_ACCOUNT='%s' AND ENT_STATUS=%d",
 				account, ENT_STATUS_VALIDATED );
+
+	hub = ofa_igetter_get_hub( getter );
 
 	if( ofa_idbconnect_query_ex( ofa_hub_get_connect( hub ), query, &result, TRUE )){
 		if( result ){
@@ -1183,6 +1222,9 @@ ofo_entry_get_max_val_deffect( ofaHub *hub, const gchar *account, GDate *date )
 
 /**
  * ofo_entry_get_max_rough_deffect:
+ * @getter: a #ofaIGetter instance.
+ * @account:
+ * @date:
  *
  * Returns: the greatest effect date of rough entries on the account,
  * taking care to not consider future entries.
@@ -1190,15 +1232,16 @@ ofo_entry_get_max_val_deffect( ofaHub *hub, const gchar *account, GDate *date )
  * The returned value may be %NULL.
  */
 GDate *
-ofo_entry_get_max_rough_deffect( ofaHub *hub, const gchar *account, GDate *date )
+ofo_entry_get_max_rough_deffect( ofaIGetter *getter, const gchar *account, GDate *date )
 {
+	ofaHub *hub;
 	const GDate *exe_end;
 	GString *query;
 	GSList *result, *icol;
 	gchar *sdate;
 	ofoDossier *dossier;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( account ), NULL );
 	g_return_val_if_fail( date, NULL );
 
@@ -1210,8 +1253,10 @@ ofo_entry_get_max_rough_deffect( ofaHub *hub, const gchar *account, GDate *date 
 	g_string_append_printf( query,
 			"ENT_ACCOUNT='%s' AND ENT_STATUS=%d ", account, ENT_STATUS_ROUGH );
 
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	exe_end = ofo_dossier_get_exe_end( dossier );
+
 	if( my_date_is_valid( exe_end )){
 		sdate = my_date_to_str( exe_end, MY_DATE_SQL );
 		g_string_append_printf( query,
@@ -1235,25 +1280,30 @@ ofo_entry_get_max_rough_deffect( ofaHub *hub, const gchar *account, GDate *date 
 
 /**
  * ofo_entry_get_max_futur_deffect:
+ * @getter: a #ofaIGetter instance.
+ * @account:
+ * @date:
  *
  * Returns: the greatest effect date of future entries on the account.
  *
  * The returned value may be %NULL.
  */
 GDate *
-ofo_entry_get_max_futur_deffect( ofaHub *hub, const gchar *account, GDate *date )
+ofo_entry_get_max_futur_deffect( ofaIGetter *getter, const gchar *account, GDate *date )
 {
+	ofaHub *hub;
 	const GDate *exe_end;
 	GString *query;
 	GSList *result, *icol;
 	gchar *sdate;
 	ofoDossier *dossier;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( account ), NULL );
 	g_return_val_if_fail( date, NULL );
 
 	my_date_clear( date );
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	exe_end = ofo_dossier_get_exe_end( dossier );
 
@@ -1289,6 +1339,7 @@ ofo_entry_get_max_futur_deffect( ofaHub *hub, const gchar *account, GDate *date 
 
 /**
  * ofo_entry_get_currencies:
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a #GSList of currency identifiers (ISO 3A code) used by the
  * entries.
@@ -1296,12 +1347,15 @@ ofo_entry_get_max_futur_deffect( ofaHub *hub, const gchar *account, GDate *date 
  * The returned value should be ofo_entry_free_currencies() by the caller.
  */
 GSList *
-ofo_entry_get_currencies( ofaHub *hub )
+ofo_entry_get_currencies( ofaIGetter *getter )
 {
+	ofaHub *hub;
 	GSList *result, *irow, *icol;
 	GSList *list;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	hub = ofa_igetter_get_hub( getter );
 
 	if( ofa_idbconnect_query_ex(
 			ofa_hub_get_connect( hub ),
@@ -1544,10 +1598,10 @@ entry_set_import_settled( ofoEntry *entry, gboolean settled )
 
 /*
  * entry_compute_status:
- * @entry:
+ * @entry: this #ofoEntry object.
  * @set_deffect: if %TRUE, then the effect date is modified to the
  *  minimum allowed.
- * @dossier:
+ * @getter: a #ofaIGetter instance.
  *
  * Set the entry status depending of the exercice beginning and ending
  * dates of the dossier. If the entry is inside the current exercice,
@@ -1561,21 +1615,23 @@ entry_set_import_settled( ofoEntry *entry, gboolean settled )
  * yet serialized to the database (and so for which ofo_base_get_hub()
  * would not work).
  */
-gboolean
-entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaHub *hub )
+static gboolean
+entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "entry_compute_status";
 	const GDate *exe_begin, *exe_end, *deffect;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	GDate min_deffect;
 	gboolean is_valid;
 	gchar *sdeffect, *sdmin;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
 	is_valid = TRUE;
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 
 	exe_begin = ofo_dossier_get_exe_begin( dossier );
@@ -1593,7 +1649,7 @@ entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaHub *hub )
 		entry_set_status( entry, ENT_STATUS_FUTURE );
 
 	} else {
-		entry_get_min_deffect( entry, &min_deffect, hub );
+		entry_get_min_deffect( entry, &min_deffect, getter );
 		is_valid = !my_date_is_valid( &min_deffect ) ||
 				my_date_compare( deffect, &min_deffect ) >= 0;
 
@@ -1603,8 +1659,8 @@ entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaHub *hub )
 		}
 
 		if( !is_valid ){
-			sdeffect = my_date_to_str( deffect, ofa_prefs_date_display( hub ));
-			sdmin = my_date_to_str( &min_deffect, ofa_prefs_date_display( hub ));
+			sdeffect = my_date_to_str( deffect, ofa_prefs_date_display( getter ));
+			sdmin = my_date_to_str( &min_deffect, ofa_prefs_date_display( getter ));
 			g_warning(
 					"%s: entry effect date %s is lesser than minimal allowed %s",
 					thisfn, sdeffect, sdmin );
@@ -1621,9 +1677,10 @@ entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaHub *hub )
 
 /**
  * ofo_entry_is_valid_data:
+ * @getter: a #ofaIGetter instance.
  */
 gboolean
-ofo_entry_is_valid_data( ofaHub *hub,
+ofo_entry_is_valid_data( ofaIGetter *getter,
 							const GDate *deffect, const GDate *dope, const gchar *label,
 							const gchar *account, const gchar *currency, const gchar *ledger,
 							const gchar *model, ofxAmount debit, ofxAmount credit,
@@ -1632,19 +1689,19 @@ ofo_entry_is_valid_data( ofaHub *hub,
 	ofoAccount *account_obj;
 	gboolean ok;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	ok = TRUE;
 
-	if( !my_strlen( ledger ) || !ofo_ledger_get_by_mnemo( hub, ledger )){
+	if( !my_strlen( ledger ) || !ofo_ledger_get_by_mnemo( getter, ledger )){
 		error_ledger( ledger );
 		ok &= FALSE;
 	}
-	if( !my_strlen( model ) || !ofo_ope_template_get_by_mnemo( hub, model )){
+	if( !my_strlen( model ) || !ofo_ope_template_get_by_mnemo( getter, model )){
 		error_ope_template( model );
 		ok &= FALSE;
 	}
-	if( !my_strlen( currency ) || !ofo_currency_get_by_code( hub, currency )){
+	if( !my_strlen( currency ) || !ofo_currency_get_by_code( getter, currency )){
 		error_currency( currency );
 		ok &= FALSE;
 	}
@@ -1652,7 +1709,7 @@ ofo_entry_is_valid_data( ofaHub *hub,
 		error_acc_number();
 		ok &= FALSE;
 	} else {
-		account_obj = ofo_account_get_by_number( hub, account );
+		account_obj = ofo_account_get_by_number( getter, account );
 		if( !account_obj ){
 			error_account( account );
 			ok &= FALSE;
@@ -1672,6 +1729,7 @@ ofo_entry_is_valid_data( ofaHub *hub,
 
 /**
  * ofo_entry_new_with_data:
+ * @getter: a #ofaIGetter instance.
  *
  * Create a new entry with the provided data.
  * The entry is - at this time - unnumbered and does not have sent any
@@ -1681,7 +1739,7 @@ ofo_entry_is_valid_data( ofaHub *hub,
  * Returns: the #ofoEntry entry object, of %NULL in case of an error.
  */
 ofoEntry *
-ofo_entry_new_with_data( ofaHub *hub,
+ofo_entry_new_with_data( ofaIGetter *getter,
 							const GDate *deffect, const GDate *dope, const gchar *label,
 							const gchar *ref, const gchar *account,
 							const gchar *currency, const gchar *ledger,
@@ -1689,14 +1747,14 @@ ofo_entry_new_with_data( ofaHub *hub,
 {
 	ofoEntry *entry;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	if( !ofo_entry_is_valid_data(
-			hub, deffect, dope, label, account, currency, ledger, model, debit, credit, NULL )){
+			getter, deffect, dope, label, account, currency, ledger, model, debit, credit, NULL )){
 		return( NULL );
 	}
 
-	entry = ofo_entry_new();
+	entry = ofo_entry_new( getter );
 
 	ofo_entry_set_deffect( entry, deffect );
 	ofo_entry_set_dope( entry, dope );
@@ -1709,7 +1767,7 @@ ofo_entry_new_with_data( ofaHub *hub,
 	ofo_entry_set_debit( entry, debit );
 	ofo_entry_set_credit( entry, credit );
 
-	entry_compute_status( entry, FALSE, hub );
+	entry_compute_status( entry, FALSE, getter );
 
 	return( entry );
 }
@@ -1721,26 +1779,28 @@ ofo_entry_new_with_data( ofaHub *hub,
  * dbms. Send the corresponding advertising messages if no error occurs.
  */
 gboolean
-ofo_entry_insert( ofoEntry *entry, ofaHub *hub )
+ofo_entry_insert( ofoEntry *entry )
 {
 	static const gchar *thisfn = "ofo_entry_insert";
 	gboolean ok;
+	ofaIGetter *getter;
+	ofaHub *hub;
 	ofoDossier *dossier;
 
-	g_debug( "%s: entry=%p, hub=%p", thisfn, ( void * ) entry, ( void * ) hub );
+	g_debug( "%s: entry=%p", thisfn, ( void * ) entry );
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( entry ));
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 
 	entry_set_number( entry, ofo_dossier_get_next_entry( dossier ));
-	entry_compute_status( entry, FALSE, hub );
+	entry_compute_status( entry, FALSE, getter );
 
-	if( entry_do_insert( entry, hub )){
-		ofo_base_set_hub( OFO_BASE( entry ), hub );
+	if( entry_do_insert( entry, getter )){
 		if( ofo_entry_get_status( entry ) != ENT_STATUS_PAST ){
 			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, entry );
 		}
@@ -1751,7 +1811,7 @@ ofo_entry_insert( ofoEntry *entry, ofaHub *hub )
 }
 
 static gboolean
-entry_do_insert( ofoEntry *entry, ofaHub *hub )
+entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 {
 	GString *query;
 	gchar *label, *ref;
@@ -1762,13 +1822,15 @@ entry_do_insert( ofoEntry *entry, ofaHub *hub )
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
 	ofxCounter ope_number;
+	ofaHub *hub;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 
 	cur_code = ofo_entry_get_currency( entry );
-	cur_obj = ofo_currency_get_by_code( hub, cur_code );
+	cur_obj = ofo_currency_get_by_code( getter, cur_code );
 	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
@@ -1911,15 +1973,15 @@ error_account( const gchar *number )
 static void
 error_acc_currency( const gchar *currency, ofoAccount *account )
 {
-	ofaHub *hub;
+	ofaIGetter *getter;
 	gchar *str;
 	const gchar *acc_currency;
 	ofoCurrency *acc_dev, *ent_dev;
 
-	hub = ofo_base_get_hub( OFO_BASE( account ));
+	getter = ofo_base_get_getter( OFO_BASE( account ));
 	acc_currency = ofo_account_get_currency( account );
-	acc_dev = ofo_currency_get_by_code( hub, acc_currency );
-	ent_dev = ofo_currency_get_by_code( hub, currency );
+	acc_dev = ofo_currency_get_by_code( getter, acc_currency );
+	ent_dev = ofo_currency_get_by_code( getter, currency );
 
 	if( !acc_dev ){
 		str = g_strdup_printf( "Currency '%s' is invalid for the account '%s'",
@@ -1960,6 +2022,7 @@ error_amounts( ofxAmount debit, ofxAmount credit )
 gboolean
 ofo_entry_update( ofoEntry *entry )
 {
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1967,9 +2030,10 @@ ofo_entry_update( ofoEntry *entry )
 	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( entry ));
+	getter = ofo_base_get_getter( OFO_BASE( entry ));
+	hub = ofa_igetter_get_hub( getter );
 
-	if( entry_do_update( entry, hub )){
+	if( entry_do_update( entry, getter )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, entry, NULL );
 		ok = TRUE;
 	}
@@ -1978,8 +2042,9 @@ ofo_entry_update( ofoEntry *entry )
 }
 
 static gboolean
-entry_do_update( ofoEntry *entry, ofaHub *hub )
+entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 {
+	ofaHub *hub;
 	GString *query;
 	gchar *sdeff, *sdope, *sdeb, *scre;
 	gchar *stamp_str, *label, *ref;
@@ -1993,9 +2058,10 @@ entry_do_update( ofoEntry *entry, ofaHub *hub )
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 
 	cur_code = ofo_entry_get_currency( entry );
-	cur_obj = ofo_currency_get_by_code( hub, cur_code );
+	cur_obj = ofo_currency_get_by_code( getter, cur_code );
 	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
@@ -2073,6 +2139,7 @@ entry_do_update( ofoEntry *entry, ofaHub *hub )
 gboolean
 ofo_entry_update_settlement( ofoEntry *entry, ofxCounter number )
 {
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -2080,7 +2147,8 @@ ofo_entry_update_settlement( ofoEntry *entry, ofxCounter number )
 	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( entry ));
+	getter = ofo_base_get_getter( OFO_BASE( entry ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( do_update_settlement( entry, ofa_hub_get_connect( hub ), number )){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_UPDATED, entry, NULL );
@@ -2133,7 +2201,7 @@ do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter 
 
 /**
  * ofo_entry_unsettle_by_number:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @number: the identifier of the settlement group to be cancelled.
  *
  * Cancel the identified settlement group by updating all member
@@ -2141,17 +2209,17 @@ do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter 
  * dossier signaling system
  */
 void
-ofo_entry_unsettle_by_number( ofaHub *hub, ofxCounter number )
+ofo_entry_unsettle_by_number( ofaIGetter *getter, ofxCounter number )
 {
 	GList *entries, *it;
 	gchar *where;
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( number > 0 );
 
 	/* get the list of entries */
 	where = g_strdup_printf( "ENT_STLMT_NUMBER=%ld", number );
-	entries = entry_load_dataset( hub, where, NULL );
+	entries = entry_load_dataset( getter, where, NULL );
 	g_free( where );
 
 	/* update the entries, simultaneously sending messages */
@@ -2169,12 +2237,15 @@ ofo_entry_unsettle_by_number( ofaHub *hub, ofxCounter number )
 gboolean
 ofo_entry_validate( ofoEntry *entry )
 {
+	ofaIGetter *getter;
 	ofaHub *hub;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
-	hub = ofo_base_get_hub( OFO_BASE( entry ));
+	getter = ofo_base_get_getter( OFO_BASE( entry ));
+	hub = ofa_igetter_get_hub( getter );
+
 	g_signal_emit_by_name( hub,
 			SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 
@@ -2183,7 +2254,7 @@ ofo_entry_validate( ofoEntry *entry )
 
 /**
  * ofo_entry_validate_by_ledger:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @mnemo: the #ofoLedger identifier.
  * @deffect: the effect date.
  *
@@ -2194,13 +2265,14 @@ ofo_entry_validate( ofoEntry *entry )
  * no error is detected.
  */
 gboolean
-ofo_entry_validate_by_ledger( ofaHub *hub, const gchar *mnemo, const GDate *deffect )
+ofo_entry_validate_by_ledger( ofaIGetter *getter, const gchar *mnemo, const GDate *deffect )
 {
 	gchar *query, *sdate;
 	ofoEntry *entry;
 	GList *dataset, *it;
+	ofaHub *hub;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	sdate = my_date_to_str( deffect, MY_DATE_SQL );
 	query = g_strdup_printf(
@@ -2212,9 +2284,11 @@ ofo_entry_validate_by_ledger( ofaHub *hub, const gchar *mnemo, const GDate *deff
 					st_boxed_defs,
 					query,
 					OFO_TYPE_ENTRY,
-					hub );
+					getter );
 
 	g_free( query );
+
+	hub = ofa_igetter_get_hub( getter );
 
 	g_signal_emit_by_name( hub, SIGNAL_HUB_STATUS_COUNT, ENT_STATUS_VALIDATED, g_list_length( dataset ));
 
@@ -2234,12 +2308,14 @@ ofo_entry_validate_by_ledger( ofaHub *hub, const gchar *mnemo, const GDate *deff
 gboolean
 ofo_entry_delete( ofoEntry *entry )
 {
+	ofaIGetter *getter;
 	ofaHub *hub;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
-	hub = ofo_base_get_hub( OFO_BASE( entry ));
+	getter = ofo_base_get_getter( OFO_BASE( entry ));
+	hub = ofa_igetter_get_hub( getter );
 
 	g_signal_emit_by_name(
 			hub, SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_DELETED );
@@ -2332,7 +2408,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * at the end of the entry.
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	GList *result, *it;
 	gboolean ok, with_headers;
@@ -2344,7 +2420,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHu
 	ofoAccount *account;
 	ofoCurrency *currency;
 
-	result = entry_load_dataset( hub, NULL, NULL );
+	result = entry_load_dataset( getter, NULL, NULL );
 
 	with_headers = ofa_stream_format_get_with_headers( settings );
 	field_sep = ofa_stream_format_get_field_sep( settings );
@@ -2372,11 +2448,11 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHu
 	for( it=result ; it ; it=it->next ){
 		acc_id = ofo_entry_get_account( OFO_ENTRY( it->data ));
 		g_return_val_if_fail( acc_id && my_strlen( acc_id ), FALSE );
-		account = ofo_account_get_by_number( hub, acc_id );
+		account = ofo_account_get_by_number( getter, acc_id );
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 		cur_code = ofo_account_get_currency( account );
 		g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
-		currency = ofo_currency_get_by_code( hub, cur_code );
+		currency = ofo_currency_get_by_code( getter, cur_code );
 		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 		str = ofa_box_csv_get_line_ex( OFO_BASE( it->data )->prot->fields, settings, ( CSVExportFunc ) export_cb, currency );
 
@@ -2516,15 +2592,17 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 {
 	GList *dataset;
 	gchar *bck_table;
+	ofaHub *hub;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+	hub = ofa_igetter_get_hub( parms->getter );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "OFA_T_ENTRIES" );
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_ENTRIES" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs > 0 ){
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "OFA_T_ENTRIES" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_ENTRIES" );
 		}
 
 		g_free( bck_table );
@@ -2557,6 +2635,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	ofoCurrency *cur_object;
 	ofxCounter counter;
 	myDateFormat date_format;
+	ofaHub *hub;
 	ofoDossier *dossier;
 
 	numline = 0;
@@ -2569,7 +2648,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	exe = NULL;
 	fut = NULL;
 	date_format = ofa_stream_format_get_date_format( parms->format );
-	dossier = ofa_hub_get_dossier( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	dossier = ofa_hub_get_dossier( hub );
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
@@ -2579,7 +2659,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 		numline += 1;
 		fields = ( GSList * ) itl->data;
-		entry = ofo_entry_new();
+		entry = ofo_entry_new( parms->getter );
 		debit = 0;
 		credit = 0;
 
@@ -2665,7 +2745,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				continue;
 			}
 		}
-		ledger = ofo_ledger_get_by_mnemo( parms->hub, cstr );
+		ledger = ofo_ledger_get_by_mnemo( parms->getter, cstr );
 		if( !ledger ){
 			str = g_strdup_printf( _( "entry ledger not found: %s" ), cstr );
 			ofa_iimporter_progress_num_text( importer, parms, numline, str );
@@ -2688,7 +2768,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			parms->parse_errs += 1;
 			continue;
 		}
-		account = ofo_account_get_by_number( parms->hub, cstr );
+		account = ofo_account_get_by_number( parms->getter, cstr );
 		if( !account ){
 			str = g_strdup_printf( _( "entry account not found: %s" ), cstr );
 			ofa_iimporter_progress_num_text( importer, parms, numline, str );
@@ -2725,7 +2805,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			parms->parse_errs += 1;
 			continue;
 		}
-		cur_object = ofo_currency_get_by_code( parms->hub, currency );
+		cur_object = ofo_currency_get_by_code( parms->getter, currency );
 		if( !cur_object ){
 			str = g_strdup_printf( _( "unregistered currency: %s" ), currency );
 			ofa_iimporter_progress_num_text( importer, parms, numline, str );
@@ -2810,7 +2890,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		 * we force it to be valid regarding exercice beginning and
 		 * ledger last closing dates, so that the entry is in ROUGH
 		 * status */
-		entry_compute_status( entry, TRUE, parms->hub );
+		entry_compute_status( entry, TRUE, parms->getter );
 		status = ofo_entry_get_status( entry );
 		switch( status ){
 			case ENT_STATUS_PAST:
@@ -2845,8 +2925,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	 * maximal rounding error accepted */
 	for( it=past ; it ; it=it->next ){
 		sdet = ( ofsCurrency * ) it->data;
-		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency, parms->hub );
-		scre = ofa_amount_to_str( sdet->credit, sdet->currency, parms->hub );
+		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency, parms->getter );
+		scre = ofa_amount_to_str( sdet->credit, sdet->currency, parms->getter );
 		str = g_strdup_printf( "PAST [%s] tot_debits=%s, tot_credits=%s",
 					ofo_currency_get_code( sdet->currency ), sdeb, scre );
 		ofa_iimporter_progress_num_text( importer, parms, numline, str );
@@ -2856,8 +2936,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	}
 	for( it=exe ; it ; it=it->next ){
 		sdet = ( ofsCurrency * ) it->data;
-		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency, parms->hub );
-		scre = ofa_amount_to_str( sdet->credit, sdet->currency, parms->hub );
+		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency, parms->getter );
+		scre = ofa_amount_to_str( sdet->credit, sdet->currency, parms->getter );
 		str = g_strdup_printf( "EXE [%s] tot_debits=%s, tot_credits=%s",
 					ofo_currency_get_code( sdet->currency ), sdeb, scre );
 		ofa_iimporter_progress_num_text( importer, parms, numline, str );
@@ -2871,8 +2951,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	}
 	for( it=fut ; it ; it=it->next ){
 		sdet = ( ofsCurrency * ) it->data;
-		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency, parms->hub );
-		scre = ofa_amount_to_str( sdet->credit, sdet->currency, parms->hub );
+		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency, parms->getter );
+		scre = ofa_amount_to_str( sdet->credit, sdet->currency, parms->getter );
 		str = g_strdup_printf( "FUTURE [%s] tot_debits=%s, tot_credits=%s",
 					ofo_currency_get_code( sdet->currency ), sdeb, scre );
 		ofa_iimporter_progress_num_text( importer, parms, numline, str );
@@ -2906,20 +2986,22 @@ iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoE
 	GDate date;
 	GTimeVal stamp;
 	ofoConcil *concil;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	myDateFormat date_format;
 
 	concil = NULL;
 	itf = *fields;
 	date_format = ofa_stream_format_get_date_format( parms->format );
-	connect = ofa_hub_get_connect( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 
 	/* reconciliation date */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	my_date_set_from_str( &date, cstr, date_format );
 	if( my_date_is_valid( &date )){
-		concil = ofo_concil_new();
+		concil = ofo_concil_new( parms->getter );
 		g_object_set_data( G_OBJECT( entry ), "entry-concil", concil );
 		ofo_concil_set_dval( concil, &date );
 		g_debug( "%s: new concil dval=%s", thisfn, cstr );
@@ -2964,10 +3046,12 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	ofoDossier *dossier;
 	ofxCounter counter;
 	ofoConcil *concil;
+	ofaHub *hub;
 
 	total = g_list_length( dataset );
-	dossier = ofa_hub_get_dossier( parms->hub );
-	connect = ofa_hub_get_connect( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	dossier = ofa_hub_get_dossier( hub );
+	connect = ofa_hub_get_connect( hub );
 	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && total > 0 ){
@@ -2983,8 +3067,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 		entry = OFO_ENTRY( it->data );
 		entry_set_number( entry, ofo_dossier_get_next_entry( dossier ));
 
-		if( entry_do_insert( entry, parms->hub )){
-			ofo_base_set_hub( OFO_BASE( entry ), parms->hub );
+		if( entry_do_insert( entry, parms->getter )){
 
 			if( entry_get_import_settled( entry )){
 				counter = ofo_dossier_get_next_settlement( dossier );
@@ -2996,7 +3079,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				ofa_iconcil_new_concil_ex( OFA_ICONCIL( entry ), concil );
 			}
 			if( ofo_entry_get_status( entry ) != ENT_STATUS_PAST ){
-				g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_NEW, entry );
+				g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, entry );
 			}
 			parms->inserted_count += 1;
 
@@ -3079,7 +3162,11 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 static gboolean
 hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
 {
-	return( !ofo_entry_use_account( hub, ofo_account_get_number( account )));
+	ofaIGetter *getter;
+
+	getter = ofo_base_get_getter( OFO_BASE( account ));
+
+	return( !ofo_entry_use_account( getter, ofo_account_get_number( account )));
 }
 
 static gboolean
@@ -3102,7 +3189,11 @@ hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
 static gboolean
 hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger )
 {
-	return( !ofo_entry_use_ledger( hub, ofo_ledger_get_mnemo( ledger )));
+	ofaIGetter *getter;
+
+	getter = ofo_base_get_getter( OFO_BASE( ledger ));
+
+	return( !ofo_entry_use_ledger( getter, ofo_ledger_get_mnemo( ledger )));
 }
 
 static gboolean
@@ -3147,11 +3238,14 @@ hub_on_deleted_entry( ofaHub *hub, ofoEntry *entry )
 	static const gchar *thisfn = "ofo_entry_hub_on_deleted_entry";
 	ofxCounter id;
 	ofoConcil *concil;
+	ofaIGetter *getter;
+
+	getter = ofo_base_get_getter( OFO_BASE( entry ));
 
 	/* if entry was settled, then cleanup whole settlement group */
 	id = ofo_entry_get_settlement_number( entry );
 	if( id > 0 ){
-		ofo_entry_unsettle_by_number( hub, id );
+		ofo_entry_unsettle_by_number( getter, id );
 	}
 
 	/* if entry was conciliated, then cleanup whole conciliation group */
@@ -3196,20 +3290,22 @@ hub_on_deleted_entry( ofaHub *hub, ofoEntry *entry )
 static void
 hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
 {
+	ofaIGetter *getter;
 	ofoDossier *dossier;
 	const GDate *new_begin, *new_end;
 
 	dossier = ofa_hub_get_dossier( hub );
+	getter = ofo_base_get_getter( OFO_BASE( dossier ));
 
 	new_begin = ofo_dossier_get_exe_begin( dossier );
-	check_for_changed_begin_exe_dates( hub, prev_begin, new_begin, TRUE );
+	check_for_changed_begin_exe_dates( getter, prev_begin, new_begin, TRUE );
 
 	new_end = ofo_dossier_get_exe_end( dossier );
-	check_for_changed_end_exe_dates( hub, prev_end, new_end, TRUE );
+	check_for_changed_end_exe_dates( getter, prev_end, new_end, TRUE );
 }
 
 static gint
-check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const GDate *new_begin, gboolean remediate )
+check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, const GDate *new_begin, gboolean remediate )
 {
 	gint count;
 	gchar *sprev, *snew, *where;
@@ -3231,7 +3327,7 @@ check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const G
 			/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
 			where = g_strdup_printf(
 					"ENT_DEFFECT<'%s' AND ENT_STATUS!=%u", snew, ENT_STATUS_DELETED );
-			count = remediate_status( hub, remediate, where, ENT_STATUS_PAST );
+			count = remediate_status( getter, remediate, where, ENT_STATUS_PAST );
 		}
 	} else if( !my_date_is_valid( new_begin )){
 		/* removing the beginning date of the exercice
@@ -3240,7 +3336,7 @@ check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const G
 		/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
 		where = g_strdup_printf(
 				"ENT_DEFFECT<'%s' AND ENT_STATUS!=%u", sprev, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
+		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
 
 	} else if( my_date_compare( prev_begin, new_begin ) < 0 ){
 		/* there may be entries which were considered in the exercice
@@ -3249,7 +3345,7 @@ check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const G
 		where = g_strdup_printf(
 				"ENT_DEFFECT>='%s' AND ENT_DEFFECT<'%s' AND ENT_STATUS!=%u",
 				sprev, snew, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_PAST );
+		count = remediate_status( getter, remediate, where, ENT_STATUS_PAST );
 
 	} else if( my_date_compare( prev_begin, new_begin ) > 0 ){
 		/* there may be entries which were considered in the past
@@ -3258,7 +3354,7 @@ check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const G
 		where = g_strdup_printf(
 				"ENT_DEFFECT<'%s' AND ENT_DEFFECT>='%s' AND ENT_STATUS!=%u",
 				sprev, snew, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
+		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
 	}
 
 	g_free( sprev );
@@ -3269,7 +3365,7 @@ check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const G
 }
 
 static gint
-check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate *new_end, gboolean remediate )
+check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, const GDate *new_end, gboolean remediate )
 {
 	gint count;
 	gchar *sprev, *snew, *where;
@@ -3291,7 +3387,7 @@ check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate
 			/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
 			where = g_strdup_printf(
 					"ENT_DEFFECT>'%s' AND ENT_STATUS!=%u", snew, ENT_STATUS_DELETED );
-			count = remediate_status( hub, remediate, where, ENT_STATUS_FUTURE );
+			count = remediate_status( getter, remediate, where, ENT_STATUS_FUTURE );
 		}
 	} else if( !my_date_is_valid( new_end )){
 		/* removing the ending date of the exercice
@@ -3300,7 +3396,7 @@ check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate
 		/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
 		where = g_strdup_printf(
 				"ENT_DEFFECT>'%s' AND ENT_STATUS!=%u", sprev, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
+		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
 
 	} else if( my_date_compare( prev_end, new_end ) < 0 ){
 		/* there may be entries which were considered in the future
@@ -3309,7 +3405,7 @@ check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate
 		where = g_strdup_printf(
 				"ENT_DEFFECT>'%s' AND ENT_DEFFECT<='%s' AND ENT_STATUS!=%u",
 				sprev, snew, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
+		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
 
 	} else if( my_date_compare( prev_end, new_end ) > 0 ){
 		/* there may be entries which were considered in the exercice
@@ -3318,14 +3414,14 @@ check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate
 		where = g_strdup_printf(
 				"ENT_DEFFECT<='%s' AND ENT_DEFFECT>'%s' AND ENT_STATUS!=%u",
 				sprev, snew, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_FUTURE );
+		count = remediate_status( getter, remediate, where, ENT_STATUS_FUTURE );
 	}
 
 	return( count );
 }
 
 static gint
-remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryStatus new_status )
+remediate_status( ofaIGetter *getter, gboolean remediate, const gchar *where, ofaEntryStatus new_status )
 {
 	static const gchar *thisfn = "ofo_entry_remediate_status";
 	gint count;
@@ -3334,10 +3430,12 @@ remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryS
 	ofaEntryStatus prev_status;
 	ofoLedger *ledger;
 	const GDate *last_close, *deffect;
+	ofaHub *hub;
 
 	count = 0;
-	dataset = entry_load_dataset( hub, where, NULL );
+	dataset = entry_load_dataset( getter, where, NULL );
 	count = g_list_length( dataset );
+	hub = ofa_igetter_get_hub( getter );
 
 	if( remediate ){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_STATUS_COUNT, new_status, count );
@@ -3349,7 +3447,7 @@ remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryS
 			/* new status actually depends of the last closing date of
 			 * the ledger of the entry */
 			if( prev_status == ENT_STATUS_PAST && new_status == ENT_STATUS_ROUGH ){
-				ledger = ofo_ledger_get_by_mnemo( hub, ofo_entry_get_ledger( entry ));
+				ledger = ofo_ledger_get_by_mnemo( getter, ofo_entry_get_ledger( entry ));
 				if( !ledger || !OFO_IS_LEDGER( ledger )){
 					g_warning( "%s: ledger %s no more exists", thisfn, ofo_entry_get_ledger( entry ));
 					return( -1 );
@@ -3378,10 +3476,12 @@ hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 {
 	static const gchar *thisfn = "ofo_entry_hub_on_entry_status_change";
 	gchar *query;
+	ofaIGetter *getter;
 
 	g_debug( "%s: hub=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
 			thisfn, ( void * ) hub, ( void * ) entry, prev_status, new_status, ( void * ) empty );
 
+	getter = ofo_base_get_getter( OFO_BASE( entry ));
 	entry_set_status( entry, new_status );
 
 	query = g_strdup_printf(
@@ -3389,7 +3489,7 @@ hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 						new_status,
 						ofo_entry_get_number( entry ));
 
-	ofo_ledger_get_dataset( hub );
+	ofo_ledger_get_dataset( getter );
 
 	if( ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, entry, NULL );

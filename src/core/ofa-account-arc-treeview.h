@@ -35,7 +35,7 @@
  * The class does not manage the selection.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 #include "api/ofo-account-def.h"
 
@@ -62,7 +62,7 @@ typedef struct {
 
 GType                  ofa_account_arc_treeview_get_type( void ) G_GNUC_CONST;
 
-ofaAccountArcTreeview *ofa_account_arc_treeview_new     ( ofaHub *hub,
+ofaAccountArcTreeview *ofa_account_arc_treeview_new     ( ofaIGetter *getter,
 																ofoAccount *account );
 
 G_END_DECLS

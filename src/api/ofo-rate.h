@@ -35,7 +35,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-rate-def.h"
 
@@ -77,12 +77,12 @@ typedef struct {
 
 GType           ofo_rate_get_type          ( void ) G_GNUC_CONST;
 
-GList          *ofo_rate_get_dataset       ( ofaHub *hub );
+GList          *ofo_rate_get_dataset       ( ofaIGetter *getter );
 #define         ofo_rate_free_dataset( L ) g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-ofoRate        *ofo_rate_get_by_mnemo      ( ofaHub *hub, const gchar *mnemo );
+ofoRate        *ofo_rate_get_by_mnemo      ( ofaIGetter *getter, const gchar *mnemo );
 
-ofoRate        *ofo_rate_new               ( void );
+ofoRate        *ofo_rate_new               ( ofaIGetter *getter );
 
 const gchar    *ofo_rate_get_mnemo         ( const ofoRate *rate );
 const gchar    *ofo_rate_get_label         ( const ofoRate *rate );
@@ -107,7 +107,7 @@ void            ofo_rate_set_notes         ( ofoRate *rate, const gchar *notes )
 void            ofo_rate_free_all_val      ( ofoRate *rate );
 void            ofo_rate_add_val           ( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
 
-gboolean        ofo_rate_insert            ( ofoRate *rate, ofaHub *hub );
+gboolean        ofo_rate_insert            ( ofoRate *rate );
 gboolean        ofo_rate_update            ( ofoRate *rate, const gchar *prev_mnemo );
 gboolean        ofo_rate_delete            ( ofoRate *rate );
 

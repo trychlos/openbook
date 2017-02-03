@@ -57,7 +57,7 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub             *hub;
+	ofaIGetter         *getter;
 	gboolean            is_writable;
 	gchar              *settings_prefix;
 
@@ -186,14 +186,18 @@ action_page_v_setup_view( ofaActionPage *page )
 	static const gchar *thisfn = "ofa_tva_form_page_v_setup_view";
 	ofaTVAFormPagePrivate *priv;
 	GtkWidget *widget;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_tva_form_page_get_instance_private( OFA_TVA_FORM_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	widget = setup_treeview( OFA_TVA_FORM_PAGE( page ));
 
@@ -210,7 +214,7 @@ setup_treeview( ofaTVAFormPage *self )
 
 	priv = ofa_tva_form_page_get_instance_private( self );
 
-	priv->tview = ofa_tva_form_treeview_new( priv->hub );
+	priv->tview = ofa_tva_form_treeview_new( priv->getter );
 	ofa_tva_form_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_tva_form_treeview_setup_columns( priv->tview );
 
@@ -380,12 +384,15 @@ on_delete_key( ofaTVAFormTreeview *view, ofoTVAForm *form, ofaTVAFormPage *self 
 static void
 action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPage *self )
 {
+	ofaTVAFormPagePrivate *priv;
 	ofoTVAForm *form;
 	GtkWindow *toplevel;
 
-	form = ofo_tva_form_new();
+	priv = ofa_tva_form_page_get_instance_private( self );
+
+	form = ofo_tva_form_new( priv->getter );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_tva_form_properties_run( OFA_IGETTER( self ), toplevel, form );
+	ofa_tva_form_properties_run( priv->getter, toplevel, form );
 }
 
 static void
@@ -401,7 +408,7 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPa
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_tva_form_properties_run( OFA_IGETTER( self ), toplevel, form );
+	ofa_tva_form_properties_run( priv->getter, toplevel, form );
 }
 
 static void

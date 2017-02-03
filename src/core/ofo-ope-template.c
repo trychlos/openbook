@@ -40,6 +40,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofa-stream-format.h"
@@ -203,7 +204,7 @@ static GList          *icollectionable_load_collection( void *user_data );
 static void            iexportable_iface_init( ofaIExportableInterface *iface );
 static guint           iexportable_get_interface_version( void );
 static gchar          *iexportable_get_label( const ofaIExportable *instance );
-static gboolean        iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gboolean        iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static gchar          *update_decimal_sep( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, void *empty );
 static void            iimportable_iface_init( ofaIImportableInterface *iface );
 static guint           iimportable_get_interface_version( void );
@@ -312,7 +313,7 @@ ofo_ope_template_class_init( ofoOpeTemplateClass *klass )
 
 /**
  * ofo_ope_template_get_dataset:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the full #ofoOpeTemplate dataset.
  *
@@ -320,16 +321,20 @@ ofo_ope_template_class_init( ofoOpeTemplateClass *klass )
  * be released by the caller.
  */
 GList *
-ofo_ope_template_get_dataset( ofaHub *hub )
+ofo_ope_template_get_dataset( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	myICollector *collector;
 
-	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE, hub ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_OPE_TEMPLATE, getter ));
 }
 
 /**
  * ofo_ope_template_get_orphans:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of template children identifiers which no more
  * have a parent.
@@ -338,12 +343,15 @@ ofo_ope_template_get_dataset( ofaHub *hub )
  * the caller.
  */
 GList *
-ofo_ope_template_get_orphans( ofaHub *hub )
+ofo_ope_template_get_orphans( ofaIGetter *getter )
 {
 	GList *orphans;
 	GSList *result, *irow, *icol;
+	ofaHub *hub;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	hub = ofa_igetter_get_hub( getter );
 
 	if( !ofa_idbconnect_query_ex(
 			ofa_hub_get_connect( hub ),
@@ -364,6 +372,7 @@ ofo_ope_template_get_orphans( ofaHub *hub )
 
 /**
  * ofo_ope_template_get_by_mnemo:
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the searched model, or %NULL.
  *
@@ -371,16 +380,16 @@ ofo_ope_template_get_orphans( ofaHub *hub )
  * not be unreffed by the caller.
  */
 ofoOpeTemplate *
-ofo_ope_template_get_by_mnemo( ofaHub *hub, const gchar *mnemo )
+ofo_ope_template_get_by_mnemo( ofaIGetter *getter, const gchar *mnemo )
 {
 	GList *dataset;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( mnemo ), NULL );
 
 	/*g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );*/
 
-	dataset = ofo_ope_template_get_dataset( hub );
+	dataset = ofo_ope_template_get_dataset( getter );
 
 	return( model_find_by_mnemo( dataset, mnemo ));
 }
@@ -401,13 +410,16 @@ model_find_by_mnemo( GList *set, const gchar *mnemo )
 
 /**
  * ofo_ope_template_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoOpeTemplate *
-ofo_ope_template_new( void )
+ofo_ope_template_new( ofaIGetter *getter )
 {
 	ofoOpeTemplate *model;
 
-	model = g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	model = g_object_new( OFO_TYPE_OPE_TEMPLATE, "ofo-base-getter", getter, NULL );
 	OFO_BASE( model )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( model );
@@ -424,13 +436,15 @@ ofoOpeTemplate *
 ofo_ope_template_new_from_template( ofoOpeTemplate *model )
 {
 	ofoOpeTemplate *dest;
+	ofaIGetter *getter;
 	gint count, i;
 	gchar *new_mnemo, *new_label;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
 	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
 
-	dest = ofo_ope_template_new();
+	getter = ofo_base_get_getter( OFO_BASE( model ));
+	dest = ofo_ope_template_new( getter );
 
 	new_mnemo = get_mnemo_new_from( model );
 	ofo_ope_template_set_mnemo( dest, new_mnemo );
@@ -479,7 +493,7 @@ ofo_ope_template_get_mnemo( const ofoOpeTemplate *model )
 static gchar *
 get_mnemo_new_from( const ofoOpeTemplate *model )
 {
-	ofaHub *hub;
+	ofaIGetter *getter;
 	const gchar *mnemo;
 	gint len_mnemo;
 	gchar *str;
@@ -489,7 +503,7 @@ get_mnemo_new_from( const ofoOpeTemplate *model )
 	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
 
 	str = NULL;
-	hub = ofo_base_get_hub( OFO_BASE( model ));
+	getter = ofo_base_get_getter( OFO_BASE( model ));
 	mnemo = ofo_ope_template_get_mnemo( model );
 	len_mnemo = my_strlen( mnemo );
 	for( i=2 ; ; ++i ){
@@ -502,7 +516,7 @@ get_mnemo_new_from( const ofoOpeTemplate *model )
 		} else {
 			str = g_strdup_printf( "%s%d", mnemo, i );
 		}
-		if( !ofo_ope_template_get_by_mnemo( hub, str )){
+		if( !ofo_ope_template_get_by_mnemo( getter, str )){
 			break;
 		}
 		g_free( str );
@@ -619,6 +633,7 @@ gboolean
 ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 {
 	static const gchar *thisfn = "ofo_ope_template_is_deletable";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean deletable;
 
@@ -626,7 +641,8 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
 	deletable = TRUE;
-	hub = ofo_base_get_hub( OFO_BASE( model ));
+	getter = ofo_base_get_getter( OFO_BASE( model ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( hub ){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, model, &deletable );
@@ -1094,24 +1110,25 @@ ofo_ope_template_update_account( ofoOpeTemplate *model, const gchar *prev_id, co
  * so it is not needed to check the date of closing
  */
 gboolean
-ofo_ope_template_insert( ofoOpeTemplate *ope_template, ofaHub *hub )
+ofo_ope_template_insert( ofoOpeTemplate *ope_template )
 {
 	static const gchar *thisfn = "ofo_ope_template_insert";
 	gboolean ok;
+	ofaIGetter *getter;
+	ofaHub *hub;
 
-	g_debug( "%s: ope_template=%p, hub=%p",
-			thisfn, ( void * ) ope_template, ( void * ) hub );
+	g_debug( "%s: ope_template=%p", thisfn, ( void * ) ope_template );
 
 	g_return_val_if_fail( ope_template && OFO_IS_OPE_TEMPLATE( ope_template ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( ope_template )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( ope_template ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( model_do_insert( ope_template, ofa_hub_get_connect( hub ))){
-		ofo_base_set_hub( OFO_BASE( ope_template ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( ope_template ), NULL, hub );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( ope_template ), NULL, getter );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, ope_template );
 		ok = TRUE;
 	}
@@ -1316,6 +1333,7 @@ gboolean
 ofo_ope_template_update( ofoOpeTemplate *ope_template, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_ope_template_update";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1327,7 +1345,8 @@ ofo_ope_template_update( ofoOpeTemplate *ope_template, const gchar *prev_mnemo )
 	g_return_val_if_fail( !OFO_BASE( ope_template )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( ope_template ));
+	getter = ofo_base_get_getter( OFO_BASE( ope_template ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( model_do_update( ope_template, ofa_hub_get_connect( hub ), prev_mnemo )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, ope_template, prev_mnemo );
@@ -1414,6 +1433,7 @@ gboolean
 ofo_ope_template_delete( ofoOpeTemplate *ope_template )
 {
 	static const gchar *thisfn = "ofo_ope_template_delete";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1424,11 +1444,12 @@ ofo_ope_template_delete( ofoOpeTemplate *ope_template )
 	g_return_val_if_fail( !OFO_BASE( ope_template )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( ope_template ));
+	getter = ofo_base_get_getter( OFO_BASE( ope_template ));
+	hub = ofa_igetter_get_hub( getter );
 
 	if( model_do_delete( ope_template, ofa_hub_get_connect( hub ))){
 		g_object_ref( ope_template );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( ope_template ));
+		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( ope_template ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, ope_template );
 		g_object_unref( ope_template );
 		ok = TRUE;
@@ -1490,14 +1511,17 @@ icollectionable_load_collection( void *user_data )
 	GList *dataset, *it;
 	ofoOpeTemplate *template;
 	gchar *from;
+	ofaHub *hub;
 
-	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_OPE_TEMPLATES",
 					OFO_TYPE_OPE_TEMPLATE,
-					OFA_HUB( user_data ));
+					OFA_IGETTER( user_data ));
+
+	hub = ofa_igetter_get_hub( OFA_IGETTER( user_data ));
 
 	for( it=dataset ; it ; it=it->next ){
 		template = OFO_OPE_TEMPLATE( it->data );
@@ -1506,7 +1530,7 @@ icollectionable_load_collection( void *user_data )
 				"OFA_T_OPE_TEMPLATES_DET WHERE OTE_MNEMO='%s'",
 				ofo_ope_template_get_mnemo( template ));
 		priv->details =
-				ofo_base_load_rows( st_detail_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );
+				ofo_base_load_rows( st_detail_defs, ofa_hub_get_connect( hub ), from );
 		g_free( from );
 	}
 
@@ -1548,7 +1572,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *dataset, *it, *det;
@@ -1558,7 +1582,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHu
 	gchar field_sep;
 	gulong count;
 
-	dataset = ofo_ope_template_get_dataset( hub );
+	dataset = ofo_ope_template_get_dataset( getter );
 
 	with_headers = ofa_stream_format_get_with_headers( settings );
 	field_sep = ofa_stream_format_get_field_sep( settings );
@@ -1715,21 +1739,23 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 {
 	GList *dataset;
 	gchar *bck_table, *bck_det_table;
+	ofaHub *hub;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+	hub = ofa_igetter_get_hub( parms->getter );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "OFA_T_OPE_TEMPLATES" );
-		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "OFA_T_OPE_TEMPLATES_DET" );
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_OPE_TEMPLATES" );
+		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_OPE_TEMPLATES_DET" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_OPE_TEMPLATE );
-			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_OPE_TEMPLATE );
+			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_OPE_TEMPLATE );
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_OPE_TEMPLATE );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "OFA_T_OPE_TEMPLATES" );
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_det_table, "OFA_T_OPE_TEMPLATES_DET" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_OPE_TEMPLATES" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_det_table, "OFA_T_OPE_TEMPLATES_DET" );
 		}
 
 		g_free( bck_table );
@@ -1823,7 +1849,7 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	ofoOpeTemplate *model;
 	gboolean locked;
 
-	model = ofo_ope_template_new();
+	model = ofo_ope_template_new( parms->getter );
 
 	/* model mnemo */
 	itf = fields ? fields->next : NULL;
@@ -1969,6 +1995,7 @@ static void
 iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
 {
 	GList *it;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	const gchar *mnemo;
 	gboolean insert;
@@ -1977,7 +2004,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	ofoOpeTemplate *model;
 
 	total = g_list_length( dataset );
-	connect = ofa_hub_get_connect( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && total > 0 ){

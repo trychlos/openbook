@@ -31,7 +31,7 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 
 #include "importers/ofa-importer-pdf.h"
 
@@ -120,7 +120,7 @@ ofa_importer_pdf_class_init( ofaImporterPdfClass *klass )
 /**
  * ofa_importer_pdf_is_willing_to:
  * @instance: a #ofaImporterPdf instance.
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @uri: the uri to the filename to be imported.
  * @accepted_contents: the #GList of the accepted mimetypes.
  *
@@ -128,7 +128,7 @@ ofa_importer_pdf_class_init( ofaImporterPdfClass *klass )
  * @accepted_contents.
  */
 gboolean
-ofa_importer_pdf_is_willing_to( ofaImporterPdf *instance, ofaHub *hub, const gchar *uri, const GList *accepted_contents )
+ofa_importer_pdf_is_willing_to( ofaImporterPdf *instance, ofaIGetter *getter, const gchar *uri, const GList *accepted_contents )
 {
 	ofaImporterPdfPrivate *priv;
 	gchar *filename, *content;

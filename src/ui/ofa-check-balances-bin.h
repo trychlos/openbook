@@ -47,7 +47,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -75,10 +75,10 @@ GType                ofa_check_balances_bin_get_type   ( void ) G_GNUC_CONST;
 ofaCheckBalancesBin *ofa_check_balances_bin_new        ( void );
 
 void                 ofa_check_balances_bin_set_display( ofaCheckBalancesBin *bin,
-															gboolean display );
+																gboolean display );
 
-void                 ofa_check_balances_bin_set_hub    ( ofaCheckBalancesBin *bin,
-															ofaHub *hub );
+void                 ofa_check_balances_bin_set_getter  ( ofaCheckBalancesBin *bin,
+																ofaIGetter *getter );
 
 gboolean             ofa_check_balances_bin_get_status ( ofaCheckBalancesBin *bin );
 

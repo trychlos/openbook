@@ -30,8 +30,8 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-icontext.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
@@ -42,11 +42,11 @@
 /* private instance data
  */
 typedef struct {
-	gboolean  dispose_has_run;
+	gboolean    dispose_has_run;
 
-	/* runtime
+	/* initialization
 	 */
-	ofaHub   *hub;
+	ofaIGetter *getter;
 }
 	ofaRecPeriodTreeviewPrivate;
 
@@ -220,7 +220,7 @@ ofa_rec_period_treeview_class_init( ofaRecPeriodTreeviewClass *klass )
 
 /**
  * ofa_rec_period_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new empty #ofaRecPeriodTreeview composite object.
  *
@@ -229,21 +229,21 @@ ofa_rec_period_treeview_class_init( ofaRecPeriodTreeviewClass *klass )
  * later should not be updated when new operations are inserted.
  */
 ofaRecPeriodTreeview *
-ofa_rec_period_treeview_new( ofaHub *hub )
+ofa_rec_period_treeview_new( ofaIGetter *getter )
 {
 	ofaRecPeriodTreeview *view;
 	ofaRecPeriodTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_REC_PERIOD_TREEVIEW,
-					"ofa-tvbin-hub",    hub,
+					"ofa-tvbin-getter", getter,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 
 	priv = ofa_rec_period_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoRecPeriod object instead of just the raw GtkTreeSelection

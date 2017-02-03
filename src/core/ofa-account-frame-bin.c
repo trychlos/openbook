@@ -363,7 +363,7 @@ setup_getter( ofaAccountFrameBin *self, ofaIGetter *getter )
 	hub_connect_to_signaling_system( self );
 
 	/* then initialize the store */
-	priv->store = ofa_account_store_new( priv->hub );
+	priv->store = ofa_account_store_new( priv->getter );
 	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
 	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 }
@@ -474,7 +474,7 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
-	view = ofa_account_treeview_new( priv->hub, class_num );
+	view = ofa_account_treeview_new( priv->getter, class_num );
 	ofa_account_treeview_set_settings_key( view, priv->settings_key );
 	ofa_account_treeview_setup_columns( view );
 	ofa_istore_add_columns( OFA_ISTORE( priv->store ), OFA_TVBIN( view ));
@@ -487,7 +487,7 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 	g_signal_connect( view, "ofa-insert", G_CALLBACK( tview_on_key_insert ), self );
 
 	/* add the page to the notebook */
-	class_obj = ofo_class_get_by_number( priv->hub, class_num );
+	class_obj = ofo_class_get_by_number( priv->getter, class_num );
 	if( class_obj && OFO_IS_CLASS( class_obj )){
 		class_label = ofo_class_get_label( class_obj );
 	} else {
@@ -1088,7 +1088,7 @@ do_insert_account( ofaAccountFrameBin *self )
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
-	account_obj = ofo_account_new();
+	account_obj = ofo_account_new( priv->getter );
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
@@ -1152,7 +1152,7 @@ delete_confirmed( ofaAccountFrameBin *self, ofoAccount *account )
 
 	if( ofo_account_is_root( account )){
 		if( ofo_account_has_children( account ) &&
-				ofa_prefs_account_delete_root_with_children( priv->hub )){
+				ofa_prefs_account_delete_root_with_children( priv->getter )){
 			msg = g_strdup_printf( _(
 					"You are about to delete the %s - %s account.\n"
 					"This is a root account which has children.\n"

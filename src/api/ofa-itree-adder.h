@@ -45,7 +45,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-istore.h"
 #include "api/ofa-tvbin.h"
 
@@ -126,7 +126,7 @@ typedef struct {
 	 * set_values:
 	 * @instance: the #ofaITreeAdder instance.
 	 * @store: the target #ofaIStore.
-	 * @hub: the #ofaHub object of the application.
+	 * @getter: a #ofaIGetter instance.
 	 * @iter: the current #GtkTreeIter.
 	 * @object: the current #GObject.
 	 *
@@ -136,7 +136,7 @@ typedef struct {
 	 */
 	void     ( *set_values )           ( ofaITreeAdder *instance,
 											ofaIStore *store,
-											ofaHub *hub,
+											ofaIGetter *getter,
 											GtkTreeIter *iter,
 											void *object );
 
@@ -144,7 +144,7 @@ typedef struct {
 	 * sort:
 	 * @instance: the #ofaITreeAdder instance.
 	 * @store: the target #ofaIStore.
-	 * @hub: the #ofaHub object of the application.
+	 * @getter: a #ofaIGetter instance.
 	 * @a: a row to be compared.
 	 * @b: another row to compare to @a.
 	 * @column_id: the index of the column to be compared.
@@ -156,7 +156,7 @@ typedef struct {
 	 */
 	gboolean ( *sort )                 ( ofaITreeAdder *instance,
 											ofaIStore *store,
-											ofaHub *hub,
+											ofaIGetter *getter,
 											GtkTreeModel *model,
 											GtkTreeIter *a,
 											GtkTreeIter *b,
@@ -194,18 +194,18 @@ guint            ofa_itree_adder_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
-GType           *ofa_itree_adder_get_column_types          ( ofaHub *hub,
+GType           *ofa_itree_adder_get_column_types          ( ofaIGetter *getter,
 																	ofaIStore *store,
 																	guint orig_cols_count,
 																	GType *orig_col_types,
 																	guint *cols_count );
 
-void             ofa_itree_adder_set_values                ( ofaHub *hub,
+void             ofa_itree_adder_set_values                ( ofaIGetter *getter,
 																	ofaIStore *store,
 																	GtkTreeIter *iter,
 																	void *object );
 
-gboolean         ofa_itree_adder_sort                      ( ofaHub *hub,
+gboolean         ofa_itree_adder_sort                      ( ofaIGetter *getter,
 																	ofaIStore *store,
 																	GtkTreeModel *model,
 																	GtkTreeIter *a,
@@ -213,7 +213,7 @@ gboolean         ofa_itree_adder_sort                      ( ofaHub *hub,
 																	gint column_id,
 																	gint *cmp );
 
-void             ofa_itree_adder_add_columns               ( ofaHub *hub,
+void             ofa_itree_adder_add_columns               ( ofaIGetter *getter,
 																	ofaIStore *store,
 																	ofaTVBin *bin );
 

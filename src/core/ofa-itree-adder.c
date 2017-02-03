@@ -29,7 +29,7 @@
 #include <string.h>
 
 #include "api/ofa-extender-collection.h"
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itree-adder.h"
 
 #define ITREE_ADDER_LAST_VERSION          1
@@ -41,8 +41,8 @@ static void     interface_base_init( ofaITreeAdderInterface *klass );
 static void     interface_base_finalize( ofaITreeAdderInterface *klass );
 static GType   *add_column_types( guint orig_cols_count, GType *orig_col_types, guint add_cols, GType *add_types );
 static GType   *itree_adder_get_column_types( ofaITreeAdder *instance, ofaIStore *store, guint cols_count, guint *add_cols );
-static void     itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, void *object );
-static gboolean itree_adder_sort( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, gint *cmp );
+static void     itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaIGetter *getter, GtkTreeIter *iter, void *object );
+static gboolean itree_adder_sort( ofaITreeAdder *instance, ofaIStore *store, ofaIGetter *getter, GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, gint *cmp );
 static void     itree_adder_add_columns( ofaITreeAdder *instance, ofaIStore *store, ofaTVBin *bin );
 
 /**
@@ -171,7 +171,7 @@ ofa_itree_adder_get_interface_version( GType type )
 
 /**
  * ofa_itree_adder_get_column_types:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @store: the target #ofaIStore.
  * @orig_cols_count: the original count of columns in the @store.
  * @orig_col_types: the original array of defined GType's.
@@ -185,7 +185,7 @@ ofa_itree_adder_get_interface_version( GType type )
  * The returned array should be g_free() by the caller.
  */
 GType *
-ofa_itree_adder_get_column_types( ofaHub *hub, ofaIStore *store,
+ofa_itree_adder_get_column_types( ofaIGetter *getter, ofaIStore *store,
 			guint orig_cols_count, GType *orig_col_types, guint *cols_count )
 {
 	ofaExtenderCollection *collection;
@@ -193,11 +193,11 @@ ofa_itree_adder_get_column_types( ofaHub *hub, ofaIStore *store,
 	GType *col_types, *add_types, *temp_types;
 	guint add_cols;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( store && OFA_IS_ISTORE( store ), NULL );
 	g_return_val_if_fail( cols_count, NULL );
 
-	collection = ofa_hub_get_extender_collection( hub );
+	collection = ofa_igetter_get_extender_collection( getter );
 	modules = ofa_extender_collection_get_for_type( collection, OFA_TYPE_ITREE_ADDER );
 	col_types = add_column_types( 0, NULL, orig_cols_count, orig_col_types );
 	*cols_count = orig_cols_count;
@@ -251,7 +251,7 @@ itree_adder_get_column_types( ofaITreeAdder *instance, ofaIStore *store, guint c
 
 /**
  * ofa_itree_adder_set_values:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @store: the target #ofaIStore.
  * @iter: the current #GtkTreeIter.
  * @object: the current object.
@@ -259,29 +259,29 @@ itree_adder_get_column_types( ofaITreeAdder *instance, ofaIStore *store, guint c
  * Let an implementation set its values in the current row.
  */
 void
-ofa_itree_adder_set_values( ofaHub *hub, ofaIStore *store, GtkTreeIter *iter, void *object )
+ofa_itree_adder_set_values( ofaIGetter *getter, ofaIStore *store, GtkTreeIter *iter, void *object )
 {
 	ofaExtenderCollection *collection;
 	GList *modules, *it;
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( store && OFA_IS_ISTORE( store ));
 
-	collection = ofa_hub_get_extender_collection( hub );
+	collection = ofa_igetter_get_extender_collection( getter );
 	modules = ofa_extender_collection_get_for_type( collection, OFA_TYPE_ITREE_ADDER );
 	for( it=modules ; it ; it=it->next ){
-		itree_adder_set_values( OFA_ITREE_ADDER( it->data ), store, hub, iter, object );
+		itree_adder_set_values( OFA_ITREE_ADDER( it->data ), store, getter, iter, object );
 	}
 	ofa_extender_collection_free_types( modules );
 }
 
 static void
-itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, void *object )
+itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaIGetter *getter, GtkTreeIter *iter, void *object )
 {
 	static const gchar *thisfn = "ofa_itree_adder_set_values";
 
 	if( OFA_ITREE_ADDER_GET_INTERFACE( instance )->set_values ){
-		OFA_ITREE_ADDER_GET_INTERFACE( instance )->set_values( instance, store, hub, iter, object );
+		OFA_ITREE_ADDER_GET_INTERFACE( instance )->set_values( instance, store, getter, iter, object );
 		return;
 	}
 
@@ -291,7 +291,7 @@ itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, 
 
 /**
  * ofa_itree_adder_sort:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @store: the target #ofaIStore.
  * @model: a #GtkTreeModel model.
  * @a: a row to be compared.
@@ -302,19 +302,19 @@ itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, 
  * Returns: %TRUE if the column is managed here, %FALSE else.
  */
 gboolean
-ofa_itree_adder_sort( ofaHub *hub, ofaIStore *store, GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, gint *cmp )
+ofa_itree_adder_sort( ofaIGetter *getter, ofaIStore *store, GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, gint *cmp )
 {
 	ofaExtenderCollection *collection;
 	GList *modules, *it;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( store && OFA_IS_ISTORE( store ), FALSE );
 	g_return_val_if_fail( cmp, FALSE );
 
-	collection = ofa_hub_get_extender_collection( hub );
+	collection = ofa_igetter_get_extender_collection( getter );
 	modules = ofa_extender_collection_get_for_type( collection, OFA_TYPE_ITREE_ADDER );
 	for( it=modules ; it ; it=it->next ){
-		if( itree_adder_sort( OFA_ITREE_ADDER( it->data ), store, hub, model, a, b, column_id, cmp )){
+		if( itree_adder_sort( OFA_ITREE_ADDER( it->data ), store, getter, model, a, b, column_id, cmp )){
 			return( TRUE );
 		}
 	}
@@ -324,12 +324,12 @@ ofa_itree_adder_sort( ofaHub *hub, ofaIStore *store, GtkTreeModel *model, GtkTre
 }
 
 static gboolean
-itree_adder_sort( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, gint *cmp )
+itree_adder_sort( ofaITreeAdder *instance, ofaIStore *store, ofaIGetter *getter, GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, gint *cmp )
 {
 	static const gchar *thisfn = "ofa_itree_adder_set_values";
 
 	if( OFA_ITREE_ADDER_GET_INTERFACE( instance )->sort ){
-		return( OFA_ITREE_ADDER_GET_INTERFACE( instance )->sort( instance, store, hub, model, a, b, column_id, cmp ));
+		return( OFA_ITREE_ADDER_GET_INTERFACE( instance )->sort( instance, store, getter, model, a, b, column_id, cmp ));
 	}
 
 	g_info( "%s: ofaITreeAdder's %s implementation does not provide 'set_values()' method",
@@ -339,23 +339,23 @@ itree_adder_sort( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTre
 
 /**
  * ofa_itree_adder_add_columns:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @store: the source #ofaIStore.
  * @bin: the #ofaTVBin which manages the #GtkTreeView treeview.
  *
  * Let an implementation add its columns to a treeview.
  */
 void
-ofa_itree_adder_add_columns( ofaHub *hub, ofaIStore *store, ofaTVBin *bin )
+ofa_itree_adder_add_columns( ofaIGetter *getter, ofaIStore *store, ofaTVBin *bin )
 {
 	ofaExtenderCollection *collection;
 	GList *modules, *it;
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( store && OFA_IS_ISTORE( store ));
 	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
 
-	collection = ofa_hub_get_extender_collection( hub );
+	collection = ofa_igetter_get_extender_collection( getter );
 	modules = ofa_extender_collection_get_for_type( collection, OFA_TYPE_ITREE_ADDER );
 	for( it=modules ; it ; it=it->next ){
 		itree_adder_add_columns( OFA_ITREE_ADDER( it->data ), store, bin );

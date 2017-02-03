@@ -35,7 +35,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-currency-def.h"
 
@@ -65,12 +65,12 @@ typedef struct {
 
 GType           ofo_currency_get_type          ( void ) G_GNUC_CONST;
 
-GList          *ofo_currency_get_dataset       ( ofaHub *hub );
+GList          *ofo_currency_get_dataset       ( ofaIGetter *getter );
 #define         ofo_currency_free_dataset( L ) g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-ofoCurrency    *ofo_currency_get_by_code       ( ofaHub *hub, const gchar *code );
+ofoCurrency    *ofo_currency_get_by_code       ( ofaIGetter *getter, const gchar *code );
 
-ofoCurrency    *ofo_currency_new               ( void );
+ofoCurrency    *ofo_currency_new               ( ofaIGetter *getter );
 
 const gchar    *ofo_currency_get_code          ( const ofoCurrency *currency );
 const gchar    *ofo_currency_get_label         ( const ofoCurrency *currency );
@@ -90,7 +90,7 @@ void            ofo_currency_set_symbol        ( ofoCurrency *currency, const gc
 void            ofo_currency_set_digits        ( ofoCurrency *currency, gint digits );
 void            ofo_currency_set_notes         ( ofoCurrency *currency, const gchar *notes );
 
-gboolean        ofo_currency_insert            ( ofoCurrency *currency, ofaHub *hub );
+gboolean        ofo_currency_insert            ( ofoCurrency *currency );
 gboolean        ofo_currency_update            ( ofoCurrency *currency, const gchar *prev_code );
 gboolean        ofo_currency_delete            ( ofoCurrency *currency );
 

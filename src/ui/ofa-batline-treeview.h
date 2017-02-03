@@ -44,7 +44,7 @@
  *    +------------------+--------------+
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 #include "api/ofo-bat-def.h"
 
@@ -107,7 +107,7 @@ enum {
 
 GType               ofa_batline_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaBatlineTreeview *ofa_batline_treeview_new             ( ofaHub *hub );
+ofaBatlineTreeview *ofa_batline_treeview_new             ( ofaIGetter *getter );
 
 void                ofa_batline_treeview_set_settings_key( ofaBatlineTreeview *view,
 																const gchar *key );

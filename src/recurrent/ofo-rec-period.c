@@ -40,6 +40,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofa-stream-format.h"
@@ -170,15 +171,15 @@ static ofoRecPeriod *period_find_by_id( GList *set, const gchar *id );
 static void          rec_period_set_upd_user( ofoRecPeriod *period, const gchar *upd_user );
 static void          rec_period_set_upd_stamp( ofoRecPeriod *period, const GTimeVal *upd_stamp );
 static void          rec_period_detail_set_id( ofoRecPeriod *period, gint i, ofxCounter id );
-static gboolean      rec_period_do_insert( ofoRecPeriod *period, ofaHub *hub );
-static gboolean      rec_period_insert_main( ofoRecPeriod *period, ofaHub *hub );
-static gboolean      rec_period_do_update( ofoRecPeriod *period, ofaHub *hub );
-static gboolean      rec_period_update_main( ofoRecPeriod *period, ofaHub *hub );
-static gboolean      rec_period_delete_details( ofoRecPeriod *period, ofaHub *hub );
-static gboolean      rec_period_insert_details_ex( ofoRecPeriod *period, ofaHub *hub );
-static gboolean      rec_period_insert_details( ofoRecPeriod *period, ofaHub *hub, guint i );
-static gboolean      rec_period_do_delete( ofoRecPeriod *period, ofaHub *hub );
-static gboolean      rec_period_delete_main( ofoRecPeriod *period, ofaHub *hub );
+static gboolean      rec_period_do_insert( ofoRecPeriod *period, ofaIGetter *getter );
+static gboolean      rec_period_insert_main( ofoRecPeriod *period, ofaIGetter *getter );
+static gboolean      rec_period_do_update( ofoRecPeriod *period, ofaIGetter *getter );
+static gboolean      rec_period_update_main( ofoRecPeriod *period, ofaIGetter *getter );
+static gboolean      rec_period_delete_details( ofoRecPeriod *period, ofaIGetter *getter );
+static gboolean      rec_period_insert_details_ex( ofoRecPeriod *period, ofaIGetter *getter );
+static gboolean      rec_period_insert_details( ofoRecPeriod *period, ofaIGetter *getter, guint i );
+static gboolean      rec_period_do_delete( ofoRecPeriod *period, ofaIGetter *getter );
+static gboolean      rec_period_delete_main( ofoRecPeriod *period, ofaIGetter *getter );
 static gint          period_cmp_by_id( ofoRecPeriod *a, const gchar *id );
 static void          icollectionable_iface_init( myICollectionableInterface *iface );
 static guint         icollectionable_get_interface_version( void );
@@ -186,7 +187,7 @@ static GList        *icollectionable_load_collection( void *user_data );
 static void          iexportable_iface_init( ofaIExportableInterface *iface );
 static guint         iexportable_get_interface_version( void );
 static gchar        *iexportable_get_label( const ofaIExportable *instance );
-static gboolean      iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gboolean      iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static void          iimportable_iface_init( ofaIImportableInterface *iface );
 static guint         iimportable_get_interface_version( void );
 static gchar        *iimportable_get_label( const ofaIImportable *instance );
@@ -282,7 +283,7 @@ ofo_rec_period_class_init( ofoRecPeriodClass *klass )
 
 /**
  * ofo_rec_period_get_dataset:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the full #ofoRecPeriod dataset.
  *
@@ -290,16 +291,20 @@ ofo_rec_period_class_init( ofoRecPeriodClass *klass )
  * be released by the caller.
  */
 GList *
-ofo_rec_period_get_dataset( ofaHub *hub )
+ofo_rec_period_get_dataset( ofaIGetter *getter )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	myICollector *collector;
 
-	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_REC_PERIOD, hub ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_REC_PERIOD, getter ));
 }
 
 /**
  * ofo_rec_period_get_by_id:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @code: the identifier of the period.
  *
  * Returns: the found periodicity, if exists, or %NULL.
@@ -308,13 +313,13 @@ ofo_rec_period_get_dataset( ofaHub *hub )
  * be released by the caller.
  */
 ofoRecPeriod *
-ofo_rec_period_get_by_id( ofaHub *hub, const gchar *id )
+ofo_rec_period_get_by_id( ofaIGetter *getter, const gchar *id )
 {
 	GList *dataset;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	dataset = ofo_rec_period_get_dataset( hub );
+	dataset = ofo_rec_period_get_dataset( getter );
 
 	return( period_find_by_id( dataset, id ));
 }
@@ -334,13 +339,16 @@ period_find_by_id( GList *set, const gchar *id )
 
 /**
  * ofo_rec_period_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofoRecPeriod *
-ofo_rec_period_new( void )
+ofo_rec_period_new( ofaIGetter *getter )
 {
 	ofoRecPeriod *period;
 
-	period = g_object_new( OFO_TYPE_REC_PERIOD, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	period = g_object_new( OFO_TYPE_REC_PERIOD, "ofo-base-getter", getter, NULL );
 	OFO_BASE( period )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( period );
@@ -619,6 +627,7 @@ ofo_rec_period_is_valid_data( const gchar *label, gchar **msgerr )
 gboolean
 ofo_rec_period_is_deletable( ofoRecPeriod *period )
 {
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean deletable;
 
@@ -626,9 +635,10 @@ ofo_rec_period_is_deletable( ofoRecPeriod *period )
 	g_return_val_if_fail( !OFO_BASE( period )->prot->dispose_has_run, FALSE );
 
 	deletable = TRUE;
-	hub = ofo_base_get_hub( OFO_BASE( period ));
+	getter = ofo_base_get_getter( OFO_BASE( period ));
+	hub = ofa_igetter_get_hub( getter );
 
-	if( hub && deletable ){
+	if( deletable ){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, period, &deletable );
 	}
 
@@ -836,24 +846,25 @@ rec_period_detail_set_id( ofoRecPeriod *period, gint idx, ofxCounter id )
  * @period:
  */
 gboolean
-ofo_rec_period_insert( ofoRecPeriod *period, ofaHub *hub )
+ofo_rec_period_insert( ofoRecPeriod *period )
 {
 	static const gchar *thisfn = "ofo_rec_period_insert";
 	gboolean ok;
+	ofaIGetter *getter;
+	ofaHub *hub;
 
-	g_debug( "%s: period=%p, hub=%p",
-			thisfn, ( void * ) period, ( void * ) hub );
+	g_debug( "%s: period=%p", thisfn, ( void * ) period );
 
 	g_return_val_if_fail( period && OFO_IS_REC_PERIOD( period ), FALSE );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( period )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( period ));
+	hub = ofa_igetter_get_hub( getter );
 
-	if( rec_period_do_insert( period, hub )){
-		ofo_base_set_hub( OFO_BASE( period ), hub );
+	if( rec_period_do_insert( period, getter )){
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( period ), NULL, hub );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( period ), NULL, getter );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, period );
 		ok = TRUE;
 	}
@@ -862,23 +873,25 @@ ofo_rec_period_insert( ofoRecPeriod *period, ofaHub *hub )
 }
 
 static gboolean
-rec_period_do_insert( ofoRecPeriod *period, ofaHub *hub )
+rec_period_do_insert( ofoRecPeriod *period, ofaIGetter *getter )
 {
-	return( rec_period_insert_main( period, hub ) &&
-			rec_period_delete_details( period, hub ) &&
-			rec_period_insert_details_ex( period, hub ));
+	return( rec_period_insert_main( period, getter ) &&
+			rec_period_delete_details( period, getter ) &&
+			rec_period_insert_details_ex( period, getter ));
 }
 
 static gboolean
-rec_period_insert_main( ofoRecPeriod *period, ofaHub *hub )
+rec_period_insert_main( ofoRecPeriod *period, ofaIGetter *getter )
 {
 	gboolean ok;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	GString *query;
 	gchar *sstamp, *notes;
 	GTimeVal stamp;
 	const gchar *userid;
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	userid = ofa_idbconnect_get_account( connect );
@@ -913,7 +926,7 @@ rec_period_insert_main( ofoRecPeriod *period, ofaHub *hub )
 }
 
 static gboolean
-rec_period_insert_details_ex( ofoRecPeriod *period, ofaHub *hub )
+rec_period_insert_details_ex( ofoRecPeriod *period, ofaIGetter *getter )
 {
 	gboolean ok;
 	guint count, i;
@@ -922,7 +935,7 @@ rec_period_insert_details_ex( ofoRecPeriod *period, ofaHub *hub )
 	count = ofo_rec_period_detail_get_count( period );
 
 	for( i=0 ; i<count ; ++i ){
-		if( !rec_period_insert_details( period, hub, i )){
+		if( !rec_period_insert_details( period, getter, i )){
 			ok = FALSE;
 			break;
 		}
@@ -932,18 +945,20 @@ rec_period_insert_details_ex( ofoRecPeriod *period, ofaHub *hub )
 }
 
 static gboolean
-rec_period_insert_details( ofoRecPeriod *period, ofaHub *hub, guint i )
+rec_period_insert_details( ofoRecPeriod *period, ofaIGetter *getter, guint i )
 {
 	gboolean ok;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	GString *query;
 	ofxCounter det_id;
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	det_id = ofo_rec_period_detail_get_id( period, i );
 	if( !det_id ){
-		det_id = ofo_recurrent_gen_get_next_per_det_id( hub );
+		det_id = ofo_recurrent_gen_get_next_per_det_id( getter );
 		rec_period_detail_set_id( period, i, det_id );
 	}
 
@@ -977,6 +992,7 @@ gboolean
 ofo_rec_period_update( ofoRecPeriod *period )
 {
 	static const gchar *thisfn = "ofo_rec_period_update";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -986,9 +1002,10 @@ ofo_rec_period_update( ofoRecPeriod *period )
 	g_return_val_if_fail( !OFO_BASE( period )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( period ));
+	getter = ofo_base_get_getter( OFO_BASE( period ));
+	hub = ofa_igetter_get_hub( getter );
 
-	if( rec_period_do_update( period, hub )){
+	if( rec_period_do_update( period, getter )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, period, NULL );
 		ok = TRUE;
 	}
@@ -997,23 +1014,25 @@ ofo_rec_period_update( ofoRecPeriod *period )
 }
 
 static gboolean
-rec_period_do_update( ofoRecPeriod *period, ofaHub *hub )
+rec_period_do_update( ofoRecPeriod *period, ofaIGetter *getter )
 {
-	return( rec_period_update_main( period, hub ) &&
-			rec_period_delete_details( period, hub ) &&
-			rec_period_insert_details_ex( period, hub ));
+	return( rec_period_update_main( period, getter ) &&
+			rec_period_delete_details( period, getter ) &&
+			rec_period_insert_details_ex( period, getter ));
 }
 
 static gboolean
-rec_period_update_main( ofoRecPeriod *period, ofaHub *hub )
+rec_period_update_main( ofoRecPeriod *period, ofaIGetter *getter )
 {
 	gboolean ok;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	GString *query;
 	gchar *sstamp, *notes;
 	GTimeVal stamp;
 	const gchar *userid;
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	userid = ofa_idbconnect_get_account( connect );
@@ -1060,6 +1079,7 @@ gboolean
 ofo_rec_period_delete( ofoRecPeriod *period )
 {
 	static const gchar *thisfn = "ofo_rec_period_delete";
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1070,11 +1090,12 @@ ofo_rec_period_delete( ofoRecPeriod *period )
 	g_return_val_if_fail( !OFO_BASE( period )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( period ));
+	getter = ofo_base_get_getter( OFO_BASE( period ));
+	hub = ofa_igetter_get_hub( getter );
 
-	if( rec_period_do_delete( period, hub )){
+	if( rec_period_do_delete( period, getter )){
 		g_object_ref( period );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( period ));
+		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( period ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, period );
 		g_object_unref( period );
 		ok = TRUE;
@@ -1084,19 +1105,21 @@ ofo_rec_period_delete( ofoRecPeriod *period )
 }
 
 static gboolean
-rec_period_do_delete( ofoRecPeriod *period, ofaHub *hub )
+rec_period_do_delete( ofoRecPeriod *period, ofaIGetter *getter )
 {
-	return( rec_period_delete_main( period, hub ) &&
-			rec_period_delete_details( period, hub ));
+	return( rec_period_delete_main( period, getter ) &&
+			rec_period_delete_details( period, getter ));
 }
 
 static gboolean
-rec_period_delete_main( ofoRecPeriod *period, ofaHub *hub )
+rec_period_delete_main( ofoRecPeriod *period, ofaIGetter *getter )
 {
 	gboolean ok;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gchar *query;
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	query = g_strdup_printf(
@@ -1111,12 +1134,14 @@ rec_period_delete_main( ofoRecPeriod *period, ofaHub *hub )
 }
 
 static gboolean
-rec_period_delete_details( ofoRecPeriod *period, ofaHub *hub )
+rec_period_delete_details( ofoRecPeriod *period, ofaIGetter *getter )
 {
 	gboolean ok;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gchar *query;
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	query = g_strdup_printf(
@@ -1167,14 +1192,17 @@ icollectionable_load_collection( void *user_data )
 	ofoRecPeriod *period;
 	ofoRecPeriodPrivate *priv;
 	gchar *from;
+	ofaHub *hub;
 
-	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"REC_T_PERIODS",
 					OFO_TYPE_REC_PERIOD,
-					OFA_HUB( user_data ));
+					OFA_IGETTER( user_data ));
+
+	hub = ofa_igetter_get_hub( OFA_IGETTER( user_data ));
 
 	for( it=dataset ; it ; it=it->next ){
 		period = OFO_REC_PERIOD( it->data );
@@ -1183,7 +1211,7 @@ icollectionable_load_collection( void *user_data )
 				"REC_T_PERIODS_DET WHERE REC_PER_ID='%s'",
 				ofo_rec_period_get_id( period ));
 		priv->details =
-				ofo_base_load_rows( st_detail_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );
+				ofo_base_load_rows( st_detail_defs, ofa_hub_get_connect( hub ), from );
 		g_free( from );
 	}
 
@@ -1225,7 +1253,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	ofoRecPeriodPrivate *priv;
 	GList *dataset, *it, *det;
@@ -1235,7 +1263,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHu
 	gchar field_sep;
 	gulong count;
 
-	dataset = ofo_rec_period_get_dataset( hub );
+	dataset = ofo_rec_period_get_dataset( getter );
 
 	with_headers = ofa_stream_format_get_with_headers( settings );
 	field_sep = ofa_stream_format_get_field_sep( settings );
@@ -1357,23 +1385,25 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaHub *hub;
 	GList *dataset;
 	gchar *bck_table, *bck_det_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+	hub = ofa_igetter_get_hub( parms->getter );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "REC_T_PERIODS" );
-		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "REC_T_PERIODS_DET" );
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "REC_T_PERIODS" );
+		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "REC_T_PERIODS_DET" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_REC_PERIOD );
-			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_REC_PERIOD );
+			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_REC_PERIOD );
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_REC_PERIOD );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "REC_T_PERIODS" );
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_det_table, "REC_T_PERIODS_DET" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "REC_T_PERIODS" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_det_table, "REC_T_PERIODS_DET" );
 		}
 
 		g_free( bck_table );
@@ -1466,7 +1496,7 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	gchar *splitted;
 	ofoRecPeriod *period;
 
-	period = ofo_rec_period_new();
+	period = ofo_rec_period_new( parms->getter );
 
 	/* period id (ignored) */
 	itf = fields ? fields->next : NULL;
@@ -1604,12 +1634,14 @@ static void
 iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
 {
 	GList *it;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	guint total;
 	ofoRecPeriod *period;
 
 	total = g_list_length( dataset );
-	connect = ofa_hub_get_connect( parms->hub );
+	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && total > 0 ){
@@ -1624,7 +1656,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 
 		period = OFO_REC_PERIOD( it->data );
 
-		if( rec_period_do_insert( period, parms->hub )){
+		if( rec_period_do_insert( period, parms->getter )){
 			parms->inserted_count += 1;
 		} else {
 			parms->insert_errs += 1;

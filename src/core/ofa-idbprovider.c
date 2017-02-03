@@ -32,7 +32,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-editor.h"
 #include "api/ofa-idbdossier-meta.h"
@@ -140,23 +139,25 @@ ofa_idbprovider_get_interface_last_version( void )
 
 /**
  * ofa_idbprovider_get_all:
- * @hub: the main #ofaHub object of the application.
+ * @getter: an #ofaIGetter instance.
  *
  * Returns: the list of available #ofaIDBProvider providers.
  *
  * The returned list should be g_list_free() by the caller.
  */
 GList *
-ofa_idbprovider_get_all( ofaHub *hub )
+ofa_idbprovider_get_all( ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_idbprovider_get_all";
 	ofaExtenderCollection *extenders;
 	GList *modules, *it, *all;
 
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	all = NULL;
-	extenders = ofa_hub_get_extender_collection( hub );
+	extenders = ofa_igetter_get_extender_collection( getter );
 	modules = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBPROVIDER );
 
 	for( it=modules ; it ; it=it->next ){
@@ -178,7 +179,7 @@ ofa_idbprovider_get_all( ofaHub *hub )
 
 /**
  * ofa_idbprovider_get_by_name:
- * @hub: the main #ofaHub object of the application.
+ * @getter: an #ofaIGetter instance.
  * @provider_name: the name of the provider as published in the
  *  settings.
  *
@@ -195,15 +196,17 @@ ofa_idbprovider_get_all( ofaHub *hub )
  * unreffed by the caller.
  */
 ofaIDBProvider *
-ofa_idbprovider_get_by_name( ofaHub *hub, const gchar *provider_name )
+ofa_idbprovider_get_by_name( ofaIGetter *getter, const gchar *provider_name )
 {
 	static const gchar *thisfn = "ofa_idbprovider_get_by_name";
 	GList *modules;
 	ofaIDBProvider *provider;
 
-	g_debug( "%s: hub=%p, provider_name=%s", thisfn, ( void * ) hub, provider_name );
+	g_debug( "%s: getter=%p, provider_name=%s", thisfn, ( void * ) getter, provider_name );
 
-	modules = ofa_idbprovider_get_all( hub );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	modules = ofa_idbprovider_get_all( getter );
 	provider = provider_get_by_name( modules, provider_name );
 	g_list_free( modules );
 
@@ -304,26 +307,22 @@ ofa_idbprovider_get_display_name( const ofaIDBProvider *provider )
 }
 
 /**
- * ofa_idbprovider_get_hub:
+ * ofa_idbprovider_get_getter:
  * @provider: this #ofaIDBProvider provider.
  *
- * Returns: the #ofaHub object of the application.
+ * Returns: a #ofaIGetter instance.
  */
-ofaHub *
-ofa_idbprovider_get_hub( ofaIDBProvider *provider )
+ofaIGetter *
+ofa_idbprovider_get_getter( ofaIDBProvider *provider )
 {
 	ofaIGetter *getter;
-	ofaHub *hub;
 
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
 	getter = ofa_isetter_get_getter( OFA_ISETTER( provider ));
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	hub = ofa_igetter_get_hub( getter );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	return( hub );
+	return( getter );
 }
 
 /**

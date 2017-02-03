@@ -32,6 +32,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter.h"
 #include "api/ofo-base.h"
 #include "api/ofo-concil.h"
 #include "api/ofo-dossier.h"
@@ -224,21 +225,23 @@ ofa_iconcil_get_concil( const ofaIConcil *instance )
 ofoConcil *
 ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval )
 {
-	ofaHub *hub;
+	ofaIGetter *getter;
 	ofoConcil *concil;
 	const ofaIDBConnect *connect;
 	GTimeVal stamp;
 	const gchar *userid;
+	ofaHub *hub;
 
 	g_return_val_if_fail( instance && OFA_IS_ICONCIL( instance ), NULL );
 
-	hub = ofo_base_get_hub( OFO_BASE( instance ));
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	getter = ofo_base_get_getter( OFO_BASE( instance ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 	userid = ofa_idbconnect_get_account( connect );
 
-	concil = ofo_concil_new();
+	concil = ofo_concil_new( getter );
 	ofo_concil_set_dval( concil, dval );
 	ofo_concil_set_user( concil, userid );
 	ofo_concil_set_stamp( concil, my_stamp_set_now( &stamp ));
@@ -259,19 +262,15 @@ ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval )
 void
 ofa_iconcil_new_concil_ex( ofaIConcil *instance, ofoConcil *concil )
 {
-	ofaHub *hub;
 	sIConcil *sdata;
 
 	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
 
-	hub = ofo_base_get_hub( OFO_BASE( instance ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
 	sdata = get_iconcil_data( instance, FALSE );
 	g_return_if_fail( !sdata->concil );
 
-	ofo_concil_insert( concil, hub );
+	ofo_concil_insert( concil );
 	ofo_concil_add_id( concil, iconcil_get_type( instance ), iconcil_get_id( instance ));
 
 	sdata->concil = concil;
@@ -416,9 +415,10 @@ get_concil_from_collection( GList *collection, const gchar *type, ofxCounter id 
 static sIConcil *
 get_iconcil_data( const ofaIConcil *instance, gboolean search )
 {
+	ofaIGetter *getter;
 	sIConcil *sdata;
-	ofaHub *hub;
 	GList *collection;
+	myICollector *collector;
 
 	sdata = ( sIConcil * ) g_object_get_data( G_OBJECT( instance ), ICONCIL_DATA );
 
@@ -429,14 +429,15 @@ get_iconcil_data( const ofaIConcil *instance, gboolean search )
 		sdata->type = g_strdup( iconcil_get_type( instance ));
 
 		if( search ){
-			hub = ofo_base_get_hub( OFO_BASE( instance ));
-			g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+			getter = ofo_base_get_getter( OFO_BASE( instance ));
+			g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-			collection = my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_CONCIL, hub );
+			collector = ofa_igetter_get_collector( getter );
+			collection = my_icollector_collection_get( collector, OFO_TYPE_CONCIL, getter );
 			sdata->concil = get_concil_from_collection( collection, sdata->type, iconcil_get_id( instance ));
 
 			if( !sdata->concil ){
-				sdata->concil = ofo_concil_get_by_other_id( hub, sdata->type, iconcil_get_id( instance ));
+				sdata->concil = ofo_concil_get_by_other_id( getter, sdata->type, iconcil_get_id( instance ));
 			}
 		}
 	}

@@ -72,7 +72,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -128,8 +128,8 @@ guint              ofa_itvcolumnable_get_interface_version     ( GType type );
 void               ofa_itvcolumnable_set_name                  ( ofaITVColumnable *instance,
 																		const gchar *name );
 
-void               ofa_itvcolumnable_set_hub                   ( ofaITVColumnable *instance,
-																		ofaHub *hub );
+void               ofa_itvcolumnable_set_getter                ( ofaITVColumnable *instance,
+																		ofaIGetter *getter );
 
 void               ofa_itvcolumnable_set_treeview              ( ofaITVColumnable *instance,
 																		GtkTreeView *treeview );

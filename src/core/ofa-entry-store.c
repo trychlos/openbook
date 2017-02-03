@@ -34,6 +34,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-concil.h"
@@ -49,12 +50,16 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 
 	/* runtime
 	 */
-	ofaHub  *hub;
-	GList   *hub_handlers;
+	ofaHub     *hub;
+	GList      *hub_handlers;
 }
 	ofaEntryStorePrivate;
 
@@ -163,23 +168,25 @@ ofa_entry_store_class_init( ofaEntryStoreClass *klass )
 
 /**
  * ofa_entry_store_new:
- * hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a reference to a new #ofaEntryStore, which should be
  * released by the caller.
  */
 ofaEntryStore *
-ofa_entry_store_new( ofaHub *hub )
+ofa_entry_store_new( ofaIGetter *getter )
 {
 	ofaEntryStore *store;
 	ofaEntryStorePrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	store = g_object_new( OFA_TYPE_ENTRY_STORE, NULL );
 
 	priv = ofa_entry_store_get_instance_private( store );
-	priv->hub = hub;
+
+	priv->getter = getter;
+	priv->hub = ofa_igetter_get_hub( getter );
 
 	gtk_list_store_set_column_types(
 			GTK_LIST_STORE( store ), ENTRY_N_COLUMNS, st_col_types );
@@ -239,7 +246,7 @@ ofa_entry_store_load( ofaEntryStore *store, const gchar *account, const gchar *l
 
 	count = 0;
 	gtk_list_store_clear( GTK_LIST_STORE( store ));
-	dataset = ofo_entry_get_dataset_for_store( priv->hub, account, ledger );
+	dataset = ofo_entry_get_dataset_for_store( priv->getter, account, ledger );
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
@@ -281,21 +288,21 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 
 	priv = ofa_entry_store_get_instance_private( self );
 
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->hub ));
-	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->hub ));
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->getter ));
+	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->getter ));
 
 	cstr = ofo_entry_get_ref( entry );
 	cref = cstr ? cstr : "";
 
 	cur_code = ofo_entry_get_currency( entry );
 	g_return_if_fail( my_strlen( cur_code ));
-	cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+	cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
 	g_return_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ));
 
 	amount = ofo_entry_get_debit( entry );
-	sdeb = amount ? ofa_amount_to_str( amount, cur_obj, priv->hub ) : g_strdup( "" );
+	sdeb = amount ? ofa_amount_to_str( amount, cur_obj, priv->getter ) : g_strdup( "" );
 	amount = ofo_entry_get_credit( entry );
-	scre = amount ? ofa_amount_to_str( amount, cur_obj, priv->hub ) : g_strdup( "" );
+	scre = amount ? ofa_amount_to_str( amount, cur_obj, priv->getter ) : g_strdup( "" );
 
 	counter = ofo_entry_get_ope_number( entry );
 	sopenum = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
@@ -374,7 +381,7 @@ set_row_concil( ofaEntryStore *self, ofoConcil *concil, GtkTreeIter *iter )
 	priv = ofa_entry_store_get_instance_private( self );
 
 	srappro = concil ?
-				my_date_to_str( ofo_concil_get_dval( concil ), ofa_prefs_date_display( priv->hub )) :
+				my_date_to_str( ofo_concil_get_dval( concil ), ofa_prefs_date_display( priv->getter )) :
 				g_strdup( "" );
 	snum = concil ?
 				g_strdup_printf( "%lu", ofo_concil_get_id( concil )) :

@@ -55,7 +55,7 @@
 
 #include "my/my-date.h"
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -124,11 +124,11 @@ ofeSFMode        ofa_stream_format_get_default_mode  ( void );
 const gchar     *ofa_stream_format_get_mode_str      ( ofeSFMode mode );
 const gchar     *ofa_stream_format_get_mode_localestr( ofeSFMode mode );
 
-gboolean         ofa_stream_format_exists            ( ofaHub *hub,
+gboolean         ofa_stream_format_exists            ( ofaIGetter *getter,
 															const gchar *name,
 															ofeSFMode mode );
 
-ofaStreamFormat *ofa_stream_format_new               ( ofaHub *hub,
+ofaStreamFormat *ofa_stream_format_new               ( ofaIGetter *getter,
 															const gchar *name,
 															ofeSFMode mode );
 

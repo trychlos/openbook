@@ -33,7 +33,7 @@
  * A #GtkComboBox -derived class which manages ledgers.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -63,8 +63,8 @@ ofaLedgerCombo *ofa_ledger_combo_new         ( void );
 void            ofa_ledger_combo_set_columns ( ofaLedgerCombo *combo,
 													const gint *columns );
 
-void            ofa_ledger_combo_set_hub     ( ofaLedgerCombo *combo,
-													ofaHub *hub );
+void            ofa_ledger_combo_set_getter  ( ofaLedgerCombo *combo,
+													ofaIGetter *getter );
 
 gchar          *ofa_ledger_combo_get_selected( ofaLedgerCombo *combo );
 

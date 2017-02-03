@@ -39,7 +39,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -64,17 +64,17 @@ typedef struct {
 
 GType        ofo_bat_line_get_type                      ( void ) G_GNUC_CONST;
 
-GList       *ofo_bat_line_get_dataset                   ( ofaHub *hub, ofxCounter bat_id );
+GList       *ofo_bat_line_get_dataset                   ( ofaIGetter *getter, ofxCounter bat_id );
 #define      ofo_bat_line_free_dataset(L)               g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
-GList       *ofo_bat_line_get_orphans                   ( ofaHub *hub );
+GList       *ofo_bat_line_get_orphans                   ( ofaIGetter *getter );
 #define      ofo_bat_line_free_orphans(L)               g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 
-GList       *ofo_bat_line_get_dataset_for_print_reconcil( ofaHub *hub, const gchar *account_id );
+GList       *ofo_bat_line_get_dataset_for_print_reconcil( ofaIGetter *getter, const gchar *account_id );
 
-ofxCounter   ofo_bat_line_get_bat_id_from_bat_line_id   ( ofaHub *hub, ofxCounter line_id );
+ofxCounter   ofo_bat_line_get_bat_id_from_bat_line_id   ( ofaIGetter *getter, ofxCounter line_id );
 
-ofoBatLine  *ofo_bat_line_new                           ( void );
+ofoBatLine  *ofo_bat_line_new                           ( ofaIGetter *getter );
 
 ofxCounter   ofo_bat_line_get_bat_id                    ( ofoBatLine *batline );
 ofxCounter   ofo_bat_line_get_line_id                   ( ofoBatLine *batline );
@@ -93,7 +93,7 @@ void         ofo_bat_line_set_label                     ( ofoBatLine *batline, c
 void         ofo_bat_line_set_currency                  ( ofoBatLine *batline, const gchar *currency );
 void         ofo_bat_line_set_amount                    ( ofoBatLine *batline, ofxAmount montant );
 
-gboolean     ofo_bat_line_insert                        ( ofoBatLine *batline, ofaHub *hub );
+gboolean     ofo_bat_line_insert                        ( ofoBatLine *batline );
 
 G_END_DECLS
 

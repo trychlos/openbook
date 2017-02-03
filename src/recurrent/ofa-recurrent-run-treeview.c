@@ -35,6 +35,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icontext.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
@@ -47,15 +48,15 @@
 /* private instance data
  */
 typedef struct {
-	gboolean  dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub   *hub;
+	ofaIGetter *getter;
 
 	/* runtime
 	 */
-	gint      visible;
+	gint        visible;
 }
 	ofaRecurrentRunTreeviewPrivate;
 
@@ -234,7 +235,7 @@ ofa_recurrent_run_treeview_class_init( ofaRecurrentRunTreeviewClass *klass )
 
 /**
  * ofa_recurrent_run_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new empty #ofaRecurrentRunTreeview composite object.
  *
@@ -243,22 +244,22 @@ ofa_recurrent_run_treeview_class_init( ofaRecurrentRunTreeviewClass *klass )
  * later should not be updated when new operations are inserted.
  */
 ofaRecurrentRunTreeview *
-ofa_recurrent_run_treeview_new( ofaHub *hub )
+ofa_recurrent_run_treeview_new( ofaIGetter *getter )
 {
 	ofaRecurrentRunTreeview *view;
 	ofaRecurrentRunTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_RECURRENT_RUN_TREEVIEW,
-					"ofa-tvbin-hub",     hub,
+					"ofa-tvbin-getter",  getter,
 					"ofa-tvbin-selmode", GTK_SELECTION_MULTIPLE,
 					"ofa-tvbin-shadow",  GTK_SHADOW_IN,
 					NULL );
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoRecurrentRun object instead of just the raw GtkTreeSelection
@@ -358,6 +359,7 @@ on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTree
 	guint column_id;
 	const gchar *status, *csdef;
 	gboolean editable;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( self );
 
@@ -390,7 +392,8 @@ on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTree
 		case REC_RUN_COL_AMOUNT2:
 		case REC_RUN_COL_AMOUNT3:
 			status = ofo_recurrent_run_get_status( recrun );
-			editable = ofa_hub_is_writable_dossier( priv->hub );
+			hub = ofa_igetter_get_hub( priv->getter );
+			editable = ofa_hub_is_writable_dossier( hub );
 			editable &= ( my_strlen( csdef ) > 0 );
 			editable &= ( my_collate( status, REC_STATUS_WAITING ) == 0 );
 			g_object_set( G_OBJECT( renderer ), "editable-set", TRUE, "editable", editable, NULL );
@@ -439,8 +442,8 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaRecu
 				case REC_RUN_COL_AMOUNT2:
 				case REC_RUN_COL_AMOUNT3:
 					/* reformat amounts before storing them */
-					amount = ofa_amount_from_str( text, priv->hub );
-					str = ofa_amount_to_str( amount, NULL, priv->hub );
+					amount = ofa_amount_from_str( text, priv->getter );
+					str = ofa_amount_to_str( amount, NULL, priv->getter );
 					gtk_list_store_set( GTK_LIST_STORE( store ), &iter, column_id, str, -1 );
 					g_free( str );
 					break;
@@ -719,7 +722,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			cmp = my_collate( labela, labelb );
 			break;
 		case REC_RUN_COL_DATE:
-			cmp = my_date_compare_by_str( datea, dateb, ofa_prefs_date_display( priv->hub ));
+			cmp = my_date_compare_by_str( datea, dateb, ofa_prefs_date_display( priv->getter ));
 			break;
 		case REC_RUN_COL_STATUS:
 			cmp = my_collate( statusa, statusb );

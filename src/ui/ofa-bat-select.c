@@ -33,7 +33,6 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
@@ -59,7 +58,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar               *settings_prefix;
-	ofaHub              *hub;
 
 	/* UI
 	 */
@@ -194,7 +192,7 @@ ofa_bat_select_run( ofaIGetter *getter, GtkWindow *parent, ofxCounter id )
 
 	priv = ofa_bat_select_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 	priv->bat_id = id;
 	bat_id = -1;
@@ -232,10 +230,7 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -295,7 +290,7 @@ setup_treeview( ofaBatSelect *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "treeview-parent" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
-	priv->tview = ofa_bat_treeview_new( priv->hub );
+	priv->tview = ofa_bat_treeview_new( priv->getter );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 0, 0, 0, 2 );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 	ofa_bat_treeview_set_settings_key( priv->tview, priv->settings_prefix );
@@ -327,7 +322,7 @@ setup_properties( ofaBatSelect *self )
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "properties-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
-	priv->bat_bin = ofa_bat_properties_bin_new( priv->hub );
+	priv->bat_bin = ofa_bat_properties_bin_new( priv->getter );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->bat_bin ), 0, 0, 2, 0 );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->bat_bin ));
 
@@ -399,7 +394,7 @@ read_settings( ofaBatSelect *self )
 
 	priv = ofa_bat_select_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -427,7 +422,7 @@ write_settings( ofaBatSelect *self )
 	str = g_strdup_printf( "%d;",
 			gtk_paned_get_position( priv->paned ));
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

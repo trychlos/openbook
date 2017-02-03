@@ -45,7 +45,7 @@
 
 #include <glib.h>
 
-#include "api/ofa-hub.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-currency-def.h"
 
 G_BEGIN_DECLS
@@ -61,7 +61,7 @@ typedef struct {
 	ofsCurrency;
 
 ofsCurrency *ofs_currency_add_by_code  ( GList **list,
-												ofaHub *hub,
+												ofaIGetter *getter,
 												const gchar *currency,
 												gdouble debit,
 												gdouble credit );

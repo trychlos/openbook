@@ -35,7 +35,7 @@
  * An #ofoRecurrentModel describes a recurrent operation template.
  */
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 
 #include "recurrent/ofo-rec-period.h"
@@ -66,13 +66,13 @@ typedef struct {
 
 GType              ofo_recurrent_model_get_type               ( void ) G_GNUC_CONST;
 
-GList             *ofo_recurrent_model_get_dataset            ( ofaHub *hub );
+GList             *ofo_recurrent_model_get_dataset            ( ofaIGetter *getter );
 
-ofoRecurrentModel *ofo_recurrent_model_get_by_mnemo           ( ofaHub *hub, const gchar *mnemo );
+ofoRecurrentModel *ofo_recurrent_model_get_by_mnemo           ( ofaIGetter *getter, const gchar *mnemo );
 
-gboolean           ofo_recurrent_model_use_ope_template       ( ofaHub *hub, const gchar *ope_template );
+gboolean           ofo_recurrent_model_use_ope_template       ( ofaIGetter *getter, const gchar *ope_template );
 
-ofoRecurrentModel *ofo_recurrent_model_new                    ( void );
+ofoRecurrentModel *ofo_recurrent_model_new                    ( ofaIGetter *getter );
 ofoRecurrentModel *ofo_recurrent_model_new_from_model         ( const ofoRecurrentModel *model );
 
 const gchar       *ofo_recurrent_model_get_mnemo              ( const ofoRecurrentModel *model );
@@ -102,7 +102,7 @@ void               ofo_recurrent_model_set_def_amount2        ( ofoRecurrentMode
 void               ofo_recurrent_model_set_def_amount3        ( ofoRecurrentModel *model, const gchar *def_amount );
 void               ofo_recurrent_model_set_is_enabled         ( ofoRecurrentModel *model, gboolean is_enabled );
 
-gboolean           ofo_recurrent_model_insert                 ( ofoRecurrentModel *model, ofaHub *hub );
+gboolean           ofo_recurrent_model_insert                 ( ofoRecurrentModel *model );
 gboolean           ofo_recurrent_model_update                 ( ofoRecurrentModel *model, const gchar *prev_mnemo );
 gboolean           ofo_recurrent_model_delete                 ( ofoRecurrentModel *model );
 

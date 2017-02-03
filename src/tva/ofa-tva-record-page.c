@@ -53,7 +53,7 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub               *hub;
+	ofaIGetter           *getter;
 	gboolean              is_writable;
 	gchar                *settings_prefix;
 
@@ -183,15 +183,18 @@ action_page_v_setup_view( ofaActionPage *page )
 	static const gchar *thisfn = "ofa_tva_record_page_v_setup_view";
 	ofaTVARecordPagePrivate *priv;
 	GtkWidget *widget;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_tva_record_page_get_instance_private( OFA_TVA_RECORD_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	widget = setup_treeview( OFA_TVA_RECORD_PAGE( page ));
 
@@ -208,7 +211,7 @@ setup_treeview( ofaTVARecordPage *self )
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
-	priv->tview = ofa_tva_record_treeview_new( priv->hub );
+	priv->tview = ofa_tva_record_treeview_new( priv->getter );
 	ofa_tva_record_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_tva_record_treeview_setup_columns( priv->tview );
 
@@ -424,7 +427,7 @@ delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
-	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display( priv->hub ));
+	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display( priv->getter ));
 	msg = g_strdup_printf( _( "Are you sure you want delete the %s at %s TVA declaration ?" ),
 				ofo_tva_record_get_mnemo( record ), send );
 
@@ -466,7 +469,7 @@ validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
-	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display( priv->hub ));
+	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display( priv->getter ));
 	msg = g_strdup_printf( _( "Are you sure you want validate the %s at %s TVA declaration ?" ),
 				ofo_tva_record_get_mnemo( record ), send );
 

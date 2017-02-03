@@ -69,7 +69,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar                 *settings_prefix;
-	ofaHub                *hub;
 	ofaIDBDossierMeta     *dossier_meta;
 	ofaIDBConnect         *connect;
 	gboolean               opened;
@@ -237,11 +236,8 @@ ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent, ofaIDBExerciceMeta 
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), FALSE );
 
 	if( exercice_meta ){
 		priv->exercice_meta = g_object_ref( exercice_meta );
@@ -295,7 +291,7 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_dossier_open_get_instance_private( OFA_DOSSIER_OPEN( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
 /*
@@ -397,7 +393,7 @@ setup_exercice( ofaDossierOpen *self, GtkSizeGroup *group )
 
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "do-exercice-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
-	priv->exercice_combo = ofa_exercice_combo_new( priv->hub );
+	priv->exercice_combo = ofa_exercice_combo_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->exercice_combo ));
 	g_signal_connect( priv->exercice_combo, "ofa-changed", G_CALLBACK( on_exercice_changed ), self );
 
@@ -418,7 +414,7 @@ setup_dossier( ofaDossierOpen *self, GtkSizeGroup *group )
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "do-dossier-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
-	priv->dossier_tview = ofa_dossier_treeview_new( priv->hub );
+	priv->dossier_tview = ofa_dossier_treeview_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->dossier_tview ));
 	ofa_tvbin_set_headers( OFA_TVBIN( priv->dossier_tview ), FALSE );
 	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, priv->settings_prefix );
@@ -694,18 +690,21 @@ static gboolean
 do_open_dossier( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
+	ofaHub *hub;
 	gboolean ok;
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
+	hub = ofa_igetter_get_hub( priv->getter );
+
 	/* if this same exercice is already opened, just do nothing */
-	if( ofa_hub_is_opened_dossier( priv->hub, priv->exercice_meta )){
+	if( ofa_hub_is_opened_dossier( hub, priv->exercice_meta )){
 		return( TRUE );
 	}
 
-	ofa_hub_close_dossier( priv->hub );
+	ofa_hub_close_dossier( hub );
 
-	ok = ofa_hub_open_dossier( priv->hub, GTK_WINDOW( self ), priv->connect, priv->read_only, TRUE );
+	ok = ofa_hub_open_dossier( hub, GTK_WINDOW( self ), priv->connect, priv->read_only, TRUE );
 
 	return( ok );
 }

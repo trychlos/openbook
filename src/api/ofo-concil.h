@@ -39,7 +39,7 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-concil-def.h"
 
@@ -77,13 +77,13 @@ typedef void (*ofoConcilEnumerate )( ofoConcil *concil, const gchar *type, ofxCo
 
 GType           ofo_concil_get_type        ( void ) G_GNUC_CONST;
 
-GList          *ofo_concil_get_orphans     ( ofaHub *hub );
+GList          *ofo_concil_get_orphans     ( ofaIGetter *getter );
 #define         ofo_concil_free_orphans(L) g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 
-ofoConcil      *ofo_concil_get_by_id       ( ofaHub *hub, ofxCounter rec_id );
-ofoConcil      *ofo_concil_get_by_other_id ( ofaHub *hub, const gchar *type, ofxCounter other_id );
+ofoConcil      *ofo_concil_get_by_id       ( ofaIGetter *getter, ofxCounter rec_id );
+ofoConcil      *ofo_concil_get_by_other_id ( ofaIGetter *getter, const gchar *type, ofxCounter other_id );
 
-ofoConcil      *ofo_concil_new             ( void );
+ofoConcil      *ofo_concil_new             ( ofaIGetter *getter );
 
 ofxCounter      ofo_concil_get_id          ( ofoConcil *concil );
 const GDate    *ofo_concil_get_dval        ( ofoConcil *concil );
@@ -98,7 +98,7 @@ void            ofo_concil_set_dval        ( ofoConcil *concil, const GDate *dva
 void            ofo_concil_set_user        ( ofoConcil *concil, const gchar *user );
 void            ofo_concil_set_stamp       ( ofoConcil *concil, const GTimeVal *stamp );
 
-gboolean        ofo_concil_insert          ( ofoConcil *concil, ofaHub *hub );
+gboolean        ofo_concil_insert          ( ofoConcil *concil );
 gboolean        ofo_concil_add_id          ( ofoConcil *concil, const gchar *type, ofxCounter id );
 gboolean        ofo_concil_delete          ( ofoConcil *concil );
 

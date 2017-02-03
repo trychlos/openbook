@@ -31,7 +31,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-buttons-box.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-istore.h"
 #include "api/ofa-itvcolumnable.h"
@@ -45,12 +44,12 @@
 /* private instance data
  */
 typedef struct {
-	gboolean  dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub   *hub;
-	gchar    *ledger;
+	ofaIGetter *getter;
+	gchar      *ledger;
 }
 	ofaOpeTemplateTreeviewPrivate;
 
@@ -304,7 +303,7 @@ ofa_ope_template_treeview_class_init( ofaOpeTemplateTreeviewClass *klass )
 
 /**
  * ofa_ope_template_treeview_new:
- * @hub: the #ofaHub object of the application.
+ * @getter: a #ofaIGetter instance.
  * @ledger: the filtered ledger.
  *  It must be set at instanciation time as it is also used as a
  *  qualifier for the actions group name.
@@ -312,20 +311,20 @@ ofa_ope_template_treeview_class_init( ofaOpeTemplateTreeviewClass *klass )
  * Returns: a new instance.
  */
 ofaOpeTemplateTreeview *
-ofa_ope_template_treeview_new( ofaHub *hub, const gchar *ledger )
+ofa_ope_template_treeview_new( ofaIGetter *getter, const gchar *ledger )
 {
 	ofaOpeTemplateTreeview *view;
 	ofaOpeTemplateTreeviewPrivate *priv;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_OPE_TEMPLATE_TREEVIEW,
-				"ofa-tvbin-hub",  hub,
+				"ofa-tvbin-getter",  getter,
 				NULL );
 
 	priv = ofa_ope_template_treeview_get_instance_private( view );
 
-	priv->hub = hub;
+	priv->getter = getter;
 	priv->ledger = g_strdup( ledger );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide

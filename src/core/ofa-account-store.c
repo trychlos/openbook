@@ -34,6 +34,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-istore.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -44,13 +45,17 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 
 	/* runtime
 	 */
-	ofaHub  *hub;
-	GList   *hub_handlers;
-	gboolean dataset_is_loaded;
+	ofaHub     *hub;
+	GList      *hub_handlers;
+	gboolean    dataset_is_loaded;
 }
 	ofaAccountStorePrivate;
 
@@ -173,9 +178,9 @@ ofa_account_store_class_init( ofaAccountStoreClass *klass )
 
 /**
  * ofa_account_store_new:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
- * Instanciates a new #ofaAccountStore and attached it to the @dossier
+ * Instanciates a new #ofaAccountStore and attached it to the collector
  * if not already done. Else get the already allocated #ofaAccountStore
  * from the @dossier.
  *
@@ -183,16 +188,16 @@ ofa_account_store_class_init( ofaAccountStoreClass *klass )
  * the caller.
  */
 ofaAccountStore *
-ofa_account_store_new( ofaHub *hub )
+ofa_account_store_new( ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_account_store_new";
 	ofaAccountStore *store;
 	ofaAccountStorePrivate *priv;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	store = ( ofaAccountStore * ) my_icollector_single_get_object( collector, OFA_TYPE_ACCOUNT_STORE );
 
 	if( store ){
@@ -204,10 +209,12 @@ ofa_account_store_new( ofaHub *hub )
 		g_debug( "%s: returning newly allocated store=%p", thisfn, ( void * ) store );
 
 		priv = ofa_account_store_get_instance_private( store );
-		priv->hub = hub;
+
+		priv->getter = getter;
+		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[ACCOUNT_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
-		ofa_istore_set_column_types( OFA_ISTORE( store ), hub, ACCOUNT_N_COLUMNS, st_col_types );
+		ofa_istore_set_column_types( OFA_ISTORE( store ), getter, ACCOUNT_N_COLUMNS, st_col_types );
 
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
@@ -262,7 +269,7 @@ tree_store_v_load_dataset( ofaTreeStore *store )
 		ofa_tree_store_loading_simulate( store );
 
 	} else {
-		dataset = ofo_account_get_dataset( priv->hub );
+		dataset = ofo_account_get_dataset( priv->getter );
 
 		for( it=dataset ; it ; it=it->next ){
 			account = OFO_ACCOUNT( it->data );
@@ -317,7 +324,7 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 
 	currency_code = ofo_account_get_currency( account );
 	if( !ofo_account_is_root( account )){
-		currency_obj = ofo_currency_get_by_code( priv->hub, currency_code );
+		currency_obj = ofo_currency_get_by_code( priv->getter, currency_code );
 		g_return_if_fail( currency_obj && OFO_IS_CURRENCY( currency_obj ));
 
 		val_debit = ofo_account_get_val_debit( account );
@@ -327,22 +334,22 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 		fut_debit = ofo_account_get_futur_debit( account );
 		fut_credit = ofo_account_get_futur_credit( account );
 
-		svdeb = ofa_amount_to_str( val_debit, currency_obj, priv->hub );
-		svcre = ofa_amount_to_str( val_credit, currency_obj, priv->hub );
-		srdeb = ofa_amount_to_str( rough_debit, currency_obj, priv->hub );
-		srcre = ofa_amount_to_str( rough_credit, currency_obj, priv->hub );
-		sfdeb = ofa_amount_to_str( fut_debit, currency_obj, priv->hub );
-		sfcre = ofa_amount_to_str( fut_credit, currency_obj, priv->hub );
+		svdeb = ofa_amount_to_str( val_debit, currency_obj, priv->getter );
+		svcre = ofa_amount_to_str( val_credit, currency_obj, priv->getter );
+		srdeb = ofa_amount_to_str( rough_debit, currency_obj, priv->getter );
+		srcre = ofa_amount_to_str( rough_credit, currency_obj, priv->getter );
+		sfdeb = ofa_amount_to_str( fut_debit, currency_obj, priv->getter );
+		sfcre = ofa_amount_to_str( fut_credit, currency_obj, priv->getter );
 
-		sedeb = ofa_amount_to_str( val_debit+rough_debit+fut_debit, currency_obj, priv->hub );
-		secre = ofa_amount_to_str( val_credit+rough_credit+fut_credit, currency_obj, priv->hub );
+		sedeb = ofa_amount_to_str( val_debit+rough_debit+fut_debit, currency_obj, priv->getter );
+		secre = ofa_amount_to_str( val_credit+rough_credit+fut_credit, currency_obj, priv->getter );
 
 		exe_solde = val_debit-val_credit+rough_debit-rough_credit+fut_debit-fut_credit;
 		if( exe_solde >= 0 ){
-			str = ofa_amount_to_str( exe_solde, currency_obj, priv->hub );
+			str = ofa_amount_to_str( exe_solde, currency_obj, priv->getter );
 			sesol = g_strdup_printf( _( "%s DB" ), str );
 		} else {
-			str = ofa_amount_to_str( -exe_solde, currency_obj, priv->hub );
+			str = ofa_amount_to_str( -exe_solde, currency_obj, priv->getter );
 			sesol = g_strdup_printf( _( "%s CR" ), str );
 		}
 		g_free( str );
@@ -872,13 +879,16 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *self )
 static void
 hub_on_deleted_account( ofaHub *hub, ofoAccount *account, ofaAccountStore *self )
 {
+	ofaAccountStorePrivate *priv;
 	GList *list, *children, *it;
+
+	priv = ofa_account_store_get_instance_private( self );
 
 	/* first element of the list is the account itself */
 	list = remove_rows_by_number( self, ofo_account_get_number( account ));
 	children = list ? list->next : NULL;
 
-	if( !ofa_prefs_account_delete_root_with_children( hub )){
+	if( !ofa_prefs_account_delete_root_with_children( priv->getter )){
 		for( it=children ; it ; it=it->next ){
 			insert_row( self, OFO_ACCOUNT( it->data ));
 		}

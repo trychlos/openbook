@@ -30,9 +30,11 @@
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
+#include "my/my-iaction-map.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 
 #include "ui/ofa-misc-audit-item.h"
 #include "ui/ofa-misc-audit-ui.h"
@@ -47,9 +49,9 @@ typedef struct {
 }
 	sItemDef;
 
-static void       on_menu_available( GApplication *application, GActionMap *map, const gchar *prefix, void *empty );
-static void       menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder );
-static void       on_misc_audit_item( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_menu_available( ofaISignaler *signaler, ofaIGetter *getter, myIActionMap *map, const gchar *scope, void *empty );
+static void menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder );
+static void on_misc_audit_item( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 /* all the actions defined here
  */
@@ -74,11 +76,15 @@ static const sItemDef st_items_misc[] = {
 void
 ofa_misc_audit_item_signal_connect( ofaIGetter *getter )
 {
-	GApplication *application;
+	static const gchar *thisfn = "ofa_misc_audit_item_signal_connect";
+	ofaISignaler *signaler;
 
-	application = ofa_igetter_get_application( getter );
+	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
-	g_signal_connect( application, "menu-available", G_CALLBACK( on_menu_available ), NULL );
+	signaler = ofa_igetter_get_signaler( getter );
+
+	g_signal_connect( signaler,
+			"ofa-signaler-menu-available", G_CALLBACK( on_menu_available ), NULL );
 }
 
 /*
@@ -90,17 +96,16 @@ ofa_misc_audit_item_signal_connect( ofaIGetter *getter )
  * or main window.
  */
 static void
-on_menu_available( GApplication *application, GActionMap *map, const gchar *prefix, void *empty )
+on_menu_available( ofaISignaler *signaler, ofaIGetter *getter, myIActionMap *map, const gchar *scope, void *empty )
 {
 	static const gchar *thisfn = "ofa_misc_audit_item_on_menu_available";
 
-	g_debug( "%s: application=%p, map=%p, prefix=%s, empty=%p",
-			thisfn, ( void * ) application, ( void * ) map, prefix, ( void * ) empty );
+	g_debug( "%s: signaler=%p, getter=%p, map=%p, scope=%s, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) getter, ( void * ) map, scope, ( void * ) empty );
 
-	if( !my_collate( prefix, "win" )){
-
+	if( !my_collate( scope, "win" )){
 		g_action_map_add_action_entries(
-				map, st_app_entries, G_N_ELEMENTS( st_app_entries ), map );
+				G_ACTION_MAP( map ), st_app_entries, G_N_ELEMENTS( st_app_entries ), map );
 
 		menu_add_section( G_OBJECT( map ), st_items_misc, "plugins_app_misc" );
 	}

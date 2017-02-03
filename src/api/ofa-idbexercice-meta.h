@@ -37,7 +37,6 @@
 
 #include <glib-object.h>
 
-#include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-editor-def.h"

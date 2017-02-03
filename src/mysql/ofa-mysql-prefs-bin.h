@@ -42,7 +42,7 @@
 
 #include "my/my-isettings.h"
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -67,7 +67,7 @@ typedef struct {
 
 GType      ofa_mysql_prefs_bin_get_type( void ) G_GNUC_CONST;
 
-GtkWidget *ofa_mysql_prefs_bin_new     ( ofaHub *hub );
+GtkWidget *ofa_mysql_prefs_bin_new     ( ofaIGetter *getter );
 
 gboolean   ofa_mysql_prefs_bin_is_valid( ofaMySQLPrefsBin *bin,
 												gchar **msgerr );

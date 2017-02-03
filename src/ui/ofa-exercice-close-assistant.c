@@ -342,7 +342,7 @@ ofa_exercice_close_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->getter = getter;
 	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
@@ -377,7 +377,7 @@ iwindow_init( myIWindow *instance )
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 }
@@ -402,7 +402,7 @@ iassistant_is_willing_to_quit( myIAssistant *instance, guint keyval )
 
 	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
 
-	return( ofa_prefs_assistant_is_willing_to_quit( priv->hub, keyval ));
+	return( ofa_prefs_assistant_is_willing_to_quit( priv->getter, keyval ));
 }
 
 /*
@@ -426,7 +426,7 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 
-	extenders = ofa_hub_get_extender_collection( priv->hub );
+	extenders = ofa_igetter_get_extender_collection( priv->getter );
 	priv->close_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IEXECLOSE );
 }
 
@@ -458,12 +458,12 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->p1_begin_cur ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( priv->p1_begin_cur ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_begin_cur ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( priv->p1_begin_cur ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_begin_cur ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_begin_cur ), TRUE );
 	begin_cur = ofo_dossier_get_exe_begin( priv->dossier );
 	my_date_editable_set_date( GTK_EDITABLE( priv->p1_begin_cur ), begin_cur );
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->p1_begin_cur ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->p1_begin_cur ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( priv->p1_begin_cur, "changed", G_CALLBACK( p1_on_date_changed ), self );
 
@@ -479,12 +479,12 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->p1_end_cur ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( priv->p1_end_cur ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_end_cur ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( priv->p1_end_cur ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_end_cur ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_end_cur ), TRUE );
 	end_cur = ofo_dossier_get_exe_end( priv->dossier );
 	my_date_editable_set_date( GTK_EDITABLE( priv->p1_end_cur ), end_cur );
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->p1_end_cur ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->p1_end_cur ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( priv->p1_end_cur, "changed", G_CALLBACK( p1_on_date_changed ), self );
 
@@ -518,10 +518,10 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->p1_begin_next ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( priv->p1_begin_next ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_begin_next ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( priv->p1_begin_next ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_begin_next ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_begin_next ), TRUE );
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->p1_begin_next ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->p1_begin_next ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( priv->p1_begin_next, "changed", G_CALLBACK( p1_on_date_changed ), self );
 
@@ -543,10 +543,10 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->p1_end_next ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( priv->p1_end_next ), ofa_prefs_date_display( priv->hub ));
-	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_end_next ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( priv->p1_end_next ), ofa_prefs_date_display( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->p1_end_next ), label, ofa_prefs_date_check( priv->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_end_next ), TRUE );
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->p1_end_next ), ofa_prefs_date_overwrite( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->p1_end_next ), ofa_prefs_date_overwrite( priv->getter ));
 
 	g_signal_connect( priv->p1_end_next, "changed", G_CALLBACK( p1_on_date_changed ), self );
 
@@ -781,7 +781,7 @@ p3_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widge
 
 	if( !priv->p3_done ){
 		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_PROGRESS );
-		ofa_check_balances_bin_set_hub( priv->p3_checks_bin, priv->hub );
+		ofa_check_balances_bin_set_getter( priv->p3_checks_bin, priv->getter );
 	}
 }
 
@@ -813,7 +813,7 @@ p4_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	priv->p4_checks_bin = ofa_check_integrity_bin_new( priv->hub, priv->settings_prefix );
+	priv->p4_checks_bin = ofa_check_integrity_bin_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( page_widget ), GTK_WIDGET( priv->p4_checks_bin ));
 
 	g_signal_connect( priv->p4_checks_bin, "ofa-done", G_CALLBACK( p4_on_checks_done ), self );
@@ -1007,7 +1007,7 @@ p6_closing_plugin( ofaExerciceCloseAssistant *self )
 		close_data = ( sClose * ) g_object_get_data( G_OBJECT( it->data ), EXECLOSE_CLOSING_DATA );
 		if( close_data ){
 			ofa_iexe_close_do_task(
-					OFA_IEXECLOSE( it->data ), EXECLOSE_CLOSING, close_data->box, priv->hub );
+					OFA_IEXECLOSE( it->data ), EXECLOSE_CLOSING, close_data->box, priv->getter );
 		}
 	}
 
@@ -1041,7 +1041,7 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->hub, ENT_STATUS_ROUGH );
+	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->getter, ENT_STATUS_ROUGH );
 	count = g_list_length( entries );
 	i = 0;
 	my_stamp_set_now( &stamp_start );
@@ -1126,7 +1126,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	bar = NULL;
 	errors = 0;
-	accounts = ofo_account_get_dataset_for_solde( priv->hub );
+	accounts = ofo_account_get_dataset_for_solde( priv->getter );
 	count = g_list_length( accounts );
 	i = 0;
 
@@ -1141,11 +1141,11 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 
 	sld_ope = ofo_dossier_get_sld_ope( priv->dossier );
-	sld_template = ofo_ope_template_get_by_mnemo( priv->hub, sld_ope );
+	sld_template = ofo_ope_template_get_by_mnemo( priv->getter, sld_ope );
 	g_return_val_if_fail( sld_template && OFO_IS_OPE_TEMPLATE( sld_template ), 1 );
 
 	for_ope = ofo_dossier_get_forward_ope( priv->dossier );
-	for_template = ofo_ope_template_get_by_mnemo( priv->hub, for_ope );
+	for_template = ofo_ope_template_get_by_mnemo( priv->getter, for_ope );
 	g_return_val_if_fail( for_template && OFO_IS_OPE_TEMPLATE( for_template ), 1 );
 
 	for( it=accounts ; it ; it=it->next ){
@@ -1153,7 +1153,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 		/* setup ofsCurrency */
 		acc_cur = ofo_account_get_currency( account );
-		cur_obj = ofo_currency_get_by_code( priv->hub, acc_cur );
+		cur_obj = ofo_currency_get_by_code( priv->getter, acc_cur );
 		scur = g_new0( ofsCurrency, 1 );
 		scur->currency = cur_obj;
 		scur->debit = ofo_account_get_val_debit( account );
@@ -1243,7 +1243,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			for( ite=sld_entries ; ite ; ite=ite->next ){
 				entry = OFO_ENTRY( ite->data );
 				ofo_entry_set_ope_number( entry, solde_ope );
-				ofo_entry_insert( entry, priv->hub );
+				ofo_entry_insert( entry );
 				if( is_ran &&
 						ofo_account_is_settleable( account ) &&
 						!g_utf8_collate( ofo_entry_get_account( entry ), acc_number )){
@@ -1331,7 +1331,7 @@ p6_close_ledgers( ofaExerciceCloseAssistant *self )
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	ledgers = ofo_ledger_get_dataset( priv->hub );
+	ledgers = ofo_ledger_get_dataset( priv->getter );
 	count = g_list_length( ledgers );
 	i = 0;
 	bar = get_new_bar( self, "p6-ledgers" );
@@ -1757,7 +1757,7 @@ p6_forward( ofaExerciceCloseAssistant *self )
 
 	for( it=priv->p6_forwards ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		ofo_entry_insert( entry, priv->hub );
+		ofo_entry_insert( entry );
 
 		counter = ofo_entry_get_settlement_number( entry );
 		if( counter ){
@@ -1765,7 +1765,7 @@ p6_forward( ofaExerciceCloseAssistant *self )
 		}
 
 		/* set reconciliation on reconciliable account */
-		account = ofo_account_get_by_number( priv->hub, ofo_entry_get_account( entry ));
+		account = ofo_account_get_by_number( priv->getter, ofo_entry_get_account( entry ));
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 		if( ofo_account_is_reconciliable( account )){
 			ofa_iconcil_new_concil( OFA_ICONCIL( entry ), dbegin );
@@ -1814,9 +1814,9 @@ p6_open( ofaExerciceCloseAssistant *self )
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
 	for_ope = ofo_dossier_get_forward_ope( priv->dossier );
-	for_template = ofo_ope_template_get_by_mnemo( priv->hub, for_ope );
+	for_template = ofo_ope_template_get_by_mnemo( priv->getter, for_ope );
 	led_mnemo = ofo_ope_template_get_ledger( for_template );
-	for_ledger = ofo_ledger_get_by_mnemo( priv->hub, led_mnemo );
+	for_ledger = ofo_ledger_get_by_mnemo( priv->getter, led_mnemo );
 
 	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 
@@ -1860,7 +1860,7 @@ p6_future( ofaExerciceCloseAssistant *self )
 
 	dos_dend = ofo_dossier_get_exe_end( priv->dossier );
 
-	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->hub, ENT_STATUS_FUTURE );
+	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->getter, ENT_STATUS_FUTURE );
 	count = g_list_length( entries );
 	i = 0;
 	bar = get_new_bar( self, "p6-future" );
@@ -1906,7 +1906,7 @@ p6_opening_plugin( ofaExerciceCloseAssistant *self )
 		close_data = ( sClose * ) g_object_get_data( G_OBJECT( it->data ), EXECLOSE_OPENING_DATA );
 		if( close_data ){
 			ofa_iexe_close_do_task(
-					OFA_IEXECLOSE( it->data ), EXECLOSE_OPENING, close_data->box, priv->hub );
+					OFA_IEXECLOSE( it->data ), EXECLOSE_OPENING, close_data->box, priv->getter );
 		}
 	}
 

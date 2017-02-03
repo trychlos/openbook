@@ -39,6 +39,7 @@
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
@@ -225,7 +226,7 @@ static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter 
 static void        dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_setup_rpid( ofoDossier *self );
 static void        dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter counter );
-static ofoDossier *dossier_do_read( ofaHub *hub );
+static ofoDossier *dossier_do_read( ofaIGetter *getter );
 static gboolean    dossier_do_update( ofoDossier *dossier );
 static gboolean    do_update_properties( ofoDossier *dossier );
 static gboolean    dossier_do_update_currencies( ofoDossier *dossier );
@@ -233,7 +234,7 @@ static gboolean    do_update_currency_properties( ofoDossier *dossier );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static void        free_currency_details( ofoDossier *dossier );
 static void        free_cur_detail( GList *fields );
 static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
@@ -311,7 +312,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 
 /**
  * ofo_dossier_new:
- * @hub: the #ofaHub object which will manage this dossier.
+ * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new object, and initializes it with data read from
  * database.
@@ -320,13 +321,13 @@ ofo_dossier_class_init( ofoDossierClass *klass )
  * has occured.
  */
 ofoDossier *
-ofo_dossier_new( ofaHub *hub )
+ofo_dossier_new( ofaIGetter *getter )
 {
 	ofoDossier *dossier;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	dossier = dossier_do_read( hub );
+	dossier = dossier_do_read( getter );
 
 	return( dossier );
 }
@@ -730,10 +731,12 @@ ofo_dossier_get_next_concil( ofoDossier *dossier )
 static void
 dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number )
 {
+	ofaIGetter *getter;
 	ofaHub *hub;
 	gchar *query;
 
-	hub = ofo_base_get_hub( OFO_BASE( dossier ));
+	getter = ofo_base_get_getter( OFO_BASE( dossier ));
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 			"UPDATE OFA_T_DOSSIER "
@@ -1405,21 +1408,23 @@ ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *currency, const g
 }
 
 static ofoDossier *
-dossier_do_read( ofaHub *hub )
+dossier_do_read( ofaIGetter *getter )
 {
 	ofoDossier *dossier;
 	ofoDossierPrivate *priv;
 	gchar *where;
 	GList *list;
+	ofaHub *hub;
 
 	dossier = NULL;
+	hub = ofa_igetter_get_hub( getter );
 
 	where = g_strdup_printf( "OFA_T_DOSSIER WHERE DOS_ID=%d", DOSSIER_ROW_ID );
 	list = ofo_base_load_dataset(
 					st_boxed_defs,
 					where,
 					OFO_TYPE_DOSSIER,
-					hub );
+					getter );
 	g_free( where );
 
 	if( g_list_length( list ) > 0 ){
@@ -1471,6 +1476,7 @@ dossier_do_update( ofoDossier *dossier )
 static gboolean
 do_update_properties( ofoDossier *dossier )
 {
+	ofaIGetter *getter;
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	GString *query;
@@ -1482,7 +1488,8 @@ do_update_properties( ofoDossier *dossier )
 	ofxCounter number;
 
 	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( dossier ));
+	getter = ofo_base_get_getter( OFO_BASE( dossier ));
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 	userid = ofa_idbconnect_get_account( connect );
 
@@ -1653,6 +1660,7 @@ static gboolean
 do_update_currency_properties( ofoDossier *dossier )
 {
 	ofoDossierPrivate *priv;
+	ofaIGetter *getter;
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gchar *query, *stamp_str;
@@ -1664,7 +1672,9 @@ do_update_currency_properties( ofoDossier *dossier )
 	const gchar *userid;
 
 	priv = ofo_dossier_get_instance_private( dossier );
-	hub = ofo_base_get_hub( OFO_BASE( dossier ));
+
+	getter = ofo_base_get_getter( OFO_BASE( dossier ));
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 	userid = ofa_idbconnect_get_account( connect );
 
@@ -1741,16 +1751,18 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	ofoDossier *dossier;
 	ofoDossierPrivate *priv;
+	ofaHub *hub;
 	GList *cur_detail;
 	gchar *str, *str2;
 	gboolean ok, with_headers;
 	gulong count;
 	gchar field_sep;
 
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 

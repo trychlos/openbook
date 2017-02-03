@@ -36,7 +36,7 @@
 
 #include <glib-object.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -62,7 +62,7 @@ typedef struct {
 GType    ofa_importer_txt_get_type     ( void );
 
 gboolean ofa_importer_txt_is_willing_to( const ofaImporterTxt *instance,
-												ofaHub *hub,
+												ofaIGetter *getter,
 												const gchar *uri,
 												const GList *accepted_contents );
 

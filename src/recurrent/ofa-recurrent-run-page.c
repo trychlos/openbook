@@ -60,7 +60,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub                  *hub;
+	ofaIGetter              *getter;
 	gchar                   *settings_prefix;
 
 	/* UI
@@ -220,13 +220,16 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 	static const gchar *thisfn = "ofa_recurrent_run_page_v_setup_view";
 	ofaRecurrentRunPagePrivate *priv;
 	GtkWidget *view;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p, paned=%p", thisfn, ( void * ) page, ( void * ) paned );
 
 	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv->paned = GTK_WIDGET( paned );
 
@@ -244,7 +247,7 @@ setup_view1( ofaRecurrentRunPage *self )
 
 	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( self ));
 
-	priv->tview = ofa_recurrent_run_treeview_new( priv->hub );
+	priv->tview = ofa_recurrent_run_treeview_new( priv->getter );
 	ofa_recurrent_run_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_recurrent_run_treeview_setup_columns( priv->tview );
 
@@ -365,7 +368,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	/* install the store at the very end of the initialization
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
-	store = ofa_recurrent_run_store_new( priv->hub, REC_MODE_FROM_DBMS );
+	store = ofa_recurrent_run_store_new( priv->getter, REC_MODE_FROM_DBMS );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( store ));
 	g_object_unref( store );
 
@@ -652,22 +655,24 @@ action_on_object_validated( ofaRecurrentRunPage *self )
 	ofxCounter ope_number;
 	const gchar *csdef;
 	ofxAmount amount;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), G_SOURCE_REMOVE );
 
 	rec_id = ofo_recurrent_run_get_mnemo( priv->update_recrun );
-	model = ofo_recurrent_model_get_by_mnemo( priv->hub, rec_id );
+	model = ofo_recurrent_model_get_by_mnemo( priv->getter, rec_id );
 	g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), G_SOURCE_REMOVE );
 
 	tmpl_id = ofo_recurrent_model_get_ope_template( model );
-	template_obj = ofo_ope_template_get_by_mnemo( priv->hub, tmpl_id );
+	template_obj = ofo_ope_template_get_by_mnemo( priv->getter, tmpl_id );
 	g_return_val_if_fail( template_obj && OFO_IS_OPE_TEMPLATE( template_obj ), G_SOURCE_REMOVE );
 
 	ledger_id = ofo_ope_template_get_ledger( template_obj );
-	ledger_obj = ofo_ledger_get_by_mnemo( priv->hub, ledger_id );
+	ledger_obj = ofo_ledger_get_by_mnemo( priv->getter, ledger_id );
 	g_return_val_if_fail( ledger_obj && OFO_IS_LEDGER( ledger_obj ), G_SOURCE_REMOVE );
 
 	ope = ofs_ope_new( template_obj );
@@ -703,7 +708,7 @@ action_on_object_validated( ofaRecurrentRunPage *self )
 	for( it=entries ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
 		ofo_entry_set_ope_number( entry, ope_number );
-		ofo_entry_insert( entry, priv->hub );
+		ofo_entry_insert( entry );
 		priv->update_entry_count += 1;
 	}
 
@@ -726,7 +731,7 @@ read_settings( ofaRecurrentRunPage *self )
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
@@ -782,7 +787,7 @@ write_settings( ofaRecurrentRunPage *self )
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->waiting_toggle )) ? "True":"False",
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_toggle )) ? "True":"False" );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
+	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 

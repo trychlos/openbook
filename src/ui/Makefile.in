@@ -160,9 +160,9 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-dossier-open.$(OBJEXT) ofa-dossier-properties.$(OBJEXT) \
 	ofa-dossier-store.$(OBJEXT) ofa-dossier-treeview.$(OBJEXT) \
 	ofa-entry-page.$(OBJEXT) ofa-entry-properties.$(OBJEXT) \
-	ofa-entry-treeview.$(OBJEXT) ofa-exercice-combo.$(OBJEXT) \
+	ofa-entry-treeview.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
-	ofa-exercice-edit-bin.$(OBJEXT) \
+	ofa-exercice-combo.$(OBJEXT) ofa-exercice-edit-bin.$(OBJEXT) \
 	ofa-exercice-meta-bin.$(OBJEXT) ofa-exercice-new.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-exercice-treeview.$(OBJEXT) \
 	ofa-export-assistant.$(OBJEXT) ofa-guided-ex.$(OBJEXT) \
@@ -594,10 +594,10 @@ openbook_SOURCES = \
 	ofa-entry-properties.h								\
 	ofa-entry-treeview.c								\
 	ofa-entry-treeview.h								\
-	ofa-exercice-combo.c								\
-	ofa-exercice-combo.h								\
 	ofa-exercice-close-assistant.c						\
 	ofa-exercice-close-assistant.h						\
+	ofa-exercice-combo.c								\
+	ofa-exercice-combo.h								\
 	ofa-exercice-edit-bin.c								\
 	ofa-exercice-edit-bin.h								\
 	ofa-exercice-meta-bin.c								\

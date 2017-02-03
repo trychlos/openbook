@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include "my/my-iaction-map.h"
+#include "my/my-menu-manager.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-core.h"
@@ -75,8 +76,11 @@ typedef struct {
 	int              argc;
 	GStrv            argv;
 	int              code;
+
+	/* runtime
+	 */
+	GMenuModel      *menu_model;
 	ofaMainWindow   *main_window;
-	GMenuModel      *menu;
 	ofaDossierStore *dos_store;
 
 	/* menu items
@@ -100,7 +104,6 @@ enum {
  */
 enum {
 	THM_AVAILABLE = 0,
-	MENU_AVAILABLE,
 	N_SIGNALS
 };
 
@@ -136,38 +139,31 @@ static       GOptionEntry st_option_entries[]   = {
 	{ NULL }
 };
 
-static void                  init_i18n( ofaApplication *self );
-static gboolean              init_gtk_args( ofaApplication *self );
-static gboolean              manage_options( ofaApplication *self );
-static void                  application_startup( GApplication *application );
-static void                  appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
-static void                  menubar_update_items( ofaApplication *self );
-static void                  application_activate( GApplication *application );
-static void                  application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
-static void                  on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaApplication *application );
-static void                  on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void                  on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void                  on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void                  on_recover( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void                  on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void                  on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void                  on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void                  on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void                  on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void                  on_version( ofaApplication *application );
-static void                  igetter_iface_init( ofaIGetterInterface *iface );
-static ofaIGetter           *igetter_get_permanent_getter( const ofaIGetter *instance );
-static GApplication         *igetter_get_application( const ofaIGetter *instance );
-static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
-static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
-static ofaIPageManager      *igetter_get_page_manager( const ofaIGetter *instance );
-static void                  iaction_map_iface_init( myIActionMapInterface *iface );
-static GMenuModel           *iaction_map_get_menu_model( const myIActionMap *instance );
+static void     init_i18n( ofaApplication *self );
+static gboolean init_gtk_args( ofaApplication *self );
+static gboolean manage_options( ofaApplication *self );
+static void     application_startup( GApplication *application );
+static void     setup_application_menu( ofaApplication *self );
+static void     appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
+static void     menubar_update_items( ofaApplication *self );
+static void     application_activate( GApplication *application );
+static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
+static void     on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaApplication *application );
+static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_recover( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_version( ofaApplication *application );
+static void     iaction_map_iface_init( myIActionMapInterface *iface );
 
 G_DEFINE_TYPE_EXTENDED( ofaApplication, ofa_application, GTK_TYPE_APPLICATION, 0,
 		G_ADD_PRIVATE( ofaApplication )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IACTION_MAP, iaction_map_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IGETTER, igetter_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IACTION_MAP, iaction_map_iface_init ))
 
 static const GActionEntry st_app_entries[] = {
 		{ "manage",        on_manage,        NULL, NULL, NULL },
@@ -221,7 +217,7 @@ application_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->menu );
+		g_clear_object( &priv->menu_model );
 		g_clear_object( &priv->dos_store );
 		g_clear_object( &priv->hub );
 	}
@@ -413,35 +409,6 @@ ofa_application_class_init( ofaApplicationClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_POINTER );
-
-	/**
-	 * ofaApplication::menu-available:
-	 *
-	 * This signal is sent on the application after having defined the
-	 * actions map and loaded the menu definition. As our application
-	 * defines two menus (with or without a dossier being opened), this
-	 * signal is sent twice, once for each corresponding #GActionMap.
-	 *
-	 * The plugins may take advantage of this signal for updating the
-	 * provided menus and actions maps.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaApplication  *application,
-	 * 						GActionMap    *map,
-	 * 						const gchar   *prefix,
-	 * 						gpointer       user_data );
-	 */
-	st_signals[ MENU_AVAILABLE ] = g_signal_new_class_handler(
-				"menu-available",
-				OFA_TYPE_APPLICATION,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_POINTER, G_TYPE_STRING );
 }
 
 /**
@@ -694,8 +661,6 @@ application_startup( GApplication *application )
 	static const gchar *thisfn = "ofa_application_startup";
 	ofaApplication *appli;
 	ofaApplicationPrivate *priv;
-	GtkBuilder *builder;
-	GMenuModel *menu;
 	ofaDossierCollection *collection;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
@@ -710,55 +675,75 @@ application_startup( GApplication *application )
 		G_APPLICATION_CLASS( ofa_application_parent_class )->startup( application );
 	}
 
-	/* instanciates and initializes the #ofaHub object of the application */
-	priv->hub = ofa_hub_new( application, priv->argv[0] );
+	/* instanciates and initializes the #ofaHub object of the application
+	 * this also loads and initializes dynamically loadable modules (aka plugins) */
+	priv->hub = ofa_hub_new();
+	ofa_hub_set_application( priv->hub, application );
+	ofa_hub_set_runtime_command( priv->hub, priv->argv[0] );
 
-	ofa_misc_audit_item_signal_connect( OFA_IGETTER( application ));
-	ofa_misc_collector_item_signal_connect( OFA_IGETTER( application ));
+	/* menu management
+	 * - let some classes add their own items through IDynamicUI interface
+	 * - load the menu from the resources
+	 * - enable the menu items sensitivity depending of current conditions */
+	ofa_misc_audit_item_signal_connect( OFA_IGETTER( priv->hub ));
+	ofa_misc_collector_item_signal_connect( OFA_IGETTER( priv->hub ));
+	setup_application_menu( OFA_APPLICATION( application ));
+	menubar_update_items( appli );
 
-	/* define the application actions */
+	/* dossiers collection monitoring
+	 */
+	collection = ofa_igetter_get_dossier_collection( OFA_IGETTER( priv->hub ));
+	g_signal_connect( collection, "changed", G_CALLBACK( on_dossier_collection_changed ), application );
+	on_dossier_collection_changed( collection, ofa_dossier_collection_get_count( collection ), appli );
+
+	/* takes the ownership on the dossier store so that we are sure
+	 * it will be available during the run */
+	priv->dos_store = ofa_dossier_store_new( OFA_IGETTER( priv->hub ));
+}
+
+static void
+setup_application_menu( ofaApplication *self )
+{
+	static const gchar *thisfn = "ofa_application_setup_application_menu";
+	ofaApplicationPrivate *priv;
+	GtkBuilder *builder;
+	GMenuModel *menu;
+	myMenuManager *menu_manager;
+
+	priv = ofa_application_get_instance_private( self );
+
+	/* define the application actions
+	 */
 	g_action_map_add_action_entries(
-			G_ACTION_MAP( appli ),
+			G_ACTION_MAP( self ),
 	        st_app_entries, G_N_ELEMENTS( st_app_entries ),
-	        ( gpointer ) appli );
-
-	my_iaction_map_register( MY_IACTION_MAP( application ), "app" );
+	        ( gpointer ) self );
 
 	/* define a traditional menubar
-	 * the program will abort if GtkBuilder is not able to be parsed
-	 * from the given file
+	 * the program will abort if GtkBuilder is not able to parse the given file
 	 * + store the references to the plugins placeholders
 	 * + let the plugins update these menu map/model
 	 */
 	builder = gtk_builder_new_from_resource( st_resource_appmenu );
 	menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_appmenu_id ));
 	if( menu ){
-		priv->menu = g_object_ref( menu );
 		g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
 				thisfn, st_resource_appmenu, ( void * ) menu, g_menu_model_get_n_items( menu ));
 
-		appli_store_ref( appli, builder, "plugins_app_dossier" );
-		appli_store_ref( appli, builder, "plugins_app_misc" );
+		appli_store_ref( self, builder, "plugins_app_dossier" );
+		appli_store_ref( self, builder, "plugins_app_misc" );
 
 	} else {
 		g_warning( "%s: unable to find '%s' object in '%s' resource", thisfn, st_appmenu_id, st_resource_appmenu );
 	}
-	g_object_unref( builder );
 
-	/* update the menu items sensitivity */
-	menubar_update_items( appli );
-
-	g_signal_emit_by_name( application, "menu-available", application, "app" );
-
-	/* dossiers collection monitoring
+	/* register the menu model with the action map
 	 */
-	collection = ofa_hub_get_dossier_collection( priv->hub );
-	g_signal_connect( collection, "changed", G_CALLBACK( on_dossier_collection_changed ), application );
-	on_dossier_collection_changed( collection, ofa_dossier_collection_get_count( collection ), appli );
+	menu_manager = ofa_igetter_get_menu_manager( OFA_IGETTER( priv->hub ));
+	my_menu_manager_register( menu_manager, MY_IACTION_MAP( self ), "app", menu );
+	priv->menu_model = g_object_ref( menu );
 
-	/* takes the ownership on the dossier store so that we are sure
-	 * it will be available during the run */
-	priv->dos_store = ofa_dossier_store_new( priv->hub );
+	g_object_unref( builder );
 }
 
 /*
@@ -769,15 +754,15 @@ static void
 appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder )
 {
 	static const gchar *thisfn = "ofa_application_appli_store_ref";
-	GObject *menu;
+	GObject *item;
 
-	menu = gtk_builder_get_object( builder, placeholder );
-	if( !menu ){
+	item = gtk_builder_get_object( builder, placeholder );
+	if( !item ){
 		g_warning( "%s: unable to find '%s' placeholder", thisfn, placeholder );
 	} else {
 		/* gtk+/examples/plugman.c uses g_object_set_data_full(), but
-		 *  menu appears to be unreffed with its parent GMenuModel */
-		g_object_set_data( G_OBJECT( application ), placeholder, menu );
+		 *  item appears to be unreffed with its parent GMenuModel */
+		g_object_set_data( G_OBJECT( application ), placeholder, item );
 	}
 }
 
@@ -785,15 +770,13 @@ static void
 menubar_update_items( ofaApplication *self )
 {
 	ofaApplicationPrivate *priv;
-	ofaHub *hub;
 	ofaExtenderCollection *collection;
 	GList *recovers;
 	gboolean has_irecover;
 
 	priv = ofa_application_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-	collection = ofa_hub_get_extender_collection( hub );
+	collection = ofa_igetter_get_extender_collection( OFA_IGETTER( priv->hub ));
 	recovers = ofa_extender_collection_get_for_type( collection, OFA_TYPE_IRECOVER );
 	has_irecover = ( g_list_length( recovers ) > 0 );
 	ofa_extender_collection_free_types( recovers );
@@ -843,7 +826,7 @@ application_activate( GApplication *application )
 	ofa_maintainer_run_by_application( OFA_APPLICATION( application ));
 
 	/* then create the main window */
-	priv->main_window = ofa_main_window_new( OFA_APPLICATION( application ));
+	priv->main_window = ofa_main_window_new( OFA_IGETTER( priv->hub ));
 	g_debug( "%s: main window instanciated at %p", thisfn, priv->main_window );
 	gtk_window_present( GTK_WINDOW( priv->main_window ));
 
@@ -959,7 +942,7 @@ on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_dossier_manager_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ));
+	ofa_dossier_manager_run( OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ));
 }
 
 static void
@@ -977,7 +960,7 @@ on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_dossier_new_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ));
+	ofa_dossier_new_run( OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ));
 }
 
 static void
@@ -996,7 +979,7 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
 	if( ofa_dossier_open_run(
-				OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ),
+				OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ),
 				NULL, NULL, NULL, FALSE )){
 
 		ofa_main_window_dossier_apply_actions( priv->main_window );
@@ -1018,7 +1001,7 @@ on_recover( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_recovery_assistant_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ) );
+	ofa_recovery_assistant_run( OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ) );
 }
 
 static void
@@ -1036,7 +1019,7 @@ on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_restore_assistant_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ) );
+	ofa_restore_assistant_run( OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ) );
 }
 
 static void
@@ -1056,7 +1039,7 @@ on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	/* passing a ofaIGetter could be the application as well as the
 	 * main window */
-	ofa_preferences_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ), NULL );
+	ofa_preferences_run( OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ), NULL );
 }
 
 /*
@@ -1067,26 +1050,33 @@ static void
 on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_application_on_quit";
-	ofaApplication *application;
-	GList *windows;
-	ofaMainWindow *window;
 	ofaApplicationPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
-	application = OFA_APPLICATION( user_data );
-	priv = ofa_application_get_instance_private( application );
 
+	priv = ofa_application_get_instance_private( OFA_APPLICATION( user_data ));
+
+	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
+
+#if 0
+	GList *windows;
+	ofaMainWindow *window;
 	windows = gtk_application_get_windows( GTK_APPLICATION( application ));
 	if( windows ){
 		window = OFA_MAIN_WINDOW( windows->data );
-		if( !ofa_prefs_appli_confirm_on_quit( priv->hub ) || ofa_main_window_is_willing_to_quit( window )){
+		if( !ofa_prefs_appli_confirm_on_quit( OFA_IGETTER( priv->hub )) || ofa_main_window_is_willing_to_quit( window )){
 			gtk_widget_destroy( GTK_WIDGET( window ));
 		}
 	} else {
 		g_application_quit( G_APPLICATION( application ));
+	}
+#endif
+
+	if( !ofa_prefs_appli_confirm_on_quit( OFA_IGETTER( priv->hub )) || ofa_main_window_is_willing_to_quit( priv->main_window )){
+		gtk_widget_destroy( GTK_WIDGET( priv->main_window ));
 	}
 }
 
@@ -1105,7 +1095,7 @@ on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_plugin_manager_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ));
+	ofa_plugin_manager_run( OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ));
 }
 
 static void
@@ -1123,7 +1113,7 @@ on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_about_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ));
+	ofa_about_run( OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ));
 }
 
 static void
@@ -1141,127 +1131,6 @@ on_version( ofaApplication *application )
 			GTK_MAJOR_VERSION, GTK_MINOR_VERSION, GTK_MICRO_VERSION );
 }
 
-/**
- * ofa_application_get_hub:
- * @application: this #ofaApplication instance.
- *
- * Returns: the #ofaHub object of the application.
- *
- * This method should not be called by normal code. It is only meant to
- * be used by the ofaMainWindow implementation of the ofaIGetter interface.
- */
-ofaHub *
-ofa_application_get_hub( ofaApplication *application )
-{
-	ofaApplicationPrivate *priv;
-
-	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
-
-	priv = ofa_application_get_instance_private( application );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->hub );
-}
-
-/**
- * ofa_application_get_menu_model:
- * @application: this #ofaApplication instance.
- */
-GMenuModel *
-ofa_application_get_menu_model( ofaApplication *application )
-{
-	ofaApplicationPrivate *priv;
-
-	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
-
-	priv = ofa_application_get_instance_private( application );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->menu );
-}
-
-/**
- * ofa_application_get_action_entries:
- * @application: this #ofaApplication instance.
- */
-const GActionEntry *
-ofa_application_get_action_entries( ofaApplication *application )
-{
-	ofaApplicationPrivate *priv;
-
-	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
-
-	priv = ofa_application_get_instance_private( application );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( st_app_entries );
-}
-
-/*
- * ofaIGetter interface management
- */
-static void
-igetter_iface_init( ofaIGetterInterface *iface )
-{
-	static const gchar *thisfn = "ofa_application_igetter_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_permanent = igetter_get_permanent_getter;
-	iface->get_application = igetter_get_application;
-	iface->get_hub = igetter_get_hub;
-	iface->get_main_window = igetter_get_main_window;
-	iface->get_page_manager = igetter_get_page_manager;
-}
-
-static ofaIGetter *
-igetter_get_permanent_getter( const ofaIGetter *instance )
-{
-	return( OFA_IGETTER( instance ));
-}
-
-static GApplication *
-igetter_get_application( const ofaIGetter *instance )
-{
-	return( G_APPLICATION( instance ));
-}
-
-static ofaHub *
-igetter_get_hub( const ofaIGetter *instance )
-{
-	ofaApplicationPrivate *priv;
-
-	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
-
-	return( priv->hub );
-}
-
-static GtkApplicationWindow *
-igetter_get_main_window( const ofaIGetter *instance )
-{
-	ofaApplicationPrivate *priv;
-
-	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
-
-	return( GTK_APPLICATION_WINDOW( priv->main_window ));
-}
-
-/*
- * the themes are managed by the main window
- */
-static ofaIPageManager *
-igetter_get_page_manager( const ofaIGetter *instance )
-{
-	ofaApplicationPrivate *priv;
-
-	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
-
-	return( OFA_IPAGE_MANAGER( priv->main_window ));
-}
-
 /*
  * myIActionMap interface management
  */
@@ -1271,16 +1140,4 @@ iaction_map_iface_init( myIActionMapInterface *iface )
 	static const gchar *thisfn = "ofa_application_iaction_map_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_menu_model = iaction_map_get_menu_model;
-}
-
-static GMenuModel *
-iaction_map_get_menu_model( const myIActionMap *instance )
-{
-	ofaApplicationPrivate *priv;
-
-	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
-
-	return( priv->menu );
 }

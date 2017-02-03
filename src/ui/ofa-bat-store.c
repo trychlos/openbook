@@ -35,6 +35,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-counter.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
@@ -51,6 +52,10 @@ typedef struct {
 	gboolean    dispose_has_run;
 
 	/* initialization
+	 */
+	ofaIGetter *getter;
+
+	/* runtime
 	 */
 	ofaHub     *hub;
 	GList      *hub_handlers;
@@ -158,7 +163,7 @@ ofa_bat_store_class_init( ofaBatStoreClass *klass )
 
 /**
  * ofa_bat_store_new:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new #ofaBatStore and attached it to the @hub
  * if not already done. Else get the already allocated #ofaBatStore
@@ -175,15 +180,15 @@ ofa_bat_store_class_init( ofaBatStoreClass *klass )
  * #g_object_unref() by the caller after use.
  */
 ofaBatStore *
-ofa_bat_store_new( ofaHub *hub )
+ofa_bat_store_new( ofaIGetter *getter )
 {
 	ofaBatStore *store;
 	ofaBatStorePrivate *priv;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_igetter_get_collector( getter );
 	store = ( ofaBatStore * ) my_icollector_single_get_object( collector, OFA_TYPE_BAT_STORE );
 
 	if( store ){
@@ -193,7 +198,9 @@ ofa_bat_store_new( ofaHub *hub )
 		store = g_object_new( OFA_TYPE_BAT_STORE, NULL );
 
 		priv = ofa_bat_store_get_instance_private( store );
-		priv->hub = hub;
+
+		priv->getter = getter;
+		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[BAT_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
@@ -246,7 +253,7 @@ load_dataset( ofaBatStore *self )
 
 	priv = ofa_bat_store_get_instance_private( self );
 
-	dataset = ofo_bat_get_dataset( priv->hub );
+	dataset = ofo_bat_get_dataset( priv->getter );
 
 	for( it=dataset ; it ; it=it->next ){
 		bat = OFO_BAT( it->data );
@@ -278,16 +285,16 @@ set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat )
 
 	priv = ofa_bat_store_get_instance_private( self );
 
-	sid = ofa_counter_to_str( ofo_bat_get_id( bat ), priv->hub );
+	sid = ofa_counter_to_str( ofo_bat_get_id( bat ), priv->getter );
 	date = ofo_bat_get_begin_date( bat );
 	if( my_date_is_valid( date )){
-		sbegin = my_date_to_str( date, ofa_prefs_date_display( priv->hub ));
+		sbegin = my_date_to_str( date, ofa_prefs_date_display( priv->getter ));
 	} else {
 		sbegin = g_strdup( "" );
 	}
 	date = ofo_bat_get_end_date( bat );
 	if( my_date_is_valid( date )){
-		send = my_date_to_str( date, ofa_prefs_date_display( priv->hub ));
+		send = my_date_to_str( date, ofa_prefs_date_display( priv->getter ));
 	} else {
 		send = g_strdup( "" );
 	}
@@ -295,15 +302,15 @@ set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat )
 	if( !cscurrency ){
 		cscurrency = "";
 	}
-	cur_obj = my_strlen( cscurrency ) ? ofo_currency_get_by_code( priv->hub, cscurrency ) : NULL;
+	cur_obj = my_strlen( cscurrency ) ? ofo_currency_get_by_code( priv->getter, cscurrency ) : NULL;
 	g_return_if_fail( !cur_obj || OFO_IS_CURRENCY( cur_obj ));
 	if( ofo_bat_get_begin_solde_set( bat )){
-		sbeginsolde = ofa_amount_to_str( ofo_bat_get_begin_solde( bat ), cur_obj, priv->hub );
+		sbeginsolde = ofa_amount_to_str( ofo_bat_get_begin_solde( bat ), cur_obj, priv->getter );
 	} else {
 		sbeginsolde = g_strdup( "" );
 	}
 	if( ofo_bat_get_end_solde_set( bat )){
-		sendsolde = ofa_amount_to_str( ofo_bat_get_end_solde( bat ), cur_obj, priv->hub );
+		sendsolde = ofa_amount_to_str( ofo_bat_get_end_solde( bat ), cur_obj, priv->getter );
 	} else {
 		sendsolde = g_strdup( "" );
 	}
@@ -594,9 +601,9 @@ hub_on_deleted_concil_enumerate_cb( ofoConcil *concil, const gchar *type, ofxCou
 	priv = ofa_bat_store_get_instance_private( self );
 
 	if( !g_utf8_collate( type, CONCIL_TYPE_BAT )){
-		bat_id = ofo_bat_line_get_bat_id_from_bat_line_id( priv->hub, id );
+		bat_id = ofo_bat_line_get_bat_id_from_bat_line_id( priv->getter, id );
 		if( find_bat_by_id( self, bat_id, &iter )){
-			bat = ofo_bat_get_by_id( priv->hub, bat_id );
+			bat = ofo_bat_get_by_id( priv->getter, bat_id );
 			set_row_by_iter( self, &iter, bat );
 		}
 	}

@@ -32,6 +32,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-counter.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 
 #include "recurrent/ofa-recurrent-run-store.h"
@@ -41,13 +42,17 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 
 	/* runtime
 	 */
-	ofaHub  *hub;
-	GList   *hub_handlers;
-	gint     mode;						/* from_db or from_list */
+	ofaHub     *hub;
+	GList      *hub_handlers;
+	gint        mode;						/* from_db or from_list */
 }
 	ofaRecurrentRunStorePrivate;
 
@@ -58,7 +63,7 @@ static GType st_col_types[REC_RUN_N_COLUMNS] = {
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* the #ofoRecurrentRun itself, the #ofoRecurrentModel */
 };
 
-static ofaRecurrentRunStore *create_new_store( ofaHub *hub, gint mode );
+static ofaRecurrentRunStore *create_new_store( ofaIGetter *getter, gint mode );
 static void                  load_dataset( ofaRecurrentRunStore *self );
 static gint                  on_sort_run( GtkTreeModel *trun, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentRunStore *self );
 static void                  do_insert_dataset( ofaRecurrentRunStore *self, const GList *dataset );
@@ -142,7 +147,7 @@ ofa_recurrent_run_store_class_init( ofaRecurrentRunStoreClass *klass )
 
 /**
  * ofa_recurrent_run_store_new:
- * @hub: the current #ofaHub object.
+ * @getter: a #ofaIGetter instance.
  * @mode: whether data come from DBMS or from a provided list.
  *
  * In from DBMS mode, instanciates a new #ofaRecurrentRunStore and
@@ -161,37 +166,37 @@ ofa_recurrent_run_store_class_init( ofaRecurrentRunStoreClass *klass )
  * Returns: a new reference to the #ofaRecurrentStore object.
  */
 ofaRecurrentRunStore *
-ofa_recurrent_run_store_new( ofaHub *hub, gint mode )
+ofa_recurrent_run_store_new( ofaIGetter *getter, gint mode )
 {
 	ofaRecurrentRunStore *store;
 	myICollector *collector;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( mode == REC_MODE_FROM_DBMS || mode == REC_MODE_FROM_LIST, NULL );
 
 	if( mode == REC_MODE_FROM_DBMS ){
 
-		collector = ofa_hub_get_collector( hub );
+		collector = ofa_igetter_get_collector( getter );
 		store = ( ofaRecurrentRunStore * ) my_icollector_single_get_object( collector, OFA_TYPE_RECURRENT_RUN_STORE );
 
 		if( store ){
 			g_return_val_if_fail( OFA_IS_RECURRENT_RUN_STORE( store ), NULL );
 
 		} else {
-			store = create_new_store( hub, mode );
+			store = create_new_store( getter, mode );
 			my_icollector_single_set_object( collector, store );
 			load_dataset( store );
 		}
 
 	} else {
-		store = create_new_store( hub, mode );
+		store = create_new_store( getter, mode );
 	}
 
 	return( store );
 }
 
 static ofaRecurrentRunStore *
-create_new_store( ofaHub *hub, gint mode )
+create_new_store( ofaIGetter *getter, gint mode )
 {
 	ofaRecurrentRunStore *store;
 	ofaRecurrentRunStorePrivate *priv;
@@ -199,7 +204,9 @@ create_new_store( ofaHub *hub, gint mode )
 	store = g_object_new( OFA_TYPE_RECURRENT_RUN_STORE, NULL );
 
 	priv = ofa_recurrent_run_store_get_instance_private( store );
-	priv->hub = hub;
+
+	priv->getter = getter;
+	priv->hub = ofa_igetter_get_hub( getter );
 	priv->mode = mode;
 
 	gtk_list_store_set_column_types(
@@ -224,7 +231,7 @@ load_dataset( ofaRecurrentRunStore *self )
 
 	priv = ofa_recurrent_run_store_get_instance_private( self );
 
-	dataset = ofo_recurrent_run_get_dataset( priv->hub );
+	dataset = ofo_recurrent_run_get_dataset( priv->getter );
 	do_insert_dataset( self, dataset );
 }
 
@@ -305,21 +312,21 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 
 	cmnemo = ofo_recurrent_run_get_mnemo( run );
 
-	model = ofo_recurrent_model_get_by_mnemo( priv->hub, cmnemo );
+	model = ofo_recurrent_model_get_by_mnemo( priv->getter, cmnemo );
 	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 
-	sdate = my_date_to_str( ofo_recurrent_run_get_date( run ), ofa_prefs_date_display( priv->hub ));
+	sdate = my_date_to_str( ofo_recurrent_run_get_date( run ), ofa_prefs_date_display( priv->getter ));
 
 	cstatus = ofo_recurrent_run_get_status( run );
 	status = ofo_recurrent_run_get_status_label( cstatus );
 
 	numseq = ofo_recurrent_run_get_numseq( run );
-	snum = ofa_counter_to_str( numseq, priv->hub );
+	snum = ofa_counter_to_str( numseq, priv->getter );
 
 	cstr = ofo_recurrent_model_get_def_amount1( model );
 	if( my_strlen( cstr )){
 		amount = ofo_recurrent_run_get_amount1( run );
-		samount1 = ofa_amount_to_str( amount, NULL, priv->hub );
+		samount1 = ofa_amount_to_str( amount, NULL, priv->getter );
 	} else {
 		samount1 = g_strdup( "" );
 	}
@@ -327,7 +334,7 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 	cstr = ofo_recurrent_model_get_def_amount2( model );
 	if( my_strlen( cstr )){
 		amount = ofo_recurrent_run_get_amount2( run );
-		samount2 = ofa_amount_to_str( amount, NULL, priv->hub );
+		samount2 = ofa_amount_to_str( amount, NULL, priv->getter );
 	} else {
 		samount2 = g_strdup( "" );
 	}
@@ -335,7 +342,7 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 	cstr = ofo_recurrent_model_get_def_amount3( model );
 	if( my_strlen( cstr )){
 		amount = ofo_recurrent_run_get_amount3( run );
-		samount3 = ofa_amount_to_str( amount, NULL, priv->hub );
+		samount3 = ofa_amount_to_str( amount, NULL, priv->getter );
 	} else {
 		samount3 = g_strdup( "" );
 	}
