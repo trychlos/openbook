@@ -135,12 +135,14 @@ page_v_setup_page( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_ope_template_page_v_setup_page";
 	ofaOpeTemplatePagePrivate *priv;
+	ofaIGetter *getter;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
-	priv->template_bin = ofa_ope_template_frame_bin_new( OFA_IGETTER( page ));
+	getter = ofa_page_get_getter( page );
+	priv->template_bin = ofa_ope_template_frame_bin_new( getter );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->template_bin ), 2, 2, 2, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->template_bin ), 0, 0, 1, 1 );
 	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, priv->settings_prefix );
@@ -179,11 +181,13 @@ page_v_get_top_focusable_widget( const ofaPage *page )
 static void
 on_row_activated( ofaOpeTemplateFrameBin *frame, ofoOpeTemplate *template, ofaOpeTemplatePage *self )
 {
+	ofaIGetter *getter;
 	GtkWindow *toplevel;
 
 	g_return_if_fail( template && OFO_IS_OPE_TEMPLATE( template ));
 
+	getter = ofa_page_get_getter( OFA_PAGE( self ));
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
-	ofa_ope_template_properties_run( OFA_IGETTER( self ), toplevel, template, NULL );
+	ofa_ope_template_properties_run( getter, toplevel, template, NULL );
 }

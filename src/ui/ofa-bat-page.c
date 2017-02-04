@@ -360,7 +360,7 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *
 	bat = ofa_bat_treeview_get_selected( priv->tview );
 	if( bat ){
 		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-		ofa_bat_properties_run( OFA_IGETTER( self ), toplevel, bat );
+		ofa_bat_properties_run( priv->getter, toplevel, bat );
 	}
 }
 
@@ -400,7 +400,7 @@ action_on_import_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *
 	priv = ofa_bat_page_get_instance_private( self );
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	bat_id = ofa_bat_utils_import( OFA_IGETTER( self ), toplevel );
+	bat_id = ofa_bat_utils_import( priv->getter, toplevel );
 	if( bat_id > 0 ){
 		ofa_bat_treeview_set_selected( priv->tview, bat_id );
 	}

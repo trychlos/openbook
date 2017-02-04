@@ -150,12 +150,14 @@ action_page_v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_paimean_page_v_setup_view";
 	ofaPaimeanPagePrivate *priv;
+	ofaIGetter *getter;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( page ));
 
-	priv->fbin = ofa_paimean_frame_bin_new( OFA_IGETTER( page ), priv->settings_prefix );
+	getter = ofa_page_get_getter( OFA_PAGE( page ));
+	priv->fbin = ofa_paimean_frame_bin_new( getter, priv->settings_prefix );
 	g_signal_connect( priv->fbin, "ofa-activated", G_CALLBACK( on_row_activated ), page );
 
 	return( GTK_WIDGET( priv->fbin ));
@@ -164,10 +166,13 @@ action_page_v_setup_view( ofaActionPage *page )
 static void
 on_row_activated( ofaPaimeanFrameBin *bin, ofoPaimean *paimean, ofaPaimeanPage *self )
 {
+	ofaIGetter *getter;
 	GtkWindow *toplevel;
 
 	g_return_if_fail( paimean && OFO_IS_PAIMEAN( paimean ));
 
+	getter = ofa_page_get_getter( OFA_PAGE( self ));
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_paimean_properties_run( OFA_IGETTER( self ), toplevel, paimean );
+
+	ofa_paimean_properties_run( getter, toplevel, paimean );
 }

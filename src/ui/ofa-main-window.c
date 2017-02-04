@@ -666,8 +666,11 @@ menubar_update_items( ofaMainWindow *self )
 static void
 init_themes( ofaMainWindow *self )
 {
+	ofaMainWindowPrivate *priv;
 	gint i;
-	GtkApplication *application;
+	ofaISignaler *signaler;
+
+	priv = ofa_main_window_get_instance_private( self );
 
 	/* define the themes for the main window */
 	for( i=0 ; st_theme_defs[i].label ; ++i ){
@@ -677,9 +680,8 @@ init_themes( ofaMainWindow *self )
 	}
 
 	/* declare then the theme manager general availability */
-	application = gtk_window_get_application( GTK_WINDOW( self ));
-	g_return_if_fail( application && OFA_IS_APPLICATION( application ));
-	g_signal_emit_by_name( application, "theme-available", self );
+	signaler = ofa_igetter_get_signaler( priv->getter );
+	g_signal_emit_by_name( signaler, "ofa-signaler-page-manager-available", self );
 }
 
 static void
@@ -1780,11 +1782,15 @@ on_tab_close_clicked( myTab *tab, ofaPage *page )
 static void
 do_close( ofaPage *page )
 {
+	ofaIGetter *getter;
 	GtkApplicationWindow *main_window;
 	GtkNotebook *book;
 	gint page_num;
 
-	main_window = ofa_igetter_get_main_window( OFA_IGETTER( page ));
+	getter = ofa_page_get_getter( page );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+
+	main_window = ofa_igetter_get_main_window( getter );
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	book = notebook_get_book( OFA_MAIN_WINDOW( main_window ));

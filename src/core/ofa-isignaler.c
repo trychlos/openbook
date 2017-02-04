@@ -113,11 +113,11 @@ interface_base_init( ofaISignalerInterface *klass )
 		 * ofaISignaler::ofa-signaler-page-manager-available:
 		 *
 		 * The signal is emitted when the #ofaIPageManager is available
-		 * to registered new themes.
+		 * to register new themes.
 		 *
 		 * Handler is of type:
 		 * 		void user_handler( ofaISignaler     *signaler,
-		 * 							ofaIGetter      *getter,
+		 * 							ofaIPageManager *manager,
 		 * 							gpointer         user_data );
 		 */
 		st_signals[ PAGE_MANAGER_AVAILABLE ] = g_signal_new_class_handler(

@@ -384,7 +384,7 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaTVARecord
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_tva_record_properties_run( OFA_IGETTER( self ), toplevel, record );
+	ofa_tva_record_properties_run( priv->getter, toplevel, record );
 	/* update is taken into account by dossier signaling system */
 }
 

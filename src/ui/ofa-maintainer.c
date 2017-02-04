@@ -45,16 +45,16 @@ static void test_libarchive( ofaIGetter *getter );
  * ofa_maintainer_run_by_application:
  */
 void
-ofa_maintainer_run_by_application( ofaApplication *application )
+ofa_maintainer_run_by_application( ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_maintainer_run_by_application";
 
-	g_debug( "%s: application=%p", thisfn, ( void * ) application );
+	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	if( 0 ){
 		old_functions();
-		test_compressor( OFA_IGETTER( application ));
-		test_libarchive( OFA_IGETTER( application ));
+		test_compressor( getter );
+		test_libarchive( getter );
 	}
 }
 

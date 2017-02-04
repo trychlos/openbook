@@ -280,7 +280,7 @@ render_page_v_get_args_widget( ofaRenderPage *page )
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( page ));
 
-	bin = ofa_balance_args_new( OFA_IGETTER( page ), priv->settings_prefix );
+	bin = ofa_balance_args_new( priv->getter, priv->settings_prefix );
 	g_signal_connect( bin, "ofa-changed", G_CALLBACK( on_args_changed ), page );
 	priv->args_bin = bin;
 

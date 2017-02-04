@@ -876,7 +876,7 @@ setup_view2( ofaGuidedEx *self )
 
 	bin_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "bin-parent" );
 	g_return_val_if_fail( bin_parent && GTK_IS_BOX( bin_parent ), NULL );
-	priv->input_bin = ofa_guided_input_bin_new( OFA_IGETTER( self ));
+	priv->input_bin = ofa_guided_input_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( bin_parent ), GTK_WIDGET( priv->input_bin ));
 	g_signal_connect( priv->input_bin, "ofa-changed", G_CALLBACK( right_on_piece_changed ), self );
 

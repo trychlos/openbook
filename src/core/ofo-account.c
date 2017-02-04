@@ -2009,25 +2009,21 @@ icollectionable_get_interface_version( void )
 static GList *
 icollectionable_load_collection( void *user_data )
 {
-	ofaIGetter *getter;
-	ofaHub *hub;
 	GList *dataset, *it;
 	ofoAccount *account;
 	ofoAccountPrivate *priv;
 	gchar *from;
+	ofaHub *hub;
 
-	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
-
-	getter = ( ofaIGetter * ) user_data;
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
-
-	hub = ofa_igetter_get_hub( getter );
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_ACCOUNTS",
 					OFO_TYPE_ACCOUNT,
-					getter );
+					OFA_IGETTER( user_data ));
+
+	hub = ofa_igetter_get_hub( OFA_IGETTER( user_data ));
 
 	for( it=dataset ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );

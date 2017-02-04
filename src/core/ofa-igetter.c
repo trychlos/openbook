@@ -174,7 +174,7 @@ ofa_igetter_get_application( const ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_igetter_get_application";
 
-	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_application ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_application( getter ));
@@ -199,7 +199,7 @@ ofa_igetter_get_auth_settings( const ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_igetter_get_auth_settings";
 
-	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_auth_settings ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_auth_settings( getter ));
@@ -224,7 +224,7 @@ ofa_igetter_get_collector( const ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_igetter_get_collector";
 
-	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_collector ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_collector( getter ));
@@ -251,7 +251,7 @@ ofa_igetter_get_dossier_collection( const ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_igetter_get_dossier_collection";
 
-	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_dossier_collection ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_dossier_collection( getter ));
@@ -277,7 +277,7 @@ ofa_igetter_get_dossier_settings( const ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_igetter_get_dossier_settings";
 
-	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_dossier_settings ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_dossier_settings( getter ));
@@ -302,7 +302,7 @@ ofa_igetter_get_extender_collection( const ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_igetter_get_extender_collection";
 
-	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_extender_collection ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_extender_collection( getter ));
@@ -330,7 +330,7 @@ ofa_igetter_get_for_type( const ofaIGetter *getter, GType type )
 {
 	static const gchar *thisfn = "ofa_igetter_get_for_type";
 
-	g_debug( "%s: getter=%p, type=%lu", thisfn, ( void * ) getter, type );
+	//g_debug( "%s: getter=%p, type=%lu", thisfn, ( void * ) getter, type );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_for_type ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_for_type( getter, type ));
@@ -355,7 +355,7 @@ ofa_igetter_get_hub( const ofaIGetter *instance )
 {
 	static const gchar *thisfn = "ofa_igetter_get_hub";
 
-	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
+	//g_debug( "%s: getter=%p, type=%lu", thisfn, ( void * ) getter, type );
 
 	if( OFA_IGETTER_GET_INTERFACE( instance )->get_hub ){
 		return( OFA_IGETTER_GET_INTERFACE( instance )->get_hub( instance ));
@@ -380,7 +380,7 @@ ofa_igetter_get_openbook_props( const ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_igetter_get_openbook_props";
 
-	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_openbook_props ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_openbook_props( getter ));
@@ -406,7 +406,7 @@ ofa_igetter_get_runtime_dir( const ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_igetter_get_runtime_dir";
 
-	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_runtime_dir ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_runtime_dir( getter ));
@@ -431,7 +431,7 @@ ofa_igetter_get_signaler( const ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_igetter_get_signaler";
 
-	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_signaler ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_signaler( getter ));
@@ -456,7 +456,7 @@ ofa_igetter_get_user_settings( const ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_igetter_get_user_settings";
 
-	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_user_settings ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_user_settings( getter ));
@@ -482,7 +482,7 @@ ofa_igetter_get_main_window( const ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_igetter_get_main_window";
 
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	//g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	if( OFA_IGETTER_GET_INTERFACE( getter )->get_main_window ){
 		return( OFA_IGETTER_GET_INTERFACE( getter )->get_main_window( getter ));
@@ -509,7 +509,7 @@ ofa_igetter_get_page_manager( const ofaIGetter *instance )
 {
 	static const gchar *thisfn = "ofa_igetter_get_page_manager";
 
-	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
+	//g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
 
 	if( OFA_IGETTER_GET_INTERFACE( instance )->get_page_manager ){
 		return( OFA_IGETTER_GET_INTERFACE( instance )->get_page_manager( instance ));
@@ -536,7 +536,7 @@ ofa_igetter_get_scope_mapper( const ofaIGetter *instance )
 {
 	static const gchar *thisfn = "ofa_igetter_get_scope_mapper";
 
-	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
+	//g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
 
 	if( OFA_IGETTER_GET_INTERFACE( instance )->get_scope_mapper ){
 		return( OFA_IGETTER_GET_INTERFACE( instance )->get_scope_mapper( instance ));

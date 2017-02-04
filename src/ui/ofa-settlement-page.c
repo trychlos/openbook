@@ -570,7 +570,7 @@ setup_account_selection( ofaSettlementPage *self, GtkContainer *parent )
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	priv->account_entry = widget;
 	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
-	ofa_account_editable_init( GTK_EDITABLE( widget ), OFA_IGETTER( self ), ACCOUNT_ALLOW_SETTLEABLE );
+	ofa_account_editable_init( GTK_EDITABLE( widget ), priv->getter, ACCOUNT_ALLOW_SETTLEABLE );
 }
 
 static void

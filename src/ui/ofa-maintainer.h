@@ -32,12 +32,11 @@
  * @include: ui/ofa-maintainer.h
  */
 
-#include "ui/ofa-application-def.h"
-#include "ui/ofa-main-window-def.h"
+#include "api/ofa-igetter.h"
 
 G_BEGIN_DECLS
 
-void ofa_maintainer_run_by_application( ofaApplication *application );
+void ofa_maintainer_run_by_application( ofaIGetter *getter );
 
 G_END_DECLS
 

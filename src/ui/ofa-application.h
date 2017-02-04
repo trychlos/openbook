@@ -72,6 +72,7 @@
  *            ofa_application_manage_options: application=0xd8a120
  *
  *          ofa_application_run_with_args: entering g_application_run
+ *
  *            ofa_application_startup: application=0xd8a120
  *               (init here the application menu when there is no dossier)
  *
@@ -86,39 +87,29 @@
  *   The application sends a 'theme-available' signal on the
  *   GApplication object right after theme manager availability.
  *
- * Letting the plugins update the menus
- * ------------------------------------
+ * Dynamic User Interface
+ * ----------------------
+ * Every one is able to add items to the displayed menubars, to add
+ * displayed pages or new dialogs, and so on.
  *
- * The application defines two menus which are to be displayed depending
- * a dossier is opened, or not:
+ * From the menu point of view:
  *
- *   XML file definition  ofa-app-menubar.ui         ofa-dos-menubar.ui
- *   displayed when       no dossier                 a dossier is opened
- *   initialized in       ofa_application_startup()  ofa_main_window_constructed()
- *   placeholders         plugins_app_dossier        plugins_win_ope1
- *                        plugins_app_misc           plugins_win_ope2
- *                                                   plugins_win_ope3
- *                                                   plugins_win_ope4
- *                                                   plugins_win_print
- *                                                   plugins_win_ref
+ * - the 'ofaISignaler::ofa-signaler-menu-available' signal is sent each
+ *   time a #GActionMap has successfully loaded a menu from its XML
+ *   definition.
  *
- * The placeholders must be both defined in the XML definition file,
- * and initialized in the ad-hoc function (ofa_application_startup/
- * ofa_main_window_constructed).
+ *   The menus XML definitions are tagged, at each submenu, at each
+ *   section and every item is itself identifier. All dynamically
+ *   loadable modules (aka plugins) should find a place for their
+ *   specific needs.
  *
- * Right after menus definition, the application sends a 'menu-available'
- * signal on the GApplication object. This signal may be handled by the
- * plugins in order to update the menus.
+ *   As of v0.66, the application provides two different main menus:
+ *   - one on 'app' scope when no dossier is opened
+ *   - one on 'win' scope when a dossier is opened.
  *
- * Each of the two menus defines various placeholders to let the plugins
- * choose where to add their items. The corresponding menu models are
- * set as data against the GtkApplication (resp. the GtkApplicationWindow),
- * and may thus be retrieved by the plugins via g_object_get_data().
- *
- * The #ofaApplication class implements the #ofaIHubber interface.
- * As long as the code have an access to the application, it may have
- * an access to the main #ofaHub that the application maintains (and
- * so the currently opened dossier).
+ * - the 'ofaISignaler::ofa-signaler-page-manager-available' signal is
+ *   sent at the end of the primary initialization of the main window;
+ *   it means the IPageManager is ready to register new themes.
  */
 
 #include <gtk/gtk.h>

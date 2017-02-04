@@ -30,7 +30,6 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
@@ -133,12 +132,15 @@ page_v_setup_page( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_account_page_v_setup_page";
 	ofaAccountPagePrivate *priv;
+	ofaIGetter *getter;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_account_page_get_instance_private( OFA_ACCOUNT_PAGE( page ));
 
-	priv->account_bin = ofa_account_frame_bin_new( OFA_IGETTER( page ));
+	getter = ofa_page_get_getter( page );
+
+	priv->account_bin = ofa_account_frame_bin_new( getter );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 2, 2, 2, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->account_bin ), 0, 0, 1, 1 );
 	ofa_account_frame_bin_set_settings_key( priv->account_bin, priv->settings_prefix );
@@ -176,12 +178,15 @@ page_v_get_top_focusable_widget( const ofaPage *page )
 static void
 on_row_activated( ofaAccountFrameBin *frame, ofoAccount *account, ofaAccountPage *self )
 {
+	ofaIGetter *getter;
 	GtkWindow *toplevel;
 
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
+	getter = ofa_page_get_getter( OFA_PAGE( self ));
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_account_properties_run( OFA_IGETTER( self ), toplevel, account );
+
+	ofa_account_properties_run( getter, toplevel, account );
 }
 
 static void

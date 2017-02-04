@@ -480,5 +480,5 @@ action_on_declare_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormP
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_tva_record_new_run( OFA_IGETTER( self ), toplevel, record );
+	ofa_tva_record_new_run( priv->getter, toplevel, record );
 }

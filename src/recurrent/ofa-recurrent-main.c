@@ -63,10 +63,10 @@ typedef struct {
 
 static void on_menu_available( ofaISignaler *signaler, const gchar *scope, GActionMap *map, ofaIGetter *getter );
 static void menu_add_section( GMenuModel *model, const gchar *scope, const sItemDef *sitems, const gchar *placeholder );
+static void on_page_manager_available( ofaISignaler *signaler, ofaIPageManager *manager, void *empty );
 static void on_rec_period( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_recurrent_run( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_page_manager_available( ofaISignaler *signaler, ofaIGetter *getter, void *empty );
 
 /* All the actions added for the Recurrent modules
  * It happens that all these actions open pages when activated
@@ -189,16 +189,13 @@ menu_add_section( GMenuModel *parent_model, const gchar *scope, const sItemDef *
 }
 
 static void
-on_page_manager_available( ofaISignaler *signaler, ofaIGetter *getter, void *empty )
+on_page_manager_available( ofaISignaler *signaler, ofaIPageManager *manager, void *empty )
 {
 	static const gchar *thisfn = "recurrent/ofa_recurrent_main_on_page_manager_available";
-	ofaIPageManager *manager;
 	guint i;
 
-	g_debug( "%s: signaler=%p, getter=%p, empty=%p",
-			thisfn, ( void * ) signaler, ( void * ) getter, empty );
-
-	manager = ofa_igetter_get_page_manager( getter );
+	g_debug( "%s: signaler=%p, manager=%p, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) manager, empty );
 
 	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
 		ofa_ipage_manager_define( manager, ( *st_theme_defs[i].fntype )(), st_theme_defs[i].theme_label );

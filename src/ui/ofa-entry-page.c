@@ -421,7 +421,7 @@ setup_account_selection( ofaEntryPage *self )
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( widget, "changed", G_CALLBACK( account_on_changed ), self );
 	priv->account_entry = widget;
-	ofa_account_editable_init( GTK_EDITABLE( widget ), OFA_IGETTER( self ), ACCOUNT_ALLOW_DETAIL );
+	ofa_account_editable_init( GTK_EDITABLE( widget ), priv->getter, ACCOUNT_ALLOW_DETAIL );
 
 	g_signal_connect( widget, "key-press-event", G_CALLBACK( account_on_entry_key_pressed ), self );
 
@@ -1014,7 +1014,7 @@ account_do_select( ofaEntryPage *self )
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
 	acc_number = ofa_account_select_run(
-							OFA_IGETTER( self ), toplevel,
+							priv->getter, toplevel,
 							gtk_entry_get_text( GTK_ENTRY( priv->account_entry )),
 							ACCOUNT_ALLOW_DETAIL );
 
@@ -2206,7 +2206,7 @@ do_update( ofaEntryPage *self, ofoEntry *entry )
 
 	if( entry ){
 		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-		ofa_entry_properties_run( OFA_IGETTER( self ), toplevel, entry, priv->editable_row );
+		ofa_entry_properties_run( priv->getter, toplevel, entry, priv->editable_row );
 	}
 }
 

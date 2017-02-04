@@ -98,15 +98,6 @@ enum {
 	OFA_PROP_HUB_ID
 };
 
-/* signals defined here
- */
-enum {
-	THM_AVAILABLE = 0,
-	N_SIGNALS
-};
-
-static guint             st_signals[ N_SIGNALS ] = { 0 };
-
 static const gchar       *st_application_id     = "org.trychlos.openbook.ui";
 
 static const gchar       *st_application_name   = N_( "Open Firm Accounting" );
@@ -383,29 +374,6 @@ ofa_application_class_init( ofaApplicationClass *klass )
 					"Icon name",
 					"The name of the icon of the application",
 					G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
-	/**
-	 * ofaApplication::theme-available:
-	 *
-	 * This signal is sent on the application by the theme manager when
-	 * it becomes available, and is able to accept new definition requests.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaApplication     *application,
-	 * 						ofaIPageManager *manager,
-	 * 						gpointer          user_data );
-	 */
-	st_signals[ THM_AVAILABLE ] = g_signal_new_class_handler(
-				"theme-available",
-				OFA_TYPE_APPLICATION,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_POINTER );
 }
 
 /**
@@ -804,7 +772,7 @@ application_activate( GApplication *application )
 
 	/* just an entry point for some test functions dedicated to the maintainer
 	 * in normal run, there is no content */
-	ofa_maintainer_run_by_application( OFA_APPLICATION( application ));
+	ofa_maintainer_run_by_application( OFA_IGETTER( priv->hub ));
 
 	/* then create the main window */
 	priv->main_window = ofa_main_window_new( OFA_IGETTER( priv->hub ));
@@ -848,7 +816,7 @@ application_activate( GApplication *application )
 		}
 		if( meta && period ){
 			if( ofa_dossier_open_run(
-						OFA_IGETTER( application ), GTK_WINDOW( priv->main_window ),
+						OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ),
 						period, st_dossier_user_opt, st_dossier_passwd_opt, FALSE )){
 
 				ofa_main_window_dossier_apply_actions( priv->main_window );

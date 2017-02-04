@@ -1021,7 +1021,7 @@ setup_account_selection( ofaReconcilPage *self, GtkContainer *parent )
 	g_return_if_fail( priv->acc_id_entry && GTK_IS_ENTRY( priv->acc_id_entry ));
 	g_signal_connect( priv->acc_id_entry, "changed", G_CALLBACK( account_on_entry_changed ), self );
 	ofa_account_editable_init(
-			GTK_EDITABLE( priv->acc_id_entry ), OFA_IGETTER( self ), ACCOUNT_ALLOW_RECONCILIABLE );
+			GTK_EDITABLE( priv->acc_id_entry ), priv->getter, ACCOUNT_ALLOW_RECONCILIABLE );
 	ofa_account_editable_set_preselect_cb(
 			GTK_EDITABLE( priv->acc_id_entry ), ( AccountPreSelectCb ) account_on_preselect, self );
 
@@ -1634,7 +1634,7 @@ bat_do_select( ofaReconcilPage *self )
 
 	prev_id = priv->bats ? ofo_bat_get_id( OFO_BAT( priv->bats->data )) : -1;
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	bat_id = ofa_bat_select_run( OFA_IGETTER( self ), toplevel, prev_id );
+	bat_id = ofa_bat_select_run( priv->getter, toplevel, prev_id );
 	if( bat_id > 0 ){
 		bat_display_by_id( self, bat_id );
 	}
@@ -1646,11 +1646,14 @@ bat_do_select( ofaReconcilPage *self )
 static void
 bat_on_import_clicked( GtkButton *button, ofaReconcilPage *self )
 {
+	ofaReconcilPagePrivate *priv;
 	ofxCounter imported_id;
 	GtkWindow *toplevel;
 
+	priv = ofa_reconcil_page_get_instance_private( self );
+
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	imported_id = ofa_bat_utils_import( OFA_IGETTER( self ), toplevel );
+	imported_id = ofa_bat_utils_import( priv->getter, toplevel );
 	if( imported_id > 0 ){
 		bat_display_by_id( self, imported_id );
 	}
@@ -2863,7 +2866,7 @@ action_on_print_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPa
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	acc_number = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
-	manager = ofa_igetter_get_page_manager( OFA_IGETTER( self ));
+	manager = ofa_igetter_get_page_manager( priv->getter);
 	page = ofa_ipage_manager_activate( manager, OFA_TYPE_RECONCIL_RENDER );
 	ofa_reconcil_render_set_account( OFA_RECONCIL_RENDER( page ), acc_number );
 }
