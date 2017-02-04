@@ -436,7 +436,7 @@ do_run( ofaCheckIntegrityBin *self )
 			priv->others_errs += OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity( instance, priv->getter, priv->display ? MY_IPROGRESS( self ) : NULL );
 		}
 	}
-	ofa_extender_collection_free_types( plugins );
+	g_list_free( plugins );
 
 	set_checks_result( self );
 

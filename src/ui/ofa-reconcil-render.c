@@ -253,8 +253,6 @@ paned_page_v_init_view( ofaPanedPage *page )
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( page ));
 
-	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
-
 	on_args_changed( priv->args_bin, OFA_RECONCIL_RENDER( page ));
 
 	read_settings( OFA_RECONCIL_RENDER( page ));
@@ -273,6 +271,8 @@ render_page_v_get_args_widget( ofaRenderPage *page )
 	ofaReconcilArgs *bin;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( page ));
+
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
 	bin = ofa_reconcil_args_new( priv->getter, priv->settings_prefix );
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_args_changed ), page );

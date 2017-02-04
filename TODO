@@ -359,6 +359,7 @@
 1340 2017- 2- 1 review ExtenderCollection to move to my library ?
 
 1341 2017- 2- 1 ofa_extender_collection_get_for_type: does not return a new ref
+     2017- 2- 3 done
 
 1342 2017- 2- 2 isolate hub signaling system in a dedicated interface
                 ISignaler + renamed ISignalHub to ISignalable

@@ -363,7 +363,7 @@ recovery_assistant_dispose( GObject *instance )
 		write_settings( OFA_RECOVERY_ASSISTANT( instance ));
 
 		/* unref object members here */
-		ofa_extender_collection_free_types( priv->p3_recoverers );
+		g_list_free( priv->p3_recoverers );
 		g_clear_object( &priv->p4_dossier_meta );
 		g_clear_object( &priv->p4_exercice_meta );
 		g_clear_object( &priv->p5_hgroup );

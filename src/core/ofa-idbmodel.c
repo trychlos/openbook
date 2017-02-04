@@ -380,7 +380,7 @@ ofa_idbmodel_update( ofaIGetter *getter, GtkWindow *parent )
 		}
 	}
 
-	ofa_extender_collection_free_types( plugins_list );
+	g_list_free( plugins_list );
 
 	return( ok );
 }
@@ -425,7 +425,7 @@ ofa_idbmodel_get_by_name( ofaIGetter *getter, const gchar *name )
 		}
 	}
 
-	ofa_extender_collection_free_types( plugins_list );
+	g_list_free( plugins_list );
 
 	return( found );
 }

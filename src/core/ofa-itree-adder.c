@@ -213,7 +213,7 @@ ofa_itree_adder_get_column_types( ofaIGetter *getter, ofaIStore *store,
 		}
 	}
 
-	ofa_extender_collection_free_types( modules );
+	g_list_free( modules );
 
 	return( col_types );
 }
@@ -272,7 +272,7 @@ ofa_itree_adder_set_values( ofaIGetter *getter, ofaIStore *store, GtkTreeIter *i
 	for( it=modules ; it ; it=it->next ){
 		itree_adder_set_values( OFA_ITREE_ADDER( it->data ), store, getter, iter, object );
 	}
-	ofa_extender_collection_free_types( modules );
+	g_list_free( modules );
 }
 
 static void
@@ -318,7 +318,7 @@ ofa_itree_adder_sort( ofaIGetter *getter, ofaIStore *store, GtkTreeModel *model,
 			return( TRUE );
 		}
 	}
-	ofa_extender_collection_free_types( modules );
+	g_list_free( modules );
 
 	return( FALSE );
 }
@@ -360,7 +360,7 @@ ofa_itree_adder_add_columns( ofaIGetter *getter, ofaIStore *store, ofaTVBin *bin
 	for( it=modules ; it ; it=it->next ){
 		itree_adder_add_columns( OFA_ITREE_ADDER( it->data ), store, bin );
 	}
-	ofa_extender_collection_free_types( modules );
+	g_list_free( modules );
 }
 
 /*

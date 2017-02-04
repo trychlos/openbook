@@ -13,6 +13,9 @@
 
  Released on 
 
+ Total files count: 
+ Total lines count: 
+
  New features and improvements:
 
    - DossierManager: be able to close the currently opened dossier (todo #1338).
@@ -28,6 +31,7 @@
    - myIScopeMap: is renamed from myIActionMap.
    - myScopeMapper: new class.
    - ofaDossierPrefs: deprecated class.
+   - ofa_extender_collection_get_for_type(): does not return a new ref (todo #1341).
    - ofaIGetter: review interface to be the only one which accesses to ofaHub (todo #1339).
    - ofaIRecover: new interface.
    - ofaISignaler: new interface (todo #1342).

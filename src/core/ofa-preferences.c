@@ -668,7 +668,7 @@ enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn )
 		ok &= ( *pfn )( self, msgerr, OFA_IPROPERTIES( it->data ));
 	}
 
-	ofa_extender_collection_free_types( list );
+	g_list_free( list );
 
 	return( ok );
 }

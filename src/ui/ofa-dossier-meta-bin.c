@@ -330,7 +330,7 @@ setup_dbms_provider( ofaDossierMetaBin *self )
 		g_free( canon_name );
 	}
 
-	ofa_extender_collection_free_types( modules );
+	g_list_free( modules );
 
 	gtk_combo_box_set_id_column( GTK_COMBO_BOX( combo ), DBMS_COL_CANON );
 

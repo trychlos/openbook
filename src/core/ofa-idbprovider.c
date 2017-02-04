@@ -172,7 +172,7 @@ ofa_idbprovider_get_all( ofaIGetter *getter )
 		}
 	}
 
-	ofa_extender_collection_free_types( modules );
+	g_list_free( modules );
 
 	return( all );
 }

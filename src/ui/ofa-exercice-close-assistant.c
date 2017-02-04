@@ -274,7 +274,7 @@ exercice_close_assistant_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->dossier_meta );
-		ofa_extender_collection_free_types( priv->close_list );
+		g_list_free( priv->close_list );
 
 		if( priv->getter ){
 			main_window = ofa_igetter_get_main_window( priv->getter );

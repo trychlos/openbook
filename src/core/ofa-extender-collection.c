@@ -197,8 +197,7 @@ load_modules( ofaExtenderCollection *self )
  * Returns: a list of objects instanciated by loaded modules which are
  *  willing to deal with requested @type.
  *
- * The returned list should be #ofa_extender_collection_free_types() by
- * the caller.
+ * The returned list should be #g_list_free() by the caller.
  */
 GList *
 ofa_extender_collection_get_for_type( ofaExtenderCollection *collection, GType type )
@@ -222,19 +221,6 @@ ofa_extender_collection_get_for_type( ofaExtenderCollection *collection, GType t
 	}
 
 	return( willing_to );
-}
-
-/*
- * ofa_extender_collection_free_types:
- * @list: a #GList as returned by #ofa_extender_collection_get_for_type().
- *
- * Free the previously returned list.
- */
-void
-ofa_extender_collection_free_types( GList *list )
-{
-	g_list_foreach( list, ( GFunc ) g_object_unref, NULL );
-	g_list_free( list );
 }
 
 /*

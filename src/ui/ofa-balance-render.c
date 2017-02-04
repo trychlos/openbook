@@ -265,8 +265,6 @@ paned_page_v_init_view( ofaPanedPage *page )
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( page ));
 
-	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
-
 	on_args_changed( priv->args_bin, OFA_BALANCE_RENDER( page ));
 
 	read_settings( OFA_BALANCE_RENDER( page ));
@@ -279,6 +277,8 @@ render_page_v_get_args_widget( ofaRenderPage *page )
 	ofaBalanceArgs *bin;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( page ));
+
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
 	bin = ofa_balance_args_new( priv->getter, priv->settings_prefix );
 	g_signal_connect( bin, "ofa-changed", G_CALLBACK( on_args_changed ), page );

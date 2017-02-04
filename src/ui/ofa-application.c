@@ -204,7 +204,7 @@ application_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
-		/* unref object members here */
+		/* unref object members here, ofaHub at last */
 		g_clear_object( &priv->menu_model );
 		g_clear_object( &priv->dos_store );
 		g_clear_object( &priv->hub );
@@ -728,7 +728,7 @@ menubar_update_items( ofaApplication *self )
 	collection = ofa_igetter_get_extender_collection( OFA_IGETTER( priv->hub ));
 	recovers = ofa_extender_collection_get_for_type( collection, OFA_TYPE_IRECOVER );
 	has_irecover = ( g_list_length( recovers ) > 0 );
-	ofa_extender_collection_free_types( recovers );
+	g_list_free( recovers );
 
 	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_recover, "recover", has_irecover );
 }

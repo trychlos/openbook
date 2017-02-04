@@ -407,8 +407,9 @@ ofa_extender_module_get_objects( ofaExtenderModule *module )
  * Returns: a list of objects instanciated by @module which are
  *  willing to deal with requested @type.
  *
- * The returned list is meant to be #ofa_extender_collection_free_types()
- * by the caller.
+ * The returned references are owned by @module and should not be
+ * released by the caller. The returned list should still be
+ * #g_list_free().
  */
 GList *
 ofa_extender_module_get_for_type( ofaExtenderModule *module, GType type )
@@ -426,7 +427,7 @@ ofa_extender_module_get_for_type( ofaExtenderModule *module, GType type )
 
 	for( it=priv->objects ; it ; it=it->next ){
 		if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( it->data ), type )){
-			objects = g_list_prepend( objects, g_object_ref( it->data ));
+			objects = g_list_prepend( objects, it->data );
 		}
 	}
 

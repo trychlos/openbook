@@ -69,7 +69,7 @@ typedef struct {
 	ofaExtenderCollection *extenders_collection;
 	ofaDossierCollection  *dossiers_collection;
 	GList                 *core_objects;
-	mySettings            *iauth_settings;
+	mySettings            *auth_settings;
 	mySettings            *dossier_settings;
 	mySettings            *user_settings;
 	ofaOpenbookProps      *openbook_props;
@@ -179,17 +179,19 @@ hub_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
-		/* unref object members here */
+		/* unref object members here,
+		 * ending with collection, ofaExtenderCollection at very last */
 
-		g_clear_object( &priv->iauth_settings );
+		g_clear_object( &priv->auth_settings );
 		g_clear_object( &priv->dossier_settings );
 		g_clear_object( &priv->user_settings );
-		g_clear_object( &priv->dossiers_collection );
-		g_clear_object( &priv->extenders_collection );
 		g_clear_object( &priv->openbook_props );
 		g_clear_object( &priv->scope_mapper );
 
 		g_list_free_full( priv->core_objects, ( GDestroyNotify ) g_object_unref );
+
+		g_clear_object( &priv->dossiers_collection );
+		g_clear_object( &priv->extenders_collection );
 	}
 
 	G_OBJECT_CLASS( ofa_hub_parent_class )->dispose( instance );
@@ -617,7 +619,7 @@ setup_settings( ofaHub *self )
 
 	priv = ofa_hub_get_instance_private( self );
 
-	priv->iauth_settings = my_settings_new_user_config( "iauth.conf", "OFA_IAUTH_CONF" );
+	priv->auth_settings = my_settings_new_user_config( "auth.conf", "OFA_IAUTH_CONF" );
 
 	priv->dossier_settings = my_settings_new_user_config( "dossier.conf", "OFA_DOSSIER_CONF" );
 
@@ -1117,7 +1119,7 @@ ofa_hub_get_willing_to_import( ofaHub *hub, const gchar *uri, GType type )
 		}
 	}
 
-	ofa_extender_collection_free_types( importers );
+	g_list_free( importers );
 
 	return( found ? g_object_ref( G_OBJECT( found )) : NULL );
 }
@@ -1225,7 +1227,7 @@ igetter_get_auth_settings( const ofaIGetter *getter )
 
 	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
 
-	return( MY_ISETTINGS( priv->iauth_settings ));
+	return( MY_ISETTINGS( priv->auth_settings ));
 }
 
 static myICollector *
@@ -1285,7 +1287,7 @@ igetter_get_for_type( const ofaIGetter *getter, GType type )
 	for( it=extender_objects ; it ; it=it->next ){
 		objects = g_list_append( objects, it->data );
 	}
-	ofa_extender_collection_free_types( extender_objects );
+	g_list_free( extender_objects );
 
 	return( objects );
 }

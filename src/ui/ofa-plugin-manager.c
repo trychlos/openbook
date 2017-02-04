@@ -645,7 +645,7 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 			gtk_widget_show_all( dialog );
 		}
 
-		ofa_extender_collection_free_types( objects );
+		g_list_free( objects );
 	}
 }
 #endif
