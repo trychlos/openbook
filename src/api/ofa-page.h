@@ -82,11 +82,6 @@ typedef struct                        ofaPageClass;
 typedef struct _ofaPageProtected      ofaPageProtected;
 #endif
 
-/**
- * Properties set against this base class at instanciation time
- */
-#define PAGE_PROP_GETTER                     "page-prop-getter"
-
 GType       ofa_page_get_type                ( void ) G_GNUC_CONST;
 
 GtkWidget  *ofa_page_get_top_focusable_widget( const ofaPage *page );
