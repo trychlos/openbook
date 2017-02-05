@@ -67,7 +67,6 @@ static gboolean plugin_check( ofaExtenderModule *self, const gchar *symbol, gpoi
 static void     plugin_register_types( ofaExtenderModule *self );
 static void     plugin_enum_type( GType type, ofaExtenderModule *self );
 static void     plugin_add_type( ofaExtenderModule *self, GType type );
-static void     on_object_finalized( ofaExtenderModule *self, GObject *finalized_object );
 
 G_DEFINE_TYPE_EXTENDED( ofaExtenderModule, ofa_extender_module, G_TYPE_TYPE_MODULE, 0,
 		G_ADD_PRIVATE( ofaExtenderModule ))
@@ -334,7 +333,13 @@ plugin_enum_type( GType type, ofaExtenderModule *self )
 /*
  * The plugin has returned a list of the primary GType it provides.
  * Allocate a new object for each of these.
- * For those who implement the ofaISetter interface, calls it.
+ *
+ * For those who implement the #ofaISetter interface, calls it.
+ *
+ * Note that there is no need to pur a weak reference on these objects,
+ * to release some resources in finalization. These objects will only
+ * be released on ExtenderModule dispose(), itself only being called
+ * on ExtenderCollection dispose().
  */
 static void
 plugin_add_type( ofaExtenderModule *self, GType type )
@@ -353,28 +358,8 @@ plugin_add_type( ofaExtenderModule *self, GType type )
 		ofa_isetter_set_getter( OFA_ISETTER( object ), priv->getter );
 	}
 
-	g_object_weak_ref( object, ( GWeakNotify ) on_object_finalized, self );
-
 	/* keep the order provided by the module */
 	priv->objects = g_list_append( priv->objects, object );
-}
-
-static void
-on_object_finalized( ofaExtenderModule *self, GObject *finalized_object )
-{
-	static const gchar *thisfn = "ofa_extender_module_on_object_finalized";
-	ofaExtenderModulePrivate *priv;
-
-	g_debug( "%s: self=%p, finalized_object=%p (%s)",
-			thisfn, ( void * ) self,
-			( void * ) finalized_object, G_OBJECT_TYPE_NAME( finalized_object ));
-
-	priv = ofa_extender_module_get_instance_private( self );
-
-	priv->objects = g_list_remove( priv->objects, finalized_object );
-
-	g_debug( "%s: new objects list after remove is %p, count=%d",
-			thisfn, ( void * ) priv->objects, g_list_length( priv->objects ));
 }
 
 /*
