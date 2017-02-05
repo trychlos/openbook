@@ -278,12 +278,9 @@ plugin_is_valid( ofaExtenderModule *self )
 	}
 
 	if( ok ){
-		ok &= priv->startup( G_TYPE_MODULE( self ), priv->getter );
-	}
-
-	if( ok ){
 		g_debug( "%s: %s: ok", thisfn, priv->filename );
 		g_module_symbol( priv->library, "ofa_extension_shutdown", ( gpointer * ) &priv->shutdown );
+		ok = priv->startup( G_TYPE_MODULE( self ), priv->getter );
 	}
 
 	return( ok );
