@@ -194,7 +194,7 @@ guint                 ofa_idbdossier_meta_get_interface_version     ( GType type
 ofaIDBProvider       *ofa_idbdossier_meta_get_provider              ( const ofaIDBDossierMeta *meta );
 
 void                  ofa_idbdossier_meta_set_provider              ( ofaIDBDossierMeta *meta,
-																			const ofaIDBProvider *instance );
+																			ofaIDBProvider *provider );
 
 const gchar          *ofa_idbdossier_meta_get_dossier_name          ( const ofaIDBDossierMeta *meta );
 

@@ -227,24 +227,24 @@ ofa_idbdossier_meta_get_provider( const ofaIDBDossierMeta *meta )
 /**
  * ofa_idbdossier_meta_set_provider:
  * @meta: this #ofaIDBDossierMeta instance.
- * @instance: the #ofaIDBProvider which manages the dossier.
+ * @provider: the #ofaIDBProvider which manages the @meta.
  *
- * The interface takes a reference on the @instance object, to make
+ * The interface takes a reference on the @provider object, to make
  * sure it stays available. This reference will be automatically
  * released on @meta finalization.
  */
 void
-ofa_idbdossier_meta_set_provider( ofaIDBDossierMeta *meta, const ofaIDBProvider *instance )
+ofa_idbdossier_meta_set_provider( ofaIDBDossierMeta *meta, ofaIDBProvider *provider )
 {
 	sIDBMeta *sdata;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( instance && OFA_IS_IDBPROVIDER( instance ));
+	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
 
 	sdata = get_instance_data( meta );
 
 	g_clear_object( &sdata->provider );
-	sdata->provider = g_object_ref(( gpointer ) instance );
+	sdata->provider = g_object_ref(( gpointer ) provider );
 }
 
 /**
