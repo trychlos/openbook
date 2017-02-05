@@ -121,6 +121,7 @@ guint        ofa_extension_list_types        ( const GType **types );
 
 /**
  * ofa_extension_enum_types:
+ * @module: the #GTypeModule of the plugin library being loaded.
  * @cb: an application-provided #ofaExtensionEnumTypesCb callback.
  * @user_data: user data to be passed to the @cb.
  *
@@ -143,10 +144,11 @@ guint        ofa_extension_list_types        ( const GType **types );
  */
 typedef void ( *ofaExtensionEnumTypesCb )    ( GType, void * );
 
-void         ofa_extension_enum_types        ( ofaExtensionEnumTypesCb cb, void *user_data );
+void         ofa_extension_enum_types        ( GTypeModule *module, ofaExtensionEnumTypesCb cb, void *user_data );
 
 /**
  * ofa_extension_shutdown:
+ * @module: the #GTypeModule of the plugin library being loaded.
  *
  * If defined, this function is called by the plugin manager when it is
  * about to shutdown itself.
@@ -157,7 +159,7 @@ void         ofa_extension_enum_types        ( ofaExtensionEnumTypesCb cb, void 
  *
  * Since: v 1.
  */
-void         ofa_extension_shutdown          ( void );
+void         ofa_extension_shutdown          ( GTypeModule *module );
 
 /**
  * ofa_extension_get_version_number:

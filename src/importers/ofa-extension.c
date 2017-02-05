@@ -62,11 +62,12 @@ ofa_extension_startup( GTypeModule *module, ofaIGetter *getter )
  * mandatory starting with API v. 2.
  */
 void
-ofa_extension_enum_types( ofaExtensionEnumTypesCb cb, void *user_data )
+ofa_extension_enum_types( GTypeModule *module, ofaExtensionEnumTypesCb cb, void *user_data )
 {
 	static const gchar *thisfn = "importers/ofa_extension_enum_types";
 
-	g_debug( "%s: cb=%p, user_data=%p", thisfn, ( void * ) cb, ( void * ) user_data );
+	g_debug( "%s: module=%p, cb=%p, user_data=%p",
+			thisfn, ( void * ) module, ( void * ) cb, ( void * ) user_data );
 
 	cb( OFA_TYPE_IMPORTER_IDENT, user_data );
 	cb( OFA_TYPE_IMPORTER_CSV, user_data );
@@ -82,11 +83,11 @@ ofa_extension_enum_types( ofaExtensionEnumTypesCb cb, void *user_data )
  * optional as of API v. 1.
  */
 void
-ofa_extension_shutdown( void )
+ofa_extension_shutdown( GTypeModule *module )
 {
 	static const gchar *thisfn = "importers/ofa_extension_shutdown";
 
-	g_debug( "%s", thisfn );
+	g_debug( "%s: module=%p", thisfn, ( void * ) module );
 }
 
 /*

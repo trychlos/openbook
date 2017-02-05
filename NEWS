@@ -32,6 +32,7 @@
    - myScopeMapper: new class.
    - ofaDossierPrefs: deprecated class.
    - ofa_extender_collection_get_for_type(): does not return a new ref (todo #1341).
+   - ofaExtension: improve API v2.
    - ofaIGetter: review interface to be the only one which accesses to ofaHub (todo #1339).
    - ofaIRecover: new interface.
    - ofaISignalable: interface renamed from ofaISignalHub (todo #1342).

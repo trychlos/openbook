@@ -51,12 +51,12 @@ typedef struct {
 	GModule    *library;
 	GList      *objects;
 
-	/* api                                                                             v1         v2
+	/* api					                                                                             v1         v2
 	 */
-	gboolean ( *startup )   ( GTypeModule *module, ofaIGetter *getter );		/* mandatory  mandatory  */
-	gint     ( *list_types )( const GType **types );							/* mandatory  deprecated */
-	void     ( *enum_types )( ofaExtensionEnumTypesCb cb, void *user_data );	/*     -      mandatory  */
-	void     ( *shutdown )  ( void );											/* opt.       opt.       */
+	gboolean ( *startup )   ( GTypeModule *module, ofaIGetter *getter );							/* mandatory  mandatory  */
+	gint     ( *list_types )( const GType **types );												/* mandatory  deprecated */
+	void     ( *enum_types )( GTypeModule *module, ofaExtensionEnumTypesCb cb, void *user_data );	/*     -      mandatory  */
+	void     ( *shutdown )  ( GTypeModule *module );												/* opt.       opt.       */
 }
 	ofaExtenderModulePrivate;
 
@@ -188,7 +188,7 @@ module_v_unload( GTypeModule *module )
 	priv = ofa_extender_module_get_instance_private( OFA_EXTENDER_MODULE( module ));
 
 	if( priv->shutdown ){
-		priv->shutdown();
+		priv->shutdown( module );
 	}
 
 	if( priv->library ){
@@ -310,7 +310,8 @@ plugin_register_types( ofaExtenderModule *self )
 	priv = ofa_extender_module_get_instance_private( self );
 
 	if( priv->enum_types ){
-		priv->enum_types(( ofaExtensionEnumTypesCb ) plugin_enum_type, self );
+		priv->enum_types(
+				G_TYPE_MODULE( self ), ( ofaExtensionEnumTypesCb ) plugin_enum_type, self );
 
 	} else {
 		count = priv->list_types( &types );
