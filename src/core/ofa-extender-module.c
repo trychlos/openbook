@@ -105,9 +105,13 @@ extender_module_dispose( GObject *object )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-
 		g_list_free_full( priv->objects, ( GDestroyNotify ) g_object_unref );
-		g_type_module_unuse( G_TYPE_MODULE( object ));
+
+		/* it may happens that use_count = 0 when g_type_module_use() has
+		 *  been unsuccessful (unable to load the module) */
+		if( G_TYPE_MODULE( object )->use_count > 0 ){
+			g_type_module_unuse( G_TYPE_MODULE( object ));
+		}
 	}
 
 	/* chain up to the parent class */
@@ -157,17 +161,21 @@ module_v_load( GTypeModule *module )
 	ofaExtenderModulePrivate *priv;
 	gboolean loaded;
 
-	g_debug( "%s: gmodule=%p", thisfn, ( void * ) module );
+	g_debug( "%s: module=%p", thisfn, ( void * ) module );
 
 	priv = ofa_extender_module_get_instance_private( OFA_EXTENDER_MODULE( module ));
 
-	loaded = FALSE;
+	loaded = TRUE;
 	priv->library = g_module_open( priv->filename, G_MODULE_BIND_LAZY | G_MODULE_BIND_LOCAL );
 
 	if( !priv->library ){
 		g_warning( "%s: g_module_open: path=%s, error=%s", thisfn, priv->filename, g_module_error());
-	} else {
-		loaded = TRUE;
+		loaded = FALSE;
+
+	} else if( !plugin_is_valid( OFA_EXTENDER_MODULE( module ))){
+		g_module_close( priv->library );
+		priv->library = NULL;
+		loaded = FALSE;
 	}
 
 	return( loaded );
@@ -182,7 +190,7 @@ module_v_unload( GTypeModule *module )
 	static const gchar *thisfn = "ofa_extender_module_module_v_unload";
 	ofaExtenderModulePrivate *priv;
 
-	g_debug( "%s: gmodule=%p", thisfn, ( void * ) module );
+	g_debug( "%s: module=%p", thisfn, ( void * ) module );
 
 	priv = ofa_extender_module_get_instance_private( OFA_EXTENDER_MODULE( module ));
 
@@ -192,11 +200,13 @@ module_v_unload( GTypeModule *module )
 
 	if( priv->library ){
 		g_module_close( priv->library );
+		priv->library = NULL;
 	}
 
 	/* reinitialise the mandatory API */
 	priv->startup = NULL;
 	priv->list_types = NULL;
+	priv->enum_types = NULL;
 }
 
 /**
@@ -221,12 +231,19 @@ ofa_extender_module_new( ofaIGetter *getter, const gchar *filename )
 	priv->getter = getter;
 	priv->filename = g_strdup( filename );
 
-	if( !g_type_module_use( G_TYPE_MODULE( module )) || !plugin_is_valid( module )){
+	if( !g_type_module_use( G_TYPE_MODULE( module ))){
 		g_object_unref( module );
 		return( NULL );
 	}
 
 	plugin_register_types( module );
+
+	/* so that the last references for keeping the module loaded
+	 *  are those of the instanciated GObjects's themselves */
+
+	/* NB: it is not enough to have instanciated objects to keep the
+	 *  module loaded, unless these objects exhibit dynamic types */
+	//g_type_module_unuse( G_TYPE_MODULE( module ));
 
 	return( module );
 }

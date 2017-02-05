@@ -32,6 +32,7 @@
    - myScopeMapper: new class.
    - ofaDossierPrefs: deprecated class.
    - ofa_extender_collection_get_for_type(): does not return a new ref (todo #1341).
+   - ofaExtenderModule: review loading/unloading the library.
    - ofaExtension: improve API v2.
    - ofa_idbdossier_meta_set_provider(): remove 'const' modifier from argument list.
    - ofaIGetter: review interface to be the only one which accesses to ofaHub (todo #1339).
