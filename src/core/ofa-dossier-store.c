@@ -30,6 +30,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-dossier-collection.h"
+#include "api/ofa-dossier-store.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
@@ -37,8 +38,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
-
-#include "ui/ofa-dossier-store.h"
 
 /* private instance data
  */

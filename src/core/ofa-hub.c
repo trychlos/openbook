@@ -36,6 +36,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
+#include "api/ofa-dossier-store.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
@@ -73,6 +74,7 @@ typedef struct {
 	mySettings            *user_settings;
 	ofaOpenbookProps      *openbook_props;
 	gchar                 *runtime_dir;
+	ofaDossierStore       *dossier_store;
 
 	/* UI related
 	 */
@@ -163,6 +165,7 @@ hub_dispose( GObject *instance )
 		g_clear_object( &priv->user_settings );
 		g_clear_object( &priv->openbook_props );
 		g_clear_object( &priv->scope_mapper );
+		g_clear_object( &priv->dossier_store );
 
 		g_list_free_full( priv->core_objects, ( GDestroyNotify ) g_object_unref );
 
@@ -232,6 +235,7 @@ ofa_hub_new( void )
 	priv->dossiers_collection = ofa_dossier_collection_new( OFA_IGETTER( hub ));
 	priv->openbook_props = ofa_openbook_props_new( OFA_IGETTER( hub ));
 	priv->scope_mapper = my_scope_mapper_new();
+	priv->dossier_store = ofa_dossier_store_new( OFA_IGETTER( hub ));
 
 	/* remediate dossier settings when properties change */
 	g_signal_connect( OFA_ISIGNALER( hub ), SIGNALER_DOSSIER_CHANGED, G_CALLBACK( on_properties_dossier_changed ), NULL );

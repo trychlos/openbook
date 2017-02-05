@@ -31,6 +31,7 @@
    - myIScopeMap: is renamed from myIActionMap.
    - myScopeMapper: new class.
    - ofaDossierPrefs: deprecated class.
+   - ofaDossierStore: is now owned by #ofaHub (todo #1343). 
    - ofa_extender_collection_get_for_type(): does not return a new ref (todo #1341).
    - ofaExtenderModule: review loading/unloading the library.
    - ofaExtension: improve API v2.

@@ -37,6 +37,7 @@ api_include_HEADERS = \
 	ofa-date-filter-hv-bin.h							\
 	ofa-dossier-collection.h							\
 	ofa-dossier-props.h									\
+	ofa-dossier-store.h									\
 	ofa-extender-collection.h							\
 	ofa-extender-module.h								\
 	ofa-formula-engine.h								\

@@ -35,6 +35,7 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-dossier-collection.h"
+#include "api/ofa-dossier-store.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -50,7 +51,6 @@
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-properties.h"
-#include "ui/ofa-dossier-store.h"
 #include "ui/ofa-dossier-treeview.h"
 #include "ui/ofa-main-window.h"
 

@@ -150,8 +150,6 @@ openbook_SOURCES = \
 	ofa-dossier-open.h									\
 	ofa-dossier-properties.c							\
 	ofa-dossier-properties.h							\
-	ofa-dossier-store.c									\
-	ofa-dossier-store.h									\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
 	ofa-entry-page.c									\

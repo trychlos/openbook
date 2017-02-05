@@ -158,9 +158,8 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-dossier-edit-bin.$(OBJEXT) ofa-dossier-manager.$(OBJEXT) \
 	ofa-dossier-meta-bin.$(OBJEXT) ofa-dossier-new.$(OBJEXT) \
 	ofa-dossier-open.$(OBJEXT) ofa-dossier-properties.$(OBJEXT) \
-	ofa-dossier-store.$(OBJEXT) ofa-dossier-treeview.$(OBJEXT) \
-	ofa-entry-page.$(OBJEXT) ofa-entry-properties.$(OBJEXT) \
-	ofa-entry-treeview.$(OBJEXT) \
+	ofa-dossier-treeview.$(OBJEXT) ofa-entry-page.$(OBJEXT) \
+	ofa-entry-properties.$(OBJEXT) ofa-entry-treeview.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-combo.$(OBJEXT) ofa-exercice-edit-bin.$(OBJEXT) \
 	ofa-exercice-meta-bin.$(OBJEXT) ofa-exercice-new.$(OBJEXT) \
@@ -582,8 +581,6 @@ openbook_SOURCES = \
 	ofa-dossier-open.h									\
 	ofa-dossier-properties.c							\
 	ofa-dossier-properties.h							\
-	ofa-dossier-store.c									\
-	ofa-dossier-store.h									\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
 	ofa-entry-page.c									\
@@ -846,7 +843,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-new.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-open.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-properties.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-properties.Po@am__quote@

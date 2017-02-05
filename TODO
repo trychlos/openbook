@@ -361,8 +361,6 @@
 1341 2017- 2- 1 ofa_extender_collection_get_for_type: does not return a new ref
      2017- 2- 3 done
 
-1343 2017- 2- 2 dossier store should be owned by the Hub, not by the appli
-
 1344 2017- 2- 3 re-authorize dossier open from command-line
 
 1346
@@ -602,6 +600,9 @@
 
 1342 2017- 2- 2 isolate hub signaling system in a dedicated interface
                 ISignaler + renamed ISignalHub to ISignalable
+     2017- 2- 5 done
+
+1343 2017- 2- 2 dossier store should be owned by the Hub, not by the appli
      2017- 2- 5 done
 
 1345 2017- 2- 4 review ISetter interface: is it really needed ?

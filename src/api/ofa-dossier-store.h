@@ -29,7 +29,7 @@
  * SECTION: dossier_store
  * @title: ofaDossierStore
  * @short_description: The ofaDossierStore class description
- * @include: ui/ofa-dossier-store.h
+ * @include: openbook/ofa-dossier-store.h
  *
  * The #ofaDossierStore derived from #GtkListStore. It is populated
  * with all the known dossiers and exercices at instanciation time,

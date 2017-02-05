@@ -49,7 +49,6 @@
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
-#include "ui/ofa-dossier-store.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-maintainer.h"
 #include "ui/ofa-misc-collector-ui.h"
@@ -80,7 +79,6 @@ typedef struct {
 	 */
 	GMenuModel      *menu_model;
 	ofaMainWindow   *main_window;
-	ofaDossierStore *dos_store;
 
 	/* menu items
 	 */
@@ -207,7 +205,6 @@ application_dispose( GObject *instance )
 
 		/* unref object members here, ofaHub at last */
 		g_clear_object( &priv->menu_model );
-		g_clear_object( &priv->dos_store );
 		g_clear_object( &priv->hub );
 	}
 
@@ -658,10 +655,6 @@ application_startup( GApplication *application )
 	collection = ofa_igetter_get_dossier_collection( OFA_IGETTER( priv->hub ));
 	g_signal_connect( collection, "changed", G_CALLBACK( on_dossier_collection_changed ), application );
 	on_dossier_collection_changed( collection, ofa_dossier_collection_get_count( collection ), appli );
-
-	/* takes the ownership on the dossier store so that we are sure
-	 * it will be available during the run */
-	priv->dos_store = ofa_dossier_store_new( OFA_IGETTER( priv->hub ));
 }
 
 static void
