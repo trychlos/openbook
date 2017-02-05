@@ -210,10 +210,6 @@
                        a new dossier
                      - administrative credentials
 
- 909 2015-11-26 ARCH SIGNAL_DOSSIER_EXE_DATE_CHANGED: change to same
-                     signal (exe_dates_changed) sent on main window so
-                     that it may automatically update window title
-
  910 2015-11-30 FEAT let the user configure the main title components as
                      a preference
 
@@ -244,8 +240,6 @@
 
 1012 2016- 2-25 FEAT OpeTemplate: when a row is moved up or down, then
                      the indexes should be updated accordingly
-
-1014 2016- 2-26 FEAT ViewEntries: filter per operation template
 
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
@@ -328,6 +322,10 @@
 1260 2016-11-17 ebp2013 reprise is empty (no entries nor ledger)
                 => have recovery assistant
      2017- 2- 1 TODO: insert entry in a non-opened dossier...
+     2017- 2- 5 main issue is that allocated entry numbers will most
+                probably overlap the numbers of the current exercice;
+                this would be bad; the most obvious solution would be
+                to have only one dossier table for all known exercices. 
 
 1261 2016-11-17 Have a backup option to save all available periods
                 + have an option to save this choice (do not automatically save)
@@ -355,11 +353,6 @@
      2017- 1-27 more generally, optimize entries loading
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
-
-1340 2017- 2- 1 review ExtenderCollection to move to my library ?
-
-1341 2017- 2- 1 ofa_extender_collection_get_for_type: does not return a new ref
-     2017- 2- 3 done
 
 1344 2017- 2- 3 re-authorize dossier open from command-line
 
@@ -391,6 +384,11 @@
  792 2015- 4- 6 FEAT have a comment in the backup
      2017- 1-13 done
 
+ 909 2015-11-26 ARCH SIGNAL_DOSSIER_EXE_DATE_CHANGED: change to same
+                     signal (exe_dates_changed) sent on main window so
+                     that it may automatically update window title
+     2017- 2- 5 done via the SIGNALER_DOSSIER_CHANGED signal handler
+
  920 2015-12-10 FEAT review RestoreAssistant
                      + let restore on a selected exercice rather than on
                      the current one
@@ -402,6 +400,9 @@
                      when the amount is set, but one of another field is
                      wrong
      2017- 1-27 useless
+
+1014 2016- 2-26 FEAT ViewEntries: filter per operation template
+     2017- 2- 5 cancelled as duplicate of #733 (search for an entry)
 
 1073 2016- 4-14 ofaIDBConnect::restore: returns an error message
      2017- 1-16 cancelled as an error message may be sent through the
@@ -596,6 +597,14 @@
      2017- 1-30 done
 
 1339 2017- 2- 1 deprecate IGetter interface elsewhere that the Hub
+     2017- 2- 3 done
+
+1340 2017- 2- 1 review ExtenderCollection to move to my library ?
+     2017- 2- 5 not possible as ofaExtenderCollection provides ofaIGetter
+                to ofaExtenderModule, itself providing them to modules
+                via ofaIExtenderSetter interface
+
+1341 2017- 2- 1 ofa_extender_collection_get_for_type: does not return a new ref
      2017- 2- 3 done
 
 1342 2017- 2- 2 isolate hub signaling system in a dedicated interface
