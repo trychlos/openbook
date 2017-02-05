@@ -181,10 +181,10 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-idbdossier-meta.lo ofa-idbexercice-meta.lo ofa-idbmodel.lo \
 	ofa-idbprovider.lo ofa-idbexercice-editor.lo \
 	ofa-idbsuperuser.lo ofa-iexe-close.lo ofa-iexportable.lo \
-	ofa-igetter.lo ofa-iimporter.lo ofa-iimportable.lo \
-	ofa-ijson.lo ofa-import-duplicate.lo ofa-ipage-manager.lo \
-	ofa-iprintable.lo ofa-iproperties.lo ofa-irecover.lo \
-	ofa-irenderable.lo ofa-isetter.lo ofa-isignalable.lo \
+	ofa-iextender-setter.lo ofa-igetter.lo ofa-iimporter.lo \
+	ofa-iimportable.lo ofa-ijson.lo ofa-import-duplicate.lo \
+	ofa-ipage-manager.lo ofa-iprintable.lo ofa-iproperties.lo \
+	ofa-irecover.lo ofa-irenderable.lo ofa-isignalable.lo \
 	ofa-isignaler.lo ofa-istore.lo ofa-itree-adder.lo \
 	ofa-itvcolumnable.lo ofa-itvfilterable.lo ofa-itvsortable.lo \
 	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
@@ -546,6 +546,7 @@ libofa_core_la_SOURCES = \
 	ofa-idbsuperuser.c									\
 	ofa-iexe-close.c									\
 	ofa-iexportable.c									\
+	ofa-iextender-setter.c								\
 	ofa-igetter.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
@@ -556,7 +557,6 @@ libofa_core_la_SOURCES = \
 	ofa-iproperties.c									\
 	ofa-irecover.c										\
 	ofa-irenderable.c									\
-	ofa-isetter.c										\
 	ofa-isignalable.c									\
 	ofa-isignaler.c										\
 	ofa-istore.c										\
@@ -776,6 +776,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbsuperuser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexe-close.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iextender-setter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-igetter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimportable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimporter.Plo@am__quote@
@@ -786,7 +787,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iproperties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-irecover.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-irenderable.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-isetter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-isignalable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-isignaler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-istore.Plo@am__quote@

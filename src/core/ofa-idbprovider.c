@@ -39,8 +39,8 @@
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbsuperuser.h"
+#include "api/ofa-iextender-setter.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-isetter.h"
 
 #define IDBPROVIDER_LAST_VERSION        1
 
@@ -164,8 +164,8 @@ ofa_idbprovider_get_all( ofaIGetter *getter )
 		if( !MY_IS_IIDENT( it->data )){
 			g_info( "%s: %s class does not implement myIIdent interface",
 					thisfn, G_OBJECT_TYPE_NAME( it->data ));
-		} else if( !OFA_IS_ISETTER( it->data )){
-			g_info( "%s: %s class does not implement ofaISetter interface",
+		} else if( !OFA_IS_IEXTENDER_SETTER( it->data )){
+			g_info( "%s: %s class does not implement ofaIExtenderSetter interface",
 					thisfn, G_OBJECT_TYPE_NAME( it->data ));
 		} else {
 			all = g_list_prepend( all, it->data );
@@ -188,7 +188,7 @@ ofa_idbprovider_get_all( ofaIGetter *getter )
  *
  * We check here:
  * - that the #ofaIDBProvider implementation also implements the
- *   #ofaISetter interface (which is a prerequisite).
+ *   #ofaIExtenderSetter interface (which is a prerequisite).
  *
  * A provider which does not satisfy all prerequisites is not returned.
  *
@@ -319,7 +319,7 @@ ofa_idbprovider_get_getter( ofaIDBProvider *provider )
 
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
-	getter = ofa_isetter_get_getter( OFA_ISETTER( provider ));
+	getter = ofa_iextender_setter_get_getter( OFA_IEXTENDER_SETTER( provider ));
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	return( getter );

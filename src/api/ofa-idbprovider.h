@@ -48,7 +48,7 @@
  * This is an Openbook software suite choice to store most of the
  * meta data a dossier may require in a dedicated settings file.
  *
- * The #ofaIDBProvider implementation *must* implement the #ofaISetter
+ * The #ofaIDBProvider implementation *must* implement the #ofaIExtenderSetter
  * interface. This is at least needed to get an access to the #ofaHub
  * object of the application, and though it to the #myISettings
  * interface used to managed the dedicated settings file.

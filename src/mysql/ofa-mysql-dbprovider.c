@@ -39,8 +39,8 @@
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbsuperuser.h"
+#include "api/ofa-iextender-setter.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-isetter.h"
 
 #include "mysql/ofa-mysql-dbprovider.h"
 #include "mysql/ofa-mysql-dossier-editor.h"
@@ -70,15 +70,15 @@ static ofaIDBDossierMeta    *idbprovider_new_dossier_meta( ofaIDBProvider *insta
 static ofaIDBDossierEditor  *idbprovider_new_dossier_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule, gboolean with_su );
 static ofaIDBExerciceEditor *idbprovider_new_exercice_editor( ofaIDBProvider *instance, const gchar *settings_prefix, guint rule );
 static ofaIDBSuperuser      *idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule );
-static void                  isetter_iface_init( ofaISetterInterface *iface );
-static ofaIGetter           *isetter_get_getter( ofaISetter *instance );
-static void                  isetter_set_getter( ofaISetter *instance, ofaIGetter *getter );
+static void                  iextender_setter_iface_init( ofaIExtenderSetterInterface *iface );
+static ofaIGetter           *iextender_setter_get_getter( ofaIExtenderSetter *instance );
+static void                  iextender_setter_set_getter( ofaIExtenderSetter *instance, ofaIGetter *getter );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDBProvider, ofa_mysql_dbprovider, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlDBProvider )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBPROVIDER, idbprovider_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISETTER, isetter_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXTENDER_SETTER, iextender_setter_iface_init ))
 
 static void
 mysql_dbprovider_finalize( GObject *instance )
@@ -247,21 +247,21 @@ idbprovider_new_superuser_bin( ofaIDBProvider *instance, guint rule )
 }
 
 /*
- * #ofaISetter interface setup
+ * #ofaIExtenderSetter interface setup
  */
 static void
-isetter_iface_init( ofaISetterInterface *iface )
+iextender_setter_iface_init( ofaIExtenderSetterInterface *iface )
 {
-	static const gchar *thisfn = "ofa_mysql_dbprovider_isetter_iface_init";
+	static const gchar *thisfn = "ofa_mysql_dbprovider_iextender_setter_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_getter = isetter_get_getter;
-	iface->set_getter = isetter_set_getter;
+	iface->get_getter = iextender_setter_get_getter;
+	iface->set_getter = iextender_setter_set_getter;
 }
 
 static ofaIGetter *
-isetter_get_getter( ofaISetter *instance )
+iextender_setter_get_getter( ofaIExtenderSetter *instance )
 {
 	ofaMysqlDBProviderPrivate *priv;
 
@@ -271,7 +271,7 @@ isetter_get_getter( ofaISetter *instance )
 }
 
 static void
-isetter_set_getter( ofaISetter *instance, ofaIGetter *getter )
+iextender_setter_set_getter( ofaIExtenderSetter *instance, ofaIGetter *getter )
 {
 	ofaMysqlDBProviderPrivate *priv;
 

@@ -28,24 +28,24 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-iextender-setter.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-isetter.h"
 
-#define ISETTER_LAST_VERSION              1
+#define IEXTENDER_SETTER_LAST_VERSION     1
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType register_type( void );
-static void  interface_base_init( ofaISetterInterface *klass );
-static void  interface_base_finalize( ofaISetterInterface *klass );
+static void  interface_base_init( ofaIExtenderSetterInterface *klass );
+static void  interface_base_finalize( ofaIExtenderSetterInterface *klass );
 
 /**
- * ofa_isetter_get_type:
+ * ofa_iextender_setter_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_isetter_get_type( void )
+ofa_iextender_setter_get_type( void )
 {
 	static GType type = 0;
 
@@ -57,18 +57,18 @@ ofa_isetter_get_type( void )
 }
 
 /*
- * ofa_isetter_register_type:
+ * ofa_iextender_setter_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_isetter_register_type";
+	static const gchar *thisfn = "ofa_iextender_setter_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaISetterInterface ),
+		sizeof( ofaIExtenderSetterInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -81,7 +81,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaISetter", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIExtenderSetter", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -89,9 +89,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaISetterInterface *klass )
+interface_base_init( ofaIExtenderSetterInterface *klass )
 {
-	static const gchar *thisfn = "ofa_isetter_interface_base_init";
+	static const gchar *thisfn = "ofa_iextender_setter_interface_base_init";
 
 	if( st_initializations == 0 ){
 
@@ -102,9 +102,9 @@ interface_base_init( ofaISetterInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaISetterInterface *klass )
+interface_base_finalize( ofaIExtenderSetterInterface *klass )
 {
-	static const gchar *thisfn = "ofa_isetter_interface_base_finalize";
+	static const gchar *thisfn = "ofa_iextender_setter_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -115,19 +115,19 @@ interface_base_finalize( ofaISetterInterface *klass )
 }
 
 /**
- * ofa_isetter_get_interface_last_version:
+ * ofa_iextender_setter_get_interface_last_version:
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_isetter_get_interface_last_version( void )
+ofa_iextender_setter_get_interface_last_version( void )
 {
-	return( ISETTER_LAST_VERSION );
+	return( IEXTENDER_SETTER_LAST_VERSION );
 }
 
 /**
- * ofa_isetter_get_interface_version:
- * @instance: this #ofaISetter instance.
+ * ofa_iextender_setter_get_interface_version:
+ * @instance: this #ofaIExtenderSetter instance.
  *
  * Returns: the version number of this interface implemented by the
  * @instance.
@@ -135,7 +135,7 @@ ofa_isetter_get_interface_last_version( void )
  * Defaults to 1.
  */
 guint
-ofa_isetter_get_interface_version( GType type )
+ofa_iextender_setter_get_interface_version( GType type )
 {
 	gpointer klass, iface;
 	guint version;
@@ -143,16 +143,16 @@ ofa_isetter_get_interface_version( GType type )
 	klass = g_type_class_ref( type );
 	g_return_val_if_fail( klass, 1 );
 
-	iface = g_type_interface_peek( klass, OFA_TYPE_ISETTER );
+	iface = g_type_interface_peek( klass, OFA_TYPE_IEXTENDER_SETTER );
 	g_return_val_if_fail( iface, 1 );
 
 	version = 1;
 
-	if((( ofaISetterInterface * ) iface )->get_interface_version ){
-		version = (( ofaISetterInterface * ) iface )->get_interface_version();
+	if((( ofaIExtenderSetterInterface * ) iface )->get_interface_version ){
+		version = (( ofaIExtenderSetterInterface * ) iface )->get_interface_version();
 
 	} else {
-		g_info( "%s implementation does not provide 'ofaISetter::get_interface_version()' method",
+		g_info( "%s implementation does not provide 'ofaIExtenderSetter::get_interface_version()' method",
 				g_type_name( type ));
 	}
 
@@ -162,49 +162,49 @@ ofa_isetter_get_interface_version( GType type )
 }
 
 /**
- * ofa_isetter_get_getter:
- * @instance: this #ofaISetter instance.
+ * ofa_iextender_setter_get_getter:
+ * @instance: this #ofaIExtenderSetter instance.
  *
  * Returns: the previously attached #ofaIGetter.
  */
 ofaIGetter *
-ofa_isetter_get_getter( ofaISetter *instance )
+ofa_iextender_setter_get_getter( ofaIExtenderSetter *instance )
 {
-	static const gchar *thisfn = "ofa_isetter_get_getter";
+	static const gchar *thisfn = "ofa_iextender_setter_get_getter";
 
-	g_return_val_if_fail( instance && OFA_IS_ISETTER( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_IEXTENDER_SETTER( instance ), NULL );
 
-	if( OFA_ISETTER_GET_INTERFACE( instance )->get_getter ){
-		return( OFA_ISETTER_GET_INTERFACE( instance )->get_getter( instance ));
+	if( OFA_IEXTENDER_SETTER_GET_INTERFACE( instance )->get_getter ){
+		return( OFA_IEXTENDER_SETTER_GET_INTERFACE( instance )->get_getter( instance ));
 	}
 
-	g_info( "%s: ofaISetter's %s implementation does not provide 'get_getter()' method",
+	g_info( "%s: ofaIExtenderSetter's %s implementation does not provide 'get_getter()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
 /**
- * ofa_isetter_set_getter:
- * @instance: this #ofaISetter instance.
+ * ofa_iextender_setter_set_getter:
+ * @instance: this #ofaIExtenderSetter instance.
  * @getter: a #ofaIGetter of the application.
  *
  * Attach a @getter to the @instance.
  */
 void
-ofa_isetter_set_getter( ofaISetter *instance, ofaIGetter *getter )
+ofa_iextender_setter_set_getter( ofaIExtenderSetter *instance, ofaIGetter *getter )
 {
-	static const gchar *thisfn = "ofa_isetter_set_getter";
+	static const gchar *thisfn = "ofa_iextender_setter_set_getter";
 	ofaIGetter *permanent_getter;
 
-	g_return_if_fail( instance && OFA_IS_ISETTER( instance ));
+	g_return_if_fail( instance && OFA_IS_IEXTENDER_SETTER( instance ));
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
-	if( OFA_ISETTER_GET_INTERFACE( instance )->set_getter ){
+	if( OFA_IEXTENDER_SETTER_GET_INTERFACE( instance )->set_getter ){
 		permanent_getter = getter;
-		OFA_ISETTER_GET_INTERFACE( instance )->set_getter( instance, permanent_getter );
+		OFA_IEXTENDER_SETTER_GET_INTERFACE( instance )->set_getter( instance, permanent_getter );
 		return;
 	}
 
-	g_info( "%s: ofaISetter's %s implementation does not provide 'set_getter()' method",
+	g_info( "%s: ofaIExtenderSetter's %s implementation does not provide 'set_getter()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }

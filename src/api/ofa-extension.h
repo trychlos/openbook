@@ -132,9 +132,9 @@ guint        ofa_extension_list_types        ( const GType **types );
  * once for each managed #GType object. Each one of these objects will
  * be instanciated once by the plugin manager.
  *
- * The #ofaISetter interface is called on those of these objects which
- * implement this interface. This interface aims to provide some initial
- * pointers to plugin objects.
+ * The #ofaIExtenderSetter interface is called on those of these objects
+ * which implement this interface. This interface aims to provide some
+ * initial pointers to plugin objects.
  *
  * An Openbook extension implementing the version 2 of this API MUST
  * implement this function in order to be considered as a valid candidate

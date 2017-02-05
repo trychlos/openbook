@@ -22,38 +22,40 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_ISETTER_H__
-#define __OPENBOOK_API_OFA_ISETTER_H__
+#ifndef __OPENBOOK_API_OFA_IEXTENDER_SETTER_H__
+#define __OPENBOOK_API_OFA_IEXTENDER_SETTER_H__
 
 /**
- * SECTION: isetter
- * @title: ofaISetter
- * @short_description: The ISetter Interface
- * @include: openbook/ofa-isetter.h
+ * SECTION: iextender_setter
+ * @title: ofaIExtenderSetter
+ * @short_description: The IExtenderSetter Interface
+ * @include: openbook/ofa-iextender-setter.h
  *
- * The #ofaISetter interface may be implemented by objects defined by
+ * The #ofaIExtenderSetter interface may be implemented by objects defined by
  * dynamically loaded modules (aka plugins) in order to get some initial
  * pointers at instanciation time.
  */
+
+#include <glib-object.h>
 
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_ISETTER                      ( ofa_isetter_get_type())
-#define OFA_ISETTER( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_ISETTER, ofaISetter ))
-#define OFA_IS_ISETTER( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_ISETTER ))
-#define OFA_ISETTER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_ISETTER, ofaISetterInterface ))
+#define OFA_TYPE_IEXTENDER_SETTER                      ( ofa_iextender_setter_get_type())
+#define OFA_IEXTENDER_SETTER( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IEXTENDER_SETTER, ofaIExtenderSetter ))
+#define OFA_IS_IEXTENDER_SETTER( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IEXTENDER_SETTER ))
+#define OFA_IEXTENDER_SETTER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IEXTENDER_SETTER, ofaIExtenderSetterInterface ))
 
-typedef struct _ofaISetter                    ofaISetter;
+typedef struct _ofaIExtenderSetter                     ofaIExtenderSetter;
 
 /**
- * ofaISetterInterface:
+ * ofaIExtenderSetterInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
  * @set_getter: [should] provides a permanent #ofaIGetter to the object.
  *
- * This defines the interface that an #ofaISetter should implement.
+ * This defines the interface that an #ofaIExtenderSetter should implement.
  */
 typedef struct {
 	/*< private >*/
@@ -76,17 +78,17 @@ typedef struct {
 	/*** instance-wide ***/
 	/**
 	 * get_getter:
-	 * @instance: the #ofaISetter instance.
+	 * @instance: the #ofaIExtenderSetter instance.
 	 *
 	 * Returns: the previously set #ofaIGetter instance.
 	 *
 	 * Since: version 1.
 	 */
-	ofaIGetter * ( *get_getter )          ( ofaISetter *instance );
+	ofaIGetter * ( *get_getter )          ( ofaIExtenderSetter *instance );
 
 	/**
 	 * set_getter:
-	 * @instance: the #ofaISetter instance.
+	 * @instance: the #ofaIExtenderSetter instance.
 	 * @getter: a permanent #ofaIGetter of the application.
 	 *
 	 * Set a @getter.
@@ -95,31 +97,31 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void         ( *set_getter )          ( ofaISetter *instance,
+	void         ( *set_getter )          ( ofaIExtenderSetter *instance,
 												ofaIGetter *getter );
 }
-	ofaISetterInterface;
+	ofaIExtenderSetterInterface;
 
 /*
  * Interface-wide
  */
-GType       ofa_isetter_get_type                  ( void );
+GType       ofa_iextender_setter_get_type                  ( void );
 
-guint       ofa_isetter_get_interface_last_version( void );
+guint       ofa_iextender_setter_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint       ofa_isetter_get_interface_version     ( GType type );
+guint       ofa_iextender_setter_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-ofaIGetter *ofa_isetter_get_getter                ( ofaISetter *instance );
+ofaIGetter *ofa_iextender_setter_get_getter                ( ofaIExtenderSetter *instance );
 
-void        ofa_isetter_set_getter                ( ofaISetter *instance,
-														ofaIGetter *getter );
+void        ofa_iextender_setter_set_getter                ( ofaIExtenderSetter *instance,
+																ofaIGetter *getter );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_ISETTER_H__ */
+#endif /* __OPENBOOK_API_OFA_IEXTENDER_SETTER_H__ */

@@ -64,6 +64,7 @@ api_include_HEADERS = \
 	ofa-idbsuperuser-def.h								\
 	ofa-iexe-close.h									\
 	ofa-iexportable.h									\
+	ofa-iextender-setter.h								\
 	ofa-igetter.h										\
 	ofa-igetter-def.h									\
 	ofa-iimportable.h									\
@@ -76,7 +77,6 @@ api_include_HEADERS = \
 	ofa-iproperties.h									\
 	ofa-irecover.h										\
 	ofa-irenderable.h									\
-	ofa-isetter.h										\
 	ofa-isignalable.h									\
 	ofa-isignaler.h										\
 	ofa-istore.h										\

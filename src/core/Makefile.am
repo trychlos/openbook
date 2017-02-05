@@ -120,6 +120,7 @@ libofa_core_la_SOURCES = \
 	ofa-idbsuperuser.c									\
 	ofa-iexe-close.c									\
 	ofa-iexportable.c									\
+	ofa-iextender-setter.c								\
 	ofa-igetter.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
@@ -130,7 +131,6 @@ libofa_core_la_SOURCES = \
 	ofa-iproperties.c									\
 	ofa-irecover.c										\
 	ofa-irenderable.c									\
-	ofa-isetter.c										\
 	ofa-isignalable.c									\
 	ofa-isignaler.c										\
 	ofa-istore.c										\
