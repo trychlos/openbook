@@ -53,7 +53,7 @@ typedef struct {
 	 */
 	myISettings   *dossier_settings;
 	myFileMonitor *monitor;
-	GList         *list;
+	GList         *list;						/* list of #ofaIDBDossierMeta */
 	gboolean       ignore_next;
 }
 	ofaDossierCollectionPrivate;
@@ -77,8 +77,6 @@ static GList             *load_dossiers( ofaDossierCollection *self, GList *prev
 static void               set_dossier_meta_properties( ofaDossierCollection *self, ofaIDBDossierMeta *meta, const gchar *group_name );
 static ofaIDBDossierMeta *get_dossier_by_name( GList *list, const gchar *dossier_name );
 static void               collection_dump( ofaDossierCollection *collection, GList *list );
-static void               dossier_collection_free_list( ofaDossierCollection *self );
-static void               free_dossiers_list( GList *list );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierCollection, ofa_dossier_collection, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaDossierCollection ))
@@ -114,7 +112,7 @@ dossier_collection_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->monitor );
-		dossier_collection_free_list( OFA_DOSSIER_COLLECTION( instance ));
+		g_list_free_full( priv->list, ( GDestroyNotify ) g_object_unref );
 	}
 
 	/* chain up to the parent class */
@@ -264,7 +262,7 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCo
 	} else {
 		prev_list = priv->list;
 		priv->list = load_dossiers( collection, prev_list );
-		free_dossiers_list( prev_list );
+		g_list_free_full( prev_list, ( GDestroyNotify ) g_object_unref );
 	}
 }
 
@@ -557,24 +555,4 @@ collection_dump( ofaDossierCollection *collection, GList *list )
 	for( it=list ; it ; it=it->next ){
 		ofa_idbdossier_meta_dump_full( OFA_IDBDOSSIER_META( it->data ));
 	}
-}
-
-/*
- * free the list of dossiers
- */
-static void
-dossier_collection_free_list( ofaDossierCollection *self )
-{
-	ofaDossierCollectionPrivate *priv;
-
-	priv = ofa_dossier_collection_get_instance_private( self );
-
-	free_dossiers_list( priv->list );
-	priv->list = NULL;
-}
-
-static void
-free_dossiers_list( GList *list )
-{
-	g_list_free_full( list, ( GDestroyNotify ) g_object_unref );
 }
