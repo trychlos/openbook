@@ -35,6 +35,8 @@
    - ofaExtenderModule: review loading/unloading the library.
    - ofaExtension: improve API v2.
    - ofa_idbdossier_meta_set_provider(): remove 'const' modifier from argument list.
+   - ofa_idbdossier_meta_unref(): new function.
+   - ofa_idbexercice_meta_unref(): new function.
    - ofaIGetter: review interface to be the only one which accesses to ofaHub (todo #1339).
    - ofaIRecover: new interface.
    - ofaISignalable: interface renamed from ofaISignalHub (todo #1342).

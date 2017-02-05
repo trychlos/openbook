@@ -204,6 +204,36 @@ ofa_idbdossier_meta_get_interface_version( GType type )
 }
 
 /**
+ * ofa_idbdossier_meta_unref:
+ * @meta: this #ofaIDBDossierMeta instance.
+ *
+ * Release the taken references, and g_object_unref() the implementation.
+ *
+ * Rationale: this interface may take references on other objects.
+ * When disposing this object, the implementation does not know
+ * that it even has references to release, and so would do nothing.
+ *
+ * So this function releases the references. It should only be called
+ * from implementation::dispose().
+ */
+void
+ofa_idbdossier_meta_unref( ofaIDBDossierMeta *meta )
+{
+	sIDBMeta *sdata;
+
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
+
+	sdata = get_instance_data( meta );
+
+	g_clear_object( &sdata->provider );
+
+	g_list_free_full( sdata->periods, ( GDestroyNotify ) ofa_idbexercice_meta_unref );
+	sdata->periods = NULL;
+
+	g_object_unref( meta );
+}
+
+/**
  * ofa_idbdossier_meta_get_provider:
  * @meta: this #ofaIDBDossierMeta instance.
  *
@@ -1067,9 +1097,7 @@ on_instance_finalized( sIDBMeta *sdata, GObject *finalized_meta )
 
 	g_debug( "%s: sdata=%p, finalized_meta=%p", thisfn, ( void * ) sdata, ( void * ) finalized_meta );
 
-	g_clear_object( &sdata->provider );
 	g_free( sdata->dossier_name );
 	g_free( sdata->settings_group );
-	g_list_free_full( sdata->periods, ( GDestroyNotify ) g_object_unref );
 	g_free( sdata );
 }

@@ -112,7 +112,7 @@ dossier_collection_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->monitor );
-		g_list_free_full( priv->list, ( GDestroyNotify ) g_object_unref );
+		g_list_free_full( priv->list, ( GDestroyNotify ) ofa_idbdossier_meta_unref );
 	}
 
 	/* chain up to the parent class */
@@ -262,7 +262,7 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCo
 	} else {
 		prev_list = priv->list;
 		priv->list = load_dossiers( collection, prev_list );
-		g_list_free_full( prev_list, ( GDestroyNotify ) g_object_unref );
+		g_list_free_full( prev_list, ( GDestroyNotify ) ofa_idbdossier_meta_unref );
 	}
 }
 
