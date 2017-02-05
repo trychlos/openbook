@@ -56,8 +56,7 @@ typedef struct {
 	/* internals
 	 */
 	ofaIGetter          *getter;
-	ofaHub              *hub;
-	GList               *hub_handlers;
+	GList               *signaler_handlers;
 	gboolean             is_writable;
 	gchar               *settings_prefix;
 
@@ -86,8 +85,8 @@ static void       action_on_update_activated( GSimpleAction *action, GVariant *e
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaCurrencyPage *self );
 static gboolean   check_for_deletability( ofaCurrencyPage *self, ofoCurrency *class );
 static void       delete_with_confirm( ofaCurrencyPage *self, ofoCurrency *class );
-static void       hub_connect_to_signaling_system( ofaCurrencyPage *self );
-static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self );
+static void       signaler_connect_to_signaling_system( ofaCurrencyPage *self );
+static void       signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaCurrencyPage, ofa_currency_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaCurrencyPage ))
@@ -116,19 +115,19 @@ static void
 currency_page_dispose( GObject *instance )
 {
 	ofaCurrencyPagePrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( instance && OFA_IS_CURRENCY_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		/* unref object members here */
 		priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( instance ));
 
-		/* note when deconnecting the handlers that the dossier may
-		 * have been already finalized (e.g. when the application
-		 * terminates) */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
 
+		/* unref object members here */
 		g_object_unref( priv->new_action );
 		g_object_unref( priv->update_action );
 		g_object_unref( priv->delete_action );
@@ -151,7 +150,7 @@ ofa_currency_page_init( ofaCurrencyPage *self )
 
 	priv = ofa_currency_page_get_instance_private( self );
 
-	priv->hub_handlers = NULL;
+	priv->signaler_handlers = NULL;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
@@ -189,6 +188,7 @@ action_page_v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_currency_page_v_setup_view";
 	ofaCurrencyPagePrivate *priv;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -196,10 +196,10 @@ action_page_v_setup_view( ofaActionPage *page )
 
 	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	priv->tview = ofa_currency_treeview_new( priv->getter );
 	ofa_currency_treeview_set_settings_key( priv->tview, priv->settings_prefix );
@@ -207,7 +207,7 @@ action_page_v_setup_view( ofaActionPage *page )
 
 	/* in case the last consumer of a currency disappears, then update
 	 * the actions sensitivities */
-	hub_connect_to_signaling_system( OFA_CURRENCY_PAGE( page ));
+	signaler_connect_to_signaling_system( OFA_CURRENCY_PAGE( page ));
 
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
@@ -437,34 +437,37 @@ delete_with_confirm( ofaCurrencyPage *self, ofoCurrency *currency )
 }
 
 /*
- * connect to the dossier signaling system
+ * Connect to ofaISignaler signaling system
  */
 static void
-hub_connect_to_signaling_system( ofaCurrencyPage *self )
+signaler_connect_to_signaling_system( ofaCurrencyPage *self )
 {
 	ofaCurrencyPagePrivate *priv;
+	ofaISignaler *signaler;
 	gulong handler;
 
 	priv = ofa_currency_page_get_instance_private( self );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	signaler = ofa_igetter_get_signaler( priv->getter );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
+ * SIGNALER_BASE_UPDATED signal handler
  *
  * When a first object takes a reference on a currency, or when an
  * object releases the last reference on a currency, then the actions
  * sensitivity should be reviewed.
  */
 static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self )
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self )
 {
-	static const gchar *thisfn = "ofa_currency_page_hub_on_updated_object";
+	static const gchar *thisfn = "ofa_currency_page_signaler_on_updated_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn, ( void * ) hub,
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn, ( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id, ( void * ) self );
 

@@ -31,7 +31,6 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
@@ -51,8 +50,7 @@ typedef struct {
 	 */
 	ofaIGetter           *getter;
 	gchar                *settings_prefix;
-	ofaHub               *hub;
-	GList                *hub_handlers;
+	GList                *signaler_handlers;
 	const ofoOpeTemplate *model;			/* model */
 	ofaGuidedInputBin    *input_bin;
 
@@ -117,11 +115,11 @@ static void       right_on_ok( GtkButton *button, ofaGuidedEx *self );
 static void       right_on_cancel( GtkButton *button, ofaGuidedEx *self );
 static void       read_settings( ofaGuidedEx *self );
 static void       write_settings( ofaGuidedEx *self );
-static void       hub_connect_to_signaling_system( ofaGuidedEx *self );
-static void       hub_on_new_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self );
-static void       hub_on_updated_object( ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
-static void       hub_on_deleted_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self );
-static void       hub_on_reload_dataset( ofaHub *hub, GType type, ofaGuidedEx *self );
+static void       signaler_connect_to_signaling_system( ofaGuidedEx *self );
+static void       signaler_on_new_base( ofaISignaler *signaler, const ofoBase *object, ofaGuidedEx *self );
+static void       signaler_on_updated_base( ofaISignaler *signaler, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
+static void       signaler_on_deleted_base( ofaISignaler *signaler, const ofoBase *object, ofaGuidedEx *self );
+static void       signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaGuidedEx *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_PANED_PAGE, 0,
 		G_ADD_PRIVATE( ofaGuidedEx ))
@@ -150,6 +148,7 @@ static void
 guided_ex_dispose( GObject *instance )
 {
 	ofaGuidedExPrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( instance && OFA_IS_GUIDED_EX( instance ));
 
@@ -157,10 +156,13 @@ guided_ex_dispose( GObject *instance )
 
 		write_settings( OFA_GUIDED_EX( instance ));
 
-		/* unref object members here */
 		priv = ofa_guided_ex_get_instance_private( OFA_GUIDED_EX( instance ));
 
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
+
+		/* unref object members here */
 	}
 
 	/* chain up to the parent class */
@@ -223,9 +225,6 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 
 	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
 	priv->paned = GTK_WIDGET( paned );
 
 	view = setup_view1( OFA_GUIDED_EX( page ));
@@ -234,7 +233,7 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 	view = setup_view2( OFA_GUIDED_EX( page ));
 	gtk_paned_pack2( paned, view, TRUE, FALSE );
 
-	hub_connect_to_signaling_system( OFA_GUIDED_EX( page ));
+	signaler_connect_to_signaling_system( OFA_GUIDED_EX( page ));
 
 	left_init_view( OFA_GUIDED_EX( page ));
 
@@ -989,38 +988,44 @@ write_settings( ofaGuidedEx *self )
 	g_free( str );
 }
 
+/*
+ * Connect to ofaISignaler signaling system
+ */
 static void
-hub_connect_to_signaling_system( ofaGuidedEx *self )
+signaler_connect_to_signaling_system( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
+	ofaISignaler *signaler;
 	gulong handler;
 
 	priv = ofa_guided_ex_get_instance_private( self );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	signaler = ofa_igetter_get_signaler( priv->getter );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_COLLECTION_RELOAD, G_CALLBACK( signaler_on_reload_collection ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 }
 
 /*
- * SIGNAL_HUB_NEW signal handler
+ * SIGNALER_BASE_NEW signal handler
  */
 static void
-hub_on_new_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self )
+signaler_on_new_base( ofaISignaler *signaler, const ofoBase *object, ofaGuidedEx *self )
 {
-	static const gchar *thisfn = "ofa_guided_ex_hub_on_new_object";
+	static const gchar *thisfn = "ofa_guided_ex_signaler_on_new_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -1033,16 +1038,16 @@ hub_on_new_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self )
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
+ * SIGNALER_BASE_UPDATED signal handler
  */
 static void
-hub_on_updated_object( ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self )
+signaler_on_updated_base( ofaISignaler *signaler, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self )
 {
-	static const gchar *thisfn = "ofa_guided_ex_hub_on_updated_object";
+	static const gchar *thisfn = "ofa_guided_ex_signaler_on_updated_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) self );
@@ -1056,16 +1061,16 @@ hub_on_updated_object( ofaHub *hub, const ofoBase *object, const gchar *prev_id,
 }
 
 /*
- * SIGNAL_HUB_DELETED signal handler
+ * SIGNALER_BASE_DELETED signal handler
  */
 static void
-hub_on_deleted_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self )
+signaler_on_deleted_base( ofaISignaler *signaler, const ofoBase *object, ofaGuidedEx *self )
 {
-	static const gchar *thisfn = "ofa_guided_ex_hub_on_deleted_object";
+	static const gchar *thisfn = "ofa_guided_ex_signaler_on_deleted_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -1078,15 +1083,15 @@ hub_on_deleted_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self )
 }
 
 /*
- * SIGNAL_HUB_RELOAD signal handler
+ * SIGNALER_COLLECTION_RELOAD signal handler
  */
 static void
-hub_on_reload_dataset( ofaHub *hub, GType type, ofaGuidedEx *self )
+signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaGuidedEx *self )
 {
-	static const gchar *thisfn = "ofa_guided_ex_hub_on_reload_dataset";
+	static const gchar *thisfn = "ofa_guided_ex_signaler_on_reload_collection";
 
-	g_debug( "%s: hub=%p, type=%lu (%s), self=%p",
-			thisfn, ( void * ) hub, type, g_type_name( type ), ( void * ) self );
+	g_debug( "%s: signaler=%p, type=%lu (%s), self=%p",
+			thisfn, ( void * ) signaler, type, g_type_name( type ), ( void * ) self );
 
 	if( type == OFO_TYPE_OPE_TEMPLATE ){
 		//

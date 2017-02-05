@@ -33,7 +33,6 @@
 #include "my/my-isettings.h"
 #include "my/my-scope-mapper.h"
 #include "my/my-settings.h"
-#include "my/my-signal.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
@@ -44,7 +43,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-isignal-hub.h"
+#include "api/ofa-isignalable.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-class.h"
@@ -89,33 +88,10 @@ typedef struct {
 }
 	ofaHubPrivate;
 
-/* signals defined here
- */
-enum {
-	NEW_OBJECT = 0,
-	UPDATED_OBJECT,
-	DELETABLE_OBJECT,
-	DELETED_OBJECT,
-	RELOAD_DATASET,
-	DOSSIER_OPENED,
-	DOSSIER_CLOSED,
-	DOSSIER_CHANGED,
-	DOSSIER_PREVIEW,
-	ENTRY_STATUS_COUNT,
-	ENTRY_STATUS_CHANGE,
-	EXE_DATES_CHANGED,
-	N_SIGNALS
-};
-
-static gint st_signals[ N_SIGNALS ]     = { 0 };
-
 static void                   hub_register_types( ofaHub *self );
-static void                   setup_settings( ofaHub *self );
-static void                   init_signaling_system( ofaHub *self );
-static void                   init_signaling_system_connect_to( ofaHub *self, GType type );
-static gboolean               on_deletable_default_handler( ofaHub *self, GObject *object );
-static void                   on_dossier_changed( ofaHub *hub, void *empty );
-static gboolean               remediate_dossier_settings( ofaHub *self );
+static void                   hub_setup_settings( ofaHub *self );
+static void                   on_properties_dossier_changed( ofaISignaler *signaler, void *empty );
+static gboolean               remediate_dossier_settings( ofaIGetter *getter );
 static void                   icollector_iface_init( myICollectorInterface *iface );
 static guint                  icollector_get_interface_version( void );
 static void                   igetter_iface_init( ofaIGetterInterface *iface );
@@ -224,313 +200,6 @@ ofa_hub_class_init( ofaHubClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = hub_dispose;
 	G_OBJECT_CLASS( klass )->finalize = hub_finalize;
-
-	/**
-	 * ofaHub::hub-object-new:
-	 *
-	 * The signal is emitted after a new object has been successfully
-	 * inserted in the database. A connected handler may take advantage
-	 * of this signal e.g. to update its own list of displayed objects.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler( ofaHub    *hub,
-	 * 							ofoBase  *object,
-	 * 							gpointer  user_data );
-	 */
-	st_signals[ NEW_OBJECT ] = g_signal_new_class_handler(
-				SIGNAL_HUB_NEW,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_OBJECT );
-
-	/**
-	 * ofaHub::hub-object-updated:
-	 *
-	 * The signal is emitted just after an object has been successfully
-	 * updated in the DBMS. A connected handler may take advantage of
-	 * this signal e.g. for updating its own list of displayed objects,
-	 * or for updating its internal links, or so.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler( ofaHub       *hub,
-	 * 							ofoBase     *object,
-	 * 							const gchar *prev_id,
-	 * 							gpointer     user_data );
-	 */
-	st_signals[ UPDATED_OBJECT ] = g_signal_new_class_handler(
-				SIGNAL_HUB_UPDATED,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_OBJECT, G_TYPE_STRING );
-
-	/**
-	 * ofaHub::hub-object-deletable:
-	 *
-	 * The signal is emitted when the application wants to know if a
-	 * particular object is deletable.
-	 *
-	 * The handlers should return %TRUE to abort the deletion of the
-	 * proposed object.
-	 *
-	 * Handler is of type:
-	 * 		gboolean user_handler( ofaHub    *hub,
-	 * 								ofoBase  *object,
-	 * 								gpointer  user_data );
-	 */
-	st_signals[ DELETABLE_OBJECT ] = g_signal_new_class_handler(
-				SIGNAL_HUB_DELETABLE,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
-				G_CALLBACK( on_deletable_default_handler ),
-				my_signal_accumulator_false_handled,
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_BOOLEAN,
-				1,
-				G_TYPE_OBJECT );
-
-	/**
-	 * ofaHub::hub-object-deleted:
-	 *
-	 * The signal is emitted just after an object has been successfully
-	 * deleted from the DBMS. A connected handler may take advantage of
-	 * this signal e.g. for updating its own list of displayed objects.
-	 *
-	 * Note that the emitter of this signal should attach a new reference
-	 * to the deleted object in order to keep it alive during for the
-	 * handlers execution.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler( ofaHub    *hub,
-	 * 							ofoBase  *object,
-	 * 							gpointer  user_data );
-	 */
-	st_signals[ DELETED_OBJECT ] = g_signal_new_class_handler(
-				SIGNAL_HUB_DELETED,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_OBJECT );
-
-	/**
-	 * ofaHub::hub-object-reload:
-	 *
-	 * The signal is emitted when such an update has been made in the
-	 * DBMS that it is considered easier for a connected handler just
-	 * to reload the whole dataset if this later whishes keep
-	 * synchronized with the database.
-	 *
-	 * This signal is so less an information signal that an action hint.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler( ofaHub   *hub,
-	 * 							GType    type_class,
-	 * 							gpointer user_data );
-	 */
-	st_signals[ RELOAD_DATASET ] = g_signal_new_class_handler(
-				SIGNAL_HUB_RELOAD,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_GTYPE );
-
-	/**
-	 * ofaHub::hub-dossier-opened:
-	 *
-	 * This signal is sent on the hub after it has opened a dossier.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler( ofaHub   *hub,
-	 * 							gpointer user_data );
-	 */
-	st_signals[ DOSSIER_OPENED ] = g_signal_new_class_handler(
-				SIGNAL_HUB_DOSSIER_OPENED,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
-
-	/**
-	 * ofaHub::hub-dossier-closed:
-	 *
-	 * This signal is sent on the hub when it is about to close a
-	 * dossier.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler( ofaHub   *hub,
-	 * 							gpointer user_data );
-	 */
-	st_signals[ DOSSIER_CLOSED ] = g_signal_new_class_handler(
-				SIGNAL_HUB_DOSSIER_CLOSED,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
-
-	/**
-	 * ofaHub::hub-dossier-changed:
-	 *
-	 * This signal is sent on the hub when the properties of the dossier
-	 * has been modified (or may have been modified) by the user. This
-	 * strictly corresponds to the OFA_T_DOSSIER table content.
-	 *
-	 * The #ofaHub itself is connected to the signal and is the very
-	 * first handler triggered. It takes advantage of this signal to
-	 * remediate the dossier settings.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler( ofaHub   *hub,
-	 * 							gpointer user_data );
-	 */
-	st_signals[ DOSSIER_CHANGED ] = g_signal_new_class_handler(
-				SIGNAL_HUB_DOSSIER_CHANGED,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
-
-	/**
-	 * ofaHub::hub-dossier-preview:
-	 * @uri: [allow-none]:
-	 *
-	 * This signal is sent on the hub to set a new background image.
-	 * The sender is responsible to restore the original image if the
-	 * user cancels the update.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler( ofaHub       *hub,
-	 * 							const gchar *uri,
-	 * 							gpointer     user_data );
-	 */
-	st_signals[ DOSSIER_PREVIEW ] = g_signal_new_class_handler(
-				SIGNAL_HUB_DOSSIER_PREVIEW,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_STRING );
-
-	/**
-	 * ofaHub::hub-status-count:
-	 *
-	 * This signal is sent on the hub before each batch of entry status
-	 * changes. A signal handler may so initialize e.g. a progression
-	 * bar about the status change.
-	 * The arguments may be read as: I am about to change the status of
-	 * '@count' entries to '@new_status' status.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler( ofaHub   *hub,
-	 *							gint     new_status,
-	 *							gulong   count,
-	 * 							gpointer user_data );
-	 */
-	st_signals[ ENTRY_STATUS_COUNT ] = g_signal_new_class_handler(
-				SIGNAL_HUB_STATUS_COUNT,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_UINT, G_TYPE_ULONG );
-
-	/**
-	 * ofaHub::hub-status-change:
-	 *
-	 * This signal is sent of the @hub to ask an antry to change its
-	 * status. This is an ACTION signal.
-	 *
-	 * The #ofoEntry class signal handler will update the @entry with
-	 * its new @new_status status, and update the database accordingly.
-	 * Other signal handlers may, e.g. update balances, progression
-	 * bars, and so on.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler( ofaHub          *hub,
-	 * 							const ofoEntry *entry
-	 * 							gint            prev_status,
-	 *							gint            new_status,
-	 * 							gpointer        user_data );
-	 */
-	st_signals[ ENTRY_STATUS_CHANGE ] = g_signal_new_class_handler(
-				SIGNAL_HUB_STATUS_CHANGE,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				3,
-				G_TYPE_OBJECT, G_TYPE_UINT, G_TYPE_UINT );
-
-	/**
-	 * ofaHub::hub-exe-dates-changed:
-	 *
-	 * Beginning and or ending exercice dates of the dossier have been
-	 * modified.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler( ofaHub       *hub
-	 * 							const GDate *prev_begin,
-	 * 							const GDate *prev_end,
-	 * 							gpointer     user_data );
-	 */
-	st_signals[ EXE_DATES_CHANGED ] = g_signal_new_class_handler(
-				SIGNAL_HUB_EXE_DATES_CHANGED,
-				OFA_TYPE_HUB,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_POINTER, G_TYPE_POINTER );
 }
 
 /**
@@ -553,21 +222,19 @@ ofa_hub_new( void )
 	ofa_box_register_types();			/* register types */
 	hub_register_types( hub );
 
-	setup_settings( hub );				/* instanciates the settings file */
-
-	/* must have extenders_collection before signaling init */
+	/* must have extenders_collection before the ISignaler be able
+	 * to initialize itself */
 	priv->extenders_collection = ofa_extender_collection_new( OFA_IGETTER( hub ), PKGLIBDIR );
 
-	init_signaling_system( hub );
+	ofa_isignaler_init_signaling_system( OFA_ISIGNALER( hub ), OFA_IGETTER( hub ));
 
+	hub_setup_settings( hub );
 	priv->dossiers_collection = ofa_dossier_collection_new( OFA_IGETTER( hub ));
 	priv->openbook_props = ofa_openbook_props_new( OFA_IGETTER( hub ));
-
-	/* connect to menu manager signals to be able to proxy them via the
-	 *  ISignaler interface */
 	priv->scope_mapper = my_scope_mapper_new();
 
-	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CHANGED, G_CALLBACK( on_dossier_changed ), NULL );
+	/* remediate dossier settings when properties change */
+	g_signal_connect( OFA_ISIGNALER( hub ), SIGNALER_DOSSIER_CHANGED, G_CALLBACK( on_properties_dossier_changed ), NULL );
 
 	return( hub );
 }
@@ -612,69 +279,20 @@ hub_register_types( ofaHub *self )
 }
 
 static void
-setup_settings( ofaHub *self )
+hub_setup_settings( ofaHub *self )
 {
 	ofaHubPrivate *priv;
 	gchar *name;
 
 	priv = ofa_hub_get_instance_private( self );
 
-	priv->auth_settings = my_settings_new_user_config( "auth.conf", "OFA_IAUTH_CONF" );
+	priv->auth_settings = my_settings_new_user_config( "auth.conf", "OFA_AUTH_CONF" );
 
 	priv->dossier_settings = my_settings_new_user_config( "dossier.conf", "OFA_DOSSIER_CONF" );
 
 	name = g_strdup_printf( "%s.conf", PACKAGE );
 	priv->user_settings = my_settings_new_user_config( name, "OFA_USER_CONF" );
 	g_free( name );
-}
-
-/*
- * init_signaling_system:
- *
- * Initialize the hub signaling system.
- *
- * Be sure object class handlers are connected to the dossier signaling
- * system, as they may be needed before the class has the opportunity
- * to initialize itself.
- *
- * Example of a use case: the intermediate closing by ledger may be run
- * without having first loaded the accounts, but the accounts should be
- * connected in order to update themselves.
- *
- * This method must be called after having registered core types.
- */
-static void
-init_signaling_system( ofaHub *self )
-{
-	GList *list, *it;
-
-	list = ofa_igetter_get_for_type( OFA_IGETTER( self ), OFA_TYPE_ISIGNAL_HUB );
-
-	for( it=list ; it ; it=it->next ){
-		init_signaling_system_connect_to( self, G_OBJECT_TYPE( it->data ));
-	}
-
-	g_list_free( list );
-}
-
-static void
-init_signaling_system_connect_to( ofaHub *self, GType type )
-{
-	gpointer klass, iface;
-
-	klass = g_type_class_ref( type );
-	g_return_if_fail( klass );
-
-	iface = g_type_interface_peek( klass, OFA_TYPE_ISIGNAL_HUB );
-
-	if( iface && (( ofaISignalHubInterface * ) iface )->connect ){
-		(( ofaISignalHubInterface * ) iface )->connect( self );
-	} else {
-		g_info( "%s implementation does not provide 'ofaISignalHub::connect()' method",
-				g_type_name( type ));
-	}
-
-	g_type_class_unref( klass );
 }
 
 /**
@@ -723,40 +341,6 @@ ofa_hub_set_runtime_command( ofaHub *hub, const gchar *argv_0 )
 
 	priv->argv_0 = g_strdup( argv_0 );
 	priv->runtime_dir = g_path_get_dirname( priv->argv_0 );
-}
-
-/*
- * Without this class handler connected, the returned deletability is
- * False.
- *
- * With this class handler connected and returning %TRUE, then the
- * returned deletability is True (which is the expected default).
- *
- * With this class handler connected and returning %FALSE, then the
- * returned deletability is False.
- *
- * Any connected handler returning %FALSE stops the signal emission,
- * and the returned value is %FALSE.
- *
- * If all connected handlers return %TRUE, then the control reaches
- * this default handler which also returns %TRUE. The object is then
- * supposed to be deletable.
- */
-static gboolean
-on_deletable_default_handler( ofaHub *self, GObject *object )
-{
-	static const gchar *thisfn = "ofa_hub_on_deletable_default_handler";
-
-	g_debug( "%s: self=%p, object=%p (%s)",
-			thisfn, ( void * ) self, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
-
-	return( TRUE );
-}
-
-static void
-on_dossier_changed( ofaHub *hub, void *empty )
-{
-	remediate_dossier_settings( hub );
 }
 
 /**
@@ -861,10 +445,10 @@ ofa_hub_open_dossier( ofaHub *hub, GtkWindow *parent,
 		priv->dossier = ofo_dossier_new( OFA_IGETTER( hub ));
 		if( priv->dossier ){
 			priv->read_only = read_only;
-			g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_OPENED );
+			g_signal_emit_by_name( OFA_ISIGNALER( hub ), SIGNALER_DOSSIER_OPENED );
 			ok = TRUE;
 			if( remediate_settings ){
-				g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CHANGED );
+				g_signal_emit_by_name( OFA_ISIGNALER( hub ), SIGNALER_DOSSIER_CHANGED );
 			}
 		}
 	}
@@ -874,6 +458,16 @@ ofa_hub_open_dossier( ofaHub *hub, GtkWindow *parent,
 	}
 
 	return( ok );
+}
+
+static void
+on_properties_dossier_changed( ofaISignaler *signaler, void *empty )
+{
+	ofaIGetter *getter;
+
+	getter = ofa_isignaler_get_getter( signaler );
+
+	remediate_dossier_settings( getter );
 }
 
 /*
@@ -888,19 +482,22 @@ ofa_hub_open_dossier( ofaHub *hub, GtkWindow *parent,
  * user.
  */
 static gboolean
-remediate_dossier_settings( ofaHub *self )
+remediate_dossier_settings( ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_hub_remediate_dossier_settings";
+	ofaHub *hub;
+	ofaIDBConnect *cnx;
 	ofoDossier *dossier;
 	gboolean db_current, settings_current, remediated;
 	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
-	const ofaIDBConnect *cnx;
 	ofaIDBExerciceMeta *period;
 	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
 
 	remediated = FALSE;
-	dossier = ofa_hub_get_dossier( self );
-	cnx = ofa_hub_get_connect( self );
+
+	hub = ofa_igetter_get_hub( getter );
+	dossier = ofa_hub_get_dossier( hub );
+	cnx = ofa_hub_get_connect( hub );
 
 	/* data from db */
 	db_current = ofo_dossier_is_current( dossier );
@@ -1083,7 +680,7 @@ ofa_hub_close_dossier( ofaHub *hub )
 
 		/* emit the closing signal
 		 *  at this time all datas are alive and valid */
-		g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CLOSED );
+		g_signal_emit_by_name( OFA_ISIGNALER( hub ), SIGNALER_DOSSIER_CLOSED );
 
 		g_clear_object( &priv->connect );
 		g_clear_object( &priv->dossier );
@@ -1122,43 +719,6 @@ ofa_hub_get_willing_to_import( ofaHub *hub, const gchar *uri, GType type )
 	g_list_free( importers );
 
 	return( found ? g_object_ref( G_OBJECT( found )) : NULL );
-}
-
-/**
- * ofa_hub_disconnect_handlers:
- * @hub: this #ofaHub object.
- * @handlers: a #GList of the handler identifiers got when connecting
- *  to the hub signaling system
- *
- * Disconnect the specified @handlers from the signaling system.
- * Free the list and clear the @handlers pointer.
- *
- * Rationale: an object should disconnect its signals when it disappears
- * while the signal emitter is still alive, i.e. to prevent the signal
- * emitter to keep sending signals to a now-disappeared object.
- */
-void
-ofa_hub_disconnect_handlers( ofaHub *hub, GList **handlers )
-{
-	static const gchar *thisfn = "ofa_hub_disconnect_handlers";
-	ofaHubPrivate *priv;
-	GList *it;
-
-	g_debug( "%s: hub=%p, handlers=%p (count=%d)",
-			thisfn, ( void * ) hub, ( void * ) handlers, g_list_length( *handlers ));
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	if( !priv->dispose_has_run ){
-		for( it=( *handlers ) ; it ; it=it->next ){
-			g_signal_handler_disconnect( hub, ( gulong ) it->data );
-		}
-	}
-
-	if( *handlers ){
-		g_list_free( *handlers );
-		*handlers = NULL;
-	}
 }
 
 /*

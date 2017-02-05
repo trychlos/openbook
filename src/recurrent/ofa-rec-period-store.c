@@ -31,7 +31,6 @@
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 
@@ -49,8 +48,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub     *hub;
-	GList      *hub_handlers;
+	GList      *signaler_handlers;
 }
 	ofaRecPeriodStorePrivate;
 
@@ -71,11 +69,11 @@ static void     do_insert_dataset( ofaRecPeriodStore *self, const GList *dataset
 static void     insert_row( ofaRecPeriodStore *self, ofoRecPeriod *period );
 static void     set_row_by_iter( ofaRecPeriodStore *self, ofoRecPeriod *period, GtkTreeIter *iter );
 static gboolean find_row_by_object( ofaRecPeriodStore *self, ofoRecPeriod *period, GtkTreeIter *iter );
-static void     hub_connect_to_signaling_system( ofaRecPeriodStore *self );
-static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecPeriodStore *self );
-static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecPeriodStore *self );
-static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecPeriodStore *self );
-static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaRecPeriodStore *self );
+static void     signaler_connect_to_signaling_system( ofaRecPeriodStore *self );
+static void     signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaRecPeriodStore *self );
+static void     signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaRecPeriodStore *self );
+static void     signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaRecPeriodStore *self );
+static void     signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaRecPeriodStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecPeriodStore, ofa_rec_period_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaRecPeriodStore ))
@@ -100,6 +98,7 @@ static void
 rec_period_store_dispose( GObject *instance )
 {
 	ofaRecPeriodStorePrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( instance && OFA_IS_REC_PERIOD_STORE( instance ));
 
@@ -109,8 +108,11 @@ rec_period_store_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
+
 		/* unref object members here */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -131,7 +133,7 @@ ofa_rec_period_store_init( ofaRecPeriodStore *self )
 	priv = ofa_rec_period_store_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->hub_handlers = NULL;
+	priv->signaler_handlers = NULL;
 }
 
 static void
@@ -149,16 +151,9 @@ ofa_rec_period_store_class_init( ofaRecPeriodStoreClass *klass )
  * ofa_rec_period_store_new:
  * @getter: a #ofaIGetter instance.
  *
- * Instanciates a new #ofaRecPeriodStore and attached it to the @dossier
- * if not already done. Else get the already allocated #ofaRecPeriodStore
- * from the @dossier.
- *
- * A weak notify reference is put on this same @dossier, so that the
- * instance will be unreffed when the @dossier will be destroyed.
- *
- * Note that the #myICollector associated to the @hub maintains its own
- * reference to the #ofaRecPeriodStore object, reference which will be
- * freed on @hub finalization.
+ * Instanciates a new #ofaRecPeriodStore and attached it to the
+ * #myICollector if not already done. Else get the already allocated
+ * #ofaRecPeriodStore from this same #myICollector.
  *
  * Returns: a new reference to the #ofaRecPeriodStore object.
  */
@@ -183,7 +178,6 @@ ofa_rec_period_store_new( ofaIGetter *getter )
 		priv = ofa_rec_period_store_get_instance_private( store );
 
 		priv->getter = getter;
-		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[PER_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
@@ -196,7 +190,7 @@ ofa_rec_period_store_new( ofaIGetter *getter )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		hub_connect_to_signaling_system( store );
+		signaler_connect_to_signaling_system( store );
 		load_dataset( store );
 	}
 
@@ -331,40 +325,43 @@ find_row_by_object( ofaRecPeriodStore *self, ofoRecPeriod *period, GtkTreeIter *
 }
 
 /*
- * connect to the hub signaling system
+ * Connect to ofaISignaler signaling system
  */
 static void
-hub_connect_to_signaling_system( ofaRecPeriodStore *self )
+signaler_connect_to_signaling_system( ofaRecPeriodStore *self )
 {
 	ofaRecPeriodStorePrivate *priv;
+	ofaISignaler *signaler;
 	gulong handler;
 
 	priv = ofa_rec_period_store_get_instance_private( self );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	signaler = ofa_igetter_get_signaler( priv->getter );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_COLLECTION_RELOAD, G_CALLBACK( signaler_on_reload_collection ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 }
 
 /*
- * SIGNAL_HUB_NEW signal handler
+ * SIGNALER_BASE_NEW signal handler
  */
 static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecPeriodStore *self )
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaRecPeriodStore *self )
 {
-	static const gchar *thisfn = "ofa_rec_period_store_hub_on_new_object";
+	static const gchar *thisfn = "ofa_rec_period_store_signaler_on_new_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), instance=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -374,17 +371,17 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecPeriodStore *self )
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
+ * SIGNALER_BASE_UPDATED signal handler
  */
 static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecPeriodStore *self )
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaRecPeriodStore *self )
 {
-	static const gchar *thisfn = "ofa_rec_period_store_hub_on_updated_object";
+	static const gchar *thisfn = "ofa_rec_period_store_signaler_on_updated_base";
 	GtkTreeIter iter;
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) self );
@@ -397,33 +394,33 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRe
 }
 
 /*
- * SIGNAL_HUB_DELETED signal handler
+ * SIGNALER_BASE_DELETED signal handler
  *
  * ofaRecPeriod is not expected to be deletable after having been
  * recorded in the DBMS.
  */
 static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecPeriodStore *self )
+signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaRecPeriodStore *self )
 {
-	static const gchar *thisfn = "ofa_rec_period_store_hub_on_deleted_object";
+	static const gchar *thisfn = "ofa_rec_period_store_signaler_on_deleted_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 }
 
 /*
- * SIGNAL_HUB_RELOAD signal handler
+ * SIGNALER_COLLECTION_RELOAD signal handler
  */
 static void
-hub_on_reload_dataset( ofaHub *hub, GType type, ofaRecPeriodStore *self )
+signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaRecPeriodStore *self )
 {
-	static const gchar *thisfn = "ofa_rec_period_store_hub_on_reload_dataset";
+	static const gchar *thisfn = "ofa_rec_period_store_signaler_on_reload_collection";
 
-	g_debug( "%s: hub=%p, type=%lu, self=%p",
-			thisfn, ( void * ) hub, type, ( void * ) self );
+	g_debug( "%s: signaler=%p, type=%lu, self=%p",
+			thisfn, ( void * ) signaler, type, ( void * ) self );
 
 	if( type == OFO_TYPE_REC_PERIOD ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));

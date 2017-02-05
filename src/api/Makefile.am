@@ -77,7 +77,7 @@ api_include_HEADERS = \
 	ofa-irecover.h										\
 	ofa-irenderable.h									\
 	ofa-isetter.h										\
-	ofa-isignal-hub.h									\
+	ofa-isignalable.h									\
 	ofa-isignaler.h										\
 	ofa-istore.h										\
 	ofa-itvcolumnable.h									\

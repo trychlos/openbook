@@ -29,7 +29,6 @@
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofo-currency.h"
 
@@ -46,8 +45,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub     *hub;
-	GList      *hub_handlers;
+	GList      *signaler_handlers;
 }
 	ofaCurrencyStorePrivate;
 
@@ -66,12 +64,12 @@ static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter
 static void     load_dataset( ofaCurrencyStore *self );
 static void     insert_row( ofaCurrencyStore *self, const ofoCurrency *currency );
 static void     set_row_by_iter( ofaCurrencyStore *self, const ofoCurrency *currency, GtkTreeIter *iter );
-static void     hub_connect_to_signaling_system( ofaCurrencyStore *self );
-static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self );
-static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyStore *self );
 static gboolean find_currency_by_code( ofaCurrencyStore *self, const gchar *code, GtkTreeIter *iter );
-static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self );
-static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaCurrencyStore *self );
+static void     signaler_connect_to_signaling_system( ofaCurrencyStore *self );
+static void     signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaCurrencyStore *self );
+static void     signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaCurrencyStore *self );
+static void     signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaCurrencyStore *self );
+static void     signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaCurrencyStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaCurrencyStore, ofa_currency_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaCurrencyStore ))
@@ -96,6 +94,7 @@ static void
 currency_store_dispose( GObject *instance )
 {
 	ofaCurrencyStorePrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( instance && OFA_IS_CURRENCY_STORE( instance ));
 
@@ -105,8 +104,11 @@ currency_store_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
+
 		/* unref object members here */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -127,7 +129,7 @@ ofa_currency_store_init( ofaCurrencyStore *self )
 	priv = ofa_currency_store_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->hub_handlers = NULL;
+	priv->signaler_handlers = NULL;
 }
 
 static void
@@ -152,9 +154,9 @@ ofa_currency_store_class_init( ofaCurrencyStoreClass *klass )
  * A weak notify reference is put on this same @dossier, so that the
  * instance will be unreffed when the @dossier will be destroyed.
  *
- * Note that the #myICollector associated to the @hub maintains its own
- * reference to the #ofaCurrencyStore object, reference which will be
- * freed on @hub finalization.
+ * Note that the #myICollector associated to the @getter maintains its
+ * own reference to the #ofaCurrencyStore object, reference which will
+ * be freed on @getter finalization.
  *
  * Returns: a new reference to the #ofaCurrencyStore object.
  */
@@ -179,7 +181,6 @@ ofa_currency_store_new( ofaIGetter *getter )
 		priv = ofa_currency_store_get_instance_private( store );
 
 		priv->getter = getter;
-		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[CURRENCY_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
@@ -192,7 +193,7 @@ ofa_currency_store_new( ofaIGetter *getter )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		hub_connect_to_signaling_system( store );
+		signaler_connect_to_signaling_system( store );
 		load_dataset( store );
 	}
 
@@ -284,75 +285,6 @@ set_row_by_iter( ofaCurrencyStore *self, const ofoCurrency *currency, GtkTreeIte
 	g_free( str );
 }
 
-/*
- * connect to the hub signaling system
- */
-static void
-hub_connect_to_signaling_system( ofaCurrencyStore *self )
-{
-	ofaCurrencyStorePrivate *priv;
-	gulong handler;
-
-	priv = ofa_currency_store_get_instance_private( self );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-}
-
-/*
- * SIGNAL_HUB_NEW signal handler
- */
-static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self )
-{
-	static const gchar *thisfn = "ofa_currency_store_hub_on_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_CURRENCY( object )){
-		insert_row( self, OFO_CURRENCY( object ));
-	}
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyStore *self )
-{
-	static const gchar *thisfn = "ofa_currency_store_hub_on_updated_object";
-	GtkTreeIter iter;
-	const gchar *code, *new_code;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) self );
-
-	if( OFO_IS_CURRENCY( object )){
-		new_code = ofo_currency_get_code( OFO_CURRENCY( object ));
-		code = prev_id ? prev_id : new_code;
-		if( find_currency_by_code( self, code, &iter )){
-			set_row_by_iter( self, OFO_CURRENCY( object ), &iter);
-		}
-	}
-}
-
 static gboolean
 find_currency_by_code( ofaCurrencyStore *self, const gchar *code, GtkTreeIter *iter )
 {
@@ -377,17 +309,89 @@ find_currency_by_code( ofaCurrencyStore *self, const gchar *code, GtkTreeIter *i
 }
 
 /*
- * SIGNAL_HUB_DELETED signal handler
+ * Connect to ofaISignaler signaling system
  */
 static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self )
+signaler_connect_to_signaling_system( ofaCurrencyStore *self )
 {
-	static const gchar *thisfn = "ofa_currency_store_hub_on_deleted_object";
+	ofaCurrencyStorePrivate *priv;
+	ofaISignaler *signaler;
+	gulong handler;
+
+	priv = ofa_currency_store_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_COLLECTION_RELOAD, G_CALLBACK( signaler_on_reload_collection ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+}
+
+/*
+ * SIGNALER_BASE_NEW signal handler
+ */
+static void
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaCurrencyStore *self )
+{
+	static const gchar *thisfn = "ofa_currency_store_signaler_on_new_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), instance=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_CURRENCY( object )){
+		insert_row( self, OFO_CURRENCY( object ));
+	}
+}
+
+/*
+ * SIGNALER_BASE_UPDATED signal handler
+ */
+static void
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaCurrencyStore *self )
+{
+	static const gchar *thisfn = "ofa_currency_store_signaler_on_updated_base";
+	GtkTreeIter iter;
+	const gchar *code, *new_code;
+
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( OFO_IS_CURRENCY( object )){
+		new_code = ofo_currency_get_code( OFO_CURRENCY( object ));
+		code = prev_id ? prev_id : new_code;
+		if( find_currency_by_code( self, code, &iter )){
+			set_row_by_iter( self, OFO_CURRENCY( object ), &iter);
+		}
+	}
+}
+
+/*
+ * SIGNALER_BASE_DELETED signal handler
+ */
+static void
+signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaCurrencyStore *self )
+{
+	static const gchar *thisfn = "ofa_currency_store_signaler_on_deleted_base";
 	GtkTreeIter iter;
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -401,15 +405,15 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self )
 }
 
 /*
- * SIGNAL_HUB_RELOAD signal handler
+ * SIGNALER_COLLECTION_RELOAD signal handler
  */
 static void
-hub_on_reload_dataset( ofaHub *hub, GType type, ofaCurrencyStore *self )
+signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaCurrencyStore *self )
 {
-	static const gchar *thisfn = "ofa_currency_store_hub_on_reload_dataset";
+	static const gchar *thisfn = "ofa_currency_store_signaler_on_reload_collection";
 
-	g_debug( "%s: hub=%p, type=%lu, self=%p",
-			thisfn, ( void * ) hub, type, ( void * ) self );
+	g_debug( "%s: signaler=%p, type=%lu, self=%p",
+			thisfn, ( void * ) signaler, type, ( void * ) self );
 
 	if( type == OFO_TYPE_CURRENCY ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));

@@ -661,7 +661,7 @@ static gboolean
 do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 	gchar *prev_mnemo;
 	gboolean ok, is_enabled;
 	const gchar *cstr;
@@ -671,7 +671,7 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
+	signaler = ofa_igetter_get_signaler( priv->getter );
 
 	msgerr = NULL;
 	prev_mnemo = g_strdup( ofo_recurrent_model_get_mnemo( priv->recurrent_model ));
@@ -717,13 +717,13 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 		if( my_strlen( priv->orig_template )){
 			template_obj = ofo_ope_template_get_by_mnemo( priv->getter, priv->orig_template );
 			if( template_obj ){
-				g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+				g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, template_obj, NULL );
 			}
 		}
 		if( my_strlen( priv->ope_template ) && my_collate( priv->ope_template, priv->orig_template )){
 			template_obj = ofo_ope_template_get_by_mnemo( priv->getter, priv->ope_template );
 			if( template_obj ){
-				g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+				g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, template_obj, NULL );
 			}
 		}
 	}

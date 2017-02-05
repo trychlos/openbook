@@ -131,7 +131,7 @@ libofa_core_la_SOURCES = \
 	ofa-irecover.c										\
 	ofa-irenderable.c									\
 	ofa-isetter.c										\
-	ofa-isignal-hub.c									\
+	ofa-isignalable.c									\
 	ofa-isignaler.c										\
 	ofa-istore.c										\
 	ofa-itree-adder.c									\

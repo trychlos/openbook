@@ -26,25 +26,24 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-hub.h"
-#include "api/ofa-isignal-hub.h"
+#include "api/ofa-igetter.h"
+#include "api/ofa-isignalable.h"
 
-#define ISIGNAL_HUB_LAST_VERSION          1
+#define ISIGNALABLE_LAST_VERSION          1
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-/* interface management */
-static GType    register_type( void );
-static void     interface_base_init( ofaISignalHubInterface *klass );
-static void     interface_base_finalize( ofaISignalHubInterface *klass );
+static GType register_type( void );
+static void  interface_base_init( ofaISignalableInterface *klass );
+static void  interface_base_finalize( ofaISignalableInterface *klass );
 
 /**
- * ofa_isignal_hub_get_type:
+ * ofa_isignalable_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_isignal_hub_get_type( void )
+ofa_isignalable_get_type( void )
 {
 	static GType type = 0;
 
@@ -56,18 +55,18 @@ ofa_isignal_hub_get_type( void )
 }
 
 /*
- * ofa_isignal_hub_register_type:
+ * ofa_isignalable_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_isignal_hub_register_type";
+	static const gchar *thisfn = "ofa_isignalable_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaISignalHubInterface ),
+		sizeof( ofaISignalableInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -80,7 +79,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaISignalHub", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaISignalable", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -88,9 +87,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaISignalHubInterface *klass )
+interface_base_init( ofaISignalableInterface *klass )
 {
-	static const gchar *thisfn = "ofa_isignal_hub_interface_base_init";
+	static const gchar *thisfn = "ofa_isignalable_interface_base_init";
 
 	if( st_initializations == 0 ){
 
@@ -101,9 +100,9 @@ interface_base_init( ofaISignalHubInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaISignalHubInterface *klass )
+interface_base_finalize( ofaISignalableInterface *klass )
 {
-	static const gchar *thisfn = "ofa_isignal_hub_interface_base_finalize";
+	static const gchar *thisfn = "ofa_isignalable_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -114,18 +113,18 @@ interface_base_finalize( ofaISignalHubInterface *klass )
 }
 
 /**
- * ofa_isignal_hub_get_interface_last_version:
+ * ofa_isignalable_get_interface_last_version:
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_isignal_hub_get_interface_last_version( void )
+ofa_isignalable_get_interface_last_version( void )
 {
-	return( ISIGNAL_HUB_LAST_VERSION );
+	return( ISIGNALABLE_LAST_VERSION );
 }
 
 /**
- * ofa_isignal_hub_get_interface_version:
+ * ofa_isignalable_get_interface_version:
  * @type: the implementation's GType.
  *
  * Returns: the version number of this interface which is managed by
@@ -136,7 +135,7 @@ ofa_isignal_hub_get_interface_last_version( void )
  * Since: version 1.
  */
 guint
-ofa_isignal_hub_get_interface_version( GType type )
+ofa_isignalable_get_interface_version( GType type )
 {
 	gpointer klass, iface;
 	guint version;
@@ -144,20 +143,50 @@ ofa_isignal_hub_get_interface_version( GType type )
 	klass = g_type_class_ref( type );
 	g_return_val_if_fail( klass, 1 );
 
-	iface = g_type_interface_peek( klass, OFA_TYPE_ISIGNAL_HUB );
+	iface = g_type_interface_peek( klass, OFA_TYPE_ISIGNALABLE );
 	g_return_val_if_fail( iface, 1 );
 
 	version = 1;
 
-	if((( ofaISignalHubInterface * ) iface )->get_interface_version ){
-		version = (( ofaISignalHubInterface * ) iface )->get_interface_version();
+	if((( ofaISignalableInterface * ) iface )->get_interface_version ){
+		version = (( ofaISignalableInterface * ) iface )->get_interface_version();
 
 	} else {
-		g_info( "%s implementation does not provide 'ofaISignalHub::get_interface_version()' method",
+		g_info( "%s implementation does not provide 'ofaISignalable::get_interface_version()' method",
 				g_type_name( type ));
 	}
 
 	g_type_class_unref( klass );
 
 	return( version );
+}
+
+/**
+ * ofa_isignalable_connect_to:
+ * @type: the implementation's GType.
+ * @signaler: the #ofaISignaler instance to connect to.
+ *
+ * Let the implementation class connect to #ofaISignaler signaling system.
+ */
+void
+ofa_isignalable_connect_to( GType type, ofaISignaler *signaler )
+{
+	gpointer klass, iface;
+
+	g_return_if_fail( signaler && OFA_IS_ISIGNALER( signaler ));
+
+	klass = g_type_class_ref( type );
+	g_return_if_fail( klass );
+
+	iface = g_type_interface_peek( klass, OFA_TYPE_ISIGNALABLE );
+
+	if( iface && (( ofaISignalableInterface * ) iface )->connect_to ){
+		(( ofaISignalableInterface * ) iface )->connect_to( signaler );
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaISignalable::connect_to()' method",
+				g_type_name( type ));
+	}
+
+	g_type_class_unref( klass );
 }

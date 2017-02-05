@@ -31,20 +31,19 @@
  * @short_description: The ISignaler Interface
  * @include: openbook/ofa-isignaler.h
  *
+ * The #ofaISignaler class defines a signaling system which emits
+ * dedicated messages on new, updated or deleted objects or collections.
+ *
  * The #ofaISignaler interface is the instance everyone may connect to
  * in order to be advertized of some application-wide events.
  *
- * The architecture of the application makes sure that this object is
+ * The architecture of the application makes sure that this instance is
  * available right after the #ofaHub has been initialized.
- *
- * Signals defined here:
- *
- * - 'ofa-signaler-page-manager-available':
- *
- * - 'ofa-signaler-menu-available':
  */
 
 #include <glib-object.h>
+
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -84,6 +83,25 @@ typedef struct {
 }
 	ofaISignalerInterface;
 
+/**
+ * Signals defined here:
+ */
+#define SIGNALER_BASE_NEW                   "ofa-signaler-base-new"
+#define SIGNALER_BASE_UPDATED               "ofa-signaler-base-updated"
+#define SIGNALER_BASE_IS_DELETABLE          "ofa-signaler-base-is-deletable"
+#define SIGNALER_BASE_DELETED               "ofa-signaler-base-deleted"
+#define SIGNALER_COLLECTION_RELOAD          "ofa-signaler-collection-reload"
+#define SIGNALER_DOSSIER_OPENED             "ofa-signaler-dossier-opened"
+#define SIGNALER_DOSSIER_CLOSED             "ofa-signaler-dossier-closed"
+#define SIGNALER_DOSSIER_CHANGED            "ofa-signaler-dossier-changed"
+#define SIGNALER_DOSSIER_PREVIEW            "ofa-signaler-dossier-preview"
+#define SIGNALER_EXERCICE_DATES_CHANGED     "ofa-signaler-exercice-dates-changed"
+#define SIGNALER_STATUS_COUNT               "ofa-signaler-entry-status-count"
+#define SIGNALER_STATUS_CHANGE              "ofa-signaler-entry-status-change"
+
+#define SIGNALER_MENU_AVAILABLE             "ofa-signaler-menu-available"
+#define SIGNALER_PAGE_MANAGER_AVAILABLE     "ofa-signaler-page-manager-available"
+
 /*
  * Interface-wide
  */
@@ -99,6 +117,13 @@ guint       ofa_isignaler_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
+void        ofa_isignaler_init_signaling_system     ( ofaISignaler *signaler,
+															ofaIGetter *getter );
+
+ofaIGetter *ofa_isignaler_get_getter                ( ofaISignaler *signaler );
+
+void        ofa_isignaler_disconnect_handlers       ( ofaISignaler *signaler,
+															GList **handlers );
 
 G_END_DECLS
 

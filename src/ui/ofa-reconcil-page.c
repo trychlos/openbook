@@ -39,7 +39,6 @@
 #include "api/ofa-account-editable.h"
 #include "api/ofa-amount.h"
 #include "api/ofa-date-filter-hv-bin.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-idate-filter.h"
@@ -150,8 +149,7 @@ typedef struct {
 	/* internals
 	 */
 	ofaIGetter          *getter;
-	ofaHub              *hub;
-	GList               *hub_handlers;
+	GList               *signaler_handlers;
 	GList               *bats;				/* loaded ofoBat objects */
 }
 	ofaReconcilPagePrivate;
@@ -290,10 +288,10 @@ static gboolean             expand_on_released( GtkWidget *button, GdkEvent *eve
 static void                 set_message( ofaReconcilPage *page, const gchar *msg );
 static void                 read_settings( ofaReconcilPage *self );
 static void                 write_settings( ofaReconcilPage *self );
-static void                 hub_connect_to_signaling_system( ofaReconcilPage *self );
-static void                 hub_on_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self );
-static void                 hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self );
-static void                 hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self );
+static void                 signaler_connect_to_signaling_system( ofaReconcilPage *self );
+static void                 signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaReconcilPage *self );
+static void                 signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self );
+static void                 signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaReconcilPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilPage, ofa_reconcil_page, OFA_TYPE_PANED_PAGE, 0,
 		G_ADD_PRIVATE( ofaReconcilPage ))
@@ -322,6 +320,7 @@ static void
 reconciliation_dispose( GObject *instance )
 {
 	ofaReconcilPagePrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( OFA_IS_RECONCIL_PAGE( instance ));
 
@@ -329,11 +328,13 @@ reconciliation_dispose( GObject *instance )
 
 		write_settings( OFA_RECONCIL_PAGE( instance ));
 
-		/* unref object members here */
 		priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( instance ));
 
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
 
+		/* unref object members here */
 		if( priv->bats ){
 			g_list_free( priv->bats );
 			priv->bats = NULL;
@@ -412,9 +413,6 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 	priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( page ));
 
 	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->paned = GTK_WIDGET( paned );
 
@@ -1290,7 +1288,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 
 	/* makes sure to connect to dossier signaling system *after*
 	 * the store itself */
-	hub_connect_to_signaling_system( OFA_RECONCIL_PAGE( page ));
+	signaler_connect_to_signaling_system( OFA_RECONCIL_PAGE( page ));
 
 	/* setup initial values */
 	read_settings( OFA_RECONCIL_PAGE( page ));
@@ -3030,36 +3028,42 @@ write_settings( ofaReconcilPage *self )
 	g_free( str );
 }
 
+/*
+ * Connect to ofaISignaler signaling system
+ */
 static void
-hub_connect_to_signaling_system( ofaReconcilPage *self )
+signaler_connect_to_signaling_system( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
+	ofaISignaler *signaler;
 	gulong handler;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	signaler = ofa_igetter_get_signaler( priv->getter );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 }
 
 /*
- * SIGNAL_HUB_NEW signal handler
+ * SIGNALER_BASE_NEW signal handler
  */
 static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_hub_on_new_object";
+	static const gchar *thisfn = "ofa_reconcil_page_signaler_on_new_base";
 	ofaReconcilPagePrivate *priv;
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -3073,17 +3077,17 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
+ * SIGNALER_BASE_UPDATED signal handler
  */
 static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self )
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_hub_on_updated_object";
+	static const gchar *thisfn = "ofa_reconcil_page_signaler_on_updated_base";
 	ofaReconcilPagePrivate *priv;
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) self, G_OBJECT_TYPE_NAME( self ));
@@ -3098,17 +3102,17 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRe
 }
 
 /*
- * SIGNAL_HUB_DELETED signal handler
+ * SIGNALER_BASE_DELETED signal handler
  */
 static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
+signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_hub_on_deleted_object";
+	static const gchar *thisfn = "ofa_reconcil_page_signaler_on_deleted_base";
 	ofaReconcilPagePrivate *priv;
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p (%s)",
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p (%s)",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self, G_OBJECT_TYPE_NAME( self ));
 

@@ -41,7 +41,7 @@
  * to handle (in particular) the deletability status of an object.
  *
  * The idea here is that the signal emission will stop as soon as any
- * connected handler returns FALSE. Else, the signal emission will
+ * connected handler returns %FALSE. Else, the signal emission will
  * continue until the default class handler, which itself is expected
  * to return %TRUE.
  *

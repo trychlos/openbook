@@ -33,7 +33,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -58,8 +57,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub     *hub;
-	GList      *hub_handlers;
+	GList      *signaler_handlers;
 }
 	ofaEntryStorePrivate;
 
@@ -85,18 +83,15 @@ static void     set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, Gtk
 static void     set_row_concil( ofaEntryStore *self, ofoConcil *concil, GtkTreeIter *iter );
 static gboolean find_row_by_number( ofaEntryStore *self, ofxCounter number, GtkTreeIter *iter );
 static void     do_update_concil( ofaEntryStore *self, ofoConcil *concil, gboolean is_deleted );
-static void     hub_connect_to_signaling_system( ofaEntryStore *self );
-static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryStore *self );
-static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryStore *self );
-static void     hub_do_update_account_number( ofaEntryStore *self, const gchar *prev, const gchar *number );
-static void     hub_do_update_currency_code( ofaEntryStore *self, const gchar *prev, const gchar *code );
-static void     hub_do_update_ledger_mnemo( ofaEntryStore *self, const gchar *prev, const gchar *mnemo );
-static void     hub_do_update_ope_template_mnemo( ofaEntryStore *self, const gchar *prev, const gchar *mnemo );
-static void     hub_on_updated_concil( ofaEntryStore *self, ofoConcil *concil );
-static void     hub_on_updated_entry( ofaEntryStore *self, ofoEntry *entry );
-static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryStore *self );
-static void     hub_on_deleted_concil( ofaEntryStore *self, ofoConcil *concil );
-static void     hub_on_deleted_entry( ofaEntryStore *self, ofoEntry *entry );
+static void     set_account_new_id( ofaEntryStore *self, const gchar *prev, const gchar *number );
+static void     set_currency_new_id( ofaEntryStore *self, const gchar *prev, const gchar *code );
+static void     set_ledger_new_id( ofaEntryStore *self, const gchar *prev, const gchar *mnemo );
+static void     set_ope_template_new_id( ofaEntryStore *self, const gchar *prev, const gchar *mnemo );
+static void     signaler_connect_to_signaling_system( ofaEntryStore *self );
+static void     signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaEntryStore *self );
+static void     signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaEntryStore *self );
+static void     signaler_on_updated_entry( ofaEntryStore *self, ofoEntry *entry );
+static void     signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaEntryStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryStore, ofa_entry_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaEntryStore ))
@@ -121,6 +116,7 @@ static void
 entry_store_dispose( GObject *instance )
 {
 	ofaEntryStorePrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( instance && OFA_IS_ENTRY_STORE( instance ));
 
@@ -130,8 +126,11 @@ entry_store_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
+
 		/* unref object members here */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -152,7 +151,7 @@ ofa_entry_store_init( ofaEntryStore *self )
 	priv = ofa_entry_store_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->hub_handlers = NULL;
+	priv->signaler_handlers = NULL;
 }
 
 static void
@@ -186,7 +185,6 @@ ofa_entry_store_new( ofaIGetter *getter )
 	priv = ofa_entry_store_get_instance_private( store );
 
 	priv->getter = getter;
-	priv->hub = ofa_igetter_get_hub( getter );
 
 	gtk_list_store_set_column_types(
 			GTK_LIST_STORE( store ), ENTRY_N_COLUMNS, st_col_types );
@@ -198,7 +196,7 @@ ofa_entry_store_new( ofaIGetter *getter )
 			GTK_TREE_SORTABLE( store ),
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-	hub_connect_to_signaling_system( store );
+	signaler_connect_to_signaling_system( store );
 
 	return( store );
 }
@@ -455,84 +453,8 @@ do_update_concil( ofaEntryStore *self, ofoConcil *concil, gboolean is_deleted )
 	}
 }
 
-/*
- * connect to the hub signaling system
- */
 static void
-hub_connect_to_signaling_system( ofaEntryStore *self )
-{
-	ofaEntryStorePrivate *priv;
-	gulong handler;
-
-	priv = ofa_entry_store_get_instance_private( self );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-}
-
-/*
- * SIGNAL_HUB_NEW signal handler
- */
-static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryStore *self )
-{
-	static const gchar *thisfn = "ofa_entry_store_hub_on_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_ENTRY( object )){
-		insert_row( self, OFO_ENTRY( object ));
-	}
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryStore *self )
-{
-	static const gchar *thisfn = "ofa_entry_store_hub_on_updated_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) self );
-
-	if( prev_id ){
-		if( OFO_IS_ACCOUNT( object )){
-			hub_do_update_account_number( self, prev_id, ofo_account_get_number( OFO_ACCOUNT( object )));
-
-		} else if( OFO_IS_CURRENCY( object )){
-			hub_do_update_currency_code( self, prev_id, ofo_currency_get_code( OFO_CURRENCY( object )));
-
-		} else if( OFO_IS_LEDGER( object )){
-			hub_do_update_ledger_mnemo( self, prev_id, ofo_ledger_get_mnemo( OFO_LEDGER( object )));
-
-		} else if( OFO_IS_OPE_TEMPLATE( object )){
-			hub_do_update_ope_template_mnemo( self, prev_id, ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object )));
-		}
-	} else if( OFO_IS_CONCIL( object )){
-		hub_on_updated_concil( self, OFO_CONCIL( object ));
-
-	} else if( OFO_IS_ENTRY( object )){
-		hub_on_updated_entry( self, OFO_ENTRY( object ));
-	}
-}
-
-static void
-hub_do_update_account_number( ofaEntryStore *self, const gchar *prev, const gchar *number )
+set_account_new_id( ofaEntryStore *self, const gchar *prev, const gchar *number )
 {
 	GtkTreeIter iter;
 	gchar *str;
@@ -554,7 +476,7 @@ hub_do_update_account_number( ofaEntryStore *self, const gchar *prev, const gcha
 }
 
 static void
-hub_do_update_currency_code( ofaEntryStore *self, const gchar *prev, const gchar *code )
+set_currency_new_id( ofaEntryStore *self, const gchar *prev, const gchar *code )
 {
 	GtkTreeIter iter;
 	gchar *str;
@@ -576,7 +498,7 @@ hub_do_update_currency_code( ofaEntryStore *self, const gchar *prev, const gchar
 }
 
 static void
-hub_do_update_ledger_mnemo( ofaEntryStore *self, const gchar *prev, const gchar *mnemo )
+set_ledger_new_id( ofaEntryStore *self, const gchar *prev, const gchar *mnemo )
 {
 	GtkTreeIter iter;
 	gchar *str;
@@ -598,7 +520,7 @@ hub_do_update_ledger_mnemo( ofaEntryStore *self, const gchar *prev, const gchar 
 }
 
 static void
-hub_do_update_ope_template_mnemo( ofaEntryStore *self, const gchar *prev, const gchar *mnemo )
+set_ope_template_new_id( ofaEntryStore *self, const gchar *prev, const gchar *mnemo )
 {
 	GtkTreeIter iter;
 	gchar *str;
@@ -620,17 +542,86 @@ hub_do_update_ope_template_mnemo( ofaEntryStore *self, const gchar *prev, const 
 }
 
 /*
- * a conciliation group is updated
- * -> update the entry row if needed
+ * Connect to ofaISignaler signaling system
  */
 static void
-hub_on_updated_concil( ofaEntryStore *self, ofoConcil *concil )
+signaler_connect_to_signaling_system( ofaEntryStore *self )
 {
-	do_update_concil( self, concil, FALSE );
+	ofaEntryStorePrivate *priv;
+	ofaISignaler *signaler;
+	gulong handler;
+
+	priv = ofa_entry_store_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+}
+
+/*
+ * SIGNALER_BASE_NEW signal handler
+ */
+static void
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaEntryStore *self )
+{
+	static const gchar *thisfn = "ofa_entry_store_signaler_on_new_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_ENTRY( object )){
+		insert_row( self, OFO_ENTRY( object ));
+	}
+}
+
+/*
+ * SIGNALER_BASE_UPDATED signal handler
+ */
+static void
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaEntryStore *self )
+{
+	static const gchar *thisfn = "ofa_entry_store_signaler_on_updated_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( prev_id ){
+		if( OFO_IS_ACCOUNT( object )){
+			set_account_new_id( self, prev_id, ofo_account_get_number( OFO_ACCOUNT( object )));
+
+		} else if( OFO_IS_CURRENCY( object )){
+			set_currency_new_id( self, prev_id, ofo_currency_get_code( OFO_CURRENCY( object )));
+
+		} else if( OFO_IS_LEDGER( object )){
+			set_ledger_new_id( self, prev_id, ofo_ledger_get_mnemo( OFO_LEDGER( object )));
+
+		} else if( OFO_IS_OPE_TEMPLATE( object )){
+			set_ope_template_new_id( self, prev_id, ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object )));
+		}
+	} else if( OFO_IS_CONCIL( object )){
+		do_update_concil( self, OFO_CONCIL( object ), FALSE );
+
+	} else if( OFO_IS_ENTRY( object )){
+		signaler_on_updated_entry( self, OFO_ENTRY( object ));
+	}
 }
 
 static void
-hub_on_updated_entry( ofaEntryStore *self, ofoEntry *entry )
+signaler_on_updated_entry( ofaEntryStore *self, ofoEntry *entry )
 {
 	GtkTreeIter iter;
 
@@ -640,35 +631,23 @@ hub_on_updated_entry( ofaEntryStore *self, ofoEntry *entry )
 }
 
 /*
- * SIGNAL_HUB_DELETED signal handler
+ * SIGNALER_BASE_DELETED signal handler
  */
 static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryStore *self )
+signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaEntryStore *self )
 {
-	static const gchar *thisfn = "ofa_entry_store_hub_on_deleted_object";
+	static const gchar *thisfn = "ofa_entry_store_signaler_on_deleted_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
 	if( OFO_IS_CONCIL( object )){
-		hub_on_deleted_concil( self, OFO_CONCIL( object ));
+		do_update_concil( self, OFO_CONCIL( object ), TRUE );
 
 	} else if( OFO_IS_ENTRY( object )){
-		hub_on_deleted_entry( self, OFO_ENTRY( object ));
+		signaler_on_updated_entry( self, OFO_ENTRY( object ));
 	}
-}
-
-static void
-hub_on_deleted_concil( ofaEntryStore *self, ofoConcil *concil )
-{
-	do_update_concil( self, concil, TRUE );
-}
-
-static void
-hub_on_deleted_entry( ofaEntryStore *self, ofoEntry *entry )
-{
-	hub_on_updated_entry( self, entry );
 }

@@ -47,6 +47,7 @@
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-page.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
@@ -281,10 +282,10 @@ static void         menubar_init( ofaMainWindow *self );
 static void         menubar_setup( ofaMainWindow *window, GActionMap *map );
 static void         menubar_update_items( ofaMainWindow *self );
 static void         init_themes( ofaMainWindow *self );
-static void         hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self );
-static void         hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self );
-static void         hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *main_window );
-static void         hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window );
+static void         signaler_on_dossier_opened( ofaISignaler *signaler, ofaMainWindow *self );
+static void         signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self );
+static void         signaler_on_dossier_changed( ofaISignaler *signaler, ofaMainWindow *main_window );
+static void         signaler_on_dossier_preview( ofaISignaler *signaler, const gchar *uri, ofaMainWindow *main_window );
 static gboolean     on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void         set_window_title( ofaMainWindow *window, gboolean with_dossier );
 static void         warning_exercice_unset( ofaMainWindow *window );
@@ -515,10 +516,10 @@ ofa_main_window_new( ofaIGetter *getter )
 
 	/* connect to the ofaHub signals
 	 */
-	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_OPENED, G_CALLBACK( hub_on_dossier_opened ), window );
-	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CLOSED, G_CALLBACK( hub_on_dossier_closed ), window );
-	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CHANGED, G_CALLBACK( hub_on_dossier_changed ), window );
-	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_PREVIEW, G_CALLBACK( hub_on_dossier_preview ), window );
+	g_signal_connect( hub, SIGNALER_DOSSIER_OPENED, G_CALLBACK( signaler_on_dossier_opened ), window );
+	g_signal_connect( hub, SIGNALER_DOSSIER_CLOSED, G_CALLBACK( signaler_on_dossier_closed ), window );
+	g_signal_connect( hub, SIGNALER_DOSSIER_CHANGED, G_CALLBACK( signaler_on_dossier_changed ), window );
+	g_signal_connect( hub, SIGNALER_DOSSIER_PREVIEW, G_CALLBACK( signaler_on_dossier_preview ), window );
 
 	/* let the plugins update the managed themes */
 	init_themes( window );
@@ -574,7 +575,7 @@ menubar_init( ofaMainWindow *self )
 		my_scope_mapper_register( mapper, "win", G_ACTION_MAP( self ), menu );
 
 		signaler = ofa_igetter_get_signaler( priv->getter );
-		g_signal_emit_by_name( signaler, "ofa-signaler-menu-available", "win", self );
+		g_signal_emit_by_name( signaler, SIGNALER_MENU_AVAILABLE, "win", self );
 
 	} else {
 		g_warning( "%s: unable to find '%s' object in '%s' resource", thisfn, st_dosmenu_id, st_resource_dosmenu );
@@ -681,13 +682,16 @@ init_themes( ofaMainWindow *self )
 
 	/* declare then the theme manager general availability */
 	signaler = ofa_igetter_get_signaler( priv->getter );
-	g_signal_emit_by_name( signaler, "ofa-signaler-page-manager-available", self );
+	g_signal_emit_by_name( signaler, SIGNALER_PAGE_MANAGER_AVAILABLE, self );
 }
 
 static void
-hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self )
+signaler_on_dossier_opened( ofaISignaler *signaler, ofaMainWindow *self )
 {
+	static const gchar *thisfn = "ofa_main_window_signaler_on_dossier_opened";
 	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: signaler=%p, self=%p", thisfn, ( void * ) signaler, ( void * ) self );
 
 	priv = ofa_main_window_get_instance_private( self );
 
@@ -705,22 +709,22 @@ hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self )
 	 * the application menubar does not have any dynamic item *
 	 * no background image
 	 */
-	hub_on_dossier_changed( hub, self );
+	signaler_on_dossier_changed( signaler, self );
 }
 
 /*
  * At this time, the main window may have been already destroyed
  */
 static void
-hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self )
+signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self )
 {
-	static const gchar *thisfn = "ofa_main_window_hub_on_dossier_closed";
+	static const gchar *thisfn = "ofa_main_window_signaler_on_dossier_closed";
 	ofaMainWindowPrivate *priv;
 	GtkApplication *application;
 
-	g_debug( "%s: self=%p, hub=%p", thisfn, ( void * ) self, ( void * ) hub );
+	g_debug( "%s: signaler=%p, self=%p", thisfn, ( void * ) signaler, ( void * ) self );
 
-	//if( GTK_IS_WINDOW( self ) && ofa_hub_get_dossier( hub )){
+	//if( GTK_IS_WINDOW( self ) && ofa_hub_get_dossier( signaler )){
 	if( GTK_IS_WINDOW( self )){
 
 		close_all_pages( self );
@@ -747,15 +751,15 @@ hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self )
 }
 
 /*
- * the dossier has advertized the hub that its properties has been
+ * the dossier has advertized the signaler that its properties has been
  * modified (or may have been modified) by the user
  */
 static void
-hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *self )
+signaler_on_dossier_changed( ofaISignaler *signaler, ofaMainWindow *self )
 {
-	static const gchar *thisfn = "ofa_main_window_hub_on_dossier_changed";
+	static const gchar *thisfn = "ofa_main_window_signaler_on_dossier_changed";
 
-	g_debug( "%s: hub=%p, self=%p", thisfn, ( void * ) hub, ( void * ) self );
+	g_debug( "%s: signaler=%p, self=%p", thisfn, ( void * ) signaler, ( void * ) self );
 
 	set_window_title( self, TRUE );
 	menubar_update_items( self );
@@ -766,7 +770,7 @@ hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *self )
  * set a background image
  */
 static void
-hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *self )
+signaler_on_dossier_preview( ofaISignaler *signaler, const gchar *uri, ofaMainWindow *self )
 {
 	background_image_set_uri( self, uri );
 }

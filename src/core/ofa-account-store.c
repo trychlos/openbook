@@ -33,7 +33,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-istore.h"
 #include "api/ofa-preferences.h"
@@ -53,8 +52,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub     *hub;
-	GList      *hub_handlers;
+	GList      *signaler_handlers;
 	gboolean    dataset_is_loaded;
 }
 	ofaAccountStorePrivate;
@@ -95,15 +93,15 @@ static void     realign_children( ofaAccountStore *self, const ofoAccount *accou
 static GList   *remove_rows_by_number( ofaAccountStore *self, const gchar *number );
 static GList   *remove_rows_rec( ofaAccountStore *self, GtkTreeIter *iter, GList *list );
 static gint     cmp_account_by_number( const ofoAccount *a, const ofoAccount *b );
-static void     hub_connect_to_signaling_system( ofaAccountStore *self );
-static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *self );
-static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *self );
-static void     hub_on_updated_account( ofaHub *hub, ofoAccount *account, const gchar *prev_id, ofaAccountStore *self );
-static void     hub_on_updated_currency_code( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id );
-static void     hub_on_updated_currency_code_rec( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id, GtkTreeIter *iter );
-static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *self );
-static void     hub_on_deleted_account( ofaHub *hub, ofoAccount *account, ofaAccountStore *self );
-static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *self );
+static void     set_account_new_id( ofaAccountStore *self, ofoAccount *account, const gchar *prev_id );
+static void     set_currency_new_id( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id );
+static void     set_currency_new_id_rec( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id, GtkTreeIter *iter );
+static void     signaler_connect_to_signaling_system( ofaAccountStore *self );
+static void     signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaAccountStore *self );
+static void     signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaAccountStore *self );
+static void     signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaAccountStore *self );
+static void     signaler_on_deleted_account( ofaAccountStore *self, ofoAccount *account );
+static void     signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaAccountStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountStore, ofa_account_store, OFA_TYPE_TREE_STORE, 0,
 		G_ADD_PRIVATE( ofaAccountStore ))
@@ -128,6 +126,7 @@ static void
 account_store_dispose( GObject *instance )
 {
 	ofaAccountStorePrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_STORE( instance ));
 
@@ -137,8 +136,11 @@ account_store_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
+
 		/* unref object members here */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -159,7 +161,7 @@ ofa_account_store_init( ofaAccountStore *self )
 	priv = ofa_account_store_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->hub_handlers = NULL;
+	priv->signaler_handlers = NULL;
 	priv->dataset_is_loaded = FALSE;
 }
 
@@ -211,7 +213,6 @@ ofa_account_store_new( ofaIGetter *getter )
 		priv = ofa_account_store_get_instance_private( store );
 
 		priv->getter = getter;
-		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[ACCOUNT_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		ofa_istore_set_column_types( OFA_ISTORE( store ), getter, ACCOUNT_N_COLUMNS, st_col_types );
@@ -223,7 +224,7 @@ ofa_account_store_new( ofaIGetter *getter )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		hub_connect_to_signaling_system( store );
+		signaler_connect_to_signaling_system( store );
 	}
 
 	return( g_object_ref( store ));
@@ -719,78 +720,8 @@ cmp_account_by_number( const ofoAccount *a, const ofoAccount *b )
 	return( g_utf8_collate( id_a, id_b ));
 }
 
-/*
- * connect to the hub signaling system
- */
 static void
-hub_connect_to_signaling_system( ofaAccountStore *self )
-{
-	ofaAccountStorePrivate *priv;
-	gulong handler;
-
-	priv = ofa_account_store_get_instance_private( self );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-}
-
-/*
- * SIGNAL_HUB_NEW signal handler
- */
-static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *self )
-{
-	static const gchar *thisfn = "ofa_account_store_hub_on_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_ACCOUNT( object )){
-		insert_row( self, OFO_ACCOUNT( object ));
-	}
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *self )
-{
-	static const gchar *thisfn = "ofa_account_store_hub_on_updated_object";
-	const gchar *new_id;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) self );
-
-	if( OFO_IS_ACCOUNT( object )){
-		hub_on_updated_account( hub, OFO_ACCOUNT( object ), prev_id, self );
-
-	} else if( OFO_IS_CURRENCY( object )){
-		new_id = ofo_currency_get_code( OFO_CURRENCY( object ));
-		if( my_strlen( prev_id ) && my_collate( prev_id, new_id )){
-			hub_on_updated_currency_code( self, prev_id, new_id );
-		}
-	}
-}
-
-static void
-hub_on_updated_account( ofaHub *hub, ofoAccount *account, const gchar *prev_id, ofaAccountStore *self )
+set_account_new_id( ofaAccountStore *self, ofoAccount *account, const gchar *prev_id )
 {
 	GtkTreeIter iter;
 	const gchar *number;
@@ -816,17 +747,17 @@ hub_on_updated_account( ofaHub *hub, ofoAccount *account, const gchar *prev_id, 
  * Update the store rows+objects for new currency code
  */
 static void
-hub_on_updated_currency_code( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id )
+set_currency_new_id( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id )
 {
 	GtkTreeIter iter;
 
 	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
-		hub_on_updated_currency_code_rec( self, prev_id, new_id, &iter );
+		set_currency_new_id_rec( self, prev_id, new_id, &iter );
 	}
 }
 
 static void
-hub_on_updated_currency_code_rec( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id, GtkTreeIter *iter )
+set_currency_new_id_rec( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id, GtkTreeIter *iter )
 {
 	GtkTreeIter child_iter;
 	ofoAccount *account;
@@ -835,7 +766,7 @@ hub_on_updated_currency_code_rec( ofaAccountStore *self, const gchar *prev_id, c
 
 	while( TRUE ){
 		if( gtk_tree_model_iter_children( GTK_TREE_MODEL( self ), &child_iter, iter )){
-			hub_on_updated_currency_code_rec( self, prev_id, new_id, &child_iter );
+			set_currency_new_id_rec( self, prev_id, new_id, &child_iter );
 		}
 		gtk_tree_model_get( GTK_TREE_MODEL( self ), iter,
 				ACCOUNT_COL_CURRENCY, &stored_id, ACCOUNT_COL_OBJECT, &account, -1 );
@@ -858,26 +789,99 @@ hub_on_updated_currency_code_rec( ofaAccountStore *self, const gchar *prev_id, c
 }
 
 /*
- * SIGNAL_HUB_DELETED signal handler
+ * Connect to ofaISignaler signaling system
  */
 static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *self )
+signaler_connect_to_signaling_system( ofaAccountStore *self )
 {
-	static const gchar *thisfn = "ofa_account_store_hub_on_deleted_object";
+	ofaAccountStorePrivate *priv;
+	ofaISignaler *signaler;
+	gulong handler;
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+	priv = ofa_account_store_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_COLLECTION_RELOAD, G_CALLBACK( signaler_on_reload_collection ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+}
+
+/*
+ * SIGNALER_BASE_NEW signal handler
+ */
+static void
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaAccountStore *self )
+{
+	static const gchar *thisfn = "ofa_account_store_signaler_on_new_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
 	if( OFO_IS_ACCOUNT( object )){
-		hub_on_deleted_account( hub, OFO_ACCOUNT( object ), self );
+		insert_row( self, OFO_ACCOUNT( object ));
+	}
+}
+
+/*
+ * SIGNALER_BASE_UPDATED signal handler
+ */
+static void
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaAccountStore *self )
+{
+	static const gchar *thisfn = "ofa_account_store_signaler_on_updated_base";
+	const gchar *new_id;
+
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( OFO_IS_ACCOUNT( object )){
+		set_account_new_id( self, OFO_ACCOUNT( object ), prev_id );
+
+	} else if( OFO_IS_CURRENCY( object )){
+		new_id = ofo_currency_get_code( OFO_CURRENCY( object ));
+		if( my_strlen( prev_id ) && my_collate( prev_id, new_id )){
+			set_currency_new_id( self, prev_id, new_id );
+		}
+	}
+}
+
+/*
+ * SIGNALER_BASE_DELETED signal handler
+ */
+static void
+signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaAccountStore *self )
+{
+	static const gchar *thisfn = "ofa_account_store_signaler_on_deleted_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_ACCOUNT( object )){
+		signaler_on_deleted_account( self, OFO_ACCOUNT( object ));
 	}
 }
 
 static void
-hub_on_deleted_account( ofaHub *hub, ofoAccount *account, ofaAccountStore *self )
+signaler_on_deleted_account( ofaAccountStore *self, ofoAccount *account )
 {
 	ofaAccountStorePrivate *priv;
 	GList *list, *children, *it;
@@ -898,15 +902,15 @@ hub_on_deleted_account( ofaHub *hub, ofoAccount *account, ofaAccountStore *self 
 }
 
 /*
- * SIGNAL_HUB_RELOAD signal handler
+ * SIGNALER_COLLECTION_RELOAD signal handler
  */
 static void
-hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *self )
+signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaAccountStore *self )
 {
-	static const gchar *thisfn = "ofa_account_store_hub_on_reload_dataset";
+	static const gchar *thisfn = "ofa_account_store_signaler_on_reload_collection";
 
-	g_debug( "%s: hub=%p, type=%lu, self=%p",
-			thisfn, ( void * ) hub, type, ( void * ) self );
+	g_debug( "%s: signaler=%p, type=%lu, self=%p",
+			thisfn, ( void * ) signaler, type, ( void * ) self );
 
 	if( type == OFO_TYPE_ACCOUNT ){
 		gtk_tree_store_clear( GTK_TREE_STORE( self ));

@@ -44,7 +44,8 @@
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofa-isignal-hub.h"
+#include "api/ofa-isignalable.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -232,22 +233,22 @@ static GList     *iimportable_import_parse( ofaIImporter *importer, ofsImporterP
 static void       iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean   ledger_get_exists( const ofoLedger *ledger, const ofaIDBConnect *connect );
 static gboolean   ledger_drop_content( const ofaIDBConnect *connect );
-static void       isignal_hub_iface_init( ofaISignalHubInterface *iface );
-static void       isignal_hub_connect( ofaHub *hub );
-static gboolean   hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
-static gboolean   hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
-static void       hub_on_new_object( ofaHub *hub, ofoBase *object, void *empty );
-static void       hub_on_new_ledger_entry( ofaHub *hub, ofoEntry *entry );
-static void       hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
-static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void       hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void       isignalable_iface_init( ofaISignalableInterface *iface );
+static void       isignalable_connect_to( ofaISignaler *signaler );
+static gboolean   signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
+static gboolean   signaler_is_deletable_currency( ofaISignaler *signaler, ofoCurrency *currency );
+static void       signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, void *empty );
+static void       signaler_on_new_ledger_entry( ofaISignaler *signaler, ofoEntry *entry );
+static void       signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static void       signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
+static void       signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
 
 G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoLedger )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
 static void
 free_detail_cur( GList *fields )
@@ -871,18 +872,18 @@ gboolean
 ofo_ledger_is_deletable( const ofoLedger *ledger )
 {
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	gboolean deletable;
-	ofaHub *hub;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
 
 	deletable = TRUE;
 	getter = ofo_base_get_getter( OFO_BASE( ledger ));
-	hub = ofa_igetter_get_hub( getter );
+	signaler = ofa_igetter_get_signaler( getter );
 
 	if( deletable ){
-		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, ledger, &deletable );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_IS_DELETABLE, ledger, &deletable );
 	}
 
 	return( deletable );
@@ -1451,7 +1452,7 @@ ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
 {
 	static const gchar *thisfn = "ofo_ledger_close";
 	ofaIGetter *getter;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 	gboolean ok;
 
 	g_debug( "%s: ledger=%p, closing=%p", thisfn, ( void * ) ledger, ( void * ) closing );
@@ -1462,12 +1463,12 @@ ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( ledger ));
-	hub = ofa_igetter_get_hub( getter );
+	signaler = ofa_igetter_get_signaler( getter );
 
 	if( ofo_entry_validate_by_ledger( getter, ofo_ledger_get_mnemo( ledger ), closing )){
 		ledger_set_last_clo( ledger, closing );
 		if( ofo_ledger_update( ledger, ofo_ledger_get_mnemo( ledger ))){
-			g_signal_emit_by_name( hub, SIGNAL_HUB_UPDATED, ledger, NULL );
+			g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, ledger, NULL );
 			ok = TRUE;
 		}
 	}
@@ -1486,6 +1487,7 @@ ofo_ledger_insert( ofoLedger *ledger )
 	static const gchar *thisfn = "ofo_ledger_insert";
 	gboolean ok;
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 
 	g_debug( "%s: ledger=%p", thisfn, ( void * ) ledger );
@@ -1495,12 +1497,13 @@ ofo_ledger_insert( ofoLedger *ledger )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( ledger ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( ledger_do_insert( ledger, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( ledger ), NULL, getter );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, ledger );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, ledger );
 		ok = TRUE;
 	}
 
@@ -1572,6 +1575,7 @@ ofo_ledger_update( ofoLedger *ledger, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_ledger_update";
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1584,10 +1588,11 @@ ofo_ledger_update( ofoLedger *ledger, const gchar *prev_mnemo )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( ledger ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( ledger_do_update( ledger, prev_mnemo, ofa_hub_get_connect( hub ))){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, ledger, prev_mnemo );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, ledger, prev_mnemo );
 		ok = TRUE;
 	}
 
@@ -1668,7 +1673,7 @@ ofo_ledger_update_balance( ofoLedger *ledger, const gchar *currency )
 	GList *balance;
 	gboolean ok;
 	ofaIGetter *getter;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 
 	g_debug( "%s: ledger=%p, currency=%s", thisfn, ( void * ) ledger, currency );
 
@@ -1678,12 +1683,13 @@ ofo_ledger_update_balance( ofoLedger *ledger, const gchar *currency )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( ledger ));
-	hub = ofa_igetter_get_hub( getter );
+	signaler = ofa_igetter_get_signaler( getter );
+
 	balance = ledger_find_balance_by_code( ledger, currency );
 	g_return_val_if_fail( balance, FALSE );
 
 	if( ledger_do_update_balance( ledger, balance, getter )){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, ledger, NULL );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, ledger, NULL );
 		ok = TRUE;
 	}
 
@@ -1763,6 +1769,7 @@ ofo_ledger_delete( ofoLedger *ledger )
 {
 	static const gchar *thisfn = "ofo_ledger_delete";
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1774,12 +1781,13 @@ ofo_ledger_delete( ofoLedger *ledger )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( ledger ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( ledger_do_delete( ledger, ofa_hub_get_connect( hub ))){
 		g_object_ref( ledger );
 		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( ledger ));
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, ledger );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_DELETED, ledger );
 		g_object_unref( ledger );
 		ok = TRUE;
 	}
@@ -2066,25 +2074,30 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaISignaler *signaler;
 	ofaHub *hub;
+	ofaIDBConnect *connect;
 	GList *dataset;
 	gchar *bck_table, *bck_det_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+
+	signaler = ofa_igetter_get_signaler( parms->getter );
 	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_LEDGERS" );
-		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_LEDGERS_CUR" );
+		bck_table = ofa_idbconnect_table_backup( connect, "OFA_T_LEDGERS" );
+		bck_det_table = ofa_idbconnect_table_backup( connect, "OFA_T_LEDGERS_CUR" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
 			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_LEDGER );
-			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_LEDGER );
+			g_signal_emit_by_name( signaler, SIGNALER_COLLECTION_RELOAD, OFO_TYPE_LEDGER );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_LEDGERS" );
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_det_table, "OFA_T_LEDGERS_CUR" );
+			ofa_idbconnect_table_restore( connect, bck_table, "OFA_T_LEDGERS" );
+			ofa_idbconnect_table_restore( connect, bck_det_table, "OFA_T_LEDGERS_CUR" );
 		}
 
 		g_free( bck_table );
@@ -2273,62 +2286,67 @@ ledger_drop_content( const ofaIDBConnect *connect )
 }
 
 /*
- * ofaISignalHub interface management
+ * ofaISignalable interface management
  */
 static void
-isignal_hub_iface_init( ofaISignalHubInterface *iface )
+isignalable_iface_init( ofaISignalableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_ledger_isignal_hub_iface_init";
+	static const gchar *thisfn = "ofo_ledger_isignalable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->connect = isignal_hub_connect;
+	iface->connect_to = isignalable_connect_to;
 }
 
 static void
-isignal_hub_connect( ofaHub *hub )
+isignalable_connect_to( ofaISignaler *signaler )
 {
-	static const gchar *thisfn = "ofo_ledger_isignal_hub_connect";
+	static const gchar *thisfn = "ofo_ledger_isignalable_connect_to";
 
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+	g_debug( "%s: signaler=%p", thisfn, ( void * ) signaler );
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( signaler && OFA_IS_ISIGNALER( signaler ));
 
-	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( hub_on_entry_status_change ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+	g_signal_connect( signaler, SIGNALER_BASE_IS_DELETABLE, G_CALLBACK( signaler_on_deletable_object ), NULL );
+	g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), NULL );
+	g_signal_connect( signaler, SIGNALER_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_status_change ), NULL );
+	g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), NULL );
 }
 
 /*
- * SIGNAL_HUB_DELETABLE signal handler
+ * SIGNALER_BASE_IS_DELETABLE signal handler
  */
 static gboolean
-hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty )
 {
-	static const gchar *thisfn = "ofo_ledger_hub_on_deletable_object";
+	static const gchar *thisfn = "ofo_ledger_signaler_on_deletable_object";
 	gboolean deletable;
 
-	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), empty=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) empty );
 
 	deletable = TRUE;
 
 	if( OFO_IS_CURRENCY( object )){
-		deletable = hub_is_deletable_currency( hub, OFO_CURRENCY( object ));
+		deletable = signaler_is_deletable_currency( signaler, OFO_CURRENCY( object ));
 	}
 
 	return( deletable );
 }
 
 static gboolean
-hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
+signaler_is_deletable_currency( ofaISignaler *signaler, ofoCurrency *currency )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gchar *query;
 	gint count;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_LEDGERS_CUR WHERE LED_CUR_CODE='%s'",
@@ -2342,20 +2360,20 @@ hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
 }
 
 /*
- * SIGNAL_HUB_NEW signal handler
+ * SIGNALER_BASE_NEW signal handler
  */
 static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, void *empty )
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, void *empty )
 {
-	static const gchar *thisfn = "ofo_ledger_hub_on_new_object";
+	static const gchar *thisfn = "ofo_ledger_signaler_on_new_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
-			thisfn, ( void * ) hub,
+	g_debug( "%s: signaler=%p, object=%p (%s), empty=%p",
+			thisfn, ( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) empty );
 
 	if( OFO_IS_ENTRY( object )){
-		hub_on_new_ledger_entry( hub, OFO_ENTRY( object ));
+		signaler_on_new_ledger_entry( signaler, OFO_ENTRY( object ));
 	}
 }
 
@@ -2364,7 +2382,7 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, void *empty )
  * thus update the balances
  */
 static void
-hub_on_new_ledger_entry( ofaHub *hub, ofoEntry *entry )
+signaler_on_new_ledger_entry( ofaISignaler *signaler, ofoEntry *entry )
 {
 	ofaEntryStatus status;
 	const gchar *mnemo, *currency;
@@ -2405,25 +2423,25 @@ hub_on_new_ledger_entry( ofaHub *hub, ofoEntry *entry )
 	}
 
 	if( ledger_do_update_balance( ledger, balance, getter )){
-		g_signal_emit_by_name( hub, SIGNAL_HUB_UPDATED, ledger, NULL );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, ledger, NULL );
 	}
 }
 
 /*
- * SIGNAL_HUB_STATUS_CHANGE signal handler
+ * SIGNALER_STATUS_CHANGE signal handler
  */
 static void
-hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
 {
-	static const gchar *thisfn = "ofo_ledger_hub_on_entry_status_change";
+	static const gchar *thisfn = "ofo_ledger_signaler_on_entry_status_change";
 	const gchar *mnemo, *currency;
 	ofoLedger *ledger;
 	ofxAmount debit, credit;
 	GList *balance;
 	ofaIGetter *getter;
 
-	g_debug( "%s: hub=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
-			thisfn, ( void * ) hub, ( void * ) entry, prev_status, new_status, ( void * ) empty );
+	g_debug( "%s: signaler=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) entry, prev_status, new_status, ( void * ) empty );
 
 	getter = ofo_base_get_getter( OFO_BASE( entry ));
 
@@ -2467,22 +2485,22 @@ hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 	balance = ledger_find_balance_by_code( ledger, currency );
 
 	if( ledger_do_update_balance( ledger, balance, getter )){
-		g_signal_emit_by_name( hub, SIGNAL_HUB_UPDATED, ledger, NULL );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, ledger, NULL );
 	}
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
+ * SIGNALER_BASE_UPDATED signal handler
  */
 static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	static const gchar *thisfn = "ofo_ledger_hub_on_updated_object";
+	static const gchar *thisfn = "ofo_ledger_signaler_on_updated_base";
 	const gchar *code;
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, empty=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) empty );
@@ -2491,7 +2509,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
-				hub_on_updated_currency_code( hub, prev_id, code );
+				signaler_on_updated_currency_code( signaler, prev_id, code );
 			}
 		}
 	}
@@ -2502,9 +2520,14 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
  * so update our ledger records
  */
 static void
-hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
+signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gchar *query;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 					"UPDATE OFA_T_LEDGERS_CUR "

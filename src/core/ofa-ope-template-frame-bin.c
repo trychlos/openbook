@@ -60,8 +60,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub              *hub;
-	GList               *hub_handlers;
+	GList               *signaler_handlers;
 	gboolean             is_writable;
 	ofaOpeTemplateStore *store;
 	GList               *store_handlers;
@@ -94,7 +93,6 @@ enum {
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
-static void       setup_getter( ofaOpeTemplateFrameBin *self, ofaIGetter *getter );
 static void       setup_bin( ofaOpeTemplateFrameBin *self );
 static GtkWidget *book_get_page_by_ledger( ofaOpeTemplateFrameBin *self, const gchar *ledger, gboolean bcreate );
 static GtkWidget *book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger );
@@ -118,14 +116,14 @@ static gboolean   delete_confirmed( ofaOpeTemplateFrameBin *self, ofoOpeTemplate
 static void       do_duplicate_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template );
 static void       do_guided_input( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template );
 static void       store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateFrameBin *self );
-static void       hub_connect_to_signaling_system( ofaOpeTemplateFrameBin *self );
-static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self );
-static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateFrameBin *self );
-static void       hub_on_updated_ledger( ofaOpeTemplateFrameBin *self, const gchar *prev_id, ofoLedger *ledger );
-static void       hub_on_updated_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template );
-static void       hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self );
-static void       hub_on_deleted_ledger_object( ofaOpeTemplateFrameBin *self, ofoLedger *ledger );
-static void       hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateFrameBin *self );
+static void       set_ledger_label( ofaOpeTemplateFrameBin *self, const gchar *prev_id, ofoLedger *ledger );
+static void       signaler_connect_to_signaling_system( ofaOpeTemplateFrameBin *self );
+static void       signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaOpeTemplateFrameBin *self );
+static void       signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaOpeTemplateFrameBin *self );
+static void       signaler_on_updated_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template );
+static void       signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaOpeTemplateFrameBin *self );
+static void       signaler_on_deleted_ledger_object( ofaOpeTemplateFrameBin *self, ofoLedger *ledger );
+static void       signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaOpeTemplateFrameBin *self );
 static void       write_settings( ofaOpeTemplateFrameBin *self );
 static void       iactionable_iface_init( ofaIActionableInterface *iface );
 static guint      iactionable_get_interface_version( void );
@@ -161,6 +159,7 @@ static void
 ope_template_frame_bin_dispose( GObject *instance )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaISignaler *signaler;
 	GList *it;
 
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_FRAME_BIN( instance ));
@@ -171,10 +170,9 @@ ope_template_frame_bin_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
-		/* unref object members here */
-
-		/* disconnect from ofaHub signaling system */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
 
 		/* disconnect from ofaOpeTemplateStore */
 		if( priv->store && OFA_IS_OPE_TEMPLATE_STORE( priv->store )){
@@ -186,6 +184,8 @@ ope_template_frame_bin_dispose( GObject *instance )
 			g_list_free( priv->store_handlers );
 			priv->store_handlers = NULL;
 		}
+
+		/* unref object members here */
 		g_clear_object( &priv->store );
 
 		g_clear_object( &priv->new_action );
@@ -308,6 +308,7 @@ ofa_ope_template_frame_bin_new( ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_ope_template_frame_bin_new";
 	ofaOpeTemplateFrameBin *self;
+	ofaOpeTemplateFrameBinPrivate *priv;
 
 	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
@@ -315,37 +316,14 @@ ofa_ope_template_frame_bin_new( ofaIGetter *getter )
 
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_FRAME_BIN, NULL );
 
-	setup_getter( self, getter );
-	setup_bin( self );
-
-	return( self );
-}
-
-/*
- * Record the getter
- * Initialize private datas which depend of only getter
- */
-static void
-setup_getter( ofaOpeTemplateFrameBin *self, ofaIGetter *getter )
-{
-	ofaOpeTemplateFrameBinPrivate *priv;
-	gulong handler;
-
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	priv->getter = getter;
 
-	/* hub-related initialization */
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+	setup_bin( self );
+	signaler_connect_to_signaling_system( self );
 
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
-	hub_connect_to_signaling_system( self );
-
-	/* then initialize the store */
-	priv->store = ofa_ope_template_store_new( priv->getter );
-	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
-	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
+	return( self );
 }
 
 /*
@@ -362,8 +340,14 @@ static void
 setup_bin( ofaOpeTemplateFrameBin *self )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaHub *hub;
+	gulong handler;
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+
+	/* signaler-related initialization */
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	/* UI grid */
 	priv->grid = gtk_grid_new();
@@ -382,6 +366,11 @@ setup_bin( ofaOpeTemplateFrameBin *self )
 	priv->buttonsbox = ofa_buttons_box_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->buttonsbox ), 0, 0, 2, 2 );
 	gtk_grid_attach( GTK_GRID( priv->grid ), GTK_WIDGET( priv->buttonsbox ), 1, 0, 1, 1 );
+
+	/* then initialize the store */
+	priv->store = ofa_ope_template_store_new( priv->getter );
+	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
+	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 }
 
 /*
@@ -946,7 +935,7 @@ do_delete_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template )
 	if( delete_confirmed( self, template ) &&
 			ofo_ope_template_delete( template )){
 
-		/* nothing to do here, all being managed by signal hub_handlers
+		/* nothing to do here, all being managed by signal signaler_handlers
 		 * just reset the selection as this is not managed by the
 		 * ope notebook (and doesn't have to)
 		 * asking for selection of the just deleted ope makes
@@ -1099,66 +1088,12 @@ ofa_ope_template_frame_bin_load_dataset( ofaOpeTemplateFrameBin *bin )
 	gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), 0 );
 }
 
-static void
-hub_connect_to_signaling_system( ofaOpeTemplateFrameBin *self )
-{
-	ofaOpeTemplateFrameBinPrivate *priv;
-	gulong handler;
-
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-}
-
-/*
- * SIGNAL_HUB_NEW signal handler
- */
-static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self )
-{
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_hub_on_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn, ( void * ) hub,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) self );
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateFrameBin *self )
-{
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_hub_on_updated_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn, ( void * ) hub,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) self );
-
-	if( OFO_IS_LEDGER( object )){
-		hub_on_updated_ledger( self, prev_id, OFO_LEDGER( object ));
-
-	} else if( OFO_IS_OPE_TEMPLATE( object )){
-		hub_on_updated_ope_template( self, OFO_OPE_TEMPLATE( object ));
-	}
-}
-
 /*
  * a ledger identifier and/or label has changed : update the
  * corresponding tab
  */
 static void
-hub_on_updated_ledger( ofaOpeTemplateFrameBin *self, const gchar *prev_id, ofoLedger *ledger )
+set_ledger_label( ofaOpeTemplateFrameBin *self, const gchar *prev_id, ofoLedger *ledger )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 	GtkWidget *page_w;
@@ -1176,35 +1111,95 @@ hub_on_updated_ledger( ofaOpeTemplateFrameBin *self, const gchar *prev_id, ofoLe
 }
 
 /*
+ * Connect to ofaISignaler signaling system
+ */
+static void
+signaler_connect_to_signaling_system( ofaOpeTemplateFrameBin *self )
+{
+	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaISignaler *signaler;
+	gulong handler;
+
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_COLLECTION_RELOAD, G_CALLBACK( signaler_on_reload_collection ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+}
+
+/*
+ * SIGNALER_BASE_NEW signal handler
+ */
+static void
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaOpeTemplateFrameBin *self )
+{
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_signaler_on_new_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
+			thisfn, ( void * ) signaler,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) self );
+}
+
+/*
+ * SIGNALER_BASE_UPDATED signal handler
+ */
+static void
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaOpeTemplateFrameBin *self )
+{
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_signaler_on_updated_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn, ( void * ) signaler,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) self );
+
+	if( OFO_IS_LEDGER( object )){
+		set_ledger_label( self, prev_id, OFO_LEDGER( object ));
+
+	} else if( OFO_IS_OPE_TEMPLATE( object )){
+		signaler_on_updated_ope_template( self, OFO_OPE_TEMPLATE( object ));
+	}
+}
+
+/*
  * we do not have any way to know if the ledger attached to the operation
  *  template has changed or not - So just make sure the correct page is
  *  shown
  */
 static void
-hub_on_updated_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template )
+signaler_on_updated_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template )
 {
 	ofa_ope_template_frame_bin_set_selected( self, ofo_ope_template_get_mnemo( template ));
 }
 
 /*
- * SIGNAL_HUB_DELETED signal handler
+ * SIGNALER_BASE_DELETED signal handler
  */
 static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self )
+signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaOpeTemplateFrameBin *self )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_hub_on_deleted_object";
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_signaler_on_deleted_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn, ( void * ) hub,
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
+			thisfn, ( void * ) signaler,
 					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) self );
 
 	if( OFO_IS_LEDGER( object )){
-		hub_on_deleted_ledger_object( self, OFO_LEDGER( object ));
+		signaler_on_deleted_ledger_object( self, OFO_LEDGER( object ));
 	}
 }
 
 static void
-hub_on_deleted_ledger_object( ofaOpeTemplateFrameBin *self, ofoLedger *ledger )
+signaler_on_deleted_ledger_object( ofaOpeTemplateFrameBin *self, ofoLedger *ledger )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 	GtkWidget *page_w;
@@ -1224,15 +1219,15 @@ hub_on_deleted_ledger_object( ofaOpeTemplateFrameBin *self, ofoLedger *ledger )
 }
 
 /*
- * SIGNAL_HUB_RELOAD signal handler
+ * SIGNALER_COLLECTION_RELOAD signal handler
  */
 static void
-hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateFrameBin *self )
+signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaOpeTemplateFrameBin *self )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_hub_on_reload_dataset";
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_signaler_on_reload_collection";
 
-	g_debug( "%s: hub=%p, type=%lu, self=%p",
-			thisfn, ( void * ) hub, type, ( void * ) self );
+	g_debug( "%s: signaler=%p, type=%lu, self=%p",
+			thisfn, ( void * ) signaler, type, ( void * ) self );
 }
 
 static void

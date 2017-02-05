@@ -80,7 +80,6 @@ typedef struct {
 	/* runtime
 	 */
 	gchar                *settings_prefix;
-	ofaHub               *hub;
 	ofoDossier           *dossier;
 	const ofaIDBConnect  *connect;
 	ofaIDBDossierMeta    *dossier_meta;
@@ -374,9 +373,6 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
@@ -414,17 +410,19 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p0_do_forward";
 	ofaExerciceCloseAssistantPrivate *priv;
 	ofaExtenderCollection *extenders;
+	ofaHub *hub;
 
 	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	priv->connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->connect = ofa_hub_get_connect( hub );
 	priv->dossier_meta = g_object_ref( ofa_idbconnect_get_dossier_meta( priv->connect ));
 	priv->dos_name = g_strdup( ofa_idbdossier_meta_get_dossier_name( priv->dossier_meta ));
 
-	priv->dossier = ofa_hub_get_dossier( priv->hub );
+	priv->dossier = ofa_hub_get_dossier( hub );
 
 	extenders = ofa_igetter_get_extender_collection( priv->getter );
 	priv->close_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IEXECLOSE );
@@ -640,22 +638,25 @@ static void
 p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
+	ofaISignaler *signaler;
 	const GDate *begin_cur, *end_cur;
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
 
 	begin_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_cur ), NULL );
 	end_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
 
 	ofo_dossier_set_exe_begin( priv->dossier, begin_cur );
 	ofo_dossier_set_exe_end( priv->dossier, end_cur );
-	g_signal_emit_by_name( priv->hub, SIGNAL_HUB_EXE_DATES_CHANGED, begin_cur, end_cur );
+	g_signal_emit_by_name( signaler, SIGNALER_EXERCICE_DATES_CHANGED, begin_cur, end_cur );
 
 	ofa_closing_parms_bin_apply( priv->p1_closing_parms );
 
 	ofo_dossier_update( priv->dossier );
 
-	g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_CHANGED );
+	g_signal_emit_by_name( signaler, SIGNALER_DOSSIER_CHANGED );
 }
 
 static void
@@ -1389,6 +1390,8 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_archive_exercice";
 	ofaExerciceCloseAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
+	ofaISignaler *signaler;
+	ofaHub *hub;
 	ofaIDBConnect *cnx;
 	ofaIDBExerciceMeta *period;
 	gboolean ok;
@@ -1399,6 +1402,8 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
+	signaler = ofa_igetter_get_signaler( priv->getter );
+	hub = ofa_igetter_get_hub( priv->getter );
 	main_window = ofa_igetter_get_main_window( priv->getter );
 
 	ofo_dossier_set_current( priv->dossier, FALSE );
@@ -1441,13 +1446,13 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			 * prevent the window manager to close this assistant
 			 */
 			my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
-			ofa_hub_close_dossier( priv->hub );
+			ofa_hub_close_dossier( hub );
 			my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
 
-			ok = ofa_hub_open_dossier( priv->hub, GTK_WINDOW( main_window ), cnx, FALSE, FALSE );
+			ok = ofa_hub_open_dossier( hub, GTK_WINDOW( main_window ), cnx, FALSE, FALSE );
 			if( ok ){
-				priv->dossier = ofa_hub_get_dossier( priv->hub );
-				priv->connect = ofa_hub_get_connect( priv->hub );
+				priv->dossier = ofa_hub_get_dossier( hub );
+				priv->connect = ofa_hub_get_connect( hub );
 				ofo_dossier_set_current( priv->dossier, TRUE );
 				ofo_dossier_set_exe_begin( priv->dossier, begin_next );
 				ofo_dossier_set_exe_end( priv->dossier, end_next );
@@ -1460,7 +1465,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	}
 
 	/* re-emit the changed signal after update of the new exercice */
-	g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_CHANGED );
+	g_signal_emit_by_name( signaler, SIGNALER_DOSSIER_CHANGED );
 
 	return( ok );
 }
@@ -1737,6 +1742,7 @@ p6_forward( ofaExerciceCloseAssistant *self )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_forward";
 	ofaExerciceCloseAssistantPrivate *priv;
+	ofaISignaler *signaler;
 	myProgressBar *bar;
 	guint count, i;
 	GList *it;
@@ -1746,6 +1752,8 @@ p6_forward( ofaExerciceCloseAssistant *self )
 	const GDate *dbegin;
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
 
 	dbegin = ofo_dossier_get_exe_begin( priv->dossier );
 
@@ -1771,8 +1779,7 @@ p6_forward( ofaExerciceCloseAssistant *self )
 			ofa_iconcil_new_concil( OFA_ICONCIL( entry ), dbegin );
 		}
 
-		g_signal_emit_by_name( priv->hub,
-				SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
+		g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 
 		update_bar( bar, &i, count, thisfn );
 	}
@@ -1848,6 +1855,7 @@ p6_future( ofaExerciceCloseAssistant *self )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_future";
 	ofaExerciceCloseAssistantPrivate *priv;
+	ofaISignaler *signaler;
 	myProgressBar *bar;
 	guint count, i;
 	GList *entries, *it;
@@ -1857,6 +1865,8 @@ p6_future( ofaExerciceCloseAssistant *self )
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
 
 	dos_dend = ofo_dossier_get_exe_end( priv->dossier );
 
@@ -1870,8 +1880,7 @@ p6_future( ofaExerciceCloseAssistant *self )
 		entry = OFO_ENTRY( it->data );
 		ent_deffect = ofo_entry_get_deffect( entry );
 		if( my_date_compare( ent_deffect, dos_dend ) <= 0 ){
-			g_signal_emit_by_name( priv->hub,
-					SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_FUTURE, ENT_STATUS_ROUGH );
+			g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, ENT_STATUS_FUTURE, ENT_STATUS_ROUGH );
 		}
 		update_bar( bar, &i, count, thisfn );
 	}

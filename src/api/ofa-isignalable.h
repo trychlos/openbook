@@ -22,17 +22,19 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_ISIGNAL_HUB_H__
-#define __OPENBOOK_API_OFA_ISIGNAL_HUB_H__
+#ifndef __OPENBOOK_API_OFA_ISIGNALABLE_H__
+#define __OPENBOOK_API_OFA_ISIGNALABLE_H__
 
 /**
- * SECTION: isignal_hub
- * @title: ofaISignalHub
+ * SECTION: isignalable
+ * @title: ofaISignalable
  * @short_description: The Hub signaling system interface.
- * @include: openbook/ofa-isignal-hub.h
+ * @include: openbook/ofa-isignalable.h
  *
- * The #ofaISignalHub lets a implementing class connect to hub signaling
- * system. Candidate classes are of two types:
+ * The #ofaISignalable lets a implementing class connect to
+ * #ofaISignaler signaling system.
+ *
+ * Candidate classes are typically of two types:
  * - either a core class, and it must so be registered via the
  *   #ofa_hub_register_types() method at startup time;
  * - or a class provided by a plugin, and it is so dynamically requested
@@ -47,22 +49,24 @@
 
 #include <glib-object.h>
 
-#include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
+#include "api/ofa-isignaler.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_ISIGNAL_HUB                      ( ofa_isignal_hub_get_type())
-#define OFA_ISIGNAL_HUB( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_ISIGNAL_HUB, ofaISignalHub ))
-#define OFA_IS_ISIGNAL_HUB( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_ISIGNAL_HUB ))
-#define OFA_ISIGNAL_HUB_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_ISIGNAL_HUB, ofaISignalHubInterface ))
+#define OFA_TYPE_ISIGNALABLE                      ( ofa_isignalable_get_type())
+#define OFA_ISIGNALABLE( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_ISIGNALABLE, ofaISignalable ))
+#define OFA_IS_ISIGNALABLE( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_ISIGNALABLE ))
+#define OFA_ISIGNALABLE_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_ISIGNALABLE, ofaISignalableInterface ))
 
-typedef struct _ofaISignalHub                     ofaISignalHub;
+typedef struct _ofaISignalable                     ofaISignalable;
 
 /**
- * ofaISignalHubInterface:
+ * ofaISignalableInterface:
  * @get_interface_version: [may]: returns the implemented version number.
+ * @connect_to: [may]: let the class connect to the #ofaISignaler system.
  *
- * This defines the interface that an #ofaISignalHub may/should implement.
+ * This defines the interface that an #ofaISignalable may/should implement.
  */
 typedef struct {
 	/*< private >*/
@@ -83,30 +87,33 @@ typedef struct {
 	guint ( *get_interface_version )( void );
 
 	/**
-	 * connect:
-	 * @hub: the #ofaHub object of the application.
+	 * connect_to:
+	 * @signaler: the #ofaISignaler instance to connect to.
 	 *
-	 * Connect to the hub signaling system.
+	 * Connect to the #ofaISignaler signaling system.
 	 *
 	 * Since: version 1.
 	 */
-	void  ( *connect )              ( ofaHub *hub );
+	void  ( *connect_to )           ( ofaISignaler *signaler );
 
 	/*** instance-wide ***/
 }
-	ofaISignalHubInterface;
+	ofaISignalableInterface;
 
 /*
  * Interface-wide
  */
-GType ofa_isignal_hub_get_type                  ( void );
+GType ofa_isignalable_get_type                  ( void );
 
-guint ofa_isignal_hub_get_interface_last_version( void );
+guint ofa_isignalable_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint ofa_isignal_hub_get_interface_version     ( GType type );
+guint ofa_isignalable_get_interface_version     ( GType type );
+
+void  ofa_isignalable_connect_to                ( GType type,
+														ofaISignaler *signaler );
 
 /*
  * Instance-wide
@@ -114,4 +121,4 @@ guint ofa_isignal_hub_get_interface_version     ( GType type );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_ISIGNAL_HUB_H__ */
+#endif /* __OPENBOOK_API_OFA_ISIGNALABLE_H__ */

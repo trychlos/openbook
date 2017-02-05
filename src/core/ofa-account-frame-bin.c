@@ -65,8 +65,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub              *hub;
-	GList               *hub_handlers;
+	GList               *signaler_handlers;
 	gboolean             is_writable;		/* whether the dossier is writable */
 	ofaAccountStore     *store;
 	GList               *store_handlers;
@@ -119,7 +118,6 @@ enum {
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
-static void       setup_getter( ofaAccountFrameBin *self, ofaIGetter *getter );
 static void       setup_bin( ofaAccountFrameBin *self );
 static GtkWidget *book_get_page_by_class( ofaAccountFrameBin *self, gint class_num, gboolean create );
 static GtkWidget *book_create_page( ofaAccountFrameBin *self, gint class );
@@ -144,13 +142,13 @@ static void       do_update_account( ofaAccountFrameBin *self, ofoAccount *accou
 static void       do_delete_account( ofaAccountFrameBin *self, ofoAccount *account );
 static gboolean   delete_confirmed( ofaAccountFrameBin *self, ofoAccount *account );
 static void       store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountFrameBin *self );
-static void       hub_connect_to_signaling_system( ofaAccountFrameBin *self );
-static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *self );
-static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountFrameBin *self );
-static void       hub_on_updated_class_label( ofaAccountFrameBin *self, ofoClass *class );
-static void       hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *self );static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaAccountFrameBin *self );
-static void       hub_on_deleted_class_label( ofaAccountFrameBin *self, ofoClass *class );
-static void       hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountFrameBin *self );
+static void       set_class_default_label( ofaAccountFrameBin *self, ofoClass *class );
+static void       signaler_connect_to_signaling_system( ofaAccountFrameBin *self );
+static void       signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaAccountFrameBin *self );
+static void       signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaAccountFrameBin *self );
+static void       signaler_on_updated_class_label( ofaAccountFrameBin *self, ofoClass *class );
+static void       signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaAccountFrameBin *self );static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaAccountFrameBin *self );
+static void       signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaAccountFrameBin *self );
 static void       iactionable_iface_init( ofaIActionableInterface *iface );
 static guint      iactionable_get_interface_version( void );
 static void       iactioner_iface_init( ofaIActionerInterface *iface );
@@ -185,6 +183,7 @@ static void
 account_frame_bin_dispose( GObject *instance )
 {
 	ofaAccountFrameBinPrivate *priv;
+	ofaISignaler *signaler;
 	GList *it;
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_FRAME_BIN( instance ));
@@ -195,10 +194,9 @@ account_frame_bin_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
-		/* unref object members here */
-
-		/* disconnect from ofaHub signaling system */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
 
 		/* disconnect from ofaAccountStore */
 		if( priv->store && OFA_IS_ACCOUNT_STORE( priv->store )){
@@ -210,6 +208,8 @@ account_frame_bin_dispose( GObject *instance )
 			g_list_free( priv->store_handlers );
 			priv->store_handlers = NULL;
 		}
+
+		/* unref object members here */
 		g_clear_object( &priv->store );
 
 		g_clear_object( &priv->new_action );
@@ -329,6 +329,7 @@ ofa_account_frame_bin_new( ofaIGetter *getter  )
 {
 	static const gchar *thisfn = "ofa_account_frame_bin_new";
 	ofaAccountFrameBin *self;
+	ofaAccountFrameBinPrivate *priv;
 
 	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
@@ -336,36 +337,14 @@ ofa_account_frame_bin_new( ofaIGetter *getter  )
 
 	self = g_object_new( OFA_TYPE_ACCOUNT_FRAME_BIN, NULL );
 
-	setup_getter( self, getter );
-	setup_bin( self );
-
-	return( self );
-}
-
-/*
- * Record the getter
- * Initialize private datas which depend of only getter
- */
-static void
-setup_getter( ofaAccountFrameBin *self, ofaIGetter *getter )
-{
-	ofaAccountFrameBinPrivate *priv;
-	gulong handler;
-
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	priv->getter = getter;
 
-	/* hub-related initialization */
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
-	hub_connect_to_signaling_system( self );
+	setup_bin( self );
+	signaler_connect_to_signaling_system( self );
 
-	/* then initialize the store */
-	priv->store = ofa_account_store_new( priv->getter );
-	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
-	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
+	return( self );
 }
 
 /*
@@ -381,8 +360,14 @@ static void
 setup_bin( ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
+	ofaHub *hub;
+	gulong handler;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
+
+	/* hub-related initialization */
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	/* UI grid */
 	priv->grid = gtk_grid_new();
@@ -402,6 +387,11 @@ setup_bin( ofaAccountFrameBin *self )
 	priv->buttonsbox = ofa_buttons_box_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->buttonsbox ), 0, 0, 2, 2 );
 	gtk_grid_attach( GTK_GRID( priv->grid ), GTK_WIDGET( priv->buttonsbox ), 1, 0, 1, 1 );
+
+	/* then initialize the store */
+	priv->store = ofa_account_store_new( priv->getter );
+	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
+	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 }
 
 /*
@@ -1123,7 +1113,7 @@ do_delete_account( ofaAccountFrameBin *self, ofoAccount *account )
 
 	if( delete_confirmed( self, account ) && ofo_account_delete( account )){
 
-			/* nothing to do here, all being managed by signal hub_handlers
+			/* nothing to do here, all being managed by signal signaler_handlers
 			 * just reset the selection
 			 * asking for selection of the just deleted account makes
 			 * almost sure that we are going to select the most close
@@ -1256,102 +1246,7 @@ ofa_account_frame_bin_load_dataset( ofaAccountFrameBin *bin )
 }
 
 static void
-hub_connect_to_signaling_system( ofaAccountFrameBin *self )
-{
-	ofaAccountFrameBinPrivate *priv;
-	gulong handler;
-
-	priv = ofa_account_frame_bin_get_instance_private( self );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-}
-
-/*
- * SIGNAL_HUB_NEW signal handler
- */
-static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *self )
-{
-	static const gchar *thisfn = "ofa_account_frame_bin_hub_on_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn, ( void * ) hub,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ),
-					( void * ) self );
-
-	if( OFO_IS_CLASS( object )){
-		hub_on_updated_class_label( self, OFO_CLASS( object ));
-	}
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountFrameBin *self )
-{
-	static const gchar *thisfn = "ofa_account_frame_bin_hub_on_updated_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn, ( void * ) hub,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id,
-					( void * ) self );
-
-	if( OFO_IS_CLASS( object )){
-		hub_on_updated_class_label( self, OFO_CLASS( object ));
-	}
-}
-
-/*
- * a class label has changed : update the corresponding tab label
- */
-static void
-hub_on_updated_class_label( ofaAccountFrameBin *self, ofoClass *class )
-{
-	ofaAccountFrameBinPrivate *priv;
-	GtkWidget *page_w;
-	gint class_num;
-
-	priv = ofa_account_frame_bin_get_instance_private( self );
-
-	class_num = ofo_class_get_number( class );
-	page_w = book_get_page_by_class( self, class_num, FALSE );
-	if( page_w ){
-		g_return_if_fail( GTK_IS_WIDGET( page_w ));
-		gtk_notebook_set_tab_label_text( GTK_NOTEBOOK( priv->notebook ), page_w, ofo_class_get_label( class ));
-	}
-}
-
-/*
- * SIGNAL_HUB_DELETED signal handler
- */
-static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *self )
-{
-	static const gchar *thisfn = "ofa_account_frame_bin_hub_on_deleted_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), book=%p",
-			thisfn, ( void * ) hub,
-					( void * ) object, G_OBJECT_TYPE_NAME( object ),
-					( void * ) self );
-
-	if( OFO_IS_CLASS( object )){
-		hub_on_deleted_class_label( self, OFO_CLASS( object ));
-	}
-}
-
-static void
-hub_on_deleted_class_label( ofaAccountFrameBin *self, ofoClass *class )
+set_class_default_label( ofaAccountFrameBin *self, ofoClass *class )
 {
 	ofaAccountFrameBinPrivate *priv;
 	GtkWidget *page_w;
@@ -1368,15 +1263,116 @@ hub_on_deleted_class_label( ofaAccountFrameBin *self, ofoClass *class )
 }
 
 /*
- * SIGNAL_HUB_RELOAD signal handler
+ * Connect to ofaISignaler signaling system
  */
 static void
-hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountFrameBin *self )
+signaler_connect_to_signaling_system( ofaAccountFrameBin *self )
 {
-	static const gchar *thisfn = "ofa_account_frame_bin_hub_on_reload_dataset";
+	ofaAccountFrameBinPrivate *priv;
+	ofaISignaler *signaler;
+	gulong handler;
 
-	g_debug( "%s: hub=%p, type=%lu, self=%p",
-			thisfn, ( void * ) hub, type, ( void * ) self );
+	priv = ofa_account_frame_bin_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_COLLECTION_RELOAD, G_CALLBACK( signaler_on_reload_collection ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+}
+
+/*
+ * SIGNALER_BASE_NEW signal handler
+ */
+static void
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaAccountFrameBin *self )
+{
+	static const gchar *thisfn = "ofa_account_frame_bin_signaler_on_new_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
+			thisfn, ( void * ) signaler,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ),
+					( void * ) self );
+
+	if( OFO_IS_CLASS( object )){
+		signaler_on_updated_class_label( self, OFO_CLASS( object ));
+	}
+}
+
+/*
+ * SIGNALER_BASE_UPDATED signal handler
+ */
+static void
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaAccountFrameBin *self )
+{
+	static const gchar *thisfn = "ofa_account_frame_bin_signaler_on_updated_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn, ( void * ) signaler,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id,
+					( void * ) self );
+
+	if( OFO_IS_CLASS( object )){
+		signaler_on_updated_class_label( self, OFO_CLASS( object ));
+	}
+}
+
+/*
+ * a class label has changed : update the corresponding tab label
+ */
+static void
+signaler_on_updated_class_label( ofaAccountFrameBin *self, ofoClass *class )
+{
+	ofaAccountFrameBinPrivate *priv;
+	GtkWidget *page_w;
+	gint class_num;
+
+	priv = ofa_account_frame_bin_get_instance_private( self );
+
+	class_num = ofo_class_get_number( class );
+	page_w = book_get_page_by_class( self, class_num, FALSE );
+	if( page_w ){
+		g_return_if_fail( GTK_IS_WIDGET( page_w ));
+		gtk_notebook_set_tab_label_text( GTK_NOTEBOOK( priv->notebook ), page_w, ofo_class_get_label( class ));
+	}
+}
+
+/*
+ * SIGNALER_BASE_DELETED signal handler
+ */
+static void
+signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaAccountFrameBin *self )
+{
+	static const gchar *thisfn = "ofa_account_frame_bin_signaler_on_deleted_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), book=%p",
+			thisfn, ( void * ) signaler,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ),
+					( void * ) self );
+
+	if( OFO_IS_CLASS( object )){
+		set_class_default_label( self, OFO_CLASS( object ));
+	}
+}
+
+/*
+ * SIGNALER_COLLECTION_RELOAD signal handler
+ */
+static void
+signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaAccountFrameBin *self )
+{
+	static const gchar *thisfn = "ofa_account_frame_bin_signaler_on_reload_collection";
+
+	g_debug( "%s: signaler=%p, type=%lu, self=%p",
+			thisfn, ( void * ) signaler, type, ( void * ) self );
 
 	book_expand_all( self );
 }

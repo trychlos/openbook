@@ -117,10 +117,10 @@ ofa_recurrent_main_signal_connect( ofaIGetter *getter )
 	signaler = ofa_igetter_get_signaler( getter );
 
 	g_signal_connect( signaler,
-			"ofa-signaler-page-manager-available", G_CALLBACK( on_page_manager_available ), NULL );
+			SIGNALER_PAGE_MANAGER_AVAILABLE, G_CALLBACK( on_page_manager_available ), NULL );
 
 	g_signal_connect( signaler,
-			"ofa-signaler-menu-available", G_CALLBACK( on_menu_available ), getter );
+			SIGNALER_MENU_AVAILABLE, G_CALLBACK( on_menu_available ), getter );
 }
 
 /*

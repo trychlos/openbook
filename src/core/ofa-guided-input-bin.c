@@ -67,8 +67,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub         *hub;
-	GList          *hub_handlers;
+	GList          *signaler_handlers;
 
 	/* from dossier
 	 */
@@ -259,9 +258,9 @@ static void              total_display_diff( ofaGuidedInputBin *self, ofoCurrenc
 static gboolean          do_validate( ofaGuidedInputBin *self );
 static void              display_ok_message( ofaGuidedInputBin *self, gint count );
 static void              do_reset_entries_rows( ofaGuidedInputBin *self );
-static void              hub_connect_to_signaling_system( ofaGuidedInputBin *self );
-static void              hub_on_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self );
-static void              hub_on_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self );
+static void              signaler_connect_to_signaling_system( ofaGuidedInputBin *self );
+static void              signaler_on_updated_base( ofaISignaler *signaler, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self );
+static void              signaler_on_deleted_base( ofaISignaler *signaler, const ofoBase *object, ofaGuidedInputBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaGuidedInputBin, ofa_guided_input_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaGuidedInputBin ))
@@ -292,6 +291,7 @@ static void
 guided_input_bin_dispose( GObject *instance )
 {
 	ofaGuidedInputBinPrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT_BIN( instance ));
 
@@ -301,8 +301,11 @@ guided_input_bin_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
+
 		/* unref object members here */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -383,12 +386,12 @@ ofa_guided_input_bin_new( ofaIGetter *getter )
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
 	priv->getter = getter;
-	priv->hub = ofa_igetter_get_hub( priv->getter );
 
 	my_utils_container_attach_from_resource( GTK_CONTAINER( self ), st_resource_ui, "gib-window", "top" );
+
 	setup_main_window( self );
 	setup_dialog( self );
-	hub_connect_to_signaling_system( self );
+	signaler_connect_to_signaling_system( self );
 
 	return( self );
 }
@@ -397,6 +400,7 @@ static void
 setup_main_window( ofaGuidedInputBin *self )
 {
 	ofaGuidedInputBinPrivate *priv;
+	ofaHub *hub;
 	ofoDossier *dossier;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
@@ -404,8 +408,11 @@ setup_main_window( ofaGuidedInputBin *self )
 	/* setup from dossier
 	 * datas which come from the dossier are read once
 	 * they are supposed to stay unchanged while the window is alive */
-	dossier = ofa_hub_get_dossier( priv->hub );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
 	priv->def_currency = ofo_dossier_get_default_currency( dossier );
 }
 
@@ -797,12 +804,15 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin 
 	ofaGuidedInputBinPrivate *priv;
 	ofsOpe *ope;
 	ofoLedger *ledger;
+	ofaHub *hub;
 	ofoDossier *dossier;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
 	ope = priv->ope;
-	dossier = ofa_hub_get_dossier( priv->hub );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 
 	ledger = ofo_ledger_get_by_mnemo( priv->getter, mnemo );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
@@ -1718,7 +1728,8 @@ static gboolean
 do_validate( ofaGuidedInputBin *self )
 {
 	ofaGuidedInputBinPrivate *priv;
-	const ofaIDBConnect *connect;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
 	gboolean ok;
 	ofoDossier *dossier;
 	ofoEntry *entry;
@@ -1727,10 +1738,12 @@ do_validate( ofaGuidedInputBin *self )
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
+	dossier = ofa_hub_get_dossier( hub );
+
 	ok = ofa_idbconnect_transaction_start( connect, FALSE, NULL );
 	entries = ofs_ope_generate_entries( priv->ope );
-	dossier = ofa_hub_get_dossier( priv->hub );
 	number = ofo_dossier_get_next_ope( dossier );
 
 	for( it=entries ; it ; it=it->next ){
@@ -1833,33 +1846,39 @@ do_reset_entries_rows( ofaGuidedInputBin *self )
 	check_for_enable_dlg( self );
 }
 
+/*
+ * Connect to ofaISignaler signaling system
+ */
 static void
-hub_connect_to_signaling_system( ofaGuidedInputBin *self )
+signaler_connect_to_signaling_system( ofaGuidedInputBin *self )
 {
 	ofaGuidedInputBinPrivate *priv;
+	ofaISignaler *signaler;
 	gulong handler;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	signaler = ofa_igetter_get_signaler( priv->getter );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
+ * SIGNALER_BASE_UPDATED signal handler
  */
 static void
-hub_on_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self )
+signaler_on_updated_base( ofaISignaler *signaler, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self )
 {
-	static const gchar *thisfn = "ofa_guided_input_bin_hub_on_updated_object";
+	static const gchar *thisfn = "ofa_guided_input_bin_signaler_on_updated_base";
 	ofaGuidedInputBinPrivate *priv;
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) self );
@@ -1874,18 +1893,18 @@ hub_on_updated_object( const ofaHub *hub, const ofoBase *object, const gchar *pr
 }
 
 /*
- * SIGNAL_HUB_DELETED signal handler
+ * SIGNALER_BASE_DELETED signal handler
  */
 static void
-hub_on_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self )
+signaler_on_deleted_base( ofaISignaler *signaler, const ofoBase *object, ofaGuidedInputBin *self )
 {
-	static const gchar *thisfn = "ofa_guided_input_bin_hub_on_deleted_object";
+	static const gchar *thisfn = "ofa_guided_input_bin_signaler_on_deleted_base";
 	ofaGuidedInputBinPrivate *priv;
 	gint i;
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 

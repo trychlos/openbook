@@ -873,7 +873,7 @@ static gboolean
 do_update( ofaTVAFormProperties *self, gchar **msgerr )
 {
 	ofaTVAFormPropertiesPrivate *priv;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 	gint i;
 	GtkWidget *entry, *base_check, *amount_check, *template_check, *spin;
 	const gchar *code, *label, *base, *amount, *template;
@@ -886,8 +886,6 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
-
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	prev_mnemo = g_strdup( ofo_tva_form_get_mnemo( priv->tva_form ));
 
@@ -965,10 +963,13 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 
 	/* asks the template store to auto-update
 	 * targets all templates which were initially used + those added during the update */
+
 	for( it=priv->orig_templates ; it ; it=it->next ){
 		template_obj = ofo_ope_template_get_by_mnemo( priv->getter, ( const gchar * ) it->data );
+
 		if( template_obj ){
-			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+			signaler = ofa_igetter_get_signaler( priv->getter );
+			g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, template_obj, NULL );
 		}
 	}
 

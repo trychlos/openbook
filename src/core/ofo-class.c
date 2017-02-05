@@ -42,7 +42,8 @@
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofa-isignal-hub.h"
+#include "api/ofa-isignalable.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -120,15 +121,15 @@ static GList     *iimportable_import_parse( ofaIImporter *importer, ofsImporterP
 static void       iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean   class_get_exists( const ofoClass *class, const ofaIDBConnect *connect );
 static gboolean   class_drop_content( const ofaIDBConnect *connect );
-static void       isignal_hub_iface_init( ofaISignalHubInterface *iface );
-static void       isignal_hub_connect( ofaHub *hub );
+static void       isignalable_iface_init( ofaISignalableInterface *iface );
+static void       isignalable_connect_to( ofaISignaler *signaler );
 
 G_DEFINE_TYPE_EXTENDED( ofoClass, ofo_class, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoClass )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
 static void
 class_finalize( GObject *instance )
@@ -366,7 +367,7 @@ gboolean
 ofo_class_is_deletable( const ofoClass *class )
 {
 	ofaIGetter *getter;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 	gboolean deletable;
 
 	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
@@ -374,10 +375,10 @@ ofo_class_is_deletable( const ofoClass *class )
 
 	deletable = TRUE;
 	getter = ofo_base_get_getter( OFO_BASE( class ));
-	hub = ofa_igetter_get_hub( getter );
 
-	if( hub && deletable ){
-		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, class, &deletable );
+	if( deletable ){
+		signaler = ofa_igetter_get_signaler( getter );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_IS_DELETABLE, class, &deletable );
 	}
 
 	return( deletable );
@@ -443,6 +444,7 @@ ofo_class_insert( ofoClass *class )
 {
 	static const gchar *thisfn = "ofo_class_insert";
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -453,12 +455,13 @@ ofo_class_insert( ofoClass *class )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( class ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( class_do_insert( class, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( class ), NULL, getter );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, class );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, class );
 		ok = TRUE;
 	}
 
@@ -520,6 +523,7 @@ ofo_class_update( ofoClass *class, gint prev_id )
 	gchar *str;
 	gboolean ok;
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 
 	g_debug( "%s: class=%p, prev_id=%d", thisfn, ( void * ) class, prev_id );
@@ -529,11 +533,12 @@ ofo_class_update( ofoClass *class, gint prev_id )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( class ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( class_do_update( class, prev_id, ofa_hub_get_connect( hub ))){
 		str = g_strdup_printf( "%d", prev_id );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, class, str );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, class, str );
 		g_free( str );
 		ok = TRUE;
 	}
@@ -595,6 +600,7 @@ ofo_class_delete( ofoClass *class )
 	static const gchar *thisfn = "ofo_class_delete";
 	gboolean ok;
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 
 	g_debug( "%s: class=%p", thisfn, ( void * ) class );
@@ -605,12 +611,13 @@ ofo_class_delete( ofoClass *class )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( class ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( class_do_delete( class, ofa_hub_get_connect( hub ))){
 		g_object_ref( class );
 		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( class ));
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, class );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_DELETED, class );
 		g_object_unref( class );
 		ok = TRUE;
 	}
@@ -806,23 +813,28 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaISignaler *signaler;
 	ofaHub *hub;
+	ofaIDBConnect *connect;
 	GList *dataset;
 	gchar *bck_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+
+	signaler = ofa_igetter_get_signaler( parms->getter );
 	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_CLASSES" );
+		bck_table = ofa_idbconnect_table_backup( connect, "OFA_T_CLASSES" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
 			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_CLASS );
-			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_CLASS );
+			g_signal_emit_by_name( signaler, SIGNALER_COLLECTION_RELOAD, OFO_TYPE_CLASS );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_CLASSES" );
+			ofa_idbconnect_table_restore( connect, bck_table, "OFA_T_CLASSES" );
 		}
 
 		g_free( bck_table );
@@ -994,24 +1006,24 @@ class_drop_content( const ofaIDBConnect *connect )
 }
 
 /*
- * ofaISignalHub interface management
+ * ofaISignalable interface management
  */
 static void
-isignal_hub_iface_init( ofaISignalHubInterface *iface )
+isignalable_iface_init( ofaISignalableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_class_isignal_hub_iface_init";
+	static const gchar *thisfn = "ofo_class_isignalable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->connect = isignal_hub_connect;
+	iface->connect_to = isignalable_connect_to;
 }
 
 static void
-isignal_hub_connect( ofaHub *hub )
+isignalable_connect_to( ofaISignaler *signaler )
 {
-	static const gchar *thisfn = "ofo_class_isignal_hub_connect";
+	static const gchar *thisfn = "ofo_class_isignalable_connect_to";
 
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+	g_debug( "%s: signaler=%p", thisfn, ( void * ) signaler );
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( signaler && OFA_IS_ISIGNALER( signaler ));
 }

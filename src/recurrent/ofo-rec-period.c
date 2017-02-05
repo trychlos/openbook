@@ -42,7 +42,8 @@
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofa-isignal-hub.h"
+#include "api/ofa-isignalable.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -197,15 +198,15 @@ static ofoRecPeriod *iimportable_import_parse_main( ofaIImporter *importer, ofsI
 static GList        *iimportable_import_parse_detail( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields, gchar **id );
 static void          iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean      period_drop_content( const ofaIDBConnect *connect );
-static void          isignal_hub_iface_init( ofaISignalHubInterface *iface );
-static void          isignal_hub_connect( ofaHub *hub );
+static void          isignalable_iface_init( ofaISignalableInterface *iface );
+static void          isignalable_connect_to( ofaISignaler *signaler );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecPeriod, ofo_rec_period, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecPeriod )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
 static void
 details_list_free_detail( GList *fields )
@@ -628,7 +629,7 @@ gboolean
 ofo_rec_period_is_deletable( ofoRecPeriod *period )
 {
 	ofaIGetter *getter;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 	gboolean deletable;
 
 	g_return_val_if_fail( period && OFO_IS_REC_PERIOD( period ), FALSE );
@@ -636,10 +637,10 @@ ofo_rec_period_is_deletable( ofoRecPeriod *period )
 
 	deletable = TRUE;
 	getter = ofo_base_get_getter( OFO_BASE( period ));
-	hub = ofa_igetter_get_hub( getter );
+	signaler = ofa_igetter_get_signaler( getter );
 
 	if( deletable ){
-		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, period, &deletable );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_IS_DELETABLE, period, &deletable );
 	}
 
 	return( deletable );
@@ -851,7 +852,7 @@ ofo_rec_period_insert( ofoRecPeriod *period )
 	static const gchar *thisfn = "ofo_rec_period_insert";
 	gboolean ok;
 	ofaIGetter *getter;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 
 	g_debug( "%s: period=%p", thisfn, ( void * ) period );
 
@@ -860,12 +861,12 @@ ofo_rec_period_insert( ofoRecPeriod *period )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( period ));
-	hub = ofa_igetter_get_hub( getter );
+	signaler = ofa_igetter_get_signaler( getter );
 
 	if( rec_period_do_insert( period, getter )){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( period ), NULL, getter );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, period );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, period );
 		ok = TRUE;
 	}
 
@@ -993,7 +994,7 @@ ofo_rec_period_update( ofoRecPeriod *period )
 {
 	static const gchar *thisfn = "ofo_rec_period_update";
 	ofaIGetter *getter;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 	gboolean ok;
 
 	g_debug( "%s: period=%p", thisfn, ( void * ) period );
@@ -1003,10 +1004,10 @@ ofo_rec_period_update( ofoRecPeriod *period )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( period ));
-	hub = ofa_igetter_get_hub( getter );
+	signaler = ofa_igetter_get_signaler( getter );
 
 	if( rec_period_do_update( period, getter )){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, period, NULL );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, period, NULL );
 		ok = TRUE;
 	}
 
@@ -1080,7 +1081,7 @@ ofo_rec_period_delete( ofoRecPeriod *period )
 {
 	static const gchar *thisfn = "ofo_rec_period_delete";
 	ofaIGetter *getter;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 	gboolean ok;
 
 	g_debug( "%s: period=%p",
@@ -1091,12 +1092,12 @@ ofo_rec_period_delete( ofoRecPeriod *period )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( period ));
-	hub = ofa_igetter_get_hub( getter );
+	signaler = ofa_igetter_get_signaler( getter );
 
 	if( rec_period_do_delete( period, getter )){
 		g_object_ref( period );
 		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( period ));
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, period );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_DELETED, period );
 		g_object_unref( period );
 		ok = TRUE;
 	}
@@ -1385,25 +1386,30 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaISignaler *signaler;
 	ofaHub *hub;
+	ofaIDBConnect *connect;
 	GList *dataset;
 	gchar *bck_table, *bck_det_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+
+	signaler = ofa_igetter_get_signaler( parms->getter );
 	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "REC_T_PERIODS" );
-		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "REC_T_PERIODS_DET" );
+		bck_table = ofa_idbconnect_table_backup( connect, "REC_T_PERIODS" );
+		bck_det_table = ofa_idbconnect_table_backup( connect, "REC_T_PERIODS_DET" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
 			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_REC_PERIOD );
-			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_REC_PERIOD );
+			g_signal_emit_by_name( signaler, SIGNALER_COLLECTION_RELOAD, OFO_TYPE_REC_PERIOD );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "REC_T_PERIODS" );
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_det_table, "REC_T_PERIODS_DET" );
+			ofa_idbconnect_table_restore( connect, bck_table, "REC_T_PERIODS" );
+			ofa_idbconnect_table_restore( connect, bck_det_table, "REC_T_PERIODS_DET" );
 		}
 
 		g_free( bck_table );
@@ -1674,24 +1680,24 @@ period_drop_content( const ofaIDBConnect *connect )
 }
 
 /*
- * ofaISignalHub interface management
+ * ofaISignalable interface management
  */
 static void
-isignal_hub_iface_init( ofaISignalHubInterface *iface )
+isignalable_iface_init( ofaISignalableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_rec_period_isignal_hub_iface_init";
+	static const gchar *thisfn = "ofo_rec_period_isignalable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->connect = isignal_hub_connect;
+	iface->connect_to = isignalable_connect_to;
 }
 
 static void
-isignal_hub_connect( ofaHub *hub )
+isignalable_connect_to( ofaISignaler *signaler )
 {
-	static const gchar *thisfn = "ofo_rec_period_isignal_hub_connect";
+	static const gchar *thisfn = "ofo_rec_period_isignalable_connect_to";
 
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+	g_debug( "%s: signaler=%p", thisfn, ( void * ) signaler );
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( signaler && OFA_IS_ISIGNALER( signaler ));
 }

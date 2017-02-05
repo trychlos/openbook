@@ -74,8 +74,7 @@ typedef struct {
 	/* internals
 	 */
 	ofaIGetter          *getter;
-	ofaHub              *hub;
-	GList               *hub_handlers;
+	GList               *signaler_handlers;
 	ofoDossier          *dossier;					/* dossier */
 	gboolean             is_writable;
 	const GDate         *dossier_opening;
@@ -250,10 +249,10 @@ static void       read_settings_status( ofaEntryPage *self, myISettings *setting
 static void       write_settings( ofaEntryPage *self );
 static void       write_settings_selection( ofaEntryPage *self, myISettings *settings );
 static void       write_settings_status( ofaEntryPage *self, myISettings *settings );
-static void       hub_connect_to_signaling_system( ofaEntryPage *self );
-static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
-static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
-static void       hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
+static void       signaler_connect_to_signaling_system( ofaEntryPage *self );
+static void       signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaEntryPage *self );
+static void       signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
+static void       signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaEntryPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryPage, ofa_entry_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaEntryPage ))
@@ -285,6 +284,7 @@ static void
 entry_page_dispose( GObject *instance )
 {
 	ofaEntryPagePrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( OFA_IS_ENTRY_PAGE( instance ));
 
@@ -292,11 +292,13 @@ entry_page_dispose( GObject *instance )
 
 		write_settings( OFA_ENTRY_PAGE( instance ));
 
-		/* unref object members here */
 		priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( instance ));
 
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
 
+		/* unref object members here */
 		g_clear_object( &priv->new_action );
 		g_clear_object( &priv->update_action );
 		g_clear_object( &priv->delete_action );
@@ -344,6 +346,7 @@ page_v_setup_page( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_entry_page_v_setup_page";
 	ofaEntryPagePrivate *priv;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -351,12 +354,12 @@ page_v_setup_page( ofaPage *page )
 
 	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	priv->dossier = ofa_hub_get_dossier( priv->hub );
+	priv->dossier = ofa_hub_get_dossier( hub );
 	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier );
-	priv->is_writable = ofa_hub_is_writable_dossier( priv->hub );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	my_utils_container_attach_from_resource( GTK_CONTAINER( page ), st_resource_ui, st_ui_id, "px-box" );
 
@@ -373,7 +376,7 @@ page_v_setup_page( ofaPage *page )
 	read_settings( OFA_ENTRY_PAGE( page ));
 
 	/* connect to dossier signaling system */
-	hub_connect_to_signaling_system( OFA_ENTRY_PAGE( page ));
+	signaler_connect_to_signaling_system( OFA_ENTRY_PAGE( page ));
 
 	/* allow the entry dataset to be loaded */
 	g_debug( "%s: end of initialization phase", thisfn );
@@ -2170,7 +2173,7 @@ insert_new_row( ofaEntryPage *self )
 	 * position of a sorted list */
 	gtk_list_store_insert_with_values(
 			GTK_LIST_STORE( priv->store ), &new_iter, -1, ENTRY_COL_OBJECT, entry, -1 );
-	//g_signal_emit_by_name( priv->hub, SIGNAL_HUB_NEW, entry );
+	//g_signal_emit_by_name( priv->hub, SIGNALER_BASE_NEW, entry );
 	g_object_unref( entry );
 
 	/* set the selection and the cursor on this new line */
@@ -2564,35 +2567,41 @@ write_settings_status( ofaEntryPage *self, myISettings *settings )
 	g_free( key );
 }
 
+/*
+ * Connect to ofaISignaler signaling system
+ */
 static void
-hub_connect_to_signaling_system( ofaEntryPage *self )
+signaler_connect_to_signaling_system( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
+	ofaISignaler *signaler;
 	gulong handler;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	signaler = ofa_igetter_get_signaler( priv->getter );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 }
 
 /*
- * SIGNAL_HUB_NEW signal handler
+ * SIGNALER_BASE_NEW signal handler
  */
 static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_hub_on_new_object";
+	static const gchar *thisfn = "ofa_entry_page_signaler_on_new_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -2602,16 +2611,16 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
+ * SIGNALER_BASE_UPDATED signal handler
  */
 static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self )
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_hub_on_updated_object";
+	static const gchar *thisfn = "ofa_entry_page_signaler_on_updated_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) self, G_OBJECT_TYPE_NAME( self ));
@@ -2634,16 +2643,16 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEn
 }
 
 /*
- * SIGNAL_HUB_DELETED signal handler
+ * SIGNALER_BASE_DELETED signal handler
  */
 static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
+signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_hub_on_deleted_object";
+	static const gchar *thisfn = "ofa_entry_page_signaler_on_deleted_base";
 
-	g_debug( "%s: hub=%p, object=%p (%s), user_data=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), user_data=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 

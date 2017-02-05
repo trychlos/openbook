@@ -41,6 +41,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-irecover.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-preferences.h"
 
 #include "ui/ofa-about.h"
@@ -702,7 +703,7 @@ menubar_init( ofaApplication *self )
 		my_scope_mapper_register( mapper, "app", G_ACTION_MAP( self ), menu );
 
 		signaler = ofa_igetter_get_signaler( OFA_IGETTER( priv->hub ));
-		g_signal_emit_by_name( signaler, "ofa-signaler-menu-available", "app", self );
+		g_signal_emit_by_name( signaler, SIGNALER_MENU_AVAILABLE, "app", self );
 
 	} else {
 		g_warning( "%s: unable to find '%s' object in '%s' resource", thisfn, st_appmenu_id, st_resource_appmenu );

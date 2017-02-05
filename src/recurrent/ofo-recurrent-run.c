@@ -40,7 +40,8 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-isignal-hub.h"
+#include "api/ofa-isignalable.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 
@@ -141,17 +142,17 @@ static gint       recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoR
 static void       icollectionable_iface_init( myICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( void );
 static GList     *icollectionable_load_collection( void *user_data );
-static void       isignal_hub_iface_init( ofaISignalHubInterface *iface );
-static void       isignal_hub_connect( ofaHub *hub );
-static gboolean   hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
-static gboolean   hub_is_deletable_recurrent_model( ofaHub *hub, ofoRecurrentModel *model );
-static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean   hub_on_updated_rec_model_mnemo( ofaHub *hub, ofoBase *object, const gchar *mnemo, const gchar *prev_id );
+static void       isignalable_iface_init( ofaISignalableInterface *iface );
+static void       isignalable_connect_to( ofaISignaler *signaler );
+static gboolean   signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
+static gboolean   signaler_is_deletable_recurrent_model( ofaISignaler *signaler, ofoRecurrentModel *model );
+static void       signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
+static gboolean   signaler_on_updated_rec_model_mnemo( ofaISignaler *signaler, ofoBase *object, const gchar *mnemo, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentRun, ofo_recurrent_run, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentRun )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
 static void
 recurrent_run_finalize( GObject *instance )
@@ -511,7 +512,7 @@ ofo_recurrent_run_insert( ofoRecurrentRun *recurrent_run )
 {
 	static const gchar *thisfn = "ofo_recurrent_run_insert";
 	ofaIGetter *getter;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 	gboolean ok;
 
 	g_debug( "%s: model=%p", thisfn, ( void * ) recurrent_run );
@@ -521,12 +522,12 @@ ofo_recurrent_run_insert( ofoRecurrentRun *recurrent_run )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( recurrent_run ));
-	hub = ofa_igetter_get_hub( getter );
+	signaler = ofa_igetter_get_signaler( getter );
 
 	if( recurrent_run_do_insert( recurrent_run, getter )){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( recurrent_run ), NULL, getter );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, recurrent_run );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, recurrent_run );
 		ok = TRUE;
 	}
 
@@ -639,7 +640,7 @@ ofo_recurrent_run_update( ofoRecurrentRun *recurrent_run )
 {
 	static const gchar *thisfn = "ofo_recurrent_run_update";
 	ofaIGetter *getter;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 	gboolean ok;
 
 	g_debug( "%s: model=%p",
@@ -650,10 +651,10 @@ ofo_recurrent_run_update( ofoRecurrentRun *recurrent_run )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( recurrent_run ));
-	hub = ofa_igetter_get_hub( getter );
+	signaler = ofa_igetter_get_signaler( getter );
 
 	if( recurrent_run_do_update( recurrent_run, getter )){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, recurrent_run, NULL );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, recurrent_run, NULL );
 		ok = TRUE;
 	}
 
@@ -813,60 +814,65 @@ icollectionable_load_collection( void *user_data )
 }
 
 /*
- * ofaISignalHub interface management
+ * ofaISignalable interface management
  */
 static void
-isignal_hub_iface_init( ofaISignalHubInterface *iface )
+isignalable_iface_init( ofaISignalableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_recurrent_run_isignal_hub_iface_init";
+	static const gchar *thisfn = "ofo_recurrent_run_isignalable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->connect = isignal_hub_connect;
+	iface->connect_to = isignalable_connect_to;
 }
 
 static void
-isignal_hub_connect( ofaHub *hub )
+isignalable_connect_to( ofaISignaler *signaler )
 {
-	static const gchar *thisfn = "ofo_recurrent_run_isignal_hub_connect";
+	static const gchar *thisfn = "ofo_recurrent_run_isignalable_connect_to";
 
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+	g_debug( "%s: signaler=%p", thisfn, ( void * ) signaler );
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( signaler && OFA_IS_ISIGNALER( signaler ));
 
-	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+	g_signal_connect( signaler, SIGNALER_BASE_IS_DELETABLE, G_CALLBACK( signaler_on_deletable_object ), NULL );
+	g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), NULL );
 }
 
 /*
- * SIGNAL_HUB_DELETABLE signal handler
+ * SIGNALER_BASE_IS_DELETABLE signal handler
  */
 static gboolean
-hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty )
 {
-	static const gchar *thisfn = "ofo_recurrent_run_hub_on_deletable_object";
+	static const gchar *thisfn = "ofo_recurrent_run_signaler_on_deletable_object";
 	gboolean deletable;
 
-	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), empty=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) empty );
 
 	deletable = TRUE;
 
 	if( OFO_IS_RECURRENT_MODEL( object )){
-		deletable = hub_is_deletable_recurrent_model( hub, OFO_RECURRENT_MODEL( object ));
+		deletable = signaler_is_deletable_recurrent_model( signaler, OFO_RECURRENT_MODEL( object ));
 	}
 
 	return( deletable );
 }
 
 static gboolean
-hub_is_deletable_recurrent_model( ofaHub *hub, ofoRecurrentModel *model )
+signaler_is_deletable_recurrent_model( ofaISignaler *signaler, ofoRecurrentModel *model )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gchar *query;
 	gint count;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM REC_T_RUN WHERE REC_MNEMO='%s'",
@@ -880,17 +886,17 @@ hub_is_deletable_recurrent_model( ofaHub *hub, ofoRecurrentModel *model )
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
+ * SIGNALER_BASE_UPDATED signal handler
  */
 static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	static const gchar *thisfn = "ofo_recurrent_run_hub_on_updated_object";
+	static const gchar *thisfn = "ofo_recurrent_run_signaler_on_updated_base";
 	const gchar *mnemo;
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, empty=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) empty );
@@ -899,24 +905,27 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			mnemo = ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object ));
 			if( my_collate( mnemo, prev_id )){
-				hub_on_updated_rec_model_mnemo( hub, object, mnemo, prev_id );
+				signaler_on_updated_rec_model_mnemo( signaler, object, mnemo, prev_id );
 			}
 		}
 	}
 }
 
 static gboolean
-hub_on_updated_rec_model_mnemo( ofaHub *hub, ofoBase *object, const gchar *mnemo, const gchar *prev_id )
+signaler_on_updated_rec_model_mnemo( ofaISignaler *signaler, ofoBase *object, const gchar *mnemo, const gchar *prev_id )
 {
-	static const gchar *thisfn = "ofo_recurrent_run_hub_on_updated_rec_model_mnemo";
-	gchar *query;
-	const ofaIDBConnect *connect;
-	gboolean ok;
+	static const gchar *thisfn = "ofo_recurrent_run_signaler_on_updated_rec_model_mnemo";
 	ofaIGetter *getter;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	gchar *query;
+	gboolean ok;
 
-	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
-			thisfn, ( void * ) hub, mnemo, prev_id );
+	g_debug( "%s: signaler=%p, mnemo=%s, prev_id=%s",
+			thisfn, ( void * ) signaler, mnemo, prev_id );
 
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	query = g_strdup_printf(
@@ -929,7 +938,6 @@ hub_on_updated_rec_model_mnemo( ofaHub *hub, ofoBase *object, const gchar *mnemo
 
 	g_free( query );
 
-	getter = ofo_base_get_getter( object );
 	my_icollector_collection_free( ofa_igetter_get_collector( getter ), OFO_TYPE_RECURRENT_RUN );
 
 	return( ok );

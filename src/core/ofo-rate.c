@@ -44,7 +44,8 @@
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofa-isignal-hub.h"
+#include "api/ofa-isignalable.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -171,15 +172,15 @@ static GList    *iimportable_import_parse_validity( ofaIImporter *importer, ofsI
 static void      iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean  rate_get_exists( const ofoRate *rate, const ofaIDBConnect *connect );
 static gboolean  rate_drop_content( const ofaIDBConnect *connect );
-static void      isignal_hub_iface_init( ofaISignalHubInterface *iface );
-static void      isignal_hub_connect( ofaHub *hub );
+static void      isignalable_iface_init( ofaISignalableInterface *iface );
+static void      isignalable_connect_to( ofaISignaler *signaler );
 
 G_DEFINE_TYPE_EXTENDED( ofoRate, ofo_rate, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRate )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
 static void
 rate_free_validity( GList *fields )
@@ -581,7 +582,7 @@ gboolean
 ofo_rate_is_deletable( const ofoRate *rate )
 {
 	ofaIGetter *getter;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 	gboolean deletable;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
@@ -589,10 +590,10 @@ ofo_rate_is_deletable( const ofoRate *rate )
 
 	deletable = TRUE;
 	getter = ofo_base_get_getter( OFO_BASE( rate ));
-	hub = ofa_igetter_get_hub( getter );
+	signaler = ofa_igetter_get_signaler( getter );
 
 	if( deletable ){
-		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, rate, &deletable );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_IS_DELETABLE, rate, &deletable );
 	}
 
 	return( deletable );
@@ -766,6 +767,7 @@ ofo_rate_insert( ofoRate *rate )
 	static const gchar *thisfn = "ofo_rate_insert";
 	gboolean ok;
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 
 	g_debug( "%s: rate=%p", thisfn, ( void * ) rate );
@@ -775,12 +777,13 @@ ofo_rate_insert( ofoRate *rate )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( rate ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( rate_do_insert( rate, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( rate ), NULL, getter );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, rate );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, rate );
 		ok = TRUE;
 	}
 
@@ -942,6 +945,7 @@ ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_rate_update";
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -954,10 +958,11 @@ ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( rate ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( rate_do_update( rate, prev_mnemo, ofa_hub_get_connect( hub ))){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, rate, prev_mnemo );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, rate, prev_mnemo );
 		ok = TRUE;
 	}
 
@@ -1030,6 +1035,7 @@ ofo_rate_delete( ofoRate *rate )
 {
 	static const gchar *thisfn = "ofo_rate_delete";
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1040,12 +1046,13 @@ ofo_rate_delete( ofoRate *rate )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( rate ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( rate_do_delete( rate, ofa_hub_get_connect( hub ))){
 		g_object_ref( rate );
 		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( rate ));
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, rate );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_DELETED, rate );
 		g_object_unref( rate );
 		ok = TRUE;
 	}
@@ -1396,25 +1403,30 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaISignaler *signaler;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
 	GList *dataset;
 	gchar *bck_table, *bck_det_table;
-	ofaHub *hub;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+
+	signaler = ofa_igetter_get_signaler( parms->getter );
 	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_RATES" );
-		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_RATES_VAL" );
+		bck_table = ofa_idbconnect_table_backup( connect, "OFA_T_RATES" );
+		bck_det_table = ofa_idbconnect_table_backup( connect, "OFA_T_RATES_VAL" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
 			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_RATE );
-			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RATE );
+			g_signal_emit_by_name( signaler, SIGNALER_COLLECTION_RELOAD, OFO_TYPE_RATE );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_RATES" );
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_det_table, "OFA_T_RATES_VAL" );
+			ofa_idbconnect_table_restore( connect, bck_table, "OFA_T_RATES" );
+			ofa_idbconnect_table_restore( connect, bck_det_table, "OFA_T_RATES_VAL" );
 		}
 
 		g_free( bck_table );
@@ -1680,24 +1692,24 @@ rate_drop_content( const ofaIDBConnect *connect )
 }
 
 /*
- * ofaISignalHub interface management
+ * ofaISignalable interface management
  */
 static void
-isignal_hub_iface_init( ofaISignalHubInterface *iface )
+isignalable_iface_init( ofaISignalableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_rate_isignal_hub_iface_init";
+	static const gchar *thisfn = "ofo_rate_isignalable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->connect = isignal_hub_connect;
+	iface->connect_to = isignalable_connect_to;
 }
 
 static void
-isignal_hub_connect( ofaHub *hub )
+isignalable_connect_to( ofaISignaler *signaler )
 {
-	static const gchar *thisfn = "ofo_rate_isignal_hub_connect";
+	static const gchar *thisfn = "ofo_rate_isignalable_connect_to";
 
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+	g_debug( "%s: signaler=%p", thisfn, ( void * ) signaler );
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( signaler && OFA_IS_ISIGNALER( signaler ));
 }

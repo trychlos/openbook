@@ -29,7 +29,6 @@
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itree-adder.h"
 #include "api/ofa-ope-template-store.h"
@@ -49,8 +48,7 @@ typedef struct {
 
 	/* runtime data
 	 */
-	ofaHub     *hub;
-	GList      *hub_handlers;
+	GList      *signaler_handlers;
 	gboolean    dataset_is_loaded;
 }
 	ofaOpeTemplateStorePrivate;
@@ -73,13 +71,13 @@ static void     insert_row( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope
 static void     set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIter *iter );
 static gboolean find_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo, GtkTreeIter *iter, gboolean *bvalid );
 static void     remove_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo );
-static void     hub_connect_to_signaling_system( ofaOpeTemplateStore *self );
-static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self );
-static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self );
-static void     hub_on_updated_account( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id );
-static void     hub_on_updated_ledger( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id );
-static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self );
-static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *self );
+static void     set_account_new_id( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id );
+static void     set_ledger_new_id( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id );
+static void     signaler_connect_to_signaling_system( ofaOpeTemplateStore *self );
+static void     signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaOpeTemplateStore *self );
+static void     signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self );
+static void     signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaOpeTemplateStore *self );
+static void     signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaOpeTemplateStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateStore, ofa_ope_template_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaOpeTemplateStore ))
@@ -104,6 +102,7 @@ static void
 ope_template_store_dispose( GObject *instance )
 {
 	ofaOpeTemplateStorePrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_STORE( instance ));
 
@@ -113,8 +112,11 @@ ope_template_store_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
+
 		/* unref object members here */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -135,7 +137,7 @@ ofa_ope_template_store_init( ofaOpeTemplateStore *self )
 	priv = ofa_ope_template_store_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->hub_handlers = NULL;
+	priv->signaler_handlers = NULL;
 	priv->dataset_is_loaded = FALSE;
 }
 
@@ -157,11 +159,8 @@ ofa_ope_template_store_class_init( ofaOpeTemplateStoreClass *klass )
  * @getter: a #ofaIGetter instance.
  *
  * Instanciates a new #ofaOpeTemplateStore and attached it to the
- * @hub if not already done. Else get the already allocated
- * #ofaOpeTemplateStore from the @hub collectioner.
- *
- * A weak notify reference is put on this same @dossier, so that the
- * unique instance will be unreffed when the @hub is destroyed.
+ * #myICollector if not already done. Else get the already allocated
+ * #ofaOpeTemplateStore from this same #myICollector.
  *
  * Returns: a new reference to the store, which should be unreffed by
  * the caller.
@@ -190,7 +189,6 @@ ofa_ope_template_store_new( ofaIGetter *getter )
 		priv = ofa_ope_template_store_get_instance_private( store );
 
 		priv->getter = getter;
-		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[OPE_TEMPLATE_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		ofa_istore_set_column_types( OFA_ISTORE( store ), getter, OPE_TEMPLATE_N_COLUMNS, st_col_types );
@@ -203,7 +201,7 @@ ofa_ope_template_store_new( ofaIGetter *getter )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		hub_connect_to_signaling_system( store );
+		signaler_connect_to_signaling_system( store );
 	}
 
 	return( g_object_ref( store ));
@@ -386,99 +384,8 @@ remove_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *number )
 	}
 }
 
-/*
- * connect to the dossier signaling system
- * there is no need to keep trace of the signal handlers, as the lifetime
- * of this self is equal to those of the dossier
- */
 static void
-hub_connect_to_signaling_system( ofaOpeTemplateStore *self )
-{
-	ofaOpeTemplateStorePrivate *priv;
-	gulong handler;
-
-	priv = ofa_ope_template_store_get_instance_private( self );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-}
-
-/*
- * SIGNAL_HUB_NEW signal handler
- */
-static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self )
-{
-	static const gchar *thisfn = "ofa_ope_template_store_hub_on_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_OPE_TEMPLATE( object )){
-		insert_row( self, OFO_OPE_TEMPLATE( object ));
-	}
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self )
-{
-	static const gchar *thisfn = "ofa_ope_template_store_hub_on_updated_object";
-	GtkTreeIter iter;
-	const gchar *mnemo, *new_id;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) self );
-
-	if( OFO_IS_OPE_TEMPLATE( object )){
-		mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
-
-		if( prev_id && g_utf8_collate( prev_id, mnemo )){
-			remove_row_by_mnemo( self, prev_id );
-			insert_row( self, OFO_OPE_TEMPLATE( object ));
-
-		} else if( find_row_by_mnemo( self, mnemo, &iter, NULL )){
-			set_row_by_iter( self, OFO_OPE_TEMPLATE( object ), &iter);
-
-		} else {
-			g_debug( "%s: not found: mnemo=%s", thisfn, mnemo );
-		}
-
-	} else if( OFO_IS_ACCOUNT( object )){
-		new_id = ofo_account_get_number( OFO_ACCOUNT( object ));
-		if( prev_id && g_utf8_collate( prev_id, new_id )){
-			hub_on_updated_account( self, prev_id, new_id );
-		}
-
-	} else if( OFO_IS_LEDGER( object )){
-		new_id = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
-		if( prev_id && g_utf8_collate( prev_id, new_id )){
-			hub_on_updated_ledger( self, prev_id, new_id );
-		}
-	}
-}
-
-static void
-hub_on_updated_account( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id )
+set_account_new_id( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id )
 {
 	GtkTreeIter iter;
 	ofoOpeTemplate *template;
@@ -499,7 +406,7 @@ hub_on_updated_account( ofaOpeTemplateStore *self, const gchar *prev_id, const g
 }
 
 static void
-hub_on_updated_ledger( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id )
+set_ledger_new_id( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id )
 {
 	GtkTreeIter iter;
 	ofoOpeTemplate *template;
@@ -520,42 +427,6 @@ hub_on_updated_ledger( ofaOpeTemplateStore *self, const gchar *prev_id, const gc
 				break;
 			}
 		}
-	}
-}
-
-/*
- * SIGNAL_HUB_DELETED signal handler
- */
-static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self )
-{
-	static const gchar *thisfn = "ofa_ope_template_store_hub_on_deleted_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_OPE_TEMPLATE( object )){
-		remove_row_by_mnemo( self, ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object )));
-	}
-}
-
-/*
- * SIGNAL_HUB_RELOAD signal handler
- */
-static void
-hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *self )
-{
-	static const gchar *thisfn = "ofa_ope_template_store_hub_on_reload_dataset";
-
-	g_debug( "%s: hub=%p, type=%lu, self=%p",
-			thisfn, ( void * ) hub, type, ( void * ) self );
-
-	if( type == OFO_TYPE_OPE_TEMPLATE ){
-		gtk_list_store_clear( GTK_LIST_STORE( self ));
-		list_store_v_load_dataset( OFA_LIST_STORE( self ));
 	}
 }
 
@@ -584,4 +455,136 @@ ofa_ope_template_store_get_by_mnemo( ofaOpeTemplateStore *store, const gchar *mn
 	found = find_row_by_mnemo( store, mnemo, iter, NULL );
 
 	return( found );
+}
+
+/*
+ * Connect to ofaISignaler signaling system
+ *
+ * Note that the need to keep trace of the signal handlers may be
+ * questionable as the lifetime of this store is not longer than those
+ * of the dossier.
+ */
+static void
+signaler_connect_to_signaling_system( ofaOpeTemplateStore *self )
+{
+	ofaOpeTemplateStorePrivate *priv;
+	ofaISignaler *signaler;
+	gulong handler;
+
+	priv = ofa_ope_template_store_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_COLLECTION_RELOAD, G_CALLBACK( signaler_on_reload_collection ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+}
+
+/*
+ * SIGNALER_BASE_NEW signal handler
+ */
+static void
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaOpeTemplateStore *self )
+{
+	static const gchar *thisfn = "ofa_ope_template_store_signaler_on_new_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		insert_row( self, OFO_OPE_TEMPLATE( object ));
+	}
+}
+
+/*
+ * SIGNALER_BASE_UPDATED signal handler
+ */
+static void
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self )
+{
+	static const gchar *thisfn = "ofa_ope_template_store_signaler_on_updated_base";
+	GtkTreeIter iter;
+	const gchar *mnemo, *new_id;
+
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
+
+		if( prev_id && g_utf8_collate( prev_id, mnemo )){
+			remove_row_by_mnemo( self, prev_id );
+			insert_row( self, OFO_OPE_TEMPLATE( object ));
+
+		} else if( find_row_by_mnemo( self, mnemo, &iter, NULL )){
+			set_row_by_iter( self, OFO_OPE_TEMPLATE( object ), &iter);
+
+		} else {
+			g_debug( "%s: not found: mnemo=%s", thisfn, mnemo );
+		}
+
+	} else if( OFO_IS_ACCOUNT( object )){
+		new_id = ofo_account_get_number( OFO_ACCOUNT( object ));
+		if( prev_id && g_utf8_collate( prev_id, new_id )){
+			set_account_new_id( self, prev_id, new_id );
+		}
+
+	} else if( OFO_IS_LEDGER( object )){
+		new_id = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
+		if( prev_id && g_utf8_collate( prev_id, new_id )){
+			set_ledger_new_id( self, prev_id, new_id );
+		}
+	}
+}
+
+/*
+ * SIGNALER_BASE_DELETED signal handler
+ */
+static void
+signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaOpeTemplateStore *self )
+{
+	static const gchar *thisfn = "ofa_ope_template_store_signaler_on_deleted_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		remove_row_by_mnemo( self, ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object )));
+	}
+}
+
+/*
+ * SIGNALER_COLLECTION_RELOAD signal handler
+ */
+static void
+signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaOpeTemplateStore *self )
+{
+	static const gchar *thisfn = "ofa_ope_template_store_signaler_on_reload_collection";
+
+	g_debug( "%s: signaler=%p, type=%lu, self=%p",
+			thisfn, ( void * ) signaler, type, ( void * ) self );
+
+	if( type == OFO_TYPE_OPE_TEMPLATE ){
+		gtk_list_store_clear( GTK_LIST_STORE( self ));
+		list_store_v_load_dataset( OFA_LIST_STORE( self ));
+	}
 }

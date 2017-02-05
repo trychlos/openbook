@@ -42,7 +42,8 @@
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofa-isignal-hub.h"
+#include "api/ofa-isignalable.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
@@ -125,15 +126,15 @@ static ofoPaimean *iimportable_import_parse_main( ofaIImporter *importer, ofsImp
 static void        iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean    paimean_get_exists( const ofoPaimean *paimean, const ofaIDBConnect *connect );
 static gboolean    paimean_drop_content( const ofaIDBConnect *connect );
-static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
-static void        isignal_hub_connect( ofaHub *hub );
+static void        isignalable_iface_init( ofaISignalableInterface *iface );
+static void        isignalable_connect_to( ofaISignaler *signaler );
 
 G_DEFINE_TYPE_EXTENDED( ofoPaimean, ofo_paimean, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoPaimean )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
 static void
 paimean_finalize( GObject *instance )
@@ -418,6 +419,7 @@ ofo_paimean_insert( ofoPaimean *paimean )
 	static const gchar *thisfn = "ofo_paimean_insert";
 	gboolean ok;
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 
 	g_debug( "%s: paimean=%p", thisfn, ( void * ) paimean );
@@ -427,12 +429,13 @@ ofo_paimean_insert( ofoPaimean *paimean )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( paimean ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( paimean_do_insert( paimean, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( paimean ), NULL, getter );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, paimean );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, paimean );
 		ok = TRUE;
 	}
 
@@ -507,6 +510,7 @@ ofo_paimean_update( ofoPaimean *paimean, const gchar *prev_code )
 {
 	static const gchar *thisfn = "ofo_paimean_update";
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -519,10 +523,11 @@ ofo_paimean_update( ofoPaimean *paimean, const gchar *prev_code )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( paimean ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( paimean_do_update( paimean, prev_code, ofa_hub_get_connect( hub ))){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, paimean, prev_code );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, paimean, prev_code );
 		ok = TRUE;
 	}
 
@@ -594,6 +599,7 @@ ofo_paimean_delete( ofoPaimean *paimean )
 {
 	static const gchar *thisfn = "ofo_paimean_delete";
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -604,12 +610,13 @@ ofo_paimean_delete( ofoPaimean *paimean )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( paimean ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( paimean_do_delete( paimean, ofa_hub_get_connect( hub ))){
 		g_object_ref( paimean );
 		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( paimean ));
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, paimean );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_DELETED, paimean );
 		g_object_unref( paimean );
 		ok = TRUE;
 	}
@@ -796,23 +803,28 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaISignaler *signaler;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
 	GList *dataset;
 	gchar *bck_table;
-	ofaHub *hub;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+
+	signaler = ofa_igetter_get_signaler( parms->getter );
 	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_PAIMEANS" );
+		bck_table = ofa_idbconnect_table_backup( connect, "OFA_T_PAIMEANS" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
 			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_PAIMEAN );
-			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_PAIMEAN );
+			g_signal_emit_by_name( signaler, SIGNALER_COLLECTION_RELOAD, OFO_TYPE_PAIMEAN );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_PAIMEANS" );
+			ofa_idbconnect_table_restore( connect, bck_table, "OFA_T_PAIMEANS" );
 		}
 
 		g_free( bck_table );
@@ -1008,24 +1020,24 @@ paimean_drop_content( const ofaIDBConnect *connect )
 }
 
 /*
- * ofaISignalHub interface management
+ * ofaISignalable interface management
  */
 static void
-isignal_hub_iface_init( ofaISignalHubInterface *iface )
+isignalable_iface_init( ofaISignalableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_paimean_isignal_hub_iface_init";
+	static const gchar *thisfn = "ofo_paimean_isignalable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->connect = isignal_hub_connect;
+	iface->connect_to = isignalable_connect_to;
 }
 
 static void
-isignal_hub_connect( ofaHub *hub )
+isignalable_connect_to( ofaISignaler *signaler )
 {
-	static const gchar *thisfn = "ofo_paimean_isignal_hub_connect";
+	static const gchar *thisfn = "ofo_paimean_isignalable_connect_to";
 
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+	g_debug( "%s: signaler=%p", thisfn, ( void * ) signaler );
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( signaler && OFA_IS_ISIGNALER( signaler ));
 }

@@ -100,8 +100,8 @@ Total: 534436 lines
  environment variables
  =====================
 
- OFA_IAUTH_CONF    pathname of the IAuth settings file
-                   defaults to ~/.config/openbook/iauth.conf
+ OFA_AUTH_CONF     pathname of the IAuth interface settings file
+                   defaults to ~/.config/openbook/auth.conf
 
  OFA_USER_CONF     pathname of the user settings file
                    defaults to ~/.config/openbook/openbook.conf

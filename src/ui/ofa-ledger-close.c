@@ -89,7 +89,6 @@ typedef struct {
  */
 typedef struct {
 	ofaIGetter    *getter;
-	GList         *hub_handlers;
 	GtkWindow     *parent;
 	GDate          closing_date;
 	gboolean       with_archive;
@@ -129,8 +128,8 @@ static gboolean close_foreach_ledger( sClose *sclose, ofoLedger *ledger );
 static void     close_end( sClose *sclose );
 static void     read_settings( ofaLedgerClose *self );
 static void     write_settings( ofaLedgerClose *self );
-static void     hub_on_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, sClose *sclose );
-static void     hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *sclose );
+static void     signaler_on_entry_status_count( ofaISignaler *signaler, ofaEntryStatus new_status, guint count, sClose *sclose );
+static void     signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *sclose );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerClose, ofa_ledger_close, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaLedgerClose )
@@ -690,18 +689,18 @@ static void
 do_close_ledgers( sClose *sclose )
 {
 	myISettings *settings;
-	GList *it;
+	GList *signaler_handlers, *it;
 	GtkWidget *dialog, *content, *button;
 	gulong handler;
-	ofaHub *hub;
+	ofaISignaler *signaler;
 
-	hub = ofa_igetter_get_hub( sclose->getter );
+	signaler = ofa_igetter_get_signaler( sclose->getter );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_STATUS_COUNT, G_CALLBACK( hub_on_entry_status_count ), sclose );
-	sclose->hub_handlers = g_list_prepend( sclose->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_STATUS_COUNT, G_CALLBACK( signaler_on_entry_status_count ), sclose );
+	signaler_handlers = g_list_prepend( signaler_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( hub_on_entry_status_change ), sclose );
-	sclose->hub_handlers = g_list_prepend( sclose->hub_handlers, ( gpointer ) handler );
+	handler = g_signal_connect( signaler, SIGNALER_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_status_change ), sclose );
+	signaler_handlers = g_list_prepend( signaler_handlers, ( gpointer ) handler );
 
 	/* the dialog which hosts the progress bars */
 	dialog = gtk_dialog_new_with_buttons(
@@ -746,7 +745,7 @@ do_close_ledgers( sClose *sclose )
 	my_utils_window_position_save( GTK_WINDOW( dialog ), settings, "ofaLedgerClosing" );
 	gtk_widget_destroy( dialog );
 
-	ofa_hub_disconnect_handlers( hub, &sclose->hub_handlers );
+	ofa_isignaler_disconnect_handlers( signaler, &signaler_handlers );
 }
 
 static void
@@ -872,10 +871,10 @@ write_settings( ofaLedgerClose *self )
 }
 
 /*
- * SIGNAL_HUB_STATUS_COUNT signal handler
+ * SIGNALER_STATUS_COUNT signal handler
  */
 static void
-hub_on_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, sClose *sclose )
+signaler_on_entry_status_count( ofaISignaler *signaler, ofaEntryStatus new_status, guint count, sClose *sclose )
 {
 	sclose->entries_count = count;
 
@@ -887,10 +886,10 @@ hub_on_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, 
 }
 
 /*
- * SIGNAL_HUB_STATUS_CHANGE signal handler
+ * SIGNALER_STATUS_CHANGE signal handler
  */
 static void
-hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *sclose )
+signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *sclose )
 {
 	gdouble progress;
 	gchar *text;

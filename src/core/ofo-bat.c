@@ -41,7 +41,8 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-isignal-hub.h"
+#include "api/ofa-isignalable.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -103,20 +104,20 @@ static gboolean    bat_get_exists( ofoBat *bat, const ofaIDBConnect *connect );
 static gchar      *bat_get_where( ofoBat *bat );
 static ofxCounter  bat_get_id_by_where( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_drop_content( const ofaIDBConnect *connect );
-static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
-static void        isignal_hub_connect( ofaHub *hub );
-static gboolean    hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
-static gboolean    hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
-static gboolean    hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
-static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void        hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_id );
-static void        hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_code, const gchar *new_code );
+static void        isignalable_iface_init( ofaISignalableInterface *iface );
+static void        isignalable_connect_to( ofaISignaler *signaler );
+static gboolean    signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
+static gboolean    signaler_is_deletable_account( ofaISignaler *signaler, ofoAccount *account );
+static gboolean    signaler_is_deletable_currency( ofaISignaler *signaler, ofoCurrency *currency );
+static void        signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
+static void        signaler_on_updated_account_id( ofaISignaler *signaler, const gchar *prev_id, const gchar *new_id );
+static void        signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_code, const gchar *new_code );
 
 G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoBat )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
 static void
 bat_finalize( GObject *instance )
@@ -955,6 +956,7 @@ ofo_bat_insert( ofoBat *bat )
 {
 	static const gchar *thisfn = "ofo_bat_insert";
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 	ofoDossier *dossier;
 	gboolean ok;
@@ -967,6 +969,7 @@ ofo_bat_insert( ofoBat *bat )
 	ok = FALSE;
 
 	getter = ofo_base_get_getter( OFO_BASE( bat ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	bat_set_id( bat, ofo_dossier_get_next_bat( dossier ));
@@ -974,7 +977,7 @@ ofo_bat_insert( ofoBat *bat )
 	if( bat_do_insert( bat, getter )){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( bat ), NULL, getter );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, bat );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, bat );
 		ok = TRUE;
 	}
 
@@ -1109,6 +1112,7 @@ ofo_bat_update( ofoBat *bat )
 {
 	static const gchar *thisfn = "ofo_bat_update";
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -1119,10 +1123,11 @@ ofo_bat_update( ofoBat *bat )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( bat ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( bat_do_update( bat, ofa_hub_get_connect( hub ))){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, bat, NULL );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, bat, NULL );
 		ok = TRUE;
 	}
 
@@ -1187,6 +1192,7 @@ ofo_bat_delete( ofoBat *bat )
 {
 	static const gchar *thisfn = "ofo_bat_delete";
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gboolean ok;
@@ -1199,13 +1205,14 @@ ofo_bat_delete( ofoBat *bat )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( bat ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	if( bat_do_delete_main( bat, connect ) &&  bat_do_delete_lines( bat, connect )){
 		g_object_ref( bat );
 		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( bat ));
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, bat );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_DELETED, bat );
 		g_object_unref( bat );
 		ok = TRUE;
 	}
@@ -1450,25 +1457,30 @@ iimportable_get_label( const ofaIImportable *instance )
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	ofaISignaler *signaler;
 	ofaHub *hub;
+	ofaIDBConnect *connect;
 	GList *dataset;
 	gchar *bck_table, *bck_det_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
+
+	signaler = ofa_igetter_get_signaler( parms->getter );
 	hub = ofa_igetter_get_hub( parms->getter );
+	connect = ofa_hub_get_connect( hub );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
-		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_BAT" );
-		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( hub ), "OFA_T_BAT_LINES" );
+		bck_table = ofa_idbconnect_table_backup( connect, "OFA_T_BAT" );
+		bck_det_table = ofa_idbconnect_table_backup( connect, "OFA_T_BAT_LINES" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
 			my_icollector_collection_free( ofa_igetter_get_collector( parms->getter ), OFO_TYPE_BAT );
-			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_BAT );
+			g_signal_emit_by_name( signaler, SIGNALER_COLLECTION_RELOAD, OFO_TYPE_BAT );
 
 		} else {
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_table, "OFA_T_BAT" );
-			ofa_idbconnect_table_restore( ofa_hub_get_connect( hub ), bck_det_table, "OFA_T_BAT_LINES" );
+			ofa_idbconnect_table_restore( connect, bck_table, "OFA_T_BAT" );
+			ofa_idbconnect_table_restore( connect, bck_det_table, "OFA_T_BAT_LINES" );
 		}
 
 		g_free( bck_table );
@@ -1982,63 +1994,68 @@ bat_drop_content( const ofaIDBConnect *connect )
 }
 
 /*
- * ofaISignalHub interface management
+ * ofaISignalable interface management
  */
 static void
-isignal_hub_iface_init( ofaISignalHubInterface *iface )
+isignalable_iface_init( ofaISignalableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_bat_isignal_hub_iface_init";
+	static const gchar *thisfn = "ofo_bat_isignalable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->connect = isignal_hub_connect;
+	iface->connect_to = isignalable_connect_to;
 }
 
 static void
-isignal_hub_connect( ofaHub *hub )
+isignalable_connect_to( ofaISignaler *signaler )
 {
-	static const gchar *thisfn = "ofo_bat_isignal_hub_connect";
+	static const gchar *thisfn = "ofo_bat_isignalable_connect_to";
 
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+	g_debug( "%s: signaler=%p", thisfn, ( void * ) signaler );
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( signaler && OFA_IS_ISIGNALER( signaler ));
 
-	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+	g_signal_connect( signaler, SIGNALER_BASE_IS_DELETABLE, G_CALLBACK( signaler_on_deletable_object ), NULL );
+	g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), NULL );
 }
 
 /*
- * SIGNAL_HUB_DELETABLE signal handler
+ * SIGNALER_BASE_IS_DELETABLE signal handler
  */
 static gboolean
-hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty )
 {
-	static const gchar *thisfn = "ofo_bat_hub_on_deletable_object";
+	static const gchar *thisfn = "ofo_bat_signaler_on_deletable_object";
 	gboolean deletable;
 
-	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), empty=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) empty );
 
 	deletable = TRUE;
 
 	if( OFO_IS_ACCOUNT( object )){
-		deletable = hub_is_deletable_account( hub, OFO_ACCOUNT( object ));
+		deletable = signaler_is_deletable_account( signaler, OFO_ACCOUNT( object ));
 
 	} else if( OFO_IS_CURRENCY( object )){
-		deletable = hub_is_deletable_currency( hub, OFO_CURRENCY( object ));
+		deletable = signaler_is_deletable_currency( signaler, OFO_CURRENCY( object ));
 	}
 
 	return( deletable );
 }
 
 static gboolean
-hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
+signaler_is_deletable_account( ofaISignaler *signaler, ofoAccount *account )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gchar *query;
 	gint count;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_BAT WHERE BAT_ACCOUNT='%s'",
@@ -2052,10 +2069,15 @@ hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
 }
 
 static gboolean
-hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
+signaler_is_deletable_currency( ofaISignaler *signaler, ofoCurrency *currency )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gchar *query;
 	gint count;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_BAT WHERE BAT_CURRENCY='%s'",
@@ -2080,17 +2102,17 @@ hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
+ * SIGNALER_BASE_UPDATED signal handler
  */
 static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	static const gchar *thisfn = "ofo_account_hub_on_updated_object";
+	static const gchar *thisfn = "ofo_account_signaler_on_updated_base";
 	const gchar *new_id, *new_code;
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, empty=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) empty );
@@ -2099,7 +2121,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			new_id = ofo_account_get_number( OFO_ACCOUNT( object ));
 			if( my_collate( new_id, prev_id )){
-				hub_on_updated_account_id( hub, prev_id, new_id );
+				signaler_on_updated_account_id( signaler, prev_id, new_id );
 			}
 		}
 
@@ -2107,16 +2129,21 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			new_code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( my_collate( new_code, prev_id )){
-				hub_on_updated_currency_code( hub, prev_id, new_code );
+				signaler_on_updated_currency_code( signaler, prev_id, new_code );
 			}
 		}
 	}
 }
 
 static void
-hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_id )
+signaler_on_updated_account_id( ofaISignaler *signaler, const gchar *prev_id, const gchar *new_id )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gchar *query;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 					"UPDATE OFA_T_BAT SET BAT_ACCOUNT='%s' WHERE BAT_ACCOUNT='%s'",
@@ -2128,9 +2155,14 @@ hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_i
 }
 
 static void
-hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_code, const gchar *new_code )
+signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_code, const gchar *new_code )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gchar *query;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 					"UPDATE OFA_T_BAT SET BAT_CURRENCY='%s' WHERE BAT_CURRENCY='%s'",

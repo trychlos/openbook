@@ -31,7 +31,6 @@
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofo-ope-template.h"
 
@@ -50,8 +49,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaHub     *hub;
-	GList      *hub_handlers;
+	GList      *signaler_handlers;
 }
 	ofaRecurrentModelStorePrivate;
 
@@ -74,12 +72,12 @@ static void     insert_row( ofaRecurrentModelStore *self, const ofoRecurrentMode
 static void     set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, GtkTreeIter *iter );
 static gboolean model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIter *iter );
 static void     remove_row_by_mnemo( ofaRecurrentModelStore *self, const gchar *mnemo );
-static void     hub_connect_to_signaling_system( ofaRecurrentModelStore *self );
-static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self );
-static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentModelStore *self );
-static void     hub_on_updated_ope_template_mnemo( ofaRecurrentModelStore *self, const gchar *prev_mnemo, const gchar *new_mnemo );
-static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self );
-static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaRecurrentModelStore *self );
+static void     set_ope_templat_new_id( ofaRecurrentModelStore *self, const gchar *prev_mnemo, const gchar *new_mnemo );
+static void     signaler_connect_to_signaling_system( ofaRecurrentModelStore *self );
+static void     signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaRecurrentModelStore *self );
+static void     signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaRecurrentModelStore *self );
+static void     signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaRecurrentModelStore *self );
+static void     signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaRecurrentModelStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentModelStore, ofa_recurrent_model_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaRecurrentModelStore ))
@@ -104,6 +102,7 @@ static void
 recurrent_model_store_dispose( GObject *instance )
 {
 	ofaRecurrentModelStorePrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( instance && OFA_IS_RECURRENT_MODEL_STORE( instance ));
 
@@ -113,8 +112,11 @@ recurrent_model_store_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
+
 		/* unref object members here */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -135,7 +137,7 @@ ofa_recurrent_model_store_init( ofaRecurrentModelStore *self )
 	priv = ofa_recurrent_model_store_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->hub_handlers = NULL;
+	priv->signaler_handlers = NULL;
 }
 
 static void
@@ -153,16 +155,9 @@ ofa_recurrent_model_store_class_init( ofaRecurrentModelStoreClass *klass )
  * ofa_recurrent_model_store_new:
  * @getter: a #ofaIGetter instance.
  *
- * Instanciates a new #ofaRecurrentModelStore and attached it to the @hub
- * if not already done. Else get the already allocated #ofaRecurrentModelStore
- * from the @dossier.
- *
- * A weak notify reference is put on this same @dossier, so that the
- * instance will be unreffed when the @dossier will be destroyed.
- *
- * Note that the #myICollector associated to the @hub maintains its own
- * reference to the #ofaRecurrentModelStore object, reference which will
- * be freed on @hub finalization.
+ * Instanciates a new #ofaRecurrentModelStore and attached it to the
+ * #myICollector if not already done. Else get the already allocated
+ * #ofaRecurrentModelStore from this same #myICollector.
  *
  * Returns: a new reference to the #ofaRecurrentStore object.
  */
@@ -187,7 +182,6 @@ ofa_recurrent_model_store_new( ofaIGetter *getter )
 		priv = ofa_recurrent_model_store_get_instance_private( store );
 
 		priv->getter = getter;
-		priv->hub = ofa_igetter_get_hub( getter );
 
 		st_col_types[REC_MODEL_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
@@ -200,7 +194,7 @@ ofa_recurrent_model_store_new( ofaIGetter *getter )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		hub_connect_to_signaling_system( store );
+		signaler_connect_to_signaling_system( store );
 		load_dataset( store );
 	}
 
@@ -382,87 +376,12 @@ ofa_recurrent_model_store_get_iter( ofaRecurrentModelStore *store, ofoRecurrentM
 }
 
 /*
- * connect to the hub signaling system
- */
-static void
-hub_connect_to_signaling_system( ofaRecurrentModelStore *self )
-{
-	ofaRecurrentModelStorePrivate *priv;
-	gulong handler;
-
-	priv = ofa_recurrent_model_store_get_instance_private( self );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-}
-
-/*
- * SIGNAL_HUB_NEW signal handler
- */
-static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self )
-{
-	static const gchar *thisfn = "ofa_recurrent_model_store_hub_on_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_RECURRENT_MODEL( object )){
-		insert_row( self, OFO_RECURRENT_MODEL( object ));
-	}
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentModelStore *self )
-{
-	static const gchar *thisfn = "ofa_recurrent_model_store_hub_on_updated_object";
-	GtkTreeIter iter;
-	const gchar *code, *new_code, *new_mnemo;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) self );
-
-	if( OFO_IS_RECURRENT_MODEL( object )){
-		new_code = ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object ));
-		code = prev_id ? prev_id : new_code;
-		if( model_find_by_mnemo( self, code, &iter )){
-			set_row_by_iter( self, OFO_RECURRENT_MODEL( object ), &iter);
-		}
-
-	} else if( OFO_IS_OPE_TEMPLATE( object )){
-		new_mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
-		if( my_strlen( prev_id ) && my_collate( prev_id, new_mnemo )){
-			hub_on_updated_ope_template_mnemo( self, prev_id, new_mnemo );
-		}
-	}
-}
-
-/*
  * Update all models to the new ope template mnemo
  * Which means updating the store + updating the corresponding object
  * Iter on all rows because several models may share same ope template
  */
 static void
-hub_on_updated_ope_template_mnemo( ofaRecurrentModelStore *self, const gchar *prev_mnemo, const gchar *new_mnemo )
+set_ope_templat_new_id( ofaRecurrentModelStore *self, const gchar *prev_mnemo, const gchar *new_mnemo )
 {
 	GtkTreeIter iter;
 	ofoRecurrentModel *model;
@@ -492,16 +411,94 @@ hub_on_updated_ope_template_mnemo( ofaRecurrentModelStore *self, const gchar *pr
 }
 
 /*
- * SIGNAL_HUB_DELETED signal handler
+ * Connect to ofaISignaler signaling system
  */
 static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self )
+signaler_connect_to_signaling_system( ofaRecurrentModelStore *self )
 {
-	static const gchar *thisfn = "ofa_recurrent_model_store_hub_on_deleted_object";
+	ofaRecurrentModelStorePrivate *priv;
+	ofaISignaler *signaler;
+	gulong handler;
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+	priv = ofa_recurrent_model_store_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_COLLECTION_RELOAD, G_CALLBACK( signaler_on_reload_collection ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+}
+
+/*
+ * SIGNALER_BASE_NEW signal handler
+ */
+static void
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaRecurrentModelStore *self )
+{
+	static const gchar *thisfn = "ofa_recurrent_model_store_signaler_on_new_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), instance=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_RECURRENT_MODEL( object )){
+		insert_row( self, OFO_RECURRENT_MODEL( object ));
+	}
+}
+
+/*
+ * SIGNALER_BASE_UPDATED signal handler
+ */
+static void
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaRecurrentModelStore *self )
+{
+	static const gchar *thisfn = "ofa_recurrent_model_store_signaler_on_updated_base";
+	GtkTreeIter iter;
+	const gchar *code, *new_code, *new_mnemo;
+
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( OFO_IS_RECURRENT_MODEL( object )){
+		new_code = ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object ));
+		code = prev_id ? prev_id : new_code;
+		if( model_find_by_mnemo( self, code, &iter )){
+			set_row_by_iter( self, OFO_RECURRENT_MODEL( object ), &iter);
+		}
+
+	} else if( OFO_IS_OPE_TEMPLATE( object )){
+		new_mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
+		if( my_strlen( prev_id ) && my_collate( prev_id, new_mnemo )){
+			set_ope_templat_new_id( self, prev_id, new_mnemo );
+		}
+	}
+}
+
+/*
+ * SIGNALER_BASE_DELETED signal handler
+ */
+static void
+signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaRecurrentModelStore *self )
+{
+	static const gchar *thisfn = "ofa_recurrent_model_store_signaler_on_deleted_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
@@ -511,15 +508,15 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *sel
 }
 
 /*
- * SIGNAL_HUB_RELOAD signal handler
+ * SIGNALER_COLLECTION_RELOAD signal handler
  */
 static void
-hub_on_reload_dataset( ofaHub *hub, GType type, ofaRecurrentModelStore *self )
+signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaRecurrentModelStore *self )
 {
-	static const gchar *thisfn = "ofa_recurrent_model_store_hub_on_reload_dataset";
+	static const gchar *thisfn = "ofa_recurrent_model_store_signaler_on_reload_collection";
 
-	g_debug( "%s: hub=%p, type=%lu, self=%p",
-			thisfn, ( void * ) hub, type, ( void * ) self );
+	g_debug( "%s: signaler=%p, type=%lu, self=%p",
+			thisfn, ( void * ) signaler, type, ( void * ) self );
 
 	if( type == OFO_TYPE_RECURRENT_MODEL ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));

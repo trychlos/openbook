@@ -37,9 +37,6 @@
  * - the opened dossier (if any),
  * - etc.
  *
- * The #ofaHub class defines a signaling system which emits dedicated
- * messages on new, updated or deleted objects.
- *
  * There is only one globally unique #ofaHub object, and it is
  * instanciated at application_new() time.
  *
@@ -89,22 +86,6 @@ enum {
 	HUB_RULE_EXERCICE_CLOSE
 };
 
-/**
- * Signals defined here:
- */
-#define SIGNAL_HUB_NEW                  "hub-object-new"
-#define SIGNAL_HUB_UPDATED              "hub-object-updated"
-#define SIGNAL_HUB_DELETABLE            "hub-object-deletable"
-#define SIGNAL_HUB_DELETED              "hub-object-deleted"
-#define SIGNAL_HUB_RELOAD               "hub-dataset-reload"
-#define SIGNAL_HUB_DOSSIER_OPENED       "hub-dossier-opened"
-#define SIGNAL_HUB_DOSSIER_CLOSED       "hub-dossier-closed"
-#define SIGNAL_HUB_DOSSIER_CHANGED      "hub-dossier-changed"
-#define SIGNAL_HUB_DOSSIER_PREVIEW      "hub-dossier-preview"
-#define SIGNAL_HUB_STATUS_COUNT         "hub-status-count"
-#define SIGNAL_HUB_STATUS_CHANGE        "hub-status-change"
-#define SIGNAL_HUB_EXE_DATES_CHANGED    "hub-exe-dates-changed"
-
 GType          ofa_hub_get_type             ( void ) G_GNUC_CONST;
 
 ofaHub        *ofa_hub_new                  ( void );
@@ -141,9 +122,6 @@ void           ofa_hub_close_dossier        ( ofaHub *hub );
 ofaIImporter  *ofa_hub_get_willing_to_import( ofaHub *hub,
 													const gchar *uri,
 													GType type );
-
-void           ofa_hub_disconnect_handlers  ( ofaHub *hub,
-													GList **handlers );
 
 G_END_DECLS
 

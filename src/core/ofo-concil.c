@@ -234,8 +234,9 @@ ofo_concil_get_by_other_id( ofaIGetter *getter, const gchar *type, ofxCounter ot
 static ofoConcil *
 concil_get_by_query( const gchar *query, ofaIGetter *getter )
 {
+	ofaISignaler *signaler;
 	ofaHub *hub;
-	const ofaIDBConnect *connect;
+	ofaIDBConnect *connect;
 	ofoConcil *concil;
 	GSList *result, *irow, *icol;
 	GDate date;
@@ -245,6 +246,7 @@ concil_get_by_query( const gchar *query, ofaIGetter *getter )
 	ofxCounter id;
 
 	concil = NULL;
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
@@ -287,7 +289,7 @@ concil_get_by_query( const gchar *query, ofaIGetter *getter )
 				ofa_igetter_get_collector( getter ),
 				MY_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr, getter );
 
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, concil );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, concil );
 	}
 
 	return( concil );
@@ -549,6 +551,7 @@ ofo_concil_insert( ofoConcil *concil )
 {
 	static const gchar *thisfn = "ofo_concil_insert";
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
 	ofoDossier *dossier;
 	gboolean ok;
@@ -560,6 +563,7 @@ ofo_concil_insert( ofoConcil *concil )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( concil ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	concil_set_id( concil, ofo_dossier_get_next_concil( dossier ));
@@ -567,7 +571,7 @@ ofo_concil_insert( ofoConcil *concil )
 	if( concil_do_insert( concil, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( concil ), NULL, getter );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, concil );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, concil );
 		ok = TRUE;
 	}
 
@@ -623,9 +627,10 @@ gboolean
 ofo_concil_add_id( ofoConcil *concil, const gchar *type, ofxCounter id )
 {
 	static const gchar *thisfn = "ofo_concil_add_id";
-	gboolean ok;
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
+	gboolean ok;
 
 	g_debug( "%s: concil=%p, type=%s, id=%lu",
 			thisfn, ( void * ) concil, type, id );
@@ -636,12 +641,13 @@ ofo_concil_add_id( ofoConcil *concil, const gchar *type, ofxCounter id )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( concil ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	concil_add_other_id( concil, type, id );
 
 	if( concil_do_insert_id( concil, type, id, ofa_hub_get_connect( hub ))){
-		g_signal_emit_by_name( G_OBJECT( hub ),SIGNAL_HUB_UPDATED, concil, NULL );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, concil, NULL );
 		ok = TRUE;
 	}
 
@@ -675,9 +681,10 @@ gboolean
 ofo_concil_delete( ofoConcil *concil )
 {
 	static const gchar *thisfn = "ofo_concil_delete";
-	gboolean ok;
 	ofaIGetter *getter;
+	ofaISignaler *signaler;
 	ofaHub *hub;
+	gboolean ok;
 
 	g_debug( "%s: concil=%p", thisfn, ( void * ) concil );
 
@@ -686,12 +693,13 @@ ofo_concil_delete( ofoConcil *concil )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( concil ));
+	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	if( concil_do_delete( concil, ofa_hub_get_connect( hub ))){
 		g_object_ref( concil );
 		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( concil ));
-		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETED, concil );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_DELETED, concil );
 		g_object_unref( concil );
 		ok = TRUE;
 	}

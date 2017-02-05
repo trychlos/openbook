@@ -40,7 +40,8 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-isignal-hub.h"
+#include "api/ofa-isignalable.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -237,24 +238,24 @@ static gchar      *iexportable_get_label( const ofaIExportable *instance );
 static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static void        free_currency_details( ofoDossier *dossier );
 static void        free_cur_detail( GList *fields );
-static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
-static void        isignal_hub_connect( ofaHub *hub );
-static gboolean    hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
-static gboolean    hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
-static gboolean    hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
-static gboolean    hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
-static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
-static void        hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
-static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void        hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_id );
-static void        hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void        hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo );
-static void        hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo );
+static void        isignalable_iface_init( ofaISignalableInterface *iface );
+static void        isignalable_connect_to( ofaISignaler *signaler );
+static gboolean    signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
+static gboolean    signaler_is_deletable_account( ofaISignaler *signaler, ofoAccount *account );
+static gboolean    signaler_is_deletable_currency( ofaISignaler *signaler, ofoCurrency *currency );
+static gboolean    signaler_is_deletable_ledger( ofaISignaler *signaler, ofoLedger *ledger );
+static gboolean    signaler_is_deletable_ope_template( ofaISignaler *signaler, ofoOpeTemplate *template );
+static void        signaler_on_exe_dates_changed( ofaISignaler *signaler, const GDate *prev_begin, const GDate *prev_end, void *empty );
+static void        signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
+static void        signaler_on_updated_account_id( ofaISignaler *signaler, const gchar *prev_id, const gchar *new_id );
+static void        signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
+static void        signaler_on_updated_ledger_mnemo( ofaISignaler *signaler, const gchar *prev_mnemo, const gchar *new_mnemo );
+static void        signaler_on_updated_ope_template_mnemo( ofaISignaler *signaler, const gchar *prev_mnemo, const gchar *new_mnemo );
 
 G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoDossier )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
 static void
 dossier_finalize( GObject *instance )
@@ -1839,70 +1840,75 @@ free_cur_detail( GList *fields )
 }
 
 /*
- * ofaISignalHub interface management
+ * ofaISignalable interface management
  */
 static void
-isignal_hub_iface_init( ofaISignalHubInterface *iface )
+isignalable_iface_init( ofaISignalableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_entry_isignal_hub_iface_init";
+	static const gchar *thisfn = "ofo_entry_isignalable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->connect = isignal_hub_connect;
+	iface->connect_to = isignalable_connect_to;
 }
 
 static void
-isignal_hub_connect( ofaHub *hub )
+isignalable_connect_to( ofaISignaler *signaler )
 {
-	static const gchar *thisfn = "ofo_entry_isignal_hub_connect";
+	static const gchar *thisfn = "ofo_entry_isignalable_connect_to";
 
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+	g_debug( "%s: signaler=%p", thisfn, ( void * ) signaler );
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( signaler && OFA_IS_ISIGNALER( signaler ));
 
-	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( hub_on_exe_dates_changed ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+	g_signal_connect( signaler, SIGNALER_BASE_IS_DELETABLE, G_CALLBACK( signaler_on_deletable_object ), NULL );
+	g_signal_connect( signaler, SIGNALER_EXERCICE_DATES_CHANGED, G_CALLBACK( signaler_on_exe_dates_changed ), NULL );
+	g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), NULL );
 }
 
 /*
- * SIGNAL_HUB_DELETABLE signal handler
+ * SIGNALER_BASE_IS_DELETABLE signal handler
  */
 static gboolean
-hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty )
 {
-	static const gchar *thisfn = "ofo_dossier_hub_on_deletable_object";
+	static const gchar *thisfn = "ofo_dossier_signaler_on_deletable_object";
 	gboolean deletable;
 
-	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), empty=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) empty );
 
 	deletable = TRUE;
 
 	if( OFO_IS_ACCOUNT( object )){
-		deletable = hub_is_deletable_account( hub, OFO_ACCOUNT( object ));
+		deletable = signaler_is_deletable_account( signaler, OFO_ACCOUNT( object ));
 
 	} else if( OFO_IS_CURRENCY( object )){
-		deletable = hub_is_deletable_currency( hub, OFO_CURRENCY( object ));
+		deletable = signaler_is_deletable_currency( signaler, OFO_CURRENCY( object ));
 
 	} else if( OFO_IS_LEDGER( object )){
-		deletable = hub_is_deletable_ledger( hub, OFO_LEDGER( object ));
+		deletable = signaler_is_deletable_ledger( signaler, OFO_LEDGER( object ));
 
 	} else if( OFO_IS_OPE_TEMPLATE( object )){
-		deletable = hub_is_deletable_ope_template( hub, OFO_OPE_TEMPLATE( object ));
+		deletable = signaler_is_deletable_ope_template( signaler, OFO_OPE_TEMPLATE( object ));
 	}
 
 	return( deletable );
 }
 
 static gboolean
-hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
+signaler_is_deletable_account( ofaISignaler *signaler, ofoAccount *account )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gchar *query;
 	gint count;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_DOSSIER_CUR WHERE DOS_SLD_ACCOUNT='%s'",
@@ -1916,10 +1922,15 @@ hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
 }
 
 static gboolean
-hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
+signaler_is_deletable_currency( ofaISignaler *signaler, ofoCurrency *currency )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gchar *query;
 	gint count;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE DOS_DEF_CURRENCY='%s'",
@@ -1943,10 +1954,15 @@ hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
 }
 
 static gboolean
-hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger )
+signaler_is_deletable_ledger( ofaISignaler *signaler, ofoLedger *ledger )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gchar *query;
 	gint count;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE DOS_IMPORT_LEDGER='%s'",
@@ -1960,10 +1976,15 @@ hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger )
 }
 
 static gboolean
-hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
+signaler_is_deletable_ope_template( ofaISignaler *signaler, ofoOpeTemplate *template )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	gchar *query;
 	gint count;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE DOS_FORW_OPE='%s' OR DOS_SLD_OPE='%s'",
@@ -1978,22 +1999,27 @@ hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
 }
 
 /*
- * SIGNAL_HUB_EXE_DATES_CHANGED signal handler
+ * SIGNALER_EXERCICE_DATES_CHANGED signal handler
  *
  * Changing beginning or ending exercice dates is only possible for the
  * current exercice.
  */
 static void
-hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
+signaler_on_exe_dates_changed( ofaISignaler *signaler, const GDate *prev_begin, const GDate *prev_end, void *empty )
 {
-	static const gchar *thisfn = "ofo_dossier_hub_on_exe_dates_changed";
+	static const gchar *thisfn = "ofo_dossier_signaler_on_exe_dates_changed";
+	ofaIGetter *getter;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	ofaIDBExerciceMeta *period;
 	ofoDossier *dossier;
 	gboolean current;
 
-	g_debug( "%s: hub=%p, prev_begin=%p, prev_end=%p, empty=%p",
-			thisfn, ( void * ) hub, ( void * ) prev_begin, ( void * ) prev_end, ( void * ) empty );
+	g_debug( "%s: signaler=%p, prev_begin=%p, prev_end=%p, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) prev_begin, ( void * ) prev_end, ( void * ) empty );
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 
 	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
@@ -2011,17 +2037,17 @@ hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *pre
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
+ * SIGNALER_BASE_UPDATED signal handler
  */
 static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	static const gchar *thisfn = "ofo_dossier_hub_on_updated_object";
+	static const gchar *thisfn = "ofo_dossier_signaler_on_updated_base";
 	const gchar *code, *new_id, *new_mnemo;
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, empty=%p",
 			thisfn,
-			( void * ) hub,
+			( void * ) signaler,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) empty );
@@ -2030,7 +2056,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			new_id = ofo_account_get_number( OFO_ACCOUNT( object ));
 			if( my_collate( new_id, prev_id )){
-				hub_on_updated_account_id( hub, prev_id, new_id );
+				signaler_on_updated_account_id( signaler, prev_id, new_id );
 			}
 		}
 
@@ -2038,7 +2064,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( my_collate( code, prev_id )){
-				hub_on_updated_currency_code( hub, prev_id, code );
+				signaler_on_updated_currency_code( signaler, prev_id, code );
 			}
 		}
 
@@ -2046,7 +2072,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			new_mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 			if( my_collate( new_mnemo, prev_id )){
-				hub_on_updated_ledger_mnemo( hub, prev_id, new_mnemo );
+				signaler_on_updated_ledger_mnemo( signaler, prev_id, new_mnemo );
 			}
 		}
 
@@ -2054,19 +2080,23 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			new_mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
 			if( my_collate( new_mnemo, prev_id )){
-				hub_on_updated_ope_template_mnemo( hub, prev_id, new_mnemo );
+				signaler_on_updated_ope_template_mnemo( signaler, prev_id, new_mnemo );
 			}
 		}
 	}
 }
 
 static void
-hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_id )
+signaler_on_updated_account_id( ofaISignaler *signaler, const gchar *prev_id, const gchar *new_id )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	gchar *query;
 	GList *details;
 
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 
 	query = g_strdup_printf(
@@ -2084,13 +2114,17 @@ hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_i
 }
 
 static void
-hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
+signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	gchar *query;
 	const gchar *def_currency;
 	GList *details;
 
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 
 	query = g_strdup_printf(
@@ -2121,12 +2155,16 @@ hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *co
 }
 
 static void
-hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo )
+signaler_on_updated_ledger_mnemo( ofaISignaler *signaler, const gchar *prev_mnemo, const gchar *new_mnemo )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	gchar *query;
 	const gchar *mnemo;
 
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 
 	query = g_strdup_printf(
@@ -2144,12 +2182,16 @@ hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *prev_mnemo, const gchar *
 }
 
 static void
-hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo )
+signaler_on_updated_ope_template_mnemo( ofaISignaler *signaler, const gchar *prev_mnemo, const gchar *new_mnemo )
 {
+	ofaIGetter *getter;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	gchar *query;
 	const gchar *mnemo;
 
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 
 	query = g_strdup_printf(
