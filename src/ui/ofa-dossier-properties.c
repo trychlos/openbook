@@ -158,8 +158,8 @@ static gboolean confirm_remediation( ofaDossierProperties *self, gint count );
 static void     display_progress_init( ofaDossierProperties *self );
 static void     display_progress_end( ofaDossierProperties *self );
 static void     signaler_connect_to_signaling_system( ofaDossierProperties *self );
-static void     signaler_on_entry_status_count( ofaISignaler *signaler, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self );
-static void     signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self );
+static void     signaler_on_entry_status_count( ofaISignaler *signaler, ofeEntryStatus new_status, gulong count, ofaDossierProperties *self );
+static void     signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, ofaDossierProperties *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierProperties, ofa_dossier_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDossierProperties )
@@ -1204,7 +1204,7 @@ signaler_connect_to_signaling_system( ofaDossierProperties *self )
  * SIGNALER_STATUS_COUNT signal handler
  */
 static void
-signaler_on_entry_status_count( ofaISignaler *signaler, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self )
+signaler_on_entry_status_count( ofaISignaler *signaler, ofeEntryStatus new_status, gulong count, ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 
@@ -1218,7 +1218,7 @@ signaler_on_entry_status_count( ofaISignaler *signaler, ofaEntryStatus new_statu
  * SIGNALER_STATUS_CHANGE signal handler
  */
 static void
-signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self )
+signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	gdouble progress;

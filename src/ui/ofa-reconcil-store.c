@@ -794,7 +794,7 @@ search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIte
 	gint spread;
 	gboolean found;
 	ofxCounter row_entnum;
-	ofaEntryStatus row_status;
+	ofeEntryStatus row_status;
 
 	g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), FALSE );
 

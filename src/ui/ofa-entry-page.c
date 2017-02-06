@@ -575,7 +575,7 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *sel
 	gboolean visible, ok;
 	gchar *account, *ledger, *sdate;
 	ofoEntry *entry;
-	ofaEntryStatus status;
+	ofeEntryStatus status;
 	GDate deffect;
 	const GDate *effect_filter;
 
@@ -665,7 +665,7 @@ tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 						ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
-	ofaEntryStatus status;
+	ofeEntryStatus status;
 	GdkRGBA color;
 	gint err_level;
 	const gchar *color_str;
@@ -1999,7 +1999,7 @@ remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_
 	ofaEntryPagePrivate *priv;
 	const gchar *account;
 	ofxAmount amount, debit, credit;
-	ofaEntryStatus status;
+	ofeEntryStatus status;
 	ofoAccount *account_new, *account_prev;
 	gint cmp;
 	gboolean remediate;
@@ -2072,7 +2072,7 @@ remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_l
 	ofaEntryPagePrivate *priv;
 	const gchar *ledger, *currency;
 	ofxAmount amount, debit, credit;
-	ofaEntryStatus status;
+	ofeEntryStatus status;
 	ofoLedger *ledger_new, *ledger_prev;
 	gboolean ledger_has_changed;
 

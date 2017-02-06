@@ -178,7 +178,7 @@ typedef struct {
 /* manage the abbreviated localized status
  */
 typedef struct {
-	ofaEntryStatus num;
+	ofeEntryStatus num;
 	const gchar   *str;
 }
 	sStatus;
@@ -197,7 +197,7 @@ static GList       *entry_load_dataset( ofaIGetter *getter, const gchar *where, 
 static GDate       *entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaIGetter *getter );
 static gboolean     entry_get_import_settled( ofoEntry *entry );
 static void         entry_set_number( ofoEntry *entry, ofxCounter number );
-static void         entry_set_status( ofoEntry *entry, ofaEntryStatus status );
+static void         entry_set_status( ofoEntry *entry, ofeEntryStatus status );
 static void         entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
 static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
 static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
@@ -246,8 +246,8 @@ static void         signaler_on_deleted_entry( ofaISignaler *signaler, ofoEntry 
 static void         signaler_on_exe_dates_changed( ofaISignaler *signaler, const GDate *prev_begin, const GDate *prev_end, void *empty );
 static gint         check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
 static gint         check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, const GDate *new_end, gboolean remediate );
-static gint         remediate_status( ofaIGetter *getter, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
-static void         signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static gint         remediate_status( ofaIGetter *getter, gboolean remediate, const gchar *where, ofeEntryStatus new_status );
+static void         signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty );
 static void         signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static void         signaler_on_updated_account_number( ofaISignaler *signaler, const gchar *prev_id, const gchar *number );
 static void         signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
@@ -680,7 +680,7 @@ ofo_entry_get_dataset_for_print_reconcil( ofaIGetter *getter,
  * be #ofo_entry_free_dataset() by the caller.
  */
 GList *
-ofo_entry_get_dataset_for_exercice_by_status( ofaIGetter *getter, ofaEntryStatus status )
+ofo_entry_get_dataset_for_exercice_by_status( ofaIGetter *getter, ofeEntryStatus status )
 {
 	GList *dataset;
 	GString *where;
@@ -1050,7 +1050,7 @@ ofo_entry_get_credit( const ofoEntry *entry )
 /**
  * ofo_entry_get_status:
  */
-ofaEntryStatus
+ofeEntryStatus
 ofo_entry_get_status( const ofoEntry *entry )
 {
 	ofo_base_getter( ENTRY, entry, int, 0, ENT_STATUS );
@@ -1065,7 +1065,7 @@ ofo_entry_get_status( const ofoEntry *entry )
 const gchar *
 ofo_entry_get_abr_status( const ofoEntry *entry )
 {
-	ofaEntryStatus status;
+	ofeEntryStatus status;
 	gint i;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
@@ -1087,7 +1087,7 @@ ofo_entry_get_abr_status( const ofoEntry *entry )
  * Returns an abbreviated localized string for the status.
  * Use case: view entries.
  */
-ofaEntryStatus
+ofeEntryStatus
 ofo_entry_get_status_from_abr( const gchar *abr_status )
 {
 	gint i;
@@ -1458,7 +1458,7 @@ gboolean
 ofo_entry_is_editable( const ofoEntry *entry )
 {
 	gboolean editable;
-	ofaEntryStatus status;
+	ofeEntryStatus status;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
@@ -1572,7 +1572,7 @@ ofo_entry_set_credit( ofoEntry *entry, ofxAmount credit )
  * entry_set_status:
  */
 static void
-entry_set_status( ofoEntry *entry, ofaEntryStatus status )
+entry_set_status( ofoEntry *entry, ofeEntryStatus status )
 {
 	ofo_base_setter( ENTRY, entry, int, ENT_STATUS, status );
 }
@@ -2725,7 +2725,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	ofoAccount *account;
 	ofoLedger *ledger;
 	gdouble debit, credit;
-	ofaEntryStatus status;
+	ofeEntryStatus status;
 	GList *past, *exe, *fut, *it;
 	ofsCurrency *sdet;
 	ofoCurrency *cur_object;
@@ -3532,13 +3532,13 @@ check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, cons
 }
 
 static gint
-remediate_status( ofaIGetter *getter, gboolean remediate, const gchar *where, ofaEntryStatus new_status )
+remediate_status( ofaIGetter *getter, gboolean remediate, const gchar *where, ofeEntryStatus new_status )
 {
 	static const gchar *thisfn = "ofo_entry_remediate_status";
 	gint count;
 	GList *dataset, *it;
 	ofoEntry *entry;
-	ofaEntryStatus prev_status;
+	ofeEntryStatus prev_status;
 	ofoLedger *ledger;
 	const GDate *last_close, *deffect;
 	ofaISignaler *signaler;
@@ -3582,7 +3582,7 @@ remediate_status( ofaIGetter *getter, gboolean remediate, const gchar *where, of
  * SIGNALER_STATUS_CHANGE signal handler
  */
 static void
-signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty )
 {
 	static const gchar *thisfn = "ofo_entry_signaler_on_entry_status_change";
 	gchar *query;

@@ -60,7 +60,7 @@ typedef struct {
 	ofoEntryClass;
 
 /**
- * ofaEntryStatus:
+ * ofeEntryStatus:
  *
  * @ENT_STATUS_PAST: status attached to the entries imported from a past
  *  exercice; these entries are not imputed on accounts nor ledgers
@@ -84,7 +84,7 @@ typedef enum {
 	ENT_STATUS_DELETED,
 	ENT_STATUS_FUTURE
 }
-	ofaEntryStatus;
+	ofeEntryStatus;
 
 /* data max length */
 #define ENT_LABEL_MAX_LENGTH          256
@@ -118,7 +118,7 @@ GList          *ofo_entry_get_dataset_for_print_reconcil
                                                     		 const gchar *account, const GDate *date );
 
 GList          *ofo_entry_get_dataset_for_exercice_by_status
-                                                     ( ofaIGetter *getter, ofaEntryStatus status );
+                                                     ( ofaIGetter *getter, ofeEntryStatus status );
 
 GList          *ofo_entry_get_dataset_for_store      ( ofaIGetter *getter,
 															const gchar *account,
@@ -143,9 +143,9 @@ const gchar    *ofo_entry_get_ledger                 ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_ope_template           ( const ofoEntry *entry );
 ofxAmount       ofo_entry_get_debit                  ( const ofoEntry *entry );
 ofxAmount       ofo_entry_get_credit                 ( const ofoEntry *entry );
-ofaEntryStatus  ofo_entry_get_status                 ( const ofoEntry *entry );
+ofeEntryStatus  ofo_entry_get_status                 ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_abr_status             ( const ofoEntry *entry );
-ofaEntryStatus  ofo_entry_get_status_from_abr        ( const gchar *abr_status );
+ofeEntryStatus  ofo_entry_get_status_from_abr        ( const gchar *abr_status );
 ofxCounter      ofo_entry_get_ope_number             ( const ofoEntry *entry );
 ofxCounter      ofo_entry_get_settlement_number      ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_settlement_user        ( const ofoEntry *entry );

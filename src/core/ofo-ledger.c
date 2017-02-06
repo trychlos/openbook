@@ -239,7 +239,7 @@ static gboolean   signaler_on_deletable_object( ofaISignaler *signaler, ofoBase 
 static gboolean   signaler_is_deletable_currency( ofaISignaler *signaler, ofoCurrency *currency );
 static void       signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, void *empty );
 static void       signaler_on_new_ledger_entry( ofaISignaler *signaler, ofoEntry *entry );
-static void       signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static void       signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty );
 static void       signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static void       signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
 
@@ -2383,7 +2383,7 @@ signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, void *empty )
 static void
 signaler_on_new_ledger_entry( ofaISignaler *signaler, ofoEntry *entry )
 {
-	ofaEntryStatus status;
+	ofeEntryStatus status;
 	const gchar *mnemo, *currency;
 	ofoLedger *ledger;
 	GList *balance;
@@ -2430,7 +2430,7 @@ signaler_on_new_ledger_entry( ofaISignaler *signaler, ofoEntry *entry )
  * SIGNALER_STATUS_CHANGE signal handler
  */
 static void
-signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty )
 {
 	static const gchar *thisfn = "ofo_ledger_signaler_on_entry_status_change";
 	const gchar *mnemo, *currency;

@@ -261,7 +261,7 @@ static void         signaler_on_new_base( ofaISignaler *signaler, ofoBase *objec
 static void         signaler_on_new_base_entry( ofaISignaler *signaler, ofoEntry *entry );
 static void         signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static void         signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
-static void         signaler_on_entry_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static void         signaler_on_entry_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoAccount )
@@ -2652,7 +2652,7 @@ static void
 signaler_on_new_base_entry( ofaISignaler *signaler, ofoEntry *entry )
 {
 	ofaIGetter *getter;
-	ofaEntryStatus status;
+	ofeEntryStatus status;
 	ofoAccount *account;
 	gdouble debit, credit, prev;
 
@@ -2712,7 +2712,7 @@ signaler_on_new_base_entry( ofaISignaler *signaler, ofoEntry *entry )
  * SIGNALER_STATUS_CHANGE signal handler
  */
 static void
-signaler_on_entry_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+signaler_on_entry_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty )
 {
 	static const gchar *thisfn = "ofo_account_signaler_on_entry_status_changed";
 	ofaIGetter *getter;

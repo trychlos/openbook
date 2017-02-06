@@ -561,7 +561,7 @@ ofa_entry_treeview_cell_data_render( ofaEntryTreeview *view,
 				GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter )
 {
 	ofaEntryTreeviewPrivate *priv;
-	ofaEntryStatus status;
+	ofeEntryStatus status;
 	GdkRGBA color;
 	gint err_level;
 	const gchar *color_str;

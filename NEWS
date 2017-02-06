@@ -40,6 +40,7 @@
    - ofaEntryStore: is now loaded at once.
    - ofa_idbdossier_meta_unref(): removed function.
    - ofa_idbexercice_meta_unref(): removed function.
+   - ofeEntryStatus: type renamed from ofaEntryStatus (as an enum).
 
 -----------------------------------------------------------------------
  Version 0.66
