@@ -1497,7 +1497,7 @@ model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo )
 static void
 icollectionable_iface_init( myICollectionableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+	static const gchar *thisfn = "ofo_ope_template_icollectionable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
