@@ -154,9 +154,6 @@
 
  733 2015- 3-15 FEAT be able to search for an entry
 
- 758 2015- 3-21 FEAT warns when deleting a settled or reconciliated
-                     entry +unsettle/unreconciliate
-
  783 2015- 4- 3 FEAT have a summary of unsettle/unreconciliated entries
                      which will be reported after exercice closing
      2016- 4-28 use case: when preparing the exercice closing, have a
@@ -376,6 +373,12 @@
                 the previously selected file when coming back from an
                 other page
      2017- 1-27 no more the case
+
+ 758 2015- 3-21 FEAT warns when deleting a settled or reconciliated
+                     entry +unsettle/unreconciliate
+     2017- 2- 6 ok for conciliation
+     2017- 2- 6 ok for settlement
+                note that no account is both conciliable and settleable
 
  761 2015- 3-22 DISP in the warning displayed when restoring to a
                      database, display the target database in bold (or

@@ -2254,9 +2254,12 @@ delete_row( ofaEntryPage *self, GtkTreeSelection *selection )
 static gboolean
 delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry )
 {
+	static const gchar *thisfn = "ofa_entry_page_delete_ask_for_confirm";
 	GString *msg;
 	gboolean ok;
 	GtkWindow *toplevel;
+
+	g_debug( "%s: ent_number=%ld", thisfn, ofo_entry_get_number( entry ));
 
 	msg = g_string_new( "" );;
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( page ));

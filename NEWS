@@ -33,6 +33,8 @@
    - Entries have now a rule indicator to distinguish forward and closing entries (todo #1228).
    - ExerciceCloseAssistant closes the opened pages before working.
    - ExerciceMetaBin no more forces a new dossier to have a current exercice.
+   - Reconciliation group is deleted when one of the entries is deleted (todo #758).
+   - Settlement group is deleted when one of the entries is deleted (todo #758).
 
  Bug fixes:
 

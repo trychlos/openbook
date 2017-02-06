@@ -671,7 +671,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 
-	/* install an empty store before setting up the initial values */
+	/* install the entry store before setting up the initial values */
 	priv->store = ofa_entry_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
