@@ -1310,7 +1310,7 @@ bat_cmp_by_id( ofoBat *a, ofxCounter id )
 static void
 icollectionable_iface_init( myICollectionableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+	static const gchar *thisfn = "ofo_bat_icollectionable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
