@@ -339,7 +339,7 @@ idialog_init_actions( ofaDossierManager *self )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->open_action ),
 					_( "_Open..." )));
-	g_simple_action_set_enabled( priv->new_action, TRUE );
+	g_simple_action_set_enabled( priv->open_action, FALSE );
 
 	/* close action */
 	priv->close_action = g_simple_action_new( "close", NULL );
@@ -352,11 +352,10 @@ idialog_init_actions( ofaDossierManager *self )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->close_action ),
 					_( "_Close" )));
-	g_simple_action_set_enabled( priv->new_action, TRUE );
+	g_simple_action_set_enabled( priv->close_action, FALSE );
 
 	/* delete action */
 	priv->delete_action = g_simple_action_new( "delete", NULL );
-	g_simple_action_set_enabled( priv->delete_action, TRUE );
 	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
@@ -366,7 +365,7 @@ idialog_init_actions( ofaDossierManager *self )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
-	g_simple_action_set_enabled( priv->new_action, TRUE );
+	g_simple_action_set_enabled( priv->delete_action, FALSE );
 }
 
 static void
@@ -532,13 +531,17 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
+	hub = ofa_igetter_get_hub( priv->getter );
+
 	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period )){
 
-		hub = ofa_igetter_get_hub( priv->getter );
+		provider = ofa_idbdossier_meta_get_provider( meta );
+
+		g_debug( "%s: selected dossier_meta=%p, exercice_meta=%p, provider=%p",
+				thisfn, ( void * ) meta, ( void * ) period, ( void * ) provider );
 
 		/* delete the exercice
 		 * delete the dossier when deleting the last exercice */
-		provider = ofa_idbdossier_meta_get_provider( meta );
 		settings_prefix = g_strdup_printf( "%s-dbsu", priv->settings_prefix );
 
 		if( ofa_dbsu_run( priv->getter, GTK_WINDOW( self ), settings_prefix, provider, HUB_RULE_EXERCICE_DELETE, &su_bin ) &&

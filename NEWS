@@ -19,7 +19,7 @@
 
  New features and improvements:
 
-   - 
+   - DossierManager: better behaves when the list is empty, disabling all unrelevant actions.
 
  Bug fixes:
 
