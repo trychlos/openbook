@@ -374,6 +374,8 @@ setup_columns( ofaEntryTreeview *self )
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_CONCIL_NUMBER, _( "Concil.num" ),  _( "Conciliation number" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), ENTRY_COL_CONCIL_DATE,   _( "Concil.date" ), _( "Conciliation date" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_STATUS,        _( "Status" ),      _( "Status" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_RULE,          _( "Rule" ),            NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_NOTES,         _( "Notes" ),           NULL );
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ENTRY_COL_LABEL );
 	ofa_itvcolumnable_twins_group_new( OFA_ITVCOLUMNABLE( self ), "amount", ENTRY_COL_DEBIT, ENTRY_COL_CREDIT, -1 );
@@ -668,8 +670,12 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	static const gchar *thisfn = "ofa_entry_treeview_v_sort";
 	ofaEntryTreeviewPrivate *priv;
 	gint cmp;
-	gchar *dopea, *deffa, *labela, *refa, *cura, *ledgera, *templatea, *accounta, *debita, *credita, *openuma, *stlmtnuma, *stlmtusera, *stlmtstampa, *entnuma, *updusera, *updstampa, *concilnuma, *concildatea, *statusa;
-	gchar *dopeb, *deffb, *labelb, *refb, *curb, *ledgerb, *templateb, *accountb, *debitb, *creditb, *openumb, *stlmtnumb, *stlmtuserb, *stlmtstampb, *entnumb, *upduserb, *updstampb, *concilnumb, *concildateb, *statusb;
+	gchar *dopea, *deffa, *labela, *refa, *cura, *ledgera, *templatea, *accounta, *debita, *credita, *openuma,
+			*stlmtnuma, *stlmtusera, *stlmtstampa, *entnuma, *updusera, *updstampa, *concilnuma, *concildatea,
+			*statusa, *rulea, *notesa;
+	gchar *dopeb, *deffb, *labelb, *refb, *curb, *ledgerb, *templateb, *accountb, *debitb, *creditb, *openumb,
+			*stlmtnumb, *stlmtuserb, *stlmtstampb, *entnumb, *upduserb, *updstampb, *concilnumb, *concildateb,
+			*statusb, *ruleb, *notesb;
 
 	priv = ofa_entry_treeview_get_instance_private( OFA_ENTRY_TREEVIEW( tvbin ));
 
@@ -694,6 +700,8 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			ENTRY_COL_CONCIL_NUMBER, &concilnuma,
 			ENTRY_COL_CONCIL_DATE,   &concildatea,
 			ENTRY_COL_STATUS,        &statusa,
+			ENTRY_COL_RULE,          &rulea,
+			ENTRY_COL_NOTES,         &notesa,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
@@ -717,6 +725,8 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			ENTRY_COL_CONCIL_NUMBER, &concilnumb,
 			ENTRY_COL_CONCIL_DATE,   &concildateb,
 			ENTRY_COL_STATUS,        &statusb,
+			ENTRY_COL_RULE,          &ruleb,
+			ENTRY_COL_NOTES,         &notesb,
 			-1 );
 
 	cmp = 0;
@@ -782,6 +792,12 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 		case ENTRY_COL_STATUS:
 			cmp = ofa_itvsortable_sort_str_int( statusa, statusb );
 			break;
+		case ENTRY_COL_RULE:
+			cmp = my_collate( rulea, ruleb );
+			break;
+		case ENTRY_COL_NOTES:
+			cmp = my_collate( notesa, notesb );
+			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, column_id );
 			break;
@@ -807,6 +823,8 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( concilnuma );
 	g_free( concildatea );
 	g_free( statusa );
+	g_free( rulea );
+	g_free( notesa );
 
 	g_free( dopeb );
 	g_free( deffb );
@@ -828,6 +846,8 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( concilnumb );
 	g_free( concildateb );
 	g_free( statusb );
+	g_free( ruleb );
+	g_free( notesb );
 
 	return( cmp );
 }

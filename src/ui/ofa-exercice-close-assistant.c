@@ -1197,6 +1197,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				g_free( msg );
 				ofs_currency_list_dump( currencies );
 				errors += 1;
+				continue;
 			}
 
 			ofs_currency_list_free( &currencies );
@@ -1240,10 +1241,13 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			 * -> set a reconciliation date on the solde entries which
 			 *    are to be written on a reconciliable account, so that
 			 *    they will not be reported on the next exercice
+			 *
+			 * -> set closing rule indicator
 			 */
 			for( ite=sld_entries ; ite ; ite=ite->next ){
 				entry = OFO_ENTRY( ite->data );
 				ofo_entry_set_ope_number( entry, solde_ope );
+				ofo_entry_set_rule( entry, ENT_RULE_CLOSE );
 				ofo_entry_insert( entry );
 				if( is_ran &&
 						ofo_account_is_settleable( account ) &&
@@ -1259,11 +1263,17 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			}
 			ofo_entry_free_dataset( sld_entries );
 
+			/* forward entries:
+			 * -> set forward rule indicator
+			 */
 			for( ite=for_entries ; ite ; ite=ite->next ){
 				entry = OFO_ENTRY( ite->data );
 				ofo_entry_set_ope_number( entry, forward_ope );
+				ofo_entry_set_rule( entry, ENT_RULE_FORWARD );
 				priv->p6_forwards = g_list_prepend( priv->p6_forwards, entry );
 			}
+
+			g_list_free( for_entries );
 		}
 
 		g_free( scur );

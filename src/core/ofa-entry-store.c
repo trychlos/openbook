@@ -74,7 +74,8 @@ static GType st_col_types[ENTRY_N_COLUMNS] = {
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,			/* concil_date, status_str, status_int */
 	G_TYPE_OBJECT,										/* the #ofoEntry itself */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, 		/* msgerr, msgwarn, dope_set */
-	G_TYPE_BOOLEAN, G_TYPE_BOOLEAN						/* deffect_set, currency_set */
+	G_TYPE_BOOLEAN, G_TYPE_BOOLEAN,						/* deffect_set, currency_set */
+	G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING			/* rule_int, rule, notes */
 };
 
 static void     load_dataset( ofaEntryStore *store );
@@ -342,6 +343,9 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 				ENTRY_COL_DOPE_SET,      FALSE,
 				ENTRY_COL_DEFFECT_SET,   FALSE,
 				ENTRY_COL_CURRENCY_SET,  FALSE,
+				ENTRY_COL_RULE_I,        ofo_entry_get_rule( entry ),
+				ENTRY_COL_RULE,          ofo_entry_get_rule_str( entry ),
+				ENTRY_COL_NOTES,         ofo_entry_get_notes( entry ),
 				-1 );
 
 	g_free( supdstamp );

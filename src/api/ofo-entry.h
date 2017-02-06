@@ -86,6 +86,24 @@ typedef enum {
 }
 	ofeEntryStatus;
 
+/**
+ * ofeEntryRule:
+ *
+ * @ENT_RULE_NORMAL: the normal entry.
+ *
+ * @ENT_RULE_FORWARD: an entry created when opening the exercice to get
+ *  the carried forward soldes on the accounts.
+ *
+ * @ENT_RULE_CLOSE: an entry created when closing the exercice to solde
+ *  the accounts.
+ */
+typedef enum {
+	ENT_RULE_NORMAL = 1,
+	ENT_RULE_FORWARD,
+	ENT_RULE_CLOSE
+}
+	ofeEntryRule;
+
 /* data max length */
 #define ENT_LABEL_MAX_LENGTH          256
 
@@ -145,11 +163,16 @@ ofxAmount       ofo_entry_get_debit                  ( const ofoEntry *entry );
 ofxAmount       ofo_entry_get_credit                 ( const ofoEntry *entry );
 ofeEntryStatus  ofo_entry_get_status                 ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_abr_status             ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_status_label           ( const ofoEntry *entry );
 ofeEntryStatus  ofo_entry_get_status_from_abr        ( const gchar *abr_status );
+ofeEntryRule    ofo_entry_get_rule                   ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_rule_str               ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_rule_label             ( const ofoEntry *entry );
 ofxCounter      ofo_entry_get_ope_number             ( const ofoEntry *entry );
 ofxCounter      ofo_entry_get_settlement_number      ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_settlement_user        ( const ofoEntry *entry );
 const GTimeVal *ofo_entry_get_settlement_stamp       ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_notes                  ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_upd_user               ( const ofoEntry *entry );
 const GTimeVal *ofo_entry_get_upd_stamp              ( const ofoEntry *entry );
 
@@ -178,6 +201,8 @@ void            ofo_entry_set_debit                  ( ofoEntry *entry, ofxAmoun
 void            ofo_entry_set_credit                 ( ofoEntry *entry, ofxAmount amount );
 void            ofo_entry_set_ope_number             ( ofoEntry *entry, ofxCounter counter );
 void            ofo_entry_set_settlement_number      ( ofoEntry *entry, ofxCounter counter );
+void            ofo_entry_set_rule                   ( ofoEntry *entry, ofeEntryRule rule );
+void            ofo_entry_set_notes                  ( ofoEntry *entry, const gchar *notes );
 
 gboolean        ofo_entry_is_valid_data              ( ofaIGetter *getter,
 															const GDate *deffect, const GDate *dope,

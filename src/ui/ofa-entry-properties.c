@@ -37,6 +37,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-account-editable.h"
+#include "api/ofa-counter.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ope-template-editable.h"
 #include "api/ofa-preferences.h"
@@ -338,6 +339,8 @@ setup_ui_properties( ofaEntryProperties *self )
 	ofaEntryPropertiesPrivate *priv;
 	GtkWidget *prompt, *entry, *label, *parent;
 	static const gint st_ledger_cols[] = { LEDGER_COL_LABEL, -1 };
+	gchar *str;
+	const gchar *cstr;
 
 	priv = ofa_entry_properties_get_instance_private( self );
 
@@ -445,8 +448,34 @@ setup_ui_properties( ofaEntryProperties *self )
 			HUB_DEFAULT_DECIMALS_AMOUNT );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_amount_changed ), self );
 
-	/* operation number - ignored for now */
-	/* entry number - ignored for now */
+	/* operation number */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-openumber" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	str = ofa_counter_to_str( ofo_entry_get_ope_number( priv->entry ), priv->getter );
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
+	/* entry number */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-entnumber" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	str = ofa_counter_to_str( ofo_entry_get_number( priv->entry ), priv->getter );
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
+	/* status */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-status-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	cstr = ofo_entry_get_status_label( priv->entry );
+	gtk_label_set_text( GTK_LABEL( label ), cstr );
+
+	/* rule */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-rule-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	cstr = ofo_entry_get_rule_label( priv->entry );
+	gtk_label_set_text( GTK_LABEL( label ), cstr );
+
+	/* notes */
+	my_utils_container_notes_init( GTK_CONTAINER( self ), entry );
 }
 
 static GtkWidget *

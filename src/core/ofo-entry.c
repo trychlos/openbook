@@ -76,12 +76,14 @@ enum {
 	ENT_CREDIT,
 	ENT_NUMBER,
 	ENT_STATUS,
+	ENT_RULE,
 	ENT_UPD_USER,
 	ENT_UPD_STAMP,
 	ENT_OPE_NUMBER,
 	ENT_STLMT_NUMBER,
 	ENT_STLMT_USER,
 	ENT_STLMT_STAMP,
+	ENT_NOTES,
 };
 
 /*
@@ -165,6 +167,15 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				FALSE },
+										/* below data are imported */
+		{ OFA_BOX_CSV( ENT_RULE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( ENT_NOTES),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ 0 }
 };
 
@@ -180,15 +191,35 @@ typedef struct {
 typedef struct {
 	ofeEntryStatus num;
 	const gchar   *str;
+	const gchar   *label;
 }
 	sStatus;
 
 static sStatus st_status[] = {
-		{ ENT_STATUS_PAST,      N_( "P" ) },
-		{ ENT_STATUS_ROUGH,     N_( "R" ) },
-		{ ENT_STATUS_VALIDATED, N_( "V" ) },
-		{ ENT_STATUS_DELETED,   N_( "D" ) },
-		{ ENT_STATUS_FUTURE,    N_( "F" ) },
+		{ ENT_STATUS_PAST,      N_( "P" ), N_( "Past" ) },
+		{ ENT_STATUS_ROUGH,     N_( "R" ), N_( "Rough" ) },
+		{ ENT_STATUS_VALIDATED, N_( "V" ), N_( "Validated" ) },
+		{ ENT_STATUS_DELETED,   N_( "D" ), N_( "Deleted" ) },
+		{ ENT_STATUS_FUTURE,    N_( "F" ), N_( "Future" ) },
+		{ 0 },
+};
+
+/* manage the rule
+ * a (non-localized) character is stored in dbms
+ * while the code is easier with an enum
+ */
+typedef struct {
+	ofeEntryRule   num;
+	const gchar   *str;
+	const gchar   *localized;
+	const gchar   *label;
+}
+	sRule;
+
+static sRule st_rule[] = {
+		{ ENT_RULE_NORMAL,  "N", N_( "N" ), N_( "Normal" ) },
+		{ ENT_RULE_FORWARD, "F", N_( "F" ), N_( "Forward" ) },
+		{ ENT_RULE_CLOSE,   "C", N_( "C" ), N_( "Closing" ) },
 		{ 0 },
 };
 
@@ -934,6 +965,7 @@ ofo_entry_new( ofaIGetter *getter )
 
 	entry_set_number( entry, OFO_BASE_UNSET_ID );
 	entry_set_status( entry, ENT_STATUS_ROUGH );
+	ofo_entry_set_rule( entry, ENT_RULE_NORMAL );
 
 	return( entry );
 }
@@ -1072,9 +1104,35 @@ ofo_entry_get_abr_status( const ofoEntry *entry )
 	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, NULL );
 
 	status = ofo_entry_get_status( entry );
+
 	for( i=0 ; st_status[i].num ; ++i ){
 		if( st_status[i].num == status ){
 			return( gettext( st_status[i].str ));
+		}
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_entry_get_status_label:
+ *
+ * Returns: a localized label for the current status.
+ */
+const gchar *
+ofo_entry_get_status_label( const ofoEntry *entry )
+{
+	ofeEntryStatus status;
+	gint i;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, NULL );
+
+	status = ofo_entry_get_status( entry );
+
+	for( i=0 ; st_status[i].num ; ++i ){
+		if( st_status[i].num == status ){
+			return( gettext( st_status[i].label ));
 		}
 	}
 
@@ -1101,6 +1159,85 @@ ofo_entry_get_status_from_abr( const gchar *abr_status )
 	}
 
 	return( ENT_STATUS_ROUGH );
+}
+
+/**
+ * ofo_entry_get_rule:
+ *
+ * Returns: the #ofeEntryRule enum for this @entry.
+ */
+ofeEntryRule
+ofo_entry_get_rule( const ofoEntry *entry )
+{
+	const gchar *cstr;
+	gint i;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), ENT_RULE_NORMAL );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, ENT_RULE_NORMAL );
+
+	cstr = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_RULE );
+
+	for( i=0 ; st_rule[i].num ; ++i ){
+		if( !my_collate( st_rule[i].str, cstr )){
+			return( st_rule[i].num );
+		}
+	}
+
+	return( ENT_RULE_NORMAL );
+}
+
+/**
+ * ofo_entry_get_rule_str:
+ *
+ * Returns: the localized rule indicator for this @entry.
+ *
+ * Use case: textview
+ */
+const gchar *
+ofo_entry_get_rule_str( const ofoEntry *entry )
+{
+	const gchar *cstr;
+	gint i;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), _( "N" ));
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, _( "N" ));
+
+	cstr = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_RULE );
+
+	for( i=0 ; st_rule[i].num ; ++i ){
+		if( !my_collate( st_rule[i].str, cstr )){
+			return( gettext( st_rule[i].localized ));
+		}
+	}
+
+	return( _( "N" ));
+}
+
+/**
+ * ofo_entry_get_rule_label:
+ *
+ * Returns: a localized label for the rule indicator.
+ *
+ * Use case: properties
+ */
+const gchar *
+ofo_entry_get_rule_label( const ofoEntry *entry )
+{
+	const gchar *cstr;
+	gint i;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, NULL );
+
+	cstr = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_RULE );
+
+	for( i=0 ; st_rule[i].num ; ++i ){
+		if( !my_collate( st_rule[i].str, cstr )){
+			return( gettext( st_rule[i].label ));
+		}
+	}
+
+	return( NULL );
 }
 
 /**
@@ -1143,6 +1280,15 @@ const GTimeVal *
 ofo_entry_get_settlement_stamp( const ofoEntry *entry )
 {
 	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_STLMT_STAMP );
+}
+
+/**
+ * ofo_entry_get_notes:
+ */
+const gchar *
+ofo_entry_get_notes( const ofoEntry *entry )
+{
+	ofo_base_getter( ENTRY, entry, string, NULL, ENT_NOTES );
 }
 
 /**
@@ -1649,6 +1795,34 @@ entry_set_import_settled( ofoEntry *entry, gboolean settled )
 	priv->import_settled = settled;
 }
 
+/**
+ * ofo_entry_set_rule:
+ */
+void
+ofo_entry_set_rule( ofoEntry *entry, ofeEntryRule rule )
+{
+	gint i;
+
+	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+	g_return_if_fail( !OFO_BASE( entry )->prot->dispose_has_run );
+
+	for( i=0 ; st_rule[i].num ; ++i ){
+		if( st_rule[i].num == rule ){
+			ofa_box_set_string( OFO_BASE( entry )->prot->fields, ENT_RULE, st_rule[i].str );
+			break;
+		}
+	}
+}
+
+/**
+ * ofo_entry_set_notes:
+ */
+void
+ofo_entry_set_notes( ofoEntry *entry, const gchar *notes )
+{
+	ofo_base_setter( ENTRY, entry, string, ENT_NOTES, notes );
+}
+
 /*
  * entry_compute_status:
  * @entry: this #ofoEntry object.
@@ -1870,10 +2044,10 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 {
 	GString *query;
 	gchar *label, *ref;
-	gchar *sdeff, *sdope, *sdebit, *scredit, *stamp_str;
+	gchar *sdeff, *sdope, *sdebit, *scredit, *stamp_str, *notes;
 	gboolean ok;
 	GTimeVal stamp;
-	const gchar *model, *cur_code, *userid;
+	const gchar *model, *cur_code, *userid, *rule;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
 	ofxCounter ope_number;
@@ -1902,8 +2076,8 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	g_string_append_printf( query,
 			"	(ENT_DEFFECT,ENT_NUMBER,ENT_DOPE,ENT_LABEL,ENT_REF,ENT_ACCOUNT,"
 			"	ENT_CURRENCY,ENT_LEDGER,ENT_OPE_TEMPLATE,"
-			"	ENT_DEBIT,ENT_CREDIT,ENT_STATUS,ENT_OPE_NUMBER,"
-			"	ENT_UPD_USER, ENT_UPD_STAMP) "
+			"	ENT_DEBIT,ENT_CREDIT,ENT_STATUS,ENT_OPE_NUMBER,ENT_RULE,"
+			"	ENT_NOTES,ENT_UPD_USER, ENT_UPD_STAMP) "
 			"	VALUES ('%s',%ld,'%s','%s',",
 			sdeff,
 			ofo_entry_get_number( entry ),
@@ -1945,6 +2119,17 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 		query = g_string_append( query, "NULL," );
 	}
 
+	rule = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_RULE );
+	g_return_val_if_fail( my_strlen( rule ) == 1, FALSE );
+	g_string_append_printf( query, "'%s',", rule );
+
+	notes = my_utils_quote_sql( ofo_entry_get_notes( entry ));
+	if( my_strlen( notes )){
+		g_string_append_printf( query, "'%s',", notes );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
 	g_string_append_printf( query,
 				"'%s','%s')",
 				userid,
@@ -1959,6 +2144,7 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	}
 
 	g_string_free( query, TRUE );
+	g_free( notes );
 	g_free( sdebit );
 	g_free( scredit );
 	g_free( sdeff );
@@ -2101,11 +2287,11 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 {
 	ofaHub *hub;
 	GString *query;
-	gchar *sdeff, *sdope, *sdeb, *scre;
+	gchar *sdeff, *sdope, *sdeb, *scre, *notes;
 	gchar *stamp_str, *label, *ref;
 	GTimeVal stamp;
 	gboolean ok;
-	const gchar *model, *cstr, *userid;
+	const gchar *model, *cstr, *userid, *rule;
 	const gchar *cur_code;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
@@ -2155,6 +2341,17 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 		query = g_string_append( query, " ENT_OPE_TEMPLATE=NULL," );
 	} else {
 		g_string_append_printf( query, " ENT_OPE_TEMPLATE='%s',", model );
+	}
+
+	rule = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_RULE );
+	g_return_val_if_fail( my_strlen( rule ) == 1, FALSE );
+	g_string_append_printf( query, "ENT_RULE='%s',", rule );
+
+	notes = my_utils_quote_sql( ofo_entry_get_notes( entry ));
+	if( my_strlen( notes )){
+		g_string_append_printf( query, "ENT_NOTES='%s',", notes );
+	} else {
+		query = g_string_append( query, "ENT_NOTES=NULL," );
 	}
 
 	g_string_append_printf( query,
@@ -2485,12 +2682,6 @@ iexportable_get_label( const ofaIExportable *instance )
  *
  * Returns: TRUE at the end if no error has been detected
  *
- * As a first - probably bad - approach, we load all the entries in
- * memory ! An alternative may be to use a cursor, but this later is
- * only available from a stored program in the DBMS (as for MySQL at
- * least), and this would imply that the exact list of columns be
- * written in this stored program ?
- *
  * v0.38: as the conciliation information have moved to another table,
  * and because we want to stay able to export/import them, we have to
  * add to the dataset the informations got from conciliation groups.
@@ -2513,7 +2704,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIG
 	ofoAccount *account;
 	ofoCurrency *currency;
 
-	result = entry_load_dataset( getter, NULL, NULL );
+	result = ofo_entry_get_dataset( getter );
 
 	with_headers = ofa_stream_format_get_with_headers( settings );
 	field_sep = ofa_stream_format_get_field_sep( settings );
@@ -2568,8 +2759,6 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIG
 			return( FALSE );
 		}
 	}
-
-	ofo_entry_free_dataset( result );
 
 	return( TRUE );
 }
@@ -2980,6 +3169,21 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 		if( format == 0 ){
 			iimportable_import_concil( importer, parms, entry, &itf );
+
+		} else {
+			/* entry rule */
+			itf = itf ? itf->next : NULL;
+			cstr = itf ? ( const gchar * ) itf->data : NULL;
+			if( my_strlen( cstr )){
+				ofa_box_set_string( OFO_BASE( entry )->prot->fields, ENT_RULE, cstr );
+			}
+
+			/* notes */
+			itf = itf ? itf->next : NULL;
+			cstr = itf ? ( const gchar * ) itf->data : NULL;
+			if( my_strlen( cstr )){
+				ofo_entry_set_notes( entry, cstr );
+			}
 		}
 
 		/* what to do regarding the effect date ?

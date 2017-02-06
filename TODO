@@ -284,9 +284,6 @@
 1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
                 background
 
-1228 2016-10-10 DBMS: Entry: have a role: exercice_open / exercice_close / normal
-                (may be useful when computing solde of an account)
-
 1231 2016-10-11 Feature question: should we reset the last closed date
                 of the ledgers when closing an exercice ?
                 For now, they are not reset. On the new exercice, ledgers
@@ -409,6 +406,10 @@
                 or of detachable pages in the main book as the two are
                 mutually exclusive
      2017- 1-27 done
+
+1228 2016-10-10 DBMS: Entry: have a role: exercice_open / exercice_close / normal
+                (may be useful when computing solde of an account)
+     2017- 2- 6 done
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
      2017- 1-12 done in CORE v34

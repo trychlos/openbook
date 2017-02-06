@@ -101,6 +101,9 @@ typedef struct {
  * @ENTRY_COL_DOPE_SET      : whether operation date is set     Bool         No
  * @ENTRY_COL_DEFFECT_SET   : whether effect date is set        Bool         No
  * @ENTRY_COL_CURRENCY_SET  : whether currency is set           Bool         No
+ * @ENTRY_COL_RULE_I        : rule indicator                    Int          No
+ * @ENTRY_COL_RULE          : rule localized string             String      Yes
+ * @ENTRY_COL_NOTES         : notes                             String      Yes
  */
 enum {
 	ENTRY_COL_DOPE = 0,
@@ -131,6 +134,9 @@ enum {
 	ENTRY_COL_DOPE_SET,
 	ENTRY_COL_DEFFECT_SET,
 	ENTRY_COL_CURRENCY_SET,
+	ENTRY_COL_RULE_I,
+	ENTRY_COL_RULE,
+	ENTRY_COL_NOTES,
 	ENTRY_N_COLUMNS
 };
 
