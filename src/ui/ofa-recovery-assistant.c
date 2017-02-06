@@ -1309,7 +1309,7 @@ p6_do_init( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 	/* admin credentials */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-admin-credentials" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p6_admin_credentials = ofa_admin_credentials_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_RECOVERY );
+	priv->p6_admin_credentials = ofa_admin_credentials_bin_new( priv->getter, HUB_RULE_DOSSIER_RECOVERY );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p6_admin_credentials ));
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p6_admin_credentials ), 0 ))){
 		my_utils_size_group_add_size_group( priv->p6_hgroup, group_bin );

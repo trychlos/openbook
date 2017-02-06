@@ -33,7 +33,7 @@
  * Let the user define the administrative account and password of an
  * exercice.
  *
- * This widget is used:
+ * This widget is used (for example):
  * - from restore assistant
  * - in new dossier dialog
  *
@@ -41,10 +41,8 @@
  * any code for the apply() method. Instead, the caller should get the
  * currently set credentials, and act accordingly.
  *
- * Whether the administrative account of a dossier should be remembered
- * is an application-wide user preferences. The administrative account
- * itself is a per-dossier settings (and so requires an #ofaIDBDossierMeta
- * to have been set).
+ * Whether the administrative account of a dossier should be remembered,
+ * and the corresponding account, are dossier-specific settings.
  *
  * Development rules:
  * - type:       bin (parent='top')
@@ -82,7 +80,6 @@ typedef struct {
 GType                   ofa_admin_credentials_bin_get_type              ( void ) G_GNUC_CONST;
 
 ofaAdminCredentialsBin *ofa_admin_credentials_bin_new                   ( ofaIGetter *getter,
-																				const gchar *settings_prefix,
 																				guint rule );
 
 void                    ofa_admin_credentials_bin_set_dossier_meta      ( ofaAdminCredentialsBin *bin,

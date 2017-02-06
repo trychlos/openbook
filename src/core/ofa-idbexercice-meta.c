@@ -58,7 +58,6 @@ typedef struct {
 	GDate              begin;
 	GDate              end;
 	gboolean           current;
-	gchar             *admin_account;
 }
 	sIDBMeta;
 
@@ -472,45 +471,6 @@ ofa_idbexercice_meta_set_end_date( ofaIDBExerciceMeta *period, const GDate *date
 }
 
 /**
- * ofa_idbexercice_meta_get_remembered_account:
- * @period: this #ofaIDBExerciceMeta instance.
- *
- * Returns: the administrative account that the user has asked us to
- * remember, or %NULL.
- */
-const gchar *
-ofa_idbexercice_meta_get_remembered_account( const ofaIDBExerciceMeta *period )
-{
-	sIDBMeta *sdata;
-
-	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
-
-	sdata = get_instance_data( period );
-
-	return(( const gchar * ) sdata->admin_account );
-}
-
-/**
- * ofa_idbexercice_meta_set_remembered_account:
- * @period: this #ofaIDBExerciceMeta instance.
- * @date: the endning date to be set.
- *
- * Set the administrative account to be remembered.
- */
-void
-ofa_idbexercice_meta_set_remembered_account( ofaIDBExerciceMeta *period, const gchar *account )
-{
-	sIDBMeta *sdata;
-
-	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
-
-	sdata = get_instance_data( period );
-
-	g_free( sdata->admin_account );
-	sdata->admin_account = g_strdup( account );
-}
-
-/**
  * ofa_idbexercice_meta_get_current:
  * @period: this #ofaIDBExerciceMeta instance.
  *
@@ -835,7 +795,6 @@ ofa_idbexercice_meta_dump( const ofaIDBExerciceMeta *period )
 	g_debug( "%s:   begin=%s", thisfn, begin );
 	g_debug( "%s:   end=%s", thisfn, end );
 	g_debug( "%s:   current=%s", thisfn, sdata->current ? "True":"False" );
-	g_debug( "%s:   admin_account=%s", thisfn, sdata->admin_account );
 	g_debug( "%s:   ref_count=%u", thisfn, G_OBJECT( period )->ref_count );
 
 	g_free( begin );
@@ -847,7 +806,7 @@ ofa_idbexercice_meta_dump( const ofaIDBExerciceMeta *period )
 }
 
 /*
- * settings are: "begin(s), end(s); current(s); admin_account(s);"
+ * settings are: "begin(s), end(s); current(s);"
  */
 static void
 read_settings( ofaIDBExerciceMeta *self )
@@ -884,14 +843,6 @@ read_settings( ofaIDBExerciceMeta *self )
 		sdata->current = my_utils_boolean_from_str( cstr );
 	}
 
-	/* remembered admin account */
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		g_free( sdata->admin_account );
-		sdata->admin_account = g_strdup( cstr );
-	}
-
 	my_isettings_free_string_list( settings, strlist );
 }
 
@@ -908,11 +859,10 @@ write_settings( const ofaIDBExerciceMeta *self )
 	sbegin = my_date_is_valid( &sdata->begin ) ? my_date_to_str( &sdata->begin, MY_DATE_YYMD ) : g_strdup( "" );
 	send = my_date_is_valid( &sdata->end ) ? my_date_to_str( &sdata->end, MY_DATE_YYMD ) : g_strdup( "" );
 
-	str = g_strdup_printf( "%s;%s;%s;%s;",
+	str = g_strdup_printf( "%s;%s;%s;",
 				sbegin,
 				send,
-				sdata->current ? "True":"False",
-				my_strlen( sdata->admin_account ) ? sdata->admin_account : "" );
+				sdata->current ? "True":"False" );
 
 	settings = ofa_idbdossier_meta_get_settings_iface( sdata->dossier_meta );
 	group = ofa_idbdossier_meta_get_settings_group( sdata->dossier_meta );
@@ -952,7 +902,6 @@ on_instance_finalized( sIDBMeta *sdata, GObject *finalized_period )
 
 	g_free( sdata->settings_key );
 	g_free( sdata->settings_id );
-	g_free( sdata->admin_account );
 
 	g_free( sdata );
 }

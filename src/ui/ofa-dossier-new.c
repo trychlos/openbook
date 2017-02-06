@@ -408,7 +408,7 @@ idialog_init( myIDialog *instance )
 	if( priv->with_admin ){
 		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "admin-parent" );
 		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-		priv->admin_bin = ofa_admin_credentials_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
+		priv->admin_bin = ofa_admin_credentials_bin_new( priv->getter, HUB_RULE_DOSSIER_NEW );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_bin ));
 		g_signal_connect( priv->admin_bin, "ofa-changed", G_CALLBACK( on_admin_bin_changed ), instance );
 		if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->admin_bin ), 0 ))){
@@ -537,7 +537,7 @@ do_create( ofaDossierNew *self )
 	ofaDossierCollection *collection;
 	myISettings *settings;
 	ofaOpenPrefs *prefs;
-	const gchar *group, *account;
+	const gchar *group;
 	ofaIDBSuperuser *su;
 
 	priv = ofa_dossier_new_get_instance_private( self );
@@ -590,6 +590,7 @@ do_create( ofaDossierNew *self )
 
 		} else {
 			if( priv->with_admin ){
+				ofa_admin_credentials_bin_set_dossier_meta( priv->admin_bin, dossier_meta );
 				ofa_admin_credentials_bin_get_credentials( priv->admin_bin, &adm_account, &adm_password );
 			}
 			ret = ofa_idbconnect_new_period( connect, exercice_meta, adm_account, adm_password, &msgerr );
@@ -613,11 +614,6 @@ do_create( ofaDossierNew *self )
 		} else {
 			ofa_idbdossier_meta_unref( dossier_meta );
 		}
-	}
-
-	if( priv->admin_bin ){
-		account = ofa_admin_credentials_bin_get_remembered_account( priv->admin_bin );
-		ofa_idbexercice_meta_set_remembered_account( exercice_meta, account );
 	}
 
 	/* open the newly created dossier if asked for */

@@ -44,7 +44,6 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter        *getter;
-	gchar             *settings_prefix;
 	guint              rule;
 
 	/* UI
@@ -72,6 +71,7 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
+static const gchar *st_settings_key     = "ofa-admin";
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-admin-credentials-bin.ui";
 
 static void          setup_bin( ofaAdminCredentialsBin *bin );
@@ -82,8 +82,6 @@ static void          on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin 
 static void          changed_composite( ofaAdminCredentialsBin *self );
 static void          read_settings( ofaAdminCredentialsBin *self );
 static void          write_settings( ofaAdminCredentialsBin *self );
-static void          read_dossier_settings( ofaAdminCredentialsBin *self );
-static void          write_dossier_settings( ofaAdminCredentialsBin *self );
 static void          ibin_iface_init( myIBinInterface *iface );
 static guint         ibin_get_interface_version( void );
 static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
@@ -107,7 +105,6 @@ admin_credentials_bin_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_admin_credentials_bin_get_instance_private( OFA_ADMIN_CREDENTIALS_BIN( instance ));
 
-	g_free( priv->settings_prefix );
 	g_free( priv->account );
 	g_free( priv->password );
 	g_free( priv->bis );
@@ -128,7 +125,6 @@ admin_credentials_bin_dispose( GObject *instance )
 	if( !priv->dispose_has_run ){
 
 		write_settings( OFA_ADMIN_CREDENTIALS_BIN( instance ));
-		write_dossier_settings( OFA_ADMIN_CREDENTIALS_BIN( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -154,7 +150,6 @@ ofa_admin_credentials_bin_init( ofaAdminCredentialsBin *self )
 	priv = ofa_admin_credentials_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -198,14 +193,12 @@ ofa_admin_credentials_bin_class_init( ofaAdminCredentialsBinClass *klass )
 /**
  * ofa_admin_credentials_bin_new:
  * @getter: a #ofaIGetter instance.
- * @settings_prefix: [allow-none]: the prefix of the key in user settings;
- *  not used here.
  * @rule: the usage of this widget.
  *
  * Returns: a new #ofaAdminCredentialsBin widget.
  */
 ofaAdminCredentialsBin *
-ofa_admin_credentials_bin_new( ofaIGetter *getter, const gchar *settings_prefix, guint rule )
+ofa_admin_credentials_bin_new( ofaIGetter *getter, guint rule )
 {
 	ofaAdminCredentialsBin *bin;
 	ofaAdminCredentialsBinPrivate *priv;
@@ -220,7 +213,6 @@ ofa_admin_credentials_bin_new( ofaIGetter *getter, const gchar *settings_prefix,
 	priv->rule = rule;
 
 	setup_bin( bin );
-	read_settings( bin );
 
 	return( bin );
 }
@@ -300,8 +292,8 @@ ofa_admin_credentials_bin_set_dossier_meta( ofaAdminCredentialsBin *bin, ofaIDBD
 	priv->dossier_meta = dossier_meta;
 
 	/* only set a maybe previously saved account if the entry is empty */
-	if( dossier_meta && !my_strlen( priv->account )){
-		read_dossier_settings( bin );
+	if( dossier_meta ){
+		read_settings( bin );
 	}
 }
 
@@ -418,63 +410,14 @@ ofa_admin_credentials_bin_get_credentials( ofaAdminCredentialsBin *bin, gchar **
 }
 
 /*
- * user settings are: remember_admin_account(b);
+ * user settings are: remember_admin_account(b); remembered_admin_account(s);
+ *
+ * They are written in the dossier settings for the specifically set dossier.
+ * So no settings are read while the
+ *  #ofa_admin_credentials_bin_set_dossier_meta() function has not been called.
  */
 static void
 read_settings( ofaAdminCredentialsBin *self )
-{
-	ofaAdminCredentialsBinPrivate *priv;
-	myISettings *settings;
-	GList *strlist, *it;
-	const gchar *cstr;
-	gboolean remember;
-	gchar *key;
-
-	priv = ofa_admin_credentials_bin_get_instance_private( self );
-
-	settings = ofa_igetter_get_user_settings( priv->getter );
-	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
-
-	remember = FALSE;
-
-	it = strlist;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		remember = my_utils_boolean_from_str( cstr );
-	}
-
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->remember_btn ), remember );
-	on_remember_toggled( GTK_TOGGLE_BUTTON( priv->remember_btn ), self );
-
-	my_isettings_free_string_list( settings, strlist );
-	g_free( key );
-}
-
-static void
-write_settings( ofaAdminCredentialsBin *self )
-{
-	ofaAdminCredentialsBinPrivate *priv;
-	myISettings *settings;
-	gchar *key, *str;
-
-	priv = ofa_admin_credentials_bin_get_instance_private( self );
-
-	str = g_strdup_printf( "%s;", priv->remember_account ? priv->account : "" );
-
-	settings = ofa_igetter_get_user_settings( priv->getter );
-	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
-
-	g_free( key );
-	g_free( str );
-}
-
-/*
- * dossier settings are: remembered_admin_account(s);
- */
-static void
-read_dossier_settings( ofaAdminCredentialsBin *self )
 {
 	ofaAdminCredentialsBinPrivate *priv;
 	myISettings *settings;
@@ -485,22 +428,30 @@ read_dossier_settings( ofaAdminCredentialsBin *self )
 
 	if( priv->dossier_meta ){
 
-		settings = ofa_idbdossier_meta_get_settings_iface( priv->dossier_meta );
+		settings = ofa_igetter_get_user_settings( priv->getter );
 		group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
-		strlist = my_isettings_get_string_list( settings, group, priv->settings_prefix );
+		strlist = my_isettings_get_string_list( settings, group, st_settings_key );
 
 		it = strlist;
+		cstr = it ? ( const gchar * ) it->data : NULL;
+		priv->remember_account = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->remember_btn ), priv->remember_account );
+		on_remember_toggled( GTK_TOGGLE_BUTTON( priv->remember_btn ), self );
+
+		it = it ? it->next : NULL;
 		cstr = it ? ( const gchar * ) it->data : NULL;
 		if( my_strlen( cstr ) && priv->remember_account ){
 			gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
 		}
 
 		my_isettings_free_string_list( settings, strlist );
+
+		ofa_idbdossier_meta_set_admin_account( priv->dossier_meta, priv->account );
 	}
 }
 
 static void
-write_dossier_settings( ofaAdminCredentialsBin *self )
+write_settings( ofaAdminCredentialsBin *self )
 {
 	ofaAdminCredentialsBinPrivate *priv;
 	myISettings *settings;
@@ -511,13 +462,18 @@ write_dossier_settings( ofaAdminCredentialsBin *self )
 
 	if( priv->dossier_meta ){
 
-		str = g_strdup_printf( "%s;", priv->remember_account ? priv->account : "" );
+		str = g_strdup_printf( "%s;%s;",
+				priv->remember_account ? "True":"False",
+				priv->remember_account ? priv->account : "" );
 
-		settings = ofa_idbdossier_meta_get_settings_iface( priv->dossier_meta );
+		settings = ofa_igetter_get_user_settings( priv->getter );
 		group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
-		my_isettings_set_string( settings, group, priv->settings_prefix, str );
+
+		my_isettings_set_string( settings, group, st_settings_key, str );
 
 		g_free( str );
+
+		ofa_idbdossier_meta_set_admin_account( priv->dossier_meta, priv->account );
 	}
 }
 

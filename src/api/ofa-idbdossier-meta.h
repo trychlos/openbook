@@ -218,6 +218,9 @@ void                  ofa_idbdossier_meta_set_from_settings         ( ofaIDBDoss
 void                  ofa_idbdossier_meta_set_from_editor           ( ofaIDBDossierMeta *meta,
 																			ofaIDBDossierEditor *editor );
 
+void                  ofa_idbdossier_meta_set_admin_account         ( ofaIDBDossierMeta *meta,
+																			const gchar *account );
+
 ofaIDBConnect        *ofa_idbdossier_meta_new_connect               ( ofaIDBDossierMeta *meta,
 																			ofaIDBExerciceMeta *period );
 

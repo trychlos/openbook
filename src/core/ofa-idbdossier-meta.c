@@ -56,6 +56,7 @@ typedef struct {
 	/* runtime
 	 */
 	GList          *periods;				/* ofaIDBExerciceMeta */
+	gchar          *admin_account;
 }
 	sIDBMeta;
 
@@ -497,6 +498,24 @@ ofa_idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, ofaIDBDossierEdito
 
 	g_info( "%s: ofaIDBDossierMeta's %s implementation does not provide 'set_from_editor()' method",
 			thisfn, G_OBJECT_TYPE_NAME( meta ));
+}
+
+/**
+ * ofa_idbdossier_meta_set_admin_account:
+ * @meta: this #ofaIDBDossierMeta instance.
+ * @account: [allow-none] the administrative account to be remembered.
+ *
+ * Set the administrative account.
+ */
+void
+ofa_idbdossier_meta_set_admin_account( ofaIDBDossierMeta *meta, const gchar *account )
+{
+	sIDBMeta *sdata;
+
+	sdata = get_instance_data( meta );
+
+	g_free( sdata->admin_account );
+	sdata->admin_account = g_strdup( account );
 }
 
 /**
@@ -1034,6 +1053,7 @@ ofa_idbdossier_meta_dump( const ofaIDBDossierMeta *meta )
 	g_debug( "%s:   settings_iface=%p", thisfn, ( void * ) sdata->settings_iface );
 	g_debug( "%s:   settings_group=%s", thisfn, sdata->settings_group );
 	g_debug( "%s:   ref_count=%u", thisfn, G_OBJECT( meta )->ref_count );
+	g_debug( "%s:   admin_account=%s", thisfn, sdata->admin_account );
 	g_debug( "%s:   periods=%p (count=%u)", thisfn, ( void * ) sdata->periods, g_list_length( sdata->periods ));
 
 	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->dump ){
@@ -1088,5 +1108,6 @@ on_instance_finalized( sIDBMeta *sdata, GObject *finalized_meta )
 	g_free( sdata->dossier_name );
 	g_free( sdata->settings_group );
 	g_list_free_full( sdata->periods, ( GDestroyNotify ) ofa_idbexercice_meta_unref );
+	g_free( sdata->admin_account );
 	g_free( sdata );
 }

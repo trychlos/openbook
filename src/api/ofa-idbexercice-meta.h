@@ -235,11 +235,6 @@ const GDate       *ofa_idbexercice_meta_get_end_date              ( const ofaIDB
 void               ofa_idbexercice_meta_set_end_date              ( ofaIDBExerciceMeta *exercice_meta,
 																		const GDate *date );
 
-const gchar       *ofa_idbexercice_meta_get_remembered_account    ( const ofaIDBExerciceMeta *exercice_meta );
-
-void               ofa_idbexercice_meta_set_remembered_account    ( ofaIDBExerciceMeta *exercice_meta,
-																		const gchar *account );
-
 gboolean           ofa_idbexercice_meta_get_current               ( const ofaIDBExerciceMeta *exercice_meta );
 
 void               ofa_idbexercice_meta_set_current               ( ofaIDBExerciceMeta *exercice_meta,
