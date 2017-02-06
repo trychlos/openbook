@@ -188,11 +188,14 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaExercice
 void
 ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBDossierMeta *meta )
 {
+	static const gchar *thisfn = "ofa_exercice_store_set_dossier";
 	ofaExerciceStorePrivate *priv;
 	const GList *period_list, *it;
 	ofaIDBExerciceMeta *period;
 	GtkTreeIter iter;
 	gchar *begin, *end, *status, *label;
+
+	g_debug( "%s: store=%p, meta=%p", thisfn, ( void * ) store, ( void * ) meta );
 
 	g_return_if_fail( store && OFA_IS_EXERCICE_STORE( store ));
 	g_return_if_fail( !meta || OFA_IS_IDBDOSSIER_META( meta ));
