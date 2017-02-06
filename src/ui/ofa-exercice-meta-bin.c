@@ -284,6 +284,7 @@ setup_bin( ofaExerciceMetaBin *self )
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), FALSE );
 	on_archive_toggled( GTK_TOGGLE_BUTTON( btn ), self );
 
+#if 0
 	switch( priv->rule ){
 		/* when defining a new dossier, the new exercice is current
 		 * and this is mandatory */
@@ -291,6 +292,7 @@ setup_bin( ofaExerciceMetaBin *self )
 			gtk_widget_set_sensitive( btn, FALSE );
 			break;
 	}
+#endif
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
