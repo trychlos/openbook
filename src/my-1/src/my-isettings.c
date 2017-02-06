@@ -256,13 +256,14 @@ my_isettings_free_groups( myISettings *instance, GList *groups_list )
 	g_debug( "%s: instance=%p, groups_list=%p", thisfn, ( void * ) instance, ( void * ) groups_list );
 
 	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
-	g_return_if_fail( groups_list );
 
-	if( MY_ISETTINGS_GET_INTERFACE( instance )->free_groups ){
-		MY_ISETTINGS_GET_INTERFACE( instance )->free_groups( instance, groups_list );
+	if( groups_list ){
+		if( MY_ISETTINGS_GET_INTERFACE( instance )->free_groups ){
+			MY_ISETTINGS_GET_INTERFACE( instance )->free_groups( instance, groups_list );
 
-	} else {
-		g_list_free_full( groups_list, ( GDestroyNotify ) g_free );
+		} else {
+			g_list_free_full( groups_list, ( GDestroyNotify ) g_free );
+		}
 	}
 }
 
