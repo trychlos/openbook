@@ -77,6 +77,7 @@ static GType st_col_types[ENTRY_N_COLUMNS] = {
 	G_TYPE_BOOLEAN, G_TYPE_BOOLEAN						/* deffect_set, currency_set */
 };
 
+static void     load_dataset( ofaEntryStore *store );
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryStore *self );
 static void     insert_row( ofaEntryStore *self, const ofoEntry *entry );
 static void     set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter );
@@ -169,7 +170,7 @@ ofa_entry_store_class_init( ofaEntryStoreClass *klass )
  * ofa_entry_store_new:
  * @getter: a #ofaIGetter instance.
  *
- * Returns: a reference to a new #ofaEntryStore, which should be
+ * Returns: a new reference to the #ofaEntryStore, which should be
  * released by the caller.
  */
 ofaEntryStore *
@@ -177,28 +178,39 @@ ofa_entry_store_new( ofaIGetter *getter )
 {
 	ofaEntryStore *store;
 	ofaEntryStorePrivate *priv;
+	myICollector *collector;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	store = g_object_new( OFA_TYPE_ENTRY_STORE, NULL );
+	collector = ofa_igetter_get_collector( getter );
+	store = ( ofaEntryStore * ) my_icollector_single_get_object( collector, OFA_TYPE_ENTRY_STORE );
 
-	priv = ofa_entry_store_get_instance_private( store );
+	if( store ){
+		g_return_val_if_fail( OFA_IS_ENTRY_STORE( store ), NULL );
 
-	priv->getter = getter;
+	} else {
+		store = g_object_new( OFA_TYPE_ENTRY_STORE, NULL );
 
-	gtk_list_store_set_column_types(
-			GTK_LIST_STORE( store ), ENTRY_N_COLUMNS, st_col_types );
+		priv = ofa_entry_store_get_instance_private( store );
 
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
+		priv->getter = getter;
 
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( store ),
-			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
+		gtk_list_store_set_column_types(
+				GTK_LIST_STORE( store ), ENTRY_N_COLUMNS, st_col_types );
 
-	signaler_connect_to_signaling_system( store );
+		gtk_tree_sortable_set_default_sort_func(
+				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 
-	return( store );
+		gtk_tree_sortable_set_sort_column_id(
+				GTK_TREE_SORTABLE( store ),
+				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
+
+		my_icollector_single_set_object( collector, store );
+		signaler_connect_to_signaling_system( store );
+		load_dataset( store );
+	}
+
+	return( g_object_ref( store ));
 }
 
 /*
@@ -218,43 +230,24 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntrySto
 	return( cmp );
 }
 
-/**
- * ofa_entry_store_load:
- * store: this #ofaEntryStore instance.
- * @account: [allow-none]: the account identifier to be loaded.
- * @ledger: [allow-none]: the ledger identifier to be loaded.
- *
- * Loads the entries which satisfy both the two conditions (if set).
- *
- * Returns: the count of loaded entries.
+/*
+ * Loads the dataset.
  */
-ofxCounter
-ofa_entry_store_load( ofaEntryStore *store, const gchar *account, const gchar *ledger )
+static void
+load_dataset( ofaEntryStore *store )
 {
 	ofaEntryStorePrivate *priv;
 	GList *dataset, *it;
-	ofxCounter count;
 	ofoEntry *entry;
-
-	g_return_val_if_fail( store && OFA_IS_ENTRY_STORE( store ), 0 );
 
 	priv = ofa_entry_store_get_instance_private( store );
 
-	g_return_val_if_fail( !priv->dispose_has_run, 0 );
-
-	count = 0;
-	gtk_list_store_clear( GTK_LIST_STORE( store ));
-	dataset = ofo_entry_get_dataset_for_store( priv->getter, account, ledger );
+	dataset = ofo_entry_get_dataset( priv->getter );
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
 		insert_row( store, entry );
 	}
-
-	count = g_list_length( dataset );
-	g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
-
-	return( count );
 }
 
 static void

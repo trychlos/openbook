@@ -435,10 +435,6 @@ get_iconcil_data( const ofaIConcil *instance, gboolean search )
 			collector = ofa_igetter_get_collector( getter );
 			collection = my_icollector_collection_get( collector, OFO_TYPE_CONCIL, getter );
 			sdata->concil = get_concil_from_collection( collection, sdata->type, iconcil_get_id( instance ));
-
-			if( !sdata->concil ){
-				sdata->concil = ofo_concil_get_by_other_id( getter, sdata->type, iconcil_get_id( instance ));
-			}
 		}
 	}
 

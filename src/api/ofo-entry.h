@@ -124,6 +124,9 @@ GList          *ofo_entry_get_dataset_for_store      ( ofaIGetter *getter,
 															const gchar *account,
 															const gchar *ledger );
 
+GList          *ofo_entry_get_dataset                ( ofaIGetter *getter );
+ofxCounter      ofo_entry_get_count                  ( ofaIGetter *getter );
+
 #define         ofo_entry_free_dataset( L )          g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
 gboolean        ofo_entry_use_account                ( ofaIGetter *getter, const gchar *account );

@@ -77,6 +77,8 @@ typedef void (*ofoConcilEnumerate )( ofoConcil *concil, const gchar *type, ofxCo
 
 GType           ofo_concil_get_type        ( void ) G_GNUC_CONST;
 
+GList          *ofo_concil_get_dataset     ( ofaIGetter *getter );
+
 GList          *ofo_concil_get_orphans     ( ofaIGetter *getter );
 #define         ofo_concil_free_orphans(L) g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 

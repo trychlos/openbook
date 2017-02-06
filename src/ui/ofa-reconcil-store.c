@@ -265,7 +265,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcil
  *
  * Loads the entries for this @account.
  *
- * Returns: the count of loaded entries.
+ * Returns: the count of inserted entries.
  */
 ofxCounter
 ofa_reconcil_store_load_by_account( ofaReconcilStore *store, const gchar *account )
@@ -296,16 +296,17 @@ ofa_reconcil_store_load_by_account( ofaReconcilStore *store, const gchar *accoun
 		priv->currency = ofo_currency_get_by_code( priv->getter, priv->acc_currency );
 	}
 
-	/* load the entries for this account */
-	dataset = ofo_entry_get_dataset_for_store( priv->getter, account, NULL );
+	/* recall the unique dataset (loaded only once) */
+	dataset = ofo_entry_get_dataset( priv->getter );
+	count = 0;
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		entry_insert_row( store, entry, TRUE, NULL, NULL, 0 );
+		if( !my_collate( ofo_entry_get_account( entry ), account )){
+			entry_insert_row( store, entry, TRUE, NULL, NULL, 0 );
+			count += 1;
+		}
 	}
-
-	count = g_list_length( dataset );
-	g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
 
 	return( count );
 }

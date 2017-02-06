@@ -169,7 +169,6 @@ static void       setup_actions( ofaSettlementPage *self, GtkContainer *parent )
 static void       paned_page_v_init_view( ofaPanedPage *page );
 static void       on_account_changed( GtkEntry *entry, ofaSettlementPage *self );
 static void       on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self );
-static void       display_entries( ofaSettlementPage *self );
 static void       action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
 static void       action_on_unsettle_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
 static void       update_selection( ofaSettlementPage *self, gboolean settle );
@@ -215,8 +214,6 @@ settlement_page_dispose( GObject *instance )
 
 		/* unref object members here */
 		priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( instance ));
-
-		g_object_unref( priv->store );
 
 		g_object_unref( priv->settle_action );
 		g_object_unref( priv->unsettle_action );
@@ -379,7 +376,8 @@ tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 }
 
 /*
- * a row is visible if it is consistant with the selected settlement status
+ * A row is visible if it is consistant with the selected settlement
+ * account and status.
  */
 static gboolean
 tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlementPage *self )
@@ -676,6 +674,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	/* install an empty store before setting up the initial values */
 	priv->store = ofa_entry_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
+	g_object_unref( priv->store );
 
 	/* as GTK_SELECTION_MULTIPLE is set, we have to explicitely
 	 * setup the initial selection if a first row exists */
@@ -710,7 +709,7 @@ on_account_changed( GtkEntry *entry, ofaSettlementPage *self )
 		}
 
 		gtk_label_set_text( GTK_LABEL( priv->account_label ), ofo_account_get_label( account ));
-		display_entries( self );
+		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 
 	} else {
 		gtk_label_set_text( GTK_LABEL( priv->account_label ), "" );
@@ -737,18 +736,6 @@ on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self )
 				-1 );
 
 		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
-	}
-}
-
-static void
-display_entries( ofaSettlementPage *self )
-{
-	ofaSettlementPagePrivate *priv;
-
-	priv = ofa_settlement_page_get_instance_private( self );
-
-	if( my_strlen( priv->account_number )){
-		ofa_entry_store_load( priv->store, priv->account_number, NULL );
 	}
 }
 

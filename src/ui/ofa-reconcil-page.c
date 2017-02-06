@@ -1359,6 +1359,7 @@ account_do_change( ofaReconcilPage *self )
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	tview_clear_selection( self );
+	/* clear the store */
 	account_clear_content( self );
 
 	/* get an ofoAccount object, or NULL */
@@ -1366,6 +1367,7 @@ account_do_change( ofaReconcilPage *self )
 	priv->account = account_get_reconciliable( self, acc_number );
 	g_debug( "%s: self=%p, number=%s, account=%p", thisfn, ( void * ) self, acc_number, ( void * ) priv->account );
 
+	/* redisplay previously loaded bat files */
 	account_reset_content( self );
 
 	if( priv->account ){

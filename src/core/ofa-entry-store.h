@@ -32,11 +32,9 @@
  * @include: core/ofa-entry-store.h
  *
  * The #ofaEntryStore derives from #ofaListStore.
- * Contrarily to other stores of the application, this one is not
- * permanent: it is created on the fly when needed, and released
- * after use.
  *
- * The #ofaEntryStore defaults to be sorted by entry number asc.
+ * As other stores of the application, only one store exists, which is
+ * loaded on demand.
  *
  * The #ofaEntryStore takes advantage of the dossier signaling
  * system to maintain itself up to date.
@@ -139,10 +137,6 @@ enum {
 GType          ofa_entry_store_get_type( void );
 
 ofaEntryStore *ofa_entry_store_new     ( ofaIGetter *getter );
-
-ofxCounter     ofa_entry_store_load    ( ofaEntryStore *store,
-												const gchar *account,
-												const gchar *ledger );
 
 G_END_DECLS
 

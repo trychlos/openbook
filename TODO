@@ -349,9 +349,6 @@
 1285 2016-12-13 myIWindow: deprecate ::get_identifier() method
                 when several windows of same name are opened, just shift them 
 
-1292 2016-12-17 optimize reconciliation loading
-     2017- 1-27 more generally, optimize entries loading
-
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 
 1344 2017- 2- 3 re-authorize dossier open from command-line
@@ -439,6 +436,10 @@
 1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
                 by a my_iwindow_set_is_destroy_allowed() method
      2017- 1-23 done
+
+1292 2016-12-17 optimize reconciliation loading
+     2017- 1-27 more generally, optimize entries loading
+     2017- 2- 6 done
 
 1300 2016-12-19 Review preferences on opening a new/existing dossier:
                 user_preferences + dossier_preferences + settings in

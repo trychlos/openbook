@@ -20,6 +20,7 @@
  New features and improvements:
 
    - DossierManager: better behaves when the list is empty, disabling all unrelevant actions.
+   - Entries and reconciliations: optimize loading (todo #1292).
    - ExerciceMetaBin: no more force a new dossier to have a current exercice.
 
  Bug fixes:

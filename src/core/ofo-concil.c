@@ -69,6 +69,7 @@ static gboolean   concil_do_insert_id( ofoConcil *concil, const gchar *type, ofx
 static gboolean   concil_do_delete( ofoConcil *concil, const ofaIDBConnect *connect );
 static void       icollectionable_iface_init( myICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( void );
+static GList     *icollectionable_load_collection( void *user_data );
 
 G_DEFINE_TYPE_EXTENDED( ofoConcil, ofo_concil, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoConcil )
@@ -130,6 +131,27 @@ ofo_concil_class_init( ofoConcilClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = concil_dispose;
 	G_OBJECT_CLASS( klass )->finalize = concil_finalize;
+}
+
+/**
+ * ofo_concil_get_dataset:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns *all* conciliation lines.
+ *
+ * The returned list is owned by the #myICollector of the application,
+ * and should not be released by the caller.
+ */
+GList *
+ofo_concil_get_dataset( ofaIGetter *getter )
+{
+	myICollector *collector;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_CONCIL, getter ));
 }
 
 /**
@@ -745,10 +767,74 @@ icollectionable_iface_init( myICollectionableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = icollectionable_get_interface_version;
+	iface->load_collection = icollectionable_load_collection;
 }
 
 static guint
 icollectionable_get_interface_version( void )
 {
 	return( 1 );
+}
+
+static GList *
+icollectionable_load_collection( void *user_data )
+{
+	GList *list;
+	ofaIGetter *getter;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GSList *result, *irow, *icol;
+	ofxCounter prev_id, id, other;
+	gchar *type;
+	GDate date;
+	GTimeVal stamp;
+	ofoConcil *concil;
+
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
+
+	getter = OFA_IGETTER( user_data );
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+	prev_id = 0;
+	concil = NULL;
+	list = NULL;
+
+	if( ofa_idbconnect_query_ex( connect, "SELECT "
+			"a.REC_ID,b.REC_IDS_TYPE,b.REC_IDS_OTHER,a.REC_DVAL,a.REC_USER,a.REC_STAMP"
+			"	FROM OFA_T_CONCIL a, OFA_T_CONCIL_IDS b WHERE a.REC_ID=b.REC_ID"
+			"	ORDER BY a.REC_ID ASC", &result, TRUE )){
+
+		for( irow=result ; irow ; irow=irow->next ){
+
+			icol = ( GSList * ) irow->data;
+			id = atol(( const gchar * ) icol->data );
+			icol = icol->next;
+			type = g_strdup(( const gchar * ) icol->data );
+			icol = icol->next;
+			other = atol(( const gchar * ) icol->data );
+
+			if( id != prev_id ){
+				concil = ofo_concil_new( getter );
+				list = g_list_prepend( list, concil );
+				concil_set_id( concil, id );
+				icol = icol->next;
+				ofo_concil_set_dval( concil,
+						my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
+				icol = icol->next;
+				ofo_concil_set_user( concil, ( const gchar * ) icol->data );
+				icol = icol->next;
+				ofo_concil_set_stamp( concil,
+						my_stamp_set_from_sql( &stamp, ( const gchar * ) icol->data ));
+				prev_id = id;
+			}
+
+			g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), NULL );
+			concil_add_other_id( concil, type, other );
+			g_free( type );
+		}
+
+		ofa_idbconnect_free_results( result );
+	}
+
+	return( list );
 }

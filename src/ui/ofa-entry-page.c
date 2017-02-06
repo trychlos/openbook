@@ -944,7 +944,7 @@ ledger_display_from( ofaEntryPage *self )
 
 	g_debug( "%s: self=%p, ledger=%s", thisfn, ( void * ) self, priv->jou_mnemo );
 
-	ofa_entry_store_load( priv->store, NULL, priv->jou_mnemo );
+	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 	balances_compute( self );
 
 	return( G_SOURCE_REMOVE );
@@ -1037,7 +1037,7 @@ account_display_from( ofaEntryPage *self )
 
 	g_debug( "%s: self=%p, account=%s", thisfn, ( void * ) self, priv->acc_number );
 
-	ofa_entry_store_load( priv->store, priv->acc_number, NULL );
+	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 	balances_compute( self );
 
 	return( G_SOURCE_REMOVE );

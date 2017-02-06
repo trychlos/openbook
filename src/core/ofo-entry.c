@@ -214,6 +214,9 @@ static void         error_acc_currency( const gchar *currency, ofoAccount *accou
 static void         error_amounts( ofxAmount debit, ofxAmount credit );
 static gboolean     entry_do_update( ofoEntry *entry, ofaIGetter *getter );
 static gboolean     do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter number );
+static void         icollectionable_iface_init( myICollectionableInterface *iface );
+static guint        icollectionable_get_interface_version( void );
+static GList       *icollectionable_load_collection( void *user_data );
 static void         iconcil_iface_init( ofaIConcilInterface *iface );
 static guint        iconcil_get_interface_version( void );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
@@ -253,6 +256,7 @@ static void         signaler_on_updated_model_mnemo( ofaISignaler *signaler, con
 
 G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoEntry )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICONCIL, iconcil_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
@@ -764,6 +768,54 @@ ofo_entry_get_dataset_for_store( ofaIGetter *getter, const gchar *account, const
 	g_string_free( where, TRUE );
 
 	return( dataset );
+}
+
+/**
+ * ofo_entry_get_dataset:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns *all* entries.
+ *
+ * The returned list is owned by the #myICollector of the application,
+ * and should not be released by the caller.
+ */
+GList *
+ofo_entry_get_dataset( ofaIGetter *getter )
+{
+	myICollector *collector;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	collector = ofa_igetter_get_collector( getter );
+
+	return( my_icollector_collection_get( collector, OFO_TYPE_ENTRY, getter ));
+}
+
+/**
+ * ofo_entry_get_count:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the total count of entries.
+ */
+ofxCounter
+ofo_entry_get_count( ofaIGetter *getter )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	gint count_int;
+	ofxCounter count;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
+
+	count = 0;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	if( ofa_idbconnect_query_int( connect, "SELECT COUNT(*) FROM OFA_T_ENTRIES", &count_int, TRUE )){
+		count = count_int;
+	}
+
+	return( count );
 }
 
 /*
@@ -2328,6 +2380,42 @@ ofo_entry_delete( ofoEntry *entry )
 			signaler, SIGNALER_BASE_DELETED, entry );
 
 	return( TRUE );
+}
+
+/*
+ * myICollectionable interface management
+ */
+static void
+icollectionable_iface_init( myICollectionableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_icollectionable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = icollectionable_get_interface_version;
+	iface->load_collection = icollectionable_load_collection;
+}
+
+static guint
+icollectionable_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GList *
+icollectionable_load_collection( void *user_data )
+{
+	GList *list;
+
+	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
+
+	list = ofo_base_load_dataset(
+					st_boxed_defs,
+					"OFA_T_ENTRIES",
+					OFO_TYPE_ENTRY,
+					OFA_IGETTER( user_data ));
+
+	return( list );
 }
 
 /*
