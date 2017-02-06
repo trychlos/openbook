@@ -351,7 +351,13 @@
 
 1344 2017- 2- 3 re-authorize dossier open from command-line
 
-1346
+1346 2017- 2- 6 SettlementPage: add a view/edit properties idem in context menu
+
+1347 2017- 2- 6 SettlementPage: does not update automatically when an
+                entry is updated in another page
+                (ex: when a settled entry is deleted from EntryPage)
+
+1348
 
 -----------------------------------------------------------------------
  DONE

@@ -94,6 +94,7 @@ static void     setup_treeview( ofaDossierManager *self );
 static void     idialog_init_actions( ofaDossierManager *self );
 static void     idialog_init_menu( ofaDossierManager *self );
 static void     on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaDossierManager *self );
+static void     do_enable_actions( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period );
 static void     on_tview_activated( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaDossierManager *self );
 static void     action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
 static void     action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
@@ -392,6 +393,12 @@ idialog_init_menu( ofaDossierManager *self )
 static void
 on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaDossierManager *self )
 {
+	do_enable_actions( self, meta, period );
+}
+
+static void
+do_enable_actions( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period )
+{
 	ofaDossierManagerPrivate *priv;
 	ofaHub *hub;
 	gboolean have_data, is_opened;
@@ -509,7 +516,13 @@ action_on_close_activated( GSimpleAction *action, GVariant *empty, ofaDossierMan
 	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period ) &&
 			ofa_hub_is_opened_dossier( hub, period )){
 
+		/* does not close this dossier manager on dossier close */
+		my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
 		ofa_hub_close_dossier( hub );
+		my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
+
+		/* re-enable the actions for the same selection */
+		do_enable_actions( self, meta, period );
 	}
 }
 
