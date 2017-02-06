@@ -1001,7 +1001,7 @@ warning_exercice_unset( ofaMainWindow *self )
 					"ending dates of the current exercice." ));
 
 	dialog = gtk_message_dialog_new(
-			NULL,
+			GTK_WINDOW( self ),
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_WARNING,
 			GTK_BUTTONS_CLOSE,
