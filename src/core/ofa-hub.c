@@ -518,25 +518,27 @@ remediate_dossier_settings( ofaIGetter *getter )
 	settings_begin = ofa_idbexercice_meta_get_begin_date( period );
 	settings_end = ofa_idbexercice_meta_get_end_date( period );
 
+	sdbbegin = my_date_to_str( db_begin, MY_DATE_SQL );
+	sdbend = my_date_to_str( db_end, MY_DATE_SQL );
+	ssetbegin = my_date_to_str( settings_begin, MY_DATE_SQL );
+	ssetend = my_date_to_str( settings_end, MY_DATE_SQL );
+
+	g_debug( "%s: db_current=%s, db_begin=%s, db_end=%s, settings_current=%s, settings_begin=%s, settings_end=%s",
+			thisfn,
+			db_current ? "True":"False", sdbbegin, sdbend,
+			settings_current ? "True":"False", ssetbegin, ssetend );
+
+	g_free( sdbbegin );
+	g_free( sdbend );
+	g_free( ssetbegin );
+	g_free( ssetend );
+
 	/* update settings if not equal */
 	if( db_current != settings_current ||
 			my_date_compare_ex( db_begin, settings_begin, TRUE ) != 0 ||
 			my_date_compare_ex( db_end, settings_end, FALSE ) != 0 ){
 
-		sdbbegin = my_date_to_str( db_begin, MY_DATE_SQL );
-		sdbend = my_date_to_str( db_end, MY_DATE_SQL );
-		ssetbegin = my_date_to_str( settings_begin, MY_DATE_SQL );
-		ssetend = my_date_to_str( settings_end, MY_DATE_SQL );
-
-		g_debug( "%s: db_current=%s, db_begin=%s, db_end=%s, settings_current=%s, settings_begin=%s, settings_end=%s: remediating settings",
-				thisfn,
-				db_current ? "True":"False", sdbbegin, sdbend,
-				settings_current ? "True":"False", ssetbegin, ssetend );
-
-		g_free( sdbbegin );
-		g_free( sdbend );
-		g_free( ssetbegin );
-		g_free( ssetend );
+		g_debug( "%s: remediating settings", thisfn );
 
 		ofa_idbexercice_meta_set_current( period, db_current );
 		ofa_idbexercice_meta_set_begin_date( period, db_begin );
