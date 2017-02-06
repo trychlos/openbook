@@ -666,7 +666,7 @@ class_cmp_by_number( const ofoClass *a, gpointer pnum )
 static void
 icollectionable_iface_init( myICollectionableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+	static const gchar *thisfn = "ofo_class_icollectionable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
