@@ -460,7 +460,7 @@ set_exercices_from_settings( ofaIDBDossierMeta *self, sIDBMeta *sdata )
 		}
 	}
 
-	g_list_free_full( sdata->periods, ( GDestroyNotify ) g_object_unref );
+	g_list_free_full( sdata->periods, ( GDestroyNotify ) ofa_idbexercice_meta_unref );
 	sdata->periods = new_list;
 	my_isettings_free_keys( sdata->settings_iface, keys );
 }
@@ -580,8 +580,8 @@ ofa_idbdossier_meta_new_period( ofaIDBDossierMeta *meta, gboolean attach )
 	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->new_period ){
 		exercice_meta = OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->new_period( meta );
 
-		get_exercice_key( meta, &key, &key_id );
 		ofa_idbexercice_meta_set_dossier_meta( exercice_meta, meta );
+		get_exercice_key( meta, &key, &key_id );
 		ofa_idbexercice_meta_set_settings_key( exercice_meta, key );
 		ofa_idbexercice_meta_set_settings_id( exercice_meta, key_id );
 		g_free( key );

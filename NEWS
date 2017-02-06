@@ -27,7 +27,7 @@
 
  Other changes:
 
-   - 
+   - ofaEntryStore: is now loaded at once.
 
 -----------------------------------------------------------------------
  Version 0.66
