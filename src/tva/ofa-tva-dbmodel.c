@@ -75,6 +75,8 @@ static gboolean dbmodel_to_v5( ofaTvaDBModel *self, guint version );
 static gulong   count_v5( ofaTvaDBModel *self );
 static gboolean dbmodel_to_v6( ofaTvaDBModel *self, guint version );
 static gulong   count_v6( ofaTvaDBModel *self );
+static gboolean dbmodel_to_v7( ofaTvaDBModel *self, guint version );
+static gulong   count_v7( ofaTvaDBModel *self );
 
 typedef struct {
 	gint        ver_target;
@@ -90,6 +92,7 @@ static sMigration st_migrates[] = {
 		{ 4, dbmodel_to_v4, count_v4 },
 		{ 5, dbmodel_to_v5, count_v5 },
 		{ 6, dbmodel_to_v6, count_v6 },
+		{ 7, dbmodel_to_v7, count_v7 },
 		{ 0 }
 };
 
@@ -759,6 +762,46 @@ static gulong
 count_v6( ofaTvaDBModel *self )
 {
 	return( 4 );
+}
+
+/*
+ * Define Documents index
+ */
+static gboolean
+dbmodel_to_v7( ofaTvaDBModel *self, guint version )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_to_v7";
+
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
+
+	/* 1. create Records documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS TVA_T_RECORDS_DOC ("
+			"	TFO_MNEMO           VARCHAR(64) BINARY NOT NULL      COMMENT 'VAT record identifier',"
+			"	TFO_END             DATE               NOT NULL      COMMENT 'VAT record date',"
+			"	TFO_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (TFO_MNEMO,TFO_END,TFO_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 2. create Form documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS_DOC ("
+			"	TFO_MNEMO           VARCHAR(64) BINARY NOT NULL      COMMENT 'VAT form identifier',"
+			"	TFO_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (TFO_MNEMO,TFO_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v7( ofaTvaDBModel *self )
+{
+	return( 2 );
 }
 
 /*

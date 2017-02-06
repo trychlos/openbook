@@ -127,6 +127,8 @@ static gboolean dbmodel_v33( ofaMysqlDBModel *self, gint version );
 static gulong   count_v33( ofaMysqlDBModel *self );
 static gboolean dbmodel_v34( ofaMysqlDBModel *self, gint version );
 static gulong   count_v34( ofaMysqlDBModel *self );
+static gboolean dbmodel_v35( ofaMysqlDBModel *self, gint version );
+static gulong   count_v35( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -144,6 +146,7 @@ static sMigration st_migrates[] = {
 		{ 32, dbmodel_v32, count_v32 },
 		{ 33, dbmodel_v33, count_v33 },
 		{ 34, dbmodel_v34, count_v34 },
+		{ 35, dbmodel_v35, count_v35 },
 		{ 0 }
 };
 
@@ -541,6 +544,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* n° 2 */
 	/* BAT_SOLDE is remediated in v22 */
 	/* Labels are resized in v28 */
+	/* URI is resized in v35 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
 			"	BAT_ID        BIGINT      NOT NULL UNIQUE            COMMENT 'Intern import identifier',"
@@ -615,6 +619,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* Identifiers and labels are resized in v28 */
 	/* DOS_LAST_OPE added in v29 */
 	/* DOS_PREVEXE_END added in v31 */
+	/* DOS_LAST_DOC added in v35 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
 			"	DOS_ID               INTEGER   NOT NULL UNIQUE       COMMENT 'Row identifier',"
@@ -671,6 +676,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* n° 9 */
 	/* Identifiers and labels are resized in v28 */
 	/* ope number is added in v32 */
+	/* rule, notes are added in v35 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
 			"	ENT_DEFFECT      DATE NOT NULL                       COMMENT 'Imputation effect date',"
@@ -2000,4 +2006,233 @@ static gulong
 count_v34( ofaMysqlDBModel *self )
 {
 	return( 2 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v35:
+ *
+ * - OFA_T_BAT: uri is extended to 4096 chars
+ * - OFA_T_ENTRIES: add rule (#1228)
+ * - Dossier settings are stored in DB (#1236)
+ * - Have documents (#1263).
+ */
+static gboolean
+dbmodel_v35( ofaMysqlDBModel *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v35";
+	gchar *query;
+	gboolean ok;
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	/* 1. alter bat */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_BAT "
+			"	MODIFY COLUMN BAT_URI       VARCHAR(4096)                           COMMENT 'Imported URI'" )){
+		return( FALSE );
+	}
+
+	/* 2. alter dossier */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	ADD COLUMN    DOS_LAST_DOC  BIGINT DEFAULT 0                        COMMENT 'Last document number used'" )){
+		return( FALSE );
+	}
+
+	/* 3. alter entries
+	 * Default is Normal; other rules are Forward and Closing */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_ENTRIES "
+			"	ADD COLUMN    ENT_NOTES     VARCHAR(4096)                           COMMENT 'Entry notes',"
+			"	ADD COLUMN    ENT_RULE      CHAR(1) DEFAULT 'N'                     COMMENT 'Entry rule indicator'" )){
+		return( FALSE );
+	}
+
+	/* 4 set standard rule */
+	if( !exec_query( self, "UPDATE OFA_T_ENTRIES SET ENT_RULE='N'" )){
+		return( FALSE );
+	}
+
+	/* +1  drop the temp table if it exists*/
+	exec_query( self, "DROP TABLE IF EXISTS TMP_TMP" );
+
+	/* +2  create a temp table */
+	if( !exec_query( self, "CREATE TABLE TMP_TMP (SELECT * FROM OFA_T_ENTRIES)" )){
+		return( FALSE );
+	}
+
+	/* 5. update forward entries
+	 * at least the first exercice was buggy, and forward operation
+	 * template was not recorded in the RAN entries - so only have
+	 * the beginning date of the exercice and the ledger in this case */
+	query = g_strdup_printf( "UPDATE OFA_T_ENTRIES SET ENT_RULE='F'"
+			"	WHERE ENT_NUMBER IN ("
+			"		SELECT ENT_NUMBER FROM TMP_TMP "
+			"			WHERE ENT_DEFFECT=(SELECT DOS_EXE_BEGIN FROM OFA_T_DOSSIER WHERE DOS_ID=%u) "
+			"				AND (ENT_OPE_TEMPLATE=(SELECT DOS_FORW_OPE FROM OFA_T_DOSSIER WHERE DOS_ID=%u) "
+			"					OR ENT_OPE_TEMPLATE IS NULL))", DOSSIER_ROW_ID, DOSSIER_ROW_ID );
+	ok = exec_query( self, query );
+	g_free( query );
+	if( !ok ){
+		return( FALSE );
+	}
+
+	/* 6. update closing entries (if any)
+	 * the first exercice was correct and we can rely on ope template */
+	query = g_strdup_printf( "UPDATE OFA_T_ENTRIES SET ENT_RULE='C'"
+			"	WHERE ENT_NUMBER IN ("
+			"		SELECT ENT_NUMBER FROM TMP_TMP "
+			"			WHERE ENT_DEFFECT=(SELECT DOS_EXE_END FROM OFA_T_DOSSIER WHERE DOS_ID=%u) "
+			"				AND ENT_OPE_TEMPLATE=(SELECT DOS_SLD_OPE FROM OFA_T_DOSSIER WHERE DOS_ID=%u))",
+				DOSSIER_ROW_ID, DOSSIER_ROW_ID );
+	ok = exec_query( self, query );
+	g_free( query );
+	if( !ok ){
+		return( FALSE );
+	}
+
+	/* +3  drop the temp table */
+	if( !exec_query( self, "DROP TABLE TMP_TMP" )){
+		return( FALSE );
+	}
+
+	/* 7. create documents table */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_DOCS ("
+			"	DOC_ID              BIGINT NOT NULL DEFAULT 0        COMMENT 'Document identifier',"
+			"	DOC_LABEL           VARCHAR(256)                     COMMENT 'Document label',"
+			"	DOC_URI             VARCHAR(4096)                    COMMENT 'Document source URI',"
+			"	DOC_NOTES           VARCHAR(4096)                    COMMENT 'Document notes',"
+			"	DOC_UPD_USER        VARCHAR(64)                      COMMENT 'Last update user',"
+			"	DOC_UPD_STAMP       TIMESTAMP                        COMMENT 'Last update timestamp',"
+			"	DOC_BLOB			LONGBLOB                         COMMENT 'Document content',"
+			"	UNIQUE (DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 8. create BAT documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_DOC ("
+			"	BAT_ID              BIGINT NOT NULL                  COMMENT 'BAT file identifier',"
+			"	BAT_DOC_ID          BIGINT NOT NULL                  COMMENT 'Document identifier',"
+			"	UNIQUE (BAT_ID,BAT_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 9. create Dossier documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_DOC ("
+			"	DOS_ID              BIGINT NOT NULL                  COMMENT 'Dossier identifier',"
+			"	DOS_DOC_ID          BIGINT NOT NULL                  COMMENT 'Document identifier',"
+			"	UNIQUE (DOS_ID,DOS_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 10. create Accounts documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS_DOC ("
+			"	ACC_NUMBER          VARCHAR(64) BINARY NOT NULL      COMMENT 'Account identifier',"
+			"	ACC_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (ACC_NUMBER,ACC_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 11. create Entries documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES_DOC ("
+			"	ENT_NUMBER          BIGINT             NOT NULL      COMMENT 'Entry number',"
+			"	ENT_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (ENT_NUMBER,ENT_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 12. create Currencies documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_CURRENCIES_DOC ("
+			"	CUR_CODE            CHAR(3)            NOT NULL      COMMENT 'Currency ISO 3A code',"
+			"	CUR_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (CUR_CODE,CUR_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 13. create Paiement means documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_PAIMEANS_DOC ("
+			"	PAM_CODE            VARCHAR(64) BINARY NOT NULL      COMMENT 'Paiement mean identifier',"
+			"	PAM_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (PAM_CODE,PAM_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 14. create Classes documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_CLASSES_DOC ("
+			"	CLA_NUMBER          INTEGER            NOT NULL      COMMENT 'Class number',"
+			"	CLA_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (CLA_NUMBER,CLA_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 15. create OpeTemplates documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES_DOC ("
+			"	OTE_MNEMO           VARCHAR(64) BINARY NOT NULL      COMMENT 'Operation template identifier',"
+			"	OTE_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (OTE_MNEMO,OTE_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 16. create Ledgers documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_DOC ("
+			"	LED_MNEMO           VARCHAR(64) BINARY NOT NULL      COMMENT 'Ledger identifier',"
+			"	LED_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (LED_MNEMO,LED_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 17. create Rates documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_RATES_DOC ("
+			"	RAT_MNEMO           VARCHAR(64) BINARY NOT NULL      COMMENT 'Rate identifier',"
+			"	RAT_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (RAT_MNEMO,RAT_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 18. create Dossier Preferences table
+	 * max key length is 767 bytes
+	 * each utf-8 char takes three bytes! */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_PREFS ("
+			"	DOS_ID              INTEGER              NOT NULL    COMMENT 'Dossier identifier',"
+			"	DOS_PREF_KEY        VARCHAR(254)  BINARY NOT NULL    COMMENT 'Preference key',"
+			"	DOS_PREF_VALUE      VARCHAR(4096) BINARY             COMMENT 'Preference value',"
+			"	UNIQUE (DOS_ID,DOS_PREF_KEY)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v35( ofaMysqlDBModel *self )
+{
+	return( 21 );
 }

@@ -80,6 +80,8 @@ static gboolean dbmodel_to_v6( ofaRecurrentDBModel *self, guint version );
 static gulong   count_v6( ofaRecurrentDBModel *self );
 static gboolean dbmodel_to_v7( ofaRecurrentDBModel *self, guint version );
 static gulong   count_v7( ofaRecurrentDBModel *self );
+static gboolean dbmodel_to_v8( ofaRecurrentDBModel *self, guint version );
+static gulong   count_v8( ofaRecurrentDBModel *self );
 
 typedef struct {
 	gint        ver_target;
@@ -96,6 +98,7 @@ static sMigration st_migrates[] = {
 		{ 5, dbmodel_to_v5, count_v5 },
 		{ 6, dbmodel_to_v6, count_v6 },
 		{ 7, dbmodel_to_v7, count_v7 },
+		{ 8, dbmodel_to_v8, count_v8 },
 		{ 0 }
 };
 
@@ -1429,6 +1432,55 @@ static gulong
 count_v7( ofaRecurrentDBModel *self )
 {
 	return( 53 );
+}
+
+/*
+ * Define documents index
+ */
+static gboolean
+dbmodel_to_v8( ofaRecurrentDBModel *self, guint version )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v8";
+
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
+
+	/* 1. create Models documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS REC_T_MODELS_DOC ("
+			"	REC_MNEMO           VARCHAR(64) BINARY NOT NULL      COMMENT 'Recurrent model identifier',"
+			"	REC_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (REC_MNEMO,REC_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 2. create Run documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS REC_T_RUN_DOC ("
+			"	REC_MNEMO           VARCHAR(64) BINARY NOT NULL      COMMENT 'Recurrent run identifier',"
+			"	REC_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (REC_MNEMO,REC_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 3. create Periodicity documents index */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS REC_T_PERIODS_DOC ("
+			"	REC_PER_ID          VARCHAR(16) BINARY NOT NULL      COMMENT 'Periodicity identifier',"
+			"	REC_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
+			"	UNIQUE (REC_PER_ID,REC_DOC_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v8( ofaRecurrentDBModel *self )
+{
+	return( 3 );
 }
 
 static gulong
