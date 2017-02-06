@@ -60,6 +60,8 @@ typedef struct {
 }
 	ofaMysqlDossierMetaClass;
 
+#define OFA_MYSQL_SU_KEY                "mysql-su"
+
 GType                ofa_mysql_dossier_meta_get_type        ( void ) G_GNUC_CONST;
 
 ofaMysqlDossierMeta *ofa_mysql_dossier_meta_new             ( void );
@@ -70,7 +72,8 @@ guint                ofa_mysql_dossier_meta_get_port        ( ofaMysqlDossierMet
 
 const gchar         *ofa_mysql_dossier_meta_get_socket      ( ofaMysqlDossierMeta *meta );
 
-const gchar         *ofa_mysql_dossier_meta_get_root_account( ofaMysqlDossierMeta *meta );
+void                 ofa_mysql_dossier_meta_set_root_account( ofaMysqlDossierMeta *meta,
+																	const gchar *remembered_account );
 
 void                 ofa_mysql_dossier_meta_set_from_editor ( ofaMysqlDossierMeta *meta,
 																	ofaMysqlDossierBin *dossier_bin,

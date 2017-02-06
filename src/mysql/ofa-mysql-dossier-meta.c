@@ -49,7 +49,7 @@ typedef struct {
 	gchar   *host;
 	gchar   *socket;
 	guint    port;
-	gchar   *root_account;
+	gchar   *root_account;				/* remembered root account */
 }
 	ofaMysqlDossierMetaPrivate;
 
@@ -224,26 +224,25 @@ ofa_mysql_dossier_meta_get_socket( ofaMysqlDossierMeta *meta )
 }
 
 /**
- * ofa_mysql_dossier_meta_get_root_account:
+ * ofa_mysql_dossier_meta_set_root_account:
  * @meta: this #ofaMysqlDossierMeta object.
+ * @remembered_account: [allow-none]: the root account the user has asked us to remember.
  *
- * Returns: the root_account of the dataserver (if set), or %NULL.
- *
- * The returned string is owned by the @meta object, and should not be
- * freed by the caller.
+ * Set: the root account to be remembered.
  */
-const gchar *
-ofa_mysql_dossier_meta_get_root_account( ofaMysqlDossierMeta *meta )
+void
+ofa_mysql_dossier_meta_set_root_account( ofaMysqlDossierMeta *meta, const gchar *remembered_account )
 {
 	ofaMysqlDossierMetaPrivate *priv;
 
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), NULL );
+	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
 
 	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
 
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+	g_return_if_fail( !priv->dispose_has_run );
 
-	return(( const gchar * ) priv->root_account );
+	g_free( priv->root_account );
+	priv->root_account = g_strdup( remembered_account );
 }
 
 /**

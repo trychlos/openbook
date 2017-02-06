@@ -39,6 +39,7 @@
    - ofaEntryProperties: let the user close the dialog.
    - ofaExerciceTreeview: fix the update when no dossier is selected.
    - ofaIDBDossierMeta, ofaIDBExerciceMeta: fix refs management.
+   - ofaMysqlRootBin: now updates the ofaMysqlDossierMeta runtime datas.
 
  Other changes:
 

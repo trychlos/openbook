@@ -551,6 +551,10 @@ read_settings( ofaMysqlRootBin *self )
 			}
 
 			my_isettings_free_string_list( settings, strlist );
+
+			ofa_mysql_dossier_meta_set_root_account(
+					OFA_MYSQL_DOSSIER_META( priv->dossier_meta ),
+					priv->remember ? priv->account : NULL );
 		}
 	}
 }
@@ -582,6 +586,10 @@ write_settings( ofaMysqlRootBin *self )
 
 			g_free( str );
 		}
+
+		ofa_mysql_dossier_meta_set_root_account(
+				OFA_MYSQL_DOSSIER_META( priv->dossier_meta ),
+				priv->remember ? priv->account : NULL );
 	}
 }
 
