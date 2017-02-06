@@ -71,8 +71,9 @@ typedef struct _ofaIDBSuperuser                    ofaIDBSuperuser;
 /**
  * ofaIDBSuperuserInterface:
  * @get_interface_version: [should]: returns the interface version number.
- * @get_size_group: [may]: returns the #GtkSizeGroup of the column.
  * @set_dossier_meta: [may]: set the #ofaIDBDossierMeta.
+ * @get_size_group: [may]: returns the #GtkSizeGroup of the column.
+ * @set_with_remember: [may]: set the sensitivity of the 'Remember' button.
  * @is_valid: [may]: returns %TRUE if the entered informations are valid.
  * @set_valid: [may]: set the validity status.
  *
@@ -98,18 +99,6 @@ typedef struct {
 
 	/*** instance-wide ***/
 	/**
-	 * get_size_group:
-	 * @instance: the #ofaIDBSuperuser instance.
-	 * @column: the desired column.
-	 *
-	 * Returns: the #GtkSizeGroup for the desired @column.
-	 *
-	 * Since: version 1
-	 */
-	GtkSizeGroup *  ( *get_size_group )              ( const ofaIDBSuperuser *instance,
-															guint column );
-
-	/**
 	 * set_dossier_meta:
 	 * @instance: the #ofaIDBSuperuser instance.
 	 * @dossier_meta: a #ofaIDBDossierMeta.
@@ -125,6 +114,32 @@ typedef struct {
 	 */
 	void            ( *set_dossier_meta )            ( ofaIDBSuperuser *instance,
 															ofaIDBDossierMeta *dossier_meta );
+
+	/**
+	 * get_size_group:
+	 * @instance: the #ofaIDBSuperuser instance.
+	 * @column: the desired column.
+	 *
+	 * Returns: the #GtkSizeGroup for the desired @column.
+	 *
+	 * Since: version 1
+	 */
+	GtkSizeGroup *  ( *get_size_group )              ( const ofaIDBSuperuser *instance,
+															guint column );
+
+	/**
+	 * set_with_remember:
+	 * @instance: the #ofaIDBSuperuser instance.
+	 * @with_remember: whether the 'Remember' button should be active.
+	 *
+	 * Set the sensitivity of the 'Remember' button.
+	 *
+	 * Defaults to %TRUE.
+	 *
+	 * Since: version 1
+	 */
+	void             ( *set_with_remember )          ( ofaIDBSuperuser *instance,
+															gboolean with_remember );
 
 	/**
 	 * is_valid:
@@ -194,6 +209,9 @@ void               ofa_idbsuperuser_set_dossier_meta            ( ofaIDBSuperuse
 
 GtkSizeGroup      *ofa_idbsuperuser_get_size_group              ( const ofaIDBSuperuser *instance,
 																		guint column );
+
+void               ofa_idbsuperuser_set_with_remember           ( ofaIDBSuperuser *instance,
+																		gboolean with_remember );
 
 gboolean           ofa_idbsuperuser_is_valid                    ( const ofaIDBSuperuser *instance,
 																		gchar **message );

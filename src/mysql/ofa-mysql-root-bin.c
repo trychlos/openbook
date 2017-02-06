@@ -63,6 +63,7 @@ typedef struct {
 	 */
 	ofaIDBDossierMeta  *dossier_meta;
 	gchar              *account;
+	gboolean            with_remember;
 	gboolean            remember;
 	gchar              *password;
 }
@@ -84,8 +85,9 @@ static guint         ibin_get_interface_version( void );
 static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
 static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
 static void          idbsuperuser_iface_init( ofaIDBSuperuserInterface *iface );
-static GtkSizeGroup *idbsuperuser_get_size_group( const ofaIDBSuperuser *instance, guint column );
 static void          idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dossier_meta );
+static GtkSizeGroup *idbsuperuser_get_size_group( const ofaIDBSuperuser *instance, guint column );
+static void          idbsuperuser_set_with_remember( ofaIDBSuperuser *instance, gboolean with_remember );
 static gboolean      idbsuperuser_is_valid( const ofaIDBSuperuser *instance, gchar **message );
 static void          idbsuperuser_set_valid( ofaIDBSuperuser *instance, gboolean valid );
 static void          idbsuperuser_set_credentials_from_connect( ofaIDBSuperuser *instance, ofaIDBConnect *connect );
@@ -155,6 +157,7 @@ ofa_mysql_root_bin_init( ofaMysqlRootBin *self )
 	priv->dispose_has_run = FALSE;
 	priv->account = NULL;
 	priv->password = NULL;
+	priv->with_remember = TRUE;
 }
 
 static void
@@ -234,6 +237,7 @@ setup_bin( ofaMysqlRootBin *self )
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mrb-remember-btn" );
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
 	g_signal_connect( btn, "toggled", G_CALLBACK( on_remember_toggled ), self );
+	gtk_widget_set_sensitive( btn, priv->with_remember );
 	priv->remember_btn = btn;
 
 	/* connect to the 'changed' signal of the entry */
@@ -551,6 +555,10 @@ read_settings( ofaMysqlRootBin *self )
 	}
 }
 
+/*
+ * There is no need to write settings again if the 'Remember' button
+ * was inactive (and thus has not changed).
+ */
 static void
 write_settings( ofaMysqlRootBin *self )
 {
@@ -561,7 +569,7 @@ write_settings( ofaMysqlRootBin *self )
 
 	priv = ofa_mysql_root_bin_get_instance_private( self );
 
-	if( priv->dossier_meta ){
+	if( priv->dossier_meta && priv->with_remember ){
 		settings = ofa_idbdossier_meta_get_settings_iface( priv->dossier_meta );
 		group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
@@ -666,11 +674,18 @@ idbsuperuser_iface_init( ofaIDBSuperuserInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_size_group = idbsuperuser_get_size_group;
 	iface->set_dossier_meta = idbsuperuser_set_dossier_meta;
+	iface->get_size_group = idbsuperuser_get_size_group;
+	iface->set_with_remember = idbsuperuser_set_with_remember;
 	iface->is_valid = idbsuperuser_is_valid;
 	iface->set_valid = idbsuperuser_set_valid;
 	iface->set_credentials_from_connect = idbsuperuser_set_credentials_from_connect;
+}
+
+static void
+idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dossier_meta )
+{
+	ofa_mysql_root_bin_set_dossier_meta( OFA_MYSQL_ROOT_BIN( instance ), dossier_meta );
 }
 
 static GtkSizeGroup *
@@ -680,9 +695,15 @@ idbsuperuser_get_size_group( const ofaIDBSuperuser *instance, guint column )
 }
 
 static void
-idbsuperuser_set_dossier_meta( ofaIDBSuperuser *instance, ofaIDBDossierMeta *dossier_meta )
+idbsuperuser_set_with_remember( ofaIDBSuperuser *instance, gboolean with_remember )
 {
-	ofa_mysql_root_bin_set_dossier_meta( OFA_MYSQL_ROOT_BIN( instance ), dossier_meta );
+	ofaMysqlRootBinPrivate *priv;
+
+	priv = ofa_mysql_root_bin_get_instance_private( OFA_MYSQL_ROOT_BIN( instance ));
+
+	gtk_widget_set_sensitive( priv->remember_btn, with_remember );
+
+	priv->with_remember = with_remember;
 }
 
 static gboolean

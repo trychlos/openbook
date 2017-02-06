@@ -324,6 +324,34 @@ ofa_idbsuperuser_get_size_group( const ofaIDBSuperuser *instance, guint column )
 }
 
 /**
+ * ofa_idbsuperuser_set_with_remember:
+ * @instance: this #ofaIDBSuperuser instance.
+ * @with_remember: whether the 'Remember' button should be active.
+ *
+ * Set the sensitivity of the 'Remember' button.
+ *
+ * Defaults to %TRUE.
+ */
+void
+ofa_idbsuperuser_set_with_remember( ofaIDBSuperuser *instance, gboolean with_remember )
+{
+	static const gchar *thisfn = "ofa_idbsuperuser_set_with_remember";
+
+	g_debug( "%s: instance=%p, with_remember=%s",
+			thisfn, ( void * ) instance, with_remember ? "True":"False" );
+
+	g_return_if_fail( instance && OFA_IS_IDBSUPERUSER( instance ));
+
+	if( OFA_IDBSUPERUSER_GET_INTERFACE( instance )->set_with_remember ){
+		OFA_IDBSUPERUSER_GET_INTERFACE( instance )->set_with_remember( instance, with_remember );
+		return;
+	}
+
+	g_info( "%s: ofaIDBSuperuser's %s implementation does not provide 'set_with_remember()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+}
+
+/**
  * ofa_idbsuperuser_is_valid:
  * @instance: this #ofaIDBSuperuser instance.
  * @message: [allow-none][out]: a message to be set.

@@ -40,7 +40,6 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-idbprovider-def.h"
 #include "api/ofa-idbsuperuser-def.h"
 
 G_BEGIN_DECLS
@@ -68,10 +67,7 @@ GType    ofa_dbsu_get_type( void ) G_GNUC_CONST;
 
 gboolean ofa_dbsu_run     ( ofaIGetter *getter,
 								GtkWindow *parent,
-								const gchar *settings_prefix,
-								ofaIDBProvider *provider,
-								guint rule,
-								ofaIDBSuperuser **su_bin );
+								ofaIDBSuperuser *su_bin );
 
 G_END_DECLS
 

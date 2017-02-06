@@ -42,6 +42,8 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
+#include "api/ofa-idbprovider.h"
+#include "api/ofa-idbsuperuser.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofo-dossier.h"
@@ -521,10 +523,11 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 	ofaIDBDossierMeta *meta;
 	ofaIDBExerciceMeta *period;
 	ofaIDBSuperuser *su_bin;
-	gchar *settings_prefix, *msgerr;
+	gchar *msgerr;
 	ofaIDBConnect *connect;
 	ofaDossierCollection *collection;
 	GtkWindow *toplevel;
+	gboolean ok_to_delete;
 
 	g_debug( "%s: action=%p, empty=%p, self=%p",
 			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
@@ -542,10 +545,18 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 
 		/* delete the exercice
 		 * delete the dossier when deleting the last exercice */
-		settings_prefix = g_strdup_printf( "%s-dbsu", priv->settings_prefix );
 
-		if( ofa_dbsu_run( priv->getter, GTK_WINDOW( self ), settings_prefix, provider, HUB_RULE_EXERCICE_DELETE, &su_bin ) &&
-			confirm_delete( self, meta, period )){
+		ok_to_delete = TRUE;
+		su_bin  = ofa_idbprovider_new_superuser_bin( provider, HUB_RULE_EXERCICE_DELETE );
+
+		if( su_bin ){
+			ofa_idbsuperuser_set_dossier_meta( su_bin, meta );
+			ofa_idbsuperuser_set_with_remember( su_bin, FALSE );
+			g_object_ref( su_bin );
+			ok_to_delete = ofa_dbsu_run( priv->getter, GTK_WINDOW( self ), su_bin );
+		}
+
+		if( ok_to_delete && confirm_delete( self, meta, period )){
 
 			/* close the currently opened dossier/exercice if we are about to delete it */
 			if( ofa_hub_is_opened_dossier( hub, period )){
@@ -566,10 +577,12 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 			}
 
 			g_object_unref( connect );
-			gtk_widget_destroy( GTK_WIDGET( su_bin ));
 		}
 
-		g_free( settings_prefix );
+		if( su_bin ){
+			g_object_unref( su_bin );
+			//gtk_widget_destroy( GTK_WIDGET( su_bin ));
+		}
 	}
 }
 
