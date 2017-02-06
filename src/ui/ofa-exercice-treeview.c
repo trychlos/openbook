@@ -324,9 +324,11 @@ ofa_exercice_treeview_set_dossier( ofaExerciceTreeview *view, ofaIDBDossierMeta 
 
 	ofa_exercice_store_set_dossier( priv->store, meta );
 
-	periods = ofa_idbdossier_meta_get_periods( meta );
-	g_return_if_fail( g_list_length(( GList * ) periods ) >= 1 );
-	ofa_exercice_treeview_set_selected( view, OFA_IDBEXERCICE_META( periods->data ));
+	if( meta ){
+		periods = ofa_idbdossier_meta_get_periods( meta );
+		g_return_if_fail( g_list_length(( GList * ) periods ) >= 1 );
+		ofa_exercice_treeview_set_selected( view, OFA_IDBEXERCICE_META( periods->data ));
+	}
 }
 
 static void
