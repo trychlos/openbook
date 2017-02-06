@@ -289,6 +289,31 @@ ofa_igetter_get_dossier_settings( const ofaIGetter *getter )
 }
 
 /**
+ * ofa_igetter_get_dossier_store:
+ * @getter: this #ofaIGetter instance.
+ *
+ * Returns: the #ofaDossierStore instance.
+ *
+ * The returned reference is owned by the @getter instance, and should
+ * not be released by the caller.
+ */
+ofaDossierStore *
+ofa_igetter_get_dossier_store( const ofaIGetter *getter )
+{
+	static const gchar *thisfn = "ofa_igetter_get_dossier_store";
+
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+
+	if( OFA_IGETTER_GET_INTERFACE( getter )->get_dossier_store ){
+		return( OFA_IGETTER_GET_INTERFACE( getter )->get_dossier_store( getter ));
+	}
+
+	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_dossier_store()' method",
+			thisfn, G_OBJECT_TYPE_NAME( getter ));
+	return( NULL );
+}
+
+/**
  * ofa_igetter_get_extender_collection:
  * @getter: this #ofaIGetter instance.
  *

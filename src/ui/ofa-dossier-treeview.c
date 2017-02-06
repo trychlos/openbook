@@ -560,7 +560,7 @@ ofa_dossier_treeview_setup_store( ofaDossierTreeview *view )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	if( !priv->store ){
-		priv->store = ofa_dossier_store_new( NULL );
+		priv->store = ofa_dossier_store_new( priv->getter );
 		ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	}
 

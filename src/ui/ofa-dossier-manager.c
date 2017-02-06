@@ -325,7 +325,7 @@ idialog_init_actions( ofaDossierManager *self )
 			buttons_box,
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->new_action ),
-					OFA_IACTIONABLE_NEW_BTN ));
+					_( "_New dossier..." )));
 	g_simple_action_set_enabled( priv->new_action, TRUE );
 
 	/* open action */
@@ -338,7 +338,7 @@ idialog_init_actions( ofaDossierManager *self )
 			buttons_box,
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->open_action ),
-					_( "_Open..." )));
+					_( "_Open the dossier..." )));
 	g_simple_action_set_enabled( priv->open_action, FALSE );
 
 	/* close action */
@@ -351,7 +351,7 @@ idialog_init_actions( ofaDossierManager *self )
 			buttons_box,
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->close_action ),
-					_( "_Close" )));
+					_( "C_lose the dossier" )));
 	g_simple_action_set_enabled( priv->close_action, FALSE );
 
 	/* delete action */
@@ -364,7 +364,7 @@ idialog_init_actions( ofaDossierManager *self )
 			buttons_box,
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
-					OFA_IACTIONABLE_DELETE_BTN ));
+					_( "Delete the dossier..." )));
 	g_simple_action_set_enabled( priv->delete_action, FALSE );
 }
 

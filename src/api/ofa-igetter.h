@@ -52,6 +52,7 @@
 #include "my/my-scope-mapper.h"
 
 #include "api/ofa-dossier-collection.h"
+#include "api/ofa-dossier-store.h"
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-igetter-def.h"
@@ -78,6 +79,7 @@ typedef struct _ofaIGetter                    ofaIGetter;
  * @get_collector: [should]: return the #myICollector object.
  * @get_dossier_collection: [should]: return the #ofaDossierCollection object.
  * @get_dossier_settings: [should]: return the dossier settings.
+ * @get_dossier_store: [should]: return the dossier store.
  * @get_extender_collection: [should]: return the #ofaExtenderCollection object.
  * @get_for_type: [should]: return the list of objects for a type..
  * @get_hub: [should]: return the #ofaHub instance.
@@ -159,6 +161,16 @@ typedef struct {
 	 * Since: version 1
 	 */
 	myISettings *           ( *get_dossier_settings )   ( const ofaIGetter *getter );
+
+	/**
+	 * get_dossier_store:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the #ofaDossierStore instance.
+	 *
+	 * Since: version 1
+	 */
+	ofaDossierStore *       ( *get_dossier_store )      ( const ofaIGetter *getter );
 
 	/**
 	 * get_extender_collection:
@@ -301,6 +313,8 @@ myICollector          *ofa_igetter_get_collector             ( const ofaIGetter 
 ofaDossierCollection  *ofa_igetter_get_dossier_collection    ( const ofaIGetter *getter );
 
 myISettings           *ofa_igetter_get_dossier_settings      ( const ofaIGetter *getter );
+
+ofaDossierStore       *ofa_igetter_get_dossier_store         ( const ofaIGetter *getter );
 
 ofaExtenderCollection *ofa_igetter_get_extender_collection   ( const ofaIGetter *getter );
 

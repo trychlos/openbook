@@ -31,7 +31,6 @@
 
 #include "api/ofa-dossier-collection.h"
 #include "api/ofa-dossier-store.h"
-#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
@@ -69,14 +68,13 @@ enum {
 	N_SIGNALS
 };
 
-static ofaDossierStore *st_store                = NULL;
-static guint            st_signals[ N_SIGNALS ] = { 0 };
+static guint st_signals[ N_SIGNALS ] = { 0 };
 
-static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *self );
-static void     on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaDossierStore *self );
-static void     load_dataset( ofaDossierStore *self, ofaDossierCollection *collection );
-static void     insert_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period );
-static void     set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period, GtkTreeIter *iter );
+static gint on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *self );
+static void on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaDossierStore *self );
+static void load_dataset( ofaDossierStore *self, ofaDossierCollection *collection );
+static void insert_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period );
+static void set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period, GtkTreeIter *iter );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaDossierStore ))
@@ -169,13 +167,17 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
 /**
  * ofa_dossier_store_new:
  * @getter: a #ofaIGetter instance.
- *  This must be non-null at first call (instanciation time), while
- *  is not used on successive calls.
  *
  * The #ofaDossierStore class implements a singleton. Each returned
  * pointer is a new reference to the same instance of the class.
  * This unique instance is allocated on demand, when the
  * #ofa_dossier_store_new() method is called for the first time.
+ *
+ * The unique #ofaDossierStore instance is *not* managed by the #myICollector
+ * interface, because this later releses all its resources when a dossier is
+ * closed.
+ * Instead, the instance is first instanciated by the #ofaHub, and then made
+ * accessible through the #ofaIGetter interface.
  *
  * Returns: a new reference on the #ofaDossierStore instance, which
  * must be g_object_unref() by the caller.
@@ -187,8 +189,9 @@ ofa_dossier_store_new( ofaIGetter *getter )
 	ofaDossierStorePrivate *priv;
 	ofaDossierCollection *collection;
 
-	if( st_store ){
-		store = g_object_ref( st_store );
+	store = ofa_igetter_get_dossier_store( getter );
+	if( store ){
+		store = g_object_ref( store );
 
 	} else {
 		g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
@@ -212,7 +215,6 @@ ofa_dossier_store_new( ofaIGetter *getter )
 		collection = ofa_igetter_get_dossier_collection( getter );
 		g_signal_connect( collection, "changed", G_CALLBACK( on_dossier_collection_changed ), store );
 		load_dataset( store, collection );
-		st_store = store;
 	}
 
 	return( store );

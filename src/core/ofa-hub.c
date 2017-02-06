@@ -102,6 +102,7 @@ static myISettings           *igetter_get_auth_settings( const ofaIGetter *gette
 static myICollector          *igetter_get_collector( const ofaIGetter *getter );
 static ofaDossierCollection  *igetter_get_dossier_collection( const ofaIGetter *getter );
 static myISettings           *igetter_get_dossier_settings( const ofaIGetter *getter );
+static ofaDossierStore       *igetter_get_dossier_store( const ofaIGetter *getter );
 static ofaExtenderCollection *igetter_get_extender_collection( const ofaIGetter *getter );
 static GList                 *igetter_get_for_type( const ofaIGetter *getter, GType type );
 static ofaHub                *igetter_get_hub( const ofaIGetter *getter );
@@ -763,6 +764,7 @@ igetter_iface_init( ofaIGetterInterface *iface )
 	iface->get_collector = igetter_get_collector;
 	iface->get_dossier_collection = igetter_get_dossier_collection;
 	iface->get_dossier_settings = igetter_get_dossier_settings;
+	iface->get_dossier_store = igetter_get_dossier_store;
 	iface->get_extender_collection = igetter_get_extender_collection;
 	iface->get_for_type = igetter_get_for_type;
 	iface->get_hub = igetter_get_hub;
@@ -821,6 +823,16 @@ igetter_get_dossier_settings( const ofaIGetter *getter )
 	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
 
 	return( MY_ISETTINGS( priv->dossier_settings ));
+}
+
+static ofaDossierStore *
+igetter_get_dossier_store( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( priv->dossier_store );
 }
 
 static ofaExtenderCollection *

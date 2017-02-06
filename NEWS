@@ -25,6 +25,7 @@
 
    - Let the user records any document with any table (todo #1263).     
    - DossierManager: better behaves when the list is empty, disabling all unrelevant actions.
+   - DossierManager: no more have two identical 'Close' buttons.
    - Entries and reconciliations: optimize loading (todo #1292).
    - Entries have now a rule indicator to distinguish forward and closing entries (todo #1228).
    - ExerciceMetaBin: no more force a new dossier to have a current exercice.
