@@ -364,7 +364,7 @@ idialog_init_actions( ofaDossierManager *self )
 			buttons_box,
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
-					_( "Delete the dossier..." )));
+					_( "_Delete the dossier..." )));
 	g_simple_action_set_enabled( priv->delete_action, FALSE );
 }
 
