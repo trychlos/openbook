@@ -112,7 +112,7 @@ dossier_collection_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->monitor );
-		g_list_free_full( priv->list, ( GDestroyNotify ) ofa_idbdossier_meta_unref );
+		g_list_free_full( priv->list, ( GDestroyNotify ) g_object_unref );
 	}
 
 	/* chain up to the parent class */
@@ -262,7 +262,7 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCo
 	} else {
 		prev_list = priv->list;
 		priv->list = load_dossiers( collection, prev_list );
-		g_list_free_full( prev_list, ( GDestroyNotify ) ofa_idbdossier_meta_unref );
+		g_list_free_full( prev_list, ( GDestroyNotify ) g_object_unref );
 	}
 }
 
@@ -550,7 +550,10 @@ ofa_dossier_collection_dump( ofaDossierCollection *collection )
 static void
 collection_dump( ofaDossierCollection *collection, GList *list )
 {
+	static const gchar *thisfn = "ofa_dossier_collection_dump";
 	GList *it;
+
+	g_debug( "%s: (count=%u)", thisfn, g_list_length( list ));
 
 	for( it=list ; it ; it=it->next ){
 		ofa_idbdossier_meta_dump_full( OFA_IDBDOSSIER_META( it->data ));

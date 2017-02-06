@@ -204,36 +204,6 @@ ofa_idbdossier_meta_get_interface_version( GType type )
 }
 
 /**
- * ofa_idbdossier_meta_unref:
- * @meta: this #ofaIDBDossierMeta instance.
- *
- * Release the taken references, and g_object_unref() the implementation.
- *
- * Rationale: this interface may take references on other objects.
- * When disposing this object, the implementation does not know
- * that it even has references to release, and so would do nothing.
- *
- * So this function releases the references. It should only be called
- * from implementation::dispose().
- */
-void
-ofa_idbdossier_meta_unref( ofaIDBDossierMeta *meta )
-{
-	sIDBMeta *sdata;
-
-	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-
-	sdata = get_instance_data( meta );
-
-	g_clear_object( &sdata->provider );
-
-	g_list_free_full( sdata->periods, ( GDestroyNotify ) ofa_idbexercice_meta_unref );
-	sdata->periods = NULL;
-
-	g_object_unref( meta );
-}
-
-/**
  * ofa_idbdossier_meta_get_provider:
  * @meta: this #ofaIDBDossierMeta instance.
  *
@@ -259,9 +229,7 @@ ofa_idbdossier_meta_get_provider( const ofaIDBDossierMeta *meta )
  * @meta: this #ofaIDBDossierMeta instance.
  * @provider: the #ofaIDBProvider which manages the @meta.
  *
- * The interface takes a reference on the @provider object, to make
- * sure it stays available. This reference will be automatically
- * released on @meta finalization.
+ * Set the @provider.
  */
 void
 ofa_idbdossier_meta_set_provider( ofaIDBDossierMeta *meta, ofaIDBProvider *provider )
@@ -273,8 +241,7 @@ ofa_idbdossier_meta_set_provider( ofaIDBDossierMeta *meta, ofaIDBProvider *provi
 
 	sdata = get_instance_data( meta );
 
-	g_clear_object( &sdata->provider );
-	sdata->provider = g_object_ref(( gpointer ) provider );
+	sdata->provider = provider;
 }
 
 /**
@@ -460,7 +427,7 @@ set_exercices_from_settings( ofaIDBDossierMeta *self, sIDBMeta *sdata )
 		}
 	}
 
-	g_list_free_full( sdata->periods, ( GDestroyNotify ) ofa_idbexercice_meta_unref );
+	g_list_free_full( sdata->periods, ( GDestroyNotify ) g_object_unref );
 	sdata->periods = new_list;
 	my_isettings_free_keys( sdata->settings_iface, keys );
 }
@@ -1099,5 +1066,6 @@ on_instance_finalized( sIDBMeta *sdata, GObject *finalized_meta )
 
 	g_free( sdata->dossier_name );
 	g_free( sdata->settings_group );
+	g_list_free_full( sdata->periods, ( GDestroyNotify ) g_object_unref );
 	g_free( sdata );
 }

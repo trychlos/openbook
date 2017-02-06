@@ -20,15 +20,19 @@
  New features and improvements:
 
    - DossierManager: better behaves when the list is empty, disabling all unrelevant actions.
+   - ExerciceMetaBin: no more force a new dossier to have a current exercice.
 
  Bug fixes:
 
-   - my_isettings_free_groups(): now accepts a NULL groups list.
-   - ofaIDBDossierMeta: now calls ofa_idbexercice_meta_unref().
+   - myISettings: fix free_groups() behavior when groups list is NULL.
+   - ofaExerciceTreeview: fix the update when no dossier is selected.
+   - ofaIDBDossierMeta, ofaIDBExerciceMeta: fix refs management.
 
  Other changes:
 
    - ofaEntryStore: is now loaded at once.
+   - ofa_idbdossier_meta_unref(): removed function.
+   - ofa_idbexercice_meta_unref(): removed function.
 
 -----------------------------------------------------------------------
  Version 0.66

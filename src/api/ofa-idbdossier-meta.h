@@ -191,8 +191,6 @@ guint                 ofa_idbdossier_meta_get_interface_version     ( GType type
 /*
  * Instance-wide
  */
-void                  ofa_idbdossier_meta_unref                     ( ofaIDBDossierMeta *meta );
-
 ofaIDBProvider       *ofa_idbdossier_meta_get_provider              ( const ofaIDBDossierMeta *meta );
 
 void                  ofa_idbdossier_meta_set_provider              ( ofaIDBDossierMeta *meta,

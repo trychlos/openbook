@@ -202,26 +202,6 @@ ofa_idbexercice_meta_get_interface_version( GType type )
 }
 
 /**
- * ofa_idbexercice_meta_unref:
- * @exercice_meta: this #ofaIDBExerciceMeta instance.
- *
- * Release the taken references, and g_object_unref() the implementation.
- */
-void
-ofa_idbexercice_meta_unref( ofaIDBExerciceMeta *exercice_meta )
-{
-	sIDBMeta *sdata;
-
-	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
-
-	sdata = get_instance_data( exercice_meta );
-
-	g_clear_object( &sdata->dossier_meta );
-
-	g_object_unref( exercice_meta );
-}
-
-/**
  * ofa_idbexercice_meta_get_dossier_meta:
  * @exercice_meta: this #ofaIDBExerciceMeta instance.
  *
@@ -834,6 +814,7 @@ ofa_idbexercice_meta_dump( const ofaIDBExerciceMeta *period )
 
 	g_debug( "%s: period=%p (%s)",
 			thisfn, ( void * ) period, G_OBJECT_TYPE_NAME( period ));
+	g_debug( "%s:   dossier_meta=%p", thisfn, sdata->dossier_meta );
 	g_debug( "%s:   settings_key=%s", thisfn, sdata->settings_key );
 	g_debug( "%s:   settings_id=%s", thisfn, sdata->settings_id );
 	g_debug( "%s:   begin=%s", thisfn, begin );
