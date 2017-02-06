@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_DOSSIER_STORE_H__
-#define __OFA_DOSSIER_STORE_H__
+#ifndef __OPENBOOK_API_OFA_DOSSIER_STORE_H__
+#define __OPENBOOK_API_OFA_DOSSIER_STORE_H__
 
 /**
  * SECTION: dossier_store
@@ -56,6 +56,7 @@
  *    +-----------+-------------------------+
  */
 
+#include "api/ofa-dossier-store-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -67,20 +68,23 @@ G_BEGIN_DECLS
 #define OFA_IS_DOSSIER_STORE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DOSSIER_STORE ))
 #define OFA_DOSSIER_STORE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DOSSIER_STORE, ofaDossierStoreClass ))
 
-typedef struct {
+#if 0
+typedef struct _ofaDossierStore               ofaDossierStore;
+typedef struct _ofaDossierStoreClass          ofaDossierStoreClass;
+#endif
+
+struct _ofaDossierStore {
 	/*< public members >*/
 	GtkListStore      parent;
-}
-	ofaDossierStore;
+};
 
 /**
  * ofaDossierStoreClass:
  */
-typedef struct {
+struct _ofaDossierStoreClass {
 	/*< public members >*/
 	GtkListStoreClass parent;
-}
-	ofaDossierStoreClass;
+};
 
 /**
  * The columns stored in the subjacent #GtkListStore.
@@ -116,4 +120,4 @@ ofaDossierStore *ofa_dossier_store_new     ( ofaIGetter *getter );
 
 G_END_DECLS
 
-#endif /* __OFA_DOSSIER_STORE_H__ */
+#endif /* __OPENBOOK_API_OFA_DOSSIER_STORE_H__ */

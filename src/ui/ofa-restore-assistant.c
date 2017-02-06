@@ -37,6 +37,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-backup-header.h"
+#include "api/ofa-dossier-collection.h"
 #include "api/ofa-dossier-props.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"

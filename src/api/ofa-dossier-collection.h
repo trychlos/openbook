@@ -45,6 +45,7 @@
 
 #include <glib-object.h>
 
+#include "api/ofa-dossier-collection-def.h"
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
@@ -59,17 +60,20 @@ G_BEGIN_DECLS
 #define OFA_IS_DOSSIER_COLLECTION_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DOSSIER_COLLECTION ))
 #define OFA_DOSSIER_COLLECTION_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DOSSIER_COLLECTION, ofaDossierCollectionClass ))
 
-typedef struct {
+#if 0
+typedef struct _ofaDossierCollection               ofaDossierCollection;
+typedef struct _ofaDossierCollectionClass          ofaDossierCollectionClass;
+#endif
+
+struct _ofaDossierCollection {
 	/*< public members >*/
 	GObject      parent;
-}
-	ofaDossierCollection;
+};
 
-typedef struct {
+struct _ofaDossierCollectionClass {
 	/*< public members >*/
 	GObjectClass parent;
-}
-	ofaDossierCollectionClass;
+};
 
 GType                 ofa_dossier_collection_get_type     ( void ) G_GNUC_CONST;
 

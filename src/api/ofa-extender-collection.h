@@ -36,6 +36,7 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
+#include "api/ofa-extender-collection-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -47,17 +48,20 @@ G_BEGIN_DECLS
 #define OFA_IS_EXTENDER_COLLECTION_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_EXTENDER_COLLECTION ))
 #define OFA_EXTENDER_COLLECTION_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_EXTENDER_COLLECTION, ofaExtenderCollectionClass ))
 
-typedef struct {
+#if 0
+typedef struct _ofaExtenderCollection               ofaExtenderCollection;
+typedef struct _ofaExtenderCollectionClass          ofaExtenderCollectionClass;
+#endif
+
+struct _ofaExtenderCollection {
 	/*< public members >*/
 	GObject      parent;
-}
-	ofaExtenderCollection;
+};
 
-typedef struct {
+struct _ofaExtenderCollectionClass {
 	/*< public members >*/
 	GObjectClass parent;
-}
-	ofaExtenderCollectionClass;
+};
 
 GType                  ofa_extender_collection_get_type    ( void ) G_GNUC_CONST;
 

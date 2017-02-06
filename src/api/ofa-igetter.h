@@ -51,14 +51,14 @@
 #include "my/my-isettings.h"
 #include "my/my-scope-mapper.h"
 
-#include "api/ofa-dossier-collection.h"
-#include "api/ofa-dossier-store.h"
-#include "api/ofa-extender-collection.h"
+#include "api/ofa-dossier-collection-def.h"
+#include "api/ofa-dossier-store-def.h"
+#include "api/ofa-extender-collection-def.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-ipage-manager-def.h"
 #include "api/ofa-isignaler.h"
-#include "api/ofa-openbook-props.h"
+#include "api/ofa-openbook-props-def.h"
 
 G_BEGIN_DECLS
 

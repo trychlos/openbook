@@ -42,6 +42,7 @@
    - ofaEntryStore: is now loaded at once.
    - ofa_idbdossier_meta_unref(): removed function.
    - ofa_idbexercice_meta_unref(): removed function.
+   - ofaIGetter: the header only includes class definitions (not the APIs).
    - ofeEntryStatus: type renamed from ofaEntryStatus (as an enum).
 
 -----------------------------------------------------------------------

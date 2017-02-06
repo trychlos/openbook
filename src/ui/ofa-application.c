@@ -35,6 +35,7 @@
 
 #include "api/ofa-core.h"
 #include "api/ofa-dossier-collection.h"
+#include "api/ofa-extender-collection.h"
 #include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"

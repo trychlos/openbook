@@ -36,6 +36,7 @@
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-dossier-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-editor.h"

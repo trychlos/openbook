@@ -36,9 +36,12 @@ api_include_HEADERS = \
 	ofa-counter.h										\
 	ofa-date-filter-hv-bin.h							\
 	ofa-dossier-collection.h							\
+	ofa-dossier-collection-def.h						\
 	ofa-dossier-props.h									\
 	ofa-dossier-store.h									\
+	ofa-dossier-store-def.h								\
 	ofa-extender-collection.h							\
+	ofa-extender-collection-def.h						\
 	ofa-extender-module.h								\
 	ofa-formula-engine.h								\
 	ofa-hub.h											\
@@ -89,6 +92,7 @@ api_include_HEADERS = \
 	ofa-ope-template-editable.h							\
 	ofa-ope-template-store.h							\
 	ofa-openbook-props.h								\
+	ofa-openbook-props-def.h							\
 	ofa-paned-page.h									\
 	ofa-page.h											\
 	ofa-page-def.h										\

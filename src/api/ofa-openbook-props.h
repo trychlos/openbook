@@ -40,6 +40,7 @@
 
 #include <glib-object.h>
 
+#include "api/ofa-openbook-props-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -51,18 +52,20 @@ G_BEGIN_DECLS
 #define OFA_IS_OPENBOOK_PROPS_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_OPENBOOK_PROPS ))
 #define OFA_OPENBOOK_PROPS_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_OPENBOOK_PROPS, ofaOpenbookPropsClass ))
 
+#if 0
 typedef struct _ofaOpenbookProps               ofaOpenbookProps;
+typedef struct _ofaOpenbookPropsClass          ofaOpenbookPropsClass;
+#endif
 
 struct _ofaOpenbookProps {
 	/*< public members >*/
 	GObject      parent;
 };
 
-typedef struct {
+struct _ofaOpenbookPropsClass {
 	/*< public members >*/
 	GObjectClass parent;
-}
-	ofaOpenbookPropsClass;
+};
 
 GType             ofa_openbook_props_get_type            ( void ) G_GNUC_CONST;
 

@@ -36,7 +36,9 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
+#include "api/ofa-dossier-collection.h"
 #include "api/ofa-dossier-store.h"
+#include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
@@ -45,6 +47,7 @@
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignalable.h"
+#include "api/ofa-openbook-props.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-class.h"
