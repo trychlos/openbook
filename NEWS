@@ -23,7 +23,8 @@
 
  Bug fixes:
 
-   - 
+   - my_isettings_free_groups(): now accepts a NULL groups list.
+   - ofaIDBDossierMeta: now calls ofa_idbexercice_meta_unref().
 
  Other changes:
 
