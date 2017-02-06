@@ -199,7 +199,7 @@ my_icollector_get_interface_version( GType type )
  * my_icollector_collection_get:
  * @instance: this #myICollector instance.
  * @type: the desired GType type.
- * @user_data: user data to be passer to #myICollectionable instance.
+ * @user_data: user data to be passed to #myICollectionable instance.
  *
  * Returns: a #GList of #myICollectionable objects, or %NULL.
  *
