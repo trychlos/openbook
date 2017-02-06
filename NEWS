@@ -32,6 +32,7 @@
  Bug fixes:
 
    - myISettings: fix free_groups() behavior when groups list is NULL.
+   - ofaEntryProperties: let the user close the dialog.
    - ofaExerciceTreeview: fix the update when no dossier is selected.
    - ofaIDBDossierMeta, ofaIDBExerciceMeta: fix refs management.
 

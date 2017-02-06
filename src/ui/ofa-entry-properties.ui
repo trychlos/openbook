@@ -19,7 +19,7 @@
               <placeholder/>
             </child>
             <child>
-              <object class="GtkButton" id="btn-ok">
+              <object class="GtkButton" id="ok-btn">
                 <property name="label">gtk-close</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -728,7 +728,7 @@
       </object>
     </child>
     <action-widgets>
-      <action-widget response="-7">btn-ok</action-widget>
+      <action-widget response="-7">ok-btn</action-widget>
     </action-widgets>
   </template>
 </interface>

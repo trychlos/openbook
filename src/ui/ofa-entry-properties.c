@@ -95,6 +95,7 @@ typedef struct {
 	GtkWidget      *sens_combo;
 	GtkWidget      *amount_entry;
 	GtkWidget      *msg_label;
+	GtkWidget      *ok_btn;
 }
 	ofaEntryPropertiesPrivate;
 
@@ -329,6 +330,11 @@ idialog_init( myIDialog *instance )
 
 	my_utils_container_updstamp_init( instance, entry );
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->editable );
+
+	/* always closeable for now */
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	gtk_widget_set_sensitive( priv->ok_btn, TRUE );
 
 	check_for_enable_dlg( OFA_ENTRY_PROPERTIES( instance ));
 }
