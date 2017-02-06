@@ -190,6 +190,7 @@ ofa_dossier_collection_new( ofaIGetter *getter )
 
 	setup_settings( collection );
 	priv->list = load_dossiers( collection, NULL );
+	collection_dump( collection, priv->list );
 
 	return( collection );
 }

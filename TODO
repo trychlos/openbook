@@ -306,7 +306,7 @@
                 - OpeTemplateBookOrder
      2016-12-18 note that updating dossier settings triggers a reload
                 of dossier_collection (due to file monitoring)
-     2017- 2- 6 we also need an ofaIDBConnect opened connection on the dossier
+     2017- 2- 6 we also need an ofaIDBConnect opened connection on the dosier
 
 1239 2016-10-19 export from EntryPage
 
