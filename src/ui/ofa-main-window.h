@@ -122,6 +122,8 @@ ofaMainWindow *ofa_main_window_new                  ( ofaIGetter *getter );
 
 gboolean       ofa_main_window_is_willing_to_quit   ( const ofaMainWindow *window );
 
+void           ofa_main_window_dossier_close_windows( ofaMainWindow *window );
+
 void           ofa_main_window_dossier_backup       ( ofaMainWindow *window );
 
 void           ofa_main_window_dossier_properties   ( ofaMainWindow *window );

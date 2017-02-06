@@ -978,6 +978,8 @@ p6_do_close( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_wid
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_close";
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
+	GtkWidget *label;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
@@ -985,6 +987,22 @@ p6_do_close( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_wid
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
 	priv->p6_page = page_widget;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-pagesclosed" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	/* before beginning with all the actions needed to close a financial
+	 * period, close the pages which may be opened at this time: this has
+	 * two benefits:
+	 * - do not disturb the user with a dimultaneous display
+	 * - gain in performances due to not updating the UI
+	 */
+	my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
+	main_window = ofa_igetter_get_main_window( priv->getter );
+	ofa_main_window_dossier_close_windows( OFA_MAIN_WINDOW( main_window ));
+	my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
+
+	gtk_label_set_text( GTK_LABEL( label ), _( "Done" ));
 
 	g_idle_add(( GSourceFunc ) p6_closing_plugin, self );
 }

@@ -811,6 +811,30 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 }
 
 /**
+ * ofa_main_window_dossier_close_windows:
+ * @main_window: this #ofaMainWindow instance.
+ *
+ * Not only as part of closing a dossier, but also when closing an exercice...
+ */
+void
+ofa_main_window_dossier_close_windows( ofaMainWindow *main_window )
+{
+	static const gchar *thisfn = "ofa_main_window_dossier_close_windows";
+	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
+
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv = ofa_main_window_get_instance_private( main_window );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	close_all_pages( main_window );
+	my_iwindow_close_all();
+}
+
+/**
  * ofa_main_window_dossier_apply_actions:
  * @main_window: this #ofaMainWindow instance.
  *
