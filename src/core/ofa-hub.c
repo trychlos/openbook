@@ -672,7 +672,10 @@ ofa_hub_is_writable_dossier( ofaHub *hub )
 void
 ofa_hub_close_dossier( ofaHub *hub )
 {
+	static const gchar *thisfn = "ofa_hub_close_dossier";
 	ofaHubPrivate *priv;
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 

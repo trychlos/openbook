@@ -202,6 +202,26 @@ ofa_idbexercice_meta_get_interface_version( GType type )
 }
 
 /**
+ * ofa_idbexercice_meta_unref:
+ * @exercice_meta: this #ofaIDBExerciceMeta instance.
+ *
+ * Unref the GObject.
+ */
+void
+ofa_idbexercice_meta_unref( ofaIDBExerciceMeta *exercice_meta )
+{
+	static const gchar *thisfn = "ofa_idbexercice_meta_unref";
+
+	g_debug( "%s: meta=%p (%s), ref_count=%d",
+			thisfn, ( void * ) exercice_meta, G_OBJECT_TYPE_NAME( exercice_meta ),
+			G_OBJECT( exercice_meta )->ref_count );
+
+	g_return_if_fail( exercice_meta && OFA_IS_IDBEXERCICE_META( exercice_meta ));
+
+	g_object_unref( exercice_meta );
+}
+
+/**
  * ofa_idbexercice_meta_get_dossier_meta:
  * @exercice_meta: this #ofaIDBExerciceMeta instance.
  *
@@ -228,9 +248,6 @@ ofa_idbexercice_meta_get_dossier_meta( const ofaIDBExerciceMeta *exercice_meta )
  * @dossier_meta: the #ofaIDBDossierMeta dossier.
  *
  * Attach the @dossier_meta to the @exercice_meta.
- *
- * The interface takes its own reference on the @dossier_meta.
- * This reference will be automatically released on @exercice_meta finalization.
  */
 void
 ofa_idbexercice_meta_set_dossier_meta( ofaIDBExerciceMeta *exercice_meta, ofaIDBDossierMeta *dossier_meta )
@@ -242,7 +259,7 @@ ofa_idbexercice_meta_set_dossier_meta( ofaIDBExerciceMeta *exercice_meta, ofaIDB
 
 	sdata = get_instance_data( exercice_meta );
 
-	sdata->dossier_meta = g_object_ref( dossier_meta );
+	sdata->dossier_meta = dossier_meta;
 }
 
 /**
@@ -777,8 +794,6 @@ ofa_idbexercice_meta_delete( ofaIDBExerciceMeta *period, ofaIDBConnect *connect,
 	ok = TRUE;
 	sdata = get_instance_data( period );
 
-	sdata = get_instance_data( period );
-
 	settings = ofa_idbdossier_meta_get_settings_iface( sdata->dossier_meta );
 	group = ofa_idbdossier_meta_get_settings_group( sdata->dossier_meta );
 	my_isettings_remove_key( settings, group, sdata->settings_key );
@@ -821,6 +836,7 @@ ofa_idbexercice_meta_dump( const ofaIDBExerciceMeta *period )
 	g_debug( "%s:   end=%s", thisfn, end );
 	g_debug( "%s:   current=%s", thisfn, sdata->current ? "True":"False" );
 	g_debug( "%s:   admin_account=%s", thisfn, sdata->admin_account );
+	g_debug( "%s:   ref_count=%u", thisfn, G_OBJECT( period )->ref_count );
 
 	g_free( begin );
 	g_free( end );

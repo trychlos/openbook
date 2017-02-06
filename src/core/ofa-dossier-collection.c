@@ -58,7 +58,6 @@ typedef struct {
 }
 	ofaDossierCollectionPrivate;
 
-#define DOSSIER_COLLECTION_SIGNAL_CHANGED       "changed"
 #define DOSSIER_COLLECTION_DOSSIER_GROUP_PREFIX "Dossier "
 #define DOSSIER_COLLECTION_PROVIDER_KEY         "ofa-DBMSProvider"
 
@@ -112,7 +111,7 @@ dossier_collection_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->monitor );
-		g_list_free_full( priv->list, ( GDestroyNotify ) g_object_unref );
+		g_list_free_full( priv->list, ( GDestroyNotify ) ofa_idbdossier_meta_unref );
 	}
 
 	/* chain up to the parent class */
@@ -156,7 +155,7 @@ ofa_dossier_collection_class_init( ofaDossierCollectionClass *klass )
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				DOSSIER_COLLECTION_SIGNAL_CHANGED,
+				"changed",
 				OFA_TYPE_DOSSIER_COLLECTION,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -262,12 +261,22 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCo
 	} else {
 		prev_list = priv->list;
 		priv->list = load_dossiers( collection, prev_list );
-		g_list_free_full( prev_list, ( GDestroyNotify ) g_object_unref );
+
+		/* dump the collection after having updated the ref counts */
+		g_list_free_full( prev_list, ( GDestroyNotify ) ofa_idbdossier_meta_unref );
+		collection_dump( collection, priv->list );
+
+		/* last advertize the change */
+		g_signal_emit_by_name( collection, "changed", g_list_length( priv->list ));
 	}
 }
 
 /*
  * @prev_list: the list before reloading the dossiers
+ *
+ * Returns: a new list with new references to the #ofaIDBDossierMeta's.
+ *
+ * The @prev_list will then be released when returning from this function.
  */
 static GList *
 load_dossiers( ofaDossierCollection *self, GList *prev_list )
@@ -304,6 +313,7 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 			g_debug( "%s: dossier_name=%s already exists with meta=%p, reusing it",
 					thisfn, dos_name, ( void * ) meta );
 			g_object_ref( meta );
+
 		} else {
 			prov_name = my_isettings_get_string( priv->dossier_settings, cstr, DOSSIER_COLLECTION_PROVIDER_KEY );
 			if( !my_strlen( prov_name )){
@@ -316,6 +326,7 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 			if( idbprovider ){
 				meta = ofa_idbprovider_new_dossier_meta( idbprovider, dos_name );
 				set_dossier_meta_properties( self, meta, cstr );
+
 			} else {
 				g_info( "%s: provider=%s not found", thisfn, prov_name );
 				continue;
@@ -327,11 +338,9 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 		g_free( dos_name );
 	}
 
-	collection_dump( self, outlist );
 	my_isettings_free_groups( priv->dossier_settings, inlist );
-	g_signal_emit_by_name( self, DOSSIER_COLLECTION_SIGNAL_CHANGED, g_list_length( outlist ));
 
-	return( g_list_reverse( outlist ));
+	return( outlist );
 }
 
 static void

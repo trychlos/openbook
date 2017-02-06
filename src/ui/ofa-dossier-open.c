@@ -142,6 +142,9 @@ dossier_open_dispose( GObject *instance )
 
 	priv = ofa_dossier_open_get_instance_private( OFA_DOSSIER_OPEN( instance ));
 
+	g_debug( "ofa_dossier_open_dispose: exercice_meta_ref_count=%d",
+			priv->exercice_meta ? G_OBJECT( priv->exercice_meta )->ref_count : 0 );
+
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
@@ -238,6 +241,9 @@ ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent, ofaIDBExerciceMeta 
 
 	priv->getter = getter;
 	priv->parent = parent;
+
+	g_debug( "%s: exercice_meta_ref_count=%d",
+			thisfn, exercice_meta ? G_OBJECT( exercice_meta )->ref_count : 0 );
 
 	if( exercice_meta ){
 		priv->exercice_meta = g_object_ref( exercice_meta );

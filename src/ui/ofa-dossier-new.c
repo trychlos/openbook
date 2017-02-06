@@ -564,6 +564,7 @@ do_create( ofaDossierNew *self )
 	if( !ret ){
 		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_ERROR,
 				_( "Unable to register the new dossier in settings" ));
+		ofa_idbdossier_meta_unref( dossier_meta );
 		return( FALSE );
 	}
 
@@ -608,6 +609,8 @@ do_create( ofaDossierNew *self )
 		priv->dossier_created = TRUE;
 		if( priv->dossier_meta ){
 			*( priv->dossier_meta ) = dossier_meta;
+		} else {
+			ofa_idbdossier_meta_unref( dossier_meta );
 		}
 	}
 

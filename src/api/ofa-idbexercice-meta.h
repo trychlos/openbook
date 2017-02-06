@@ -203,6 +203,8 @@ guint              ofa_idbexercice_meta_get_interface_version     ( GType type )
 /*
  * Instance-wide
  */
+void               ofa_idbexercice_meta_unref                     ( ofaIDBExerciceMeta *exercice_meta );
+
 ofaIDBDossierMeta *ofa_idbexercice_meta_get_dossier_meta          ( const ofaIDBExerciceMeta *exercice_meta );
 
 void               ofa_idbexercice_meta_set_dossier_meta          ( ofaIDBExerciceMeta *exercice_meta,

@@ -284,7 +284,7 @@
 1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
                 background
 
-1228 2016-10-10 Entry: have a role: exercice_open / exercice_close / normal
+1228 2016-10-10 DBMS: Entry: have a role: exercice_open / exercice_close / normal
                 (may be useful when computing solde of an account)
 
 1231 2016-10-11 Feature question: should we reset the last closed date
@@ -296,7 +296,7 @@
 1235 2016-10-12 begining of the exercice cannot be modified anymore after
                 the first exercice operation
 
-1236 2016-10-13 move user and dossier settings to dbms
+1236 2016-10-13 DBMS: move user and dossier settings to dbms
      2016-11-13 dossier settings are:
                 $ grep -vE '^#|^\[|^ofa-DBMSProvider|^mysql-db-' ~/.config/openbook/dossier* | cut -d: -f2- | cut -d= -f1 | sort -u
                 - LastBackupFolder
@@ -339,7 +339,7 @@
                 - ofaExerciceNew         (add to prefix + <unused>)
                 - ofaTargetChooserBin    (add to prefix + <unused>)
 
-1263 2016-11-19 store documents
+1263 2016-11-19 DBMS: store documents
                 + attach documents via an interface to:
                 - BAT: the original imported document from the bank,
                 - operations: the bill, or the purchase trace

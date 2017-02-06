@@ -204,6 +204,25 @@ ofa_idbdossier_meta_get_interface_version( GType type )
 }
 
 /**
+ * ofa_idbdossier_meta_unref:
+ * @meta: this #ofaIDBDossierMeta instance.
+ *
+ * Unref the GObject.
+ */
+void
+ofa_idbdossier_meta_unref( ofaIDBDossierMeta *meta )
+{
+	static const gchar *thisfn = "ofa_idbdossier_meta_unref";
+
+	g_debug( "%s: meta=%p (%s), ref_count=%d",
+			thisfn, ( void * ) meta, G_OBJECT_TYPE_NAME( meta ), G_OBJECT( meta )->ref_count );
+
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
+
+	g_object_unref( meta );
+}
+
+/**
  * ofa_idbdossier_meta_get_provider:
  * @meta: this #ofaIDBDossierMeta instance.
  *
@@ -418,6 +437,7 @@ set_exercices_from_settings( ofaIDBDossierMeta *self, sIDBMeta *sdata )
 			ofa_idbexercice_meta_set_from_settings( exercice_meta );
 			period = find_exercice( self, sdata, exercice_meta );
 			if( period ){
+				ofa_idbexercice_meta_set_from_settings( period );
 				g_object_ref( period );
 				g_object_unref( exercice_meta );
 			} else {
@@ -427,7 +447,7 @@ set_exercices_from_settings( ofaIDBDossierMeta *self, sIDBMeta *sdata )
 		}
 	}
 
-	g_list_free_full( sdata->periods, ( GDestroyNotify ) g_object_unref );
+	g_list_free_full( sdata->periods, ( GDestroyNotify ) ofa_idbexercice_meta_unref );
 	sdata->periods = new_list;
 	my_isettings_free_keys( sdata->settings_iface, keys );
 }
@@ -546,7 +566,6 @@ ofa_idbdossier_meta_new_period( ofaIDBDossierMeta *meta, gboolean attach )
 
 	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->new_period ){
 		exercice_meta = OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->new_period( meta );
-
 		ofa_idbexercice_meta_set_dossier_meta( exercice_meta, meta );
 		get_exercice_key( meta, &key, &key_id );
 		ofa_idbexercice_meta_set_settings_key( exercice_meta, key );
@@ -957,6 +976,7 @@ delete_period( ofaIDBDossierMeta *meta, ofaIDBConnect *connect, ofaIDBExerciceMe
 
 	if( ok ){
 		ok = ofa_idbexercice_meta_delete( period, connect, msgerr );
+		ofa_idbexercice_meta_unref( period );
 	}
 
 	return( ok );
@@ -1011,8 +1031,9 @@ ofa_idbdossier_meta_dump( const ofaIDBDossierMeta *meta )
 	g_debug( "%s: meta=%p (%s)", thisfn, ( void * ) meta, G_OBJECT_TYPE_NAME( meta ));
 	g_debug( "%s:   provider=%p", thisfn, ( void * ) sdata->provider );
 	g_debug( "%s:   dossier_name=%s", thisfn, sdata->dossier_name );
-	g_debug( "%s:   settings=%p", thisfn, ( void * ) sdata->settings_iface );
-	g_debug( "%s:   group_name=%s", thisfn, sdata->settings_group );
+	g_debug( "%s:   settings_iface=%p", thisfn, ( void * ) sdata->settings_iface );
+	g_debug( "%s:   settings_group=%s", thisfn, sdata->settings_group );
+	g_debug( "%s:   ref_count=%u", thisfn, G_OBJECT( meta )->ref_count );
 	g_debug( "%s:   periods=%p (count=%u)", thisfn, ( void * ) sdata->periods, g_list_length( sdata->periods ));
 
 	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->dump ){
@@ -1066,6 +1087,6 @@ on_instance_finalized( sIDBMeta *sdata, GObject *finalized_meta )
 
 	g_free( sdata->dossier_name );
 	g_free( sdata->settings_group );
-	g_list_free_full( sdata->periods, ( GDestroyNotify ) g_object_unref );
+	g_list_free_full( sdata->periods, ( GDestroyNotify ) ofa_idbexercice_meta_unref );
 	g_free( sdata );
 }

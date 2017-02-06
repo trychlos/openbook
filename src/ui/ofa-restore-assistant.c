@@ -318,13 +318,12 @@ restore_assistant_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		priv->dispose_has_run = TRUE;
 		write_settings( OFA_RESTORE_ASSISTANT( instance ));
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 		g_clear_object( &priv->p1_dossier_props );
-		g_clear_object( &priv->p2_dossier_meta );
-		g_clear_object( &priv->p2_exercice_meta );
 		g_clear_object( &priv->p3_hgroup );
 		g_clear_object( &priv->p2_connect );
 
@@ -685,14 +684,11 @@ p2_on_target_chooser_changed( ofaTargetChooserBin *bin, ofaIDBDossierMeta *dossi
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	g_clear_object( &priv->p2_dossier_meta );
-	g_clear_object( &priv->p2_exercice_meta );
-
 	if( dossier_meta ){
-		priv->p2_dossier_meta = g_object_ref( dossier_meta );
+		priv->p2_dossier_meta = dossier_meta;
 		priv->p2_new_dossier = ofa_target_chooser_bin_is_new_dossier( bin, dossier_meta );
 		if( exercice_meta ){
-			priv->p2_exercice_meta = g_object_ref( exercice_meta );
+			priv->p2_exercice_meta = exercice_meta;
 			priv->p2_new_exercice = ofa_target_chooser_bin_is_new_exercice( bin, exercice_meta );
 		}
 	}
@@ -1374,7 +1370,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 		} else if( priv->p2_new_exercice ){
 			collection = ofa_igetter_get_dossier_collection( priv->getter );
-			ofa_dossier_collection_delete_period( collection, priv->p2_connect, priv->p2_exercice_meta, TRUE, NULL );
+			ofa_dossier_collection_delete_period( collection, priv->p2_connect, priv->p6_exercice_meta, TRUE, NULL );
 		}
 
 		gtk_label_set_text(
@@ -1499,7 +1495,7 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 
 	exemeta = NULL;
 	settings_updated = FALSE;
-	connect = ofa_idbdossier_meta_new_connect( priv->p2_dossier_meta, priv->p2_exercice_meta );
+	connect = ofa_idbdossier_meta_new_connect( priv->p6_dossier_meta, priv->p6_exercice_meta );
 	ok = ofa_idbconnect_open_with_superuser( connect, priv->p3_dbsu_credentials );
 
 	if( ok ){
@@ -1522,8 +1518,8 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 
 	/* check that the restored datas do not overlap with another exercice */
 	if( ok && my_date_is_valid( dos_begin )){
-		period = ofa_idbdossier_meta_get_period( priv->p2_dossier_meta, dos_begin, TRUE );
-		if( period != priv->p2_exercice_meta ){
+		period = ofa_idbdossier_meta_get_period( priv->p6_dossier_meta, dos_begin, TRUE );
+		if( period != priv->p6_exercice_meta ){
 			label = ofa_idbexercice_meta_get_label( period );
 			str = g_strdup_printf( _( "Error: the restored file overrides the '%s' exercice" ), label );
 			p6_msg_cb( str, self );
@@ -1533,8 +1529,8 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 		}
 	}
 	if( ok && my_date_is_valid( dos_end )){
-		period = ofa_idbdossier_meta_get_period( priv->p2_dossier_meta, dos_end, TRUE );
-		if( period != priv->p2_exercice_meta ){
+		period = ofa_idbdossier_meta_get_period( priv->p6_dossier_meta, dos_end, TRUE );
+		if( period != priv->p6_exercice_meta ){
 			label = ofa_idbexercice_meta_get_label( period );
 			str = g_strdup_printf( _( "Error: the restored file overrides the '%s' exercice" ), label );
 			p6_msg_cb( str, self );
@@ -1545,9 +1541,9 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 	}
 
 	/* these are the settings */
-	meta_begin = ofa_idbexercice_meta_get_begin_date( priv->p2_exercice_meta );
-	meta_end = ofa_idbexercice_meta_get_end_date( priv->p2_exercice_meta );
-	meta_current = ofa_idbexercice_meta_get_current( priv->p2_exercice_meta );
+	meta_begin = ofa_idbexercice_meta_get_begin_date( priv->p6_exercice_meta );
+	meta_end = ofa_idbexercice_meta_get_end_date( priv->p6_exercice_meta );
+	meta_current = ofa_idbexercice_meta_get_current( priv->p6_exercice_meta );
 
 	if( 1 ){
 		sbegin = my_date_to_str( meta_begin, MY_DATE_SQL );
@@ -1560,14 +1556,14 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 	/* set the settings date if not already done */
 	if( ok && !my_date_is_valid( meta_begin ) && my_date_is_valid( dos_begin )){
 		g_debug( "%s: remediating settings begin", thisfn );
-		ofa_idbexercice_meta_set_begin_date( priv->p2_exercice_meta, dos_begin );
-		meta_begin = ofa_idbexercice_meta_get_begin_date( priv->p2_exercice_meta );
+		ofa_idbexercice_meta_set_begin_date( priv->p6_exercice_meta, dos_begin );
+		meta_begin = ofa_idbexercice_meta_get_begin_date( priv->p6_exercice_meta );
 		settings_updated = TRUE;
 	}
 	if( ok && !my_date_is_valid( meta_end ) && my_date_is_valid( dos_end )){
 		g_debug( "%s: remediating settings end", thisfn );
-		ofa_idbexercice_meta_set_end_date( priv->p2_exercice_meta, dos_end );
-		meta_end = ofa_idbexercice_meta_get_end_date( priv->p2_exercice_meta );
+		ofa_idbexercice_meta_set_end_date( priv->p6_exercice_meta, dos_end );
+		meta_end = ofa_idbexercice_meta_get_end_date( priv->p6_exercice_meta );
 		settings_updated = TRUE;
 	}
 
@@ -1576,7 +1572,7 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 	if( ok ){
 		if( priv->p1_format == OFA_BACKUP_HEADER_GZ ){
 			if( dos_current && !meta_current ){
-				period = ofa_idbdossier_meta_get_current_period( priv->p2_dossier_meta );
+				period = ofa_idbdossier_meta_get_current_period( priv->p6_dossier_meta );
 				if( period != NULL ){
 					label = ofa_idbexercice_meta_get_label( period );
 					str = g_strdup_printf( _( "Error: the restored file overrides the %s exercice" ), label );
@@ -1586,8 +1582,8 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 					ok = FALSE;
 				} else {
 					g_debug( "%s: remediating settings current", thisfn );
-					ofa_idbexercice_meta_set_current( priv->p2_exercice_meta, dos_current );
-					meta_current = ofa_idbexercice_meta_get_current( priv->p2_exercice_meta );
+					ofa_idbexercice_meta_set_current( priv->p6_exercice_meta, dos_current );
+					meta_current = ofa_idbexercice_meta_get_current( priv->p6_exercice_meta );
 					settings_updated = TRUE;
 				}
 			}
@@ -1597,8 +1593,8 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 		if( priv->p1_format == OFA_BACKUP_HEADER_ZIP ){
 			if( dos_current != meta_current ){
 				g_debug( "%s: remediating settings current", thisfn );
-				ofa_idbexercice_meta_set_current( priv->p2_exercice_meta, dos_current );
-				meta_current = ofa_idbexercice_meta_get_current( priv->p2_exercice_meta );
+				ofa_idbexercice_meta_set_current( priv->p6_exercice_meta, dos_current );
+				meta_current = ofa_idbexercice_meta_get_current( priv->p6_exercice_meta );
 				settings_updated = TRUE;
 			}
 		}
@@ -1606,7 +1602,7 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 
 	/* last remediate settings */
 	if( ok && settings_updated ){
-		ofa_idbexercice_meta_update_settings( priv->p2_exercice_meta );
+		ofa_idbexercice_meta_update_settings( priv->p6_exercice_meta );
 	}
 
 	g_clear_object( &exemeta );
@@ -1686,7 +1682,7 @@ p6_do_open( ofaRestoreAssistant *self )
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	g_debug( "%s: self=%p, meta=%p, period=%p, account=%s",
-			thisfn, ( void * ) self, ( void * ) priv->p2_dossier_meta, ( void * ) priv->p2_exercice_meta, priv->p4_account );
+			thisfn, ( void * ) self, ( void * ) priv->p6_dossier_meta, ( void * ) priv->p6_exercice_meta, priv->p4_account );
 
 	if( priv->p5_open ){
 		if( !ofa_dossier_open_run(

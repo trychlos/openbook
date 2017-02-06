@@ -113,10 +113,24 @@ target_chooser_bin_finalize( GObject *instance )
 	priv = ofa_target_chooser_bin_get_instance_private( OFA_TARGET_CHOOSER_BIN( instance ));
 
 	g_free( priv->settings_prefix );
-	g_list_free( priv->new_list );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_target_chooser_bin_parent_class )->finalize( instance );
+}
+
+static void
+object_unref( GObject *object )
+{
+	static const gchar *thisfn = "ofa_target_chooser_bin_object_unref";
+	if( OFA_IS_IDBDOSSIER_META( object )){
+		ofa_idbdossier_meta_unref( OFA_IDBDOSSIER_META( object ));
+
+	} else if( OFA_IS_IDBEXERCICE_META( object )){
+		ofa_idbexercice_meta_unref( OFA_IDBEXERCICE_META( object ));
+
+	} else {
+		g_warning( "%s: unexpected object=%p (%s)", thisfn, object, G_OBJECT_TYPE_NAME( object ));
+	}
 }
 
 static void
@@ -135,6 +149,7 @@ target_chooser_bin_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_list_free_full( priv->new_list, ( GDestroyNotify ) object_unref );
 	}
 
 	/* chain up to the parent class */

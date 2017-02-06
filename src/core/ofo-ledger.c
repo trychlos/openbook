@@ -374,7 +374,6 @@ ledger_find_by_mnemo( GList *set, const gchar *mnemo )
 	found = g_list_find_custom( set, mnemo, ( GCompareFunc ) ledger_cmp_by_mnemo );
 
 	if( found ){
-		g_debug( "ledger_find_by_mnemo: found" );
 		return( OFO_LEDGER( found->data ));
 	}
 
