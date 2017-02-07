@@ -219,6 +219,7 @@ ofa_account_store_new( ofaIGetter *getter )
 
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
+
 		gtk_tree_sortable_set_sort_column_id(
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
@@ -242,7 +243,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountS
 	gtk_tree_model_get( tmodel, a, ACCOUNT_COL_NUMBER, &anumber, -1 );
 	gtk_tree_model_get( tmodel, b, ACCOUNT_COL_NUMBER, &bnumber, -1 );
 
-	cmp = g_utf8_collate( anumber, bnumber );
+	cmp = my_collate( anumber, bnumber );
 
 	g_free( anumber );
 	g_free( bnumber );
