@@ -295,7 +295,7 @@ ofo_recurrent_run_new( ofaIGetter *getter )
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	model = g_object_new( OFO_TYPE_RECURRENT_RUN, "ofo-base-getter", NULL );
+	model = g_object_new( OFO_TYPE_RECURRENT_RUN, "ofo-base-getter", getter, NULL );
 	OFO_BASE( model )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	ofo_recurrent_run_set_status( model, REC_STATUS_WAITING );

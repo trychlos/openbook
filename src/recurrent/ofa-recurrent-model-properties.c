@@ -306,7 +306,7 @@ idialog_init( myIDialog *instance )
 	priv = ofa_recurrent_model_properties_get_instance_private( OFA_RECURRENT_MODEL_PROPERTIES( instance ));
 
 	/* update properties on OK + always terminates */
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;
@@ -679,8 +679,10 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	ofo_recurrent_model_set_mnemo( priv->recurrent_model, priv->mnemo );
 	ofo_recurrent_model_set_label( priv->recurrent_model, priv->label );
 	ofo_recurrent_model_set_ope_template( priv->recurrent_model, priv->ope_template );
-	ofo_recurrent_model_set_periodicity( priv->recurrent_model, ofo_rec_period_get_id( priv->periodicity ));
-	ofo_recurrent_model_set_periodicity_detail( priv->recurrent_model, priv->periodicity_detail );
+	if( priv->periodicity ){
+		ofo_recurrent_model_set_periodicity( priv->recurrent_model, ofo_rec_period_get_id( priv->periodicity ));
+		ofo_recurrent_model_set_periodicity_detail( priv->recurrent_model, priv->periodicity_detail );
+	}
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( priv->def1_entry ));
 	ofo_recurrent_model_set_def_amount1( priv->recurrent_model, cstr );

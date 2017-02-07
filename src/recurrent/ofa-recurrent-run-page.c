@@ -372,12 +372,12 @@ paned_page_v_init_view( ofaPanedPage *page )
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( store ));
 	g_object_unref( store );
 
+	/* setup initial values */
+	read_settings( OFA_RECURRENT_RUN_PAGE( page ));
+
 	/* as GTK_SELECTION_MULTIPLE is set, we have to explicitely
 	 * setup the initial selection if a first row exists */
 	ofa_tvbin_select_all( OFA_TVBIN( priv->tview ));
-
-	/* setup initial values */
-	read_settings( OFA_RECURRENT_RUN_PAGE( page ));
 }
 
 static void

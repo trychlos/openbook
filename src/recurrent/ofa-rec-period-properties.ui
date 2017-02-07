@@ -16,7 +16,7 @@
             <property name="can_focus">False</property>
             <property name="layout_style">end</property>
             <child>
-              <object class="GtkButton" id="btn-cancel">
+              <object class="GtkButton" id="cancel-btn">
                 <property name="label">gtk-cancel</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -377,7 +377,7 @@
       </object>
     </child>
     <action-widgets>
-      <action-widget response="-6">btn-cancel</action-widget>
+      <action-widget response="-6">cancel-btn</action-widget>
       <action-widget response="-5">ok-btn</action-widget>
     </action-widgets>
   </template>

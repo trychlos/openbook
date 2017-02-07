@@ -454,6 +454,7 @@ dbmodel_to_v1( ofaRecurrentDBModel *self, guint version )
 	/* updated in v2 */
 	/* updated in v5 */
 	/* altered in v6 */
+	/* rec_period_detail modified in v8 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_MODELS ("
 			"	REC_MNEMO          VARCHAR(64)  BINARY NOT NULL UNIQUE COMMENT 'Recurrent operation identifier',"
@@ -1474,13 +1475,20 @@ dbmodel_to_v8( ofaRecurrentDBModel *self, guint version )
 		return( FALSE );
 	}
 
+	/* 4. modifiy rec_period_detail */
+	if( !exec_query( self,
+			"ALTER TABLE REC_T_MODELS "
+			"	MODIFY COLUMN REC_PERIOD_DETAIL BIGINT               COMMENT 'Periodicity detail identifier'" )){
+		return( FALSE );
+	}
+
 	return( TRUE );
 }
 
 static gulong
 count_v8( ofaRecurrentDBModel *self )
 {
-	return( 3 );
+	return( 4 );
 }
 
 static gulong

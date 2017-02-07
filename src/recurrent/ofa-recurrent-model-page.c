@@ -603,10 +603,13 @@ delete_with_confirm( ofaRecurrentModelPage *self, ofoRecurrentModel *model )
 static void
 action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self )
 {
+	ofaRecurrentModelPagePrivate *priv;
 	GtkWindow *toplevel;
 
+	priv = ofa_recurrent_model_page_get_instance_private( self );
+
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_recurrent_generate_run( OFA_IGETTER( self ), toplevel, self );
+	ofa_recurrent_generate_run( OFA_IGETTER( priv->getter ), toplevel, self );
 }
 
 /*
@@ -615,8 +618,11 @@ action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurre
 static void
 action_on_view_opes_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self )
 {
+	ofaRecurrentModelPagePrivate *priv;
 	ofaIPageManager *manager;
 
-	manager = ofa_igetter_get_page_manager( OFA_IGETTER( self ));
+	priv = ofa_recurrent_model_page_get_instance_private( self );
+
+	manager = ofa_igetter_get_page_manager( OFA_IGETTER( priv->getter ));
 	ofa_ipage_manager_activate( manager, OFA_TYPE_RECURRENT_RUN_PAGE );
 }
