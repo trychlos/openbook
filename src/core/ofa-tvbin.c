@@ -1612,6 +1612,7 @@ ofa_tvbin_select_row( ofaTVBin *bin, GtkTreeIter *treeview_iter )
 	/* move the cursor so that it is visible */
 	model = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
 	path = gtk_tree_model_get_path( model, treeview_iter );
+	gtk_tree_view_expand_to_path( GTK_TREE_VIEW( priv->treeview ), path );
 	gtk_tree_view_scroll_to_cell( GTK_TREE_VIEW( priv->treeview ), path, NULL, FALSE, 0, 0 );
 	gtk_tree_view_set_cursor( GTK_TREE_VIEW( priv->treeview ), path, NULL, FALSE );
 	gtk_tree_path_free( path );
