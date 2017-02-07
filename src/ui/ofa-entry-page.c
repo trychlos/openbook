@@ -2289,7 +2289,7 @@ delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry )
 		}
 		if( my_strlen( msg->str )){
 			msg = g_string_append( msg, _( "\nAre you sure ?"));
-			ok = my_utils_dialog_question( toplevel, msg->str, _( "Yes, _delete it" ));
+			ok = my_utils_dialog_question( toplevel, msg->str, _( "_Yes, delete it" ));
 		}
 		g_string_free( msg, TRUE );
 	}
