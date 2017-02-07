@@ -71,15 +71,15 @@
  */
 typedef struct {
 
-	/* internals
+	/* runtime
 	 */
 	ofaIGetter          *getter;
-	GList               *signaler_handlers;
 	ofoDossier          *dossier;					/* dossier */
 	gboolean             is_writable;
 	const GDate         *dossier_opening;
 	gboolean             initializing;
 	gchar               *settings_prefix;
+	GList               *store_handlers;
 
 	/* frame 1: general selection
 	 */
@@ -249,10 +249,7 @@ static void       read_settings_status( ofaEntryPage *self, myISettings *setting
 static void       write_settings( ofaEntryPage *self );
 static void       write_settings_selection( ofaEntryPage *self, myISettings *settings );
 static void       write_settings_status( ofaEntryPage *self, myISettings *settings );
-static void       signaler_connect_to_signaling_system( ofaEntryPage *self );
-static void       signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaEntryPage *self );
-static void       signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
-static void       signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaEntryPage *self );
+static void       store_on_changed( ofaEntryStore *store, ofaEntryPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryPage, ofa_entry_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaEntryPage ))
@@ -284,7 +281,7 @@ static void
 entry_page_dispose( GObject *instance )
 {
 	ofaEntryPagePrivate *priv;
-	ofaISignaler *signaler;
+	GList *it;
 
 	g_return_if_fail( OFA_IS_ENTRY_PAGE( instance ));
 
@@ -294,9 +291,11 @@ entry_page_dispose( GObject *instance )
 
 		priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( instance ));
 
-		/* disconnect from ofaISignaler signaling system */
-		signaler = ofa_igetter_get_signaler( priv->getter );
-		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
+		/* disconnect ofaEntryStore signal handlers */
+		for( it=priv->store_handlers ; it ; it=it->next ){
+			g_signal_handler_disconnect( priv->store, ( gulong ) it->data );
+		}
+		g_list_free( priv->store_handlers );
 
 		/* unref object members here */
 		g_clear_object( &priv->new_action );
@@ -374,9 +373,6 @@ page_v_setup_page( ofaPage *page )
 	setup_actions( OFA_ENTRY_PAGE( page ));
 
 	read_settings( OFA_ENTRY_PAGE( page ));
-
-	/* connect to dossier signaling system */
-	signaler_connect_to_signaling_system( OFA_ENTRY_PAGE( page ));
 
 	/* allow the entry dataset to be loaded */
 	g_debug( "%s: end of initialization phase", thisfn );
@@ -537,6 +533,7 @@ setup_treeview( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	GtkWidget *parent;
+	gulong handler;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
@@ -559,6 +556,10 @@ setup_treeview( ofaEntryPage *self )
 
 	priv->store = ofa_entry_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
+	g_object_unref( priv->store );
+
+	handler = g_signal_connect( priv->store, "ofa-changed", G_CALLBACK( store_on_changed ), self );
+	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 }
 
 /*
@@ -2570,98 +2571,13 @@ write_settings_status( ofaEntryPage *self, myISettings *settings )
 }
 
 /*
- * Connect to ofaISignaler signaling system
+ * ofaEntryStore::ofa-changed signal handler
+ *
+ * This signal is sent by ofaEntryStore after it has treated an
+ * ofaISignaler event.
  */
 static void
-signaler_connect_to_signaling_system( ofaEntryPage *self )
+store_on_changed( ofaEntryStore *store, ofaEntryPage *self )
 {
-	ofaEntryPagePrivate *priv;
-	ofaISignaler *signaler;
-	gulong handler;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	signaler = ofa_igetter_get_signaler( priv->getter );
-
-	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
-	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
-	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
-	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
-}
-
-/*
- * SIGNALER_BASE_NEW signal handler
- */
-static void
-signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_signaler_on_new_base";
-
-	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) signaler,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_ENTRY( object )){
-		refresh_display( self );
-	}
-}
-
-/*
- * SIGNALER_BASE_UPDATED signal handler
- */
-static void
-signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_signaler_on_updated_base";
-
-	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
-			thisfn,
-			( void * ) signaler,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	if( OFO_IS_ACCOUNT( object )){
-		refresh_display( self );
-
-	} else if( OFO_IS_LEDGER( object )){
-		refresh_display( self );
-
-	} else if( OFO_IS_CURRENCY( object )){
-		refresh_display( self );
-
-	} else if( OFO_IS_CONCIL( object )){
-		refresh_display( self );
-
-	} else if( OFO_IS_ENTRY( object )){
-		refresh_display( self );
-	}
-}
-
-/*
- * SIGNALER_BASE_DELETED signal handler
- */
-static void
-signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_signaler_on_deleted_base";
-
-	g_debug( "%s: signaler=%p, object=%p (%s), user_data=%p",
-			thisfn,
-			( void * ) signaler,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_CONCIL( object )){
-		refresh_display( self );
-
-	} else if( OFO_IS_ENTRY( object )){
-		refresh_display( self );
-	}
+	refresh_display( self );
 }

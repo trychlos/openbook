@@ -35,6 +35,7 @@
    - ExerciceMetaBin no more forces a new dossier to have a current exercice.
    - Reconciliation group is deleted when one of the entries is deleted (todo #758).
    - Settlement group is deleted when one of the entries is deleted (todo #758).
+   - Settlement page now auto-updates itself when an entry is modified elsewhere (todo #1347).
 
  Bug fixes:
 

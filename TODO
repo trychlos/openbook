@@ -352,10 +352,6 @@
 
 1346 2017- 2- 6 SettlementPage: add a view/edit properties idem in context menu
 
-1347 2017- 2- 6 SettlementPage: does not update automatically when an
-                entry is updated in another page
-                (ex: when a settled entry is deleted from EntryPage)
-
 1348
 
 -----------------------------------------------------------------------
@@ -631,6 +627,11 @@
 1345 2017- 2- 4 review ISetter interface: is it really needed ?
                 is it actually an IExtenderSetter inteface ?
      2017- 2- 4 done
+
+1347 2017- 2- 6 SettlementPage: does not update automatically when an
+                entry is updated in another page
+                (ex: when a settled entry is deleted from EntryPage)
+     2017- 2- 7 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

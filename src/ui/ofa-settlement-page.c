@@ -60,6 +60,7 @@ typedef struct {
 	 */
 	ofaIGetter        *getter;
 	gchar             *settings_prefix;
+	GList             *store_handlers;
 
 	/* UI
 	 */
@@ -172,8 +173,10 @@ static void       action_on_settle_activated( GSimpleAction *action, GVariant *e
 static void       action_on_unsettle_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
 static void       update_selection( ofaSettlementPage *self, gboolean settle );
 static void       update_row( ofoEntry *entry, sEnumSelected *ses );
+static void       refresh_display( ofaSettlementPage *self );
 static void       read_settings( ofaSettlementPage *self );
 static void       write_settings( ofaSettlementPage *self );
+static void       store_on_changed( ofaEntryStore *store, ofaSettlementPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaSettlementPage, ofa_settlement_page, OFA_TYPE_PANED_PAGE, 0,
 		G_ADD_PRIVATE( ofaSettlementPage ))
@@ -204,6 +207,7 @@ static void
 settlement_page_dispose( GObject *instance )
 {
 	ofaSettlementPagePrivate *priv;
+	GList *it;
 
 	g_return_if_fail( instance && OFA_IS_SETTLEMENT_PAGE( instance ));
 
@@ -211,9 +215,15 @@ settlement_page_dispose( GObject *instance )
 
 		write_settings( OFA_SETTLEMENT_PAGE( instance ));
 
-		/* unref object members here */
 		priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( instance ));
 
+		/* disconnect ofaEntryStore signal handlers */
+		for( it=priv->store_handlers ; it ; it=it->next ){
+			g_signal_handler_disconnect( priv->store, ( gulong ) it->data );
+		}
+		g_list_free( priv->store_handlers );
+
+		/* unref object members here */
 		g_object_unref( priv->settle_action );
 		g_object_unref( priv->unsettle_action );
 	}
@@ -653,6 +663,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	static const gchar *thisfn = "ofa_settlement_page_v_init_view";
 	ofaSettlementPagePrivate *priv;
 	GMenu *menu;
+	gulong handler;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -673,6 +684,9 @@ paned_page_v_init_view( ofaPanedPage *page )
 	priv->store = ofa_entry_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
+
+	handler = g_signal_connect( priv->store, "ofa-changed", G_CALLBACK( store_on_changed ), page );
+	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 
 	/* as GTK_SELECTION_MULTIPLE is set, we have to explicitely
 	 * setup the initial selection if a first row exists */
@@ -707,13 +721,12 @@ on_account_changed( GtkEntry *entry, ofaSettlementPage *self )
 		}
 
 		gtk_label_set_text( GTK_LABEL( priv->account_label ), ofo_account_get_label( account ));
-		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 
 	} else {
 		gtk_label_set_text( GTK_LABEL( priv->account_label ), "" );
 	}
 
-	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
+	refresh_display( self );
 }
 
 static void
@@ -733,7 +746,7 @@ on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self )
 				SET_COL_CODE, &priv->filter_id,
 				-1 );
 
-		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
+		refresh_display( self );
 	}
 }
 
@@ -782,7 +795,7 @@ update_selection( ofaSettlementPage *self, gboolean settle )
 	g_simple_action_set_enabled( priv->settle_action, ses.unsettled > 0 );
 	g_simple_action_set_enabled( priv->unsettle_action, ses.settled > 0 );
 
-	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
+	refresh_display( self );
 }
 
 /*
@@ -814,6 +827,16 @@ ofa_settlement_page_set_account( ofaSettlementPage *page, const gchar *number )
 	priv = ofa_settlement_page_get_instance_private( page );
 
 	gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), number );
+}
+
+static void
+refresh_display( ofaSettlementPage *self )
+{
+	ofaSettlementPagePrivate *priv;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 }
 
 /*
@@ -887,4 +910,16 @@ write_settings( ofaSettlementPage *self )
 
 	g_free( str );
 	g_free( key );
+}
+
+/*
+ * ofaEntryStore::ofa-changed signal handler
+ *
+ * This signal is sent by ofaEntryStore after it has treated an
+ * ofaISignaler event.
+ */
+static void
+store_on_changed( ofaEntryStore *store, ofaSettlementPage *self )
+{
+	refresh_display( self );
 }

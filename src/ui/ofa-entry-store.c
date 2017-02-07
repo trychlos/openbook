@@ -78,6 +78,15 @@ static GType st_col_types[ENTRY_N_COLUMNS] = {
 	G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING			/* rule_int, rule, notes */
 };
 
+/* signals defined here
+ */
+enum {
+	CHANGED = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+
 static void     load_dataset( ofaEntryStore *store );
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryStore *self );
 static void     insert_row( ofaEntryStore *self, const ofoEntry *entry );
@@ -94,6 +103,7 @@ static void     signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, o
 static void     signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaEntryStore *self );
 static void     signaler_on_updated_entry( ofaEntryStore *self, ofoEntry *entry );
 static void     signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaEntryStore *self );
+static void     signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaEntryStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryStore, ofa_entry_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaEntryStore ))
@@ -165,6 +175,30 @@ ofa_entry_store_class_init( ofaEntryStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = entry_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = entry_store_finalize;
+
+	/**
+	 * ofaEntryStore::ofa-changed:
+	 *
+	 * #ofaEntryStore sends a 'ofa-changed' signal after having treated
+	 * an ofaISignaler update. It is time for the view to update itself.
+	 *
+	 * There is no argument.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaEntryStore *store,
+	 * 						gpointer     user_data );
+	 */
+	st_signals[ CHANGED ] = g_signal_new_class_handler(
+				"ofa-changed",
+				OFA_TYPE_ENTRY_STORE,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
 }
 
 /**
@@ -560,6 +594,9 @@ signaler_connect_to_signaling_system( ofaEntryStore *self )
 
 	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
 	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_COLLECTION_RELOAD, G_CALLBACK( signaler_on_reload_collection ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 }
 
 /*
@@ -579,6 +616,8 @@ signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaEntryStore *se
 	if( OFO_IS_ENTRY( object )){
 		insert_row( self, OFO_ENTRY( object ));
 	}
+
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 /*
@@ -615,6 +654,8 @@ signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *
 	} else if( OFO_IS_ENTRY( object )){
 		signaler_on_updated_entry( self, OFO_ENTRY( object ));
 	}
+
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
@@ -647,4 +688,21 @@ signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaEntryStore
 	} else if( OFO_IS_ENTRY( object )){
 		signaler_on_updated_entry( self, OFO_ENTRY( object ));
 	}
+
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+/*
+ * SIGNALER_COLLECTION_RELOAD signal handler
+ */
+static void
+signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaEntryStore *self )
+{
+	static const gchar *thisfn = "ofa_entry_store_signaler_on_reload_collection";
+
+	g_debug( "%s: signaler=%p, type=%lu, self=%p",
+			thisfn,
+			( void * ) signaler, type, ( void * ) self );
+
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
