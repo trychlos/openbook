@@ -232,6 +232,8 @@
                      choose whether to import reconciliations/settlements
                      or no, to import deleted entries
      2016- 3- 1 +accounts: import balances
+     201è- 2- 7 it would be more usefull to have a preview of the imported
+                file, and a mapping dialog
 
 1003 2016- 2-24 FEAT RenderPage: add navigation+zoom buttons
 
@@ -241,12 +243,8 @@
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
 
-1053 2016- 3-26 CODE review the menu distribution
-
 1075 2016- 4-14 have a message bar
      2016- 4-20 describe a use case
-
-1086 2016- 4-15 Have an error message from ofa_idbconnect_query
 
 1093 2016- 4-19 CODE should ICollector have its own messaging system
                      on add/remove actions (update/reload cannot be managed
@@ -404,9 +402,17 @@
 1014 2016- 2-26 FEAT ViewEntries: filter per operation template
      2017- 2- 5 cancelled as duplicate of #733 (search for an entry)
 
+1053 2016- 3-26 CODE review the menu distribution
+     2017- 2- 7 cancelled as useless
+
 1073 2016- 4-14 ofaIDBConnect::restore: returns an error message
      2017- 1-16 cancelled as an error message may be sent through the
                 msg_cb callback
+
+1086 2016- 4-15 Have an error message from ofa_idbconnect_query
+     2017- 2- 7 for now, error message is displayed or emitted as a
+                warning which is enough
+                -> cancelled
 
 1147 2016- 6- 8 UserPref: whether to take advantage of tab reordering
                 or of detachable pages in the main book as the two are
