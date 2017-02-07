@@ -49,6 +49,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofs-currency.h"
 
+#include "ui/ofa-entry-properties.h"
 #include "ui/ofa-entry-store.h"
 #include "ui/ofa-entry-treeview.h"
 #include "ui/ofa-settlement-page.h"
@@ -102,6 +103,7 @@ typedef struct {
 
 	/* actions
 	 */
+	GSimpleAction     *edit_action;
 	GSimpleAction     *settle_action;
 	GSimpleAction     *unsettle_action;
 
@@ -177,6 +179,8 @@ static void       setup_actions( ofaSettlementPage *self, GtkContainer *parent )
 static void       paned_page_v_init_view( ofaPanedPage *page );
 static void       on_account_changed( GtkEntry *entry, ofaSettlementPage *self );
 static void       on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self );
+static void       action_on_edit_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
+static void       do_edit( ofaSettlementPage *self, ofoEntry *entry );
 static gboolean   settle_on_pressed( GtkWidget *button, GdkEvent *event, ofaSettlementPage *self );
 static gboolean   settle_on_released( GtkWidget *button, GdkEvent *event, ofaSettlementPage *self );
 static void       action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
@@ -237,6 +241,7 @@ settlement_page_dispose( GObject *instance )
 		g_list_free( priv->store_handlers );
 
 		/* unref object members here */
+		g_object_unref( priv->edit_action );
 		g_object_unref( priv->settle_action );
 		g_object_unref( priv->unsettle_action );
 	}
@@ -482,6 +487,12 @@ tview_is_session_settled( ofaSettlementPage *self, ofoEntry *entry )
 static void
 tview_on_row_selected( ofaEntryTreeview *view, GList *selected, ofaSettlementPage *self )
 {
+	ofaSettlementPagePrivate *priv;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	g_simple_action_set_enabled( priv->edit_action, g_list_length( selected ) > 0 );
+
 	refresh_selection_compute_with_selected( self, selected );
 }
 
@@ -603,6 +614,14 @@ setup_actions( ofaSettlementPage *self, GtkContainer *parent )
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
+	/* edit action */
+	priv->edit_action = g_simple_action_new( "edit", NULL );
+	g_signal_connect( priv->edit_action, "activate", G_CALLBACK( action_on_edit_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->edit_action ),
+			_( "View/edit properties..." ));
+	g_simple_action_set_enabled( priv->edit_action, FALSE );
+
 	/* settle action */
 	priv->settle_action = g_simple_action_new( "settle", NULL );
 	g_signal_connect( priv->settle_action, "activate", G_CALLBACK( action_on_settle_activated ), self );
@@ -719,6 +738,35 @@ on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self )
 				-1 );
 
 		refresh_display( self );
+	}
+}
+
+static void
+action_on_edit_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self )
+{
+	ofaSettlementPagePrivate *priv;
+	GList *selected;
+	ofoEntry *entry;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	selected = ofa_entry_treeview_get_selected( priv->tview );
+	entry = ( ofoEntry * ) selected->data;
+	do_edit( self, entry );
+	ofa_entry_treeview_free_selected( selected );
+}
+
+static void
+do_edit( ofaSettlementPage *self, ofoEntry *entry )
+{
+	ofaSettlementPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	if( entry ){
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+		ofa_entry_properties_run( priv->getter, toplevel, entry, FALSE );
 	}
 }
 
