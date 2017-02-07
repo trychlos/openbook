@@ -2181,14 +2181,14 @@ do_reconciliate_user_confirm( ofaReconcilPage *self, ofxAmount debit, ofxAmount 
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	sdeb = ofa_amount_to_str( debit, NULL, priv->getter );
-	scre = ofa_amount_to_str( credit, NULL, priv->getter );
+	sdeb = ofa_amount_to_str( debit, priv->acc_currency, priv->getter );
+	scre = ofa_amount_to_str( credit, priv->acc_currency, priv->getter );
 	str = g_strdup_printf( _( "Caution: reconciliated amounts are not balanced:\n"
 			"debit=%s, credit=%s.\n"
-			"Are you sure you want reconciliate this group ?" ), sdeb, scre );
+			"Are you sure you want to reconciliate this group ?" ), sdeb, scre );
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ok = my_utils_dialog_question( toplevel, str, _( "Reconciliate" ));
+	ok = my_utils_dialog_question( toplevel, str, _( "_Reconciliate" ));
 
 	g_free( sdeb );
 	g_free( scre );

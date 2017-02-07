@@ -36,6 +36,7 @@
    - Reconciliation group is deleted when one of the entries is deleted (todo #758).
    - Settlement group is deleted when one of the entries is deleted (todo #758).
    - Settlement page now auto-updates itself when an entry is modified elsewhere (todo #1347).
+   - Settlement page now warns when amounts are not balanced (unless Ctrl key is pressed).
 
  Bug fixes:
 

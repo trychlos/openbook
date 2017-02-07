@@ -47,10 +47,22 @@
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
+#include "api/ofs-currency.h"
 
 #include "ui/ofa-entry-store.h"
 #include "ui/ofa-entry-treeview.h"
 #include "ui/ofa-settlement-page.h"
+
+/* when enumerating the selected rows
+ * this structure is maintained each time the selection changes
+ * and is later used when settling or unsettling the selection
+ */
+typedef struct {
+	guint      rows;				/* count of. */
+	guint      settled;				/* count of. */
+	guint      unsettled;			/* count of. */
+}
+	sEnumSelected;
 
 /* priv instance data
  */
@@ -92,6 +104,18 @@ typedef struct {
 	 */
 	GSimpleAction     *settle_action;
 	GSimpleAction     *unsettle_action;
+
+	/* settlement button:
+	 * when clicked with <Ctrl>, then does not check for selection balance
+	 */
+	gboolean           ctrl_on_pressed;
+	gboolean           ctrl_on_released;
+
+	/* selection management
+	 */
+	sEnumSelected      ses;
+	ofsCurrency        scur;
+	ofxCounter         snumber;
 }
 	ofaSettlementPagePrivate;
 
@@ -131,22 +155,6 @@ static const sSettlementPage st_settlements[] = {
 		{ 0 }
 };
 
-/* when enumerating the selected rows
- * this structure is used twice:
- * - each time the selection is updated, in order to update the footer fields
- * - when settling or unsettling the selection
- */
-typedef struct {
-	ofaSettlementPage *self;
-	gint               rows;				/* count of. */
-	gint               settled;				/* count of. */
-	gint               unsettled;			/* count of. */
-	gdouble            debit;				/* sum of debit amounts */
-	gdouble            credit;				/* sum of credit amounts */
-	gint               set_number;
-}
-	sEnumSelected;
-
 #define COLOR_SETTLED                   "#e0e0e0"		/* light gray background */
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-settlement-page.ui";
@@ -161,7 +169,7 @@ static void       tview_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRe
 static gboolean   tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlementPage *self );
 static gboolean   tview_is_session_settled( ofaSettlementPage *self, ofoEntry *entry );
 static void       tview_on_row_selected( ofaEntryTreeview *view, GList *selected, ofaSettlementPage *self );
-static void       tview_enum_selected( ofoEntry *entry, sEnumSelected *ses );
+static void       tview_enum_selected( ofoEntry *entry, ofaSettlementPage *self );
 static GtkWidget *setup_view2( ofaSettlementPage *self );
 static void       setup_account_selection( ofaSettlementPage *self, GtkContainer *parent );
 static void       setup_settlement_selection( ofaSettlementPage *self, GtkContainer *parent );
@@ -169,10 +177,15 @@ static void       setup_actions( ofaSettlementPage *self, GtkContainer *parent )
 static void       paned_page_v_init_view( ofaPanedPage *page );
 static void       on_account_changed( GtkEntry *entry, ofaSettlementPage *self );
 static void       on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self );
+static gboolean   settle_on_pressed( GtkWidget *button, GdkEvent *event, ofaSettlementPage *self );
+static gboolean   settle_on_released( GtkWidget *button, GdkEvent *event, ofaSettlementPage *self );
 static void       action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
+static gboolean   do_settle_user_confirm( ofaSettlementPage *self );
 static void       action_on_unsettle_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
 static void       update_selection( ofaSettlementPage *self, gboolean settle );
-static void       update_row( ofoEntry *entry, sEnumSelected *ses );
+static void       update_row_enum( ofoEntry *entry, ofaSettlementPage *self );
+static void       refresh_selection_compute( ofaSettlementPage *self );
+static void       refresh_selection_compute_with_selected( ofaSettlementPage *self, GList *selected );
 static void       refresh_display( ofaSettlementPage *self );
 static void       read_settings( ofaSettlementPage *self );
 static void       write_settings( ofaSettlementPage *self );
@@ -469,79 +482,35 @@ tview_is_session_settled( ofaSettlementPage *self, ofoEntry *entry )
 static void
 tview_on_row_selected( ofaEntryTreeview *view, GList *selected, ofaSettlementPage *self )
 {
-	ofaSettlementPagePrivate *priv;
-	sEnumSelected ses;
-	gchar *samount;
-	const gchar *code;
-
-	priv = ofa_settlement_page_get_instance_private( self );
-
-	memset( &ses, '\0', sizeof( sEnumSelected ));
-	ses.self = self;
-	g_list_foreach( selected, ( GFunc ) tview_enum_selected, &ses );
-
-	g_simple_action_set_enabled( priv->settle_action, ses.unsettled > 0 );
-	g_simple_action_set_enabled( priv->unsettle_action, ses.settled > 0 );
-
-	if( priv->last_style ){
-		my_style_remove( priv->footer_label, priv->last_style );
-		my_style_remove( priv->debit_balance, priv->last_style );
-		my_style_remove( priv->credit_balance, priv->last_style );
-		my_style_remove( priv->currency_balance, priv->last_style );
-	}
-
-	samount = priv->account_currency
-			? ofa_amount_to_str( ses.debit, priv->account_currency, priv->getter )
-			: g_strdup( "" );
-	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
-	g_free( samount );
-
-	samount = priv->account_currency
-			? ofa_amount_to_str( ses.credit, priv->account_currency, priv->getter )
-			: g_strdup( "" );
-	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
-	g_free( samount );
-
-	code = priv->account_currency ? ofo_currency_get_code( priv->account_currency ) : "",
-	gtk_label_set_text( GTK_LABEL( priv->currency_balance ), code );
-
-	if( ses.rows == 0 ){
-		priv->last_style = "labelinvalid";
-	} else if( ses.debit == ses.credit ){
-		priv->last_style = "labelinfo";
-	} else {
-		priv->last_style = "labelwarning";
-	}
-
-	my_style_add( priv->footer_label, priv->last_style );
-	my_style_add( priv->debit_balance, priv->last_style );
-	my_style_add( priv->credit_balance, priv->last_style );
-	my_style_add( priv->currency_balance, priv->last_style );
+	refresh_selection_compute_with_selected( self, selected );
 }
 
 /*
  * a function called each time the selection is changed, for each selected row
  */
 static void
-tview_enum_selected( ofoEntry *entry, sEnumSelected *ses )
+tview_enum_selected( ofoEntry *entry, ofaSettlementPage *self )
 {
+	ofaSettlementPagePrivate *priv;
 	ofxCounter stlmt_number;
 	ofxAmount debit, credit;
 
-	ses->rows += 1;
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	priv->ses.rows += 1;
 
 	stlmt_number = ofo_entry_get_settlement_number( entry );
 	debit = ofo_entry_get_debit( entry );
 	credit = ofo_entry_get_credit( entry );
 
 	if( stlmt_number > 0 ){
-		ses->settled += 1;
+		priv->ses.settled += 1;
 	} else {
-		ses->unsettled += 1;
+		priv->ses.unsettled += 1;
 	}
 
-	ses->debit += debit;
-	ses->credit += credit;
+	priv->scur.debit += debit;
+	priv->scur.credit += credit;
 }
 
 static GtkWidget *
@@ -630,7 +599,7 @@ static void
 setup_actions( ofaSettlementPage *self, GtkContainer *parent )
 {
 	ofaSettlementPagePrivate *priv;
-	GtkWidget *widget;
+	GtkWidget *button;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
@@ -640,10 +609,13 @@ setup_actions( ofaSettlementPage *self, GtkContainer *parent )
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->settle_action ),
 			_( "Settle the selection" ));
-	widget = my_utils_container_get_child_by_name( parent, "settle-btn" );
-	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
+	button = my_utils_container_get_child_by_name( parent, "settle-btn" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	ofa_iactionable_set_button(
-			OFA_IACTIONABLE( self ), widget, priv->settings_prefix, G_ACTION( priv->settle_action ));
+			OFA_IACTIONABLE( self ), button, priv->settings_prefix, G_ACTION( priv->settle_action ));
+
+	g_signal_connect( button, "button-press-event", G_CALLBACK( settle_on_pressed ), self );
+	g_signal_connect( button, "button-release-event", G_CALLBACK( settle_on_released ), self );
 
 	/* unsettle action */
 	priv->unsettle_action = g_simple_action_new( "unsettle", NULL );
@@ -651,10 +623,10 @@ setup_actions( ofaSettlementPage *self, GtkContainer *parent )
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->unsettle_action ),
 			_( "Unsettle the selection" ));
-	widget = my_utils_container_get_child_by_name( parent, "unsettle-btn" );
-	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
+	button = my_utils_container_get_child_by_name( parent, "unsettle-btn" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	ofa_iactionable_set_button(
-			OFA_IACTIONABLE( self ), widget, priv->settings_prefix, G_ACTION( priv->unsettle_action ));
+			OFA_IACTIONABLE( self ), button, priv->settings_prefix, G_ACTION( priv->unsettle_action ));
 }
 
 static void
@@ -750,10 +722,81 @@ on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self )
 	}
 }
 
+static gboolean
+settle_on_pressed( GtkWidget *button, GdkEvent *event, ofaSettlementPage *self )
+{
+	ofaSettlementPagePrivate *priv;
+	GdkModifierType modifiers;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	modifiers = gtk_accelerator_get_default_mod_mask();
+
+	priv->ctrl_on_pressed = ((( GdkEventButton * ) event )->state & modifiers ) == GDK_CONTROL_MASK;
+
+	return( FALSE );
+}
+
+static gboolean
+settle_on_released( GtkWidget *button, GdkEvent *event, ofaSettlementPage *self )
+{
+	ofaSettlementPagePrivate *priv;
+	GdkModifierType modifiers;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	modifiers = gtk_accelerator_get_default_mod_mask();
+
+	priv->ctrl_on_released = ((( GdkEventButton * ) event )->state & modifiers ) == GDK_CONTROL_MASK;
+
+	return( FALSE );
+}
+
 static void
 action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self )
 {
+	ofaSettlementPagePrivate *priv;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	/* ask for a user confirmation when selection is not balanced
+	 *  (and Ctrl key is not pressed) */
+	if(( !priv->ctrl_on_pressed || !priv->ctrl_on_released ) && !ofs_currency_is_balanced( &priv->scur )){
+		if( !do_settle_user_confirm( self )){
+			return;
+		}
+	}
+
 	update_selection( self, TRUE );
+
+	priv->ctrl_on_pressed = FALSE;
+	priv->ctrl_on_released = FALSE;
+}
+
+static gboolean
+do_settle_user_confirm( ofaSettlementPage *self )
+{
+	ofaSettlementPagePrivate *priv;
+	gboolean ok;
+	gchar *sdeb, *scre, *str;
+	GtkWindow *toplevel;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	sdeb = ofa_amount_to_str( priv->scur.debit, priv->account_currency, priv->getter );
+	scre = ofa_amount_to_str( priv->scur.credit, priv->account_currency, priv->getter );
+	str = g_strdup_printf( _( "Caution: settleable amounts are not balanced:\n"
+			"debit=%s, credit=%s.\n"
+			"Are you sure you want to settle this group ?" ), sdeb, scre );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ok = my_utils_dialog_question( toplevel, str, _( "_Settle" ));
+
+	g_free( sdeb );
+	g_free( scre );
+	g_free( str );
+
+	return( ok );
 }
 
 static void
@@ -765,35 +808,33 @@ action_on_unsettle_activated( GSimpleAction *action, GVariant *empty, ofaSettlem
 /*
  * we update here the rows to settled/unsettled
  * due to the GtkTreeModelFilter, this may lead the updated row to
- * disappear from the view -> so update based on GtkListStore iters
+ * disappear from the view -> so update is based on store iters
  */
 static void
 update_selection( ofaSettlementPage *self, gboolean settle )
 {
 	ofaSettlementPagePrivate *priv;
-	sEnumSelected ses;
 	ofaHub *hub;
 	ofoDossier *dossier;
 	GList *selected;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
-	memset( &ses, '\0', sizeof( sEnumSelected ));
-	ses.self = self;
 	if( settle ){
 		hub = ofa_igetter_get_hub( priv->getter );
 		dossier = ofa_hub_get_dossier( hub );
-		ses.set_number = ofo_dossier_get_next_settlement( dossier );
+		priv->snumber = ofo_dossier_get_next_settlement( dossier );
+
 	} else {
-		ses.set_number = -1;
+		priv->snumber = -1;
 	}
 
 	selected = ofa_entry_treeview_get_selected( priv->tview );
-	g_list_foreach( selected, ( GFunc ) update_row, &ses );
+	g_list_foreach( selected, ( GFunc ) update_row_enum, self );
 	ofa_entry_treeview_free_selected( selected );
 
-	g_simple_action_set_enabled( priv->settle_action, ses.unsettled > 0 );
-	g_simple_action_set_enabled( priv->unsettle_action, ses.settled > 0 );
+	g_simple_action_set_enabled( priv->settle_action, priv->ses.unsettled > 0 );
+	g_simple_action_set_enabled( priv->unsettle_action, priv->ses.settled > 0 );
 
 	refresh_display( self );
 }
@@ -803,10 +844,13 @@ update_selection( ofaSettlementPage *self, gboolean settle )
  * so auto-update itself.
  */
 static void
-update_row( ofoEntry *entry, sEnumSelected *ses )
+update_row_enum( ofoEntry *entry, ofaSettlementPage *self )
 {
-	ofo_entry_update_settlement( entry, ses->set_number );
-	tview_enum_selected( entry, ses );
+	ofaSettlementPagePrivate *priv;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	ofo_entry_update_settlement( entry, priv->snumber );
 }
 
 /**
@@ -829,6 +873,81 @@ ofa_settlement_page_set_account( ofaSettlementPage *page, const gchar *number )
 	gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), number );
 }
 
+/*
+ * Recompute the whole selection struct each time the selection change
+ */
+static void
+refresh_selection_compute( ofaSettlementPage *self )
+{
+	ofaSettlementPagePrivate *priv;
+	GList *selected;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	selected = ofa_entry_treeview_get_selected( priv->tview );
+	refresh_selection_compute_with_selected( self, selected );
+	ofa_entry_treeview_free_selected( selected );
+}
+
+static void
+refresh_selection_compute_with_selected( ofaSettlementPage *self, GList *selected )
+{
+	ofaSettlementPagePrivate *priv;
+	gchar *samount;
+	const gchar *code;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	memset( &priv->ses, '\0', sizeof( sEnumSelected ));
+	memset( &priv->scur, '\0', sizeof( ofsCurrency ));
+	priv->snumber = -1;
+
+	if( priv->account_currency ){
+		priv->scur.currency = priv->account_currency;
+		g_list_foreach( selected, ( GFunc ) tview_enum_selected, self );
+	}
+
+	g_simple_action_set_enabled( priv->settle_action, priv->ses.unsettled > 0 );
+	g_simple_action_set_enabled( priv->unsettle_action, priv->ses.settled > 0 );
+
+	if( priv->last_style ){
+		my_style_remove( priv->footer_label, priv->last_style );
+		my_style_remove( priv->debit_balance, priv->last_style );
+		my_style_remove( priv->credit_balance, priv->last_style );
+		my_style_remove( priv->currency_balance, priv->last_style );
+	}
+
+	samount = priv->account_currency
+			? ofa_amount_to_str( priv->scur.debit, priv->account_currency, priv->getter )
+			: g_strdup( "" );
+	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
+	g_free( samount );
+
+	samount = priv->account_currency
+			? ofa_amount_to_str( priv->scur.credit, priv->account_currency, priv->getter )
+			: g_strdup( "" );
+	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
+	g_free( samount );
+
+	code = priv->account_currency ? ofo_currency_get_code( priv->account_currency ) : "",
+	gtk_label_set_text( GTK_LABEL( priv->currency_balance ), code );
+
+	if( priv->ses.rows == 0 ){
+		priv->last_style = "labelinvalid";
+
+	} else if( priv->scur.debit == priv->scur.credit ){
+		priv->last_style = "labelinfo";
+
+	} else {
+		priv->last_style = "labelwarning";
+	}
+
+	my_style_add( priv->footer_label, priv->last_style );
+	my_style_add( priv->debit_balance, priv->last_style );
+	my_style_add( priv->credit_balance, priv->last_style );
+	my_style_add( priv->currency_balance, priv->last_style );
+}
+
 static void
 refresh_display( ofaSettlementPage *self )
 {
@@ -837,6 +956,7 @@ refresh_display( ofaSettlementPage *self )
 	priv = ofa_settlement_page_get_instance_private( self );
 
 	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
+	refresh_selection_compute( self );
 }
 
 /*
