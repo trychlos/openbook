@@ -48,8 +48,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
-#include "core/ofa-entry-store.h"
-
+#include "ui/ofa-entry-store.h"
 #include "ui/ofa-entry-treeview.h"
 #include "ui/ofa-settlement-page.h"
 

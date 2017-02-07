@@ -29,7 +29,7 @@
  * SECTION: reconcil_store
  * @title: ofaReconcilStore
  * @short_description: The ReconcilStore class description
- * @include: core/ofa-entry-store.h
+ * @include: ui/ofa-reconcil-store.h
  *
  * The #ofaReconcilStore derives from #ofaTreeStore. It stores entries
  * and BAT lines which are proposed to bank reconciliation.

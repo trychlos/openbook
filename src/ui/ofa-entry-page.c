@@ -58,13 +58,13 @@
 #include "api/ofs-currency.h"
 
 #include "core/ofa-account-select.h"
-#include "core/ofa-entry-store.h"
 #include "core/ofa-iconcil.h"
 #include "core/ofa-ledger-combo.h"
 #include "core/ofa-ledger-store.h"
 
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-entry-properties.h"
+#include "ui/ofa-entry-store.h"
 #include "ui/ofa-entry-treeview.h"
 
 /* priv instance data

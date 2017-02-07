@@ -156,6 +156,8 @@ openbook_SOURCES = \
 	ofa-entry-page.h									\
 	ofa-entry-properties.c								\
 	ofa-entry-properties.h								\
+	ofa-entry-store.c									\
+	ofa-entry-store.h									\
 	ofa-entry-treeview.c								\
 	ofa-entry-treeview.h								\
 	ofa-exercice-close-assistant.c						\
