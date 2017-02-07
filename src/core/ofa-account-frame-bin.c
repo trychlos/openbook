@@ -1056,6 +1056,13 @@ is_new_allowed( ofaAccountFrameBin *self )
 	return( ok );
 }
 
+/*
+ * Does the selected accounts is deletable ?
+ *
+ * For a root account, whose all children would be deleted too due to
+ * user preferences, must also check that all children are deletable;
+ * #ofo_account_is_deletable() takes care of that for root accounts.
+ */
 static gboolean
 is_delete_allowed( ofaAccountFrameBin *self, ofoAccount *account )
 {
@@ -1113,7 +1120,7 @@ do_delete_account( ofaAccountFrameBin *self, ofoAccount *account )
 
 	if( delete_confirmed( self, account ) && ofo_account_delete( account )){
 
-			/* nothing to do here, all being managed by signal signaler_handlers
+			/* nothing to do here, all being managed by ofaISignaler handlers
 			 * just reset the selection
 			 * asking for selection of the just deleted account makes
 			 * almost sure that we are going to select the most close
@@ -1145,7 +1152,7 @@ delete_confirmed( ofaAccountFrameBin *self, ofoAccount *account )
 				ofa_prefs_account_delete_root_with_children( priv->getter )){
 			msg = g_strdup_printf( _(
 					"You are about to delete the %s - %s account.\n"
-					"This is a root account which has children.\n"
+					"This is a root account, and all its children will be deleted too.\n"
 					"Are you sure ?" ),
 					ofo_account_get_number( account ),
 					ofo_account_get_label( account ));

@@ -430,7 +430,7 @@
                             <property name="column_spacing">4</property>
                             <child>
                               <object class="GtkCheckButton" id="p3-delete-children">
-                                <property name="label" translatable="yes">Also _delete all its children when deleting a root account</property>
+                                <property name="label" translatable="yes">When deleting a root account, also delete all its _children </property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
