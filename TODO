@@ -348,7 +348,11 @@
 
 1344 2017- 2- 3 re-authorize dossier open from command-line
 
-1348
+1348 2017- 2- 7 TVAForm: should emit a warning if ope_template does not exist
+                + add to integrity check
+                + disable the opes generation 
+
+1349
 
 -----------------------------------------------------------------------
  DONE

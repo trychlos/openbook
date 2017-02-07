@@ -1324,42 +1324,46 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 			if( amount > 0 && my_strlen( cstr )){
 				g_debug( "%s: amount=%lf, template=%s", thisfn, amount, cstr );
 				done = FALSE;
+				ope = NULL;
 				template = ofo_ope_template_get_by_mnemo( priv->getter, cstr );
-				g_return_val_if_fail( template && OFO_IS_OPE_TEMPLATE( template ), FALSE );
-				/*
-				 * generate an operation when the amount is greater thant zero
-				 * and the operation template is set and found
-				 * inject the positive amount into the first row/debit/credit
-				 * slot
-				 */
-				ope = ofs_ope_new( template );
-				my_date_set_from_date( &ope->dope, ofo_tva_record_get_dope( priv->tva_record ));
-				ope->dope_user_set = TRUE;
-				ope->ref = g_strdup( ofo_tva_record_get_mnemo( priv->tva_record ));
-				ope->ref_user_set = TRUE;
-				tmpl_count = ofo_ope_template_get_detail_count( template );
-				for( tmpl_idx=0 ; tmpl_idx < tmpl_count ; ++tmpl_idx ){
-					if( !ofo_ope_template_get_detail_debit_locked( template, tmpl_idx )){
-						cstr = ofo_ope_template_get_detail_debit( template, tmpl_idx );
-						if( !my_strlen( cstr )){
-							detail = ( ofsOpeDetail * ) g_list_nth( ope->detail, tmpl_idx )->data;
-							detail->debit = amount;
-							detail->debit_user_set = TRUE;
-							done = TRUE;
-							break;
+				if( template && OFO_IS_OPE_TEMPLATE( template )){
+					/*
+					 * generate an operation when the amount is greater thant zero
+					 * and the operation template is set and found
+					 * inject the positive amount into the first row/debit/credit
+					 * slot
+					 */
+					ope = ofs_ope_new( template );
+					my_date_set_from_date( &ope->dope, ofo_tva_record_get_dope( priv->tva_record ));
+					ope->dope_user_set = TRUE;
+					ope->ref = g_strdup( ofo_tva_record_get_mnemo( priv->tva_record ));
+					ope->ref_user_set = TRUE;
+					tmpl_count = ofo_ope_template_get_detail_count( template );
+					for( tmpl_idx=0 ; tmpl_idx < tmpl_count ; ++tmpl_idx ){
+						if( !ofo_ope_template_get_detail_debit_locked( template, tmpl_idx )){
+							cstr = ofo_ope_template_get_detail_debit( template, tmpl_idx );
+							if( !my_strlen( cstr )){
+								detail = ( ofsOpeDetail * ) g_list_nth( ope->detail, tmpl_idx )->data;
+								detail->debit = amount;
+								detail->debit_user_set = TRUE;
+								done = TRUE;
+								break;
 
-						}
-					} else if( !ofo_ope_template_get_detail_credit_locked( template, tmpl_idx )){
-						cstr = ofo_ope_template_get_detail_credit( template, tmpl_idx );
-						if( !my_strlen( cstr )){
-							detail = ( ofsOpeDetail * ) g_list_nth( ope->detail, tmpl_idx )->data;
-							detail->credit = amount;
-							detail->credit_user_set = TRUE;
-							done = TRUE;
-							break;
+							}
+						} else if( !ofo_ope_template_get_detail_credit_locked( template, tmpl_idx )){
+							cstr = ofo_ope_template_get_detail_credit( template, tmpl_idx );
+							if( !my_strlen( cstr )){
+								detail = ( ofsOpeDetail * ) g_list_nth( ope->detail, tmpl_idx )->data;
+								detail->credit = amount;
+								detail->credit_user_set = TRUE;
+								done = TRUE;
+								break;
 
+							}
 						}
 					}
+				} else {
+					g_warning( "%s: invalid or unknown ope_template=%s", thisfn, cstr );
 				}
 				/*
 				 * setup an operation number
