@@ -65,6 +65,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	gboolean             initialized;
 	GList               *signaler_handlers;
 	gboolean             is_writable;		/* whether the dossier is writable */
 	ofaAccountStore     *store;
@@ -243,6 +244,7 @@ ofa_account_frame_bin_init( ofaAccountFrameBin *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( self ));
+	priv->initialized = FALSE;
 	priv->prev_class = -1;
 	priv->current_page = NULL;
 }
@@ -344,6 +346,8 @@ ofa_account_frame_bin_new( ofaIGetter *getter  )
 	setup_bin( self );
 	signaler_connect_to_signaling_system( self );
 
+	priv->initialized = TRUE;
+
 	return( self );
 }
 
@@ -408,6 +412,9 @@ book_get_page_by_class( ofaAccountFrameBin *self, gint class_num, gboolean bcrea
 	gint count, i;
 	GtkWidget *found, *page_widget;
 	gint page_class;
+
+	g_debug( "%s: self=%p, class_num=%u, bcreate=%s",
+			thisfn, ( void * ) self, class_num, bcreate ? "True":"False" );
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
@@ -1186,18 +1193,26 @@ static void
 store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
-	gchar *number;
-	gint class_num;
+	ofoAccount *account;
+	gint class_num, page_num;
+	GtkWidget *page;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
-	gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_NUMBER, &number, -1 );
-	class_num = ofo_account_get_class_from_number( number );
-	g_free( number );
+	gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_OBJECT, &account, -1 );
+	g_object_unref( account );
+
+	class_num = ofo_account_get_class( account );
 
 	if( class_num != priv->prev_class ){
-		book_get_page_by_class( self, class_num, TRUE );
+		page = book_get_page_by_class( self, class_num, TRUE );
 		priv->prev_class = class_num;
+
+		if( priv->initialized ){
+			gtk_widget_show_all( page );
+			page_num = gtk_notebook_page_num( GTK_NOTEBOOK( priv->notebook ), page );
+			gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), page_num );
+		}
 	}
 }
 

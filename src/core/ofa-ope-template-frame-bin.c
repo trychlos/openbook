@@ -60,6 +60,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	gboolean             initialized;
 	GList               *signaler_handlers;
 	gboolean             is_writable;
 	ofaOpeTemplateStore *store;
@@ -219,6 +220,7 @@ ofa_ope_template_frame_bin_init( ofaOpeTemplateFrameBin *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( self ));
+	priv->initialized = FALSE;
 	priv->current_page = NULL;
 }
 
@@ -322,6 +324,8 @@ ofa_ope_template_frame_bin_new( ofaIGetter *getter )
 
 	setup_bin( self );
 	signaler_connect_to_signaling_system( self );
+
+	priv->initialized = TRUE;
 
 	return( self );
 }
@@ -1003,8 +1007,13 @@ static void
 store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateFrameBin *self )
 {
 	static const gchar *thisfn = "ofa_ope_template_frame_bin_store_on_row_inserted";
+	ofaOpeTemplateFrameBinPrivate *priv;
 	ofoOpeTemplate *ope;
 	const gchar *ledger;
+	GtkWidget *page;
+	gint page_num;
+
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	gtk_tree_model_get( tmodel, iter, OPE_TEMPLATE_COL_OBJECT, &ope, -1 );
 	g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
@@ -1017,8 +1026,16 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateFr
 	}
 
 	ledger = ofo_ope_template_get_ledger( ope );
-	if( !book_get_page_by_ledger( self, ledger, TRUE )){
-		book_get_page_by_ledger( self, UNKNOWN_LEDGER_MNEMO, TRUE );
+	page = book_get_page_by_ledger( self, ledger, TRUE );
+
+	if( !page ){
+		page = book_get_page_by_ledger( self, UNKNOWN_LEDGER_MNEMO, TRUE );
+	}
+
+	if( priv->initialized ){
+		gtk_widget_show_all( page );
+		page_num = gtk_notebook_page_num( GTK_NOTEBOOK( priv->notebook ), page );
+		gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), page_num );
 	}
 }
 
