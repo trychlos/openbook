@@ -247,7 +247,7 @@ idialog_init( myIDialog *instance )
 	g_signal_connect( priv->su_bin, "ofa-changed", G_CALLBACK( on_su_bin_changed ), instance );
 	priv->su_parent = parent;
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dn-msg" );

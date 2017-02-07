@@ -378,7 +378,7 @@ idialog_init( myIDialog *instance )
 
 	/* we do not know at this time if are going to run as modal or non-modal
 	 * so only option is to wait until OK button is clicked */
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;

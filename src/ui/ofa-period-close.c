@@ -259,7 +259,7 @@ idialog_init( myIDialog *instance )
 	priv = ofa_period_close_get_instance_private( OFA_PERIOD_CLOSE( instance ));
 
 	/* close ledgers on OK + change Cancel button to Close */
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->do_close_btn = btn;

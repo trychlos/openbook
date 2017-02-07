@@ -363,7 +363,7 @@ check_for_enable_dlg( ofaBatSelect *self )
 
 	priv = ofa_bat_select_get_instance_private( self );
 
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "btn-ok" );
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ok-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 
 	gtk_widget_set_sensitive( btn, priv->bat_id > 0 );

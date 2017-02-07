@@ -294,7 +294,7 @@ idialog_init( myIDialog *instance )
 	priv = ofa_ledger_properties_get_instance_private( OFA_LEDGER_PROPERTIES( instance ));
 
 	/* update properties on OK + always terminates */
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
 	priv->ok_btn = btn;

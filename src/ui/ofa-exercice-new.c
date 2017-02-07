@@ -309,7 +309,7 @@ idialog_init( myIDialog *instance )
 	ofa_exercice_edit_bin_set_dossier_meta( priv->edit_bin, priv->dossier_meta );
 	g_signal_connect( priv->edit_bin, "ofa-changed", G_CALLBACK( on_edit_bin_changed ), instance );
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dn-msg" );
