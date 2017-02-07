@@ -226,9 +226,9 @@ ofa_dossier_actions_bin_new( ofaIGetter *getter, const gchar *settings_prefix, g
 	priv->rule = rule;
 
 	if( my_strlen( settings_prefix )){
-		str = priv->settings_prefix;
-		priv->settings_prefix = g_strdup_printf( "%s-%s", settings_prefix, str );
-		g_free( str );
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_prefix );
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = str;
 	}
 
 	setup_bin( bin );

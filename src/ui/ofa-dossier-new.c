@@ -285,9 +285,9 @@ ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *s
 	priv->dossier_meta = dossier_meta;
 
 	if( my_strlen( settings_prefix )){
-		str = priv->settings_prefix;
-		priv->settings_prefix = g_strdup_printf( "%s-%s", settings_prefix, str );
-		g_free( str );
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_prefix );
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = str;
 	}
 
 	dossier_created = FALSE;

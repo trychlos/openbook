@@ -327,9 +327,10 @@
 
 1262 2016-11-17 pass settings_prefix as a constructor argument (or know why)
      2017- 1-28 new settings_prefix behavior:
-                - ofaAdminCredentialsBin (<unused>      + '-settings')
+                - ofaAdminCredentialsBin (removed)
                 - ofaDossierActionsBin   (add to prefix + '-settings')
                 - ofaDossierNew          (add to prefix + <unused>)
+                - ofaEntryTreeview       (add to prefix+ unused here)
                 - ofaExerciceEditBin     (add to prefix + <unused>)
                 - ofaExerciceNew         (add to prefix + <unused>)
                 - ofaTargetChooserBin    (add to prefix + <unused>)
@@ -340,6 +341,7 @@
                 - operations: the bill, or the purchase trace
                 - entries: idem operation,
                 - accounts: all documents for this account
+     2017- 2- 6 dbms is prepared
 
 1285 2016-12-13 myIWindow: deprecate ::get_identifier() method
                 when several windows of same name are opened, just shift them 

@@ -53,7 +53,6 @@
 
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
-#include "api/ofo-entry.h"
 
 G_BEGIN_DECLS
 
@@ -84,29 +83,27 @@ enum {
 	ENTRY_ERR_ERROR
 };
 
-GType             ofa_entry_treeview_get_type          ( void ) G_GNUC_CONST;
+GType             ofa_entry_treeview_get_type         ( void ) G_GNUC_CONST;
 
-ofaEntryTreeview *ofa_entry_treeview_new               ( ofaIGetter *getter );
+ofaEntryTreeview *ofa_entry_treeview_new              ( ofaIGetter *getter,
+																const gchar *settings_prefix );
 
-void              ofa_entry_treeview_set_settings_key  ( ofaEntryTreeview *view,
-																const gchar *key );
+void              ofa_entry_treeview_setup_columns    ( ofaEntryTreeview *view );
 
-void              ofa_entry_treeview_setup_columns     ( ofaEntryTreeview *view );
+GList            *ofa_entry_treeview_get_selected     ( ofaEntryTreeview *view );
 
-GList            *ofa_entry_treeview_get_selected      ( ofaEntryTreeview *view );
+#define           ofa_entry_treeview_free_selected(L) g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
-#define           ofa_entry_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
-
-void              ofa_entry_treeview_set_selected      ( ofaEntryTreeview *view,
+void              ofa_entry_treeview_set_selected     ( ofaEntryTreeview *view,
 																ofxCounter entry );
 
-void              ofa_entry_treeview_cell_data_render  ( ofaEntryTreeview *view,
+void              ofa_entry_treeview_cell_data_render ( ofaEntryTreeview *view,
 																GtkTreeViewColumn *column,
 																GtkCellRenderer *renderer,
 																GtkTreeModel *model,
 																GtkTreeIter *iter );
 
-void              ofa_entry_treeview_set_filter_func   ( ofaEntryTreeview *view,
+void              ofa_entry_treeview_set_filter_func  ( ofaEntryTreeview *view,
 																GtkTreeModelFilterVisibleFunc filter_fn,
 																void *filter_data );
 

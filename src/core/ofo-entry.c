@@ -1191,7 +1191,7 @@ ofo_entry_get_rule( const ofoEntry *entry )
  *
  * Returns: the localized rule indicator for this @entry.
  *
- * Use case: textview
+ * Use case: treeview
  */
 const gchar *
 ofo_entry_get_rule_str( const ofoEntry *entry )
