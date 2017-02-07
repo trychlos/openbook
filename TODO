@@ -350,8 +350,6 @@
 
 1344 2017- 2- 3 re-authorize dossier open from command-line
 
-1346 2017- 2- 6 SettlementPage: add a view/edit properties idem in context menu
-
 1348
 
 -----------------------------------------------------------------------
@@ -627,6 +625,9 @@
 1345 2017- 2- 4 review ISetter interface: is it really needed ?
                 is it actually an IExtenderSetter inteface ?
      2017- 2- 4 done
+
+1346 2017- 2- 6 SettlementPage: add a view/edit properties idem in context menu
+     2017- 2- 6 done
 
 1347 2017- 2- 6 SettlementPage: does not update automatically when an
                 entry is updated in another page

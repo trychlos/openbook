@@ -1125,14 +1125,20 @@ do_delete_account( ofaAccountFrameBin *self, ofoAccount *account )
 
 	account_id = g_strdup( ofo_account_get_number( account ));
 
-	if( delete_confirmed( self, account ) && ofo_account_delete( account )){
+	if( delete_confirmed( self, account )){
 
-			/* nothing to do here, all being managed by ofaISignaler handlers
-			 * just reset the selection
-			 * asking for selection of the just deleted account makes
-			 * almost sure that we are going to select the most close
-			 * row */
-			ofa_account_frame_bin_set_selected( self, account_id );
+		if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children( priv->getter )){
+			ofo_account_delete_with_children( account );
+		} else {
+			ofo_account_delete( account );
+		}
+
+		/* nothing to do here, all being managed by ofaISignaler handlers
+		 * just reset the selection
+		 * asking for selection of the just deleted account makes
+		 * almost sure that we are going to select the most close
+		 * row */
+		ofa_account_frame_bin_set_selected( self, account_id );
 	}
 
 	g_free( account_id );
@@ -1208,6 +1214,8 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountFrameB
 		page = book_get_page_by_class( self, class_num, TRUE );
 		priv->prev_class = class_num;
 
+		/* makes sure the correct page is displayed
+		 */
 		if( priv->initialized ){
 			gtk_widget_show_all( page );
 			page_num = gtk_notebook_page_num( GTK_NOTEBOOK( priv->notebook ), page );

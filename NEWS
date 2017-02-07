@@ -41,16 +41,18 @@
    - Settlement group is deleted when one of the entries is deleted (todo #758).
    - Settlement page now auto-updates itself when an entry is modified elsewhere (todo #1347).
    - Settlement page now warns when amounts are not balanced (unless Ctrl key is pressed).
-   - Settlement page now has a 'View/edit entry...' context menu item.
+   - Settlement page now has a 'View/edit entry...' context menu item (todo #1346).
 
  Bug fixes:
 
    - myISettings: fix free_groups() behavior when groups list is NULL.
+   - ofaAccountFrameBin: fix selection of newly created account.
    - ofaEntryProperties: let the user close the dialog.
    - ofaExerciceTreeview: fix the update when no dossier is selected.
    - ofaIDBDossierMeta, ofaIDBExerciceMeta: fix refs management.
    - ofaMysqlRootBin: now updates the ofaMysqlDossierMeta runtime datas.
    - ofaPaimeanSelect: fix store instanciation.
+   - ofoAccount: actually delete all children when requested to.
 
  Other changes:
 
@@ -60,6 +62,7 @@
    - ofaIGetter: the header only includes class definitions (not the APIs).
    - ofeEntryRule: new enum which indicates the rule of the entry.
    - ofeEntryStatus: type renamed from ofaEntryStatus (as an enum).
+   - ofo_account_delete_with_children(): new function.
 
 -----------------------------------------------------------------------
  Version 0.66

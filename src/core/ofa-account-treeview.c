@@ -35,6 +35,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
@@ -55,6 +56,10 @@ typedef struct {
 	 */
 	ofaIGetter *getter;
 	gint        class_num;
+
+	/* runtime
+	 */
+	GList      *signaler_handlers;
 }
 	ofaAccountTreeviewPrivate;
 
@@ -82,11 +87,13 @@ static void        on_selection_activated( ofaAccountTreeview *self, GtkTreeSele
 static void        on_selection_delete( ofaAccountTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        get_and_send( ofaAccountTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoAccount *get_selected_with_selection( ofaAccountTreeview *self, GtkTreeSelection *selection );
-static gboolean    select_by_account_id_rec( ofaAccountTreeview *view, const gchar *account_id, GtkTreeModel *model, GtkTreeIter *iter, GtkTreeIter *prev_iter );
+static gint        find_account_iter( ofaAccountTreeview *self, const gchar *account_id, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void        cell_data_render_text( GtkCellRendererText *renderer, gboolean is_root, gint level, gboolean is_error );
 static gboolean    tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountTreeview *self );
 static void        tview_collapse_node( ofaAccountTreeview *self, GtkWidget *widget );
 static void        tview_expand_node( ofaAccountTreeview *self, GtkWidget *widget );
+static void        signaler_connect_to_signaling_system( ofaAccountTreeview *self );
+static void        signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaAccountTreeview *self );
 static gboolean    tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountTreeview, ofa_account_treeview, OFA_TYPE_TVBIN, 0,
@@ -112,6 +119,7 @@ static void
 account_treeview_dispose( GObject *instance )
 {
 	ofaAccountTreeviewPrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_TREEVIEW( instance ));
 
@@ -120,6 +128,10 @@ account_treeview_dispose( GObject *instance )
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
+
+		/* disconnect from ofaISignaler signaling system */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
 
 		/* unref object members here */
 	}
@@ -351,6 +363,9 @@ ofa_account_treeview_new( ofaIGetter *getter, gint class_number )
 	 */
 	ofa_tvbin_set_write_settings( OFA_TVBIN( view ), FALSE );
 
+	/* connect to ISignaler */
+	signaler_connect_to_signaling_system( view );
+
 	return( view );
 }
 
@@ -579,7 +594,7 @@ ofa_account_treeview_set_selected( ofaAccountTreeview *view, const gchar *accoun
 	ofaAccountTreeviewPrivate *priv;
 	GtkWidget *treeview;
 	GtkTreeModel *tmodel;
-	GtkTreeIter iter, prev_iter;
+	GtkTreeIter iter;
 
 	g_debug( "%s: view=%p, account_id=%s", thisfn, ( void * ) view, account_id );
 
@@ -593,53 +608,56 @@ ofa_account_treeview_set_selected( ofaAccountTreeview *view, const gchar *accoun
 	if( treeview ){
 		tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( treeview ));
 		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-			while( TRUE ){
-				prev_iter = iter;
-				if( !select_by_account_id_rec( view, account_id, tmodel, &iter, &prev_iter )){
-					break;
-				}
-				iter = prev_iter;
-				if( !gtk_tree_model_iter_next( tmodel, &iter )){
-					ofa_tvbin_select_row( OFA_TVBIN( view ), &prev_iter );
-					break;
-				}
-			}
+			find_account_iter( view, account_id, tmodel, &iter );
+			ofa_tvbin_select_row( OFA_TVBIN( view ), &iter );
 		}
 	}
 }
 
 /*
- * returns whether to continue the iteration
+ * On enter, @iter is expected to point to the first row.
+ *
+ * Returns: %TRUE if found.
  */
-static gboolean
-select_by_account_id_rec( ofaAccountTreeview *view, const gchar *account_id, GtkTreeModel *model, GtkTreeIter *iter, GtkTreeIter *prev_iter )
+static gint
+find_account_iter( ofaAccountTreeview *self, const gchar *account_id, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
+	GtkTreeIter child_iter;
 	gchar *row_id;
 	gint cmp;
-	GtkTreeIter child_iter;
 
 	while( TRUE ){
-		gtk_tree_model_get( model, iter, ACCOUNT_COL_NUMBER, &row_id, -1 );
-		cmp = my_collate( row_id, account_id );
-		//g_debug( "row_id=%s, account_id=%s, cmp=%d", row_id, account_id, cmp );
-		g_free( row_id );
-		if( cmp >= 0 ){
-			ofa_tvbin_select_row( OFA_TVBIN( view ), iter );
-			return( FALSE );
-		}
-		*prev_iter = *iter;
-		if( gtk_tree_model_iter_children( GTK_TREE_MODEL( model ), &child_iter, iter )){
-			if( !select_by_account_id_rec( view, account_id, model, &child_iter, iter )){
-				return( FALSE );
+
+		/* first examine children of the current iter */
+		if( gtk_tree_model_iter_has_child( tmodel, iter )){
+			gtk_tree_model_iter_children( tmodel, &child_iter, iter );
+			cmp = find_account_iter( self, account_id, tmodel, &child_iter );
+			if( cmp >= 0 ){
+				*iter = child_iter;
+				return( cmp );
 			}
 		}
-		*iter = *prev_iter;
-		if( !gtk_tree_model_iter_next( model, iter )){
+
+		/* examine the current iter */
+		gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_NUMBER, &row_id, -1 );
+		cmp = my_collate( row_id, account_id );
+		//g_debug( "find_account_iter: account_id=%s, row_id=%s, cmp=%d", account_id, row_id, cmp );
+		g_free( row_id );
+
+		/* found
+		 * or not found but have found a greater id, so stop there */
+		if( cmp >= 0 ){
+			return( cmp );
+		}
+
+		/* continue on next iter of same level */
+		if( !gtk_tree_model_iter_next( tmodel, iter )){
 			break;
 		}
 	}
 
-	return( TRUE );
+	/* not found, and worth to continue */
+	return( -1 );
 }
 
 /**
@@ -820,6 +838,50 @@ tview_expand_node( ofaAccountTreeview *self, GtkWidget *widget )
 				gtk_tree_view_expand_row( GTK_TREE_VIEW( widget ), path, FALSE );
 				gtk_tree_path_free( path );
 			}
+		}
+	}
+}
+
+/*
+ * Connect to ofaISignaler signaling system
+ */
+static void
+signaler_connect_to_signaling_system( ofaAccountTreeview *self )
+{
+	ofaAccountTreeviewPrivate *priv;
+	ofaISignaler *signaler;
+	gulong handler;
+
+	priv = ofa_account_treeview_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+}
+
+/*
+ * SIGNALER_BASE_NEW signal handler
+ */
+static void
+signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaAccountTreeview *self )
+{
+	static const gchar *thisfn = "ofa_account_treeview_signaler_on_new_base";
+	ofaAccountTreeviewPrivate *priv;
+	gint class_num;
+
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	priv = ofa_account_treeview_get_instance_private( self );
+
+	if( OFO_IS_ACCOUNT( object )){
+		class_num = ofo_account_get_class( OFO_ACCOUNT( object ));
+		if( class_num == priv->class_num ){
+			ofa_account_treeview_set_selected( self, ofo_account_get_number( OFO_ACCOUNT( object )));
 		}
 	}
 }
