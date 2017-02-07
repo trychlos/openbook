@@ -75,8 +75,11 @@ static GType st_col_types[ENTRY_N_COLUMNS] = {
 	G_TYPE_OBJECT,										/* the #ofoEntry itself */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, 		/* msgerr, msgwarn, dope_set */
 	G_TYPE_BOOLEAN, G_TYPE_BOOLEAN,						/* deffect_set, currency_set */
-	G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING			/* rule_int, rule, notes */
+	G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING, 0			/* rule_int, rule, notes, notes_png */
 };
+
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 /* signals defined here
  */
@@ -230,6 +233,7 @@ ofa_entry_store_new( ofaIGetter *getter )
 
 		priv->getter = getter;
 
+		st_col_types[ENTRY_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), ENTRY_N_COLUMNS, st_col_types );
 
@@ -304,13 +308,16 @@ insert_row( ofaEntryStore *self, const ofoEntry *entry )
 static void
 set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 {
+	static const gchar *thisfn = "ofa_entry_store_set_row_by_iter";
 	ofaEntryStorePrivate *priv;
 	gchar *sdope, *sdeff, *sdeb, *scre, *sopenum, *ssetnum, *ssetstamp, *sentnum, *supdstamp;
-	const gchar *cstr, *cref, *cur_code, *csetuser, *cupduser;
+	const gchar *cstr, *cref, *cur_code, *csetuser, *cupduser, *notes;
 	ofoCurrency *cur_obj;
 	ofxAmount amount;
 	ofxCounter counter;
 	ofoConcil *concil;
+	GdkPixbuf *notes_png;
+	GError *error;
 
 	priv = ofa_entry_store_get_instance_private( self );
 
@@ -346,6 +353,13 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	cupduser = cstr ? cstr : "";
 	supdstamp = my_stamp_to_str( ofo_entry_get_upd_stamp( entry ), MY_STAMP_DMYYHM );
 
+	error = NULL;
+	notes = ofo_entry_get_notes( entry );
+	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
+	if( error ){
+		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
+		g_error_free( error );
+	}
 
 	gtk_list_store_set(
 				GTK_LIST_STORE( self ),
@@ -379,7 +393,8 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 				ENTRY_COL_CURRENCY_SET,  FALSE,
 				ENTRY_COL_RULE_I,        ofo_entry_get_rule( entry ),
 				ENTRY_COL_RULE,          ofo_entry_get_rule_str( entry ),
-				ENTRY_COL_NOTES,         ofo_entry_get_notes( entry ),
+				ENTRY_COL_NOTES,         notes,
+				ENTRY_COL_NOTES_PNG,     notes_png,
 				-1 );
 
 	g_free( supdstamp );

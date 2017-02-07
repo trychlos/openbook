@@ -670,64 +670,72 @@ tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	gint err_level;
 	const gchar *color_str;
 
+	g_return_if_fail( tcolumn && GTK_IS_TREE_VIEW_COLUMN( tcolumn ));
 	g_return_if_fail( cell && GTK_IS_CELL_RENDERER( cell ));
+	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
+	g_return_if_fail( self && OFA_IS_ENTRY_PAGE( self ));
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	err_level = row_get_errlevel( self, tmodel, iter );
-	gtk_tree_model_get( tmodel, iter, ENTRY_COL_STATUS_I, &status, -1 );
+	g_return_if_fail( !OFA_PAGE( self )->prot->dispose_has_run );
 
-	g_object_set( G_OBJECT( cell ),
-						"style-set",      FALSE,
-						"background-set", FALSE,
-						"foreground-set", FALSE,
-						NULL );
+	if( GTK_IS_CELL_RENDERER_TEXT( cell )){
 
-	switch( status ){
+		err_level = row_get_errlevel( self, tmodel, iter );
+		gtk_tree_model_get( tmodel, iter, ENTRY_COL_STATUS_I, &status, -1 );
 
-		case ENT_STATUS_PAST:
-			gdk_rgba_parse( &color, RGBA_PAST );
-			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
-			break;
+		g_object_set( G_OBJECT( cell ),
+							"style-set",      FALSE,
+							"background-set", FALSE,
+							"foreground-set", FALSE,
+							NULL );
 
-		case ENT_STATUS_VALIDATED:
-			gdk_rgba_parse( &color, RGBA_VALIDATED );
-			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
-			break;
+		switch( status ){
 
-		case ENT_STATUS_DELETED:
-			gdk_rgba_parse( &color, RGBA_DELETED );
-			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
-			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
-			break;
+			case ENT_STATUS_PAST:
+				gdk_rgba_parse( &color, RGBA_PAST );
+				g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
+				break;
 
-		case ENT_STATUS_ROUGH:
-			switch( err_level ){
-				case ENT_ERR_ERROR:
-					color_str = RGBA_ERROR;
-					break;
-				case ENT_ERR_WARNING:
-					color_str = RGBA_WARNING;
-					break;
-				default:
-					color_str = RGBA_NORMAL;
-					break;
-			}
-			gdk_rgba_parse( &color, color_str );
-			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
-			break;
+			case ENT_STATUS_VALIDATED:
+				gdk_rgba_parse( &color, RGBA_VALIDATED );
+				g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
+				break;
 
-		case ENT_STATUS_FUTURE:
-			gdk_rgba_parse( &color, RGBA_FUTURE );
-			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
-			break;
+			case ENT_STATUS_DELETED:
+				gdk_rgba_parse( &color, RGBA_DELETED );
+				g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
+				g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
+				break;
 
-		default:
-			break;
+			case ENT_STATUS_ROUGH:
+				switch( err_level ){
+					case ENT_ERR_ERROR:
+						color_str = RGBA_ERROR;
+						break;
+					case ENT_ERR_WARNING:
+						color_str = RGBA_WARNING;
+						break;
+					default:
+						color_str = RGBA_NORMAL;
+						break;
+				}
+				gdk_rgba_parse( &color, color_str );
+				g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
+				break;
+
+			case ENT_STATUS_FUTURE:
+				gdk_rgba_parse( &color, RGBA_FUTURE );
+				g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
+				break;
+
+			default:
+				break;
+		}
+
+		/* is the cell editable ? */
+		g_object_set( G_OBJECT( cell ), "editable-set", TRUE, "editable", priv->editable_row, NULL );
 	}
-
-	/* is the cell editable ? */
-	g_object_set( G_OBJECT( cell ), "editable-set", TRUE, "editable", priv->editable_row, NULL );
 }
 
 /*

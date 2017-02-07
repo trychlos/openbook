@@ -367,6 +367,7 @@ setup_columns( ofaEntryTreeview *self )
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_STATUS,        _( "Status" ),      _( "Status" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_RULE,          _( "Rule" ),            NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_NOTES,         _( "Notes" ),           NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), ENTRY_COL_NOTES_PNG,        "",              _( "Notes indicator" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ENTRY_COL_LABEL );
 	ofa_itvcolumnable_twins_group_new( OFA_ITVCOLUMNABLE( self ), "amount", ENTRY_COL_DEBIT, ENTRY_COL_CREDIT, -1 );
@@ -561,63 +562,66 @@ ofa_entry_treeview_cell_data_render( ofaEntryTreeview *view,
 
 	g_return_if_fail( view && OFA_IS_ENTRY_TREEVIEW( view ));
 	g_return_if_fail( column && GTK_IS_TREE_VIEW_COLUMN( column ));
-	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER_TEXT( renderer ));
+	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER( renderer ));
 	g_return_if_fail( model && GTK_IS_TREE_MODEL( model ));
 
 	priv = ofa_entry_treeview_get_instance_private( view );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	err_level = get_row_errlevel( view, model, iter );
-	gtk_tree_model_get( model, iter, ENTRY_COL_STATUS_I, &status, -1 );
+	if( GTK_IS_CELL_RENDERER_TEXT( renderer )){
 
-	g_object_set( G_OBJECT( renderer ),
-						"style-set",      FALSE,
-						"background-set", FALSE,
-						"foreground-set", FALSE,
-						NULL );
+		err_level = get_row_errlevel( view, model, iter );
+		gtk_tree_model_get( model, iter, ENTRY_COL_STATUS_I, &status, -1 );
 
-	switch( status ){
+		g_object_set( G_OBJECT( renderer ),
+							"style-set",      FALSE,
+							"background-set", FALSE,
+							"foreground-set", FALSE,
+							NULL );
 
-		case ENT_STATUS_PAST:
-			gdk_rgba_parse( &color, RGBA_PAST );
-			g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
-			break;
+		switch( status ){
 
-		case ENT_STATUS_VALIDATED:
-			gdk_rgba_parse( &color, RGBA_VALIDATED );
-			g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
-			break;
+			case ENT_STATUS_PAST:
+				gdk_rgba_parse( &color, RGBA_PAST );
+				g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
+				break;
 
-		case ENT_STATUS_DELETED:
-			gdk_rgba_parse( &color, RGBA_DELETED );
-			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
-			g_object_set( G_OBJECT( renderer ), "style", PANGO_STYLE_ITALIC, NULL );
-			break;
+			case ENT_STATUS_VALIDATED:
+				gdk_rgba_parse( &color, RGBA_VALIDATED );
+				g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
+				break;
 
-		case ENT_STATUS_ROUGH:
-			switch( err_level ){
-				case ENTRY_ERR_ERROR:
-					color_str = RGBA_ERROR;
-					break;
-				case ENTRY_ERR_WARNING:
-					color_str = RGBA_WARNING;
-					break;
-				default:
-					color_str = RGBA_NORMAL;
-					break;
-			}
-			gdk_rgba_parse( &color, color_str );
-			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
-			break;
+			case ENT_STATUS_DELETED:
+				gdk_rgba_parse( &color, RGBA_DELETED );
+				g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+				g_object_set( G_OBJECT( renderer ), "style", PANGO_STYLE_ITALIC, NULL );
+				break;
 
-		case ENT_STATUS_FUTURE:
-			gdk_rgba_parse( &color, RGBA_FUTURE );
-			g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
-			break;
+			case ENT_STATUS_ROUGH:
+				switch( err_level ){
+					case ENTRY_ERR_ERROR:
+						color_str = RGBA_ERROR;
+						break;
+					case ENTRY_ERR_WARNING:
+						color_str = RGBA_WARNING;
+						break;
+					default:
+						color_str = RGBA_NORMAL;
+						break;
+				}
+				gdk_rgba_parse( &color, color_str );
+				g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+				break;
 
-		default:
-			break;
+			case ENT_STATUS_FUTURE:
+				gdk_rgba_parse( &color, RGBA_FUTURE );
+				g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
+				break;
+
+			default:
+				break;
+		}
 	}
 }
 
@@ -667,6 +671,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	gchar *dopeb, *deffb, *labelb, *refb, *curb, *ledgerb, *templateb, *accountb, *debitb, *creditb, *openumb,
 			*stlmtnumb, *stlmtuserb, *stlmtstampb, *entnumb, *upduserb, *updstampb, *concilnumb, *concildateb,
 			*statusb, *ruleb, *notesb;
+	GdkPixbuf *pnga, *pngb;
 
 	priv = ofa_entry_treeview_get_instance_private( OFA_ENTRY_TREEVIEW( tvbin ));
 
@@ -693,6 +698,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			ENTRY_COL_STATUS,        &statusa,
 			ENTRY_COL_RULE,          &rulea,
 			ENTRY_COL_NOTES,         &notesa,
+			ENTRY_COL_NOTES_PNG,     &pnga,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
@@ -718,6 +724,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			ENTRY_COL_STATUS,        &statusb,
 			ENTRY_COL_RULE,          &ruleb,
 			ENTRY_COL_NOTES,         &notesb,
+			ENTRY_COL_NOTES_PNG,     &pngb,
 			-1 );
 
 	cmp = 0;
@@ -789,6 +796,9 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 		case ENTRY_COL_NOTES:
 			cmp = my_collate( notesa, notesb );
 			break;
+		case ENTRY_COL_NOTES_PNG:
+			cmp = ofa_itvsortable_sort_png( pnga, pngb );
+			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, column_id );
 			break;
@@ -816,6 +826,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( statusa );
 	g_free( rulea );
 	g_free( notesa );
+	g_clear_object( &pnga );
 
 	g_free( dopeb );
 	g_free( deffb );
@@ -839,6 +850,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( statusb );
 	g_free( ruleb );
 	g_free( notesb );
+	g_clear_object( &pngb );
 
 	return( cmp );
 }
