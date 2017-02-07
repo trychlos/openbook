@@ -81,6 +81,11 @@ typedef struct {
 
 	/* UI - Account delete page
 	 */
+	GtkWidget                *p3_delete_children_btn;
+	GtkWidget                *p3_settle_warns_btn;
+	GtkWidget                *p3_settle_ctrl_btn;
+	GtkWidget                *p3_reconciliate_warns_btn;
+	GtkWidget                *p3_reconciliate_ctrl_btn;
 
 	/* UI - Locales
 	 */
@@ -128,7 +133,7 @@ static const gchar *st_assistant_confirm_on_escape    = "AssistantConfirmOnEscap
 static const gchar *st_assistant_confirm_on_cancel    = "AssistantConfirmOnCancel";
 static const gchar *st_appli_confirm_on_quit          = "ApplicationConfirmOnQuit";
 static const gchar *st_appli_confirm_on_altf4         = "ApplicationConfirmOnAltF4";
-static const gchar *st_account_delete_root_with_child = "AssistantConfirmOnCancel";
+static const gchar *st_account_prefs                  = "ofaPreferences-accounts";
 static const gchar *st_export_default_folder          = "ExportDefaultFolder";
 
 static const gchar *st_resource_ui                    = "/org/trychlos/openbook/core/ofa-preferences.ui";
@@ -151,6 +156,8 @@ static gboolean enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, p
 static gboolean init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *plugin );
 //static void     activate_first_page( ofaPreferences *self );
 static void     on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void     on_settle_warns_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void     on_reconciliate_warns_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void     on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
 static void     on_check_date_changed( GtkComboBox *box, ofaPreferences *self );
 static void     on_date_overwrite_toggled( GtkToggleButton *toggle, ofaPreferences *self );
@@ -445,10 +452,39 @@ init_account_page( ofaPreferences *self )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-delete-with-child" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-delete-children" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_account_delete_root_with_children( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	priv->p3_delete_children_btn = button;
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-settle-ctrl" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	bvalue = ofa_prefs_settle_warns_unless_ctrl( priv->getter );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	priv->p3_settle_ctrl_btn = button;
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-settle-warns" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	g_signal_connect( button, "toggled", G_CALLBACK( on_settle_warns_toggled ), self );
+	bvalue = ofa_prefs_settle_warns_if_unbalanced( priv->getter );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	on_settle_warns_toggled( GTK_TOGGLE_BUTTON( button ), self );
+	priv->p3_settle_warns_btn = button;
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-reconciliate-ctrl" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	bvalue = ofa_prefs_reconciliate_warns_unless_ctrl( priv->getter );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	priv->p3_reconciliate_ctrl_btn = button;
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-reconciliate-warns" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	g_signal_connect( button, "toggled", G_CALLBACK( on_reconciliate_warns_toggled ), self );
+	bvalue = ofa_prefs_reconciliate_warns_if_unbalanced( priv->getter );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	on_reconciliate_warns_toggled( GTK_TOGGLE_BUTTON( button ), self );
+	priv->p3_reconciliate_warns_btn = button;
 }
 
 static void
@@ -752,6 +788,26 @@ on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 	gtk_widget_set_sensitive(
 			GTK_WIDGET( priv->confirm_on_escape_btn ),
 			gtk_toggle_button_get_active( button ));
+}
+
+static void
+on_settle_warns_toggled( GtkToggleButton *button, ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+
+	priv = ofa_preferences_get_instance_private( self );
+
+	gtk_widget_set_sensitive( priv->p3_settle_ctrl_btn, gtk_toggle_button_get_active( button ));
+}
+
+static void
+on_reconciliate_warns_toggled( GtkToggleButton *button, ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+
+	priv = ofa_preferences_get_instance_private( self );
+
+	gtk_widget_set_sensitive( priv->p3_reconciliate_ctrl_btn, gtk_toggle_button_get_active( button ));
 }
 
 static void
@@ -1169,23 +1225,29 @@ do_update_dossier_page( ofaPreferences *self, gchar **msgerr )
 	return( TRUE );
 }
 
+/*
+ * Settings are:
+ * delete_children(b); settle_warns(b); settle_ctrl(b); reconciliate_warns(b); reconciliate_ctrl(b);
+ */
 static gboolean
 do_update_account_page( ofaPreferences *self, gchar **msgerrr )
 {
 	ofaPreferencesPrivate *priv;
 	myISettings *settings;
-	GtkWidget *button;
+	gchar *str;
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-delete-with-child" );
-	g_return_val_if_fail( button && GTK_IS_CHECK_BUTTON( button ), FALSE );
+	str = g_strdup_printf( "%s;%s;%s;%s;%s;",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_delete_children_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_settle_warns_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_settle_ctrl_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_reconciliate_warns_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_reconciliate_ctrl_btn )) ? "True":"False" );
 
 	settings = ofa_igetter_get_user_settings( priv->getter );
-	my_isettings_set_boolean(
-			settings, HUB_USER_SETTINGS_GROUP,
-			st_account_delete_root_with_child,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs, str );
+	g_free( str );
 
 	return( TRUE );
 }
@@ -1200,12 +1262,167 @@ gboolean
 ofa_prefs_account_delete_root_with_children( ofaIGetter *getter )
 {
 	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gboolean b;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	settings = ofa_igetter_get_user_settings( getter );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs );
 
-	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_account_delete_root_with_child ));
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	b = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
+	my_isettings_free_string_list( settings, strlist );
+
+	return( b );
+}
+
+/**
+ * ofa_prefs_settle_warns_if_unbalanced:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: %TRUE if the user should be warned when about to settle
+ * unbalanced entries.
+ */
+gboolean
+ofa_prefs_settle_warns_if_unbalanced( ofaIGetter *getter )
+{
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gboolean b;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	settings = ofa_igetter_get_user_settings( getter );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs );
+
+	/* first is delete_children */
+	it = strlist;
+
+	/* second is warns_if_unbalanced */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	b = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : TRUE;
+	my_isettings_free_string_list( settings, strlist );
+
+	return( b );
+}
+
+/**
+ * ofa_prefs_settle_warns_unless_ctrl:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: %TRUE if the user should be warned when about to settle
+ * unbalanced entries, unless the <Ctrl> key is simultaneously pressed.
+ */
+gboolean
+ofa_prefs_settle_warns_unless_ctrl( ofaIGetter *getter )
+{
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gboolean b;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	settings = ofa_igetter_get_user_settings( getter );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs );
+
+	/* first is delete_children */
+	it = strlist;
+
+	/* second is warns_if_unbalanced */
+	it = it ? it->next : NULL;
+
+	/* third is warns_unless_ctrl */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	b = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : TRUE;
+	my_isettings_free_string_list( settings, strlist );
+
+	return( b );
+}
+
+/**
+ * ofa_prefs_reconciliate_warns_if_unbalanced:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: %TRUE if the user should be warned when about to reconciliate
+ * unbalanced lines.
+ */
+gboolean
+ofa_prefs_reconciliate_warns_if_unbalanced( ofaIGetter *getter )
+{
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gboolean b;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	settings = ofa_igetter_get_user_settings( getter );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs );
+
+	/* first is delete_children */
+	it = strlist;
+
+	/* second is warns_if_unbalanced (settle) */
+	it = it ? it->next : NULL;
+
+	/* third is warns_unless_ctrl (settle) */
+	it = it ? it->next : NULL;
+
+	/* fourth is warns_if_unbalanced (reconciliate) */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	b = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : TRUE;
+	my_isettings_free_string_list( settings, strlist );
+
+	return( b );
+}
+
+/**
+ * ofa_prefs_reconciliate_warns_unless_ctrl:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: %TRUE if the user should be warned when about to reconciliate
+ * unbalanced entries, unless the <Ctrl> key is simultaneously pressed.
+ */
+gboolean
+ofa_prefs_reconciliate_warns_unless_ctrl( ofaIGetter *getter )
+{
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gboolean b;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	settings = ofa_igetter_get_user_settings( getter );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs );
+
+	/* first is delete_children */
+	it = strlist;
+
+	/* second is warns_if_unbalanced (settle) */
+	it = it ? it->next : NULL;
+
+	/* third is warns_unless_ctrl (settle) */
+	it = it ? it->next : NULL;
+
+	/* fourth is warns_if_unbalanced (reconciliate) */
+	it = it ? it->next : NULL;
+
+	/* fifth is warns_unless_ctrl (reconciliate) */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	b = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : TRUE;
+	my_isettings_free_string_list( settings, strlist );
+
+	return( b );
 }
 
 static gboolean

@@ -121,7 +121,7 @@ typedef struct {
 	 * when clicked with <Ctrl>, then expand all
 	 */
 	gboolean             ctrl_on_pressed;
-	gboolean             ctrl_on_released;
+	gboolean             ctrl_pressed;
 
 	/* UI - entries view
 	 */
@@ -1956,7 +1956,7 @@ action_on_reconciliate_activated( GSimpleAction *action, GVariant *empty, ofaRec
 			OFA_TVBIN( priv->tview ), ofa_tvbin_get_selection( OFA_TVBIN( priv->tview )), self );
 
 	priv->ctrl_on_pressed = FALSE;
-	priv->ctrl_on_released = FALSE;
+	priv->ctrl_pressed = FALSE;
 }
 
 /*
@@ -2011,7 +2011,9 @@ do_reconciliate( ofaReconcilPage *self )
 
 	/* ask for a user confirmation when amounts are not balanced
 	 *  (and Ctrl key is not pressed) */
-	if(( !priv->ctrl_on_pressed || !priv->ctrl_on_released ) && !ofs_currency_is_balanced( &scur )){
+	if( !ofs_currency_is_balanced( &scur ) &&
+			( ofa_prefs_reconciliate_warns_if_unbalanced( priv->getter ) &&
+			( !ofa_prefs_reconciliate_warns_unless_ctrl( priv->getter ) || !priv->ctrl_pressed ))){
 		if( !do_reconciliate_user_confirm( self, scur.debit, scur.credit )){
 			return;
 		}
@@ -2290,12 +2292,14 @@ reconciliate_on_released( GtkWidget *button, GdkEvent *event, ofaReconcilPage *s
 {
 	ofaReconcilPagePrivate *priv;
 	GdkModifierType modifiers;
+	gboolean ctrl_on_released;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	modifiers = gtk_accelerator_get_default_mod_mask();
 
-	priv->ctrl_on_released = ((( GdkEventButton * ) event )->state & modifiers ) == GDK_CONTROL_MASK;
+	ctrl_on_released = ((( GdkEventButton * ) event )->state & modifiers ) == GDK_CONTROL_MASK;
+	priv->ctrl_pressed = priv->ctrl_on_pressed && ctrl_on_released;
 
 	return( FALSE );
 }
@@ -2878,14 +2882,14 @@ action_on_expand_activated( GSimpleAction *action, GVariant *empty, ofaReconcilP
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	if( priv->ctrl_on_pressed && priv->ctrl_on_released ){
+	if( priv->ctrl_pressed ){
 		ofa_reconcil_treeview_expand_all( priv->tview );
 	} else {
 		ofa_reconcil_treeview_default_expand( priv->tview );
 	}
 
 	priv->ctrl_on_pressed = FALSE;
-	priv->ctrl_on_released = FALSE;
+	priv->ctrl_pressed = FALSE;
 }
 
 static gboolean
@@ -2910,12 +2914,14 @@ expand_on_released( GtkWidget *button, GdkEvent *event, ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	GdkModifierType modifiers;
+	gboolean ctrl_on_released;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	modifiers = gtk_accelerator_get_default_mod_mask();
 
-	priv->ctrl_on_released = ((( GdkEventButton * ) event )->state & modifiers ) == GDK_CONTROL_MASK;
+	ctrl_on_released = ((( GdkEventButton * ) event )->state & modifiers ) == GDK_CONTROL_MASK;
+	priv->ctrl_pressed = priv->ctrl_on_pressed && ctrl_on_released;
 
 	/*g_debug( "expand_on_released: ctrl_on_released=%s", priv->ctrl_on_released ? "True":"False" );*/
 

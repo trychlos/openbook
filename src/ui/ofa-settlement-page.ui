@@ -241,6 +241,8 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Settle the selected group of lines.
+When clicked with &lt;Ctrl&gt; key, then does not check for the balance of amounts.</property>
                     <property name="use_underline">True</property>
                   </object>
                   <packing>

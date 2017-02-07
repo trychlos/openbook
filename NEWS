@@ -34,6 +34,7 @@
    - ExerciceCloseAssistant closes the opened pages before working.
    - ExerciceMetaBin no more forces a new dossier to have a current exercice.
    - Paiement mean select: set the correct title.
+   - Preferences: have user preferences to warns on settling or reconciliating unbalanced lines.
    - Reconciliation group is deleted when one of the entries is deleted (todo #758).
    - Settlement group is deleted when one of the entries is deleted (todo #758).
    - Settlement page now auto-updates itself when an entry is modified elsewhere (todo #1347).

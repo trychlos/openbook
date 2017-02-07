@@ -111,7 +111,7 @@ typedef struct {
 	 * when clicked with <Ctrl>, then does not check for selection balance
 	 */
 	gboolean           ctrl_on_pressed;
-	gboolean           ctrl_on_released;
+	gboolean           ctrl_pressed;
 
 	/* selection management
 	 */
@@ -381,22 +381,28 @@ tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	ofxCounter number;
 	GdkRGBA color;
 
-	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
+	g_return_if_fail( tcolumn && GTK_IS_TREE_VIEW_COLUMN( tcolumn ));
+	g_return_if_fail( GTK_IS_CELL_RENDERER( cell ));
+	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
+	g_return_if_fail( self && OFA_IS_SETTLEMENT_PAGE( self ));
 
-	g_object_set( G_OBJECT( cell ),
-						"background-set", FALSE,
-						NULL );
+	if( GTK_IS_CELL_RENDERER_TEXT( cell )){
 
-	gtk_tree_model_get( tmodel, iter, ENTRY_COL_OBJECT, &entry, -1 );
-	if( entry ){
-		g_return_if_fail( OFO_IS_ENTRY( entry ));
-		g_object_unref( entry );
+		g_object_set( G_OBJECT( cell ),
+							"background-set", FALSE,
+							NULL );
 
-		number = ofo_entry_get_settlement_number( entry );
+		gtk_tree_model_get( tmodel, iter, ENTRY_COL_OBJECT, &entry, -1 );
+		if( entry ){
+			g_return_if_fail( OFO_IS_ENTRY( entry ));
+			g_object_unref( entry );
 
-		if( number > 0 ){
-			gdk_rgba_parse( &color, COLOR_SETTLED );
-			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
+			number = ofo_entry_get_settlement_number( entry );
+
+			if( number > 0 ){
+				gdk_rgba_parse( &color, COLOR_SETTLED );
+				g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
+			}
 		}
 	}
 }
@@ -790,12 +796,14 @@ settle_on_released( GtkWidget *button, GdkEvent *event, ofaSettlementPage *self 
 {
 	ofaSettlementPagePrivate *priv;
 	GdkModifierType modifiers;
+	gboolean ctrl_on_released;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
 	modifiers = gtk_accelerator_get_default_mod_mask();
 
-	priv->ctrl_on_released = ((( GdkEventButton * ) event )->state & modifiers ) == GDK_CONTROL_MASK;
+	ctrl_on_released = ((( GdkEventButton * ) event )->state & modifiers ) == GDK_CONTROL_MASK;
+	priv->ctrl_pressed = priv->ctrl_on_pressed && ctrl_on_released;
 
 	return( FALSE );
 }
@@ -809,7 +817,9 @@ action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaSettlemen
 
 	/* ask for a user confirmation when selection is not balanced
 	 *  (and Ctrl key is not pressed) */
-	if(( !priv->ctrl_on_pressed || !priv->ctrl_on_released ) && !ofs_currency_is_balanced( &priv->scur )){
+	if( !ofs_currency_is_balanced( &priv->scur ) &&
+			( ofa_prefs_settle_warns_if_unbalanced( priv->getter ) &&
+			( !ofa_prefs_settle_warns_unless_ctrl( priv->getter ) || !priv->ctrl_pressed ))){
 		if( !do_settle_user_confirm( self )){
 			return;
 		}
@@ -818,7 +828,7 @@ action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaSettlemen
 	update_selection( self, TRUE );
 
 	priv->ctrl_on_pressed = FALSE;
-	priv->ctrl_on_released = FALSE;
+	priv->ctrl_pressed = FALSE;
 }
 
 static gboolean

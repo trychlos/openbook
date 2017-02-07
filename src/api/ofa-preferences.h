@@ -92,6 +92,12 @@ gboolean     ofa_prefs_appli_confirm_on_quit            ( ofaIGetter *getter );
 
 gboolean     ofa_prefs_account_delete_root_with_children( ofaIGetter *getter );
 
+gboolean     ofa_prefs_settle_warns_if_unbalanced       ( ofaIGetter *getter );
+gboolean     ofa_prefs_settle_warns_unless_ctrl         ( ofaIGetter *getter );
+
+gboolean     ofa_prefs_reconciliate_warns_if_unbalanced ( ofaIGetter *getter );
+gboolean     ofa_prefs_reconciliate_warns_unless_ctrl   ( ofaIGetter *getter );
+
 myDateFormat ofa_prefs_date_display                     ( ofaIGetter *getter );
 myDateFormat ofa_prefs_date_check                       ( ofaIGetter *getter );
 gboolean     ofa_prefs_date_overwrite                   ( ofaIGetter *getter );
