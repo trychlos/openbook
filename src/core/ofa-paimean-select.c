@@ -181,10 +181,7 @@ paimean_select_new( ofaIGetter *getter, GtkWindow *parent )
 		priv->getter = getter;
 		priv->parent = parent;
 
-		/* setup a permanent getter before initialization */
 		my_iwindow_init( MY_IWINDOW( dialog ));
-
-		/* and record this unique object */
 		my_icollector_single_set_object( collector, dialog );
 	}
 

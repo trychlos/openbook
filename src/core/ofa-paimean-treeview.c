@@ -232,6 +232,7 @@ ofaPaimeanTreeview *
 ofa_paimean_treeview_new( ofaIGetter *getter )
 {
 	ofaPaimeanTreeview *view;
+	ofaPaimeanTreeviewPrivate *priv;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -239,6 +240,10 @@ ofa_paimean_treeview_new( ofaIGetter *getter )
 					"ofa-tvbin-getter", getter,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
+
+	priv = ofa_paimean_treeview_get_instance_private( view );
+
+	priv->getter = getter;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoPaimean object instead of just the raw GtkTreeSelection
