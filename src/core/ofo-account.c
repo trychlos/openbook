@@ -1969,6 +1969,46 @@ ofo_account_delete( ofoAccount *account )
 	return( ok );
 }
 
+/**
+ * ofo_account_delete_with_children:
+ * @account: the #ofoAccount to be deleted.
+ *
+ * Delete the @account and all its children without any further confirmation.
+ *
+ * Returns: %TRUE if deletion is successful.
+ */
+gboolean
+ofo_account_delete_with_children( ofoAccount *account )
+{
+	static const gchar *thisfn = "ofo_account_delete_with_children";
+	gboolean ok;
+	GList *children, *it, *refs;
+
+	g_debug( "%s: account=%p", thisfn, ( void * ) account );
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+
+	ok = TRUE;
+	children = ofo_account_get_children( account );
+	children = g_list_prepend( children, account );
+
+	/* get a ref on all children to make sure they stay alive during the deletion */
+	refs = NULL;
+	for( it=children ; it ; it=it->next ){
+		refs = g_list_prepend( refs, g_object_ref( it->data ));
+	}
+	g_list_free( children );
+
+	/* next delete the children */
+	for( it=refs ; it ; it=it->next ){
+		ok &= ofo_account_delete( OFO_ACCOUNT( it->data ));
+	}
+	g_list_free_full( refs, ( GDestroyNotify ) g_object_unref );
+
+	return( ok );
+}
+
 static gboolean
 account_do_delete( ofoAccount *account, const ofaIDBConnect *connect )
 {

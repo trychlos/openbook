@@ -156,6 +156,7 @@ gboolean        ofo_account_insert                  ( ofoAccount *account );
 gboolean        ofo_account_update                  ( ofoAccount *account, const gchar *prev_number );
 gboolean        ofo_account_update_amounts          ( ofoAccount *account );
 gboolean        ofo_account_delete                  ( ofoAccount *account );
+gboolean        ofo_account_delete_with_children    ( ofoAccount *account );
 
 G_END_DECLS
 
