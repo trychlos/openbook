@@ -478,6 +478,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* ACC_FORWARD is renamed to ACC_FORWARDABLE in v27 */
 	/* Identifiers and labels are resized in v28 */
 	/* ACC_OPEN_DEBIT and ACC_OPEN_CREDIT dropped in v31 */
+	/* keep_unsettled and keep_unreconciliated added in v35 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS ("
 			"	ACC_NUMBER          VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
@@ -2048,6 +2049,24 @@ dbmodel_v35( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
+	/* 22 alter accounts */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_ACCOUNTS "
+			"	ADD COLUMN    ACC_KEEP_UNSETTLED       CHAR(1) DEFAULT 'N'          COMMENT 'Whether to keep unsettled entries',"
+			"	ADD COLUMN    ACC_KEEP_UNRECONCILIATED CHAR(1) DEFAULT 'N'          COMMENT 'Whether to keep unreconciliated entries'" )){
+		return( FALSE );
+	}
+
+	/* 23 alter accounts
+	 * so that settleable accounts will keep unsettled entries
+	 * and reconciliable accounts will keep unreconciliated entries on period closing */
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS "
+			"	SET ACC_KEEP_UNSETTLED=ACC_SETTLEABLE,"
+			"	    ACC_KEEP_UNRECONCILIATED=ACC_RECONCILIABLE" )){
+		return( FALSE );
+	}
+
 	/* 4 set standard rule */
 	if( !exec_query( self, "UPDATE OFA_T_ENTRIES SET ENT_RULE='N'" )){
 		return( FALSE );
@@ -2234,5 +2253,5 @@ dbmodel_v35( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v35( ofaMysqlDBModel *self )
 {
-	return( 21 );
+	return( 23 );
 }

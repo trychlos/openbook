@@ -67,7 +67,9 @@ enum {
 	ACC_CURRENCY,
 	ACC_ROOT,
 	ACC_SETTLEABLE,
+	ACC_KEEP_UNSETTLED,
 	ACC_RECONCILIABLE,
+	ACC_KEEP_UNRECONCILIATED,
 	ACC_FORWARDABLE,
 	ACC_CLOSED,
 	ACC_NOTES,
@@ -125,6 +127,14 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( ACC_NOTES ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_KEEP_UNSETTLED ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_KEEP_UNRECONCILIATED ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -731,11 +741,7 @@ ofo_account_is_root( const ofoAccount *account )
  * ofo_account_is_settleable:
  * @account: the #ofoAccount account
  *
- * Returns: %TRUE if the account is settleable
- *
- * All accounts are actually settleable, i.e. all entries may be
- * settled. But only unsettled entries written on settleable accounts
- * will be reported on next exercice at closing time.
+ * Returns: %TRUE if the account is settleable.
  */
 gboolean
 ofo_account_is_settleable( const ofoAccount *account )
@@ -751,15 +757,33 @@ ofo_account_is_settleable( const ofoAccount *account )
 }
 
 /**
+ * ofo_account_keep_unsettled:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if unsettled entries on this account should be kept
+ * on exercice closing.
+ *
+ * Only unsettled entries written on settleable accounts whith this
+ * flag set will be reported on next exercice at closing time.
+ */
+gboolean
+ofo_account_get_keep_unsettled( const ofoAccount *account )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+
+	cstr = account_get_string_ex( account, ACC_KEEP_UNSETTLED );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
  * ofo_account_is_reconciliable:
  * @account: the #ofoAccount account
  *
- * Returns: %TRUE if the account is reconciliable
- *
- * All accounts are actually reconciliable, i.e. all entries may be
- * reconciliated. But only unreconciliated entries written on
- * reconciliable accounts will be reported on next exercice at closing
- * time.
+ * Returns: %TRUE if the account is reconciliable.
  */
 gboolean
 ofo_account_is_reconciliable( const ofoAccount *account )
@@ -770,6 +794,29 @@ ofo_account_is_reconciliable( const ofoAccount *account )
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	cstr = account_get_string_ex( account, ACC_RECONCILIABLE );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_account_keep_unreconciliated:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if unreconciliated entries on this account should be
+ * kept on exercice closing.
+ *
+ * Only unreconciliated entries written on reconciliable accounts whith
+ * this flag set will be reported on next exercice at closing time.
+ */
+gboolean
+ofo_account_get_keep_unreconciliated( const ofoAccount *account )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+
+	cstr = account_get_string_ex( account, ACC_KEEP_UNRECONCILIATED );
 
 	return( !my_collate( cstr, "Y" ));
 }
@@ -1455,6 +1502,17 @@ ofo_account_set_settleable( ofoAccount *account, gboolean settleable )
 }
 
 /**
+ * ofo_account_set_keep_unsettled:
+ * @account: the #ofoAccount account.
+ * @keep: whether the unsettled entries should be kept.
+ */
+void
+ofo_account_set_keep_unsettled( ofoAccount *account, gboolean keep )
+{
+	account_set_string( ACC_KEEP_UNSETTLED, keep ? "Y":"N" );
+}
+
+/**
  * ofo_account_set_reconciliable:
  * @account: the #ofoAccount account
  * @reconciliable: %TRUE if the account is to be set reconciliable
@@ -1463,6 +1521,17 @@ void
 ofo_account_set_reconciliable( ofoAccount *account, gboolean reconciliable )
 {
 	account_set_string( ACC_RECONCILIABLE, reconciliable ? "Y":"N" );
+}
+
+/**
+ * ofo_account_set_keep_unreconciliated:
+ * @account: the #ofoAccount account.
+ * @keep: whether the unreconciliated entries should be kept.
+ */
+void
+ofo_account_set_keep_unreconciliated( ofoAccount *account, gboolean keep )
+{
+	account_set_string( ACC_KEEP_UNRECONCILIATED, keep ? "Y":"N" );
 }
 
 /**
@@ -1627,9 +1696,10 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 	query = g_string_new( "INSERT INTO OFA_T_ACCOUNTS" );
 
 	g_string_append_printf( query,
-			"	(ACC_NUMBER,ACC_LABEL,ACC_CURRENCY,ACC_NOTES,"
-			"	ACC_ROOT,ACC_SETTLEABLE,ACC_RECONCILIABLE,ACC_FORWARDABLE,"
-			"	ACC_CLOSED,ACC_UPD_USER, ACC_UPD_STAMP)"
+			"	(ACC_NUMBER,ACC_LABEL,ACC_CURRENCY,ACC_NOTES,ACC_ROOT,"
+			"	 ACC_SETTLEABLE,ACC_KEEP_UNSETTLED,ACC_RECONCILIABLE,ACC_KEEP_UNRECONCILIATED,"
+			"	 ACC_FORWARDABLE,ACC_CLOSED,"
+			"	 ACC_UPD_USER, ACC_UPD_STAMP)"
 			"	VALUES ('%s','%s',",
 					ofo_account_get_number( account ),
 					label );
@@ -1648,7 +1718,9 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 
 	g_string_append_printf( query, "'%s',", ofo_account_is_root( account ) ? "Y":"N" );
 	g_string_append_printf( query, "'%s',", ofo_account_is_settleable( account ) ? "Y":"N" );
+	g_string_append_printf( query, "'%s',", ofo_account_get_keep_unsettled( account ) ? "Y":"N" );
 	g_string_append_printf( query, "'%s',", ofo_account_is_reconciliable( account ) ? "Y":"N" );
+	g_string_append_printf( query, "'%s',", ofo_account_get_keep_unreconciliated( account ) ? "Y":"N" );
 	g_string_append_printf( query, "'%s',", ofo_account_is_forwardable( account ) ? "Y":"N" );
 	g_string_append_printf( query, "'%s',", ofo_account_is_closed( account ) ? "Y":"N" );
 
@@ -1757,7 +1829,13 @@ account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gcha
 			"	ACC_SETTLEABLE='%s',", ofo_account_is_settleable( account ) ? "Y":"N" );
 
 	g_string_append_printf( query,
+			"	ACC_KEEP_UNSETTLED='%s',", ofo_account_get_keep_unsettled( account ) ? "Y":"N" );
+
+	g_string_append_printf( query,
 			"	ACC_RECONCILIABLE='%s',", ofo_account_is_reconciliable( account ) ? "Y":"N" );
+
+	g_string_append_printf( query,
+			"	ACC_KEEP_UNRECONCILIATED='%s',", ofo_account_get_keep_unreconciliated( account ) ? "Y":"N" );
 
 	g_string_append_printf( query,
 			"	ACC_FORWARDABLE='%s',", ofo_account_is_forwardable( account ) ? "Y":"N" );
@@ -2468,6 +2546,36 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		splitted = my_utils_import_multi_lines( cstr );
 		ofo_account_set_notes( account, splitted );
 		g_free( splitted );
+
+		/* keep unsettled entries ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, "Y" ) && my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid keep_unsettled account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_keep_unsettled( account, !my_collate( cstr, "Y" ));
+			}
+		}
+
+		/* keep unreconciliated entries ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, "Y" ) && my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid keep_unreconciliated account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_keep_unreconciliated( account, !my_collate( cstr, "Y" ));
+			}
+		}
 
 		dataset = g_list_prepend( dataset, account );
 		parms->parsed_count += 1;

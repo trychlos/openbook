@@ -144,7 +144,7 @@ It is modifiable as long as no entry has been imputed on the account.</property>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">5</property>
+                        <property name="top_attach">6</property>
                       </packing>
                     </child>
                     <child>
@@ -227,8 +227,8 @@ It is modifiable as long as no entry has been imputed on the account.</property>
                             <property name="margin_top">2</property>
                             <property name="margin_bottom">2</property>
                             <child>
-                              <object class="GtkCheckButton" id="p1-settleable">
-                                <property name="label" translatable="yes">Keep un_settled entries</property>
+                              <object class="GtkCheckButton" id="p1-keep-unsettled">
+                                <property name="label" translatable="yes">_Keep unsettled entries</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
@@ -243,8 +243,8 @@ It is modifiable as long as no entry has been imputed on the account.</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="p1-reconciliable">
-                                <property name="label" translatable="yes">Keep un_reconciliated entries</property>
+                              <object class="GtkCheckButton" id="p1-keep-unreconciliated">
+                                <property name="label" translatable="yes">Keep _unreconciliated entries</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
@@ -286,7 +286,7 @@ It is modifiable as long as no entry has been imputed on the account.</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
-                        <property name="top_attach">4</property>
+                        <property name="top_attach">5</property>
                       </packing>
                     </child>
                     <child>
@@ -315,8 +315,68 @@ It is modifiable as long as no entry has been imputed on the account.</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
-                        <property name="top_attach">5</property>
+                        <property name="top_attach">6</property>
                       </packing>
+                    </child>
+                    <child>
+                      <object class="GtkFrame" id="p1-nature-frame">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label_xalign">0</property>
+                        <property name="shadow_type">in</property>
+                        <child>
+                          <object class="GtkGrid">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="margin_left">8</property>
+                            <property name="margin_right">2</property>
+                            <property name="margin_top">2</property>
+                            <property name="margin_bottom">2</property>
+                            <child>
+                              <object class="GtkCheckButton" id="p1-settleable">
+                                <property name="label" translatable="yes">Account is _settleable</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="use_underline">True</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton" id="p1-reconciliable">
+                                <property name="label" translatable="yes">Account is _reconciliable</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="use_underline">True</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">1</property>
+                              </packing>
+                            </child>
+                          </object>
+                        </child>
+                        <child type="label">
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes"> Behavior </property>
+                          </object>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">4</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <placeholder/>
                     </child>
                     <child>
                       <placeholder/>

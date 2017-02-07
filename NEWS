@@ -23,7 +23,9 @@
    Recurrent DB Model v8
    VAT DB Model v7
 
-   - Let the user records any document with any table (todo #1263).  
+   - Let the user records any document with any table (todo #1263).
+   - Accounts are now settleable and reconciliable, and able to allow keeping
+     unsettleable and unreconciliable entries.
    - Accounts chart: display the newly created page when creating an account with new class.
    - Administrative credentials are now recorded as dossier settings.   
    - DossierManager better behaves when the list is empty, disabling all unrelevant actions.

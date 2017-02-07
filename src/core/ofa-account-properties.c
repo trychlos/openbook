@@ -76,9 +76,12 @@ typedef struct {
 	GtkWidget    *type_frame;
 	GtkWidget    *root_btn;
 	GtkWidget    *detail_btn;
-	GtkWidget    *p1_exe_frame;
+	GtkWidget    *p1_nature_frame;
 	GtkWidget    *settleable_btn;
 	GtkWidget    *reconciliable_btn;
+	GtkWidget    *p1_exe_frame;
+	GtkWidget    *keep_unsettled_btn;
+	GtkWidget    *keep_unreconciliated_btn;
 	GtkWidget    *forward_btn;
 	GtkWidget    *currency_etiq;
 	GtkWidget    *currency_parent;
@@ -126,6 +129,8 @@ static void     on_currency_changed( ofaCurrencyCombo *combo, const gchar *code,
 static void     on_root_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
 static void     on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
 static void     on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, gboolean root );
+static void     on_settleable_toggled( GtkToggleButton *btn, ofaAccountProperties *self );
+static void     on_reconciliable_toggled( GtkToggleButton *btn, ofaAccountProperties *self );
 static void     check_for_enable_dlg( ofaAccountProperties *self );
 static gboolean is_dialog_validable( ofaAccountProperties *self );
 static void     on_ok_clicked( ofaAccountProperties *self );
@@ -391,12 +396,21 @@ idialog_init( myIDialog *instance )
 		on_detail_toggled( GTK_RADIO_BUTTON( priv->detail_btn ), OFA_ACCOUNT_PROPERTIES( instance ));
 	}
 
-	/* when closing exercice */
+	/* nature of the account */
 	gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON( priv->settleable_btn ), ofo_account_is_settleable( priv->account ));
+	on_settleable_toggled( GTK_TOGGLE_BUTTON( priv->settleable_btn ), OFA_ACCOUNT_PROPERTIES( instance ));
 
 	gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON( priv->reconciliable_btn ), ofo_account_is_reconciliable( priv->account ));
+	on_reconciliable_toggled( GTK_TOGGLE_BUTTON( priv->reconciliable_btn ), OFA_ACCOUNT_PROPERTIES( instance ));
+
+	/* when closing exercice */
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->keep_unsettled_btn ), ofo_account_get_keep_unsettled( priv->account ));
+
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->keep_unreconciliated_btn ), ofo_account_get_keep_unreconciliated( priv->account ));
 
 	gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON( priv->forward_btn ), ofo_account_is_forwardable( priv->account ));
@@ -483,11 +497,25 @@ init_ui( ofaAccountProperties *dialog )
 	/* account behavior when closing exercice */
 	priv->p1_exe_frame = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-exe-frame" );
 
+	priv->keep_unsettled_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-keep-unsettled" );
+	g_return_if_fail( priv->keep_unsettled_btn && GTK_IS_TOGGLE_BUTTON( priv->keep_unsettled_btn ));
+
+	priv->keep_unreconciliated_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-keep-unreconciliated" );
+	g_return_if_fail( priv->keep_unreconciliated_btn && GTK_IS_TOGGLE_BUTTON( priv->keep_unreconciliated_btn ));
+
+	priv->forward_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-forward" );
+	g_return_if_fail( priv->forward_btn && GTK_IS_TOGGLE_BUTTON( priv->forward_btn ));
+
+	/* nature of the account */
+	priv->p1_nature_frame = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-nature-frame" );
+
 	priv->settleable_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-settleable" );
 	g_return_if_fail( priv->settleable_btn && GTK_IS_TOGGLE_BUTTON( priv->settleable_btn ));
+	g_signal_connect( priv->settleable_btn, "toggled", G_CALLBACK( on_settleable_toggled ), dialog );
 
 	priv->reconciliable_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-reconciliable" );
 	g_return_if_fail( priv->reconciliable_btn && GTK_IS_TOGGLE_BUTTON( priv->reconciliable_btn ));
+	g_signal_connect( priv->reconciliable_btn, "toggled", G_CALLBACK( on_reconciliable_toggled ), dialog );
 
 	priv->forward_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-forward" );
 	g_return_if_fail( priv->forward_btn && GTK_IS_TOGGLE_BUTTON( priv->forward_btn ));
@@ -707,6 +735,30 @@ on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, gboolean root 
 }
 
 static void
+on_settleable_toggled( GtkToggleButton *btn, ofaAccountProperties *self )
+{
+	ofaAccountPropertiesPrivate *priv;
+
+	priv = ofa_account_properties_get_instance_private( self );
+
+	gtk_widget_set_sensitive(
+			priv->keep_unsettled_btn,
+			priv->is_writable && gtk_toggle_button_get_active( btn ));
+}
+
+static void
+on_reconciliable_toggled( GtkToggleButton *btn, ofaAccountProperties *self )
+{
+	ofaAccountPropertiesPrivate *priv;
+
+	priv = ofa_account_properties_get_instance_private( self );
+
+	gtk_widget_set_sensitive(
+			priv->keep_unreconciliated_btn,
+			priv->is_writable && gtk_toggle_button_get_active( btn ));
+}
+
+static void
 check_for_enable_dlg( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
@@ -719,6 +771,7 @@ check_for_enable_dlg( ofaAccountProperties *self )
 		gtk_widget_set_sensitive( priv->type_frame, !priv->has_entries );
 		/*g_debug( "setting type frame to %s", priv->has_entries ? "False":"True" );*/
 
+		gtk_widget_set_sensitive( priv->p1_nature_frame, !priv->root );
 		gtk_widget_set_sensitive( priv->p1_exe_frame, !priv->root );
 
 		gtk_widget_set_sensitive( priv->currency_etiq, !priv->root && !priv->has_entries );
@@ -807,8 +860,12 @@ do_update( ofaAccountProperties *self, gchar **msgerr )
 	ofo_account_set_root( priv->account, priv->root );
 	ofo_account_set_settleable( priv->account,
 			priv->root ? FALSE : gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->settleable_btn )));
+	ofo_account_set_keep_unsettled( priv->account,
+			priv->root ? FALSE : gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->keep_unsettled_btn )));
 	ofo_account_set_reconciliable( priv->account,
 			priv->root ? FALSE : gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->reconciliable_btn )));
+	ofo_account_set_keep_unreconciliated( priv->account,
+			priv->root ? FALSE : gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->keep_unreconciliated_btn )));
 	ofo_account_set_forwardable( priv->account,
 			priv->root ? FALSE : gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->forward_btn )));
 	ofo_account_set_currency( priv->account, priv->root ? NULL : priv->currency );

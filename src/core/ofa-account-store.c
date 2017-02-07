@@ -57,10 +57,12 @@ typedef struct {
 }
 	ofaAccountStorePrivate;
 
-#define ACCOUNT_SETTLEABLE_STR          _( "S" )
-#define ACCOUNT_RECONCILIABLE_STR       _( "R" )
-#define ACCOUNT_FORWARDABLE_STR         _( "F" )
-#define ACCOUNT_CLOSED_STR              _( "C" )
+#define ACCOUNT_SETTLEABLE_STR            _( "S" )
+#define ACCOUNT_RECONCILIABLE_STR         _( "R" )
+#define ACCOUNT_FORWARDABLE_STR           _( "F" )
+#define ACCOUNT_CLOSED_STR                _( "C" )
+#define ACCOUNT_KEEP_UNSETTLED_STR        _( "Y" )
+#define ACCOUNT_KEEP_UNRECONCILIATED_STR  _( "Y" )
 
 /* store data types
  * GDK_PIXBUF is not a constant, and has thus to be set at runtime
@@ -72,7 +74,8 @@ static GType st_col_types[ACCOUNT_N_COLUMNS] = {
 	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* upd_stamp, val_debit, val_credit */
 	G_TYPE_STRING,  G_TYPE_STRING,					/* rough_debit, rough_credit */
 	G_TYPE_STRING,  G_TYPE_STRING,					/* fut_debit, fut_credit */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* settleable, reconciliable, forwardable */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,	/* settleable, keep_unsettled, reconciliable */
+	G_TYPE_STRING,  G_TYPE_STRING,					/* keep_unreconciliated, forwardable */
 	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING, 	/* closed, exe_debit, exe_credit */
 	G_TYPE_STRING,  								/* exe_solde */
 	G_TYPE_OBJECT									/* the #ofoAccount itself */
@@ -380,26 +383,28 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 	gtk_tree_store_set(
 			GTK_TREE_STORE( self ),
 			iter,
-			ACCOUNT_COL_LABEL,         ofo_account_get_label( account ),
-			ACCOUNT_COL_CURRENCY,      currency_code,
-			ACCOUNT_COL_ROOT,          ofo_account_is_root( account ),
-			ACCOUNT_COL_NOTES,         notes,
-			ACCOUNT_COL_NOTES_PNG,     notes_png,
-			ACCOUNT_COL_UPD_USER,      ofo_account_get_upd_user( account ),
-			ACCOUNT_COL_UPD_STAMP,     stamp,
-			ACCOUNT_COL_VAL_DEBIT,     svdeb,
-			ACCOUNT_COL_VAL_CREDIT,    svcre,
-			ACCOUNT_COL_ROUGH_DEBIT,   srdeb,
-			ACCOUNT_COL_ROUGH_CREDIT,  srcre,
-			ACCOUNT_COL_FUT_DEBIT,     sfdeb,
-			ACCOUNT_COL_FUT_CREDIT,    sfcre,
-			ACCOUNT_COL_SETTLEABLE,    ofo_account_is_settleable( account ) ? ACCOUNT_SETTLEABLE_STR : "",
-			ACCOUNT_COL_RECONCILIABLE, ofo_account_is_reconciliable( account ) ? ACCOUNT_RECONCILIABLE_STR : "",
-			ACCOUNT_COL_FORWARDABLE,       ofo_account_is_forwardable( account ) ? ACCOUNT_FORWARDABLE_STR : "",
-			ACCOUNT_COL_CLOSED,        ofo_account_is_closed( account ) ? ACCOUNT_CLOSED_STR : "",
-			ACCOUNT_COL_EXE_DEBIT,     sedeb,
-			ACCOUNT_COL_EXE_CREDIT,    secre,
-			ACCOUNT_COL_EXE_SOLDE,     sesol,
+			ACCOUNT_COL_LABEL,                ofo_account_get_label( account ),
+			ACCOUNT_COL_CURRENCY,             currency_code,
+			ACCOUNT_COL_ROOT,                 ofo_account_is_root( account ),
+			ACCOUNT_COL_NOTES,                notes,
+			ACCOUNT_COL_NOTES_PNG,            notes_png,
+			ACCOUNT_COL_UPD_USER,             ofo_account_get_upd_user( account ),
+			ACCOUNT_COL_UPD_STAMP,            stamp,
+			ACCOUNT_COL_VAL_DEBIT,            svdeb,
+			ACCOUNT_COL_VAL_CREDIT,           svcre,
+			ACCOUNT_COL_ROUGH_DEBIT,          srdeb,
+			ACCOUNT_COL_ROUGH_CREDIT,         srcre,
+			ACCOUNT_COL_FUT_DEBIT,            sfdeb,
+			ACCOUNT_COL_FUT_CREDIT,           sfcre,
+			ACCOUNT_COL_SETTLEABLE,           ofo_account_is_settleable( account ) ? ACCOUNT_SETTLEABLE_STR : "",
+			ACCOUNT_COL_KEEP_UNSETTLED,       ofo_account_get_keep_unsettled( account ) ? ACCOUNT_KEEP_UNSETTLED_STR : "",
+			ACCOUNT_COL_RECONCILIABLE,        ofo_account_is_reconciliable( account ) ? ACCOUNT_RECONCILIABLE_STR : "",
+			ACCOUNT_COL_KEEP_UNRECONCILIATED, ofo_account_get_keep_unreconciliated( account ) ? ACCOUNT_KEEP_UNRECONCILIATED_STR : "",
+			ACCOUNT_COL_FORWARDABLE,          ofo_account_is_forwardable( account ) ? ACCOUNT_FORWARDABLE_STR : "",
+			ACCOUNT_COL_CLOSED,               ofo_account_is_closed( account ) ? ACCOUNT_CLOSED_STR : "",
+			ACCOUNT_COL_EXE_DEBIT,            sedeb,
+			ACCOUNT_COL_EXE_CREDIT,           secre,
+			ACCOUNT_COL_EXE_SOLDE,            sesol,
 			-1 );
 
 	g_object_unref( notes_png );

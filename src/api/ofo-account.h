@@ -116,7 +116,9 @@ gboolean        ofo_account_is_deletable            ( const ofoAccount *account 
 gboolean        ofo_account_is_root                 ( const ofoAccount *account );
 gboolean        ofo_account_is_closed               ( const ofoAccount *account );
 gboolean        ofo_account_is_settleable           ( const ofoAccount *account );
+gboolean        ofo_account_get_keep_unsettled      ( const ofoAccount *account );
 gboolean        ofo_account_is_reconciliable        ( const ofoAccount *account );
+gboolean        ofo_account_get_keep_unreconciliated( const ofoAccount *account );
 gboolean        ofo_account_is_forwardable          ( const ofoAccount *account );
 gboolean        ofo_account_is_valid_data           ( const gchar *number, const gchar *label, const gchar *devise, gboolean root, gchar **msgerr );
 gint            ofo_account_get_class_from_number   ( const gchar *number );
@@ -142,7 +144,9 @@ void            ofo_account_set_currency            ( ofoAccount *account, const
 void            ofo_account_set_notes               ( ofoAccount *account, const gchar *notes );
 void            ofo_account_set_root                ( ofoAccount *account, gboolean root );
 void            ofo_account_set_settleable          ( ofoAccount *account, gboolean settleable );
+void            ofo_account_set_keep_unsettled      ( ofoAccount *account, gboolean keep );
 void            ofo_account_set_reconciliable       ( ofoAccount *account, gboolean reconciliable );
+void            ofo_account_set_keep_unreconciliated( ofoAccount *account, gboolean keep );
 void            ofo_account_set_forwardable         ( ofoAccount *account, gboolean forwardable );
 void            ofo_account_set_closed              ( ofoAccount *account, gboolean closed );
 void            ofo_account_set_val_debit           ( ofoAccount *account, ofxAmount amount );
