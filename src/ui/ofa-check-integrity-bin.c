@@ -1407,13 +1407,14 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 	ofaCheckIntegrityBinPrivate *priv;
 	const void *worker;
 	GtkWidget *label;
-	GList *ope_templates, *it, *orphans;
-	gulong count, i;
+	GList *ope_templates, *it, *orphans, *ito;
+	gulong count, i, opeerrs;
 	ofoOpeTemplate *ope_template;
 	gchar *str;
-	const gchar *mnemo, *led_mnemo, *acc_number;
+	const gchar *mnemo, *led_mnemo;
 	ofoLedger *led_obj;
 	gint nbdets, idet;
+	ofxCounter docid;
 
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
@@ -1427,55 +1428,86 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 
 	priv->ope_templates_errs = 0;
 	ope_templates = ofo_ope_template_get_dataset( priv->getter );
-	count = g_list_length( ope_templates );
+	count = 2 + 2*g_list_length( ope_templates );
+	i = 0;
 
 	if( count == 0 ){
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
-
-	} else {
-		for( i=1, it=ope_templates ; it && count ; ++i, it=it->next ){
-			ope_template = OFO_OPE_TEMPLATE( it->data );
-			mnemo = ofo_ope_template_get_mnemo( ope_template );
-
-			/* ledger is optional here */
-			led_mnemo = ofo_ope_template_get_ledger( ope_template );
-			if( my_strlen( led_mnemo )){
-				led_obj = ofo_ledger_get_by_mnemo( priv->getter, led_mnemo );
-				if( !led_obj || !OFO_IS_LEDGER( led_obj )){
-					str = g_strdup_printf(
-							_( "Operation template %s has ledger '%s' which doesn't exist" ), mnemo, led_mnemo );
-					my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
-					g_free( str );
-					priv->ope_templates_errs += 1;
-				}
-			}
-
-			nbdets = ofo_ope_template_get_detail_count( ope_template );
-			for( idet=0 ; idet<nbdets ; ++idet ){
-				/* cannot check for account without first identifying formulas */
-				acc_number = ofo_ope_template_get_detail_account( ope_template, idet );
-				if( !my_strlen( acc_number )){
-
-				}
-			}
-
-			my_iprogress_pulse( MY_IPROGRESS( self ), worker, i, count );
-		}
-
-		/* check that all details have a parent */
-		orphans = ofo_ope_template_get_orphans( priv->getter );
-		for( it=orphans ; it ; it=it->next ){
-			str = g_strdup_printf( _( "Found orphan operation template: %s" ), ( const gchar * ) it->data );
-			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
-			g_free( str );
-			priv->ope_templates_errs += 1;
-			count += 1;
-			my_iprogress_pulse( MY_IPROGRESS( self ), worker, count, count );
-		}
-		ofo_ope_template_free_orphans( orphans );
 	}
 
+	for( it=ope_templates ; it ; it=it->next ){
+		ope_template = OFO_OPE_TEMPLATE( it->data );
+		mnemo = ofo_ope_template_get_mnemo( ope_template );
+		opeerrs = 0;
+
+		/* ledger is optional here */
+		led_mnemo = ofo_ope_template_get_ledger( ope_template );
+		if( my_strlen( led_mnemo )){
+			led_obj = ofo_ledger_get_by_mnemo( priv->getter, led_mnemo );
+			if( !led_obj || !OFO_IS_LEDGER( led_obj )){
+				str = g_strdup_printf(
+						_( "Operation template %s has ledger '%s' which doesn't exist" ), mnemo, led_mnemo );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+				g_free( str );
+				priv->ope_templates_errs += 1;
+				opeerrs += 1;
+			}
+		}
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+		nbdets = ofo_ope_template_get_detail_count( ope_template );
+		for( idet=0 ; idet<nbdets ; ++idet ){
+			/* cannot check for account nor rates without first identifying formulas */
+		}
+
+		/* check for referenced documents which actually do not exist */
+		orphans = ofa_idoc_get_orphans( OFA_IDOC( ope_template ));
+		if( g_list_length( orphans ) > 0 ){
+			for( ito=orphans ; ito ; ito=ito->next ){
+				docid = ( ofxCounter ) ito->data;
+				str = g_strdup_printf( _( "Found orphan ledger document with DocId %lu" ), docid );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+				g_free( str );
+				priv->ope_templates_errs += 1;
+				opeerrs += 1;
+			}
+		}
+		ofa_idoc_free_orphans( orphans );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+		if( opeerrs == 0 ){
+			str = g_strdup_printf( _( "operation template %s does not exhibit any error: OK" ), mnemo );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+			g_free( str );
+		}
+	}
+
+	/* check that all details have a parent */
+	orphans = ofo_ope_template_get_det_orphans( priv->getter );
+	for( ito=orphans ; ito ; ito=ito->next ){
+		str = g_strdup_printf( _( "Found orphan detail with operation template %s" ), ( const gchar * ) ito->data );
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+		g_free( str );
+		priv->ope_templates_errs += 1;
+		count += 1;
+	}
+	ofo_ope_template_free_det_orphans( orphans );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+	/* check that all documents have a parent */
+	orphans = ofo_ope_template_get_doc_orphans( priv->getter );
+	for( ito=orphans ; ito ; ito=ito->next ){
+		str = g_strdup_printf( _( "Found orphan document with operation template %s" ), ( const gchar * ) ito->data );
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+		g_free( str );
+		priv->ope_templates_errs += 1;
+		count += 1;
+	}
+	ofo_ope_template_free_doc_orphans( orphans );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
 	/* progress end */
+	my_iprogress_set_text( MY_IPROGRESS( self ), worker, "" );
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->ope_templates_errs );
 }
 

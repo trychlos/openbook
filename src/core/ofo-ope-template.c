@@ -39,6 +39,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
@@ -190,6 +191,7 @@ static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gchar          *get_mnemo_new_from( const ofoOpeTemplate *model );
 static void            ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *upd_user );
 static void            ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp );
+static GList          *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean        model_do_insert( ofoOpeTemplate *model, const ofaIDBConnect *connect );
 static gboolean        model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect );
 static gboolean        model_delete_details( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gchar *prev_mnemo );
@@ -202,6 +204,8 @@ static gint            model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar 
 static void            icollectionable_iface_init( myICollectionableInterface *iface );
 static guint           icollectionable_get_interface_version( void );
 static GList          *icollectionable_load_collection( void *user_data );
+static void            idoc_iface_init( ofaIDocInterface *iface );
+static guint           idoc_get_interface_version( void );
 static void            iexportable_iface_init( ofaIExportableInterface *iface );
 static guint           iexportable_get_interface_version( void );
 static gchar          *iexportable_get_label( const ofaIExportable *instance );
@@ -232,6 +236,7 @@ static gboolean        do_update_formulas( ofaIGetter *getter, const gchar *new_
 G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoOpeTemplate )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
@@ -331,44 +336,6 @@ ofo_ope_template_get_dataset( ofaIGetter *getter )
 	collector = ofa_igetter_get_collector( getter );
 
 	return( my_icollector_collection_get( collector, OFO_TYPE_OPE_TEMPLATE, getter ));
-}
-
-/**
- * ofo_ope_template_get_orphans:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the list of template children identifiers which no more
- * have a parent.
- *
- * The returned list should not be #ofo_ope_template_free_orphans() by
- * the caller.
- */
-GList *
-ofo_ope_template_get_orphans( ofaIGetter *getter )
-{
-	GList *orphans;
-	GSList *result, *irow, *icol;
-	ofaHub *hub;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
-
-	hub = ofa_igetter_get_hub( getter );
-
-	if( !ofa_idbconnect_query_ex(
-			ofa_hub_get_connect( hub ),
-			"SELECT DISTINCT(OTE_MNEMO) FROM OFA_T_OPE_TEMPLATES_DET "
-			"	WHERE OTE_MNEMO NOT IN (SELECT DISTINCT(OTE_MNEMO) FROM OFA_T_OPE_TEMPLATES)"
-			"	ORDER BY OTE_MNEMO DESC", &result, FALSE )){
-		return( NULL );
-	}
-	orphans = NULL;
-	for( irow=result ; irow ; irow=irow->next ){
-		icol = irow->data;
-		orphans = g_list_prepend( orphans, g_strdup(( gchar * ) icol->data ));
-	}
-	ofa_idbconnect_free_results( result );
-
-	return( orphans );
 }
 
 /**
@@ -1105,6 +1072,70 @@ ofo_ope_template_update_account( ofoOpeTemplate *model, const gchar *prev_id, co
 }
 
 /**
+ * ofo_ope_template_get_det_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown ope_template mnemos in
+ * OFA_T_OPE_TEMPLATES_DET child table.
+ *
+ * The returned list should be #ofo_ope_template_free_det_orphans() by
+ * the caller.
+ */
+GList *
+ofo_ope_template_get_det_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_OPE_TEMPLATES_DET" ));
+}
+
+/**
+ * ofo_ope_template_get_doc_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown ope_template mnemos in
+ * OFA_T_OPE_TEMPLATES_DOC child table.
+ *
+ * The returned list should be #ofo_ope_template_free_doc_orphans() by
+ * the caller.
+ */
+GList *
+ofo_ope_template_get_doc_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_OPE_TEMPLATES_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(OTE_MNEMO) FROM %s "
+			"	WHERE OTE_MNEMO NOT IN (SELECT OTE_MNEMO FROM OFA_T_OPE_TEMPLATES)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			orphans = g_list_prepend( orphans, g_strdup(( const gchar * ) icol->data ));
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
  * ofo_ope_template_insert:
  *
  * we deal here with an update of publicly modifiable model properties
@@ -1542,6 +1573,25 @@ icollectionable_load_collection( void *user_data )
 	}
 
 	return( dataset );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_ope_template_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

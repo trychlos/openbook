@@ -158,9 +158,6 @@ GType           ofo_ope_template_get_type                 ( void ) G_GNUC_CONST;
 GList          *ofo_ope_template_get_dataset              ( ofaIGetter *getter );
 #define         ofo_ope_template_free_dataset( L )        g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-GList          *ofo_ope_template_get_orphans              ( ofaIGetter *getter );
-#define         ofo_ope_template_free_orphans( L )        g_list_free_full(( L ),( GDestroyNotify ) g_free )
-
 ofoOpeTemplate *ofo_ope_template_get_by_mnemo             ( ofaIGetter *getter, const gchar *mnemo );
 
 ofoOpeTemplate *ofo_ope_template_new                      ( ofaIGetter *getter );
@@ -210,6 +207,12 @@ const gchar    *ofo_ope_template_get_detail_credit        ( ofoOpeTemplate *mode
 gboolean        ofo_ope_template_get_detail_credit_locked ( ofoOpeTemplate *model, gint idx );
 
 void            ofo_ope_template_update_account           ( ofoOpeTemplate *model, const gchar *prev_id, const gchar *new_id );
+
+GList          *ofo_ope_template_get_det_orphans          ( ofaIGetter *getter );
+#define         ofo_ope_template_free_det_orphans( L )    ( g_list_free_full(( L ),( GDestroyNotify ) g_free ))
+
+GList          *ofo_ope_template_get_doc_orphans          ( ofaIGetter *getter );
+#define         ofo_ope_template_free_doc_orphans( L )    ( g_list_free_full(( L ),( GDestroyNotify ) g_free ))
 
 gboolean        ofo_ope_template_insert                   ( ofoOpeTemplate *model );
 gboolean        ofo_ope_template_update                   ( ofoOpeTemplate *model, const gchar *prev_mnemo );

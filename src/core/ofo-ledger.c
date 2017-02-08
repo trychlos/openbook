@@ -1974,7 +1974,7 @@ icollectionable_load_collection( void *user_data )
 static void
 idoc_iface_init( ofaIDocInterface *iface )
 {
-	static const gchar *thisfn = "ofo_account_idoc_iface_init";
+	static const gchar *thisfn = "ofo_ledger_idoc_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
