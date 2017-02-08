@@ -39,6 +39,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
@@ -104,6 +105,7 @@ typedef struct {
 static ofoPaimean *paimean_find_by_code( GList *set, const gchar *code );
 static void        paimean_set_upd_user( ofoPaimean *paimean, const gchar *user );
 static void        paimean_set_upd_stamp( ofoPaimean *paimean, const GTimeVal *stamp );
+static GList      *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean    paimean_do_insert( ofoPaimean *paimean, const ofaIDBConnect *connect );
 static gboolean    paimean_insert_main( ofoPaimean *paimean, const ofaIDBConnect *connect );
 static gboolean    paimean_do_update( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBConnect *connect );
@@ -113,6 +115,8 @@ static gint        paimean_cmp_by_code( const ofoPaimean *a, const gchar *code )
 static void        icollectionable_iface_init( myICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( void );
 static GList      *icollectionable_load_collection( void *user_data );
+static void        idoc_iface_init( ofaIDocInterface *iface );
+static guint       idoc_get_interface_version( void );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
@@ -132,6 +136,7 @@ static void        isignalable_connect_to( ofaISignaler *signaler );
 G_DEFINE_TYPE_EXTENDED( ofoPaimean, ofo_paimean, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoPaimean )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
@@ -409,6 +414,54 @@ paimean_set_upd_stamp( ofoPaimean *paimean, const GTimeVal *upd_stamp )
 }
 
 /**
+ * ofo_paimean_get_doc_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown means of paiement identifiers in
+ * OFA_T_PAIMEANS_DOC child table.
+ *
+ * The returned list should be #ofo_paimean_free_doc_orphans() by the
+ * caller.
+ */
+GList *
+ofo_paimean_get_doc_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_PAIMEANS_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(PAM_CODE) FROM %s "
+			"	WHERE PAM_CODE NOT IN (SELECT PAM_CODE FROM OFA_T_PAIMEANS)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			orphans = g_list_prepend( orphans, g_strdup(( const gchar * ) icol->data ));
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
  * ofo_paimean_insert:
  *
  * First creation of a new #ofoPaimean.
@@ -681,6 +734,25 @@ icollectionable_load_collection( void *user_data )
 					OFA_IGETTER( user_data ));
 
 	return( dataset );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_ledger_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

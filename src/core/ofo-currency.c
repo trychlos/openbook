@@ -41,6 +41,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
@@ -117,6 +118,7 @@ static ofoCurrency *currency_find_by_code( GList *set, const gchar *code );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static void         currency_set_upd_user( ofoCurrency *currency, const gchar *user );
 static void         currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp );
+static GList       *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean     currency_do_insert( ofoCurrency *currency, const ofaIDBConnect *connect );
 static gboolean     currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect );
 static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBConnect *connect );
@@ -125,6 +127,8 @@ static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *cod
 static void         icollectionable_iface_init( myICollectionableInterface *iface );
 static guint        icollectionable_get_interface_version( void );
 static GList       *icollectionable_load_collection( void *user_data );
+static void         idoc_iface_init( ofaIDocInterface *iface );
+static guint        idoc_get_interface_version( void );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
@@ -143,6 +147,7 @@ static void         isignalable_connect_to( ofaISignaler *signaler );
 G_DEFINE_TYPE_EXTENDED( ofoCurrency, ofo_currency, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoCurrency )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
@@ -488,6 +493,54 @@ currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp )
 }
 
 /**
+ * ofo_currency_get_doc_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown ledger mnemos in OFA_T_CURRENCIES_DOC
+ * child table.
+ *
+ * The returned list should be #ofo_currency_free_doc_orphans() by the
+ * caller.
+ */
+GList *
+ofo_currency_get_doc_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_CURRENCIES_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(CUR_CODE) FROM %s "
+			"	WHERE CUR_CODE NOT IN (SELECT CUR_CODE FROM OFA_T_CURRENCIES)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			orphans = g_list_prepend( orphans, g_strdup(( const gchar * ) icol->data ));
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
  * ofo_currency_insert:
  * @currency:
  */
@@ -749,6 +802,25 @@ icollectionable_load_collection( void *user_data )
 					OFA_IGETTER( user_data ));
 
 	return( list );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_ledger_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

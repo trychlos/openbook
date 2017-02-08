@@ -50,6 +50,7 @@
 #include "api/ofa-idoc.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
+#include "api/ofo-paimean.h"
 #include "api/ofs-currency.h"
 
 #include "ui/ofa-check-integrity-bin.h"
@@ -75,6 +76,8 @@ typedef struct {
 	gulong         entries_errs;
 	gulong         ledgers_errs;
 	gulong         ope_templates_errs;
+	gulong         currency_errs;
+	gulong         paimean_errs;
 	gulong         others_errs;
 
 	gulong         total_errs;
@@ -127,6 +130,8 @@ static void     check_concil_run( ofaCheckIntegrityBin *self );
 static void     check_entries_run( ofaCheckIntegrityBin *self );
 static void     check_ledgers_run( ofaCheckIntegrityBin *self );
 static void     check_ope_templates_run( ofaCheckIntegrityBin *self );
+static void     check_currency_run( ofaCheckIntegrityBin *self );
+static void     check_paimean_run( ofaCheckIntegrityBin *self );
 static void     set_checks_result( ofaCheckIntegrityBin *self );
 static void     on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaCheckIntegrityBin *self );
 static void     iprogress_iface_init( myIProgressInterface *iface );
@@ -149,6 +154,8 @@ static checkfn st_fn[] = {
 		check_entries_run,
 		check_ledgers_run,
 		check_ope_templates_run,
+		check_currency_run,
+		check_paimean_run,
 		0
 };
 
@@ -1476,7 +1483,7 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 		if( opeerrs == 0 ){
-			str = g_strdup_printf( _( "operation template %s does not exhibit any error: OK" ), mnemo );
+			str = g_strdup_printf( _( "Operation template %s does not exhibit any error: OK" ), mnemo );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 			g_free( str );
 		}
@@ -1512,6 +1519,170 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 }
 
 /*
+ * check for currencies integrity
+ */
+static void
+check_currency_run( ofaCheckIntegrityBin *self )
+{
+	ofaCheckIntegrityBinPrivate *priv;
+	const void *worker;
+	GtkWidget *label;
+	GList *currencies, *it, *orphans, *ito;
+	gulong count, i, curerrs;
+	ofoCurrency *currency;
+	gchar *str;
+	const gchar *cur_code;
+	ofxCounter docid;
+
+	priv = ofa_check_integrity_bin_get_instance_private( self );
+
+	worker = GUINT_TO_POINTER( OFO_TYPE_LEDGER );
+
+	if( priv->display ){
+		label = gtk_label_new( _( " Check for currencies integrity " ));
+		my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
+		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	}
+
+	priv->currency_errs = 0;
+	currencies = ofo_currency_get_dataset( priv->getter );
+	count = 1 + g_list_length( currencies );
+	i = 0;
+
+	if( count == 0 ){
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
+	}
+
+	for( it=currencies ; it ; it=it->next ){
+		currency = OFO_CURRENCY( it->data );
+		cur_code = ofo_currency_get_code( currency );
+		curerrs = 0;
+
+		/* check for referenced documents which actually do not exist */
+		orphans = ofa_idoc_get_orphans( OFA_IDOC( currency ));
+		if( g_list_length( orphans ) > 0 ){
+			for( ito=orphans ; ito ; ito=ito->next ){
+				docid = ( ofxCounter ) ito->data;
+				str = g_strdup_printf( _( "Found orphan currency document with DocId %lu" ), docid );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+				g_free( str );
+				priv->currency_errs += 1;
+				curerrs += 1;
+			}
+		}
+		ofa_idoc_free_orphans( orphans );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+		if( curerrs == 0 ){
+			str = g_strdup_printf( _( "Currency %s does not exhibit any error: OK" ), cur_code );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+			g_free( str );
+		}
+	}
+
+	/* check for ofa_t_currencies_doc orphans */
+	orphans = ofo_currency_get_doc_orphans( priv->getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( ito=orphans ; ito ; ito=ito->next ){
+			str = g_strdup_printf( _( "Found orphan currency document(s) with CurCode %s" ), ( const gchar * ) ito->data );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+			g_free( str );
+			priv->currency_errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "No orphan currency document found: OK" ));
+	}
+	ofo_currency_free_doc_orphans( orphans );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+	/* progress end */
+	my_iprogress_set_text( MY_IPROGRESS( self ), worker, "" );
+	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->currency_errs );
+}
+
+/*
+ * check for means of paiement integrity
+ */
+static void
+check_paimean_run( ofaCheckIntegrityBin *self )
+{
+	ofaCheckIntegrityBinPrivate *priv;
+	const void *worker;
+	GtkWidget *label;
+	GList *paimeans, *it, *orphans, *ito;
+	gulong count, i, pmaerrs;
+	ofoPaimean *paimean;
+	gchar *str;
+	const gchar *pma_code;
+	ofxCounter docid;
+
+	priv = ofa_check_integrity_bin_get_instance_private( self );
+
+	worker = GUINT_TO_POINTER( OFO_TYPE_LEDGER );
+
+	if( priv->display ){
+		label = gtk_label_new( _( " Check for means of paiement integrity " ));
+		my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
+		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	}
+
+	priv->paimean_errs = 0;
+	paimeans = ofo_paimean_get_dataset( priv->getter );
+	count = 1 + g_list_length( paimeans );
+	i = 0;
+
+	if( count == 0 ){
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
+	}
+
+	for( it=paimeans ; it ; it=it->next ){
+		paimean = OFO_PAIMEAN( it->data );
+		pma_code = ofo_paimean_get_code( paimean );
+		pmaerrs = 0;
+
+		/* check for referenced documents which actually do not exist */
+		orphans = ofa_idoc_get_orphans( OFA_IDOC( paimean ));
+		if( g_list_length( orphans ) > 0 ){
+			for( ito=orphans ; ito ; ito=ito->next ){
+				docid = ( ofxCounter ) ito->data;
+				str = g_strdup_printf( _( "Found orphan mean of paiement document with DocId %lu" ), docid );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+				g_free( str );
+				priv->paimean_errs += 1;
+				pmaerrs += 1;
+			}
+		}
+		ofa_idoc_free_orphans( orphans );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+		if( pmaerrs == 0 ){
+			str = g_strdup_printf( _( "Mean of paiement %s does not exhibit any error: OK" ), pma_code );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+			g_free( str );
+		}
+	}
+
+	/* check for ofa_t_paimeans_doc orphans */
+	orphans = ofo_paimean_get_doc_orphans( priv->getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( ito=orphans ; ito ; ito=ito->next ){
+			str = g_strdup_printf( _( "Found orphan mean of paiment document(s) with PmaCode %s" ), ( const gchar * ) ito->data );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+			g_free( str );
+			priv->paimean_errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "No orphan mean of paiement document found: OK" ));
+	}
+	ofo_paimean_free_doc_orphans( orphans );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+	/* progress end */
+	my_iprogress_set_text( MY_IPROGRESS( self ), worker, "" );
+	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->paimean_errs );
+}
+
+/*
  * after the end of individual checks (entries, ledgers, accounts)
  * check that the balances are the sames
  */
@@ -1532,6 +1703,8 @@ set_checks_result( ofaCheckIntegrityBin *self )
 			+ priv->entries_errs
 			+ priv->ledgers_errs
 			+ priv->ope_templates_errs
+			+ priv->currency_errs
+			+ priv->paimean_errs
 			+ priv->others_errs;
 
 	if( priv->display ){
