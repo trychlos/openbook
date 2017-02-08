@@ -1008,6 +1008,7 @@ check_concil_run( ofaCheckIntegrityBin *self )
 
 	count = 1;
 	priv->concil_errs = 0;
+	i = 0;
 
 	/* check that all details have a parent */
 	orphans = ofo_concil_get_orphans( priv->getter );

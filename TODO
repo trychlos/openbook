@@ -128,12 +128,6 @@
                 settlement data groups if they are set in the object
                 (would prevent two updates when closing the exercice)
 
- 601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
-                database
-     2016- 4-20 see also #886.
-     2016-10-12 + purge reconciliation groups (wich was actually the #886)
-     2017- 2- 8 only bat files which are not fully reconciliated are fully kept
-
  632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
                 than standard prefix=/usr
      2016- 1-25 icon is installed in $(datadir)
@@ -374,6 +368,12 @@
                 the previously selected file when coming back from an
                 other page
      2017- 1-27 no more the case
+
+ 601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
+                database
+     2016- 4-20 see also #886.
+     2016-10-12 + purge reconciliation groups (wich was actually the #886)
+     2017- 2- 8 done
 
  758 2015- 3-21 FEAT warns when deleting a settled or reconciliated
                      entry +unsettle/unreconciliate

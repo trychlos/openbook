@@ -1513,7 +1513,7 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_cleanup";
 	ofaExerciceCloseAssistantPrivate *priv;
-	gchar *query;
+	gchar *query, *sub;
 	gboolean ok;
 	GtkWidget *label;
 
@@ -1721,6 +1721,53 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	if( ok ){
 		query = g_strdup( "DELETE FROM OFA_T_BAT_LINES "
 					"WHERE BAT_ID NOT IN (SELECT BAT_ID FROM ARCHIVE_T_KEEP_BATS)" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+
+	/* keep conciliation groups
+	 * - where a bat line is kept
+	 * - where an entry is kept
+	 */
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_CONCIL_IDS" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	sub = g_strdup_printf(
+					"		(REC_IDS_TYPE='%s' "
+					"		 AND REC_IDS_OTHER NOT IN (SELECT BAT_LINE_ID FROM OFA_T_BAT_LINES))"
+					"	OR	(REC_IDS_TYPE='%s' "
+					"		 AND REC_IDS_OTHER NOT IN (SELECT ENT_NUMBER FROM OFA_T_ENTRIES))",
+					CONCIL_TYPE_BAT, CONCIL_TYPE_ENTRY );
+	if( ok ){
+		query = g_strdup_printf( "CREATE TABLE ARCHIVE_T_CONCIL_IDS "
+					"SELECT * FROM OFA_T_CONCIL_IDS WHERE %s", sub );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup_printf( "DELETE FROM OFA_T_CONCIL_IDS "
+				"	WHERE %s", sub );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	g_free( sub );
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_CONCIL" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "CREATE TABLE ARCHIVE_T_CONCIL "
+					"SELECT * FROM OFA_T_CONCIL "
+					"	WHERE REC_ID NOT IN (SELECT DISTINCT(REC_ID) FROM ARCHIVE_T_CONCIL_IDS)" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "DELETE FROM OFA_T_CONCIL "
+					"WHERE REC_ID NOT IN (SELECT DISTINCT(REC_ID) FROM ARCHIVE_T_CONCIL)" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}

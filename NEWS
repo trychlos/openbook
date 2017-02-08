@@ -27,7 +27,8 @@
    - Accounts are now settleable and reconciliable, and able to allow keeping
      unsettleable and unreconciliable entries.
    - Accounts chart: display the newly created page when creating an account with new class.
-   - Administrative credentials are now recorded as dossier settings.   
+   - Administrative credentials are now recorded as dossier settings.
+   - Conciliation groups are now archived on exercice closing (todo #601).   
    - DossierManager better behaves when the list is empty, disabling all unrelevant actions.
    - DossierManager no more has two identical 'Close' buttons.
    - DossierManager no more allows (there is no sense to that) to check/uncheck the 'Remember'
