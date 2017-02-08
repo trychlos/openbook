@@ -40,6 +40,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignalable.h"
 #include "api/ofa-isignaler.h"
@@ -47,11 +48,11 @@
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
+#include "api/ofo-bat.h"
+#include "api/ofo-bat-line.h"
 #include "api/ofo-concil.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-bat.h"
-#include "api/ofo-bat-line.h"
 
 /* priv instance data
  */
@@ -81,6 +82,7 @@ static ofoBat     *bat_find_by_id( GList *set, ofxCounter id );
 static void        bat_set_id( ofoBat *bat, ofxCounter id );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
+static GList      *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean    bat_do_insert( ofoBat *bat, ofaIGetter *getter );
 static gboolean    bat_insert_main( ofoBat *bat, ofaIGetter *getter );
 static gboolean    bat_do_update( ofoBat *bat, const ofaIDBConnect *connect );
@@ -92,6 +94,8 @@ static gint        bat_cmp_by_id( ofoBat *a, ofxCounter id );
 static void        icollectionable_iface_init( myICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( void );
 static GList      *icollectionable_load_collection( void *user_data );
+static void        idoc_iface_init( ofaIDocInterface *iface );
+static guint       idoc_get_interface_version( void );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( void );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
@@ -116,6 +120,7 @@ static void        signaler_on_updated_currency_code( ofaISignaler *signaler, co
 G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoBat )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
@@ -943,6 +948,57 @@ bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
 }
 
 /**
+ * ofo_bat_doc_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown BAT_ID in OFA_T_BAT_DOC child table.
+ *
+ * The returned list should be #ofo_bat_doc_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_bat_doc_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_BAT_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+	ofxCounter batid;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(BAT_ID) FROM %s "
+			"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM OFA_T_BAT)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			batid = atol(( const gchar * ) icol->data );
+			//g_debug( "bat_get_orphans: data=%s data=%p data=%lu batid=%lu",
+			//		( const gchar * ) icol->data, ( void * ) icol->data, ( gulong ) icol->data, batid );
+			orphans = g_list_prepend( orphans, ( gpointer ) batid );
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
  * ofo_bat_insert:
  * @bat: a new #ofoBat instance to be added to the database.
  *
@@ -1414,6 +1470,25 @@ icollectionable_load_collection( void *user_data )
 	}
 
 	return( dataset );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_bat_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

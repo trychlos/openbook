@@ -42,6 +42,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
@@ -240,6 +241,7 @@ static void         archive_do_add_list( ofoAccount *account, const GDate *date,
 static gint         archive_get_last_index( ofoAccount *account, const GDate *requested );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
+static GList       *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
 static gboolean     account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
 static gboolean     account_do_update_arc( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
@@ -249,6 +251,8 @@ static gint         account_cmp_by_number( const ofoAccount *a, const gchar *num
 static void         icollectionable_iface_init( myICollectionableInterface *iface );
 static guint        icollectionable_get_interface_version( void );
 static GList       *icollectionable_load_collection( void *user_data );
+static void         idoc_iface_init( ofaIDocInterface *iface );
+static guint        idoc_get_interface_version( void );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
@@ -276,6 +280,7 @@ static void         signaler_on_entry_status_changed( ofaISignaler *signaler, of
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoAccount )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
@@ -1637,6 +1642,67 @@ ofo_account_set_futur_credit( ofoAccount *account, ofxAmount amount )
 }
 
 /**
+ * ofo_account_arc_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown account numbers in OFA_T_ACCOUNT_ARC child table.
+ *
+ * The returned list should be #ofo_account_arc_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_account_arc_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_ACCOUNTS_ARC" ));
+}
+
+/**
+ * ofo_account_doc_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown account numbers in OFA_T_ACCOUNT_DOC child table.
+ *
+ * The returned list should be #ofo_account_doc_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_account_doc_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_ACCOUNTS_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT ACC_NUMBER FROM %s WHERE ACC_NUMBER NOT IN (SELECT ACC_NUMBER FROM OFA_T_ACCOUNTS)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			orphans = g_list_prepend( orphans, g_strdup(( const gchar * ) icol->data ));
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
  * ofo_account_insert:
  * @account: the new #ofoAccount account to be inserted.
  *
@@ -2162,6 +2228,25 @@ icollectionable_load_collection( void *user_data )
 	}
 
 	return( dataset );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_bat_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

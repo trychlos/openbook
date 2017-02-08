@@ -290,26 +290,3 @@ ofo_base_get_getter( ofoBase *base )
 
 	return( priv->getter );
 }
-
-#if 0
-/**
- * ofo_base_set_getter:
- * @base: this #ofoBase object.
- * @getter: [allow-none]: a #ofaIGetter instance.
- *
- * Attach the @getter object to the @base one.
- */
-void
-ofo_base_set_getter( ofoBase *base, ofaIGetter *getter )
-{
-	ofoBasePrivate *priv;
-
-	g_return_if_fail( base && OFO_IS_BASE( base ));
-	g_return_if_fail( !getter || OFA_IS_IGETTER( getter ));
-	g_return_if_fail( !base->prot->dispose_has_run);
-
-	priv = ofo_base_get_instance_private( base );
-
-	priv->getter = getter;
-}
-#endif

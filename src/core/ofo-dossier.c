@@ -38,6 +38,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbmodel.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignalable.h"
@@ -227,11 +228,14 @@ static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter 
 static void        dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_setup_rpid( ofoDossier *self );
 static void        dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter counter );
+static GList      *get_orphans( ofaIGetter *getter, const gchar *table );
 static ofoDossier *dossier_do_read( ofaIGetter *getter );
 static gboolean    dossier_do_update( ofoDossier *dossier );
 static gboolean    do_update_properties( ofoDossier *dossier );
 static gboolean    dossier_do_update_currencies( ofoDossier *dossier );
 static gboolean    do_update_currency_properties( ofoDossier *dossier );
+static void        idoc_iface_init( ofaIDocInterface *iface );
+static guint       idoc_get_interface_version( void );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
@@ -254,6 +258,7 @@ static void        signaler_on_updated_ope_template_mnemo( ofaISignaler *signale
 
 G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoDossier )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
@@ -1408,6 +1413,84 @@ ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *currency, const g
 	ofa_box_set_string( cur_detail, DOS_SLD_ACCOUNT, account );
 }
 
+/**
+ * ofo_dossier_cur_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown DOS_ID in OFA_T_DOSSIER_CUR child table.
+ *
+ * The returned list should be #ofo_dossier_cur_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_dossier_cur_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_DOSSIER_CUR" ));
+}
+
+/**
+ * ofo_dossier_doc_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown DOS_ID in OFA_T_DOSSIER_DOC child table.
+ *
+ * The returned list should be #ofo_dossier_doc_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_dossier_doc_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_DOSSIER_DOC" ));
+}
+
+/**
+ * ofo_dossier_prefs_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown DOS_ID in OFA_T_DOSSIER_PREFS child table.
+ *
+ * The returned list should be #ofo_dossier_prefs_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_dossier_prefs_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_DOSSIER_PREFS" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+	guint dosid;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DOS_ID FROM %s WHERE DOS_ID!=%u", table, DOSSIER_ROW_ID );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			dosid = atoi(( const gchar * ) icol->data );
+			orphans = g_list_prepend( orphans, GUINT_TO_POINTER( dosid ));
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
 static ofoDossier *
 dossier_do_read( ofaIGetter *getter )
 {
@@ -1715,6 +1798,25 @@ do_update_currency_properties( ofoDossier *dossier )
 	}
 
 	return( ok );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_dossier_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

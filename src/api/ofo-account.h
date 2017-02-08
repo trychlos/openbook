@@ -156,6 +156,12 @@ void            ofo_account_set_rough_credit        ( ofoAccount *account, ofxAm
 void            ofo_account_set_futur_debit         ( ofoAccount *account, ofxAmount amount );
 void            ofo_account_set_futur_credit        ( ofoAccount *account, ofxAmount amount );
 
+GList          *ofo_account_arc_get_orphans         ( ofaIGetter *getter );
+#define         ofo_account_arc_free_orphans( L )   ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+
+GList          *ofo_account_doc_get_orphans         ( ofaIGetter *getter );
+#define         ofo_account_doc_free_orphans( L )   ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+
 gboolean        ofo_account_insert                  ( ofoAccount *account );
 gboolean        ofo_account_update                  ( ofoAccount *account, const gchar *prev_number );
 gboolean        ofo_account_update_amounts          ( ofoAccount *account );

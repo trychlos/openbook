@@ -238,8 +238,7 @@ bat_line_load_dataset( ofaIGetter *getter, const gchar *where )
  * ofo_bat_line_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
- * Returns: the list of BAT children identifiers which no more
- * have a parent.
+ * Returns: the list of BAT identifiers which are referenced but unknwon.
  *
  * The returned list should not be #ofo_bat_line_free_orphans() by
  * the caller.

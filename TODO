@@ -132,6 +132,7 @@
                 database
      2016- 4-20 see also #886.
      2016-10-12 + purge reconciliation groups (wich was actually the #886)
+     2017- 2- 8 only bat files which are not fully reconciliated are fully kept
 
  632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
                 than standard prefix=/usr
@@ -233,7 +234,7 @@
                      or no, to import deleted entries
      2016- 3- 1 +accounts: import balances
      201è- 2- 7 it would be more usefull to have a preview of the imported
-                file, and a mapping dialog
+                file, and a mapping page
 
 1003 2016- 2-24 FEAT RenderPage: add navigation+zoom buttons
 
@@ -352,7 +353,9 @@
                 + add to integrity check
                 + disable the opes generation 
 
-1349
+1349 2017- 2- 8 AccountSelect: does not allow delete
+
+1350
 
 -----------------------------------------------------------------------
  DONE

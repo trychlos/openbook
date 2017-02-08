@@ -117,6 +117,7 @@ libofa_core_la_SOURCES = \
 	ofa-idbprovider.c									\
 	ofa-idbexercice-editor.c							\
 	ofa-idbsuperuser.c									\
+	ofa-idoc.c											\
 	ofa-iexe-close.c									\
 	ofa-iexportable.c									\
 	ofa-iextender-setter.c								\
@@ -191,6 +192,7 @@ libofa_core_la_SOURCES = \
 	ofo-class.c											\
 	ofo-concil.c										\
 	ofo-currency.c										\
+	ofo-doc.c											\
 	ofo-dossier.c										\
 	ofo-entry.c											\
 	ofo-exemeta.c										\

@@ -61,10 +61,12 @@
    - ofaEntryStore: is now loaded at once.
    - ofa_idbdossier_meta_unref(): removed function.
    - ofa_idbexercice_meta_unref(): removed function.
+   - ofaIDoc: new documents management interface.
    - ofaIGetter: the header only includes class definitions (not the APIs).
    - ofeEntryRule: new enum which indicates the rule of the entry.
    - ofeEntryStatus: type renamed from ofaEntryStatus (as an enum).
    - ofo_account_delete_with_children(): new function.
+   - ofoDoc: new class for documents management.
 
 -----------------------------------------------------------------------
  Version 0.66

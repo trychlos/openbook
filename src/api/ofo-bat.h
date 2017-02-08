@@ -161,6 +161,9 @@ void            ofo_bat_set_currency               ( ofoBat *bat, const gchar *c
 void            ofo_bat_set_notes                  ( ofoBat *bat, const gchar *notes );
 void            ofo_bat_set_account                ( ofoBat *bat, const gchar *account );
 
+GList          *ofo_bat_doc_get_orphans            ( ofaIGetter *getter );
+#define         ofo_bat_doc_free_orphans( L )      ( g_list_free( L ))
+
 gboolean        ofo_bat_insert                     ( ofoBat *bat );
 gboolean        ofo_bat_update                     ( ofoBat *bat );
 gboolean        ofo_bat_delete                     ( ofoBat *bat );

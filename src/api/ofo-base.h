@@ -125,11 +125,6 @@ GList      *ofo_base_load_rows       ( const ofsBoxDef *defs,
 
 ofaIGetter *ofo_base_get_getter      ( ofoBase *base );
 
-#if 0
-void        ofo_base_set_getter      ( ofoBase *base,
-											ofaIGetter *getter );
-#endif
-
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFO_BASE_H__ */

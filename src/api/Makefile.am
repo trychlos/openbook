@@ -66,6 +66,7 @@ api_include_HEADERS = \
 	ofa-idbprovider-def.h								\
 	ofa-idbsuperuser.h									\
 	ofa-idbsuperuser-def.h								\
+	ofa-idoc.h											\
 	ofa-iexe-close.h									\
 	ofa-iexportable.h									\
 	ofa-iextender-setter.h								\
@@ -118,6 +119,8 @@ api_include_HEADERS = \
 	ofo-concil-def.h									\
 	ofo-currency.h										\
 	ofo-currency-def.h									\
+	ofo-doc.h											\
+	ofo-doc-def.h										\
 	ofo-dossier.h										\
 	ofo-dossier-def.h									\
 	ofo-entry.h											\
