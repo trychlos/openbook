@@ -138,10 +138,6 @@ GList          *ofo_entry_get_dataset_for_print_reconcil
 GList          *ofo_entry_get_dataset_for_exercice_by_status
                                                      ( ofaIGetter *getter, ofeEntryStatus status );
 
-GList          *ofo_entry_get_dataset_for_store      ( ofaIGetter *getter,
-															const gchar *account,
-															const gchar *ledger );
-
 GList          *ofo_entry_get_dataset                ( ofaIGetter *getter );
 ofxCounter      ofo_entry_get_count                  ( ofaIGetter *getter );
 
@@ -218,6 +214,9 @@ ofoEntry       *ofo_entry_new_with_data              ( ofaIGetter *getter,
 															const gchar *account, const gchar *currency,
 															const gchar *ledger, const gchar *model,
 															ofxAmount debit, ofxAmount credit );
+
+GList          *ofo_entry_get_doc_orphans            ( ofaIGetter *getter );
+#define         ofo_entry_free_doc_orphans( L )      ( g_list_free( L ))
 
 gboolean        ofo_entry_insert                     ( ofoEntry *entry );
 gboolean        ofo_entry_update                     ( ofoEntry *entry );

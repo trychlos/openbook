@@ -1414,7 +1414,7 @@ ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *currency, const g
 }
 
 /**
- * ofo_dossier_cur_get_orphans:
+ * ofo_dossier_get_cur_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown DOS_ID in OFA_T_DOSSIER_CUR child table.
@@ -1423,13 +1423,13 @@ ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *currency, const g
  * caller.
  */
 GList *
-ofo_dossier_cur_get_orphans( ofaIGetter *getter )
+ofo_dossier_get_cur_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_DOSSIER_CUR" ));
 }
 
 /**
- * ofo_dossier_doc_get_orphans:
+ * ofo_dossier_get_doc_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown DOS_ID in OFA_T_DOSSIER_DOC child table.
@@ -1438,13 +1438,13 @@ ofo_dossier_cur_get_orphans( ofaIGetter *getter )
  * caller.
  */
 GList *
-ofo_dossier_doc_get_orphans( ofaIGetter *getter )
+ofo_dossier_get_doc_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_DOSSIER_DOC" ));
 }
 
 /**
- * ofo_dossier_prefs_get_orphans:
+ * ofo_dossier_get_prefs_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown DOS_ID in OFA_T_DOSSIER_PREFS child table.
@@ -1453,7 +1453,7 @@ ofo_dossier_doc_get_orphans( ofaIGetter *getter )
  * caller.
  */
 GList *
-ofo_dossier_prefs_get_orphans( ofaIGetter *getter )
+ofo_dossier_get_prefs_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_DOSSIER_PREFS" ));
 }

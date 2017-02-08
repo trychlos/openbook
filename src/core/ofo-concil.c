@@ -63,6 +63,8 @@ typedef struct {
 static ofoConcil *concil_get_by_query( const gchar *query, ofaIGetter *getter );
 static void       concil_set_id( ofoConcil *concil, ofxCounter id );
 static void       concil_add_other_id( ofoConcil *concil, const gchar *type, ofxCounter id );
+static GList     *get_orphans( ofaIGetter *getter, const gchar *table );
+static GList     *get_other_orphans( ofaIGetter *getter, const gchar *type, const gchar *column, const gchar *table );
 static gboolean   concil_do_insert( ofoConcil *concil, const ofaIDBConnect *connect );
 static gint       concil_cmp_by_ptr( ofoConcil *a, ofoConcil *b );
 static gboolean   concil_do_insert_id( ofoConcil *concil, const gchar *type, ofxCounter id, const ofaIDBConnect *connect );
@@ -152,44 +154,6 @@ ofo_concil_get_dataset( ofaIGetter *getter )
 	collector = ofa_igetter_get_collector( getter );
 
 	return( my_icollector_collection_get( collector, OFO_TYPE_CONCIL, getter ));
-}
-
-/**
- * ofo_concil_get_orphans:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the list of conciliation children identifiers which no more
- * have a parent.
- *
- * The returned list should not be #ofo_concil_free_orphans() by
- * the caller.
- */
-GList *
-ofo_concil_get_orphans( ofaIGetter *getter )
-{
-	ofaHub *hub;
-	GList *orphans;
-	GSList *result, *irow, *icol;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
-
-	hub = ofa_igetter_get_hub( getter );
-
-	if( !ofa_idbconnect_query_ex(
-			ofa_hub_get_connect( hub ),
-			"SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL_IDS "
-			"	WHERE REC_ID NOT IN (SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL)"
-			"	ORDER BY REC_ID DESC", &result, FALSE )){
-		return( NULL );
-	}
-	orphans = NULL;
-	for( irow=result ; irow ; irow=irow->next ){
-		icol = irow->data;
-		orphans = g_list_prepend( orphans, g_strdup(( gchar * ) icol->data ));
-	}
-	ofa_idbconnect_free_results( result );
-
-	return( orphans );
 }
 
 /**
@@ -562,6 +526,124 @@ concil_add_other_id( ofoConcil *concil, const gchar *type, ofxCounter id )
 	sid->other_id = id;
 
 	priv->ids = g_list_prepend( priv->ids, ( gpointer ) sid );
+}
+
+/**
+ * ofo_concil_get_concil_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of conciliation group identifiers which are
+ * referenced in conciliation members, but do not (or no more) exist.
+ *
+ * The returned list should not be #ofo_concil_free_concil_orphans() by
+ * the caller.
+ */
+GList *
+ofo_concil_get_concil_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_CONCIL_IDS" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+	ofxCounter recid;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(REC_ID) FROM %s "
+			"	WHERE REC_ID NOT IN (SELECT REC_ID FROM OFA_T_CONCIL)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			recid = atol(( const gchar * ) icol->data );
+			orphans = g_list_prepend( orphans, ( gpointer ) recid );
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
+ * ofo_concil_get_bat_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of conciliation group identifiers which are
+ * referenced as Bat lines in conciliation members, but do not (or no
+ * more) exist.
+ *
+ * The returned list should not be #ofo_concil_free_bat_orphans() by
+ * the caller.
+ */
+GList *
+ofo_concil_get_bat_orphans( ofaIGetter *getter )
+{
+	return( get_other_orphans( getter, CONCIL_TYPE_BAT, "BAT_LINE_ID", "OFA_T_BAT_LINES" ));
+}
+
+/**
+ * ofo_concil_get_entry_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of conciliation group identifiers which are
+ * referenced as entries in conciliation members, but do not (or no
+ * more) exist.
+ *
+ * The returned list should not be #ofo_concil_free_entry_orphans() by
+ * the caller.
+ */
+GList *
+ofo_concil_get_entry_orphans( ofaIGetter *getter )
+{
+	return( get_other_orphans( getter, CONCIL_TYPE_ENTRY, "ENT_NUMBER", "OFA_T_ENTRIES" ));
+}
+
+static GList *
+get_other_orphans( ofaIGetter *getter, const gchar *type, const gchar *column, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+	ofxCounter recid;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL_IDS "
+			"	WHERE REC_IDS_TYPE='%s' AND REC_IDS_OTHER NOT IN (SELECT %s FROM %s)", type, column, table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			recid = atol(( const gchar * ) icol->data );
+			orphans = g_list_prepend( orphans, ( gpointer ) recid );
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
 }
 
 /**

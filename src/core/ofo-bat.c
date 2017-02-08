@@ -948,7 +948,7 @@ bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
 }
 
 /**
- * ofo_bat_doc_get_orphans:
+ * ofo_bat_get_doc_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown BAT_ID in OFA_T_BAT_DOC child table.
@@ -957,7 +957,7 @@ bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
  * caller.
  */
 GList *
-ofo_bat_doc_get_orphans( ofaIGetter *getter )
+ofo_bat_get_doc_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_BAT_DOC" ));
 }

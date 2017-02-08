@@ -1642,7 +1642,7 @@ ofo_account_set_futur_credit( ofoAccount *account, ofxAmount amount )
 }
 
 /**
- * ofo_account_arc_get_orphans:
+ * ofo_account_get_arc_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown account numbers in OFA_T_ACCOUNT_ARC child table.
@@ -1651,13 +1651,13 @@ ofo_account_set_futur_credit( ofoAccount *account, ofxAmount amount )
  * caller.
  */
 GList *
-ofo_account_arc_get_orphans( ofaIGetter *getter )
+ofo_account_get_arc_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_ACCOUNTS_ARC" ));
 }
 
 /**
- * ofo_account_doc_get_orphans:
+ * ofo_account_get_doc_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown account numbers in OFA_T_ACCOUNT_DOC child table.
@@ -1666,7 +1666,7 @@ ofo_account_arc_get_orphans( ofaIGetter *getter )
  * caller.
  */
 GList *
-ofo_account_doc_get_orphans( ofaIGetter *getter )
+ofo_account_get_doc_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_ACCOUNTS_DOC" ));
 }
@@ -1687,7 +1687,8 @@ get_orphans( ofaIGetter *getter, const gchar *table )
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
-	query = g_strdup_printf( "SELECT ACC_NUMBER FROM %s WHERE ACC_NUMBER NOT IN (SELECT ACC_NUMBER FROM OFA_T_ACCOUNTS)", table );
+	query = g_strdup_printf( "SELECT DISTINCT(ACC_NUMBER) FROM %s "
+			"	WHERE ACC_NUMBER NOT IN (SELECT ACC_NUMBER FROM OFA_T_ACCOUNTS)", table );
 
 	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
 		for( irow=result ; irow ; irow=irow->next ){
@@ -2236,7 +2237,7 @@ icollectionable_load_collection( void *user_data )
 static void
 idoc_iface_init( ofaIDocInterface *iface )
 {
-	static const gchar *thisfn = "ofo_bat_idoc_iface_init";
+	static const gchar *thisfn = "ofo_account_idoc_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 

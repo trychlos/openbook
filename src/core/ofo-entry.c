@@ -39,6 +39,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
@@ -235,6 +236,7 @@ static void         entry_set_settlement_user( ofoEntry *entry, const gchar *use
 static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static void         entry_set_import_settled( ofoEntry *entry, gboolean settled );
 static gboolean     entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaIGetter *getter );
+static GList       *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean     entry_do_insert( ofoEntry *entry, ofaIGetter *getter );
 static void         error_ledger( const gchar *ledger );
 static void         error_ope_template( const gchar *model );
@@ -252,6 +254,8 @@ static void         iconcil_iface_init( ofaIConcilInterface *iface );
 static guint        iconcil_get_interface_version( void );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
 static const gchar *iconcil_get_object_type( const ofaIConcil *instance );
+static void         idoc_iface_init( ofaIDocInterface *iface );
+static guint        idoc_get_interface_version( void );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
@@ -289,6 +293,7 @@ G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoEntry )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICONCIL, iconcil_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
@@ -764,44 +769,6 @@ effect_in_exercice( ofaIGetter *getter )
 }
 
 /**
- * ofo_entry_get_dataset_for_store:
- * @getter: a #ofaIGetter instance.
- * @account: [allow-none]: the searched account.
- * @ledger: [allow-none]: the searched ledger.
- *
- * Returns *all* entries for the specified @account and/or @ledger.
- */
-GList *
-ofo_entry_get_dataset_for_store( ofaIGetter *getter, const gchar *account, const gchar *ledger )
-{
-	static const gchar *thisfn = "ofo_entry_get_dataset_for_store";
-	GString *where;
-	GList *dataset;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
-
-	where = g_string_new( "" );
-
-	if( my_strlen( account )){
-		g_string_append_printf( where, "ENT_ACCOUNT='%s' ", account );
-	}
-	if( my_strlen( ledger )){
-		if( where->len ){
-			where = g_string_append( where, "AND " );
-		}
-		g_string_append_printf( where, "ENT_LEDGER='%s' ", ledger );
-	}
-
-	dataset = entry_load_dataset( getter, where->str, "ORDER BY ENT_NUMBER ASC");
-
-	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
-
-	g_string_free( where, TRUE );
-
-	return( dataset );
-}
-
-/**
  * ofo_entry_get_dataset:
  * @getter: a #ofaIGetter instance.
  *
@@ -831,20 +798,13 @@ ofo_entry_get_dataset( ofaIGetter *getter )
 ofxCounter
 ofo_entry_get_count( ofaIGetter *getter )
 {
-	ofaHub *hub;
-	ofaIDBConnect *connect;
-	gint count_int;
+	GList *dataset;
 	ofxCounter count;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
 
-	count = 0;
-	hub = ofa_igetter_get_hub( getter );
-	connect = ofa_hub_get_connect( hub );
-
-	if( ofa_idbconnect_query_int( connect, "SELECT COUNT(*) FROM OFA_T_ENTRIES", &count_int, TRUE )){
-		count = count_int;
-	}
+	dataset = ofo_entry_get_dataset( getter );
+	count = ( ofxCounter ) g_list_length( dataset );
 
 	return( count );
 }
@@ -2000,6 +1960,55 @@ ofo_entry_new_with_data( ofaIGetter *getter,
 }
 
 /**
+ * ofo_entry_get_doc_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown ENT_NUMBER in OFA_T_ENTRIES_DOC child table.
+ *
+ * The returned list should be #ofo_entry_doc_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_entry_get_doc_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_ENTRIES_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+	ofxCounter entnum;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(ENT_NUMBER) FROM %s "
+			"	WHERE ENT_NUMBER NOT IN (SELECT ENT_NUMBER FROM OFA_T_ENTRIES)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			entnum = atol(( const gchar * ) icol->data );
+			orphans = g_list_prepend( orphans, ( gpointer ) entnum );
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
  * ofo_entry_insert:
  *
  * Allocates a sequential number to the entry, and records it in the
@@ -2646,6 +2655,25 @@ static const gchar *
 iconcil_get_object_type( const ofaIConcil *instance )
 {
 	return( CONCIL_TYPE_ENTRY );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*
