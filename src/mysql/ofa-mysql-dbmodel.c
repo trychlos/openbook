@@ -1043,6 +1043,7 @@ dbmodel_v25( ofaMysqlDBModel *self, gint version )
 	}
 
 	/* n° 2 */
+	/* a unique key is added in v35 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CONCIL_IDS ("
 			"	REC_ID         BIGINT             NOT NULL           COMMENT 'Reconciliation identifier',"
@@ -2243,6 +2244,13 @@ dbmodel_v35( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
+	/* 24 add a unique key to concil_ids */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_CONCIL_IDS "
+			"	ADD UNIQUE (REC_ID,REC_IDS_TYPE,REC_IDS_OTHER)" )){
+		return( FALSE );
+	}
+
 	return( TRUE );
 }
 
@@ -2253,5 +2261,5 @@ dbmodel_v35( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v35( ofaMysqlDBModel *self )
 {
-	return( 23 );
+	return( 24 );
 }
