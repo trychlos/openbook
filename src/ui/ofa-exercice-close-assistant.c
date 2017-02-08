@@ -49,6 +49,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
+#include "api/ofo-concil.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -1611,8 +1612,11 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	}
 
 	/* archive deleted (non-reported) entries
-	 * i.e. those which are tight to an unsettleable or an unreconcilable
-	 * account, or are not settled, or are not reconciliated
+	 * or
+	 * keep and report:
+	 *  - unsettled entries on settleable accounts
+	 *  - unreconciliated entries on reconciliable accounts
+	 *  - future entries
 	 */
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_KEEP_ENTRIES" );
@@ -1625,14 +1629,14 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 					"	WHERE ENT_ACCOUNT=ACC_NUMBER AND ("
 					"		(ACC_SETTLEABLE='Y' AND ACC_KEEP_UNSETTLED='Y' AND ENT_STLMT_NUMBER IS NULL) OR "
 					"		(ACC_RECONCILIABLE='Y' AND ACC_KEEP_UNRECONCILIATED='Y' AND ENT_NUMBER NOT IN ("
-					"			SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS WHERE REC_IDS_TYPE='E'))) AND "
+					"			SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS WHERE REC_IDS_TYPE='%s'))) AND "
 					"		ENT_STATUS!=%d",
-					ENT_STATUS_DELETED );
+					CONCIL_TYPE_ENTRY, ENT_STATUS_DELETED );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup_printf( "INSERT INTO ARCHIVE_T_KEEP_ENTRIES "
+		query = g_strdup_printf( "INSERT IGNORE INTO ARCHIVE_T_KEEP_ENTRIES "
 					"SELECT ENT_NUMBER FROM OFA_T_ENTRIES WHERE ENT_STATUS=%d", ENT_STATUS_FUTURE );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
@@ -1674,11 +1678,11 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "CREATE TABLE ARCHIVE_T_KEEP_BATS "
+		query = g_strdup_printf( "CREATE TABLE ARCHIVE_T_KEEP_BATS "
 					"SELECT DISTINCT(BAT_ID) FROM OFA_T_BAT_LINES "
 					"	WHERE BAT_LINE_ID NOT IN "
 					"		(SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS "
-					"			WHERE REC_IDS_TYPE='B')" );
+					"			WHERE REC_IDS_TYPE='%s')", CONCIL_TYPE_BAT );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
