@@ -1647,7 +1647,7 @@ ofo_account_set_futur_credit( ofoAccount *account, ofxAmount amount )
  *
  * Returns: the list of unknown account numbers in OFA_T_ACCOUNT_ARC child table.
  *
- * The returned list should be #ofo_account_arc_free_orphans() by the
+ * The returned list should be #ofo_account_free_arc_orphans() by the
  * caller.
  */
 GList *
@@ -1662,7 +1662,7 @@ ofo_account_get_arc_orphans( ofaIGetter *getter )
  *
  * Returns: the list of unknown account numbers in OFA_T_ACCOUNT_DOC child table.
  *
- * The returned list should be #ofo_account_doc_free_orphans() by the
+ * The returned list should be #ofo_account_free_doc_orphans() by the
  * caller.
  */
 GList *

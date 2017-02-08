@@ -1101,7 +1101,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 
 	priv->entries_errs = 0;
 	entries = ofo_entry_get_dataset( priv->getter );
-	count = 1+5*g_list_length( entries );
+	count = 1 + 5*g_list_length( entries );
 	i = 0;
 
 	if( count == 0 ){
@@ -1244,12 +1244,14 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 	const void *worker;
 	GtkWidget *label;
 	GList *ledgers, *it;
-	GList *currencies, *itc;
-	gulong count, i;
+	GList *currencies, *itc, *orphans, *ito;
+	gulong count, i, lederrs;
 	ofoLedger *ledger;
 	gchar *str;
 	const gchar *mnemo, *cur_code;
 	ofoCurrency *cur_obj;
+	guint cur_count, icur;
+	ofxCounter docid;
 
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
@@ -1263,15 +1265,19 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 
 	priv->ledgers_errs = 0;
 	ledgers = ofo_ledger_get_dataset( priv->getter );
-	count = g_list_length( ledgers );
+	count = 3 + 3*g_list_length( ledgers );
+	i = 0;
 
 	if( count == 0 ){
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
 	}
 
-	for( i=1, it=ledgers ; it && count ; ++i, it=it->next ){
+	for( it=ledgers ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
 		mnemo = ofo_ledger_get_mnemo( ledger );
+		lederrs = 0;
+
+		/* balance currency must exist */
 		currencies = ofo_ledger_get_currencies( ledger );
 		for( itc=currencies ; itc ; itc=itc->next ){
 			cur_code = ( const gchar * ) itc->data;
@@ -1280,6 +1286,7 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 				g_free( str );
 				priv->ledgers_errs += 1;
+				lederrs += 1;
 			} else {
 				cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
@@ -1288,14 +1295,106 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 					my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 					g_free( str );
 					priv->ledgers_errs += 1;
+					lederrs += 1;
 				}
 			}
 		}
 		g_list_free( currencies );
-		my_iprogress_pulse( MY_IPROGRESS( self ), worker, i, count );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+		/* archive currencies must exist */
+		cur_count = ofo_ledger_archive_get_count( ledger );
+		for( icur=0 ; icur<cur_count ; ++icur ){
+			cur_code = ofo_ledger_archive_get_currency( ledger, icur );
+			if( !my_strlen( cur_code )){
+				str = g_strdup_printf( _( "Ledger %s archive %u has an empty currency" ), mnemo, icur );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+				g_free( str );
+				priv->ledgers_errs += 1;
+				lederrs += 1;
+			} else {
+				cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
+				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
+					str = g_strdup_printf(
+							_( "Ledger %s archive %u has currency '%s' which doesn't exist" ), mnemo, icur, cur_code );
+					my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+					g_free( str );
+					priv->ledgers_errs += 1;
+					lederrs += 1;
+				}
+			}
+		}
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+		/* check for referenced documents which actually do not exist */
+		orphans = ofa_idoc_get_orphans( OFA_IDOC( ledger ));
+		if( g_list_length( orphans ) > 0 ){
+			for( ito=orphans ; ito ; ito=ito->next ){
+				docid = ( ofxCounter ) ito->data;
+				str = g_strdup_printf( _( "Found orphan ledger document with DocId %lu" ), docid );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+				g_free( str );
+				priv->ledgers_errs += 1;
+				lederrs += 1;
+			}
+		}
+		ofa_idoc_free_orphans( orphans );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+		if( lederrs == 0 ){
+			str = g_strdup_printf( _( "Ledger %s does not exhibit any error: OK" ), mnemo );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+			g_free( str );
+		}
 	}
 
+	/* check for ofa_t_ledgers_arc orphans */
+	orphans = ofo_ledger_get_arc_orphans( priv->getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( ito=orphans ; ito ; ito=ito->next ){
+			str = g_strdup_printf( _( "Found orphan ledger archive(s) with LedMnemo %s" ), ( const gchar * ) ito->data );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+			g_free( str );
+			priv->ledgers_errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "No orphan ledger archive found: OK" ));
+	}
+	ofo_ledger_free_arc_orphans( orphans );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+	/* check for ofa_t_ledgers_cur orphans */
+	orphans = ofo_ledger_get_cur_orphans( priv->getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( ito=orphans ; ito ; ito=ito->next ){
+			str = g_strdup_printf( _( "Found orphan ledger currency(ies) with LedMnemo %s" ), ( const gchar * ) ito->data );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+			g_free( str );
+			priv->ledgers_errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "No orphan ledger currency found: OK" ));
+	}
+	ofo_ledger_free_cur_orphans( orphans );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+	/* check for ofa_t_ledgers_doc orphans */
+	orphans = ofo_ledger_get_doc_orphans( priv->getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( ito=orphans ; ito ; ito=ito->next ){
+			str = g_strdup_printf( _( "Found orphan ledger document(s) with LedMnemo %s" ), ( const gchar * ) ito->data );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+			g_free( str );
+			priv->ledgers_errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "No orphan ledger document found: OK" ));
+	}
+	ofo_ledger_free_doc_orphans( orphans );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
 	/* progress end */
+	my_iprogress_set_text( MY_IPROGRESS( self ), worker, "" );
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->ledgers_errs );
 }
 
