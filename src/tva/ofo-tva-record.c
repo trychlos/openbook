@@ -40,6 +40,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignalable.h"
 #include "api/ofa-isignaler.h"
@@ -176,6 +177,7 @@ typedef struct {
 static void          record_set_mnemo( ofoTVARecord *record, const gchar *mnemo );
 static void          tva_record_set_upd_user( ofoTVARecord *record, const gchar *upd_user );
 static void          tva_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *upd_stamp );
+static GList        *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean      record_do_insert( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean      record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean      record_delete_details( ofoTVARecord *record, const ofaIDBConnect *connect );
@@ -190,6 +192,8 @@ static gint          record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar
 static void          icollectionable_iface_init( myICollectionableInterface *iface );
 static guint         icollectionable_get_interface_version( void );
 static GList        *icollectionable_load_collection( void *user_data );
+static void          idoc_iface_init( ofaIDocInterface *iface );
+static guint         idoc_get_interface_version( void );
 static void          isignalable_iface_init( ofaISignalableInterface *iface );
 static void          isignalable_connect_to( ofaISignaler *signaler );
 static gboolean      signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
@@ -200,6 +204,7 @@ static gboolean      signaler_on_updated_tva_form_mnemo( ofaISignaler *signaler,
 G_DEFINE_TYPE_EXTENDED( ofoTVARecord, ofo_tva_record, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVARecord )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
 static void
@@ -1098,6 +1103,86 @@ ofo_tva_record_boolean_get_is_true( ofoTVARecord *record, guint idx )
 }
 
 /**
+ * ofo_tva_record_get_bool_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown period mnemos in TVA_T_RECORDS_BOOL
+ * child table.
+ *
+ * The returned list should be #ofo_tva_record_free_bool_orphans() by the
+ * caller.
+ */
+GList *
+ofo_tva_record_get_bool_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "TVA_T_RECORDS_BOOL" ));
+}
+
+/**
+ * ofo_tva_record_get_det_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown period mnemos in TVA_T_RECORDS_DET
+ * child table.
+ *
+ * The returned list should be #ofo_tva_record_free_det_orphans() by the
+ * caller.
+ */
+GList *
+ofo_tva_record_get_det_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "TVA_T_RECORDS_DET" ));
+}
+
+/**
+ * ofo_tva_record_get_doc_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown period mnemos in TVA_T_RECORDS_DOC
+ * child table.
+ *
+ * The returned list should be #ofo_tva_record_free_doc_orphans() by the
+ * caller.
+ */
+GList *
+ofo_tva_record_get_doc_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "TVA_T_RECORDS_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(TFO_MNEMO) FROM %s "
+			"	WHERE TFO_MNEMO NOT IN (SELECT TFO_MNEMO FROM TVA_T_RECORDS)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			orphans = g_list_prepend( orphans, g_strdup(( const gchar * ) icol->data ));
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
  * ofo_tva_record_insert:
  */
 gboolean
@@ -1618,6 +1703,25 @@ icollectionable_load_collection( void *user_data )
 	}
 
 	return( dataset );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_ledger_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

@@ -37,6 +37,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
@@ -189,6 +190,7 @@ static GList      *form_detail_new( ofoTVAForm *form, guint level, const gchar *
 static void        form_detail_add( ofoTVAForm *form, GList *fields );
 static GList      *form_boolean_new( ofoTVAForm *form, const gchar *label );
 static void        form_boolean_add( ofoTVAForm *form, GList *fields );
+static GList      *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean    form_do_insert( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gboolean    form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gboolean    form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *connect );
@@ -204,6 +206,8 @@ static gint        form_cmp_by_mnemo( const ofoTVAForm *a, const gchar *mnemo );
 static void        icollectionable_iface_init( myICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( void );
 static GList      *icollectionable_load_collection( void *user_data );
+static void        idoc_iface_init( ofaIDocInterface *iface );
+static guint       idoc_get_interface_version( void );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
@@ -234,6 +238,7 @@ static void        signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *ob
 G_DEFINE_TYPE_EXTENDED( ofoTVAForm, ofo_tva_form, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVAForm )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
@@ -1107,6 +1112,86 @@ ofo_tva_form_boolean_get_label( ofoTVAForm *form, guint idx )
 }
 
 /**
+ * ofo_tva_form_get_bool_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown period mnemos in TVA_T_FORMS_BOOL
+ * child table.
+ *
+ * The returned list should be #ofo_tva_form_free_bool_orphans() by the
+ * caller.
+ */
+GList *
+ofo_tva_form_get_bool_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "TVA_T_FORMS_BOOL" ));
+}
+
+/**
+ * ofo_tva_form_get_det_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown period mnemos in TVA_T_FORMS_DET
+ * child table.
+ *
+ * The returned list should be #ofo_tva_form_free_det_orphans() by the
+ * caller.
+ */
+GList *
+ofo_tva_form_get_det_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "TVA_T_FORMS_DET" ));
+}
+
+/**
+ * ofo_tva_form_get_doc_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown period mnemos in TVA_T_FORMS_DOC
+ * child table.
+ *
+ * The returned list should be #ofo_tva_form_free_doc_orphans() by the
+ * caller.
+ */
+GList *
+ofo_tva_form_get_doc_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "TVA_T_FORMS_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(TFO_MNEMO) FROM %s "
+			"	WHERE TFO_MNEMO NOT IN (SELECT TFO_MNEMO FROM TVA_T_FORMS)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			orphans = g_list_prepend( orphans, g_strdup(( const gchar * ) icol->data ));
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
  * ofo_tva_form_insert:
  */
 gboolean
@@ -1583,6 +1668,25 @@ icollectionable_load_collection( void *user_data )
 	}
 
 	return( dataset );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_ledger_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

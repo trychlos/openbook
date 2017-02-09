@@ -130,6 +130,15 @@ void            ofo_tva_record_boolean_free_all       ( ofoTVARecord *record );
 guint           ofo_tva_record_boolean_get_count      ( ofoTVARecord *record );
 gboolean        ofo_tva_record_boolean_get_is_true    ( ofoTVARecord *record, guint idx );
 
+GList          *ofo_tva_record_get_bool_orphans       ( ofaIGetter *getter );
+#define         ofo_tva_record_free_bool_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+
+GList          *ofo_tva_record_get_det_orphans        ( ofaIGetter *getter );
+#define         ofo_tva_record_free_det_orphans( L )  ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+
+GList          *ofo_tva_record_get_doc_orphans        ( ofaIGetter *getter );
+#define         ofo_tva_record_free_doc_orphans( L )  ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+
 gboolean        ofo_tva_record_insert                 ( ofoTVARecord *record );
 gboolean        ofo_tva_record_update                 ( ofoTVARecord *record );
 gboolean        ofo_tva_record_delete                 ( ofoTVARecord *record );

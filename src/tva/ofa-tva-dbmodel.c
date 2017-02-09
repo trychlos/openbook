@@ -35,7 +35,9 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-igetter.h"
+#include "api/ofo-ope-template.h"
 
 #include "ofa-tva-dbmodel.h"
 #include "ofo-tva-form.h"
@@ -112,6 +114,8 @@ static gboolean   exec_query( ofaTvaDBModel *self, const gchar *query );
 static gboolean   version_begin( ofaTvaDBModel *self, gint version );
 static gboolean   version_end( ofaTvaDBModel *self, gint version );
 static gulong     idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
+static gulong     check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
+static gulong     check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
 
 G_DEFINE_TYPE_EXTENDED( ofaTvaDBModel, ofa_tva_dbmodel, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaTvaDBModel )
@@ -812,5 +816,341 @@ count_v7( ofaTvaDBModel *self )
 static gulong
 idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
-	return( 0 );
+	gulong errs;
+
+	errs = 0;
+	errs += check_forms( instance, getter, progress );
+	errs += check_records( instance, getter, progress );
+
+	return( errs );
+}
+
+static gulong
+check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
+{
+	gulong errs, objerrs;
+	void *worker;
+	GtkWidget *label;
+	GList *records, *it, *orphans, *ito;
+	gulong count, i;
+	gchar *str;
+	const gchar *mnemo, *template;
+	ofoTVAForm *form_obj;
+	ofxCounter docid;
+	guint det_count, idet;
+	gboolean has_template;
+	ofoOpeTemplate *template_obj;
+
+	worker = GUINT_TO_POINTER( OFO_TYPE_TVA_FORM );
+
+	if( progress ){
+		label = gtk_label_new( _( " Check for VAT forms integrity " ));
+		my_iprogress_start_work( progress, worker, label );
+		my_iprogress_start_progress( progress, worker, NULL, TRUE );
+	}
+
+	errs = 0;
+	records = ofo_tva_form_get_dataset( getter );
+	count = 3 + 2*g_list_length( records );
+	i = 0;
+
+	if( count == 0 ){
+		if( progress ){
+			my_iprogress_pulse( progress, worker, 0, 0 );
+		}
+	}
+
+	for( it=records ; it ; it=it->next ){
+		form_obj = OFO_TVA_FORM( it->data );
+		mnemo = ofo_tva_form_get_mnemo( form_obj );
+		det_count = ofo_tva_form_detail_get_count( form_obj );
+		objerrs = 0;
+
+		/* check for operation template in detail lines */
+		for( idet=0 ; idet<det_count ; ++idet ){
+			has_template = ofo_tva_form_detail_get_has_template( form_obj, idet );
+			template = ofo_tva_form_detail_get_template( form_obj, idet );
+
+			if( !has_template && my_strlen( template )){
+				if( progress ){
+					str = g_strdup_printf(
+							_( "VAT form %s, detail %u, is said to not have template, but template %s is set" ),
+							mnemo, idet, template );
+					my_iprogress_set_text( progress, worker, str );
+					g_free( str );
+				}
+				errs += 1;
+				objerrs += 1;
+
+			} else if( has_template && !my_strlen( template )){
+				if( progress ){
+					str = g_strdup_printf(
+							_( "VAT form %s, detail %u, is said to have template, but template is not set" ),
+							mnemo, idet );
+					my_iprogress_set_text( progress, worker, str );
+					g_free( str );
+				}
+				errs += 1;
+				objerrs += 1;
+
+			} else if( has_template && my_strlen( template )){
+				template_obj = ofo_ope_template_get_by_mnemo( getter, template );
+				if( !template_obj || !OFO_IS_OPE_TEMPLATE( template_obj )){
+					if( progress ){
+						str = g_strdup_printf(
+								_( "VAT form %s, detail %u, has operation template '%s' which doesn't exist" ),
+								mnemo, idet, template );
+						my_iprogress_set_text( progress, worker, str );
+						g_free( str );
+					}
+					errs += 1;
+					objerrs += 1;
+				}
+			}
+			if( progress ){
+				my_iprogress_pulse( progress, worker, ++i, count );
+			}
+
+			/* unable to check for accounts and rates without evaluating
+			 * the formulas */
+		}
+
+		/* check for referenced documents which actually do not exist */
+		orphans = ofa_idoc_get_orphans( OFA_IDOC( form_obj ));
+		if( g_list_length( orphans ) > 0 ){
+			for( ito=orphans ; ito ; ito=ito->next ){
+				docid = ( ofxCounter ) ito->data;
+				if( progress ){
+					str = g_strdup_printf( _( "Found orphan document(s) with DocId %lu" ), docid );
+					my_iprogress_set_text( progress, worker, str );
+					g_free( str );
+				}
+				errs += 1;
+				objerrs += 1;
+			}
+		}
+		ofa_idoc_free_orphans( orphans );
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
+		}
+
+		if( objerrs == 0 && progress ){
+			str = g_strdup_printf( _( "VAT form %s does not exhibit any error: OK" ), mnemo );
+			my_iprogress_set_text( progress, worker, str );
+			g_free( str );
+		}
+	}
+
+	/* check that all booleans have a form parent */
+	orphans = ofo_tva_form_get_bool_orphans( getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( it=orphans ; it ; it=it->next ){
+			if( progress ){
+				str = g_strdup_printf( _( "Found orphan boolean(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
+			errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( progress, worker, _( "No orphan VAT form boolean found: OK" ));
+	}
+	ofo_tva_form_free_bool_orphans( orphans );
+	if( progress ){
+		my_iprogress_pulse( progress, worker, ++i, count );
+	}
+
+	/* check that all details have a form parent */
+	orphans = ofo_tva_form_get_det_orphans( getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( it=orphans ; it ; it=it->next ){
+			if( progress ){
+				str = g_strdup_printf( _( "Found orphan detail(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
+			errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( progress, worker, _( "No orphan VAT form found: OK" ));
+	}
+	ofo_tva_form_free_det_orphans( orphans );
+	if( progress ){
+		my_iprogress_pulse( progress, worker, ++i, count );
+	}
+
+	/* check that all documents have a form parent */
+	orphans = ofo_tva_form_get_doc_orphans( getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( it=orphans ; it ; it=it->next ){
+			if( progress ){
+				str = g_strdup_printf( _( "Found orphan document(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
+			errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( progress, worker, _( "No orphan VAT form document found: OK" ));
+	}
+	ofo_tva_form_free_doc_orphans( orphans );
+	if( progress ){
+		my_iprogress_pulse( progress, worker, ++i, count );
+	}
+
+	/* progress end */
+	if( progress ){
+		my_iprogress_set_text( progress, worker, "" );
+		my_iprogress_set_ok( progress, worker, NULL, errs );
+	}
+
+	return( errs );
+}
+
+static gulong
+check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
+{
+	gulong errs, objerrs;
+	void *worker;
+	GtkWidget *label;
+	GList *records, *it, *orphans, *ito;
+	gulong count, i;
+	gchar *str, *sdate;
+	const gchar *mnemo;
+	ofoTVARecord *record;
+	ofoTVAForm *form_obj;
+	ofxCounter docid;
+
+	worker = GUINT_TO_POINTER( OFO_TYPE_TVA_FORM );
+
+	if( progress ){
+		label = gtk_label_new( _( " Check for VAT records integrity " ));
+		my_iprogress_start_work( progress, worker, label );
+		my_iprogress_start_progress( progress, worker, NULL, TRUE );
+	}
+
+	errs = 0;
+	records = ofo_tva_record_get_dataset( getter );
+	count = 3 + 2*g_list_length( records );
+	i = 0;
+
+	if( count == 0 ){
+		if( progress ){
+			my_iprogress_pulse( progress, worker, 0, 0 );
+		}
+	}
+
+	for( it=records ; it ; it=it->next ){
+		record = OFO_TVA_RECORD( it->data );
+		mnemo = ofo_tva_record_get_mnemo( record );
+		sdate = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
+		objerrs = 0;
+
+		/* check that form exists */
+		form_obj = ofo_tva_form_get_by_mnemo( getter, mnemo );
+		if( !form_obj || !OFO_IS_TVA_FORM( form_obj )){
+			if( progress ){
+				str = g_strdup_printf( _( "Found orphan VAT record(s) with TfoMnemo %s" ), mnemo );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
+			errs += 1;
+			objerrs += 1;
+		}
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
+		}
+
+		/* check for referenced documents which actually do not exist */
+		orphans = ofa_idoc_get_orphans( OFA_IDOC( record ));
+		if( g_list_length( orphans ) > 0 ){
+			for( ito=orphans ; ito ; ito=ito->next ){
+				docid = ( ofxCounter ) ito->data;
+				if( progress ){
+					str = g_strdup_printf( _( "Found orphan document(s) with DocId %lu" ), docid );
+					my_iprogress_set_text( progress, worker, str );
+					g_free( str );
+				}
+				errs += 1;
+				objerrs += 1;
+			}
+		}
+		ofa_idoc_free_orphans( orphans );
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
+		}
+
+		if( objerrs == 0 && progress ){
+			str = g_strdup_printf( _( "VAT record %s-%s does not exhibit any error: OK" ), mnemo, sdate );
+			my_iprogress_set_text( progress, worker, str );
+			g_free( str );
+		}
+
+		g_free( sdate );
+	}
+
+	/* check that all booleans have a record parent */
+	orphans = ofo_tva_record_get_bool_orphans( getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( it=orphans ; it ; it=it->next ){
+			if( progress ){
+				str = g_strdup_printf( _( "Found orphan boolean(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
+			errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( progress, worker, _( "No orphan VAT record boolean found: OK" ));
+	}
+	ofo_tva_record_free_bool_orphans( orphans );
+	if( progress ){
+		my_iprogress_pulse( progress, worker, ++i, count );
+	}
+
+	/* check that all details have a record parent */
+	orphans = ofo_tva_record_get_det_orphans( getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( it=orphans ; it ; it=it->next ){
+			if( progress ){
+				str = g_strdup_printf( _( "Found orphan detail(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
+			errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( progress, worker, _( "No orphan VAT record found: OK" ));
+	}
+	ofo_tva_record_free_det_orphans( orphans );
+	if( progress ){
+		my_iprogress_pulse( progress, worker, ++i, count );
+	}
+
+	/* check that all documents have a record parent */
+	orphans = ofo_tva_record_get_doc_orphans( getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( it=orphans ; it ; it=it->next ){
+			if( progress ){
+				str = g_strdup_printf( _( "Found orphan document(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
+			errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( progress, worker, _( "No orphan VAT record document found: OK" ));
+	}
+	ofo_tva_record_free_doc_orphans( orphans );
+	if( progress ){
+		my_iprogress_pulse( progress, worker, ++i, count );
+	}
+
+	/* progress end */
+	if( progress ){
+		my_iprogress_set_text( progress, worker, "" );
+		my_iprogress_set_ok( progress, worker, NULL, errs );
+	}
+
+	return( errs );
 }
