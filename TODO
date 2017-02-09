@@ -351,7 +351,11 @@
 
 1350 2017- 2- 8 CheckBalances: check account and ledger archives
 
-1351
+1351 2017- 2- 9 Review export and import formats, especially the tables
+                with children and companions (e.g. entries+concil)
+                + have a version number
+
+1352
 
 -----------------------------------------------------------------------
  DONE
