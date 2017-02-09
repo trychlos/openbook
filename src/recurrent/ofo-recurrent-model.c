@@ -38,6 +38,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
@@ -135,6 +136,7 @@ static ofoRecurrentModel *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gchar             *get_mnemo_new_from( const ofoRecurrentModel *model );
 static void               recurrent_model_set_upd_user( ofoRecurrentModel *model, const gchar *upd_user );
 static void               recurrent_model_set_upd_stamp( ofoRecurrentModel *model, const GTimeVal *upd_stamp );
+static GList             *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean           model_do_insert( ofoRecurrentModel *model, const ofaIDBConnect *connect );
 static gboolean           model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect );
 static gboolean           model_do_update( ofoRecurrentModel *model, const ofaIDBConnect *connect, const gchar *prev_mnemo );
@@ -144,6 +146,8 @@ static gint               model_cmp_by_mnemo( const ofoRecurrentModel *a, const 
 static void               icollectionable_iface_init( myICollectionableInterface *iface );
 static guint              icollectionable_get_interface_version( void );
 static GList             *icollectionable_load_collection( void *user_data );
+static void               idoc_iface_init( ofaIDocInterface *iface );
+static guint              idoc_get_interface_version( void );
 static void               iexportable_iface_init( ofaIExportableInterface *iface );
 static guint              iexportable_get_interface_version( void );
 static gchar             *iexportable_get_label( const ofaIExportable *instance );
@@ -167,6 +171,7 @@ static void               signaler_on_deleted_base( ofaISignaler *signaler, ofoB
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentModel, ofo_recurrent_model, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentModel )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
@@ -732,6 +737,53 @@ ofo_recurrent_model_set_is_enabled( ofoRecurrentModel *model, gboolean is_enable
 }
 
 /**
+ * ofo_recurrent_model_get_doc_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown recurrent_model mnemos in REC_T_MODELS_DOC child table.
+ *
+ * The returned list should be #ofo_recurrent_model_free_doc_orphans() by the
+ * caller.
+ */
+GList *
+ofo_recurrent_model_get_doc_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "REC_T_MODELS_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(REC_MNEMO) FROM %s "
+			"	WHERE REC_MNEMO NOT IN (SELECT REC_MNEMO FROM REC_T_MODELS)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			orphans = g_list_prepend( orphans, g_strdup(( const gchar * ) icol->data ));
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
  * ofo_recurrent_model_insert:
  */
 gboolean
@@ -1100,6 +1152,25 @@ icollectionable_load_collection( void *user_data )
 					OFA_IGETTER( user_data ));
 
 	return( dataset );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_recurrent_model_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

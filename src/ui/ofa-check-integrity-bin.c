@@ -1266,7 +1266,6 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 		g_free( str );
 		priv->ope_templates_errs += 1;
-		count += 1;
 	}
 	ofo_ope_template_free_det_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
@@ -1278,7 +1277,6 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 		g_free( str );
 		priv->ope_templates_errs += 1;
-		count += 1;
 	}
 	ofo_ope_template_free_doc_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
@@ -1659,7 +1657,6 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 			g_free( str );
 			priv->bat_lines_errs += 1;
-			count += 1;
 		}
 	} else {
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "No orphan BAT line found: OK" ));
@@ -1677,7 +1674,6 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 			g_free( str );
 			priv->bat_lines_errs += 1;
-			count += 1;
 		}
 	} else {
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "No orphan BAT document found: OK" ));
@@ -1775,6 +1771,7 @@ static void
 set_checks_result( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
+	GtkWindow *toplevel;
 	GtkWidget *label;
 	gchar *str;
 
@@ -1797,7 +1794,8 @@ set_checks_result( ofaCheckIntegrityBin *self )
 		if( priv->total_errs > 0 ){
 			str = g_strdup_printf(
 					_( "We have detected %lu integrity errors in the DBMS." ), priv->total_errs );
-			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
+			toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+			my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING, str );
 			g_free( str );
 
 		} else {

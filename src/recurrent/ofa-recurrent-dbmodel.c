@@ -36,6 +36,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-igetter.h"
 #include "api/ofo-ope-template.h"
 
@@ -120,6 +121,7 @@ static gboolean   version_end( ofaRecurrentDBModel *self, gint version );
 static gulong     idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
 static gulong     check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
 static gulong     check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
+static gulong     check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentDBModel, ofa_recurrent_dbmodel, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaRecurrentDBModel )
@@ -1458,9 +1460,9 @@ dbmodel_to_v8( ofaRecurrentDBModel *self, guint version )
 	/* 2. create Run documents index */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_RUN_DOC ("
-			"	REC_MNEMO           VARCHAR(64) BINARY NOT NULL      COMMENT 'Recurrent run identifier',"
+			"	REC_NUMSEQ          BIGINT             NOT NULL      COMMENT 'Recurrent run identifier',"
 			"	REC_DOC_ID          BIGINT             NOT NULL      COMMENT 'Document identifier',"
-			"	UNIQUE (REC_MNEMO,REC_DOC_ID)"
+			"	UNIQUE (REC_NUMSEQ,REC_DOC_ID)"
 			") CHARACTER SET utf8" )){
 		return( FALSE );
 	}
@@ -1499,6 +1501,7 @@ idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, 
 	errs = 0;
 	errs += check_model( instance, getter, progress );
 	errs += check_run( instance, getter, progress );
+	errs += check_period( instance, getter, progress );
 
 	return( errs );
 }
@@ -1506,15 +1509,18 @@ idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, 
 static gulong
 check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
-	gulong errs;
+	gulong errs, moderrs;
 	void *worker;
 	GtkWidget *label;
-	GList *records, *it;
+	GList *records, *it, *orphans, *ito;
 	gulong count, i;
 	ofoRecurrentModel *model;
 	gchar *str;
-	const gchar *mnemo, *ope_mnemo;
+	const gchar *mnemo, *ope_mnemo, *per_mnemo;
 	ofoOpeTemplate *ope_object;
+	ofoRecPeriod *period_obj;
+	ofxCounter detail_id, docid;
+	gint detail_idx;
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_MODEL );
 
@@ -1526,7 +1532,8 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 
 	errs = 0;
 	records = ofo_recurrent_model_get_dataset( getter );
-	count = g_list_length( records );
+	count = 1 + 4*g_list_length( records );
+	i = 0;
 
 	if( count == 0 ){
 		if( progress ){
@@ -1534,11 +1541,13 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 		}
 	}
 
-	for( i=1, it=records ; it ; ++i, it=it->next ){
+	for( it=records ; it ; it=it->next ){
 		model = OFO_RECURRENT_MODEL( it->data );
 		mnemo = ofo_recurrent_model_get_mnemo( model );
+		moderrs = 0;
 
 		if( ofo_recurrent_model_get_is_enabled( model )){
+
 			/* operation template */
 			ope_mnemo = ofo_recurrent_model_get_ope_template( model );
 			if( !my_strlen( ope_mnemo )){
@@ -1548,6 +1557,7 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 					g_free( str );
 				}
 				errs += 1;
+				moderrs += 1;
 			} else {
 				ope_object = ofo_ope_template_get_by_mnemo( getter, ope_mnemo );
 				if( !ope_object || !OFO_IS_OPE_TEMPLATE( ope_object )){
@@ -1558,17 +1568,109 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 						g_free( str );
 					}
 					errs += 1;
+					moderrs += 1;
 				}
+			}
+			if( progress ){
+				my_iprogress_pulse( progress, worker, ++i, count );
+			}
+
+			/* periodicity */
+			period_obj = NULL;
+			per_mnemo = ofo_recurrent_model_get_periodicity( model );
+			if( !my_strlen( ope_mnemo )){
+				if( progress ){
+					str = g_strdup_printf( _( "Recurrent model %s does not have a periodicity" ), mnemo );
+					my_iprogress_set_text( progress, worker, str );
+					g_free( str );
+				}
+				errs += 1;
+				moderrs += 1;
+			} else {
+				period_obj = ofo_rec_period_get_by_id( getter, per_mnemo );
+				if( !period_obj || !OFO_IS_REC_PERIOD( period_obj )){
+					if( progress ){
+						str = g_strdup_printf(
+								_( "Recurrent model %s has periodicity '%s' which doesn't exist" ), mnemo, per_mnemo );
+						my_iprogress_set_text( progress, worker, str );
+						g_free( str );
+					}
+					errs += 1;
+					moderrs += 1;
+				}
+			}
+			if( progress ){
+				my_iprogress_pulse( progress, worker, ++i, count );
+			}
+
+			/* periodicity detail - may be empty */
+			detail_id = ofo_recurrent_model_get_periodicity_detail( model );
+			if( detail_id > 0 && period_obj ){
+				detail_idx = ofo_rec_period_detail_get_by_id( period_obj, detail_id );
+				if( detail_idx < 0 ){
+					if( progress ){
+						str = g_strdup_printf(
+								_( "Recurrent model %s has periodicity detail %lu which doesn't exist" ), mnemo, detail_id );
+						my_iprogress_set_text( progress, worker, str );
+						g_free( str );
+					}
+					errs += 1;
+					moderrs += 1;
+				}
+			}
+			if( progress ){
+				my_iprogress_pulse( progress, worker, ++i, count );
 			}
 		}
 
-		if( progress ){
-			my_iprogress_pulse( progress, worker, i, count );
+		/* check for referenced documents which actually do not exist */
+		orphans = ofa_idoc_get_orphans( OFA_IDOC( model ));
+		if( g_list_length( orphans ) > 0 ){
+			for( ito=orphans ; ito ; ito=ito->next ){
+				docid = ( ofxCounter ) ito->data;
+				if( progress ){
+					str = g_strdup_printf( _( "Found orphan document(s) with DocId %lu" ), docid );
+					my_iprogress_set_text( progress, worker, str );
+					g_free( str );
+				}
+				errs += 1;
+				moderrs += 1;
+			}
 		}
+		ofa_idoc_free_orphans( orphans );
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
+		}
+
+		if( moderrs == 0 && progress ){
+			str = g_strdup_printf( _( "Recurrent model %s does not exhibit any error: OK" ), mnemo );
+			my_iprogress_set_text( progress, worker, str );
+			g_free( str );
+		}
+	}
+
+	/* check that all documents have a model parent */
+	orphans = ofo_recurrent_model_get_doc_orphans( getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( it=orphans ; it ; it=it->next ){
+			if( progress ){
+				str = g_strdup_printf( _( "Found orphan document(s) with RecMnemo %s" ), ( const gchar * ) it->data );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
+			errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( progress, worker, _( "No orphan recurrent model document found: OK" ));
+	}
+	ofo_recurrent_model_free_doc_orphans( orphans );
+	if( progress ){
+		my_iprogress_pulse( progress, worker, ++i, count );
 	}
 
 	/* progress end */
 	if( progress ){
+		my_iprogress_set_text( progress, worker, "" );
 		my_iprogress_set_ok( progress, worker, NULL, errs );
 	}
 
@@ -1578,15 +1680,16 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 static gulong
 check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
-	gulong errs;
+	gulong errs, runerrs;
 	void *worker;
 	GtkWidget *label;
-	GList *records, *it;
+	GList *records, *it, *orphans, *ito;
 	gulong count, i;
 	ofoRecurrentRun *obj;
 	gchar *str;
 	const gchar *mnemo;
 	ofoRecurrentModel *model_object;
+	ofxCounter numseq, docid;
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_RUN );
 
@@ -1598,7 +1701,8 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 
 	errs = 0;
 	records = ofo_recurrent_run_get_dataset( getter );
-	count = g_list_length( records );
+	count = 1 + 2*g_list_length( records );
+	i = 0;
 
 	if( count == 0 ){
 		if( progress ){
@@ -1606,29 +1710,196 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 		}
 	}
 
-	for( i=1, it=records ; it ; ++i, it=it->next ){
+	for( it=records ; it ; it=it->next ){
 		obj = OFO_RECURRENT_RUN( it->data );
-		mnemo = ofo_recurrent_run_get_mnemo( obj );
+		numseq = ofo_recurrent_run_get_numseq( obj );
+		runerrs = 0;
 
-		/* recurrent model */
-		model_object = ofo_recurrent_model_get_by_mnemo( getter, mnemo );
-		if( !model_object || !OFO_IS_RECURRENT_MODEL( model_object )){
+		/* recurrent model is mandatory */
+		mnemo = ofo_recurrent_run_get_mnemo( obj );
+		if( !my_strlen( mnemo )){
 			if( progress ){
-				str = g_strdup_printf(
-						_( "Recurrent model %s doesn't exist" ), mnemo );
+				str = g_strdup_printf( _( "Recurrent run %lu does not have a model mnemonic" ), numseq );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
+			errs += 1;
+			runerrs += 1;
+		} else {
+			model_object = ofo_recurrent_model_get_by_mnemo( getter, mnemo );
+			if( !model_object || !OFO_IS_RECURRENT_MODEL( model_object )){
+				if( progress ){
+					str = g_strdup_printf(
+							_( "Recurrent run %lu has model %s which doesn't exist" ), numseq, mnemo );
+					my_iprogress_set_text( progress, worker, str );
+					g_free( str );
+				}
+				errs += 1;
+				runerrs += 1;
+			}
+		}
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
+		}
+
+		/* check for referenced documents which actually do not exist */
+		orphans = ofa_idoc_get_orphans( OFA_IDOC( obj ));
+		if( g_list_length( orphans ) > 0 ){
+			for( ito=orphans ; ito ; ito=ito->next ){
+				docid = ( ofxCounter ) ito->data;
+				if( progress ){
+					str = g_strdup_printf( _( "Found orphan document(s) with DocId %lu" ), docid );
+					my_iprogress_set_text( progress, worker, str );
+					g_free( str );
+				}
+				errs += 1;
+				runerrs += 1;
+			}
+		}
+		ofa_idoc_free_orphans( orphans );
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
+		}
+
+		if( runerrs == 0 && progress ){
+			str = g_strdup_printf( _( "Recurrent run %lu does not exhibit any error: OK" ), numseq );
+			my_iprogress_set_text( progress, worker, str );
+			g_free( str );
+		}
+	}
+
+	/* check that all documents have a model parent */
+	orphans = ofo_recurrent_run_get_doc_orphans( getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( it=orphans ; it ; it=it->next ){
+			if( progress ){
+				str = g_strdup_printf( _( "Found orphan document(s) with RecNumseq %lu" ), ( ofxCounter ) it->data );
 				my_iprogress_set_text( progress, worker, str );
 				g_free( str );
 			}
 			errs += 1;
 		}
-
-		if( progress ){
-			my_iprogress_pulse( progress, worker, i, count );
-		}
+	} else {
+		my_iprogress_set_text( progress, worker, _( "No orphan recurrent run document found: OK" ));
+	}
+	ofo_recurrent_run_free_doc_orphans( orphans );
+	if( progress ){
+		my_iprogress_pulse( progress, worker, ++i, count );
 	}
 
 	/* progress end */
 	if( progress ){
+		my_iprogress_set_text( progress, worker, "" );
+		my_iprogress_set_ok( progress, worker, NULL, errs );
+	}
+
+	return( errs );
+}
+
+static gulong
+check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
+{
+	gulong errs, objerrs;
+	void *worker;
+	GtkWidget *label;
+	GList *records, *it, *orphans, *ito;
+	gulong count, i;
+	gchar *str;
+	const gchar *perid;
+	ofxCounter docid;
+	ofoRecPeriod *period_obj;
+
+	worker = GUINT_TO_POINTER( OFO_TYPE_REC_PERIOD );
+
+	if( progress ){
+		label = gtk_label_new( _( " Check for periodicities integrity " ));
+		my_iprogress_start_work( progress, worker, label );
+		my_iprogress_start_progress( progress, worker, NULL, TRUE );
+	}
+
+	errs = 0;
+	records = ofo_rec_period_get_dataset( getter );
+	count = 2 + g_list_length( records );
+	i = 0;
+
+	if( count == 0 ){
+		if( progress ){
+			my_iprogress_pulse( progress, worker, 0, 0 );
+		}
+	}
+
+	for( it=records ; it ; it=it->next ){
+		period_obj = OFO_REC_PERIOD( it->data );
+		perid = ofo_rec_period_get_id( period_obj );
+		objerrs = 0;
+
+		/* check for referenced documents which actually do not exist */
+		orphans = ofa_idoc_get_orphans( OFA_IDOC( period_obj ));
+		if( g_list_length( orphans ) > 0 ){
+			for( ito=orphans ; ito ; ito=ito->next ){
+				docid = ( ofxCounter ) ito->data;
+				if( progress ){
+					str = g_strdup_printf( _( "Found orphan document(s) with DocId %lu" ), docid );
+					my_iprogress_set_text( progress, worker, str );
+					g_free( str );
+				}
+				errs += 1;
+				objerrs += 1;
+			}
+		}
+		ofa_idoc_free_orphans( orphans );
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
+		}
+
+		if( objerrs == 0 && progress ){
+			str = g_strdup_printf( _( "Periodicity %s does not exhibit any error: OK" ), perid );
+			my_iprogress_set_text( progress, worker, str );
+			g_free( str );
+		}
+	}
+
+	/* check that all details have a model parent */
+	orphans = ofo_rec_period_get_det_orphans( getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( it=orphans ; it ; it=it->next ){
+			if( progress ){
+				str = g_strdup_printf( _( "Found orphan document(s) with RecNumseq %lu" ), ( ofxCounter ) it->data );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
+			errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( progress, worker, _( "No orphan periodicity detail found: OK" ));
+	}
+	ofo_rec_period_free_det_orphans( orphans );
+	if( progress ){
+		my_iprogress_pulse( progress, worker, ++i, count );
+	}
+
+	/* check that all documents have a model parent */
+	orphans = ofo_rec_period_get_doc_orphans( getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( it=orphans ; it ; it=it->next ){
+			if( progress ){
+				str = g_strdup_printf( _( "Found orphan document(s) with RecNumseq %lu" ), ( ofxCounter ) it->data );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
+			errs += 1;
+		}
+	} else {
+		my_iprogress_set_text( progress, worker, _( "No orphan periodicity document found: OK" ));
+	}
+	ofo_rec_period_free_doc_orphans( orphans );
+	if( progress ){
+		my_iprogress_pulse( progress, worker, ++i, count );
+	}
+
+	/* progress end */
+	if( progress ){
+		my_iprogress_set_text( progress, worker, "" );
 		my_iprogress_set_ok( progress, worker, NULL, errs );
 	}
 

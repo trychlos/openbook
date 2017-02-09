@@ -39,6 +39,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
@@ -172,6 +173,7 @@ static ofoRecPeriod *period_find_by_id( GList *set, const gchar *id );
 static void          rec_period_set_upd_user( ofoRecPeriod *period, const gchar *upd_user );
 static void          rec_period_set_upd_stamp( ofoRecPeriod *period, const GTimeVal *upd_stamp );
 static void          rec_period_detail_set_id( ofoRecPeriod *period, gint i, ofxCounter id );
+static GList        *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean      rec_period_do_insert( ofoRecPeriod *period, ofaIGetter *getter );
 static gboolean      rec_period_insert_main( ofoRecPeriod *period, ofaIGetter *getter );
 static gboolean      rec_period_do_update( ofoRecPeriod *period, ofaIGetter *getter );
@@ -185,6 +187,8 @@ static gint          period_cmp_by_id( ofoRecPeriod *a, const gchar *id );
 static void          icollectionable_iface_init( myICollectionableInterface *iface );
 static guint         icollectionable_get_interface_version( void );
 static GList        *icollectionable_load_collection( void *user_data );
+static void          idoc_iface_init( ofaIDocInterface *iface );
+static guint         idoc_get_interface_version( void );
 static void          iexportable_iface_init( ofaIExportableInterface *iface );
 static guint         iexportable_get_interface_version( void );
 static gchar        *iexportable_get_label( const ofaIExportable *instance );
@@ -204,6 +208,7 @@ static void          isignalable_connect_to( ofaISignaler *signaler );
 G_DEFINE_TYPE_EXTENDED( ofoRecPeriod, ofo_rec_period, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecPeriod )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
@@ -843,6 +848,70 @@ rec_period_detail_set_id( ofoRecPeriod *period, gint idx, ofxCounter id )
 }
 
 /**
+ * ofo_rec_period_get_det_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown period mnemos in REC_T_PERIODS_DET
+ * child table.
+ *
+ * The returned list should be #ofo_rec_period_free_det_orphans() by the
+ * caller.
+ */
+GList *
+ofo_rec_period_get_det_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "REC_T_PERIODS_DET" ));
+}
+
+/**
+ * ofo_rec_period_get_doc_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown period mnemos in REC_T_PERIODS_DOC
+ * child table.
+ *
+ * The returned list should be #ofo_rec_period_free_doc_orphans() by the
+ * caller.
+ */
+GList *
+ofo_rec_period_get_doc_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "REC_T_PERIODS_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(REC_PER_ID) FROM %s "
+			"	WHERE REC_PER_ID NOT IN (SELECT REC_PER_ID FROM REC_T_PERIODS)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			orphans = g_list_prepend( orphans, g_strdup(( const gchar * ) icol->data ));
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
  * ofo_rec_period_insert:
  * @period:
  */
@@ -1217,6 +1286,25 @@ icollectionable_load_collection( void *user_data )
 	}
 
 	return( dataset );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_ledger_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

@@ -39,6 +39,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignalable.h"
 #include "api/ofa-isignaler.h"
@@ -133,6 +134,7 @@ static const sLabels st_labels[] = {
 static void       recurrent_run_set_numseq( ofoRecurrentRun *model, ofxCounter numseq );
 static void       recurrent_run_set_upd_user( ofoRecurrentRun *model, const gchar *upd_user );
 static void       recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp );
+static GList     *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean   recurrent_run_do_insert( ofoRecurrentRun *model, ofaIGetter *getter );
 static gboolean   recurrent_run_insert_main( ofoRecurrentRun *model, ofaIGetter *getter );
 static gboolean   recurrent_run_do_update( ofoRecurrentRun *model, ofaIGetter *getter );
@@ -142,6 +144,8 @@ static gint       recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoR
 static void       icollectionable_iface_init( myICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( void );
 static GList     *icollectionable_load_collection( void *user_data );
+static void       idoc_iface_init( ofaIDocInterface *iface );
+static guint      idoc_get_interface_version( void );
 static void       isignalable_iface_init( ofaISignalableInterface *iface );
 static void       isignalable_connect_to( ofaISignaler *signaler );
 static gboolean   signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
@@ -152,6 +156,7 @@ static gboolean   signaler_on_updated_rec_model_mnemo( ofaISignaler *signaler, o
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentRun, ofo_recurrent_run, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentRun )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
 static void
@@ -505,6 +510,56 @@ ofo_recurrent_run_set_amount3( ofoRecurrentRun *model, gdouble amount )
 }
 
 /**
+ * ofo_recurrent_run_get_doc_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown recurrent_run identifiers in
+ * REC_T_RUN_DOC child table.
+ *
+ * The returned list should be #ofo_recurrent_run_free_doc_orphans() by the
+ * caller.
+ */
+GList *
+ofo_recurrent_run_get_doc_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "REC_T_RUN_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+	ofxCounter numseq;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(REC_NUMSEQ) FROM %s "
+			"	WHERE REC_NUMSEQ NOT IN (SELECT REC_NUMSEQ FROM REC_T_RUN)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			numseq = atol(( const gchar * ) icol->data );
+			orphans = g_list_prepend( orphans, ( gpointer ) numseq );
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
+}
+
+/**
  * ofo_recurrent_run_insert:
  */
 gboolean
@@ -811,6 +866,25 @@ icollectionable_load_collection( void *user_data )
 					OFA_IGETTER( user_data ));
 
 	return( dataset );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

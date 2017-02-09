@@ -102,6 +102,9 @@ void               ofo_recurrent_model_set_def_amount2        ( ofoRecurrentMode
 void               ofo_recurrent_model_set_def_amount3        ( ofoRecurrentModel *model, const gchar *def_amount );
 void               ofo_recurrent_model_set_is_enabled         ( ofoRecurrentModel *model, gboolean is_enabled );
 
+GList             *ofo_recurrent_model_get_doc_orphans        ( ofaIGetter *getter );
+#define            ofo_recurrent_model_free_doc_orphans( L )  ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+
 gboolean           ofo_recurrent_model_insert                 ( ofoRecurrentModel *model );
 gboolean           ofo_recurrent_model_update                 ( ofoRecurrentModel *model, const gchar *prev_mnemo );
 gboolean           ofo_recurrent_model_delete                 ( ofoRecurrentModel *model );
