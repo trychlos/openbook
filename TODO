@@ -343,16 +343,11 @@
 
 1344 2017- 2- 3 re-authorize dossier open from command-line
 
-1349 2017- 2- 8 AccountSelect: does not allow delete
-
 1350 2017- 2- 8 CheckBalances: check account and ledger archives
 
 1351 2017- 2- 9 Review export and import formats, especially the tables
                 with children and companions (e.g. entries+concil)
                 + have a version number
-
-1352 2017- 2- 9 when upgrading the dbmodel, recurrent progress bars do
-                not displaythe OK
 
 1355
 
@@ -656,6 +651,13 @@
                 + add to integrity check -> done
                 + disable the opes generation
      2017- 2- 9 done
+
+1349 2017- 2- 8 AccountSelect: does not allow delete
+     2017- 2- 9 done
+
+1352 2017- 2- 9 when upgrading the dbmodel, recurrent progress bars do
+                not display the OK
+     2017- 2- 9 fixed
 
 1353 2017- 2- 9 when upgrading the dbmodel, the v33 use the current 
                 accounts def, which may not be compatible with those

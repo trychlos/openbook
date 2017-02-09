@@ -24,6 +24,7 @@
    VAT DB Model v7
 
    - Let the user records any document with any table (todo #1263).
+   - Account selection does not allow deletion anymore (todo #1349).
    - Accounts are now settleable and reconciliable, and able to allow keeping
      unsettleable and unreconciliable entries.
    - Accounts chart: display the newly created page when creating an account with new class.

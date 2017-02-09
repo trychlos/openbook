@@ -369,6 +369,8 @@ upgrade_to( ofaRecurrentDBModel *self, sMigration *smig )
 			smig->fnquery( self, smig->ver_target ) &&
 			version_end( self, smig->ver_target );
 
+	my_iprogress_set_ok( priv->window, self, NULL, ok ? 0 : 1 );
+
 	return( ok );
 }
 
