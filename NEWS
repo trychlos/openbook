@@ -49,6 +49,7 @@
 
  Bug fixes:
 
+   - DBModel migration: fix regression for ofoAccount between v33 and v35 versions (todo #1353).
    - myISettings: fix free_groups() behavior when groups list is NULL.
    - ofaAccountFrameBin: fix selection of newly created account.
    - ofaEntryProperties: let the user close the dialog.
@@ -68,6 +69,7 @@
    - ofeEntryRule: new enum which indicates the rule of the entry.
    - ofeEntryStatus: type renamed from ofaEntryStatus (as an enum).
    - ofo_account_delete_with_children(): new function.
+   - ofoAccountv34: new class.
    - ofoDoc: new class for documents management.
 
 -----------------------------------------------------------------------

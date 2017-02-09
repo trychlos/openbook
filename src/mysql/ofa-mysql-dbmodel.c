@@ -43,6 +43,7 @@
 #include "api/ofa-iimporter.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-account.h"
+#include "api/ofo-account-v34.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
@@ -1810,8 +1811,8 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 	gchar *query;
 	GSList *result, *irow, *icol;
 	const gchar *cstr, *userid;
-	GList *ita, *itd;
-	ofoAccount *account;
+	GList *ita, *itd, *dataset;
+	ofoAccountv34 *accountv34;
 	GDate begin, date;
 	gboolean ok;
 
@@ -1877,11 +1878,12 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 
 	/* for each account and date, recompute the soldes
 	 * but for the first day of the exercice */
+	dataset = ofo_account_v34_get_dataset( priv->getter );
 	for( ita=priv->v33_accounts ; ita ; ita=ita->next ){
 		cstr = ( const gchar * ) ita->data;
-		account = ofo_account_get_by_number( priv->getter, cstr );
-		if( account ){
-			if( ofo_account_is_root( account )){
+		accountv34 = ofo_account_v34_get_by_number( dataset, cstr );
+		if( accountv34 ){
+			if( ofo_account_v34_is_root( accountv34 )){
 				priv->current += g_list_length( priv->v33_dates );
 				my_iprogress_pulse( priv->window, self, priv->current, priv->total );
 			} else {
@@ -1889,7 +1891,7 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 					cstr = ( const gchar * ) itd->data;
 					my_date_set_from_sql( &date, cstr );
 					if( !my_date_is_valid( &begin ) || my_date_compare( &begin, &date ) != 0 ){
-						ofo_account_archive_balances_ex( account, &begin, &date );
+						ofo_account_v34_archive_balances_ex( accountv34, &begin, &date );
 					}
 					priv->current += 1;
 					my_iprogress_pulse( priv->window, self, priv->current, priv->total );
@@ -1897,6 +1899,7 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 			}
 		}
 	}
+	ofo_account_v34_free_dataset( dataset );
 	g_list_free_full( priv->v33_accounts, ( GDestroyNotify ) g_free );
 	g_list_free_full( priv->v33_dates, ( GDestroyNotify ) g_free );
 

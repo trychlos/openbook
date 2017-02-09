@@ -186,6 +186,7 @@ libofa_core_la_SOURCES = \
 	ofa-tvbin.c											\
 	\
 	ofo-account.c										\
+	ofo-account-v34.c									\
 	ofo-base.c											\
 	ofo-bat.c											\
 	ofo-bat-line.c										\

@@ -99,7 +99,7 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-root-bin.h								\
 	ofa-mysql-user-prefs.c								\
 	ofa-mysql-user-prefs.h								\
-	$(NULL)
+$(NULL)
 
 libofa_mysql_la_LIBADD = \
 	$(OPENBOOK_LIBS)									\

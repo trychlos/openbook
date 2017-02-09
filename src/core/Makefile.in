@@ -199,13 +199,13 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-page.lo ofa-preferences.lo ofa-rate-store.lo \
 	ofa-render-page.lo ofa-stream-format.lo \
 	ofa-stream-format-bin.lo ofa-stream-format-disp.lo \
-	ofa-tree-store.lo ofa-tvbin.lo ofo-account.lo ofo-base.lo \
-	ofo-bat.lo ofo-bat-line.lo ofo-class.lo ofo-concil.lo \
-	ofo-currency.lo ofo-doc.lo ofo-dossier.lo ofo-entry.lo \
-	ofo-exemeta.lo ofo-ledger.lo ofo-ope-template.lo \
-	ofo-paimean.lo ofo-rate.lo ofs-account-balance.lo \
-	ofs-concil-id.lo ofs-currency.lo ofs-ledger-balance.lo \
-	ofs-ope.lo
+	ofa-tree-store.lo ofa-tvbin.lo ofo-account.lo \
+	ofo-account-v34.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
+	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-doc.lo \
+	ofo-dossier.lo ofo-entry.lo ofo-exemeta.lo ofo-ledger.lo \
+	ofo-ope-template.lo ofo-paimean.lo ofo-rate.lo \
+	ofs-account-balance.lo ofs-concil-id.lo ofs-currency.lo \
+	ofs-ledger-balance.lo ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
@@ -613,6 +613,7 @@ libofa_core_la_SOURCES = \
 	ofa-tvbin.c											\
 	\
 	ofo-account.c										\
+	ofo-account-v34.c									\
 	ofo-base.c											\
 	ofo-bat.c											\
 	ofo-bat-line.c										\
@@ -826,6 +827,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tree-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tvbin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-account-v34.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-account.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-base.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-bat-line.Plo@am__quote@

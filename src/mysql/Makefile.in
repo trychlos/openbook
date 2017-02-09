@@ -517,7 +517,7 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	ofa-mysql-root-bin.h								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.c								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.h								\
-@HAVE_MYSQL_TRUE@	$(NULL)
+@HAVE_MYSQL_TRUE@$(NULL)
 
 @HAVE_MYSQL_TRUE@libofa_mysql_la_LIBADD = \
 @HAVE_MYSQL_TRUE@	$(OPENBOOK_LIBS)									\

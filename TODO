@@ -354,10 +354,6 @@
 1352 2017- 2- 9 when upgrading the dbmodel, recurrent progress bars do
                 not displaythe OK
 
-1353 2017- 2- 9 when upgrading the dbmodel, the v33 use the current 
-                accounts def, which may not be compatible with those
-                expected in v33
-
 1355
 
 -----------------------------------------------------------------------
@@ -660,6 +656,11 @@
                 + add to integrity check -> done
                 + disable the opes generation
      2017- 2- 9 done
+
+1353 2017- 2- 9 when upgrading the dbmodel, the v33 use the current 
+                accounts def, which may not be compatible with those
+                expected in v33
+     2017- 2- 9 fixed with ofoAccountv34 new class
 
 1354 2017- 2- 9 on restored archive from 2014, segfault on check_balances
                 this is a consequence of #1353 - just add some warning
