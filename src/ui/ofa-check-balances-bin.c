@@ -324,7 +324,7 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 
 	priv->entries_list = NULL;
 	dbegin = ofo_dossier_get_exe_begin( dossier );
-	entries = ofo_entry_get_dataset_for_print_by_account( priv->getter, NULL, NULL, dbegin, NULL );
+	entries = ofo_entry_get_dataset( priv->getter );
 	count = g_list_length( entries );
 	g_debug( "%s: dbegin=%s, count=%u", thisfn, my_date_to_str( dbegin, MY_DATE_SQL ), count );
 
@@ -334,19 +334,23 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 
 	for( i=1, it=entries ; it && count ; ++i, it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		currency = ofo_entry_get_currency( entry );
 
-		sbal = ofs_currency_add_by_code(
-					&priv->entries_list, priv->getter, currency,
-					ofo_entry_get_debit( entry ), ofo_entry_get_credit( entry ));
+		if( my_date_compare( ofo_entry_get_deffect( entry ), dbegin ) >= 0 &&
+				ofo_entry_get_status( entry ) != ENT_STATUS_DELETED ){
 
-		if( priv->display ){
-			g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
+			currency = ofo_entry_get_currency( entry );
+
+			sbal = ofs_currency_add_by_code(
+						&priv->entries_list, priv->getter, currency,
+						ofo_entry_get_debit( entry ), ofo_entry_get_credit( entry ));
+
+			if( priv->display ){
+				g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
+			}
 		}
+
 		set_bar_progression( self, bar, count, i );
 	}
-
-	ofo_entry_free_dataset( entries );
 
 	priv->entries_ok = check_balances_per_currency( self, priv->entries_list );
 	set_balance_status( self, priv->entries_ok, "p4-entry-ok" );
@@ -430,7 +434,7 @@ check_ledgers_balance_run( ofaCheckBalancesBin *self )
 static void
 check_accounts_balance_run( ofaCheckBalancesBin *self )
 {
-	static const gchar *thisfn = "ofa_check_accounts_bin_check_entries_balance_run";
+	static const gchar *thisfn = "ofa_check_balances_bin_check_accounts_balance_run";
 	ofaCheckBalancesBinPrivate *priv;
 	myProgressBar *bar;
 	ofaBalanceGridBin *grid;
@@ -613,7 +617,16 @@ set_checks_result( ofaCheckBalancesBin *self )
 						"In this current state, we will be unable to close this "
 						"exercice until you fix your balances." ));
 		}
+
+	} else if( !priv->entries_list && !priv->ledgers_list && !priv->accounts_list ){
+		my_utils_msg_dialog( NULL, GTK_MESSAGE_INFO,
+				_( "Your books appear empty." ));
+
 	} else {
+		g_return_if_fail( priv->entries_list );
+		g_return_if_fail( priv->ledgers_list );
+		g_return_if_fail( priv->accounts_list );
+
 		priv->result &= cmp_lists( self, priv->entries_list, priv->ledgers_list );
 		priv->result &= cmp_lists( self, priv->entries_list, priv->accounts_list );
 	}

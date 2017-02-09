@@ -358,8 +358,6 @@
                 accounts def, which may not be compatible with those
                 expected in v33
 
-1354 2017- 2- 9 on restored archive from 2014, segfault on check_balances
-
 1355
 
 -----------------------------------------------------------------------
@@ -662,6 +660,10 @@
                 + add to integrity check -> done
                 + disable the opes generation
      2017- 2- 9 done
+
+1354 2017- 2- 9 on restored archive from 2014, segfault on check_balances
+                this is a consequence of #1353 - just add some warning
+                messages
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
