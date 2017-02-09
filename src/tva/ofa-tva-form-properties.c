@@ -68,6 +68,7 @@ typedef struct {
 	/* UI
 	 */
 	GtkWidget     *corresp_btn;
+	GtkWidget     *enabled_btn;
 	GtkWidget     *bool_grid;
 	GtkWidget     *det_grid;
 	GtkWidget     *ok_btn;
@@ -127,6 +128,7 @@ static void     setup_boolean_widgets( ofaTVAFormProperties *self, guint row );
 static void     set_boolean_values( ofaTVAFormProperties *self, guint row );
 static void     on_mnemo_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     on_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
+static void     on_enabled_toggled( GtkToggleButton *button, ofaTVAFormProperties *self );
 static void     on_det_code_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     on_det_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     on_det_has_base_toggled( GtkToggleButton *button, ofaTVAFormProperties *self );
@@ -140,7 +142,7 @@ static void     check_for_enable_dlg( ofaTVAFormProperties *self );
 static gboolean is_dialog_validable( ofaTVAFormProperties *self );
 static void     on_ok_clicked( ofaTVAFormProperties *self );
 static gboolean do_update( ofaTVAFormProperties *self, gchar **msgerr );
-static void     set_msgerr( ofaTVAFormProperties *dialog, const gchar *msg );
+static void     set_msgerr( ofaTVAFormProperties *dialog, const gchar *msg, const gchar *style );
 
 G_DEFINE_TYPE_EXTENDED( ofaTVAFormProperties, ofa_tva_form_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaTVAFormProperties )
@@ -377,11 +379,20 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
+	/* has correspondance */
 	priv->corresp_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-has-corresp" );
 	g_return_if_fail( priv->corresp_btn && GTK_TOGGLE_BUTTON( priv->corresp_btn ));
 	gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON( priv->corresp_btn ),
 			ofo_tva_form_get_has_correspondence( priv->tva_form ));
+
+	/* enabled */
+	priv->enabled_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-enabled" );
+	g_return_if_fail( priv->enabled_btn && GTK_TOGGLE_BUTTON( priv->enabled_btn ));
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->enabled_btn ),
+			ofo_tva_form_get_is_enabled( priv->tva_form ));
+	g_signal_connect( priv->enabled_btn, "toggled", G_CALLBACK( on_enabled_toggled ), instance );
 
 	my_utils_container_notes_init( GTK_CONTAINER( instance ), tva_form );
 	my_utils_container_updstamp_init( GTK_CONTAINER( instance ), tva_form );
@@ -709,6 +720,12 @@ on_label_changed( GtkEntry *entry, ofaTVAFormProperties *self )
 }
 
 static void
+on_enabled_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
+{
+	check_for_enable_dlg( self );
+}
+
+static void
 on_det_code_changed( GtkEntry *entry, ofaTVAFormProperties *self )
 {
 	check_for_enable_dlg( self );
@@ -808,42 +825,69 @@ static void
 check_for_enable_dlg( ofaTVAFormProperties *self )
 {
 	ofaTVAFormPropertiesPrivate *priv;
-	gboolean ok;
+	gboolean ok, enabled;
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	if( priv->is_writable ){
 		ok = is_dialog_validable( self );
-		gtk_widget_set_sensitive( priv->ok_btn, ok );
+		enabled = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ));
+		gtk_widget_set_sensitive( priv->ok_btn, ok || !enabled );
 	}
 }
 
 /*
- * are we able to validate this tva form
+ * are we able to validate this tva form ?
  */
 static gboolean
 is_dialog_validable( ofaTVAFormProperties *self )
 {
 	ofaTVAFormPropertiesPrivate *priv;
-	gboolean ok, exists, subok;
+	gboolean ok, exists, subok, enabled;
 	gchar *msgerr;
+	guint rows_count, i;
+	GtkWidget *entry;
+	const gchar *template, *style;
+	ofoOpeTemplate *template_obj;
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	msgerr = NULL;
+	style = NULL;
 
 	ok = ofo_tva_form_is_valid_data( priv->mnemo, priv->label, &msgerr );
 
 	if( ok ){
 		exists = ( ofo_tva_form_get_by_mnemo( priv->getter, priv->mnemo ) != NULL );
 		subok = !priv->is_new &&
-						!g_utf8_collate( priv->mnemo, ofo_tva_form_get_mnemo( priv->tva_form ));
+						!my_collate( priv->mnemo, ofo_tva_form_get_mnemo( priv->tva_form ));
 		ok = !exists || subok;
 		if( !ok ){
 			msgerr = g_strdup( _( "Mnemonic is already defined" ));
+			style = "labelerror";
 		}
 	}
-	set_msgerr( self, msgerr );
+
+	if( ok ){
+		enabled = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ));
+		rows_count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ));
+		for( i=1 ; i<=rows_count ; ++i ){
+			entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_TEMPLATE, i );
+			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+			template = gtk_entry_get_text( GTK_ENTRY( entry ));
+			if( my_strlen( template )){
+				template_obj = ofo_ope_template_get_by_mnemo( priv->getter, template );
+				if( !template_obj || !OFO_IS_OPE_TEMPLATE( template_obj )){
+					ok = FALSE;
+					msgerr = g_strdup_printf( _( "Operation template %s does not exist" ), template );
+					style = enabled ? "labelerror" : "labelwarning";
+					break;
+				}
+			}
+		}
+	}
+
+	set_msgerr( self, msgerr, style );
 	g_free( msgerr );
 
 	return( ok );
@@ -879,13 +923,15 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 	const gchar *code, *label, *base, *amount, *template;
 	gchar *prev_mnemo;
 	guint rows_count, level;
-	gboolean ok;
+	gboolean ok, enabled;
 	GList *it;
 	ofoOpeTemplate *template_obj;
 
-	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
-
 	priv = ofa_tva_form_properties_get_instance_private( self );
+
+	enabled = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ));
+
+	g_return_val_if_fail( is_dialog_validable( self ) || !enabled, FALSE );
 
 	prev_mnemo = g_strdup( ofo_tva_form_get_mnemo( priv->tva_form ));
 
@@ -894,6 +940,8 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 	ofo_tva_form_set_has_correspondence(
 			priv->tva_form,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->corresp_btn )));
+	ofo_tva_form_set_is_enabled( priv->tva_form, enabled );
+
 	my_utils_container_notes_get( GTK_WINDOW( self ), tva_form );
 
 	rows_count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ));
@@ -902,21 +950,27 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 		spin = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_LEVEL, i );
 		g_return_val_if_fail( spin && GTK_IS_SPIN_BUTTON( spin ), FALSE );
 		level = gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( spin ));
+
 		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_CODE, i );
 		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 		code = gtk_entry_get_text( GTK_ENTRY( entry ));
+
 		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_LABEL, i );
 		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 		label = gtk_entry_get_text( GTK_ENTRY( entry ));
+
 		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_BASE, i );
 		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 		base = gtk_entry_get_text( GTK_ENTRY( entry ));
+
 		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_AMOUNT, i );
 		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 		amount = gtk_entry_get_text( GTK_ENTRY( entry ));
+
 		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_TEMPLATE, i );
 		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 		template = gtk_entry_get_text( GTK_ENTRY( entry ));
+
 		if( my_strlen( code ) || my_strlen( label ) || my_strlen( base ) || my_strlen( amount ) || my_strlen( template )){
 			base_check = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_BASE, i );
 			amount_check = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_AMOUNT, i );
@@ -977,7 +1031,7 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 }
 
 static void
-set_msgerr( ofaTVAFormProperties *dialog, const gchar *msg )
+set_msgerr( ofaTVAFormProperties *dialog, const gchar *msg, const gchar *style )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 
@@ -986,7 +1040,14 @@ set_msgerr( ofaTVAFormProperties *dialog, const gchar *msg )
 	if( !priv->msg_label ){
 		priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "px-msgerr" );
 		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
-		my_style_add( priv->msg_label, "labelerror");
+	}
+
+	my_style_remove( priv->msg_label, "labelerror" );
+	my_style_remove( priv->msg_label, "labelwarning" );
+	my_style_remove( priv->msg_label, "labelnormal" );
+
+	if( my_strlen( style )){
+		my_style_add( priv->msg_label, style );
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );

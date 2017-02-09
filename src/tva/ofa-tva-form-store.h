@@ -82,6 +82,8 @@ typedef struct {
  * @TVA_FORM_COL_NOTES_PNG         : notes indicator                              Pixbuf       Yes
  * @TVA_FORM_COL_UPD_USER          : last update user                             String       Yes
  * @TVA_FORM_COL_UPD_STAMP         : last update timestamp                        String       Yes
+ * @TVA_FORM_COL_ENABLED           : whether the form is enabled                  String       Yes
+ * @TVA_FORM_COL_ENABLED_B         : whether the form is enabled                  Bool          No
  * @TVA_FORM_COL_OBJECT            : #ofoTVAForm object                           GObject       No
  */
 enum {
@@ -92,6 +94,8 @@ enum {
 	TVA_FORM_COL_NOTES_PNG,
 	TVA_FORM_COL_UPD_USER,
 	TVA_FORM_COL_UPD_STAMP,
+	TVA_FORM_COL_ENABLED,
+	TVA_FORM_COL_ENABLED_B,
 	TVA_FORM_COL_OBJECT,
 	TVA_N_COLUMNS
 };

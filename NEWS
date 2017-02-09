@@ -45,6 +45,7 @@
    - Settlement page now auto-updates itself when an entry is modified elsewhere (todo #1347).
    - Settlement page now warns when amounts are not balanced (unless Ctrl key is pressed).
    - Settlement page now has a 'View/edit entry...' context menu item (todo #1346).
+   - VAT form is more tolerant when an operation template does not exist (todo #1348).
 
  Bug fixes:
 

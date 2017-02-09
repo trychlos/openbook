@@ -343,10 +343,6 @@
 
 1344 2017- 2- 3 re-authorize dossier open from command-line
 
-1348 2017- 2- 7 TVAForm: should emit a warning if ope_template does not exist
-                + add to integrity check
-                + disable the opes generation 
-
 1349 2017- 2- 8 AccountSelect: does not allow delete
 
 1350 2017- 2- 8 CheckBalances: check account and ledger archives
@@ -355,7 +351,16 @@
                 with children and companions (e.g. entries+concil)
                 + have a version number
 
-1352
+1352 2017- 2- 9 when upgrading the dbmodel, recurrent progress bars do
+                not displaythe OK
+
+1353 2017- 2- 9 when upgrading the dbmodel, the v33 use the current 
+                accounts def, which may not be compatible with those
+                expected in v33
+
+1354 2017- 2- 9 on restored archive from 2014, segfault on check_balances
+
+1355
 
 -----------------------------------------------------------------------
  DONE
@@ -652,6 +657,11 @@
                 entry is updated in another page
                 (ex: when a settled entry is deleted from EntryPage)
      2017- 2- 7 done
+
+1348 2017- 2- 7 TVAForm: should emit a warning if ope_template does not exist
+                + add to integrity check -> done
+                + disable the opes generation
+     2017- 2- 9 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

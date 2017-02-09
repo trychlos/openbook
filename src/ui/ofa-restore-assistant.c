@@ -142,7 +142,6 @@ typedef struct {
 	ofaDossierActionsBin   *p4_actions;
 	gchar                  *p4_account;
 	gchar                  *p4_password;
-	gboolean                p4_apply_actions;
 	GtkWidget              *p4_message;
 
 	/* p5: display operations to be done and ask for confirmation
@@ -166,6 +165,8 @@ typedef struct {
 	GtkWidget              *p6_label;
 	ofaIDBDossierMeta      *p6_dossier_meta;
 	ofaIDBExerciceMeta     *p6_exercice_meta;
+	gboolean                p6_restored;
+	gboolean                p6_opened;
 }
 	ofaRestoreAssistantPrivate;
 
@@ -328,10 +329,17 @@ restore_assistant_dispose( GObject *instance )
 		g_clear_object( &priv->p3_hgroup );
 		g_clear_object( &priv->p2_connect );
 
-		if( priv->p4_apply_actions && priv->getter ){
+		/* if the archive has been successfully restored and opened,
+		 * it is now time to (maybe) apply standard actions */
+		if( priv->p6_restored && priv->p6_opened && priv->p5_apply && priv->getter ){
 			main_window = ofa_igetter_get_main_window( priv->getter );
 			g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 			ofa_main_window_dossier_apply_actions( OFA_MAIN_WINDOW( main_window ));
+		}
+
+		/* if the dossier has not been opened, inc. the reference count */
+		if( !priv->p6_opened ){
+			g_object_ref( priv->p6_dossier_meta );
 		}
 	}
 
@@ -358,7 +366,9 @@ ofa_restore_assistant_init( ofaRestoreAssistant *self )
 	priv->p2_exercice_meta = NULL;
 	priv->p3_dossier_name = NULL;
 	priv->p3_provider = NULL;
-	priv->p4_apply_actions = FALSE;
+	priv->p5_apply = FALSE;
+	priv->p6_restored = FALSE;
+	priv->p6_opened = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -743,7 +753,7 @@ p2_check_for_restore_rules( ofaRestoreAssistant *self )
 	if( priv->p1_format == OFA_BACKUP_HEADER_GZ ){
 		if( !priv->p2_new_dossier && !priv->p2_new_exercice ){
 			ok = FALSE;
-			p2_set_message( self, _( "Overriding an existing exercice from old archive format is forbidden" ));
+			p2_set_message( self, _( "Overriding an existing exercice from an old archive format is not allowed" ));
 		}
 
 	/* restoring from the ZIP format is subject to several rules
@@ -1465,6 +1475,7 @@ p6_do_restore( ofaRestoreAssistant *self )
 	g_free( msg );
 
 	if( ok ){
+		priv->p6_restored = TRUE;
 		g_idle_add(( GSourceFunc ) p6_do_open, self );
 	} else {
 		my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
@@ -1690,7 +1701,10 @@ p6_do_open( ofaRestoreAssistant *self )
 				priv->getter, GTK_WINDOW( self ),
 				priv->p6_exercice_meta, priv->p4_account, priv->p4_password, FALSE )){
 
-			priv->p4_apply_actions = FALSE;
+			priv->p5_apply = FALSE;
+
+		} else {
+			priv->p6_opened = TRUE;
 		}
 	}
 

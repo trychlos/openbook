@@ -70,6 +70,7 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void        setup_columns( ofaTVAFormTreeview *self );
+static void        on_cell_data_fn( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaTVAFormTreeview *self );
 static void        on_selection_changed( ofaTVAFormTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        on_selection_activated( ofaTVAFormTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        on_selection_delete( ofaTVAFormTreeview *self, GtkTreeSelection *selection, void *empty );
@@ -306,6 +307,7 @@ ofa_tva_form_treeview_setup_columns( ofaTVAFormTreeview *view )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	setup_columns( view );
+	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_fn, view );
 }
 
 /*
@@ -321,12 +323,41 @@ setup_columns( ofaTVAFormTreeview *self )
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_MNEMO,              _( "Mnemo" ),    _( "Mnemonic" ));
 	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), TVA_FORM_COL_LABEL,              _( "Label" ),        NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_HAS_CORRESPONDENCE,    "",           _( "Has correspondence" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_ENABLED,            _( "Enabled" ),      NULL );
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), TVA_FORM_COL_NOTES,              _( "Notes" ),        NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), TVA_FORM_COL_NOTES_PNG,             "",           _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_UPD_USER,           _( "User" ),     _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_FORM_COL_UPD_STAMP,              NULL,        _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), TVA_FORM_COL_LABEL );
+}
+
+/*
+ * gray+italic disabled items
+ */
+static void
+on_cell_data_fn( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaTVAFormTreeview *self )
+{
+	ofoTVAForm *form;
+	GdkRGBA color;
+
+	if( GTK_IS_CELL_RENDERER_TEXT( renderer )){
+
+		gtk_tree_model_get( tmodel, iter, TVA_FORM_COL_OBJECT, &form, -1 );
+		g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
+		g_object_unref( form );
+
+		g_object_set( G_OBJECT( renderer ),
+				"style-set",      FALSE,
+				"foreground-set", FALSE,
+				NULL );
+
+		if( !ofo_tva_form_get_is_enabled( form )){
+			gdk_rgba_parse( &color, "#808080" );
+			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+			g_object_set( G_OBJECT( renderer ), "style", PANGO_STYLE_ITALIC, NULL );
+		}
+	}
 }
 
 /**

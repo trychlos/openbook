@@ -54,7 +54,8 @@ typedef struct {
 }
 	ofoExemetaPrivate;
 
-static gboolean do_read( ofoExemeta *self );
+static gboolean do_read_status( ofoExemeta *self );
+static gboolean do_read_dates( ofoExemeta *self );
 
 G_DEFINE_TYPE_EXTENDED( ofoExemeta, ofo_exemeta, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofoExemeta ))
@@ -142,15 +143,58 @@ ofo_exemeta_new( ofaIDBConnect *connect )
 
 	priv->connect = g_object_ref( connect );
 
-	if( !do_read( meta )){
+	if( !do_read_status( meta ) || !do_read_dates( meta )){
 		g_clear_object( &meta );
 	}
 
 	return( meta );
 }
 
+/*
+ * It happens that DOS_STATUS is renamed to DOS_CURRENT in v27
+ * - STATUS = O|C
+ * - CURRENT = Y|N
+ */
 static gboolean
-do_read( ofoExemeta *self )
+do_read_status( ofoExemeta *self )
+{
+	ofoExemetaPrivate *priv;
+	gboolean ok;
+	gchar *query;
+	GSList *result, *irow, *icol;
+
+	priv = ofo_exemeta_get_instance_private( self );
+
+	ok = FALSE;
+	query = g_strdup_printf( "SELECT DOS_CURRENT FROM OFA_T_DOSSIER WHERE DOS_ID=%u", DOSSIER_ROW_ID );
+
+	if( ofa_idbconnect_query_ex( priv->connect, query, &result, FALSE )){
+		irow = result;
+		icol = ( GSList * ) irow->data;
+		priv->is_current = my_utils_boolean_from_str(( const gchar * ) icol->data );
+		ofa_idbconnect_free_results( result );
+		ok = TRUE;
+
+	} else {
+		g_free( query );
+		query = g_strdup_printf( "SELECT DOS_STATUS FROM OFA_T_DOSSIER WHERE DOS_ID=%u", DOSSIER_ROW_ID );
+
+		if( ofa_idbconnect_query_ex( priv->connect, query, &result, FALSE )){
+			irow = result;
+			icol = ( GSList * ) irow->data;
+			priv->is_current = my_collate(( const gchar * ) icol->data, "O" ) == 0;
+			ofa_idbconnect_free_results( result );
+			ok = TRUE;
+		}
+	}
+
+	g_free( query );
+
+	return( ok );
+}
+
+static gboolean
+do_read_dates( ofoExemeta *self )
 {
 	ofoExemetaPrivate *priv;
 	gboolean ok;
@@ -160,7 +204,7 @@ do_read( ofoExemeta *self )
 	priv = ofo_exemeta_get_instance_private( self );
 
 	query = g_strdup_printf(
-			"SELECT DOS_EXE_BEGIN, DOS_EXE_END, DOS_CURRENT "
+			"SELECT DOS_EXE_BEGIN, DOS_EXE_END "
 			"	FROM OFA_T_DOSSIER WHERE DOS_ID=%u", DOSSIER_ROW_ID );
 
 	ok = ofa_idbconnect_query_ex( priv->connect, query, &result, TRUE );
@@ -171,8 +215,6 @@ do_read( ofoExemeta *self )
 		my_date_set_from_sql( &priv->begin_date, ( const gchar * ) icol->data );
 		icol = icol->next;
 		my_date_set_from_sql( &priv->end_date, ( const gchar * ) icol->data );
-		icol = icol->next;
-		priv->is_current = my_utils_boolean_from_str(( const gchar * ) icol->data );
 		ofa_idbconnect_free_results( result );
 	}
 

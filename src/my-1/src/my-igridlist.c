@@ -544,7 +544,9 @@ my_igridlist_get_rows_count( const myIGridList *instance, GtkGrid *grid )
 	static const gchar *thisfn = "my_igridlist_get_rows_count";
 	sIGridList *sdata;
 
-	g_debug( "%s: instance=%p, grid=%p", thisfn, ( void * ) instance, ( void * ) grid );
+	if( 0 ){
+		g_debug( "%s: instance=%p, grid=%p", thisfn, ( void * ) instance, ( void * ) grid );
+	}
 
 	g_return_val_if_fail( instance && MY_IS_IGRIDLIST( instance ), 0 );
 	g_return_val_if_fail( grid && GTK_IS_GRID( grid ), 0 );

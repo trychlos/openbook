@@ -434,6 +434,7 @@ dbmodel_to_v1( ofaTvaDBModel *self, guint version )
 
 	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
+	/* add tfo_enabled in v7 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS ("
 			"	TFO_MNEMO          VARCHAR(10)  NOT NULL UNIQUE COMMENT 'Form mnemonic',"
@@ -799,13 +800,26 @@ dbmodel_to_v7( ofaTvaDBModel *self, guint version )
 		return( FALSE );
 	}
 
+	/* 3. add tfo_enabled */
+	if( !exec_query( self,
+			"ALTER TABLE TVA_T_FORMS "
+			"	ADD COLUMN TFO_ENABLED  CHAR(1) DEFAULT 'N'          COMMENT 'Whether the form is enabled'" )){
+		return( FALSE );
+	}
+
+	/* 4. for already existing forms */
+	if( !exec_query( self,
+			"UPDATE TVA_T_FORMS SET TFO_ENABLED='Y'" )){
+		return( FALSE );
+	}
+
 	return( TRUE );
 }
 
 static gulong
 count_v7( ofaTvaDBModel *self )
 {
-	return( 2 );
+	return( 4 );
 }
 
 /*

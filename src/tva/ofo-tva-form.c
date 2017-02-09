@@ -58,6 +58,7 @@ enum {
 	TFO_MNEMO = 1,
 	TFO_LABEL,
 	TFO_HAS_CORRESPONDENCE,
+	TFO_ENABLED,
 	TFO_NOTES,
 	TFO_UPD_USER,
 	TFO_UPD_STAMP,
@@ -107,6 +108,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				TRUE },
+		{ OFA_BOX_CSV( TFO_ENABLED ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ 0 }
 };
 
@@ -442,6 +447,8 @@ ofo_tva_form_new( ofaIGetter *getter )
 	form = g_object_new( OFO_TYPE_TVA_FORM, "ofo-base-getter", getter, NULL );
 	OFO_BASE( form )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
+	ofo_tva_form_set_is_enabled( form, FALSE );
+
 	return( form );
 }
 
@@ -528,6 +535,23 @@ ofo_tva_form_get_has_correspondence( const ofoTVAForm *form )
 	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, FALSE );
 
 	cstr = ofa_box_get_string( OFO_BASE( form )->prot->fields, TFO_HAS_CORRESPONDENCE );
+
+	return( my_utils_boolean_from_str( cstr ));
+}
+
+/**
+ * ofo_tva_form_get_is_enabled:
+ */
+gboolean
+ofo_tva_form_get_is_enabled( const ofoTVAForm *form )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
+
+	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, FALSE );
+
+	cstr = ofa_box_get_string( OFO_BASE( form )->prot->fields, TFO_ENABLED );
 
 	return( my_utils_boolean_from_str( cstr ));
 }
@@ -673,6 +697,15 @@ void
 ofo_tva_form_set_has_correspondence( ofoTVAForm *form, gboolean has_correspondence )
 {
 	ofo_base_setter( TVA_FORM, form, string, TFO_HAS_CORRESPONDENCE, has_correspondence ? "Y":"N" );
+}
+
+/**
+ * ofo_tva_form_set_is_enabled:
+ */
+void
+ofo_tva_form_set_is_enabled( ofoTVAForm *form, gboolean enabled )
+{
+	ofo_base_setter( TVA_FORM, form, string, TFO_ENABLED, enabled ? "Y":"N" );
 }
 
 /**
@@ -1248,7 +1281,7 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 	query = g_string_new( "INSERT INTO TVA_T_FORMS" );
 
 	g_string_append_printf( query,
-			"	(TFO_MNEMO,TFO_LABEL,TFO_HAS_CORRESPONDENCE,"
+			"	(TFO_MNEMO,TFO_LABEL,TFO_HAS_CORRESPONDENCE,TFO_ENABLED,"
 			"	 TFO_NOTES,TFO_UPD_USER, TFO_UPD_STAMP) VALUES ('%s',",
 			ofo_tva_form_get_mnemo( form ));
 
@@ -1259,6 +1292,8 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 	}
 
 	g_string_append_printf( query, "'%s',", ofo_tva_form_get_has_correspondence( form ) ? "Y":"N" );
+
+	g_string_append_printf( query, "'%s',", ofo_tva_form_get_is_enabled( form ) ? "Y":"N" );
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
@@ -1492,6 +1527,10 @@ form_update_main( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *p
 	g_string_append_printf(
 			query, "TFO_HAS_CORRESPONDENCE='%s',",
 			ofo_tva_form_get_has_correspondence( form ) ? "Y":"N" );
+
+	g_string_append_printf(
+			query, "TFO_ENABLED='%s',",
+			ofo_tva_form_get_is_enabled( form ) ? "Y":"N" );
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "TFO_NOTES='%s',", notes );
@@ -2065,13 +2104,28 @@ iimportable_import_parse_form( ofaIImporter *importer, ofsImporterParms *parms, 
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	ofo_tva_form_set_has_correspondence( form, my_utils_boolean_from_str( cstr ));
 
-	/* notes
-	 * we are tolerant on the last field... */
+	/* notes */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	splitted = my_utils_import_multi_lines( cstr );
 	ofo_tva_form_set_notes( form, splitted );
 	g_free( splitted );
+
+	/* update user - not imported */
+	itf = itf ? itf->next : NULL;
+
+	/* update stamp - not imported */
+	itf = itf ? itf->next : NULL;
+
+	/* enabled
+	 * default is TRUE */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_tva_form_set_is_enabled( form, my_utils_boolean_from_str( cstr ));
+	} else {
+		ofo_tva_form_set_is_enabled( form, TRUE );
+	}
 
 	return( form );
 }

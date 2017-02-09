@@ -106,6 +106,7 @@ const gchar    *ofo_tva_form_get_mnemo              ( const ofoTVAForm *form );
 gchar          *ofo_tva_form_get_mnemo_new_from     ( const ofoTVAForm *form );
 const gchar    *ofo_tva_form_get_label              ( const ofoTVAForm *form );
 gboolean        ofo_tva_form_get_has_correspondence ( const ofoTVAForm *form );
+gboolean        ofo_tva_form_get_is_enabled         ( const ofoTVAForm *form );
 const gchar    *ofo_tva_form_get_notes              ( const ofoTVAForm *form );
 const gchar    *ofo_tva_form_get_upd_user           ( const ofoTVAForm *form );
 const GTimeVal *ofo_tva_form_get_upd_stamp          ( const ofoTVAForm *form );
@@ -118,6 +119,7 @@ gint            ofo_tva_form_compare_id             ( const ofoTVAForm *a, const
 void            ofo_tva_form_set_mnemo              ( ofoTVAForm *form, const gchar *mnemo );
 void            ofo_tva_form_set_label              ( ofoTVAForm *form, const gchar *label );
 void            ofo_tva_form_set_has_correspondence ( ofoTVAForm *form, gboolean has_correspondence );
+void            ofo_tva_form_set_is_enabled         ( ofoTVAForm *form, gboolean enabled );
 void            ofo_tva_form_set_notes              ( ofoTVAForm *form, const gchar *notes );
 
 void            ofo_tva_form_detail_add             ( ofoTVAForm *form,

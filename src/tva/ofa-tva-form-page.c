@@ -325,15 +325,16 @@ static void
 on_row_selected( ofaTVAFormTreeview *view, ofoTVAForm *form, ofaTVAFormPage *self )
 {
 	ofaTVAFormPagePrivate *priv;
-	gboolean is_form;
+	gboolean is_form, enabled;
 
 	priv = ofa_tva_form_page_get_instance_private( self );
 
 	is_form = form && OFO_IS_TVA_FORM( form );
+	enabled = is_form ? ofo_tva_form_get_is_enabled( form ) : FALSE;
 
 	g_simple_action_set_enabled( priv->update_action, is_form );
 	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, form ));
-	g_simple_action_set_enabled( priv->declare_action, priv->is_writable && is_form );
+	g_simple_action_set_enabled( priv->declare_action, priv->is_writable && is_form && enabled );
 }
 
 /*
@@ -477,7 +478,7 @@ action_on_declare_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormP
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
 	record = ofo_tva_record_new_from_form( form );
-	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ) && ofo_tva_form_get_is_enabled( form ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_tva_record_new_run( priv->getter, toplevel, record );
