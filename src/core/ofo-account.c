@@ -93,6 +93,7 @@ enum {
  * 2/ no more modify it
  * 3/ take attention to be able to support the import of a previously
  *    exported file
+ * 4/ new datas must be added to the end of the list
  */
 static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( ACC_NUMBER ),
@@ -131,15 +132,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( ACC_KEEP_UNSETTLED ),
-				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
-		{ OFA_BOX_CSV( ACC_KEEP_UNRECONCILIATED ),
-				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
-										/* below data are not imported */
 		{ OFA_BOX_CSV( ACC_UPD_USER ),
 				OFA_TYPE_STRING,
 				FALSE,
@@ -171,6 +163,14 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( ACC_FUT_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_KEEP_UNSETTLED ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_KEEP_UNRECONCILIATED ),
+				OFA_TYPE_STRING,
+				TRUE,
 				FALSE },
 		{ 0 }
 };
