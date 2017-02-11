@@ -28,6 +28,7 @@
    - Accounts are now settleable and reconciliable, and able to allow keeping
      unsettleable and unreconciliable entries.
    - Accounts chart: display the newly created page when creating an account with new class.
+   - Accounts treeview: indicators are now centered in the column.
    - Administrative credentials are now recorded as dossier settings.
    - Conciliation groups are now archived on exercice closing (todo #601).   
    - DossierManager better behaves when the list is empty, disabling all unrelevant actions.
@@ -59,6 +60,7 @@
    - ofaITVColumnable: makes sure columns have a minimal width.
    - ofaMysqlRootBin: now updates the ofaMysqlDossierMeta runtime datas.
    - ofaPaimeanSelect: fix store instanciation.
+   - ofaTVBin: header of a centered column is itself centered.
    - ofoAccount: actually delete all children when requested to.
 
  Other changes:

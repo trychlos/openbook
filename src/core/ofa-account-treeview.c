@@ -443,12 +443,12 @@ setup_columns( ofaAccountTreeview *self )
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_ROUGH_CREDIT,         _( "Credit" ),   _( "Rough credit" ));
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FUT_DEBIT,            _( "Debit" ),    _( "Future debit" ));
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FUT_CREDIT,           _( "Credit" ),   _( "Future credit" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_SETTLEABLE,           _( "S" ),        _( "Settleable" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_KEEP_UNSETTLED,       _( "Kus" ),      _( "Keep unsettled" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_RECONCILIABLE,        _( "R" ),        _( "Reconciliable" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_KEEP_UNRECONCILIATED, _( "Kur" ),      _( "Keep unreconciliated" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_FORWARDABLE,          _( "F" ),        _( "Forwardable" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_CLOSED,               _( "C" ),        _( "Closed" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_SETTLEABLE,           _( "S" ),        _( "Settleable" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_KEEP_UNSETTLED,       _( "Kus" ),      _( "Keep unsettled" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_RECONCILIABLE,        _( "R" ),        _( "Reconciliable" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_KEEP_UNRECONCILIATED, _( "Kur" ),      _( "Keep unreconciliated" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_FORWARDABLE,          _( "F" ),        _( "Forwardable" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_CLOSED,               _( "C" ),        _( "Closed" ));
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_DEBIT,            _( "Debit" ),    _( "Exercice debit" ));
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_CREDIT,           _( "Credit" ),   _( "Exercice credit" ));
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_SOLDE,            _( "Solde" ),    _( "Exercice solde" ));

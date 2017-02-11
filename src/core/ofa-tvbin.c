@@ -1313,6 +1313,7 @@ ofa_tvbin_add_column_text_c( ofaTVBin *bin, gint column_id, const gchar *header,
 	gtk_cell_renderer_set_alignment( cell, 0.5, 0.5 );
 	column = gtk_tree_view_column_new_with_attributes(
 					header ? header : _( "Text" ), cell, "text", column_id, NULL );
+	gtk_tree_view_column_set_alignment( column, 0.5 );
 
 	add_column( bin, column, column_id, menu );
 }
