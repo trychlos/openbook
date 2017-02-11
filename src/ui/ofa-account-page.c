@@ -140,10 +140,9 @@ page_v_setup_page( ofaPage *page )
 
 	getter = ofa_page_get_getter( page );
 
-	priv->account_bin = ofa_account_frame_bin_new( getter );
+	priv->account_bin = ofa_account_frame_bin_new( getter, priv->settings_prefix );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 2, 2, 2, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->account_bin ), 0, 0, 1, 1 );
-	ofa_account_frame_bin_set_settings_key( priv->account_bin, priv->settings_prefix );
 	ofa_account_frame_bin_set_cell_data_func( priv->account_bin, ( GtkTreeCellDataFunc ) on_treeview_cell_data_func, page );
 
 	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_NEW );

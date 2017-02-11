@@ -53,6 +53,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
+#include "api/ofo-account-v34.h"
 #include "api/ofo-class.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -277,7 +278,7 @@ static void         signaler_on_updated_base( ofaISignaler *signaler, ofoBase *o
 static void         signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
 static void         signaler_on_entry_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty );
 
-G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0,
+G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_ACCOUNT_V34, 0,
 		G_ADD_PRIVATE( ofoAccount )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )

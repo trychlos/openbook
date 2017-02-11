@@ -73,7 +73,8 @@ typedef struct {
 	GtkTreeCellDataFunc  cell_fn;
 	void                *cell_data;
 	gint                 prev_class;
-	gchar               *settings_key;
+	gchar               *settings_prefix;		/* e.g. ofaAccountPage */
+	gchar               *settings_key;			/* e.g. ofaAccountPage-ofaAccountFrameBin */
 	GtkWidget           *current_page;
 
 	/* UI
@@ -174,6 +175,7 @@ account_frame_bin_finalize( GObject *instance )
 	priv = ofa_account_frame_bin_get_instance_private( OFA_ACCOUNT_FRAME_BIN( instance ));
 
 	/* free data members here */
+	g_free( priv->settings_prefix );
 	g_free( priv->settings_key );
 
 	/* chain up to the parent class */
@@ -243,6 +245,7 @@ ofa_account_frame_bin_init( ofaAccountFrameBin *self )
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->initialized = FALSE;
 	priv->prev_class = -1;
@@ -311,6 +314,9 @@ ofa_account_frame_bin_class_init( ofaAccountFrameBinClass *klass )
 /**
  * ofa_account_frame_bin_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_prefix: [allow-none]: the prefix of the key in user settings;
+ *  if %NULL, then rely on this class name;
+ *  when set, then this class automatically adds its name as a suffix.
  *
  * Creates the structured content, i.e. the accounts notebook on the
  * left column, the buttons box on the right one.
@@ -327,11 +333,12 @@ ofa_account_frame_bin_class_init( ofaAccountFrameBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaAccountFrameBin *
-ofa_account_frame_bin_new( ofaIGetter *getter  )
+ofa_account_frame_bin_new( ofaIGetter *getter, const gchar *settings_prefix  )
 {
 	static const gchar *thisfn = "ofa_account_frame_bin_new";
 	ofaAccountFrameBin *self;
 	ofaAccountFrameBinPrivate *priv;
+	gchar *str;
 
 	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
@@ -342,6 +349,15 @@ ofa_account_frame_bin_new( ofaIGetter *getter  )
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	priv->getter = getter;
+
+	if( my_strlen( settings_prefix )){
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = g_strdup( settings_prefix );
+
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_key );
+		g_free( priv->settings_key );
+		priv->settings_key = str;
+	}
 
 	setup_bin( self );
 	signaler_connect_to_signaling_system( self );
@@ -471,9 +487,7 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
-	view = ofa_account_treeview_new( priv->getter, class_num );
-	ofa_account_treeview_set_settings_key( view, priv->settings_key );
-	ofa_account_treeview_setup_columns( view );
+	view = ofa_account_treeview_new( priv->getter, priv->settings_prefix, class_num );
 	ofa_istore_add_columns( OFA_ISTORE( priv->store ), OFA_TVBIN( view ));
 	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), priv->cell_fn, priv->cell_data );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
@@ -507,7 +521,7 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 	/* create a new context menu for each page of the notebook */
 	menu = g_menu_new();
 	g_menu_append_section( menu, NULL,
-			G_MENU_MODEL( ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_key )));
+			G_MENU_MODEL( ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix )));
 	ofa_icontext_set_menu(
 			OFA_ICONTEXT( view ), OFA_IACTIONABLE( self ),
 			menu );
@@ -857,12 +871,12 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 			priv->new_action = g_simple_action_new( "new", NULL );
 			g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), bin );
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_ITEM );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_new_button(
-							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->new_action ),
+							OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->new_action ),
 							OFA_IACTIONABLE_NEW_BTN ));
 			g_simple_action_set_enabled( priv->new_action, priv->is_writable );
 			break;
@@ -871,12 +885,12 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 			priv->update_action = g_simple_action_new( "update", NULL );
 			g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), bin );
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->update_action ),
+					OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->update_action ),
 					priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_new_button(
-							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->update_action ),
+							OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->update_action ),
 							OFA_IACTIONABLE_PROPERTIES_BTN ));
 			g_simple_action_set_enabled( priv->update_action, FALSE );
 			break;
@@ -885,12 +899,12 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 			priv->delete_action = g_simple_action_new( "delete", NULL );
 			g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), bin );
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_ITEM );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_new_button(
-							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->delete_action ),
+							OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 							OFA_IACTIONABLE_DELETE_BTN ));
 			g_simple_action_set_enabled( priv->delete_action, FALSE );
 			break;
@@ -899,12 +913,12 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 			priv->view_entries_action = g_simple_action_new( "view-entries", NULL );
 			g_signal_connect( priv->view_entries_action, "activate", G_CALLBACK( action_on_view_entries_activated ), bin );
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->view_entries_action ),
+					OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->view_entries_action ),
 					_( "View entries" ));
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_new_button(
-							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->view_entries_action ),
+							OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->view_entries_action ),
 							_( "_View entries..." )));
 			g_simple_action_set_enabled( priv->view_entries_action, FALSE );
 			break;
@@ -913,12 +927,12 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 			priv->settlement_action = g_simple_action_new( "settlement", NULL );
 			g_signal_connect( priv->settlement_action, "activate", G_CALLBACK( action_on_settlement_activated ), bin );
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->settlement_action ),
+					OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->settlement_action ),
 					_( "Settlement page" ));
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_new_button(
-							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->settlement_action ),
+							OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->settlement_action ),
 							_( "Settlement..." )));
 			g_simple_action_set_enabled( priv->settlement_action, FALSE );
 			break;
@@ -927,12 +941,12 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 			priv->reconciliation_action = g_simple_action_new( "reconciliation", NULL );
 			g_signal_connect( priv->reconciliation_action, "activate", G_CALLBACK( action_on_reconciliation_activated ), bin );
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->reconciliation_action ),
+					OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->reconciliation_action ),
 					_( "Reconciliation page" ));
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_new_button(
-							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->reconciliation_action ),
+							OFA_IACTIONABLE( bin ), priv->settings_prefix, G_ACTION( priv->reconciliation_action ),
 							_( "_Reconciliation..." )));
 			g_simple_action_set_enabled( priv->reconciliation_action, FALSE );
 			break;
@@ -1222,31 +1236,6 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountFrameB
 			gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), page_num );
 		}
 	}
-}
-
-/**
- * ofa_account_frame_bin_set_settings_key:
- * @bin: this #ofaAccountFrameBin instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- */
-void
-ofa_account_frame_bin_set_settings_key( ofaAccountFrameBin *bin, const gchar *key )
-{
-	static const gchar *thisfn = "ofa_account_frame_bin_set_settings_key";
-	ofaAccountFrameBinPrivate *priv;
-
-	g_debug( "%s: bin=%p, key=%s", thisfn, ( void * ) bin, key );
-
-	g_return_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ));
-
-	priv = ofa_account_frame_bin_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	g_free( priv->settings_key );
-	priv->settings_key = g_strdup( my_strlen( key ) ? key : G_OBJECT_TYPE_NAME( bin ));
 }
 
 /**

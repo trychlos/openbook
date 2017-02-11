@@ -108,6 +108,7 @@ api_include_HEADERS = \
 	ofo-account.h										\
 	ofo-account-def.h									\
 	ofo-account-v34.h									\
+	ofo-account-v34-def.h								\
 	ofo-base.h											\
 	ofo-base-def.h										\
 	ofo-base-prot.h										\

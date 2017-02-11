@@ -55,6 +55,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter *getter;
+	gchar      *settings_prefix;
 	gint        class_num;
 
 	/* runtime
@@ -103,6 +104,7 @@ static void
 account_treeview_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_account_treeview_finalize";
+	ofaAccountTreeviewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -110,6 +112,9 @@ account_treeview_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_TREEVIEW( instance ));
 
 	/* free data members here */
+	priv = ofa_account_treeview_get_instance_private( OFA_ACCOUNT_TREEVIEW( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_account_treeview_parent_class )->finalize( instance );
@@ -208,6 +213,7 @@ ofa_account_treeview_init( ofaAccountTreeview *self )
 	priv = ofa_account_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->class_num = -1;
 }
 
@@ -320,6 +326,9 @@ ofa_account_treeview_class_init( ofaAccountTreeviewClass *klass )
 /**
  * ofa_account_treeview_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_prefix: [allow-none]: the prefix of the key in user settings;
+ *  if %NULL, then rely on this class name;
+ *  when set, then this class automatically adds its name as a suffix.
  * @class_number: the filtered class number.
  *  It must be set at instanciation time as it is also used as a
  *  qualifier for the actions group name.
@@ -327,10 +336,11 @@ ofa_account_treeview_class_init( ofaAccountTreeviewClass *klass )
  * Returns: a new instance.
  */
 ofaAccountTreeview *
-ofa_account_treeview_new( ofaIGetter *getter, gint class_number )
+ofa_account_treeview_new( ofaIGetter *getter, const gchar *settings_prefix, gint class_number )
 {
 	ofaAccountTreeview *view;
 	ofaAccountTreeviewPrivate *priv;
+	gchar *str;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -342,6 +352,12 @@ ofa_account_treeview_new( ofaIGetter *getter, gint class_number )
 
 	priv->getter = getter;
 	priv->class_num = class_number;
+
+	if( my_strlen( settings_prefix )){
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_prefix );
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = str;
+	}
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoAccount object instead of just the raw GtkTreeSelection
@@ -362,6 +378,8 @@ ofa_account_treeview_new( ofaIGetter *getter, gint class_number )
 	 * the last being saw by the user (see ofaAccountFrameBin::dispose)
 	 */
 	ofa_tvbin_set_write_settings( OFA_TVBIN( view ), FALSE );
+	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
+	setup_columns( view );
 
 	/* connect to ISignaler */
 	signaler_connect_to_signaling_system( view );
@@ -400,52 +418,6 @@ ofa_account_treeview_get_class( ofaAccountTreeview *view )
 	g_return_val_if_fail( !priv->dispose_has_run, -1 );
 
 	return( priv->class_num );
-}
-
-/**
- * ofa_account_treeview_set_settings_key:
- * @view: this #ofaAccountTreeview instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- */
-void
-ofa_account_treeview_set_settings_key( ofaAccountTreeview *view, const gchar *key )
-{
-	static const gchar *thisfn = "ofa_account_treeview_set_settings_key";
-	ofaAccountTreeviewPrivate *priv;
-
-	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
-
-	g_return_if_fail( view && OFA_IS_ACCOUNT_TREEVIEW( view ));
-
-	priv = ofa_account_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* we do not manage any settings here, so directly pass it to the
-	 * base class */
-	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
-}
-
-/**
- * ofa_account_treeview_setup_columns:
- * @view: this #ofaAccountTreeview instance.
- *
- * Setup the treeview columns.
- */
-void
-ofa_account_treeview_setup_columns( ofaAccountTreeview *view )
-{
-	ofaAccountTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_ACCOUNT_TREEVIEW( view ));
-
-	priv = ofa_account_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	setup_columns( view );
 }
 
 /*

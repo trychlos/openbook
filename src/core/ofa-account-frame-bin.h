@@ -89,7 +89,8 @@ typedef enum {
 
 GType               ofa_account_frame_bin_get_type          ( void ) G_GNUC_CONST;
 
-ofaAccountFrameBin *ofa_account_frame_bin_new               ( ofaIGetter *getter );
+ofaAccountFrameBin *ofa_account_frame_bin_new               ( ofaIGetter *getter,
+																	const gchar *settings_prefix );
 
 void                ofa_account_frame_bin_add_action        ( ofaAccountFrameBin *bin,
 																	ofeAccountAction id );
@@ -106,9 +107,6 @@ void                ofa_account_frame_bin_set_selected      ( ofaAccountFrameBin
 void                ofa_account_frame_bin_set_cell_data_func( ofaAccountFrameBin *bin,
 																	GtkTreeCellDataFunc fn_cell,
 																	void *fn_data );
-
-void                ofa_account_frame_bin_set_settings_key  ( ofaAccountFrameBin *bin,
-																	const gchar *key );
 
 void                ofa_account_frame_bin_load_dataset      ( ofaAccountFrameBin *bin );
 

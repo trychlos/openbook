@@ -27,9 +27,9 @@
 
 /**
  * SECTION: ofoaccount
- * @title: ofoAccountv3434
- * @short_description: #ofoAccountv3434 class definition.
- * @include: openbook/ofo-account-34.h
+ * @title: ofoAccountv34
+ * @short_description: #ofoAccountv34 class definition.
+ * @include: openbook/ofo-account-v34.h
  *
  * This file defines the #ofoAccountv34 class public API.
  *
@@ -37,12 +37,15 @@
  *
  * Instead, it is specially built to be used during DB model migrations,
  * by providing to the plugin a v34 version of the #ofoAccount class.
+ *
+ * ofoAccountv34 is made a base class of ofoAccount in order to be able
+ * to share some functions.
  */
 
 #include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
-#include "api/ofo-account-def.h"
+#include "api/ofo-account-v34-def.h"
 
 G_BEGIN_DECLS
 
@@ -53,18 +56,20 @@ G_BEGIN_DECLS
 #define OFO_IS_ACCOUNT_V34_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_ACCOUNT_V34 ))
 #define OFO_ACCOUNT_V34_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_ACCOUNT_V34, ofoAccountv34Class ))
 
+#if 0
 typedef struct _ofoAccountv34              ofoAccountv34;
+typedef struct _ofoAccountv34Class         ofoAccountv34Class;
 
 struct _ofoAccountv34 {
 	/*< public members >*/
 	ofoBase      parent;
 };
 
-typedef struct {
+struct _ofoAccountv34Class {
 	/*< public members >*/
 	ofoBaseClass parent;
-}
-	ofoAccountv34Class;
+};
+#endif
 
 GType          ofo_account_v34_get_type           ( void ) G_GNUC_CONST;
 

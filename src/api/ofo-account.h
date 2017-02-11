@@ -38,6 +38,7 @@
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-account-def.h"
+#include "api/ofo-account-v34-def.h"
 
 G_BEGIN_DECLS
 
@@ -54,12 +55,12 @@ typedef struct _ofoAccount              ofoAccount;
 
 struct _ofoAccount {
 	/*< public members >*/
-	ofoBase      parent;
+	ofoAccountv34      parent;
 };
 
 typedef struct {
 	/*< public members >*/
-	ofoBaseClass parent;
+	ofoAccountv34Class parent;
 }
 	ofoAccountClass;
 

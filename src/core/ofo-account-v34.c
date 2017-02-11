@@ -26,21 +26,13 @@
 #include <config.h>
 #endif
 
-#include <glib/gi18n.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "my/my-date.h"
-#include "my/my-double.h"
-#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-idbmodel.h"
-#include "api/ofa-idoc.h"
 #include "api/ofa-igetter.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"

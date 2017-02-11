@@ -75,14 +75,10 @@ typedef struct {
 GType               ofa_account_treeview_get_type        ( void ) G_GNUC_CONST;
 
 ofaAccountTreeview *ofa_account_treeview_new             ( ofaIGetter *getter,
+																	const gchar *settings_prefix,
 																	gint class_num );
 
 gint                ofa_account_treeview_get_class       ( ofaAccountTreeview *view );
-
-void                ofa_account_treeview_set_settings_key( ofaAccountTreeview *view,
-																	const gchar *key );
-
-void                ofa_account_treeview_setup_columns   ( ofaAccountTreeview *view );
 
 ofoAccount         *ofa_account_treeview_get_selected    ( ofaAccountTreeview *view );
 

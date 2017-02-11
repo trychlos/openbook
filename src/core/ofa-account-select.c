@@ -297,10 +297,9 @@ idialog_init( myIDialog *instance )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->account_bin = ofa_account_frame_bin_new( priv->getter );
+	priv->account_bin = ofa_account_frame_bin_new( priv->getter, priv->settings_prefix );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 0, 4, 0, 0 );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_bin ));
-	ofa_account_frame_bin_set_settings_key( priv->account_bin, priv->settings_prefix );
 	ofa_account_frame_bin_set_cell_data_func( priv->account_bin, ( GtkTreeCellDataFunc ) on_treeview_cell_data_func, instance );
 
 	g_signal_connect( priv->account_bin, "ofa-changed", G_CALLBACK( on_selection_changed ), instance );
