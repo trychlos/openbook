@@ -49,6 +49,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter *getter;
+	gchar      *settings_prefix;
 	gchar      *ledger;
 }
 	ofaOpeTemplateTreeviewPrivate;
@@ -92,10 +93,12 @@ ope_template_treeview_finalize( GObject *instance )
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_TREEVIEW( instance ));
-
-	/* free data members here */
 	priv = ofa_ope_template_treeview_get_instance_private( OFA_OPE_TEMPLATE_TREEVIEW( instance ));
 
+	priv = ofa_ope_template_treeview_get_instance_private( OFA_OPE_TEMPLATE_TREEVIEW( instance ));
+
+	/* free data members here */
+	g_free( priv->settings_prefix );
 	g_free( priv->ledger );
 
 	/* chain up to the parent class */
@@ -191,6 +194,7 @@ ofa_ope_template_treeview_init( ofaOpeTemplateTreeview *self )
 	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->ledger = NULL;
 }
 
@@ -304,6 +308,9 @@ ofa_ope_template_treeview_class_init( ofaOpeTemplateTreeviewClass *klass )
 /**
  * ofa_ope_template_treeview_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_prefix: [allow-none]: the prefix of the key in user settings;
+ *  if %NULL, then rely on this class name;
+ *  when set, then this class automatically adds its name as a suffix.
  * @ledger: the filtered ledger.
  *  It must be set at instanciation time as it is also used as a
  *  qualifier for the actions group name.
@@ -311,10 +318,11 @@ ofa_ope_template_treeview_class_init( ofaOpeTemplateTreeviewClass *klass )
  * Returns: a new instance.
  */
 ofaOpeTemplateTreeview *
-ofa_ope_template_treeview_new( ofaIGetter *getter, const gchar *ledger )
+ofa_ope_template_treeview_new( ofaIGetter *getter, const gchar *settings_prefix, const gchar *ledger )
 {
 	ofaOpeTemplateTreeview *view;
 	ofaOpeTemplateTreeviewPrivate *priv;
+	gchar *str;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -326,6 +334,12 @@ ofa_ope_template_treeview_new( ofaIGetter *getter, const gchar *ledger )
 
 	priv->getter = getter;
 	priv->ledger = g_strdup( ledger );
+
+	if( my_strlen( settings_prefix )){
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_prefix );
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = str;
+	}
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoOpeTemplate object instead of just the raw GtkTreeSelection
@@ -344,6 +358,8 @@ ofa_ope_template_treeview_new( ofaIGetter *getter, const gchar *ledger )
 	 * the last being saw by the user (see ofaOpeTemplateFrameBin::dispose)
 	 */
 	ofa_tvbin_set_write_settings( OFA_TVBIN( view ), FALSE );
+	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
+	setup_columns( view );
 
 	return( view );
 }
@@ -366,52 +382,6 @@ ofa_ope_template_treeview_get_ledger( ofaOpeTemplateTreeview *view )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->ledger );
-}
-
-/**
- * ofa_ope_template_treeview_set_settings_key:
- * @view: this #ofaOpeTemplateTreeview instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- */
-void
-ofa_ope_template_treeview_set_settings_key( ofaOpeTemplateTreeview *view, const gchar *key )
-{
-	static const gchar *thisfn = "ofa_ope_template_treeview_set_settings_key";
-	ofaOpeTemplateTreeviewPrivate *priv;
-
-	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
-
-	g_return_if_fail( view && OFA_IS_OPE_TEMPLATE_TREEVIEW( view ));
-
-	priv = ofa_ope_template_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* we do not manage any settings here, so directly pass it to the
-	 * base class */
-	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
-}
-
-/**
- * ofa_ope_template_treeview_setup_columns:
- * @view: this #ofaOpeTemplateTreeview instance.
- *
- * Setup the treeview columns.
- */
-void
-ofa_ope_template_treeview_setup_columns( ofaOpeTemplateTreeview *view )
-{
-	ofaOpeTemplateTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_OPE_TEMPLATE_TREEVIEW( view ));
-
-	priv = ofa_ope_template_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	setup_columns( view );
 }
 
 /*

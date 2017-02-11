@@ -86,24 +86,24 @@ typedef enum {
 }
 	ofeOpeTemplateAction;
 
-GType                   ofa_ope_template_frame_bin_get_type          ( void ) G_GNUC_CONST;
+GType                   ofa_ope_template_frame_bin_get_type        ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new               ( ofaIGetter *getter,
+ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new             ( ofaIGetter *getter,
 																			const gchar *settings_prefix );
 
-void                    ofa_ope_template_frame_bin_add_action        ( ofaOpeTemplateFrameBin *bin,
+void                    ofa_ope_template_frame_bin_add_action      ( ofaOpeTemplateFrameBin *bin,
 																			ofeOpeTemplateAction id );
 
-GtkWidget              *ofa_ope_template_frame_bin_get_current_page  ( ofaOpeTemplateFrameBin *bin );
+GtkWidget              *ofa_ope_template_frame_bin_get_current_page( ofaOpeTemplateFrameBin *bin );
 
-GList                  *ofa_ope_template_frame_bin_get_pages_list    ( ofaOpeTemplateFrameBin *bin );
+GList                  *ofa_ope_template_frame_bin_get_pages_list  ( ofaOpeTemplateFrameBin *bin );
 
-ofoOpeTemplate         *ofa_ope_template_frame_bin_get_selected      ( ofaOpeTemplateFrameBin *bin );
+ofoOpeTemplate         *ofa_ope_template_frame_bin_get_selected    ( ofaOpeTemplateFrameBin *bin );
 
-void                    ofa_ope_template_frame_bin_set_selected      ( ofaOpeTemplateFrameBin *bin,
+void                    ofa_ope_template_frame_bin_set_selected    ( ofaOpeTemplateFrameBin *bin,
 																			const gchar *mnemo );
 
-void                    ofa_ope_template_frame_bin_load_dataset      ( ofaOpeTemplateFrameBin *bin );
+void                    ofa_ope_template_frame_bin_load_dataset    ( ofaOpeTemplateFrameBin *bin );
 
 G_END_DECLS
 

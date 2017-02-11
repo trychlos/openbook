@@ -473,9 +473,7 @@ book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
 		}
 	}
 
-	view = ofa_ope_template_treeview_new( priv->getter, ledger );
-	ofa_ope_template_treeview_set_settings_key( view, priv->settings_key );
-	ofa_ope_template_treeview_setup_columns( view );
+	view = ofa_ope_template_treeview_new( priv->getter, priv->settings_prefix, ledger );
 	ofa_istore_add_columns( OFA_ISTORE( priv->store ), OFA_TVBIN( view ));
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 

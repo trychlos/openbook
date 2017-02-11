@@ -111,9 +111,9 @@ account_treeview_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_TREEVIEW( instance ));
 
-	/* free data members here */
 	priv = ofa_account_treeview_get_instance_private( OFA_ACCOUNT_TREEVIEW( instance ));
 
+	/* free data members here */
 	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
