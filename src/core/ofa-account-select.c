@@ -307,7 +307,6 @@ idialog_init( myIDialog *instance )
 
 	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_NEW );
 	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_UPDATE );
-
 	/* do not allow account deletion from select dialog */
 	//ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_DELETE );
 
