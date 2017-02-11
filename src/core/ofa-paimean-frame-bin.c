@@ -54,11 +54,12 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter         *getter;
+	gchar              *settings_prefix;
 
 	/* runtime
 	 */
 	gboolean            is_writable;		/* whether the dossier is writable */
-	gchar              *settings_prefix;
+	gchar              *settings_key;
 
 	/* UI
 	 */
@@ -118,6 +119,7 @@ paimean_frame_bin_finalize( GObject *instance )
 
 	/* free data members here */
 	g_free( priv->settings_prefix );
+	g_free( priv->settings_key );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_paimean_frame_bin_parent_class )->finalize( instance );
@@ -161,6 +163,7 @@ ofa_paimean_frame_bin_init( ofaPaimeanFrameBin *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
+	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -225,7 +228,7 @@ ofa_paimean_frame_bin_class_init( ofaPaimeanFrameBinClass *klass )
 /**
  * ofa_paimean_frame_bin_new:
  * @getter: a #ofaIGetter instance.
- * @key: [allow-none]: the prefix of the settings key.
+ * @settings_prefix: [allow-none]: the prefix of the settings key.
  *
  * Creates the structured content, i.e. the paimeans treeview on the
  * left column, the buttons box on the right one.
@@ -241,11 +244,12 @@ ofa_paimean_frame_bin_class_init( ofaPaimeanFrameBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaPaimeanFrameBin *
-ofa_paimean_frame_bin_new( ofaIGetter *getter, const gchar *key  )
+ofa_paimean_frame_bin_new( ofaIGetter *getter, const gchar *settings_prefix  )
 {
 	static const gchar *thisfn = "ofa_paimean_frame_bin_new";
 	ofaPaimeanFrameBin *self;
 	ofaPaimeanFrameBinPrivate *priv;
+	gchar *str;
 
 	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
@@ -255,8 +259,14 @@ ofa_paimean_frame_bin_new( ofaIGetter *getter, const gchar *key  )
 
 	priv = ofa_paimean_frame_bin_get_instance_private( self );
 
-	g_free( priv->settings_prefix );
-	priv->settings_prefix = g_strdup( my_strlen( key ) ? key : G_OBJECT_TYPE_NAME( self ));
+	if( my_strlen( settings_prefix )){
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = g_strdup( settings_prefix );
+
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_key );
+		g_free( priv->settings_key );
+		priv->settings_key = str;
+	}
 
 	setup_getter( self, getter );
 	setup_bin( self );
@@ -308,10 +318,8 @@ setup_bin( ofaPaimeanFrameBin *self )
 	gtk_container_add( GTK_CONTAINER( self ), grid );
 
 	/* treeview */
-	priv->tview = ofa_paimean_treeview_new( priv->getter );
+	priv->tview = ofa_paimean_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( priv->tview ), 0, 0, 1, 1 );
-	ofa_paimean_treeview_set_settings_key( priv->tview, priv->settings_prefix );
-	ofa_paimean_treeview_setup_columns( priv->tview );
 
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), self );

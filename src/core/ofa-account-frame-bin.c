@@ -62,19 +62,19 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
+	gchar               *settings_prefix;		/* e.g. "ofaAccountPage" */
 
 	/* runtime
 	 */
 	gboolean             initialized;
 	GList               *signaler_handlers;
-	gboolean             is_writable;		/* whether the dossier is writable */
+	gboolean             is_writable;			/* whether the dossier is writable */
 	ofaAccountStore     *store;
 	GList               *store_handlers;
 	GtkTreeCellDataFunc  cell_fn;
 	void                *cell_data;
 	gint                 prev_class;
-	gchar               *settings_prefix;		/* e.g. ofaAccountPage */
-	gchar               *settings_key;			/* e.g. ofaAccountPage-ofaAccountFrameBin */
+	gchar               *settings_key;			/* e.g. "ofaAccountPage-ofaAccountFrameBin" */
 	GtkWidget           *current_page;
 
 	/* UI

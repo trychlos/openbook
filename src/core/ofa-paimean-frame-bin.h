@@ -72,7 +72,7 @@ typedef struct {
 GType               ofa_paimean_frame_bin_get_type     ( void ) G_GNUC_CONST;
 
 ofaPaimeanFrameBin *ofa_paimean_frame_bin_new          ( ofaIGetter *getter,
-																const gchar *key );
+																const gchar *settings_prefix );
 
 GtkWidget          *ofa_paimean_frame_bin_get_tree_view( ofaPaimeanFrameBin *bin );
 

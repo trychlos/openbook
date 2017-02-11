@@ -71,12 +71,8 @@ typedef struct {
 
 GType               ofa_paimean_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaPaimeanTreeview *ofa_paimean_treeview_new             ( ofaIGetter *getter );
-
-void                ofa_paimean_treeview_set_settings_key( ofaPaimeanTreeview *view,
-																const gchar *key );
-
-void                ofa_paimean_treeview_setup_columns   ( ofaPaimeanTreeview *view );
+ofaPaimeanTreeview *ofa_paimean_treeview_new             ( ofaIGetter *getter,
+																const gchar *settings_prefix );
 
 void                ofa_paimean_treeview_setup_store     ( ofaPaimeanTreeview *view );
 
