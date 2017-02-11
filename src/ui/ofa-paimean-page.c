@@ -157,7 +157,7 @@ action_page_v_setup_view( ofaActionPage *page )
 	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( page ));
 
 	getter = ofa_page_get_getter( OFA_PAGE( page ));
-	priv->fbin = ofa_paimean_frame_bin_new( getter, priv->settings_prefix );
+	priv->fbin = ofa_paimean_frame_bin_new( getter, priv->settings_prefix, TRUE );
 	g_signal_connect( priv->fbin, "ofa-activated", G_CALLBACK( on_row_activated ), page );
 
 	return( GTK_WIDGET( priv->fbin ));

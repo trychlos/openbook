@@ -288,7 +288,7 @@ idialog_init( myIDialog *instance )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->fbin = ofa_paimean_frame_bin_new( priv->getter, priv->settings_prefix );
+	priv->fbin = ofa_paimean_frame_bin_new( priv->getter, priv->settings_prefix, FALSE );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->fbin ), 0, 4, 0, 0 );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->fbin ));
 

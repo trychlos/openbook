@@ -55,6 +55,7 @@ typedef struct {
 	 */
 	ofaIGetter         *getter;
 	gchar              *settings_prefix;
+	gboolean            with_delete;
 
 	/* runtime
 	 */
@@ -229,6 +230,7 @@ ofa_paimean_frame_bin_class_init( ofaPaimeanFrameBinClass *klass )
  * ofa_paimean_frame_bin_new:
  * @getter: a #ofaIGetter instance.
  * @settings_prefix: [allow-none]: the prefix of the settings key.
+ * @with_delete: whether the 'Delete' action should be shown.
  *
  * Creates the structured content, i.e. the paimeans treeview on the
  * left column, the buttons box on the right one.
@@ -244,7 +246,7 @@ ofa_paimean_frame_bin_class_init( ofaPaimeanFrameBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaPaimeanFrameBin *
-ofa_paimean_frame_bin_new( ofaIGetter *getter, const gchar *settings_prefix  )
+ofa_paimean_frame_bin_new( ofaIGetter *getter, const gchar *settings_prefix, gboolean with_delete  )
 {
 	static const gchar *thisfn = "ofa_paimean_frame_bin_new";
 	ofaPaimeanFrameBin *self;
@@ -258,6 +260,9 @@ ofa_paimean_frame_bin_new( ofaIGetter *getter, const gchar *settings_prefix  )
 	self = g_object_new( OFA_TYPE_PAIMEAN_FRAME_BIN, NULL );
 
 	priv = ofa_paimean_frame_bin_get_instance_private( self );
+
+	priv->getter = getter;
+	priv->with_delete = with_delete;
 
 	if( my_strlen( settings_prefix )){
 		g_free( priv->settings_prefix );
@@ -287,8 +292,6 @@ setup_getter( ofaPaimeanFrameBin *self, ofaIGetter *getter )
 	ofaHub *hub;
 
 	priv = ofa_paimean_frame_bin_get_instance_private( self );
-
-	priv->getter = getter;
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
@@ -368,16 +371,18 @@ setup_actions( ofaPaimeanFrameBin *self )
 					OFA_IACTIONABLE_PROPERTIES_BTN ));
 
 	/* delete action */
-	priv->delete_action = g_simple_action_new( "delete", NULL );
-	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), self );
-	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
-			OFA_IACTIONABLE_DELETE_ITEM );
-	ofa_buttons_box_append_button(
-			priv->buttonsbox,
-			ofa_iactionable_new_button(
-					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
-					OFA_IACTIONABLE_DELETE_BTN ));
+	if( priv->with_delete ){
+		priv->delete_action = g_simple_action_new( "delete", NULL );
+		g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), self );
+		ofa_iactionable_set_menu_item(
+				OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
+				OFA_IACTIONABLE_DELETE_ITEM );
+		ofa_buttons_box_append_button(
+				priv->buttonsbox,
+				ofa_iactionable_new_button(
+						OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
+						OFA_IACTIONABLE_DELETE_BTN ));
+	}
 }
 
 static void
@@ -496,7 +501,10 @@ on_row_selected( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanFrame
 	is_paimean = paimean && OFO_IS_PAIMEAN( paimean );
 
 	g_simple_action_set_enabled( priv->update_action, is_paimean );
-	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, paimean ));
+
+	if( priv->delete_action ){
+		g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, paimean ));
+	}
 
 	g_signal_emit_by_name( self, "ofa-changed", paimean );
 }
