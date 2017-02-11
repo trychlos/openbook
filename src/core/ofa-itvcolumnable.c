@@ -94,9 +94,11 @@ enum {
 	N_SIGNALS
 };
 
+#define ITVCOLUMNABLE_MIN_WIDTH                20
+
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
-static guint        st_initializations      = 0;	/* interface initialization count */
+static guint        st_initializations      =   0;	/* interface initialization count */
 
 static const gchar *st_action_prefix        = "itvcolumnable_";
 
@@ -116,6 +118,7 @@ static sColumn        *get_column_data_by_ptr( const ofaITVColumnable *instance,
 static sColumn        *get_column_data_by_action_name( ofaITVColumnable *instance, sITVColumnable *sdata, const gchar *name );
 static gchar          *column_id_to_action_name( gint id );
 static gint            action_name_to_column_id( const gchar *name );
+static guint           check_min_width( guint candidate_width );
 static gint            read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata );
 static void            write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata );
 static sITVColumnable *get_instance_data( const ofaITVColumnable *instance );
@@ -784,7 +787,7 @@ do_propagate_visible_columns( ofaITVColumnable *source, sITVColumnable *src_data
 		column = gtk_tree_view_get_column( src_data->treeview, i );
 		if( gtk_tree_view_column_get_visible( column )){
 			col_id = get_column_id( source, src_data, column );
-			col_width = gtk_tree_view_column_get_width( column );
+			col_width = check_min_width( gtk_tree_view_column_get_width( column ));
 
 			target_scol = get_column_data_by_id( target, target_data, col_id );
 			if( target_scol && target_scol->column ){
@@ -1085,6 +1088,16 @@ action_name_to_column_id( const gchar *name )
 	return( atoi( name+len_prefix ));
 }
 
+static guint
+check_min_width( guint candidate_width )
+{
+	guint width;
+
+	width = ( candidate_width < ITVCOLUMNABLE_MIN_WIDTH ? ITVCOLUMNABLE_MIN_WIDTH : candidate_width );
+
+	return( width );
+}
+
 /*
  * settings: pairs of <column_id;column_width;> in order of appearance
  *
@@ -1117,7 +1130,7 @@ read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 			it = it->next;
 			cstr = it ? it->data : NULL;
 			if( my_strlen( cstr )){
-				col_width = atoi( cstr );
+				col_width = check_min_width( atoi( cstr ));
 				scol = get_column_data_by_id( instance, sdata, col_id );
 				if( scol && scol->column ){
 					gtk_tree_view_move_column_after( sdata->treeview, scol->column, prev );

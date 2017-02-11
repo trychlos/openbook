@@ -56,6 +56,7 @@
    - ofaEntryProperties: let the user close the dialog.
    - ofaExerciceTreeview: fix the update when no dossier is selected.
    - ofaIDBDossierMeta, ofaIDBExerciceMeta: fix refs management.
+   - ofaITVColumnable: makes sure columns have a minimal width.
    - ofaMysqlRootBin: now updates the ofaMysqlDossierMeta runtime datas.
    - ofaPaimeanSelect: fix store instanciation.
    - ofoAccount: actually delete all children when requested to.
