@@ -57,6 +57,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
+	gchar               *settings_prefix;		/* e.g. "ofaOpeTemplatePage" */
 
 	/* runtime
 	 */
@@ -65,7 +66,7 @@ typedef struct {
 	gboolean             is_writable;
 	ofaOpeTemplateStore *store;
 	GList               *store_handlers;
-	gchar               *settings_key;
+	gchar               *settings_key;			/* e.g. "ofaOpeTemplatePage-ofaOpeTemplateFrameBin" */
 	GtkWidget           *current_page;
 
 	/* UI
@@ -150,6 +151,7 @@ ope_template_frame_bin_finalize( GObject *instance )
 	priv = ofa_ope_template_frame_bin_get_instance_private( OFA_OPE_TEMPLATE_FRAME_BIN( instance ));
 
 	/* free data members here */
+	g_free( priv->settings_prefix );
 	g_free( priv->settings_key );
 
 	/* chain up to the parent class */
@@ -219,6 +221,7 @@ ofa_ope_template_frame_bin_init( ofaOpeTemplateFrameBin *self )
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->initialized = FALSE;
 	priv->current_page = NULL;
@@ -286,6 +289,9 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
 /**
  * ofa_ope_template_frame_bin_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_prefix: [allow-none]: the prefix of the key in user settings;
+ *  if %NULL, then rely on this class name;
+ *  when set, then this class automatically adds its name as a suffix.
  *
  * Creates the structured content, i.e. the operation templates notebook
  * on the left column, the buttons box on the right one.
@@ -306,11 +312,12 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaOpeTemplateFrameBin *
-ofa_ope_template_frame_bin_new( ofaIGetter *getter )
+ofa_ope_template_frame_bin_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
 	static const gchar *thisfn = "ofa_ope_template_frame_bin_new";
 	ofaOpeTemplateFrameBin *self;
 	ofaOpeTemplateFrameBinPrivate *priv;
+	gchar *str;
 
 	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
@@ -321,6 +328,15 @@ ofa_ope_template_frame_bin_new( ofaIGetter *getter )
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	priv->getter = getter;
+
+	if( my_strlen( settings_prefix )){
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = g_strdup( settings_prefix );
+
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_key );
+		g_free( priv->settings_key );
+		priv->settings_key = str;
+	}
 
 	setup_bin( self );
 	signaler_connect_to_signaling_system( self );
@@ -1037,31 +1053,6 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateFr
 		page_num = gtk_notebook_page_num( GTK_NOTEBOOK( priv->notebook ), page );
 		gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), page_num );
 	}
-}
-
-/**
- * ofa_ope_template_frame_bin_set_settings_key:
- * @bin: this #ofaOpeTemplateFrameBin instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- */
-void
-ofa_ope_template_frame_bin_set_settings_key( ofaOpeTemplateFrameBin *bin, const gchar *key )
-{
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_set_settings_key";
-	ofaOpeTemplateFrameBinPrivate *priv;
-
-	g_debug( "%s: bin=%p, key=%s", thisfn, ( void * ) bin, key );
-
-	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ));
-
-	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	g_free( priv->settings_key );
-	priv->settings_key = g_strdup( my_strlen( key ) ? key : G_OBJECT_TYPE_NAME( bin ));
 }
 
 /**

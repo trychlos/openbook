@@ -288,9 +288,8 @@ idialog_init( myIDialog *instance )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->template_bin = ofa_ope_template_frame_bin_new( priv->getter );
+	priv->template_bin = ofa_ope_template_frame_bin_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->template_bin ));
-	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, priv->settings_prefix );
 
 	g_signal_connect( priv->template_bin, "ofa-changed", G_CALLBACK( on_ope_template_changed ), instance );
 	g_signal_connect( priv->template_bin, "ofa-activated", G_CALLBACK( on_ope_template_activated ), instance );

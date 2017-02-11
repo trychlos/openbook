@@ -327,6 +327,8 @@
                 - ofaEntryTreeview       (add to prefix+ unused here)
                 - ofaExerciceEditBin     (add to prefix + <unused>)
                 - ofaExerciceNew         (add to prefix + <unused>)
+                - ofaOpeTemplateFrameBin (replace prefix + passed)
+                - ofaPaimeanFrameBin     (replace prefix + passed)
                 - ofaTargetChooserBin    (add to prefix + <unused>)
 
 1263 2016-11-19 DBMS: store documents

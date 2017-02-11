@@ -88,7 +88,8 @@ typedef enum {
 
 GType                   ofa_ope_template_frame_bin_get_type          ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new               ( ofaIGetter *getter );
+ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new               ( ofaIGetter *getter,
+																			const gchar *settings_prefix );
 
 void                    ofa_ope_template_frame_bin_add_action        ( ofaOpeTemplateFrameBin *bin,
 																			ofeOpeTemplateAction id );
@@ -101,9 +102,6 @@ ofoOpeTemplate         *ofa_ope_template_frame_bin_get_selected      ( ofaOpeTem
 
 void                    ofa_ope_template_frame_bin_set_selected      ( ofaOpeTemplateFrameBin *bin,
 																			const gchar *mnemo );
-
-void                    ofa_ope_template_frame_bin_set_settings_key  ( ofaOpeTemplateFrameBin *bin,
-																			const gchar *key );
 
 void                    ofa_ope_template_frame_bin_load_dataset      ( ofaOpeTemplateFrameBin *bin );
 

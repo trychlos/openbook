@@ -142,10 +142,9 @@ page_v_setup_page( ofaPage *page )
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
 	getter = ofa_page_get_getter( page );
-	priv->template_bin = ofa_ope_template_frame_bin_new( getter );
+	priv->template_bin = ofa_ope_template_frame_bin_new( getter, priv->settings_prefix );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->template_bin ), 2, 2, 2, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->template_bin ), 0, 0, 1, 1 );
-	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, priv->settings_prefix );
 
 	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_NEW );
 	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_PROPERTIES );
