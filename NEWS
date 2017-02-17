@@ -57,6 +57,7 @@
    - my_double_to_sql_ex: fix translation when we only have one digit (todo #1358).
    - myISettings: fix free_groups() behavior when groups list is NULL.
    - ofaAccountFrameBin: fix selection of newly created account.
+   - ofoEntry: maintains the store up to date.
    - ofaEntryProperties: let the user close the dialog.
    - ofaExerciceTreeview: fix the update when no dossier is selected.
    - ofaIDBDossierMeta, ofaIDBExerciceMeta: fix refs management.
