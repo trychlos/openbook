@@ -1928,7 +1928,11 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				g_free( sdbegin );
 				g_free( sdend );
 
-				ofa_iimporter_progress_text( importer, parms, str );
+				if( parms->progress ){
+					ofa_iimporter_progress_text( importer, parms, str );
+				} else {
+					my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
+				}
 				g_free( str );
 			}
 
