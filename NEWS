@@ -54,6 +54,7 @@
  Bug fixes:
 
    - DBModel migration: fix regression for ofoAccount between v33 and v35 versions (todo #1353).
+   - my_double_to_sql_ex: fix translation when we only have one digit (todo #1358).
    - myISettings: fix free_groups() behavior when groups list is NULL.
    - ofaAccountFrameBin: fix selection of newly created account.
    - ofaEntryProperties: let the user close the dialog.

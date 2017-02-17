@@ -292,9 +292,11 @@ gchar *
 my_double_to_sql_ex( gdouble value, gint decimals )
 {
 	gchar amount_str[1+G_ASCII_DTOSTR_BUF_SIZE];
-	gchar *temp_str, *text;
 	gdouble temp_double;
 	glong temp_long;
+	gchar *text;
+	GString *gstr;
+	guint first_digit;
 
 	if( value >= 0 ){
 		temp_double = value*exp10( decimals ) + 0.5;
@@ -304,12 +306,26 @@ my_double_to_sql_ex( gdouble value, gint decimals )
 	temp_long = ( glong ) temp_double;
 	g_ascii_dtostr( amount_str, G_ASCII_DTOSTR_BUF_SIZE, temp_long );
 	g_strchug( amount_str );
+	// amount_str is an integer, maybe with a leading '-' sign
+	//g_debug( "my_double_to_sql_ex: value=%lf, amount_str='%s'", value, amount_str );
 
 	if( value ){
-		temp_str = g_strreverse( g_strdup( amount_str ));
-		temp_str[decimals] = '\0';
-		amount_str[my_strlen( amount_str )-decimals] = '\0';
-		text = g_strconcat( amount_str, ".", g_strreverse( temp_str ), NULL );
+		/* advance in amount_str until first digit (may have a leading
+		 *  '-' sign, plus maybe other unknown characters */
+		for( first_digit=0 ; !g_ascii_isdigit( amount_str[first_digit] ) ; ++first_digit )
+			;
+		//g_debug( "my_double_to_sql_ex: first_digit=%u", first_digit );
+		gstr = g_string_new( amount_str+first_digit );
+		while( my_strlen( gstr->str ) < decimals+1 ){
+			gstr = g_string_insert_c( gstr, 0, '0' );
+		}
+		//g_debug( "my_double_to_sql_ex: after added 0, gstr='%s'", gstr->str );
+		gstr = g_string_insert_c( gstr, my_strlen( gstr->str )-decimals, '.' );
+		//g_debug( "my_double_to_sql_ex: after insert ., gstr='%s'", gstr->str );
+		text = g_strdup_printf( "%*.*s%s", first_digit, first_digit, amount_str, gstr->str );
+		//g_debug( "my_double_to_sql_ex: final text='%s'", text );
+		g_string_free( gstr, TRUE );
+
 	} else {
 		text = g_strdup( amount_str );
 	}
