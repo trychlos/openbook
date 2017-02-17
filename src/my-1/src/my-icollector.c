@@ -271,10 +271,10 @@ load_collection( myICollector *instance, GType type, void *user_data )
 /**
  * my_icollector_collection_add_object:
  * @instance: this #myICollector instance.
- * @hub: the #ofaHub object.
- * @object: the #myICollactionable object to be added.
+ * @object: the #myICollectionable object to be added.
  * @func: [allow-none]: a #GCompareFunc to make sure the object is
  *  added in a sorted list.
+ * @user_data: user data to be passed to ::load_collection() method.
  *
  * Adds the @object to the collection of objects of the same type.
  * The collection is maintained sorted with @func function.
