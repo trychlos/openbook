@@ -21,6 +21,8 @@
               <object class="GtkGrid" id="grid5">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
                 <property name="margin_top">2</property>
                 <property name="margin_bottom">2</property>
                 <property name="column_spacing">4</property>
@@ -100,7 +102,7 @@
                 <property name="margin_top">2</property>
                 <property name="margin_bottom">2</property>
                 <property name="row_spacing">2</property>
-                <property name="column_spacing">8</property>
+                <property name="column_spacing">2</property>
                 <property name="column_homogeneous">True</property>
                 <child>
                   <object class="GtkButton" id="p2-cancel-btn">
@@ -149,6 +151,20 @@
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes"> Actions </property>
               </object>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="date-filter">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <placeholder/>
             </child>
           </object>
           <packing>

@@ -99,6 +99,10 @@ gint                     ofa_recurrent_run_treeview_get_visible       ( ofaRecur
 void                     ofa_recurrent_run_treeview_set_visible       ( ofaRecurrentRunTreeview *view,
 																			gint visible );
 
+void                     ofa_recurrent_run_treeview_set_ope_date      ( ofaRecurrentRunTreeview *view,
+																			const GDate *from,
+																			const GDate *to );
+
 GList                   *ofa_recurrent_run_treeview_get_selected      ( ofaRecurrentRunTreeview *view );
 
 #define                  ofa_recurrent_run_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )

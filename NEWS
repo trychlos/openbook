@@ -45,6 +45,8 @@
    - Paiement mean selection does not allow deletion anymore.
    - Preferences: have user preferences to warns on settling or reconciliating unbalanced lines.
    - Reconciliation group is deleted when one of the entries is deleted (todo #758).
+   - RecurrentRunPage: have a filter on the operation date (todo #1360).
+   - RecurrentRunTreeview: the date column is better named 'Operation' (todo #1368).
    - Settlement group is deleted when one of the entries is deleted (todo #758).
    - Settlement page now auto-updates itself when an entry is modified elsewhere (todo #1347).
    - Settlement page now warns when amounts are not balanced (unless Ctrl key is pressed).
@@ -64,6 +66,7 @@
    - ofaITVColumnable: makes sure columns have a minimal width.
    - ofaMysqlRootBin: now updates the ofaMysqlDossierMeta runtime datas.
    - ofaPaimeanSelect: fix store instanciation.
+   - ofaRecurrentRunPage: fix left margin of the visible filter (todo #1365).
    - ofaTVBin: header of a centered column is itself centered.
    - ofoAccount: actually delete all children when requested to.
 

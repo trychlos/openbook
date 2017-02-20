@@ -344,6 +344,7 @@
      2017- 2-17 but OpeTemplate because ope templates may have different
                 count of detail lines, and so better display with different
                 height
+     2017- 2-20 and so OpeTemplate identifiers should be with count of lines
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 
@@ -361,12 +362,30 @@
 1356 2017- 2-17 when entering an operation, have a message 'account does
                 not exist' instead of 'unbalanced currencies'
 
-1357 2017- 2-17 Change RecoverAssistant keyboard shortcut (Ctrl-C is bad!)
+1357 2017- 2-17 change RecoverAssistant keyboard shortcut (Ctrl-C is bad!)
 
 1359 2017- 2-17 clarify the reference management of the collections
-                 in the case of the insertion of a new object
+                when inserting of a new object
 
-1360
+1361 2017- 2-17 add a date filter on vat declarations view
+
+1362 2017- 2-20 buttons in NewDossier/NewPeriod are too large. why ?
+
+1363 2017- 2-20 space between buttons in pages args should be 2
+     2017- 2-20 RecurrentRunPage: done
+
+1364 2017- 2-20 vat declarations: should be an extra height before validate btn
+
+1366 2017- 2-20 periodicity details: space between widgets should be 2
+                + have an extra right margin for scrollbar
+
+1367 2017- 2-20 the title of var/recurrent pages used in main notebook
+                should not have an underline
+
+1369 2017- 2-20 recurrent operations validation: cancelled operations
+                should be italic+grayed
+
+1370
 
 -----------------------------------------------------------------------
  DONE
@@ -687,6 +706,16 @@
 
 1358 2017- 2-17 when importing a batline, debit 0.05 is translated to .-5
      2017- 2-17 fixed
+
+1360 2017- 2-17 add a date filter on recurrent operations view
+     2017- 2-20 done
+
+1365 2017- 2-20 recurrent operations validation: lack of a left margin
+                in visible operations filter
+     2017- 2-20 fixed
+
+1368 2017- 2-20 recurrent operations validation: date -> ope. date
+     2017- 2-20 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

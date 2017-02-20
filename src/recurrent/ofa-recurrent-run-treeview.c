@@ -48,15 +48,17 @@
 /* private instance data
  */
 typedef struct {
-	gboolean    dispose_has_run;
+	gboolean     dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter *getter;
+	ofaIGetter  *getter;
 
 	/* runtime
 	 */
-	gint        visible;
+	gint         visible;
+	const GDate *from;
+	const GDate *to;
 }
 	ofaRecurrentRunTreeviewPrivate;
 
@@ -334,14 +336,14 @@ setup_columns( ofaRecurrentRunTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_MNEMO,     _( "Mnemo" ),    _( "Mnemonic" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), REC_RUN_COL_NUMSEQ,    _( "Seq." ),     _( "Sequence number" ));
-	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), REC_RUN_COL_LABEL,     _( "Label" ),        NULL );
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), REC_RUN_COL_DATE,      _( "Date" ),     _( "Operation date" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_STATUS,    _( "Status" ),       NULL );
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT1,   _( "Amount n° 1" ),  NULL);
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT2,   _( "Amount n° 2" ),  NULL);
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT3,   _( "Amount n° 3" ),  NULL);
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_MNEMO,     _( "Mnemo" ),     _( "Mnemonic" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), REC_RUN_COL_NUMSEQ,    _( "Seq." ),      _( "Sequence number" ));
+	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), REC_RUN_COL_LABEL,     _( "Label" ),         NULL );
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), REC_RUN_COL_DATE,      _( "Operation" ), _( "Operation date" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_STATUS,    _( "Status" ),        NULL );
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT1,   _( "Amount n° 1" ),   NULL);
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT2,   _( "Amount n° 2" ),   NULL);
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT3,   _( "Amount n° 3" ),   NULL);
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), REC_RUN_COL_LABEL );
 }
@@ -554,6 +556,32 @@ ofa_recurrent_run_treeview_set_visible( ofaRecurrentRunTreeview *view, gint visi
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->visible = visible;
+
+	ofa_tvbin_refilter( OFA_TVBIN( view ));
+}
+
+/**
+ * ofa_recurrent_run_treeview_set_ope_date:
+ * @view: this #ofaRecurrentRunTreeview instance.
+ * @from: [allow-none]: the minimal operation date.
+ * @to: [allow-none]: the maximal operation date.
+ *
+ * Set the operation date filter.
+ */
+void
+ofa_recurrent_run_treeview_set_ope_date( ofaRecurrentRunTreeview *view, const GDate *from, const GDate *to )
+{
+	ofaRecurrentRunTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_RECURRENT_RUN_TREEVIEW( view ));
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->from = from;
+	priv->to = to;
+
 	ofa_tvbin_refilter( OFA_TVBIN( view ));
 }
 
@@ -650,6 +678,7 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	gboolean visible;
 	ofoRecurrentRun *object;
 	const gchar *status;
+	const GDate *dope;
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( OFA_RECURRENT_RUN_TREEVIEW( tvbin ));
 
@@ -661,6 +690,7 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 		g_object_unref( object );
 
 		status = ofo_recurrent_run_get_status( object );
+		dope = ofo_recurrent_run_get_date( object );
 
 		if( !my_collate( status, REC_STATUS_CANCELLED )){
 			visible = priv->visible & REC_VISIBLE_CANCELLED;
@@ -670,6 +700,14 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 
 		} else if( !my_collate( status, REC_STATUS_VALIDATED )){
 			visible = priv->visible & REC_VISIBLE_VALIDATED;
+		}
+
+		if( visible && my_date_is_valid( priv->from )){
+			visible = my_date_compare( priv->from, dope ) <= 0;
+		}
+
+		if( visible && my_date_is_valid( priv->to )){
+			visible = my_date_compare( dope, priv->to ) <= 0;
 		}
 	}
 

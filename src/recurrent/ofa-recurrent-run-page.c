@@ -34,9 +34,11 @@
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
+#include "api/ofa-idate-filter.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
@@ -72,6 +74,8 @@ typedef struct {
 	GtkWidget               *waiting_toggle;
 	GtkWidget               *validated_toggle;
 
+	ofaDateFilterHVBin      *date_filter;
+
 	GSimpleAction           *cancel_action;
 	GSimpleAction           *waiting_action;
 	GSimpleAction           *validate_action;
@@ -102,12 +106,14 @@ static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
 static void       paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
 static GtkWidget *setup_view1( ofaRecurrentRunPage *self );
 static GtkWidget *setup_view2( ofaRecurrentRunPage *self );
-static void       setup_filters( ofaRecurrentRunPage *self, GtkContainer *parent );
+static void       setup_status_filter( ofaRecurrentRunPage *self, GtkContainer *parent );
+static void       setup_date_filter( ofaRecurrentRunPage *self, GtkContainer *parent );
 static void       setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent );
 static void       paned_page_v_init_view( ofaPanedPage *page );
 static void       filter_on_cancelled_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
 static void       filter_on_waiting_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
 static void       filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
+static void       on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaRecurrentRunPage *self );
 static void       on_row_selected( ofaRecurrentRunTreeview *view, GList *list, ofaRecurrentRunPage *self );
 static void       tview_examine_selected( ofaRecurrentRunPage *self, GList *selected, guint *cancelled, guint *waiting, guint *validated );
 static void       action_on_cancel_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
@@ -265,7 +271,8 @@ setup_view2( ofaRecurrentRunPage *self )
 	parent = gtk_grid_new();
 	my_utils_container_attach_from_resource( GTK_CONTAINER( parent ), st_resource_ui, "RecurrentRunPageWindow", "top" );
 
-	setup_filters( OFA_RECURRENT_RUN_PAGE( self ), GTK_CONTAINER( parent ));
+	setup_status_filter( OFA_RECURRENT_RUN_PAGE( self ), GTK_CONTAINER( parent ));
+	setup_date_filter( OFA_RECURRENT_RUN_PAGE( self ), GTK_CONTAINER( parent ));
 	setup_actions( OFA_RECURRENT_RUN_PAGE( self ), GTK_CONTAINER( parent ));
 
 	return( parent );
@@ -275,7 +282,7 @@ setup_view2( ofaRecurrentRunPage *self )
  * initialize the filter area
  */
 static void
-setup_filters( ofaRecurrentRunPage *self, GtkContainer *parent )
+setup_status_filter( ofaRecurrentRunPage *self, GtkContainer *parent )
 {
 	ofaRecurrentRunPagePrivate *priv;
 	GtkWidget *btn;
@@ -296,6 +303,30 @@ setup_filters( ofaRecurrentRunPage *self, GtkContainer *parent )
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
 	priv->validated_toggle = btn;
 	g_signal_connect( btn, "toggled", G_CALLBACK( filter_on_validated_btn_toggled ), self );
+}
+
+static void
+setup_date_filter( ofaRecurrentRunPage *self, GtkContainer *container )
+{
+	ofaRecurrentRunPagePrivate *priv;
+	GtkWidget *parent, *label;
+	ofaDateFilterHVBin *filter;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	parent = my_utils_container_get_child_by_name( container, "date-filter" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+
+	filter = ofa_date_filter_hv_bin_new( priv->getter );
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
+
+	/* instead of "effect dates filter" */
+	label = ofa_idate_filter_get_frame_label( OFA_IDATE_FILTER( filter ));
+	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
+
+	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_date_filter_changed ), self );
+
+	priv->date_filter = filter;
 }
 
 /*
@@ -429,6 +460,20 @@ filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *s
 		visible &= ~REC_VISIBLE_VALIDATED;
 	}
 	ofa_recurrent_run_treeview_set_visible( priv->tview, visible );
+}
+
+static void
+on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+	const GDate *from, *to;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	from = ofa_idate_filter_get_date( OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM );
+	to = ofa_idate_filter_get_date( OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO );
+
+	ofa_recurrent_run_treeview_set_ope_date( priv->tview, from, to );
 }
 
 /*
@@ -717,7 +762,7 @@ action_on_object_validated( ofaRecurrentRunPage *self )
 }
 
 /*
- * settings: paned_position;cancelled_visible;waiting_visible;validated_visible;
+ * settings: paned_position; cancelled_visible; waiting_visible; validated_visible; from_date; to_date;
  */
 static void
 read_settings( ofaRecurrentRunPage *self )
@@ -728,6 +773,7 @@ read_settings( ofaRecurrentRunPage *self )
 	const gchar *cstr;
 	gint pos;
 	gchar *key;
+	GDate date;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
@@ -768,6 +814,22 @@ read_settings( ofaRecurrentRunPage *self )
 		filter_on_validated_btn_toggled( GTK_TOGGLE_BUTTON( priv->validated_toggle ), self );
 	}
 
+	/* from date */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
+		ofa_idate_filter_set_date( OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM, &date );
+	}
+
+	/* to date */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
+		ofa_idate_filter_set_date( OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, &date );
+	}
+
 	my_isettings_free_string_list( settings, strlist );
 	g_free( key );
 }
@@ -777,15 +839,24 @@ write_settings( ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
 	myISettings *settings;
-	gchar *str, *key;
+	gchar *str, *key, *sdfrom, *sdto;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	str = g_strdup_printf( "%d;%s;%s;%s;",
+	sdfrom = my_date_to_str(
+			ofa_idate_filter_get_date(
+					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM ), MY_DATE_SQL );
+	sdto = my_date_to_str(
+			ofa_idate_filter_get_date(
+					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO ), MY_DATE_SQL );
+
+	str = g_strdup_printf( "%d;%s;%s;%s;%s;%s;",
 			gtk_paned_get_position( GTK_PANED( priv->paned )),
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->cancelled_toggle )) ? "True":"False",
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->waiting_toggle )) ? "True":"False",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_toggle )) ? "True":"False" );
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_toggle )) ? "True":"False",
+			my_strlen( sdfrom ) ? sdfrom : "",
+			my_strlen( sdto ) ? sdto : "" );
 
 	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
