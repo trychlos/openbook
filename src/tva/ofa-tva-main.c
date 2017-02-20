@@ -89,8 +89,8 @@ static const sItemDef st_items_ref[] = {
 /* the themes which also define the tab titles
  */
 static sThemeDef st_theme_defs[] = {
-		{ "vat-declare",  N_( "VAT _declarations" ),  ofa_tva_record_page_get_type },
-		{ "vat-manage",  N_( "VAT _forms management" ),  ofa_tva_form_page_get_type },
+		{ "vat-declare",  N_( "VAT declarations" ),  ofa_tva_record_page_get_type },
+		{ "vat-manage",  N_( "VAT forms management" ),  ofa_tva_form_page_get_type },
 		{ 0 }
 };
 

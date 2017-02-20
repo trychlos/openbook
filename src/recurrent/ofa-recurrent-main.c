@@ -93,9 +93,9 @@ static const sItemDef st_items_ref[] = {
 /* The themes which also define the tab titles
  */
 static sThemeDef st_theme_defs[] = {
-		{ "rec-period",       N_( "_Recurrent periodicities" ),         ofa_rec_period_page_get_type },
-		{ "recurrent-run",    N_( "_Recurrent operations validation" ), ofa_recurrent_run_page_get_type },
-		{ "recurrent-define", N_( "_Recurrent models management" ),     ofa_recurrent_model_page_get_type },
+		{ "rec-period",       N_( "Recurrent periodicities" ),         ofa_rec_period_page_get_type },
+		{ "recurrent-run",    N_( "Recurrent operations validation" ), ofa_recurrent_run_page_get_type },
+		{ "recurrent-define", N_( "Recurrent models management" ),     ofa_recurrent_model_page_get_type },
 		{ 0 }
 };
 

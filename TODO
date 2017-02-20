@@ -379,9 +379,6 @@
 1366 2017- 2-20 periodicity details: space between widgets should be 2
                 + have an extra right margin for scrollbar
 
-1367 2017- 2-20 the title of var/recurrent pages used in main notebook
-                should not have an underline
-
 1369 2017- 2-20 recurrent operations validation: cancelled operations
                 should be italic+grayed
 
@@ -712,6 +709,10 @@
 
 1365 2017- 2-20 recurrent operations validation: lack of a left margin
                 in visible operations filter
+     2017- 2-20 fixed
+
+1367 2017- 2-20 the title of var/recurrent pages used in main notebook
+                should not have an underline
      2017- 2-20 fixed
 
 1368 2017- 2-20 recurrent operations validation: date -> ope. date

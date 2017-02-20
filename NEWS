@@ -66,7 +66,9 @@
    - ofaITVColumnable: makes sure columns have a minimal width.
    - ofaMysqlRootBin: now updates the ofaMysqlDossierMeta runtime datas.
    - ofaPaimeanSelect: fix store instanciation.
+   - ofaRecurrentMain: remove underline from theme labels (todo #1367).
    - ofaRecurrentRunPage: fix left margin of the visible filter (todo #1365).
+   - ofaTvaMain: remove underline from theme labels (todo #1367).
    - ofaTVBin: header of a centered column is itself centered.
    - ofoAccount: actually delete all children when requested to.
 
