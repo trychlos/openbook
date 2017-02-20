@@ -52,6 +52,7 @@
    - Settlement page now warns when amounts are not balanced (unless Ctrl key is pressed).
    - Settlement page now has a 'View/edit entry...' context menu item (todo #1346).
    - VAT form is more tolerant when an operation template does not exist (todo #1348).
+   - VAT declaration page has an extra space between 'Delete' and 'Validate' buttons (todo #1364).
 
  Bug fixes:
 

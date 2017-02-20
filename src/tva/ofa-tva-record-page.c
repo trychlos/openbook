@@ -272,6 +272,9 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 					OFA_IACTIONABLE_DELETE_BTN ));
 	g_simple_action_set_enabled( priv->delete_action, FALSE );
 
+	/* spacer */
+	ofa_buttons_box_add_spacer( buttons_box );
+
 	/* validate action */
 	priv->validate_action = g_simple_action_new( "validate", NULL );
 	g_signal_connect( priv->validate_action, "activate", G_CALLBACK( action_on_validate_activated ), page );
