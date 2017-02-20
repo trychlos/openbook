@@ -27,6 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "my/my-utils.h"
 
@@ -64,6 +65,7 @@ typedef struct {
 
 	/* UI
 	 */
+	GtkWidget           *top_paned;
 	ofaDossierTreeview  *dossier_tview;
 	GtkWidget           *dossier_new_btn;
 	ofaExerciceTreeview *exercice_tview;
@@ -94,6 +96,8 @@ static void     remove_collection_handler( ofaTargetChooserBin *self );
 static void     on_collection_changed( ofaDossierCollection *collection, guint count, ofaTargetChooserBin *self );
 static void     set_new_object( ofaTargetChooserBin *self, GObject *object );
 static gboolean get_is_new_object( ofaTargetChooserBin *self, GObject *object );
+static void     read_settings( ofaTargetChooserBin *self );
+static void     write_settings( ofaTargetChooserBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaTargetChooserBin, ofa_target_chooser_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaTargetChooserBin ))
@@ -144,6 +148,7 @@ target_chooser_bin_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
+		write_settings( OFA_TARGET_CHOOSER_BIN( instance ));
 		remove_collection_handler( OFA_TARGET_CHOOSER_BIN( instance ));
 
 		priv->dispose_has_run = TRUE;
@@ -245,6 +250,7 @@ ofa_target_chooser_bin_new( ofaIGetter *getter, const gchar *settings_prefix, gu
 	}
 
 	setup_bin( bin );
+	read_settings( bin );
 	exercice_set_sensitive( bin );
 
 	return( bin );
@@ -298,6 +304,10 @@ setup_bin( ofaTargetChooserBin *self )
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	g_signal_connect( btn, "clicked", G_CALLBACK( exercice_on_new ), self );
 	priv->exercice_new_btn = btn;
+
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "tc-paned" );
+	g_return_if_fail( parent && GTK_IS_PANED( parent ));
+	priv->top_paned = parent;
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -574,4 +584,52 @@ ofa_target_chooser_bin_set_selected( ofaTargetChooserBin *bin,
 	dossier_name = dossier_meta ? ofa_idbdossier_meta_get_dossier_name( dossier_meta ) : NULL;
 	ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
 	ofa_exercice_treeview_set_selected( priv->exercice_tview, exercice_meta );
+}
+
+/*
+ * settings are: paned_position;
+ */
+static void
+read_settings( ofaTargetChooserBin *self )
+{
+	ofaTargetChooserBinPrivate *priv;
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gchar *key;
+	gint pos;
+
+	priv = ofa_target_chooser_bin_get_instance_private( self );
+
+	settings = ofa_igetter_get_user_settings( priv->getter );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
+
+	/* paned position */
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
+	gtk_paned_set_position( GTK_PANED( priv->top_paned ), MAX( pos, 150 ));
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
+}
+
+static void
+write_settings( ofaTargetChooserBin *self )
+{
+	ofaTargetChooserBinPrivate *priv;
+	myISettings *settings;
+	gchar *key, *str;
+
+	priv = ofa_target_chooser_bin_get_instance_private( self );
+
+	str = g_strdup_printf( "%d;",
+			gtk_paned_get_position( GTK_PANED( priv->top_paned )));
+
+	settings = ofa_igetter_get_user_settings( priv->getter );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
+	g_free( key );
+	g_free( str );
 }

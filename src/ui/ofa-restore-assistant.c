@@ -329,17 +329,20 @@ restore_assistant_dispose( GObject *instance )
 		g_clear_object( &priv->p3_hgroup );
 		g_clear_object( &priv->p2_connect );
 
-		/* if the archive has been successfully restored and opened,
-		 * it is now time to (maybe) apply standard actions */
-		if( priv->p6_restored && priv->p6_opened && priv->p5_apply && priv->getter ){
-			main_window = ofa_igetter_get_main_window( priv->getter );
-			g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-			ofa_main_window_dossier_apply_actions( OFA_MAIN_WINDOW( main_window ));
-		}
+		if( priv->p6_dossier_meta && OFA_IS_IDBDOSSIER_META( priv->p6_dossier_meta )){
 
-		/* if the dossier has not been opened, inc. the reference count */
-		if( !priv->p6_opened ){
-			g_object_ref( priv->p6_dossier_meta );
+			/* if the archive has been successfully restored and opened,
+			 * it is now time to (maybe) apply standard actions */
+			if( priv->p6_restored && priv->p6_opened && priv->p5_apply && priv->getter ){
+				main_window = ofa_igetter_get_main_window( priv->getter );
+				g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+				ofa_main_window_dossier_apply_actions( OFA_MAIN_WINDOW( main_window ));
+			}
+
+			/* if the dossier has not been opened, inc. the reference count */
+			if( !priv->p6_opened ){
+				g_object_ref( priv->p6_dossier_meta );
+			}
 		}
 	}
 

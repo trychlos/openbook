@@ -47,6 +47,7 @@
    - Reconciliation group is deleted when one of the entries is deleted (todo #758).
    - RecurrentRunPage: have a filter on the operation date (todo #1360).
    - RecurrentRunTreeview: the date column is better named 'Operation' (todo #1368).
+   - Restore assistant: improve target chooser user interface (todo #1362).
    - Settlement group is deleted when one of the entries is deleted (todo #758).
    - Settlement page now auto-updates itself when an entry is modified elsewhere (todo #1347).
    - Settlement page now warns when amounts are not balanced (unless Ctrl key is pressed).
@@ -69,6 +70,7 @@
    - ofaPaimeanSelect: fix store instanciation.
    - ofaRecurrentMain: remove underline from theme labels (todo #1367).
    - ofaRecurrentRunPage: fix left margin of the visible filter (todo #1365).
+   - ofaRestoreAssistant: fix object reference on dispose.
    - ofaTvaMain: remove underline from theme labels (todo #1367).
    - ofaTVBin: header of a centered column is itself centered.
    - ofoAccount: actually delete all children when requested to.
