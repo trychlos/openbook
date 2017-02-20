@@ -28,7 +28,7 @@
 					<attribute name="id">dossier-10-backup</attribute>
 					<attribute name="label" translatable="yes">_Backup...</attribute>
 					<attribute name="action">win.backup</attribute>
-					<attribute name="accel">&lt;Control&gt;b</attribute>
+					<attribute name="accel">&lt;Control&gt;&lt;Shift&gt;b</attribute>
 				</item>
 				<item>
 					<attribute name="id">dossier-10-close</attribute>
@@ -49,13 +49,13 @@
 					<attribute name="id">dossier-20-restore</attribute>
 					<attribute name="label" translatable="yes">_Restore...</attribute>
 					<attribute name="action">app.restore</attribute>
-					<attribute name="accel">&lt;Control&gt;r</attribute>
+					<attribute name="accel">&lt;Control&gt;&lt;Shift&gt;r</attribute>
 				</item>
 				<item>
 					<attribute name="id">dossier-20-recover</attribute>
 					<attribute name="label" translatable="yes">Re_cover...</attribute>
 					<attribute name="action">app.recover</attribute>
-					<attribute name="accel">&lt;Control&gt;c</attribute>
+					<attribute name="accel">&lt;Control&gt;&lt;Shift&gt;c</attribute>
 				</item>
 			</section>
 			<section>
@@ -133,11 +133,13 @@
 					<attribute name="id">operations-40-import</attribute>
 					<attribute name="label" translatable="yes">_Import...</attribute>
 					<attribute name="action">win.import</attribute>
+					<attribute name="accel">&lt;Control&gt;&lt;Shift&gt;i</attribute>
 				</item>
 				<item>
 					<attribute name="id">operations-40-export</attribute>
 					<attribute name="label" translatable="yes">_Export...</attribute>
 					<attribute name="action">win.export</attribute>
+					<attribute name="accel">&lt;Control&gt;&lt;Shift&gt;e</attribute>
 				</item>
 			</section>
 			<section>

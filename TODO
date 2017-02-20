@@ -362,8 +362,6 @@
 1356 2017- 2-17 when entering an operation, have a message 'account does
                 not exist' instead of 'unbalanced currencies'
 
-1357 2017- 2-17 change RecoverAssistant keyboard shortcut (Ctrl-C is bad!)
-
 1359 2017- 2-17 clarify the reference management of the collections
                 when inserting of a new object
 
@@ -696,6 +694,9 @@
 1354 2017- 2- 9 on restored archive from 2014, segfault on check_balances
                 this is a consequence of #1353 - just add some warning
                 messages
+
+1357 2017- 2-17 change RecoverAssistant keyboard shortcut (Ctrl-C is bad!)
+     2017- 2-20 done
 
 1358 2017- 2-17 when importing a batline, debit 0.05 is translated to .-5
      2017- 2-17 fixed

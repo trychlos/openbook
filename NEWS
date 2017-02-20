@@ -24,6 +24,7 @@
    VAT DB Model v7
 
    - Let the user records any document with any table (todo #1263).
+   - Have new keyboard shortcuts for import/export assistants.
    - Account selection does not allow deletion anymore (todo #1349).
    - Accounts are now settleable and reconciliable, and able to allow keeping
      unsettleable and unreconciliable entries.
@@ -61,6 +62,7 @@
    - my_double_to_sql_ex: fix translation when we only have one digit (todo #1358).
    - myISettings: fix free_groups() behavior when groups list is NULL.
    - ofaAccountFrameBin: fix selection of newly created account.
+   - ofaAppMenubar, ofaDosMenubar: change Ctrl-C shortcut (todo #1357).
    - ofoEntry: maintains the store up to date.
    - ofaEntryProperties: let the user close the dialog.
    - ofaExerciceTreeview: fix the update when no dossier is selected.

@@ -31,13 +31,13 @@
 					<attribute name="id">dossier-20-restore</attribute>
 					<attribute name="label" translatable="yes">_Restore...</attribute>
 					<attribute name="action">app.restore</attribute>
-					<attribute name="accel">&lt;Control&gt;r</attribute>
+					<attribute name="accel">&lt;Control&gt;&lt;Shift&gt;r</attribute>
 				</item>
 				<item>
 					<attribute name="id">dossier-20-recover</attribute>
 					<attribute name="label" translatable="yes">Re_cover...</attribute>
 					<attribute name="action">app.recover</attribute>
-					<attribute name="accel">&lt;Control&gt;c</attribute>
+					<attribute name="accel">&lt;Control&gt;&lt;Shift&gt;c</attribute>
 				</item>
 			</section>
 			<section>
