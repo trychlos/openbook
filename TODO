@@ -356,9 +356,6 @@
                 with children and companions (e.g. entries+concil)
                 + have a version number
 
-1355 2017- 2-17 focus issue when new account from account select
-                (unable to create a new account)
-
 1356 2017- 2-17 when entering an operation, have a message 'account does
                 not exist' instead of 'unbalanced currencies'
 
@@ -691,6 +688,10 @@
 1354 2017- 2- 9 on restored archive from 2014, segfault on check_balances
                 this is a consequence of #1353 - just add some warning
                 messages
+
+1355 2017- 2-17 focus issue when new account from account select
+                (unable to create a new account)
+     2017- 2-21 fixed
 
 1357 2017- 2-17 change RecoverAssistant keyboard shortcut (Ctrl-C is bad!)
      2017- 2-20 done

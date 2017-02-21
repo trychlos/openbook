@@ -26,6 +26,7 @@
 
  Bug fixes:
 
+   - myIDialog: fix focus issue when running 'maybe_non_modal()' (todo #1355).
    - Recurrent: fix periodicity details count.
 
  Other changes:

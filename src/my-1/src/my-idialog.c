@@ -377,9 +377,6 @@ my_idialog_run( myIDialog *instance )
  * - if parent has not been defined, it is expected to be the main window
  * - if parent is modal, run modal
  * - else (not modal or not defined), run non modal.
- *
- * Running a non modal dialog requires that the #my_idialog_click_to_update()
- * method be called at initialization time.
  */
 void
 my_idialog_run_maybe_modal( myIDialog *instance )
@@ -393,14 +390,19 @@ my_idialog_run_maybe_modal( myIDialog *instance )
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
+	my_iwindow_init( MY_IWINDOW( instance ));
+
 	parent = my_iwindow_get_parent( MY_IWINDOW( instance ));
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
+	g_debug( "%s: parent=%p (%s)", thisfn, ( void * ) parent, G_OBJECT_TYPE_NAME( parent ));
 
 	if( parent && gtk_window_get_modal( GTK_WINDOW( parent ))){
+		g_debug( "%s: parent is modal: running my_idialog_run", thisfn );
 		my_idialog_run( instance );
 
 	} else {
 		/* after this call, @instance may be invalid */
+		g_debug( "%s: parent is not modal: running my_iwindow_present", thisfn );
 		my_iwindow_present( MY_IWINDOW( instance ));
 	}
 }
@@ -411,11 +413,11 @@ my_idialog_run_maybe_modal( myIDialog *instance )
 static gboolean
 ok_to_terminate( myIDialog *instance, gint response_code )
 {
+	static const gchar *thisfn = "my_idialog_ok_to_terminate";
 	gboolean quit = FALSE;
 
-	/* if the user has set #my_idialog_click_to_update() method,
-	 * then this dialog maybe already destroyed and finalized */
 	if( !MY_IS_IDIALOG( instance )){
+		g_warning( "%s: calling ok_to_terminate() while the dialog is already destroyed", thisfn );
 		return( TRUE );
 	}
 
