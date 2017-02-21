@@ -271,7 +271,7 @@ set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, G
 
 	csdet = "";
 	perdetid = 0;
-	if( period && ofo_rec_period_get_details_count( period ) > 0 ){
+	if( period && ofo_rec_period_detail_get_count( period ) > 0 ){
 		perdetid = ofo_recurrent_model_get_periodicity_detail( model );
 		idx = ofo_rec_period_detail_get_by_id( period, perdetid );
 		if( idx >= 0 ){

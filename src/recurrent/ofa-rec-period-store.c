@@ -264,7 +264,7 @@ set_row_by_iter( ofaRecPeriodStore *self, ofoRecPeriod *period, GtkTreeIter *ite
 	order = ofo_rec_period_get_order( period );
 	sorder = g_strdup_printf( "%u", order );
 	label = ofo_rec_period_get_label( period );
-	count = ofo_rec_period_get_details_count( period );
+	count = ofo_rec_period_detail_get_count( period );
 	scount = g_strdup_printf( "%u", count );
 
 	stamp  = my_stamp_to_str( ofo_rec_period_get_upd_stamp( period ), MY_STAMP_DMYYHM );

@@ -344,7 +344,7 @@ period_on_selection_changed( GtkComboBox *combo, ofaRecPeriodBin *self )
 		gtk_tree_model_get( tmodel, &iter, PER_COL_OBJECT, &priv->period, -1 );
 		if( priv->period ){
 			g_object_unref( priv->period );
-			details_count = ofo_rec_period_get_details_count( priv->period );
+			details_count = ofo_rec_period_detail_get_count( priv->period );
 		}
 	}
 

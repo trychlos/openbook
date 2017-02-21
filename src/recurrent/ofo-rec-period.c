@@ -58,7 +58,6 @@ enum {
 	REC_ID = 1,
 	REC_ORDER,
 	REC_LABEL,
-	REC_DETAILS_COUNT,
 	REC_NOTES,
 	REC_UPD_USER,
 	REC_UPD_STAMP,
@@ -93,12 +92,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				"REC_PER_LABEL",
 				"REC_LABEL",
 				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
-		{ REC_DETAILS_COUNT,
-				"REC_PER_DETAILS_COUNT",
-				"REC_DETAILS_COUNT",
-				OFA_TYPE_INTEGER,
 				TRUE,
 				FALSE },
 		{ REC_NOTES,
@@ -388,16 +381,6 @@ const gchar *
 ofo_rec_period_get_label( ofoRecPeriod *period )
 {
 	ofo_base_getter( REC_PERIOD, period, string, NULL, REC_LABEL );
-}
-
-/**
- * ofo_rec_period_get_details_count:
- * @period: this #ofoRecPeriod object.
- */
-guint
-ofo_rec_period_get_details_count( ofoRecPeriod *period )
-{
-	ofo_base_getter( REC_PERIOD, period, int, 0, REC_DETAILS_COUNT );
 }
 
 /**
@@ -743,17 +726,6 @@ ofo_rec_period_set_label( ofoRecPeriod *period, const gchar *label )
 }
 
 /**
- * ofo_rec_period_set_details_count:
- * @period: this #ofoRecPeriod object.
- * @count:
- */
-void
-ofo_rec_period_set_details_count( ofoRecPeriod *period, guint count )
-{
-	ofo_base_setter( REC_PERIOD, period, int, REC_DETAILS_COUNT, count );
-}
-
-/**
  * ofo_rec_period_set_notes:
  * @period: this #ofoRecPeriod object.
  * @notes:
@@ -977,7 +949,7 @@ rec_period_insert_main( ofoRecPeriod *period, ofaIGetter *getter )
 			ofo_rec_period_get_id( period ),
 			ofo_rec_period_get_order( period ),
 			ofo_rec_period_get_label( period ),
-			ofo_rec_period_get_details_count( period ));
+			ofo_rec_period_detail_get_count( period ));
 
 	notes = my_utils_quote_sql( ofo_rec_period_get_notes( period ));
 	g_string_append_printf( query,
@@ -1113,7 +1085,7 @@ rec_period_update_main( ofoRecPeriod *period, ofaIGetter *getter )
 
 	g_string_append_printf( query, "REC_PER_ORDER=%u,", ofo_rec_period_get_order( period ));
 	g_string_append_printf( query, "REC_PER_LABEL='%s',", ofo_rec_period_get_label( period ));
-	g_string_append_printf( query, "REC_PER_DETAILS_COUNT=%u,", ofo_rec_period_get_details_count( period ));
+	g_string_append_printf( query, "REC_PER_DETAILS_COUNT=%u,", ofo_rec_period_detail_get_count( period ));
 
 	notes = my_utils_quote_sql( ofo_rec_period_get_notes( period ));
 	if( my_strlen( notes )){
@@ -1622,17 +1594,6 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 		return( NULL );
 	}
 	ofo_rec_period_set_label( period, cstr );
-
-	/* count of types of detail */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( !my_strlen( cstr )){
-		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty detail types count" ));
-		parms->parse_errs += 1;
-		g_object_unref( period );
-		return( NULL );
-	}
-	ofo_rec_period_set_details_count( period, atoi( cstr ));
 
 	/* notes
 	 * we are tolerant on the last field... */

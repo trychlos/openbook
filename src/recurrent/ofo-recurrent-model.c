@@ -609,13 +609,13 @@ ofo_recurrent_model_is_valid_data( const gchar *mnemo, const gchar *label,
 		}
 		return( FALSE );
 	}
-	if( ofo_rec_period_get_details_count( period ) > 0 && detail_id <= 0 ){
+	if( ofo_rec_period_detail_get_count( period ) > 0 && detail_id <= 0 ){
 		if( msgerr ){
 			*msgerr = g_strdup( _( "Periodicity expects details, but no detail is set" ));
 		}
 		return( FALSE );
 	}
-	if( ofo_rec_period_get_details_count( period ) == 0 && detail_id > 0 ){
+	if( ofo_rec_period_detail_get_count( period ) == 0 && detail_id > 0 ){
 		if( msgerr ){
 			*msgerr = g_strdup( _( "Periodicity does not expect detail, but a detail is set" ));
 		}
@@ -1414,7 +1414,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( my_strlen( cstr )){
 			if( period ){
-				if( ofo_rec_period_get_details_count( period ) > 0 ){
+				if( ofo_rec_period_detail_get_count( period ) > 0 ){
 					perdetid = atol( cstr );
 					idx = ofo_rec_period_detail_get_by_id( period, perdetid );
 					if( idx >= 0 ){
@@ -1440,7 +1440,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				continue;
 			}
 		} else if( period ){
-			if( ofo_rec_period_get_details_count( period ) > 0 ){
+			if( ofo_rec_period_detail_get_count( period ) > 0 ){
 				ofa_iimporter_progress_num_text( importer, parms, numline,
 						_( "periodicity expects unspecified details" ));
 				parms->parse_errs += 1;

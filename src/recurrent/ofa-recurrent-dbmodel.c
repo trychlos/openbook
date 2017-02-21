@@ -83,6 +83,8 @@ static gboolean dbmodel_to_v7( ofaRecurrentDBModel *self, guint version );
 static gulong   count_v7( ofaRecurrentDBModel *self );
 static gboolean dbmodel_to_v8( ofaRecurrentDBModel *self, guint version );
 static gulong   count_v8( ofaRecurrentDBModel *self );
+static gboolean dbmodel_to_v9( ofaRecurrentDBModel *self, guint version );
+static gulong   count_v9( ofaRecurrentDBModel *self );
 
 typedef struct {
 	gint        ver_target;
@@ -100,6 +102,7 @@ static sMigration st_migrates[] = {
 		{ 6, dbmodel_to_v6, count_v6 },
 		{ 7, dbmodel_to_v7, count_v7 },
 		{ 8, dbmodel_to_v8, count_v8 },
+		{ 9, dbmodel_to_v9, count_v9 },
 		{ 0 }
 };
 
@@ -837,7 +840,8 @@ dbmodel_to_v7( ofaRecurrentDBModel *self, guint version )
 		return( FALSE );
 	}
 
-	/* 2 - update Periodicity table */
+	/* 2 - update Periodicity table
+	 *     REC_PER_DETAILS_COUNT removed in v9 */
 	if( !exec_query( self,
 			"ALTER TABLE REC_T_PERIODS "
 			"	DROP   COLUMN REC_PER_HAVE_DETAIL,"
@@ -1493,6 +1497,32 @@ static gulong
 count_v8( ofaRecurrentDBModel *self )
 {
 	return( 4 );
+}
+
+/*
+ * Remove REC_PER_DETAILS_COUNT column
+ */
+static gboolean
+dbmodel_to_v9( ofaRecurrentDBModel *self, guint version )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v9";
+
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
+
+	/* 1. create Models documents index */
+	if( !exec_query( self,
+			"ALTER TABLE REC_T_PERIODS "
+			"	DROP   COLUMN REC_PER_DETAILS_COUNT" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v9( ofaRecurrentDBModel *self )
+{
+	return( 1 );
 }
 
 static gulong

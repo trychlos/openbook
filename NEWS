@@ -20,15 +20,17 @@
 
  New features and improvements:
 
+   Recurrent DB Model v9
+
    - 
 
  Bug fixes:
 
-   - 
+   - Recurrent: fix periodicity details count.
 
  Other changes:
 
-   - 
+   - Periodicity properties: review UI margins (todo #1366).
 
 -----------------------------------------------------------------------
  Version 0.67

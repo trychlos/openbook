@@ -33,6 +33,9 @@
  * This file defines the #ofoRecPeriod class behavior.
  *
  * An #ofoRecPeriod describes a periodicity.
+ *
+ * Id         : a free alpha-numeric identifier
+ * Order      : the display order (e.g. in combobox or in treeview)
  */
 
 #include "api/ofa-box.h"
@@ -94,7 +97,6 @@ ofoRecPeriod   *ofo_rec_period_new                   ( ofaIGetter *getter );
 const gchar    *ofo_rec_period_get_id                ( ofoRecPeriod *period );
 guint           ofo_rec_period_get_order             ( ofoRecPeriod *period );
 const gchar    *ofo_rec_period_get_label             ( ofoRecPeriod *period );
-guint           ofo_rec_period_get_details_count     ( ofoRecPeriod *period );
 const gchar    *ofo_rec_period_get_notes             ( ofoRecPeriod *period );
 const gchar    *ofo_rec_period_get_upd_user          ( ofoRecPeriod *period );
 const GTimeVal *ofo_rec_period_get_upd_stamp         ( ofoRecPeriod *period );
@@ -119,7 +121,6 @@ void            ofo_rec_period_enum_between          ( ofoRecPeriod *period,
 void            ofo_rec_period_set_id                ( ofoRecPeriod *period, const gchar *id );
 void            ofo_rec_period_set_order             ( ofoRecPeriod *period, guint order );
 void            ofo_rec_period_set_label             ( ofoRecPeriod *period, const gchar *label );
-void            ofo_rec_period_set_details_count     ( ofoRecPeriod *period, guint count );
 void            ofo_rec_period_set_notes             ( ofoRecPeriod *period, const gchar *notes );
 
 void            ofo_rec_period_free_detail_all       ( ofoRecPeriod *period );
