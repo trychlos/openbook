@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include <cairo.h>
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
@@ -90,6 +91,7 @@ static void        get_and_send( ofaAccountTreeview *self, GtkTreeSelection *sel
 static ofoAccount *get_selected_with_selection( ofaAccountTreeview *self, GtkTreeSelection *selection );
 static gint        find_account_iter( ofaAccountTreeview *self, const gchar *account_id, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void        cell_data_render_text( GtkCellRendererText *renderer, gboolean is_root, gint level, gboolean is_error );
+static void        cell_data_render_pixbuf( GtkCellRendererPixbuf *renderer, gboolean is_root, gint level, gboolean is_error );
 static gboolean    tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountTreeview *self );
 static void        tview_collapse_node( ofaAccountTreeview *self, GtkWidget *widget );
 static void        tview_expand_node( ofaAccountTreeview *self, GtkWidget *widget );
@@ -699,6 +701,7 @@ ofa_account_treeview_cell_data_render( ofaAccountTreeview *view,
 		cell_data_render_text( GTK_CELL_RENDERER_TEXT( renderer ), is_root, level, is_error );
 
 	} else if( GTK_IS_CELL_RENDERER_PIXBUF( renderer )){
+		cell_data_render_pixbuf( GTK_CELL_RENDERER_PIXBUF( renderer ), is_root, level, is_error );
 
 		/*if( ofo_account_is_root( account_obj ) && level == 2 ){
 			path = gtk_tree_model_get_path( tmodel, iter );
@@ -714,7 +717,7 @@ cell_data_render_text( GtkCellRendererText *renderer, gboolean is_root, gint lev
 {
 	GdkRGBA color;
 
-	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( renderer ));
+	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER_TEXT( renderer ));
 
 	g_object_set( G_OBJECT( renderer ),
 						"style-set",      FALSE,
@@ -743,6 +746,23 @@ cell_data_render_text( GtkCellRendererText *renderer, gboolean is_root, gint lev
 	} else if( is_error ){
 		gdk_rgba_parse( &color, "#800000" );
 		g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+	}
+}
+
+static void
+cell_data_render_pixbuf( GtkCellRendererPixbuf *renderer, gboolean is_root, gint level, gboolean is_error )
+{
+	GdkRGBA color;
+
+	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER_PIXBUF( renderer ));
+
+	g_object_set( G_OBJECT( renderer ), "cell-background-set", FALSE, NULL );
+
+	if( is_root ){
+		if( level == 2 ){
+			gdk_rgba_parse( &color, "#c0ffff" );
+			g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
+		}
 	}
 }
 

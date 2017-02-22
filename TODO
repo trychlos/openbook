@@ -92,10 +92,6 @@
                 same font/background
                 + may be useful to use styles ?
 
- 442 2014-11-13 AccountsBook: add a notes indicator
-     2014-12-19 started with svn #4348
-                bug left: no background on highlighted rows...
-
  445 2014-11-13 my_date: do not accept two successive '/'
      2014-11-23 done - svn #4145
      2015- 1- 8 opened back as doesn't work
@@ -378,6 +374,11 @@
 
  325 2014-10-12 DossierManage Properties: to be written
      2017- 1-27 cancelled (because do not know what this is about)
+
+ 442 2014-11-13 AccountsBook: add a notes indicator
+     2014-12-19 started with svn #4348
+                bug left: no background on highlighted rows...
+     2017- 2-22 fixed
 
  553 2015- 1- 6 deleting a dossier only removes its references from
                 settings - so DossierDelete and DossierDeletePrefs
