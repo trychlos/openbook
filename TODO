@@ -102,10 +102,6 @@
      2015- 1- 5 really only required when ofoBat/ofoBatLine will implement
                 the ofaIExportable interface - so it is not urgent
 
- 513 2014-12- 9 whether balancing accounts are settleable or 
-                reconciliable (and shouldn't) has to be checked when 
-                setting these accounts for balance
-
  525 2014-12-13 when importing entries: review the code to be faster
                 import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)
                 import ledgers:  0.02982 s/row (9 rows)
@@ -366,8 +362,6 @@
 1369 2017- 2-20 recurrent operations validation: cancelled operations
                 should be italic+grayed
 
-1370 2017- 2-22 ofaClosingParmsBin should implement myIGridlist
-
 1371 2017- 2-22 myIGridlist should send a changed signal when removing a row 
 
 1372
@@ -383,6 +377,11 @@
      2014-12-19 started with svn #4348
                 bug left: no background on highlighted rows...
      2017- 2-22 fixed
+
+ 513 2014-12- 9 whether balancing accounts are settleable or
+                reconciliable (and shouldn't) has to be checked when
+                setting these accounts for balance
+     2017- 2-22 done
 
  553 2015- 1- 6 deleting a dossier only removes its references from
                 settings - so DossierDelete and DossierDeletePrefs
@@ -727,6 +726,9 @@
 
 1368 2017- 2-20 recurrent operations validation: date -> ope. date
      2017- 2-20 done
+
+1370 2017- 2-22 ofaClosingParmsBin should implement myIGridlist
+     2017- 2-22 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

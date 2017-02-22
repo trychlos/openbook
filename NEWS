@@ -34,6 +34,7 @@
 
    - my_igridlist_add_row(): add user data argument.
    - my_igridlist_get_rows_count(): renamed to my_igridlist_get_details_count().
+   - ofaClosingParmsBin: implements myIGridlist interface (todo #1370).
    - Periodicity properties: review UI margins (todo #1366).
 
 -----------------------------------------------------------------------

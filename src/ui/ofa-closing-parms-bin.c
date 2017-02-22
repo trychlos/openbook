@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "my/my-date.h"
+#include "my/my-igridlist.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-account-editable.h"
@@ -60,7 +61,8 @@ typedef struct {
 	 */
 	GtkWidget      *forward;
 	ofoDossier     *dossier;
-	GSList         *currencies;			/* used currencies, from entries */
+	gboolean        is_writable;
+	GList          *currencies;			/* knwon currencies */
 	gchar          *detail_account;
 
 	/* the closing operations
@@ -72,8 +74,7 @@ typedef struct {
 
 	/* the balancing accounts per currency
 	 */
-	GtkGrid        *grid;
-	gint            count;				/* total count of rows in the grid */
+	GtkWidget      *acc_grid;
 }
 	ofaClosingParmsBinPrivate;
 
@@ -84,10 +85,8 @@ typedef struct {
 /* the columns in the dynamic grid
  */
 enum {
-	COL_ADD = 0,
-	COL_CURRENCY,
+	COL_CURRENCY = 0,
 	COL_ACCOUNT,
-	COL_REMOVE,
 	N_COLUMNS
 };
 
@@ -102,29 +101,29 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-closing-parms-bin.ui";
 
-static void     setup_bin( ofaClosingParmsBin *self );
-static void     setup_closing_opes( ofaClosingParmsBin *bin );
-static void     setup_currency_accounts( ofaClosingParmsBin *bin );
-static void     on_sld_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
-static void     on_for_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
-static void     on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label );
-static void     add_empty_row( ofaClosingParmsBin *self );
-static void     add_button( ofaClosingParmsBin *self, const gchar *stock_id, gint column, gint row );
-static void     on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaClosingParmsBin *self );
-static void     on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self );
-static void     on_button_clicked( GtkButton *button, ofaClosingParmsBin *self );
-static void     remove_row( ofaClosingParmsBin *self, gint row );
-static void     set_currency( ofaClosingParmsBin *self, gint row, const gchar *code );
-static void     set_account( ofaClosingParmsBin *self, const gchar *currency, const gchar *account );
-static gint     find_currency_row( ofaClosingParmsBin *self, const gchar *currency );
-static GObject *get_currency_combo_at( ofaClosingParmsBin *self, gint row );
-static void     check_bin( ofaClosingParmsBin *bin );
-static gboolean check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg );
-static gchar   *get_detail_account( ofaClosingParmsBin *self );
-static gboolean check_for_accounts( ofaClosingParmsBin *self, gchar **msg );
+static void       setup_bin( ofaClosingParmsBin *self );
+static void       setup_closing_opes( ofaClosingParmsBin *self );
+static void       setup_currencies( ofaClosingParmsBin *self );
+static void       setup_currency_accounts( ofaClosingParmsBin *self );
+static void       igridlist_iface_init( myIGridListInterface *iface );
+static guint      igridlist_get_interface_version( void );
+static void       igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *currency );
+static void       setup_detail_widgets( ofaClosingParmsBin *self, GtkGrid *grid, guint row, const gchar *currency );
+static void       set_detail_values( ofaClosingParmsBin *self, GtkGrid *grid, guint row, const gchar *currency );
+static void       on_sld_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
+static void       on_for_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
+static void       on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label );
+static void       on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaClosingParmsBin *self );
+static void       on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self );
+static GtkWidget *get_currency_combo_at( ofaClosingParmsBin *self, gint row );
+static void       check_bin( ofaClosingParmsBin *bin );
+static gboolean   check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg );
+static gchar     *get_detail_account( ofaClosingParmsBin *self );
+static gboolean   check_for_accounts( ofaClosingParmsBin *self, gchar **msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaClosingParmsBin ))
+		G_ADD_PRIVATE( ofaClosingParmsBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ))
 
 static void
 closing_parms_bin_finalize( GObject *instance )
@@ -180,6 +179,7 @@ ofa_closing_parms_bin_init( ofaClosingParmsBin *self )
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->currencies = NULL;
 	priv->detail_account = NULL;
 }
 
@@ -236,9 +236,11 @@ ofa_closing_parms_bin_new( ofaIGetter *getter )
 	hub = ofa_igetter_get_hub( getter );
 	priv->dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ), NULL );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	setup_bin( bin );
 	setup_closing_opes( bin );
+	setup_currencies( bin );
 	setup_currency_accounts( bin );
 
 	return( bin );
@@ -298,12 +300,12 @@ setup_bin( ofaClosingParmsBin *bin )
 }
 
 static void
-setup_closing_opes( ofaClosingParmsBin *bin )
+setup_closing_opes( ofaClosingParmsBin *self )
 {
 	ofaClosingParmsBinPrivate *priv;
 	const gchar *cstr;
 
-	priv = ofa_closing_parms_bin_get_instance_private( bin );
+	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	/* operation mnemo for closing entries
 	 * - have a default value */
@@ -319,35 +321,150 @@ setup_closing_opes( ofaClosingParmsBin *bin )
 	}
 }
 
+/*
+ * Store in our currencies list all known currencies:
+ * - all distinct currencies found in entries
+ * - distinct currencies already archived in dossier
+ * - dossier default currency
+ */
 static void
-setup_currency_accounts( ofaClosingParmsBin *bin )
+setup_currencies( ofaClosingParmsBin *self )
 {
 	ofaClosingParmsBinPrivate *priv;
-	gint i;
 	GSList *currencies, *it;
-	const gchar *currency, *account;
+	const gchar *cur;
 
-	priv = ofa_closing_parms_bin_get_instance_private( bin );
+	priv = ofa_closing_parms_bin_get_instance_private( self );
 
-	priv->grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-grid" ));
-	priv->count = 1;
-	add_button( bin, "gtk-add", COL_ADD, priv->count );
-
-	/* display all used currencies (from entries)
-	 * then display the corresponding account number (if set) */
-	priv->currencies = ofo_entry_get_currencies( priv->getter );
-	for( i=1, it=priv->currencies ; it ; ++i, it=it->next ){
-		add_empty_row( bin );
-		set_currency( bin, i, ( const gchar * ) it->data );
+	/* all used currencies from entries
+	 * take the ownership of the string */
+	currencies = ofo_entry_get_currencies( priv->getter );
+	for( it=currencies ; it ; it=it->next ){
+		priv->currencies = g_list_insert_sorted( priv->currencies, it->data, ( GCompareFunc ) my_collate );
 	}
+	g_slist_free( currencies );
 
-	/* for currencies already recorded in dossier_cur,
-	 * set the account number  */
+	/* currencies already archived in dossier_cur
+	 * normally all archived currencies should have at least one entry,
+	 * so be already in the list */
 	currencies = ofo_dossier_get_currencies( priv->dossier );
 	for( it=currencies ; it ; it=it->next ){
-		currency = ( const gchar * ) it->data;
+		cur = ( const gchar * ) it->data;
+		if( !g_list_find_custom( priv->currencies, cur, ( GCompareFunc ) my_collate )){
+			priv->currencies = g_list_insert_sorted( priv->currencies, g_strdup( cur ), ( GCompareFunc ) my_collate );
+		}
+	}
+	ofo_dossier_free_currencies( currencies );
+
+	/* add the default currency for the dossier */
+	cur = ofo_dossier_get_default_currency( priv->dossier );
+	if( !g_list_find_custom( priv->currencies, cur, ( GCompareFunc ) my_collate )){
+		priv->currencies = g_list_insert_sorted( priv->currencies, g_strdup( cur ), ( GCompareFunc ) my_collate );
+	}
+}
+
+/*
+ * Setup one row for each known currency
+ */
+static void
+setup_currency_accounts( ofaClosingParmsBin *self )
+{
+	ofaClosingParmsBinPrivate *priv;
+	GList *it;
+
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
+	priv->acc_grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-grid" );
+	g_return_if_fail( priv->acc_grid && GTK_IS_GRID( priv->acc_grid ));
+
+	my_igridlist_init(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->acc_grid ),
+			TRUE, priv->is_writable, N_COLUMNS );
+
+	for( it=priv->currencies ; it ; it=it->next ){
+		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->acc_grid ), it->data );
+	}
+}
+
+/*
+ * myIGridList interface management
+ */
+static void
+igridlist_iface_init( myIGridListInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ofa_ope_template_properties_igridlist_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = igridlist_get_interface_version;
+	iface->setup_row = igridlist_setup_row;
+}
+
+static guint
+igridlist_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static void
+igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *currency )
+{
+	ofaClosingParmsBinPrivate *priv;
+
+	g_return_if_fail( instance && OFA_IS_CLOSING_PARMS_BIN( instance ));
+
+	priv = ofa_closing_parms_bin_get_instance_private( OFA_CLOSING_PARMS_BIN( instance ));
+	g_return_if_fail( grid == GTK_GRID( priv->acc_grid ));
+
+	setup_detail_widgets( OFA_CLOSING_PARMS_BIN( instance ), grid, row, ( const gchar * ) currency );
+	set_detail_values( OFA_CLOSING_PARMS_BIN( instance ), grid, row, ( const gchar * ) currency );
+}
+
+static void
+setup_detail_widgets( ofaClosingParmsBin *self, GtkGrid *grid, guint row, const gchar *currency )
+{
+	ofaClosingParmsBinPrivate *priv;
+	GtkWidget *box, *entry;
+	ofaCurrencyCombo *combo;
+	static const gint st_currency_cols[] = { CURRENCY_COL_CODE, -1 };
+
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
+	/* currency combo box */
+	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	combo = ofa_currency_combo_new();
+	gtk_widget_set_sensitive( GTK_WIDGET( combo ), priv->is_writable );
+	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( combo ));
+	ofa_currency_combo_set_columns( combo, st_currency_cols );
+	ofa_currency_combo_set_getter( combo, priv->getter );
+	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
+	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, box, 1+COL_CURRENCY, row, 1, 1 );
+
+	/* account number */
+	entry = gtk_entry_new();
+	gtk_widget_set_sensitive( entry, priv->is_writable );
+	ofa_account_editable_init( GTK_EDITABLE( entry ), priv->getter, ACCOUNT_ALLOW_DETAIL );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_account_changed ), self );
+	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, entry, 1+COL_ACCOUNT, row, 1, 1 );
+}
+
+static void
+set_detail_values( ofaClosingParmsBin *self, GtkGrid *grid, guint row, const gchar *currency )
+{
+	ofaClosingParmsBinPrivate *priv;
+	GtkWidget *combo, *entry;
+	const gchar *account;
+
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
+	if( my_strlen( currency )){
+		combo = get_currency_combo_at( self, row );
+		ofa_currency_combo_set_selected( OFA_CURRENCY_COMBO( combo ), currency );
+
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->acc_grid ), 1+COL_ACCOUNT, row );
+		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		account = ofo_dossier_get_sld_account( priv->dossier, currency );
-		set_account( bin, currency, account );
+		gtk_entry_set_text( GTK_ENTRY( entry ), account ? account : "" );
 	}
 }
 
@@ -385,72 +502,6 @@ on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label )
 	check_bin( self );
 }
 
-/*
- * insert a row at the given position, counted from zero
- * priv->count maintains the count of rows in the grid, including the
- * headers, but not counting the last row with just an 'Add' button.
- */
-static void
-add_empty_row( ofaClosingParmsBin *self )
-{
-	ofaClosingParmsBinPrivate *priv;
-	GtkWidget *widget;
-	ofaCurrencyCombo *combo;
-	gint row;
-	static const gint st_currency_cols[] = { CURRENCY_COL_CODE, -1 };
-
-	priv = ofa_closing_parms_bin_get_instance_private( self );
-
-	row = priv->count;
-
-	gtk_widget_destroy( gtk_grid_get_child_at( priv->grid, COL_ADD, row ));
-
-	/* currency combo box */
-	widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	gtk_grid_attach( priv->grid, widget, COL_CURRENCY, row, 1, 1 );
-	combo = ofa_currency_combo_new();
-	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( combo ));
-	ofa_currency_combo_set_columns( combo, st_currency_cols );
-	ofa_currency_combo_set_getter( combo, priv->getter );
-	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
-	g_object_set_data( G_OBJECT( combo ), DATA_ROW, GINT_TO_POINTER( row ));
-	g_object_set_data( G_OBJECT( widget ), DATA_COMBO, combo);
-
-	/* account number */
-	widget = gtk_entry_new();
-	g_object_set_data( G_OBJECT( widget ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_grid_attach( priv->grid, widget, COL_ACCOUNT, row, 1, 1 );
-	ofa_account_editable_init( GTK_EDITABLE( widget ), priv->getter, ACCOUNT_ALLOW_DETAIL );
-	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
-
-	/* management buttons */
-	add_button( self, "gtk-remove", COL_REMOVE, row );
-	add_button( self, "gtk-add", COL_ADD, row+1 );
-
-	priv->count += 1;
-	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
-}
-
-/*
- * add an 'Add' button to the row (counted from zero)
- */
-static void
-add_button( ofaClosingParmsBin *self, const gchar *stock_id, gint column, gint row )
-{
-	ofaClosingParmsBinPrivate *priv;
-	GtkWidget *image, *button;
-
-	priv = ofa_closing_parms_bin_get_instance_private( self );
-
-	button = gtk_button_new();
-	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
-	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
-	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
-	gtk_button_set_image( GTK_BUTTON( button ), image );
-	g_signal_connect( button, "clicked", G_CALLBACK( on_button_clicked ), self );
-	gtk_grid_attach( priv->grid, button, column, row, 1, 1 );
-}
-
 static void
 on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaClosingParmsBin *self )
 {
@@ -463,154 +514,21 @@ on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self )
 	check_bin( self );
 }
 
-static void
-on_button_clicked( GtkButton *button, ofaClosingParmsBin *self )
-{
-	gint column, row;
-
-	column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_COLUMN ));
-	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
-	switch( column ){
-		case COL_ADD:
-			add_empty_row( self );
-			break;
-		case COL_REMOVE:
-			remove_row( self, row );
-			break;
-	}
-}
-
-/*
- * we have clicked on the 'Remove' button on the 'row' row
- * row is counted from zero
- * priv->count maintains the count of rows in the grid, including the
- * headers, but not counting the last row with just an 'Add' button.
- */
-static void
-remove_row( ofaClosingParmsBin *self, gint row )
-{
-	ofaClosingParmsBinPrivate *priv;
-	gint i, line;
-	GtkWidget *widget;
-
-	priv = ofa_closing_parms_bin_get_instance_private( self );
-
-	/* first remove the line
-	 * note that there is no 'add' button in a used line */
-	for( i=0 ; i<N_COLUMNS ; ++i ){
-		if( i != COL_ADD ){
-			gtk_widget_destroy( gtk_grid_get_child_at( priv->grid, i, row ));
-		}
-	}
-
-	/* then move the follow lines one row up */
-	for( line=row+1 ; line<=priv->count+1 ; ++line ){
-		for( i=0 ; i<N_COLUMNS ; ++i ){
-			widget = gtk_grid_get_child_at( priv->grid, i, line );
-			if( widget ){
-				g_object_ref( widget );
-				gtk_container_remove( GTK_CONTAINER( priv->grid ), widget );
-				gtk_grid_attach( priv->grid, widget, i, line-1, 1, 1 );
-				g_object_set_data( G_OBJECT( widget ), DATA_ROW, GINT_TO_POINTER( line-1 ));
-				g_object_unref( widget );
-			}
-		}
-	}
-
-	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
-
-	/* last update the lines count */
-	priv->count -= 1;
-}
-
-/*
- * at initialization time, select the given currency at the given row
- */
-static void
-set_currency( ofaClosingParmsBin *self, gint row, const gchar *code )
-{
-	GObject *combo;
-
-	combo = get_currency_combo_at( self, row );
-	if( combo ){
-		g_return_if_fail( OFA_IS_CURRENCY_COMBO( combo ));
-		ofa_currency_combo_set_selected( OFA_CURRENCY_COMBO( combo ), code );
-	}
-}
-
-/*
- * at initialization time, set the given account for the given currency
- */
-static void
-set_account( ofaClosingParmsBin *self, const gchar *currency, const gchar *account )
-{
-	ofaClosingParmsBinPrivate *priv;
-	gint row;
-	GtkWidget *entry;
-
-	priv = ofa_closing_parms_bin_get_instance_private( self );
-
-	row = find_currency_row( self, currency );
-
-	if( !row ){
-		add_empty_row( self );
-		row = priv->count;
-		set_currency( self, row, currency );
-	}
-
-	entry = gtk_grid_get_child_at( priv->grid, COL_ACCOUNT, row );
-	if( entry ){
-		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-		gtk_entry_set_text( GTK_ENTRY( entry ), account );
-	}
-}
-
-static gint
-find_currency_row( ofaClosingParmsBin *self, const gchar *currency )
-{
-	ofaClosingParmsBinPrivate *priv;
-	GObject *combo;
-	gint row, cmp;
-	gchar *selected;
-
-	priv = ofa_closing_parms_bin_get_instance_private( self );
-
-	for( row=1 ; row<=priv->count ; ++row ){
-
-		combo = get_currency_combo_at( self, row );
-		if( combo ){
-			g_return_val_if_fail( OFA_IS_CURRENCY_COMBO( combo ), -1 );
-
-			selected = ofa_currency_combo_get_selected( OFA_CURRENCY_COMBO( combo ));
-			cmp = g_utf8_collate( selected, currency );
-			g_free( selected );
-
-			if( cmp == 0 ){
-				return( row );
-			}
-		}
-	}
-
-	return( -1 );
-}
-
-static GObject *
+static GtkWidget *
 get_currency_combo_at( ofaClosingParmsBin *self, gint row )
 {
 	ofaClosingParmsBinPrivate *priv;
-	GtkWidget *align;
-	GObject *combo;
+	GtkWidget *box, *combo;
+	GList *children;
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
-	align = gtk_grid_get_child_at( priv->grid, COL_CURRENCY, row );
-	if( !align ){
-		return( NULL );
-	}
-	g_return_val_if_fail( GTK_IS_CONTAINER( align ), NULL );
-
-	combo = g_object_get_data( G_OBJECT( align ), DATA_COMBO );
+	box = gtk_grid_get_child_at( GTK_GRID( priv->acc_grid ), 1+COL_CURRENCY, row );
+	g_return_val_if_fail( box && GTK_IS_BOX( box ), NULL );
+	children = gtk_container_get_children( GTK_CONTAINER( box ));
+	combo = ( GtkWidget * ) children->data;
 	g_return_val_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ), NULL );
+	g_list_free( children );
 
 	return( combo );
 }
@@ -733,29 +651,28 @@ static gboolean
 check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 {
 	ofaClosingParmsBinPrivate *priv;
-	GSList *it;
-	gint row;
-	const gchar *acc_number, *acc_currency, *cstr;
-	GtkWidget *entry;
-	GObject *combo;
-	ofoAccount *account;
+	guint row, details_count;
 	gchar *code;
-	GSList *cursets, *find;
+	GList *cursets, *find, *it;
+	ofoAccount *account;
 	gboolean ok;
+	const gchar *acc_number, *acc_currency, *cstr;
+	GtkWidget *combo, *entry;
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	ok = TRUE;
 	cursets = NULL;
+	details_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->acc_grid ));
 
-	for( row=1 ; row<priv->count ; ++row ){
+	for( row=1 ; row<=details_count ; ++row ){
 		combo = get_currency_combo_at( self, row );
-		g_return_val_if_fail( OFA_IS_CURRENCY_COMBO( combo ), FALSE );
+		g_return_val_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ), FALSE );
 
 		code = ofa_currency_combo_get_selected( OFA_CURRENCY_COMBO( combo ));
 		if( my_strlen( code )){
 
-			find = g_slist_find_custom( cursets, code, ( GCompareFunc ) g_utf8_collate );
+			find = g_list_find_custom( cursets, code, ( GCompareFunc ) my_collate );
 			if( find ){
 				if( msg ){
 					*msg = g_strdup_printf( _( "The currency %s appears to be duplicated" ), code );
@@ -763,9 +680,9 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 				ok = FALSE;
 				break;
 			}
-			cursets = g_slist_prepend( cursets, g_strdup( code ));
+			cursets = g_list_prepend( cursets, g_strdup( code ));
 
-			entry = gtk_grid_get_child_at( priv->grid, COL_ACCOUNT, row );
+			entry = gtk_grid_get_child_at( GTK_GRID( priv->acc_grid ), 1+COL_ACCOUNT, row );
 			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 
 			acc_number = gtk_entry_get_text( GTK_ENTRY( entry ));
@@ -835,7 +752,7 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 			}
 
 			acc_currency = ofo_account_get_currency( account );
-			if( g_utf8_collate( code, acc_currency )){
+			if( my_collate( code, acc_currency ) != 0 ){
 				if( msg ){
 					*msg = g_strdup_printf(
 							_( "The account '%s' manages %s currency, which is incompatible with currency %s on row %u" ),
@@ -853,7 +770,7 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 	if( ok ){
 		for( it=priv->currencies ; it ; it=it->next ){
 			cstr = ( const gchar * ) it->data;
-			find = g_slist_find_custom( cursets, cstr, ( GCompareFunc ) g_utf8_collate );
+			find = g_list_find_custom( cursets, cstr, ( GCompareFunc ) my_collate );
 			if( !find ){
 				if( msg ){
 					*msg = g_strdup_printf( _( "The mandatory currency %s is not set" ), cstr );
@@ -864,7 +781,7 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 		}
 	}
 
-	g_slist_free_full( cursets, ( GDestroyNotify ) g_free );
+	g_list_free_full( cursets, ( GDestroyNotify ) g_free );
 
 	return( ok );
 }
@@ -877,9 +794,8 @@ ofa_closing_parms_bin_apply( ofaClosingParmsBin *bin )
 {
 	static const gchar *thisfn = "ofa_closing_parms_bin_apply";
 	ofaClosingParmsBinPrivate *priv;
-	gint row;
-	GtkWidget *entry;
-	GObject *combo;
+	guint details_count, row;
+	GtkWidget *entry, *combo;
 	gchar *code;
 	const gchar *acc_number;
 
@@ -897,14 +813,16 @@ ofa_closing_parms_bin_apply( ofaClosingParmsBin *bin )
 
 	ofo_dossier_reset_currencies( priv->dossier );
 
-	for( row=1 ; row<priv->count ; ++row ){
+	details_count = my_igridlist_get_details_count( MY_IGRIDLIST( bin ), GTK_GRID( priv->acc_grid ));
+
+	for( row=1 ; row<=details_count ; ++row ){
 		combo = get_currency_combo_at( bin, row );
 		g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
 
 		code = ofa_currency_combo_get_selected( OFA_CURRENCY_COMBO( combo ));
 		if( my_strlen( code )){
 
-			entry = gtk_grid_get_child_at( priv->grid, COL_ACCOUNT, row );
+			entry = gtk_grid_get_child_at( GTK_GRID( priv->acc_grid ), 1+COL_ACCOUNT, row );
 			g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 			acc_number = gtk_entry_get_text( GTK_ENTRY( entry ));
 

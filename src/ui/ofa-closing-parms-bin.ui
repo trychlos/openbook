@@ -44,7 +44,7 @@
                             <property name="tooltip_text" translatable="yes">For each currency, enter or select the account which will receive the balancing entries.
 This account should be neither settleable, reconciliable nor forwardable.</property>
                             <property name="row_spacing">2</property>
-                            <property name="column_spacing">4</property>
+                            <property name="column_spacing">2</property>
                             <child>
                               <object class="GtkLabel" id="label1">
                                 <property name="visible">True</property>

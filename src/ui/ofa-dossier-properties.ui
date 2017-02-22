@@ -830,8 +830,8 @@
                       <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">At this time, parameters for exercice closing are checked, but their status will not prevent this dialog to be recorded.
-A full validation is postponed until the actual exercice closing.</property>
+                        <property name="margin_left">3</property>
+                        <property name="label" translatable="yes">At this time, parameters for exercice closing are checked, but their status will not prevent this dialog to be validable. Only lines which have both a currency and a corresponding solde account will be recorded in the dossier.</property>
                         <property name="wrap">True</property>
                         <property name="xalign">0</property>
                       </object>
