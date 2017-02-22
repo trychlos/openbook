@@ -755,13 +755,24 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 		code = ofa_currency_combo_get_selected( OFA_CURRENCY_COMBO( combo ));
 		if( my_strlen( code )){
 
+			find = g_slist_find_custom( cursets, code, ( GCompareFunc ) g_utf8_collate );
+			if( find ){
+				if( msg ){
+					*msg = g_strdup_printf( _( "The currency %s appears to be duplicated" ), code );
+				}
+				ok = FALSE;
+				break;
+			}
+			cursets = g_slist_prepend( cursets, g_strdup( code ));
+
 			entry = gtk_grid_get_child_at( priv->grid, COL_ACCOUNT, row );
 			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 
 			acc_number = gtk_entry_get_text( GTK_ENTRY( entry ));
 			if( !my_strlen( acc_number )){
 				if( msg ){
-					*msg = g_strdup_printf( _( "%s: empty account number" ), code );
+					*msg = g_strdup_printf(
+							_( "An account is mandatory (currency %s on row %u)" ), code, row );
 				}
 				ok = FALSE;
 				break;
@@ -771,7 +782,7 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 			if( !account ){
 				if( msg ){
 					*msg = g_strdup_printf(
-								_( "%s: invalid account number: %s" ), code, acc_number );
+							_( "The account number '%s' is invalid (currency %s on row %u)" ), acc_number, code, row );
 				}
 				ok = FALSE;
 				break;
@@ -781,7 +792,7 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 			if( ofo_account_is_root( account )){
 				if( msg ){
 					*msg = g_strdup_printf(
-								_( "%s: unauthorized root account: %s" ), code, acc_number );
+							_( "Root account '%s' is no allowed here (currency %s on row %u)" ), acc_number, code, row );
 				}
 				ok = FALSE;
 				break;
@@ -790,7 +801,34 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 			if( ofo_account_is_closed( account )){
 				if( msg ){
 					*msg = g_strdup_printf(
-								_( "%s: unauthorized closed account: %s" ), code, acc_number );
+							_( "Closed account '%s' is no allowed here (currency %s on row %u)" ), acc_number, code, row );
+				}
+				ok = FALSE;
+				break;
+			}
+
+			if( ofo_account_is_settleable( account )){
+				if( msg ){
+					*msg = g_strdup_printf(
+							_( "Settleable account '%s' is no allowed here (currency %s on row %u)" ), acc_number, code, row );
+				}
+				ok = FALSE;
+				break;
+			}
+
+			if( ofo_account_is_reconciliable( account )){
+				if( msg ){
+					*msg = g_strdup_printf(
+							_( "Reconciliable account '%s' is no allowed here (currency %s on row %u)" ), acc_number, code, row );
+				}
+				ok = FALSE;
+				break;
+			}
+
+			if( ofo_account_is_forwardable( account )){
+				if( msg ){
+					*msg = g_strdup_printf(
+							_( "Forwardable account '%s' is no allowed here (currency %s on row %u)" ), acc_number, code, row );
 				}
 				ok = FALSE;
 				break;
@@ -800,22 +838,12 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 			if( g_utf8_collate( code, acc_currency )){
 				if( msg ){
 					*msg = g_strdup_printf(
-								_( "%s: incompatible account currency: %s: %s" ), code, acc_number, acc_currency );
+							_( "The account '%s' manages %s currency, which is incompatible with currency %s on row %u" ),
+							acc_number, acc_currency, code, row );
 				}
 				ok = FALSE;
 				break;
 			}
-
-			find = g_slist_find_custom( cursets, code, ( GCompareFunc ) g_utf8_collate );
-			if( find ){
-				if( msg ){
-					*msg = g_strdup_printf( _( "%s: duplicate currency" ), code );
-				}
-				ok = FALSE;
-				break;
-			}
-
-			cursets = g_slist_prepend( cursets, g_strdup( code ));
 		}
 		g_free( code );
 	}
@@ -828,7 +856,7 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 			find = g_slist_find_custom( cursets, cstr, ( GCompareFunc ) g_utf8_collate );
 			if( !find ){
 				if( msg ){
-					*msg = g_strdup_printf( _( "%s: unset mandatory currency" ), cstr );
+					*msg = g_strdup_printf( _( "The mandatory currency %s is not set" ), cstr );
 				}
 				ok = FALSE;
 				break;

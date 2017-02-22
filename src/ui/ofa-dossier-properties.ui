@@ -803,16 +803,42 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox" id="p5-forward-parent">
+                  <object class="GtkGrid">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">3</property>
+                    <property name="margin_left">2</property>
                     <property name="margin_right">2</property>
                     <property name="margin_top">2</property>
                     <property name="margin_bottom">2</property>
-                    <property name="orientation">vertical</property>
                     <child>
-                      <placeholder/>
+                      <object class="GtkBox" id="p5-forward-parent">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="margin_top">2</property>
+                        <property name="margin_bottom">2</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">At this time, parameters for exercice closing are checked, but their status will not prevent this dialog to be recorded.
+A full validation is postponed until the actual exercice closing.</property>
+                        <property name="wrap">True</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">1</property>
+                      </packing>
                     </child>
                   </object>
                   <packing>

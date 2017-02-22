@@ -366,7 +366,11 @@
 1369 2017- 2-20 recurrent operations validation: cancelled operations
                 should be italic+grayed
 
-1370
+1370 2017- 2-22 ofaClosingParmsBin should implement myIGridlist
+
+1371 2017- 2-22 myIGridlist should send a changed signal when removing a row 
+
+1372
 
 -----------------------------------------------------------------------
  DONE
