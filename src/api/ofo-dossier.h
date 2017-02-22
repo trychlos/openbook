@@ -122,8 +122,7 @@ GDate               *ofo_dossier_get_min_deffect           ( const ofoDossier *d
 																	const ofoLedger *ledger, GDate *date );
 
 GSList              *ofo_dossier_get_currencies            ( ofoDossier *dossier );
-#define              ofo_dossier_free_currencies( L )      g_slist_free_full(( L ), \
-																	( GDestroyNotify ) g_free )
+#define              ofo_dossier_free_currencies( L )      ( g_slist_free_full(( L ), ( GDestroyNotify ) g_free ))
 
 const gchar         *ofo_dossier_get_sld_account           ( ofoDossier *dossier,
 																	const gchar *currency );
