@@ -48,17 +48,17 @@ typedef struct {
 }
 	sIGridList;
 
-#define IGRIDLIST_LAST_VERSION          1
+#define IGRIDLIST_LAST_VERSION            1
 #define IGRIDLIST_DATA                  "igridlist-data"
 #define IGRIDLIST_COLUMN                "igridlist-column"
 #define IGRIDLIST_ROW                   "igridlist-row"
 
-#define COL_ADD                         0
-#define COL_ROW                         0
+#define COL_ADD                           0
+#define COL_ROW                           0
 #define COL_UP                          (sdata->columns_count+1)
 #define COL_DOWN                        (sdata->columns_count+2)
 #define COL_REMOVE                      (sdata->columns_count+3)
-#define RANG_WIDTH                      3
+#define RANG_WIDTH                        3
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
@@ -274,7 +274,7 @@ on_button_clicked( GtkButton *button, sIGridList *sdata )
 			thisfn, ( void * ) button, ( void * ) sdata, column, row );
 
 	if( column == COL_ADD ){
-		my_igridlist_add_row( sdata->instance, sdata->grid );
+		my_igridlist_add_row( sdata->instance, sdata->grid, NULL );
 
 	} else if( column == COL_UP ){
 		g_return_if_fail( row > sdata->first_row );
@@ -418,22 +418,26 @@ signal_row_removed( sIGridList *sdata )
  * my_igridlist_add_row:
  * @instance: this #myIGridList instance.
  * @grid: the target #GtkGrid.
+ * @user_data: [allow-none]: user data to be passed to setup_row() method.
  *
  * Adds a new empty row at the end of the @grid
  * (actually at the user end, i.e. before the last row which holds the
  *  'Add' button).
  *
+ * This function triggers the setup_row() method.
+ *
  * Returns: the index of the newly added row, counted from zero.
  */
 guint
-my_igridlist_add_row( const myIGridList *instance, GtkGrid *grid )
+my_igridlist_add_row( const myIGridList *instance, GtkGrid *grid, void *user_data )
 {
 	static const gchar *thisfn = "my_igridlist_add_row";
 	sIGridList *sdata;
 	guint row;
 
 	if( 0 ){
-		g_debug( "%s: instance=%p, grid=%p", thisfn, ( void * ) instance, ( void * ) grid );
+		g_debug( "%s: instance=%p, grid=%p, user_data=%p",
+				thisfn, ( void * ) instance, ( void * ) grid, user_data );
 	}
 
 	g_return_val_if_fail( instance && MY_IS_IGRIDLIST( instance ), 0 );
@@ -448,7 +452,7 @@ my_igridlist_add_row( const myIGridList *instance, GtkGrid *grid )
 	add_button( sdata, "gtk-add", COL_ADD, row+1, 4, G_CALLBACK( on_button_clicked ));
 
 	if( MY_IGRIDLIST_GET_INTERFACE( instance )->setup_row ){
-		MY_IGRIDLIST_GET_INTERFACE( instance )->setup_row( instance, grid, row );
+		MY_IGRIDLIST_GET_INTERFACE( instance )->setup_row( instance, grid, row, user_data );
 
 	} else {
 		g_info( "%s: myIGridList's %s implementation does not provide 'setup_row()' method",

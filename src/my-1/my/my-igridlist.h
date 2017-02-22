@@ -38,11 +38,11 @@
  * All methods must identify the #myIGridList instance (e.g. the dialog)
  * and the concerned #GtkGrid.
  *
- * The managed grid is expected to have a header row at index 0, and
- * the interface adds an empty row with only a '+' (Add) button at the
- * end of the grid.
+ * The managed grid may have a header row at index 0, and the interface
+ * adds an empty row with only a '+' (Add) button at the end of the grid.
+ *
  * An empty grid from the user point of view has so exacty two rows:
- * the headers row + the Add row.
+ * the headers row (if present) + the Add row.
  * A grid which has n detail lines has so n+2 rows.
  * Details lines are numbered from 1 to n, which happens to be the row
  * index in the managed grid.
@@ -51,6 +51,9 @@
  * - either a Add button or the row number at column 0
  * - the detail widgets to be provided by the implementation
  * - the Up, Down and Remove buttons on last right columns
+ *
+ * From the implementation point of view, the column numbering so starts
+ * at 1.
  */
 
 #include <gtk/gtk.h>
@@ -68,9 +71,9 @@ typedef struct _myIGridList                    myIGridList;
  * myIGridListInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
- * @set_row: [may]: set widgets and values on the row.
+ * @setup_row: [may]: set widgets and values on the row.
 *
- * This defines the interface that an #myIGridList may/should/must
+ * This defines the interface that a #myIGridList may/should/must
  * implement.
  */
 typedef struct {
@@ -96,16 +99,20 @@ typedef struct {
 	 * set_row:
 	 * @instance: the #myIGridList instance.
 	 * @grid: the target #GtkGrid
-	 * @row: the row index, counted from zero.
+	 * @row: the row index in the @grid.
+	 * @user_data: [allow-none]: the data passed to my_igridlist_add_row().
 	 *
 	 * The implementation may take advantage of this method to add
 	 * its own widgets and values to the @grid.
+	 *
+	 * The interface takes care of add
 	 *
 	 * Since: version 1.
 	 */
 	void       ( *setup_row )            ( const myIGridList *instance,
 												GtkGrid *grid,
-												guint row );
+												guint row,
+												void *user_data );
 }
 	myIGridListInterface;
 
@@ -131,7 +138,8 @@ void       my_igridlist_init                      ( const myIGridList *instance,
 														guint columns_count );
 
 guint      my_igridlist_add_row                   ( const myIGridList *instance,
-														GtkGrid *grid );
+														GtkGrid *grid,
+														void *user_data );
 
 void       my_igridlist_set_widget                ( const myIGridList *instance,
 														GtkGrid *grid,

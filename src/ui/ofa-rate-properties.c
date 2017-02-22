@@ -99,7 +99,7 @@ static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     igridlist_iface_init( myIGridListInterface *iface );
 static guint    igridlist_get_interface_version( void );
-static void     igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row );
+static void     igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *empty );
 static void     setup_detail_widgets( ofaRateProperties *self, guint row );
 static void     set_detail_values( ofaRateProperties *self, guint row );
 static void     on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self );
@@ -369,7 +369,7 @@ idialog_init( myIDialog *instance )
 
 	count = ofo_rate_get_val_count( priv->rate );
 	for( idx=0 ; idx<count ; ++idx ){
-		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->grid ));
+		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->grid ), NULL );
 	}
 
 	check_for_enable_dlg( OFA_RATE_PROPERTIES( instance ));
@@ -396,7 +396,7 @@ igridlist_get_interface_version( void )
 }
 
 static void
-igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row )
+igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *empty )
 {
 	ofaRatePropertiesPrivate *priv;
 

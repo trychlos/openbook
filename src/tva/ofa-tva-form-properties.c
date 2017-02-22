@@ -121,7 +121,7 @@ static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     igridlist_iface_init( myIGridListInterface *iface );
 static guint    igridlist_get_interface_version( void );
-static void     igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row );
+static void     igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *empty );
 static void     setup_detail_widgets( ofaTVAFormProperties *self, guint row );
 static void     set_detail_values( ofaTVAFormProperties *self, guint row );
 static void     setup_boolean_widgets( ofaTVAFormProperties *self, guint row );
@@ -412,7 +412,7 @@ idialog_init( myIDialog *instance )
 			TRUE, priv->is_writable, N_DET_COLUMNS );
 	count = ofo_tva_form_detail_get_count( priv->tva_form );
 	for( idx=0 ; idx<count ; ++idx ){
-		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->det_grid ));
+		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->det_grid ), NULL );
 	}
 
 	priv->bool_grid = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p3-grid" );
@@ -422,7 +422,7 @@ idialog_init( myIDialog *instance )
 			TRUE, priv->is_writable, N_BOOL_COLUMNS );
 	count = ofo_tva_form_boolean_get_count( priv->tva_form );
 	for( idx=0 ; idx<count ; ++idx ){
-		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->bool_grid ));
+		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->bool_grid ), NULL );
 	}
 
 	/* if not the current exercice, then only have a 'Close' button */
@@ -455,7 +455,7 @@ igridlist_get_interface_version( void )
 }
 
 static void
-igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row )
+igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *empty )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 

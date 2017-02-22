@@ -106,7 +106,7 @@ static void     init_details( ofaRecPeriodProperties *self );
 static void     setup_properties( ofaRecPeriodProperties *self );
 static void     igridlist_iface_init( myIGridListInterface *iface );
 static guint    igridlist_get_interface_version( void );
-static void     igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row );
+static void     igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *empty );
 static void     init_detail_widgets( ofaRecPeriodProperties *self, guint row );
 static void     setup_detail_values( ofaRecPeriodProperties *self, guint row );
 static void     on_order_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self );
@@ -387,7 +387,7 @@ init_details( ofaRecPeriodProperties *self )
 
 	count = ofo_rec_period_detail_get_count( priv->rec_period );
 	for( i=1 ; i<=count ; ++i ){
-		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ));
+		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ), NULL );
 	}
 }
 
@@ -430,7 +430,7 @@ igridlist_get_interface_version( void )
 }
 
 static void
-igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row )
+igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *empty )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
 
