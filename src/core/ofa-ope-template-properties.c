@@ -815,7 +815,7 @@ on_pam_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
-	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
+	count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
 
 	if( gtk_toggle_button_get_active( btn )){
 		for( i=1 ; i<=count ; ++i ){
@@ -899,7 +899,7 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 
 	/* make sure that we have at most one mean of paiement target */
 	if( ok && priv->details_grid ){
-		count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
+		count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
 		pam_count = 0;
 		for( i=1 ; i<=count ; ++i ){
 			get_detail_list( self, i, FALSE );
@@ -963,7 +963,7 @@ do_update( ofaOpeTemplateProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( GTK_WINDOW( self ), ope_template );
 
 	ofo_ope_template_free_detail_all( priv->ope_template );
-	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
+	count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
 	pam_row = -1;
 	for( i=1 ; i<=count ; ++i ){
 		get_detail_list( self, i, TRUE );

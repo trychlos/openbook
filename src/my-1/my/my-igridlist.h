@@ -149,7 +149,7 @@ void       my_igridlist_set_widget                ( const myIGridList *instance,
 														guint width,
 														guint height );
 
-guint      my_igridlist_get_rows_count            ( const myIGridList *instance,
+guint      my_igridlist_get_details_count         ( const myIGridList *instance,
 														GtkGrid *grid );
 
 guint      my_igridlist_get_row_index             ( GtkWidget *widget );

@@ -616,7 +616,7 @@ is_dialog_validable( ofaRateProperties *self )
 
 	priv = ofa_rate_properties_get_instance_private( self );
 
-	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
+	count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
 	for( i=1, valids=NULL ; i<=count ; ++i ){
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_BEGIN, i ));
 		dbegin = my_date_editable_get_date( GTK_EDITABLE( entry ), NULL );
@@ -697,7 +697,7 @@ do_update( ofaRateProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( self, rate );
 
 	ofo_rate_free_all_val( priv->rate );
-	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
+	count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
 
 	for( i=1 ; i<=count ; ++i ){
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_BEGIN, i ));

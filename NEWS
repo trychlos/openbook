@@ -33,6 +33,7 @@
  Other changes:
 
    - my_igridlist_add_row(): add user data argument.
+   - my_igridlist_get_rows_count(): renamed to my_igridlist_get_details_count().
    - Periodicity properties: review UI margins (todo #1366).
 
 -----------------------------------------------------------------------

@@ -870,7 +870,7 @@ is_dialog_validable( ofaTVAFormProperties *self )
 
 	if( ok ){
 		enabled = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ));
-		rows_count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ));
+		rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ));
 		for( i=1 ; i<=rows_count ; ++i ){
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_TEMPLATE, i );
 			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
@@ -944,7 +944,7 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 
 	my_utils_container_notes_get( GTK_WINDOW( self ), tva_form );
 
-	rows_count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ));
+	rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ));
 	ofo_tva_form_detail_free_all( priv->tva_form );
 	for( i=1 ; i<=rows_count ; ++i ){
 		spin = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_LEVEL, i );
@@ -990,7 +990,7 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 		}
 	}
 
-	rows_count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->bool_grid ));
+	rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->bool_grid ));
 	ofo_tva_form_boolean_free_all( priv->tva_form );
 	for( i=1 ; i<=rows_count ; ++i ){
 		entry = gtk_grid_get_child_at( GTK_GRID( priv->bool_grid ), 1+COL_BOOL_LABEL, i );

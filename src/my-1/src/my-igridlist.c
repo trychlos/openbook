@@ -535,7 +535,7 @@ set_widget( sIGridList *sdata, GtkWidget *widget, guint column, guint row, guint
 }
 
 /**
- * my_igridlist_get_rows_count:
+ * my_igridlist_get_details_count:
  * @instance: this #myIGridList instance.
  * @grid: the target #GtkGrid.
  *
@@ -543,9 +543,9 @@ set_widget( sIGridList *sdata, GtkWidget *widget, guint column, guint row, guint
  * last row with only the Add button.
  */
 guint
-my_igridlist_get_rows_count( const myIGridList *instance, GtkGrid *grid )
+my_igridlist_get_details_count( const myIGridList *instance, GtkGrid *grid )
 {
-	static const gchar *thisfn = "my_igridlist_get_rows_count";
+	static const gchar *thisfn = "my_igridlist_get_details_count";
 	sIGridList *sdata;
 
 	if( 0 ){

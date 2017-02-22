@@ -596,7 +596,7 @@ do_update( ofaRecPeriodProperties *self, gchar **msgerr )
 	ofo_rec_period_set_label( priv->rec_period, clabel );
 
 	ofo_rec_period_free_detail_all( priv->rec_period );
-	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ));
+	count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ));
 	for( i=1 ; i<=count ; ++i ){
 		get_detail_list( self, i );
 	}
