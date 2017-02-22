@@ -1500,8 +1500,8 @@ ofo_entry_get_max_futur_deffect( ofaIGetter *getter, const gchar *account, GDate
  * ofo_entry_get_currencies:
  * @getter: a #ofaIGetter instance.
  *
- * Returns: a #GSList of currency identifiers (ISO 3A code) used by the
- * entries.
+ * Returns: a #GSList of distinct currency identifiers (ISO 3A code)
+ * recorded in the entries.
  *
  * The returned value should be ofo_entry_free_currencies() by the caller.
  */
