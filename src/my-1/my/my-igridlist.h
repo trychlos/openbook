@@ -54,6 +54,11 @@
  *
  * From the implementation point of view, the column numbering so starts
  * at 1.
+ *
+ * Signals
+ * -------
+ * my-row-changed: sent to the interface when a row is added or removed
+ * by clicking on the corresponding button.
  */
 
 #include <gtk/gtk.h>

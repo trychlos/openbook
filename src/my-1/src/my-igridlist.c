@@ -48,19 +48,27 @@ typedef struct {
 }
 	sIGridList;
 
-#define IGRIDLIST_LAST_VERSION            1
+#define IGRIDLIST_LAST_VERSION              1
 #define IGRIDLIST_DATA                  "igridlist-data"
 #define IGRIDLIST_COLUMN                "igridlist-column"
 #define IGRIDLIST_ROW                   "igridlist-row"
 
-#define COL_ADD                           0
-#define COL_ROW                           0
+#define COL_ADD                             0
+#define COL_ROW                             0
 #define COL_UP                          (sdata->columns_count+1)
 #define COL_DOWN                        (sdata->columns_count+2)
 #define COL_REMOVE                      (sdata->columns_count+3)
-#define RANG_WIDTH                        3
+#define RANG_WIDTH                          3
 
-static guint st_initializations         = 0;	/* interface initialization count */
+/* signals defined here
+ */
+enum {
+	CHANGED = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+static guint st_initializations         =   0;	/* interface initialization count */
 
 static GType       register_type( void );
 static void        interface_base_init( myIGridListInterface *klass );
@@ -136,7 +144,27 @@ interface_base_init( myIGridListInterface *klass )
 	if( st_initializations == 0 ){
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
-		/* declare here the default implementations */
+		/**
+		 * myIGridList::my-row-changed:
+		 *
+		 * This signal is sent when a row is added or removed by clicking
+		 * on the corresponding button.
+		 *
+		 * Handler is of type:
+		 * void ( *handler )( myIGridlist *instance,
+		 * 						gpointer   user_data );
+		 */
+		st_signals[ CHANGED ] = g_signal_new_class_handler(
+					"my-row-changed",
+					MY_TYPE_IGRIDLIST,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					0,
+					G_TYPE_NONE );
 	}
 
 	st_initializations += 1;
@@ -275,6 +303,7 @@ on_button_clicked( GtkButton *button, sIGridList *sdata )
 
 	if( column == COL_ADD ){
 		my_igridlist_add_row( sdata->instance, sdata->grid, NULL );
+		g_signal_emit_by_name(( gpointer ) sdata->instance, "my-row-changed" );
 
 	} else if( column == COL_UP ){
 		g_return_if_fail( row > sdata->first_row );
@@ -286,6 +315,7 @@ on_button_clicked( GtkButton *button, sIGridList *sdata )
 
 	} else if( column == COL_REMOVE ){
 		remove_row( sdata, row );
+		g_signal_emit_by_name(( gpointer ) sdata->instance, "my-row-changed" );
 
 	} else {
 		g_warning( "%s: invalid column=%u", thisfn, column );
