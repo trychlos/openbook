@@ -35,7 +35,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	const myIGridList *instance;
+	const myIGridlist *instance;
 	GtkGrid           *grid;
 	gboolean           has_header;
 	gboolean           writable;
@@ -71,8 +71,8 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static guint st_initializations         =   0;	/* interface initialization count */
 
 static GType       register_type( void );
-static void        interface_base_init( myIGridListInterface *klass );
-static void        interface_base_finalize( myIGridListInterface *klass );
+static void        interface_base_init( myIGridlistInterface *klass );
+static void        interface_base_finalize( myIGridlistInterface *klass );
 static GtkWidget  *add_button( sIGridList *sdata, const gchar *stock_id, guint column, guint row, guint right_margin, GCallback cb );
 static void        on_button_clicked( GtkButton *button, sIGridList *sdata );
 static void        exchange_rows( sIGridList *sdata, gint row_a, gint row_b );
@@ -84,7 +84,7 @@ static void        signal_row_added( sIGridList *sdata );
 static void        signal_row_removed( sIGridList *sdata );
 static void        add_empty_row( sIGridList *sdata, guint row );
 static void        set_widget( sIGridList *sdata, GtkWidget *widget, guint column, guint row, guint width, guint height );
-static sIGridList *get_igridlist_data( const myIGridList *instance, GtkGrid *grid );
+static sIGridList *get_igridlist_data( const myIGridlist *instance, GtkGrid *grid );
 static void        on_grid_finalized( sIGridList *sdata, GObject *finalized_grid );
 
 /**
@@ -116,7 +116,7 @@ register_type( void )
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( myIGridListInterface ),
+		sizeof( myIGridlistInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -129,7 +129,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "myIGridList", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "myIGridlist", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -137,7 +137,7 @@ register_type( void )
 }
 
 static void
-interface_base_init( myIGridListInterface *klass )
+interface_base_init( myIGridlistInterface *klass )
 {
 	static const gchar *thisfn = "my_igridlist_interface_base_init";
 
@@ -145,7 +145,7 @@ interface_base_init( myIGridListInterface *klass )
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
 		/**
-		 * myIGridList::my-row-changed:
+		 * myIGridlist::my-row-changed:
 		 *
 		 * This signal is sent when a row is added or removed by clicking
 		 * on the corresponding button.
@@ -171,7 +171,7 @@ interface_base_init( myIGridListInterface *klass )
 }
 
 static void
-interface_base_finalize( myIGridListInterface *klass )
+interface_base_finalize( myIGridlistInterface *klass )
 {
 	static const gchar *thisfn = "my_igridlist_interface_base_finalize";
 
@@ -218,11 +218,11 @@ my_igridlist_get_interface_version( GType type )
 
 	version = 1;
 
-	if((( myIGridListInterface * ) iface )->get_interface_version ){
-		version = (( myIGridListInterface * ) iface )->get_interface_version();
+	if((( myIGridlistInterface * ) iface )->get_interface_version ){
+		version = (( myIGridlistInterface * ) iface )->get_interface_version();
 
 	} else {
-		g_info( "%s implementation does not provide 'myIGridList::get_interface_version()' method",
+		g_info( "%s implementation does not provide 'myIGridlist::get_interface_version()' method",
 				g_type_name( type ));
 	}
 
@@ -233,7 +233,7 @@ my_igridlist_get_interface_version( GType type )
 
 /**
  * my_igridlist_init:
- * @instance: this #myIGridList instance.
+ * @instance: this #myIGridlist instance.
  * @grid: the #GtkGrid container.
  * @has_header: whether row zero is used by the headers.
  * @writable: whether the data are updatable by the user.
@@ -243,7 +243,7 @@ my_igridlist_get_interface_version( GType type )
  * Initialize the containing @grid, creating the very first Add button.
  */
 void
-my_igridlist_init( const myIGridList *instance, GtkGrid *grid, gboolean has_header, gboolean writable, guint columns_count )
+my_igridlist_init( const myIGridlist *instance, GtkGrid *grid, gboolean has_header, gboolean writable, guint columns_count )
 {
 	static const gchar *thisfn = "my_igridlist_init";
 	sIGridList *sdata;
@@ -446,7 +446,7 @@ signal_row_removed( sIGridList *sdata )
 
 /**
  * my_igridlist_add_row:
- * @instance: this #myIGridList instance.
+ * @instance: this #myIGridlist instance.
  * @grid: the target #GtkGrid.
  * @user_data: [allow-none]: user data to be passed to setup_row() method.
  *
@@ -459,7 +459,7 @@ signal_row_removed( sIGridList *sdata )
  * Returns: the index of the newly added row, counted from zero.
  */
 guint
-my_igridlist_add_row( const myIGridList *instance, GtkGrid *grid, void *user_data )
+my_igridlist_add_row( const myIGridlist *instance, GtkGrid *grid, void *user_data )
 {
 	static const gchar *thisfn = "my_igridlist_add_row";
 	sIGridList *sdata;
@@ -485,7 +485,7 @@ my_igridlist_add_row( const myIGridList *instance, GtkGrid *grid, void *user_dat
 		MY_IGRIDLIST_GET_INTERFACE( instance )->setup_row( instance, grid, row, user_data );
 
 	} else {
-		g_info( "%s: myIGridList's %s implementation does not provide 'setup_row()' method",
+		g_info( "%s: myIGridlist's %s implementation does not provide 'setup_row()' method",
 				thisfn, G_OBJECT_TYPE_NAME( instance ));
 	}
 
@@ -518,7 +518,7 @@ add_empty_row( sIGridList *sdata, guint row )
 
 /**
  * my_igridlist_set_widget:
- * @instance: this #myIGridList instance.
+ * @instance: this #myIGridlist instance.
  * @grid: the target #GtkGrid.
  * @widget: the widget to be added to the @grid.
  * @column: the target column index.
@@ -530,7 +530,7 @@ add_empty_row( sIGridList *sdata, guint row )
  * If a widget was already present as this place, it is destroyed.
  */
 void
-my_igridlist_set_widget( const myIGridList *instance, GtkGrid *grid,
+my_igridlist_set_widget( const myIGridlist *instance, GtkGrid *grid,
 							GtkWidget *widget, guint column, guint row, guint width, guint height )
 {
 	static const gchar *thisfn = "my_igridlist_set_widget";
@@ -566,14 +566,14 @@ set_widget( sIGridList *sdata, GtkWidget *widget, guint column, guint row, guint
 
 /**
  * my_igridlist_get_details_count:
- * @instance: this #myIGridList instance.
+ * @instance: this #myIGridlist instance.
  * @grid: the target #GtkGrid.
  *
  * Returns: the count of detail rows, not counting the header nor the
  * last row with only the Add button.
  */
 guint
-my_igridlist_get_details_count( const myIGridList *instance, GtkGrid *grid )
+my_igridlist_get_details_count( const myIGridlist *instance, GtkGrid *grid )
 {
 	static const gchar *thisfn = "my_igridlist_get_details_count";
 	sIGridList *sdata;
@@ -606,7 +606,7 @@ my_igridlist_get_row_index( GtkWidget *widget )
 }
 
 static sIGridList *
-get_igridlist_data( const myIGridList *instance, GtkGrid *grid )
+get_igridlist_data( const myIGridlist *instance, GtkGrid *grid )
 {
 	sIGridList *sdata;
 

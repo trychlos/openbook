@@ -27,7 +27,7 @@
 
 /**
  * SECTION: igridlist
- * @title: myIGridList
+ * @title: myIGridlist
  * @short_description: An interface to manage the dynamic grids.
  * @include: my/my-igridlist.h
  *
@@ -35,7 +35,7 @@
  * a grid with a variable set of rows, which may be added, removed
  * or moved.
  *
- * All methods must identify the #myIGridList instance (e.g. the dialog)
+ * All methods must identify the #myIGridlist instance (e.g. the dialog)
  * and the concerned #GtkGrid.
  *
  * The managed grid may have a header row at index 0, and the interface
@@ -66,19 +66,19 @@
 G_BEGIN_DECLS
 
 #define MY_TYPE_IGRIDLIST                      ( my_igridlist_get_type())
-#define MY_IGRIDLIST( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, MY_TYPE_IGRIDLIST, myIGridList ))
+#define MY_IGRIDLIST( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, MY_TYPE_IGRIDLIST, myIGridlist ))
 #define MY_IS_IGRIDLIST( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, MY_TYPE_IGRIDLIST ))
-#define MY_IGRIDLIST_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), MY_TYPE_IGRIDLIST, myIGridListInterface ))
+#define MY_IGRIDLIST_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), MY_TYPE_IGRIDLIST, myIGridlistInterface ))
 
-typedef struct _myIGridList                    myIGridList;
+typedef struct _myIGridlist                    myIGridlist;
 
 /**
- * myIGridListInterface:
+ * myIGridlistInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
  * @setup_row: [may]: set widgets and values on the row.
 *
- * This defines the interface that a #myIGridList may/should/must
+ * This defines the interface that a #myIGridlist may/should/must
  * implement.
  */
 typedef struct {
@@ -102,7 +102,7 @@ typedef struct {
 	/*** instance-wide ***/
 	/**
 	 * set_row:
-	 * @instance: the #myIGridList instance.
+	 * @instance: the #myIGridlist instance.
 	 * @grid: the target #GtkGrid
 	 * @row: the row index in the @grid.
 	 * @user_data: [allow-none]: the data passed to my_igridlist_add_row().
@@ -114,12 +114,12 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void       ( *setup_row )            ( const myIGridList *instance,
+	void       ( *setup_row )            ( const myIGridlist *instance,
 												GtkGrid *grid,
 												guint row,
 												void *user_data );
 }
-	myIGridListInterface;
+	myIGridlistInterface;
 
 /*
  * Interface-wide
@@ -136,17 +136,17 @@ guint      my_igridlist_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
-void       my_igridlist_init                      ( const myIGridList *instance,
+void       my_igridlist_init                      ( const myIGridlist *instance,
 														GtkGrid *grid,
 														gboolean has_header,
 														gboolean writable,
 														guint columns_count );
 
-guint      my_igridlist_add_row                   ( const myIGridList *instance,
+guint      my_igridlist_add_row                   ( const myIGridlist *instance,
 														GtkGrid *grid,
 														void *user_data );
 
-void       my_igridlist_set_widget                ( const myIGridList *instance,
+void       my_igridlist_set_widget                ( const myIGridlist *instance,
 														GtkGrid *grid,
 														GtkWidget *widget,
 														guint column,
@@ -154,7 +154,7 @@ void       my_igridlist_set_widget                ( const myIGridList *instance,
 														guint width,
 														guint height );
 
-guint      my_igridlist_get_details_count         ( const myIGridList *instance,
+guint      my_igridlist_get_details_count         ( const myIGridlist *instance,
 														GtkGrid *grid );
 
 guint      my_igridlist_get_row_index             ( GtkWidget *widget );

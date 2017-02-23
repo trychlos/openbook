@@ -105,9 +105,9 @@ static void       setup_bin( ofaClosingParmsBin *self );
 static void       setup_closing_opes( ofaClosingParmsBin *self );
 static void       setup_currencies( ofaClosingParmsBin *self );
 static void       setup_currency_accounts( ofaClosingParmsBin *self );
-static void       igridlist_iface_init( myIGridListInterface *iface );
+static void       igridlist_iface_init( myIGridlistInterface *iface );
 static guint      igridlist_get_interface_version( void );
-static void       igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *currency );
+static void       igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *currency );
 static void       setup_detail_widgets( ofaClosingParmsBin *self, GtkGrid *grid, guint row, const gchar *currency );
 static void       set_detail_values( ofaClosingParmsBin *self, GtkGrid *grid, guint row, const gchar *currency );
 static void       on_sld_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
@@ -115,7 +115,7 @@ static void       on_for_ope_changed( GtkEditable *editable, ofaClosingParmsBin 
 static void       on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label );
 static void       on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaClosingParmsBin *self );
 static void       on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self );
-static void       on_detail_count_changed( myIGridList *instance, void *empty );
+static void       on_detail_count_changed( myIGridlist *instance, void *empty );
 static GtkWidget *get_currency_combo_at( ofaClosingParmsBin *self, gint row );
 static void       check_bin( ofaClosingParmsBin *bin );
 static gboolean   check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg );
@@ -390,10 +390,10 @@ setup_currency_accounts( ofaClosingParmsBin *self )
 }
 
 /*
- * myIGridList interface management
+ * myIGridlist interface management
  */
 static void
-igridlist_iface_init( myIGridListInterface *iface )
+igridlist_iface_init( myIGridlistInterface *iface )
 {
 	static const gchar *thisfn = "ofa_ofa_ope_template_properties_igridlist_iface_init";
 
@@ -410,7 +410,7 @@ igridlist_get_interface_version( void )
 }
 
 static void
-igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *currency )
+igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *currency )
 {
 	ofaClosingParmsBinPrivate *priv;
 
@@ -518,7 +518,7 @@ on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self )
 }
 
 static void
-on_detail_count_changed( myIGridList *instance, void *empty )
+on_detail_count_changed( myIGridlist *instance, void *empty )
 {
 	check_bin( OFA_CLOSING_PARMS_BIN( instance ));
 }

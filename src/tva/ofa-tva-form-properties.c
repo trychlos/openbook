@@ -119,9 +119,9 @@ static void     iwindow_init( myIWindow *instance );
 static gchar   *iwindow_get_identifier( const myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
-static void     igridlist_iface_init( myIGridListInterface *iface );
+static void     igridlist_iface_init( myIGridlistInterface *iface );
 static guint    igridlist_get_interface_version( void );
-static void     igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *empty );
+static void     igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *empty );
 static void     setup_detail_widgets( ofaTVAFormProperties *self, guint row );
 static void     set_detail_values( ofaTVAFormProperties *self, guint row );
 static void     setup_boolean_widgets( ofaTVAFormProperties *self, guint row );
@@ -435,10 +435,10 @@ idialog_init( myIDialog *instance )
 }
 
 /*
- * myIGridList interface management
+ * myIGridlist interface management
  */
 static void
-igridlist_iface_init( myIGridListInterface *iface )
+igridlist_iface_init( myIGridlistInterface *iface )
 {
 	static const gchar *thisfn = "ofa_tva_form_properties_igridlist_iface_init";
 
@@ -455,7 +455,7 @@ igridlist_get_interface_version( void )
 }
 
 static void
-igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *empty )
+igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *empty )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 

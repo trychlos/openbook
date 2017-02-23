@@ -134,9 +134,9 @@ static void     init_ledger( ofaOpeTemplateProperties *self );
 static void     init_ledger_locked( ofaOpeTemplateProperties *self );
 static void     init_ref( ofaOpeTemplateProperties *self );
 static void     init_detail( ofaOpeTemplateProperties *self );
-static void     igridlist_iface_init( myIGridListInterface *iface );
+static void     igridlist_iface_init( myIGridlistInterface *iface );
 static guint    igridlist_get_interface_version( void );
-static void     igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *empty );
+static void     igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *empty );
 static void     setup_detail_widgets( ofaOpeTemplateProperties *self, guint row );
 static void     set_detail_values( ofaOpeTemplateProperties *self, guint row );
 static void     on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
@@ -553,10 +553,10 @@ init_detail( ofaOpeTemplateProperties *self )
 }
 
 /*
- * myIGridList interface management
+ * myIGridlist interface management
  */
 static void
-igridlist_iface_init( myIGridListInterface *iface )
+igridlist_iface_init( myIGridlistInterface *iface )
 {
 	static const gchar *thisfn = "ofa_ofa_ope_template_properties_igridlist_iface_init";
 
@@ -573,7 +573,7 @@ igridlist_get_interface_version( void )
 }
 
 static void
-igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row, void *empty )
+igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *empty )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
 
