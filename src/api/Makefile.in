@@ -446,10 +446,10 @@ api_include_HEADERS = \
 	ofa-isignalable.h									\
 	ofa-isignaler.h										\
 	ofa-istore.h										\
+	ofa-itree-adder.h									\
 	ofa-itvcolumnable.h									\
 	ofa-itvfilterable.h									\
 	ofa-itvsortable.h									\
-	ofa-itree-adder.h									\
 	ofa-list-store.h									\
 	ofa-ope-template-editable.h							\
 	ofa-ope-template-store.h							\
