@@ -32,7 +32,7 @@
  * @include: openbook/ofa-itvfilterable.h
  *
  * The #ofaITVFilterable interface should be implemented by any GtkTreeView-
- * derived class to make it sortable.
+ * derived class to make it filterable.
  */
 
 #include <gtk/gtk.h>
