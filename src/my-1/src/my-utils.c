@@ -966,6 +966,11 @@ child_set_editable_cb( GtkWidget *widget, gpointer data )
 void
 my_utils_container_dump( GtkContainer *container )
 {
+	static const gchar *thisfn = "my_utils_container_dump";
+
+	g_debug( "%s: container=%p (%s)",
+			thisfn, ( void * ) container, G_OBJECT_TYPE_NAME( container ));
+
 	my_utils_container_dump_rec( container, " " );
 }
 
@@ -977,9 +982,6 @@ my_utils_container_dump_rec( GtkContainer *container, const gchar *prefix )
 	GtkWidget *child;
 	const gchar *child_name;
 	gchar *new_prefix;
-
-	g_debug( "%s:%scontainer=%p (%s)",
-			thisfn, prefix, ( void * ) container, G_OBJECT_TYPE_NAME( container ));
 
 	children = gtk_container_get_children( container );
 
