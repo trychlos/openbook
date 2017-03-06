@@ -90,8 +90,8 @@ static void        on_selection_delete( ofaAccountTreeview *self, GtkTreeSelecti
 static void        get_and_send( ofaAccountTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoAccount *get_selected_with_selection( ofaAccountTreeview *self, GtkTreeSelection *selection );
 static gint        find_account_iter( ofaAccountTreeview *self, const gchar *account_id, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void        cell_data_render_background( GtkCellRenderer *renderer, gboolean is_root, gint level, gboolean is_error );
 static void        cell_data_render_text( GtkCellRendererText *renderer, gboolean is_root, gint level, gboolean is_error );
-static void        cell_data_render_pixbuf( GtkCellRendererPixbuf *renderer, gboolean is_root, gint level, gboolean is_error );
 static gboolean    tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountTreeview *self );
 static void        tview_collapse_node( ofaAccountTreeview *self, GtkWidget *widget );
 static void        tview_expand_node( ofaAccountTreeview *self, GtkWidget *widget );
@@ -697,18 +697,25 @@ ofa_account_treeview_cell_data_render( ofaAccountTreeview *view,
 		g_string_free( number, TRUE );
 	}
 
+	cell_data_render_background( renderer, is_root, level, is_error );
+
 	if( GTK_IS_CELL_RENDERER_TEXT( renderer )){
 		cell_data_render_text( GTK_CELL_RENDERER_TEXT( renderer ), is_root, level, is_error );
+	}
+}
 
-	} else if( GTK_IS_CELL_RENDERER_PIXBUF( renderer )){
-		cell_data_render_pixbuf( GTK_CELL_RENDERER_PIXBUF( renderer ), is_root, level, is_error );
+static void
+cell_data_render_background( GtkCellRenderer *renderer, gboolean is_root, gint level, gboolean is_error )
+{
+	GdkRGBA color;
 
-		/*if( ofo_account_is_root( account_obj ) && level == 2 ){
-			path = gtk_tree_model_get_path( tmodel, iter );
-			tview = gtk_tree_view_column_get_tree_view( tcolumn );
-			gtk_tree_view_get_cell_area( tview, path, tcolumn, &rc );
-			gtk_tree_path_free( path );
-		}*/
+	g_object_set( G_OBJECT( renderer ), "cell-background-set", FALSE, NULL );
+
+	if( is_root ){
+		if( level == 2 ){
+			gdk_rgba_parse( &color, "#c0ffff" );
+			g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
+		}
 	}
 }
 
@@ -722,14 +729,11 @@ cell_data_render_text( GtkCellRendererText *renderer, gboolean is_root, gint lev
 	g_object_set( G_OBJECT( renderer ),
 						"style-set",      FALSE,
 						"weight-set",     FALSE,
-						"background-set", FALSE,
 						"foreground-set", FALSE,
 						NULL );
 
 	if( is_root ){
 		if( level == 2 ){
-			gdk_rgba_parse( &color, "#c0ffff" );
-			g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
 			g_object_set( G_OBJECT( renderer ), "weight", PANGO_WEIGHT_BOLD, NULL );
 
 		} else if( level == 3 ){
@@ -746,23 +750,6 @@ cell_data_render_text( GtkCellRendererText *renderer, gboolean is_root, gint lev
 	} else if( is_error ){
 		gdk_rgba_parse( &color, "#800000" );
 		g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
-	}
-}
-
-static void
-cell_data_render_pixbuf( GtkCellRendererPixbuf *renderer, gboolean is_root, gint level, gboolean is_error )
-{
-	GdkRGBA color;
-
-	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER_PIXBUF( renderer ));
-
-	g_object_set( G_OBJECT( renderer ), "cell-background-set", FALSE, NULL );
-
-	if( is_root ){
-		if( level == 2 ){
-			gdk_rgba_parse( &color, "#c0ffff" );
-			g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
-		}
 	}
 }
 
