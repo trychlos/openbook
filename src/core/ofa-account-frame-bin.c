@@ -779,6 +779,7 @@ ofa_account_frame_bin_set_selected( ofaAccountFrameBin *bin, const gchar *number
  * @fn_cell:
  * @user_data:
  *
+ * Setup the cell renderer function.
  */
 void
 ofa_account_frame_bin_set_cell_data_func( ofaAccountFrameBin *bin, GtkTreeCellDataFunc fn_cell, void *fn_data )
