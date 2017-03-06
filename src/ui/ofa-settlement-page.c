@@ -386,23 +386,18 @@ tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 	g_return_if_fail( self && OFA_IS_SETTLEMENT_PAGE( self ));
 
-	if( GTK_IS_CELL_RENDERER_TEXT( cell )){
+	g_object_set( G_OBJECT( cell ), "cell-background-set", FALSE, NULL );
 
-		g_object_set( G_OBJECT( cell ),
-							"background-set", FALSE,
-							NULL );
+	gtk_tree_model_get( tmodel, iter, ENTRY_COL_OBJECT, &entry, -1 );
+	if( entry ){
+		g_return_if_fail( OFO_IS_ENTRY( entry ));
+		g_object_unref( entry );
 
-		gtk_tree_model_get( tmodel, iter, ENTRY_COL_OBJECT, &entry, -1 );
-		if( entry ){
-			g_return_if_fail( OFO_IS_ENTRY( entry ));
-			g_object_unref( entry );
+		number = ofo_entry_get_settlement_number( entry );
 
-			number = ofo_entry_get_settlement_number( entry );
-
-			if( number > 0 ){
-				gdk_rgba_parse( &color, COLOR_SETTLED );
-				g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
-			}
+		if( number > 0 ){
+			gdk_rgba_parse( &color, COLOR_SETTLED );
+			g_object_set( G_OBJECT( cell ), "cell-background-rgba", &color, NULL );
 		}
 	}
 }
