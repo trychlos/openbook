@@ -103,6 +103,8 @@ static void      on_selection_activated( ofaEntryTreeview *self, GtkTreeSelectio
 static void      on_selection_delete( ofaEntryTreeview *self, GtkTreeSelection *selection, void *empty );
 static void      get_and_send( ofaEntryTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static GList    *get_selected_with_selection( ofaEntryTreeview *self, GtkTreeSelection *selection );
+static void      cell_data_render_background( GtkCellRenderer *renderer, ofeEntryStatus status, gint err_level );
+static void      cell_data_render_text( GtkCellRendererText *renderer, ofeEntryStatus status, gint err_level );
 static gint      get_row_errlevel( ofaEntryTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean  tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gint      tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
@@ -543,12 +545,8 @@ ofa_entry_treeview_set_selected( ofaEntryTreeview *view, ofxCounter entry )
  *
  * Paints the row.
  *
- * level 1: not displayed (should not appear)
- * level 2 and root: bold, colored background
- * level 3 and root: colored background
- * other root: italic
- *
- * Detail accounts who have no currency are red written.
+ * Foreground and background colors only depend of entry status and
+ * maybe of the error level.
  */
 void
 ofa_entry_treeview_cell_data_render( ofaEntryTreeview *view,
@@ -556,9 +554,7 @@ ofa_entry_treeview_cell_data_render( ofaEntryTreeview *view,
 {
 	ofaEntryTreeviewPrivate *priv;
 	ofeEntryStatus status;
-	GdkRGBA color;
 	gint err_level;
-	const gchar *color_str;
 
 	g_return_if_fail( view && OFA_IS_ENTRY_TREEVIEW( view ));
 	g_return_if_fail( column && GTK_IS_TREE_VIEW_COLUMN( column ));
@@ -569,59 +565,84 @@ ofa_entry_treeview_cell_data_render( ofaEntryTreeview *view,
 
 	g_return_if_fail( !priv->dispose_has_run );
 
+	err_level = get_row_errlevel( view, model, iter );
+	gtk_tree_model_get( model, iter, ENTRY_COL_STATUS_I, &status, -1 );
+
+	cell_data_render_background( renderer, status, err_level );
+
 	if( GTK_IS_CELL_RENDERER_TEXT( renderer )){
+		cell_data_render_text( GTK_CELL_RENDERER_TEXT( renderer ), status, err_level );
+	}
+}
 
-		err_level = get_row_errlevel( view, model, iter );
-		gtk_tree_model_get( model, iter, ENTRY_COL_STATUS_I, &status, -1 );
+static void
+cell_data_render_background( GtkCellRenderer *renderer, ofeEntryStatus status, gint err_level )
+{
+	GdkRGBA color;
 
-		g_object_set( G_OBJECT( renderer ),
-							"style-set",      FALSE,
-							"background-set", FALSE,
-							"foreground-set", FALSE,
-							NULL );
+	g_object_set( G_OBJECT( renderer ), "cell-background-set", FALSE, NULL );
 
-		switch( status ){
+	switch( status ){
 
-			case ENT_STATUS_PAST:
-				gdk_rgba_parse( &color, RGBA_PAST );
-				g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
-				break;
+		case ENT_STATUS_PAST:
+			gdk_rgba_parse( &color, RGBA_PAST );
+			g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
+			break;
 
-			case ENT_STATUS_VALIDATED:
-				gdk_rgba_parse( &color, RGBA_VALIDATED );
-				g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
-				break;
+		case ENT_STATUS_VALIDATED:
+			gdk_rgba_parse( &color, RGBA_VALIDATED );
+			g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
+			break;
 
-			case ENT_STATUS_DELETED:
-				gdk_rgba_parse( &color, RGBA_DELETED );
-				g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
-				g_object_set( G_OBJECT( renderer ), "style", PANGO_STYLE_ITALIC, NULL );
-				break;
+		case ENT_STATUS_FUTURE:
+			gdk_rgba_parse( &color, RGBA_FUTURE );
+			g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
+			break;
 
-			case ENT_STATUS_ROUGH:
-				switch( err_level ){
-					case ENTRY_ERR_ERROR:
-						color_str = RGBA_ERROR;
-						break;
-					case ENTRY_ERR_WARNING:
-						color_str = RGBA_WARNING;
-						break;
-					default:
-						color_str = RGBA_NORMAL;
-						break;
-				}
-				gdk_rgba_parse( &color, color_str );
-				g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
-				break;
+		default:
+			break;
+	}
+}
 
-			case ENT_STATUS_FUTURE:
-				gdk_rgba_parse( &color, RGBA_FUTURE );
-				g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
-				break;
+static void
+cell_data_render_text( GtkCellRendererText *renderer, ofeEntryStatus status, gint err_level )
+{
+	GdkRGBA color;
+	const gchar *color_str;
 
-			default:
-				break;
-		}
+	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER_TEXT( renderer ));
+
+	g_object_set( G_OBJECT( renderer ),
+						"style-set",      FALSE,
+						"foreground-set", FALSE,
+						NULL );
+
+	switch( status ){
+
+		case ENT_STATUS_DELETED:
+			gdk_rgba_parse( &color, RGBA_DELETED );
+			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+			g_object_set( G_OBJECT( renderer ), "style", PANGO_STYLE_ITALIC, NULL );
+			break;
+
+		case ENT_STATUS_ROUGH:
+			switch( err_level ){
+				case ENTRY_ERR_ERROR:
+					color_str = RGBA_ERROR;
+					break;
+				case ENTRY_ERR_WARNING:
+					color_str = RGBA_WARNING;
+					break;
+				default:
+					color_str = RGBA_NORMAL;
+					break;
+			}
+			gdk_rgba_parse( &color, color_str );
+			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+			break;
+
+		default:
+			break;
 	}
 }
 
