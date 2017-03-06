@@ -650,25 +650,12 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *sel
 	return( visible );
 }
 
-/*
- * default to not display ledger (resp. account) when selection is made
- *  per ledger (resp. account)
- *
- * deleted entries are italic on white background
- * rough entries are standard (blanck on white)
- *  - unvalid entries have red foreground
- * validated entries are on light yellow background
- */
 static void
 tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
-						GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
-						ofaEntryPage *self )
+							GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
+							ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
-	ofeEntryStatus status;
-	GdkRGBA color;
-	gint err_level;
-	const gchar *color_str;
 
 	g_return_if_fail( tcolumn && GTK_IS_TREE_VIEW_COLUMN( tcolumn ));
 	g_return_if_fail( cell && GTK_IS_CELL_RENDERER( cell ));
@@ -679,61 +666,10 @@ tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 	g_return_if_fail( !OFA_PAGE( self )->prot->dispose_has_run );
 
-	if( GTK_IS_CELL_RENDERER_TEXT( cell )){
-
-		err_level = row_get_errlevel( self, tmodel, iter );
-		gtk_tree_model_get( tmodel, iter, ENTRY_COL_STATUS_I, &status, -1 );
-
-		g_object_set( G_OBJECT( cell ),
-							"style-set",      FALSE,
-							"background-set", FALSE,
-							"foreground-set", FALSE,
-							NULL );
-
-		switch( status ){
-
-			case ENT_STATUS_PAST:
-				gdk_rgba_parse( &color, RGBA_PAST );
-				g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
-				break;
-
-			case ENT_STATUS_VALIDATED:
-				gdk_rgba_parse( &color, RGBA_VALIDATED );
-				g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
-				break;
-
-			case ENT_STATUS_DELETED:
-				gdk_rgba_parse( &color, RGBA_DELETED );
-				g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
-				g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
-				break;
-
-			case ENT_STATUS_ROUGH:
-				switch( err_level ){
-					case ENT_ERR_ERROR:
-						color_str = RGBA_ERROR;
-						break;
-					case ENT_ERR_WARNING:
-						color_str = RGBA_WARNING;
-						break;
-					default:
-						color_str = RGBA_NORMAL;
-						break;
-				}
-				gdk_rgba_parse( &color, color_str );
-				g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
-				break;
-
-			case ENT_STATUS_FUTURE:
-				gdk_rgba_parse( &color, RGBA_FUTURE );
-				g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
-				break;
-
-			default:
-				break;
-		}
+	ofa_entry_treeview_cell_data_render( priv->tview, tcolumn, cell, tmodel, iter );
 
 		/* is the cell editable ? */
+	if( GTK_IS_CELL_RENDERER_TEXT( cell )){
 		g_object_set( G_OBJECT( cell ), "editable-set", TRUE, "editable", priv->editable_row, NULL );
 	}
 }
