@@ -380,14 +380,20 @@ remove_row( sIGridList *sdata, gint row )
 	gtk_widget_show_all( GTK_WIDGET( sdata->grid ));
 }
 
+/*
+ * widget may be unset if the implementation does not provide anything
+ * (is empty)
+ */
 static void
 remove_row_widget_remove( sIGridList *sdata, guint column, guint row )
 {
 	GtkWidget *widget;
 
 	widget = gtk_grid_get_child_at( sdata->grid, column, row );
-	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
-	gtk_widget_destroy( widget );
+	if( widget ){
+		g_return_if_fail( GTK_IS_WIDGET( widget ));
+		gtk_widget_destroy( widget );
+	}
 }
 
 static void
