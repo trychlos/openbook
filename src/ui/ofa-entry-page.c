@@ -176,6 +176,7 @@ enum {
 	XFIL_COL_FIELD,
 	XFIL_COL_CONDITION,
 	XFIL_COL_VALUE,
+	XFIL_COL_STATUS,
 	XFIL_N_COLUMNS
 };
 
@@ -269,6 +270,8 @@ typedef struct {
 	sExtend;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-entry-page.ui";
+static const gchar *st_green_check_png  = "/org/trychlos/openbook/ui/ofa-entry-page-green-check-14.png";
+static const gchar *st_red_cross_png    = "/org/trychlos/openbook/ui/ofa-entry-page-red-cross-14.png";
 static const gchar *st_ui_id            = "EntryPageWindow";
 
 #define SEL_LEDGER                      "Ledger"

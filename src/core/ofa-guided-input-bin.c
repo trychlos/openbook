@@ -125,7 +125,7 @@ enum {
 	TYPE_NONE = 0,
 	TYPE_ENTRY,
 	TYPE_LABEL,
-	TYPE_IMAGE
+	TYPE_BUTTON
 };
 
 /* definition of the columns
@@ -181,7 +181,7 @@ static sColumnDef st_col_defs[] = {
 				CURRENCY_WIDTH, CURRENCY_WIDTH, FALSE, 0, FALSE, NULL
 		},
 		{ OPE_COL_VALID,
-				TYPE_IMAGE,
+				TYPE_BUTTON,
 				NULL,
 				NULL,
 				-1, -1, FALSE, 0.5, FALSE, NULL
@@ -217,7 +217,7 @@ static GDate st_last_dope                   = { 0 };
 static GDate st_last_deff                   = { 0 };
 
 static const gchar *st_resource_image_empty = "/org/trychlos/openbook/core/filler.png";
-static const gchar *st_resource_image_check = "/org/trychlos/openbook/core/ofa-guided-input-bin-green-checkmark.png";
+static const gchar *st_resource_image_check = "/org/trychlos/openbook/core/ofa-guided-input-bin-green-check-16.png";
 static const gchar *st_resource_ui          = "/org/trychlos/openbook/core/ofa-guided-input-bin.ui";
 
 static void              setup_main_window( ofaGuidedInputBin *self );
@@ -227,7 +227,7 @@ static void              add_entry_row( ofaGuidedInputBin *self, gint i );
 static void              add_entry_row_widget( ofaGuidedInputBin *self, gint col_id, gint row );
 static GtkWidget        *row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row );
 static GtkWidget        *row_widget_label( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row );
-static GtkWidget        *row_widget_image( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row );
+static GtkWidget        *row_widget_button( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row );
 static void              on_entry_finalized( sEntryData *sdata, GObject *finalized_entry );
 static void              on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin *self );
 static void              on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *self );
@@ -664,8 +664,8 @@ add_entry_row_widget( ofaGuidedInputBin *self, gint col_id, gint row )
 			widget = row_widget_label( self, col_def, row );
 			break;
 
-		case TYPE_IMAGE:
-			widget = row_widget_image( self, col_def, row );
+		case TYPE_BUTTON:
+			widget = row_widget_button( self, col_def, row );
 			break;
 
 		default:
@@ -771,13 +771,16 @@ row_widget_label( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 }
 
 static GtkWidget *
-row_widget_image( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
+row_widget_button( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 {
-	GtkWidget *image;
+	GtkWidget *image, *button;
 
 	image = gtk_image_new_from_resource( st_resource_image_empty );
+	button = gtk_button_new();
+	gtk_button_set_image( GTK_BUTTON( button ), image );
+	gtk_widget_set_sensitive( button, FALSE );
 
-	return( image );
+	return( button );
 }
 
 static void
@@ -1453,17 +1456,18 @@ draw_valid_coche( ofaGuidedInputBin *self, gint row, gboolean bvalid )
 {
 	ofaGuidedInputBinPrivate *priv;
 	const sColumnDef *def;
-	GtkWidget *image;
+	GtkWidget *button, *image;
 
 	//g_debug( "draw_valid_coche: row=%d, bvalid=%s", row, bvalid ? "True":"False" );
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
 	def = find_column_def_from_col_id( self, OPE_COL_VALID );
-	g_return_if_fail( def && def->column_type == TYPE_IMAGE );
+	g_return_if_fail( def && def->column_type == TYPE_BUTTON );
 
-	image = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_VALID, row );
-	g_return_if_fail( image && GTK_IS_IMAGE( image ));
+	button = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_VALID, row );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	image = gtk_button_get_image( GTK_BUTTON( button ));
 
 	if( bvalid ){
 		gtk_image_set_from_resource( GTK_IMAGE( image ), st_resource_image_check );
