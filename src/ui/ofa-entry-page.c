@@ -283,6 +283,9 @@ static void       setup_status_filter( ofaEntryPage *self );
 static void       setup_edit_switch( ofaEntryPage *self );
 static void       setup_treeview( ofaEntryPage *self );
 static gboolean   tview_is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaEntryPage *self );
+static gboolean   tview_apply_stdfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gboolean   tview_apply_extfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gboolean   tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint i, gboolean visible );
 static void       tview_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self );
 static void       tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self );
 static void       tview_on_row_activated( ofaTVBin *bin, GList *selected, ofaEntryPage *self );
@@ -674,13 +677,42 @@ setup_treeview( ofaEntryPage *self )
 }
 
 /*
+ * The GtkTreeModelFilter behavior depends of the current switched stack
+ */
+static gboolean
+tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	const gchar *name;
+	gboolean visible;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( priv->stack ){
+		name = gtk_stack_get_visible_child_name( GTK_STACK( priv->stack ));
+
+		if( !my_collate( name, "standard" )){
+			visible = tview_apply_stdfilter( self, tmodel, iter );
+		} else {
+			visible = tview_apply_extfilter( self, tmodel, iter );
+		}
+
+	} else {
+		visible = tview_apply_stdfilter( self, tmodel, iter );
+	}
+
+	return( visible );
+}
+
+/*
+ * Standard filter:
  * a row is visible if it is consistant with the selected modes:
  * - general type selection
  * - status of the entry
  * - effect date layout
  */
 static gboolean
-tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self )
+tview_apply_stdfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	ofaEntryPagePrivate *priv;
 	gboolean visible, ok;
@@ -757,6 +789,152 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *sel
 	g_free( sdate );
 	g_free( account );
 	g_free( ledger );
+
+	return( visible );
+}
+
+/*
+ * Extended filter
+ * A row is visible if it complies with full operator+filed+condition+value datas
+ */
+static gboolean
+tview_apply_extfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	ofaEntryPagePrivate *priv;
+	gboolean visible;
+	guint rows_count, i;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	visible = TRUE;
+	rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ));
+	for( i=0 ; i<rows_count ; ++i ){
+		visible = tview_apply_extfilter_for_row( self, tmodel, iter, i, visible );
+	}
+
+	return( visible );
+}
+
+/*
+ * i is a counter from zero
+ *
+ * Invalid rows are just ignored.
+ */
+static gboolean
+tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint i, gboolean visible )
+{
+	static const gchar *thisfn = "tview_apply_extfilter_for_row";
+	ofaEntryPagePrivate *priv;
+	guint row, operator, field, condition;
+	GtkWidget *combo, *entry;
+	gboolean valid, ok;
+	GtkTreeIter combo_iter;
+	GtkTreeModel *combo_model;
+	const gchar *value;
+	gchar *entry_value;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	row = i; 				/* this myIGridlist does not have header */
+	valid = TRUE;
+	ok = TRUE;
+
+	/* operator */
+	if( row > 0 ){
+		combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_OPERATOR, row );
+		g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), FALSE );
+		if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &combo_iter )){
+			combo_model = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+			gtk_tree_model_get( combo_model, &combo_iter, OPE_COL_OPERATOR, &operator, -1 );
+		} else {
+			valid = FALSE;
+		}
+	} else {
+		operator = OPERATOR_AND;
+	}
+
+	/* field */
+	combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_FIELD, row );
+	g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), FALSE );
+	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &combo_iter )){
+		combo_model = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+		gtk_tree_model_get( combo_model, &combo_iter, FLD_COL_ID, &field, -1 );
+	} else {
+		valid = FALSE;
+	}
+
+	/* condition */
+	combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_CONDITION, row );
+	g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), FALSE );
+	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &combo_iter )){
+		combo_model = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+		gtk_tree_model_get( combo_model, &combo_iter, COND_COL_COND, &condition, -1 );
+	} else {
+		valid = FALSE;
+	}
+
+	/* value */
+	entry = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_VALUE, row );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+	value = gtk_entry_get_text( GTK_ENTRY( entry ));
+	valid = ( my_strlen( value ) > 0 );
+
+	if( valid ){
+		/* TODO: should compare date vs. date, amount vs. amount */
+		/* TODO: should be case insensitive */
+		gtk_tree_model_get( tmodel, iter, field, &entry_value, -1 );
+		switch( condition ){
+			case COND_EQUAL:
+				ok = my_collate( entry_value, value ) == 0;
+				break;
+			case COND_LE:
+				ok = my_collate( entry_value, value ) <= 0;
+				break;
+			case COND_LT:
+				ok = my_collate( entry_value, value ) < 0;
+				break;
+			case COND_GE:
+				ok = my_collate( entry_value, value ) >= 0;
+				break;
+			case COND_GT:
+				ok = my_collate( entry_value, value ) > 0;
+				break;
+			case COND_NE:
+				ok = my_collate( entry_value, value ) != 0;
+				break;
+			case COND_BEGINS:
+				ok = g_str_has_prefix( entry_value, value );
+				break;
+			case COND_NOTBEGINS:
+				ok = !g_str_has_prefix( entry_value, value );
+				break;
+			case COND_CONTAINS:
+				ok = g_strrstr( entry_value, value ) != NULL;
+				break;
+			case COND_NOTCONTAINS:
+				ok = g_strrstr( entry_value, value ) == NULL;
+				break;
+			default:
+				g_warning( "%s: row=%u, condition=%u is unknown", thisfn, row, condition );
+				valid = FALSE;
+				break;
+		}
+		g_free( entry_value );
+	}
+
+	if( valid ){
+		switch( operator ){
+			case OPERATOR_AND:
+				visible = visible && ok;
+				break;
+			case OPERATOR_OR:
+				visible = visible || ok;
+				break;
+			default:
+				// visible is left unchanged
+				break;
+		}
+	}
 
 	return( visible );
 }
@@ -956,7 +1134,10 @@ igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void
 	g_return_if_fail( grid == GTK_GRID( priv->ext_grid ));
 
 	setup_row_widgets( OFA_ENTRY_PAGE( instance ), grid, row );
-	setup_row_values( OFA_ENTRY_PAGE( instance ), grid, row, ( sExtend * ) criterium );
+
+	if( criterium ){
+		setup_row_values( OFA_ENTRY_PAGE( instance ), grid, row, ( sExtend * ) criterium );
+	}
 }
 
 /*
@@ -1238,7 +1419,7 @@ extfilter_on_init_from_clicked( GtkButton *button, ofaEntryPage *self )
 	}
 
 	/* and apply this filter (which should not change anything) */
-	extfilter_do_apply( self );
+	refresh_display( self );
 }
 
 static void
@@ -1278,19 +1459,13 @@ extfilter_on_reset_clicked( GtkButton *button, ofaEntryPage *self )
 		my_igridlist_remove_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), -1 );
 	}
 
-	extfilter_do_apply( self );
+	refresh_display( self );
 }
 
 static void
 extfilter_on_apply_clicked( GtkButton *button, ofaEntryPage *self )
 {
-	extfilter_do_apply( self );
-}
-
-static void
-extfilter_do_apply( ofaEntryPage *self )
-{
-
+	refresh_display( self );
 }
 
 static void
