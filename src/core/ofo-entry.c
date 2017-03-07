@@ -1058,12 +1058,25 @@ const gchar *
 ofo_entry_get_abr_status( const ofoEntry *entry )
 {
 	ofeEntryStatus status;
-	gint i;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
 	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, NULL );
 
 	status = ofo_entry_get_status( entry );
+
+	return( ofo_entry_get_abr_from_status( status ));
+}
+
+/**
+ * ofo_entry_get_abr_from_status:
+ * @status: the #ofeEntryStatus.
+ *
+ * Returns an abbreviated localized string for the @status.
+ */
+const gchar *
+ofo_entry_get_abr_from_status( ofeEntryStatus status )
+{
+	gint i;
 
 	for( i=0 ; st_status[i].num ; ++i ){
 		if( st_status[i].num == status ){
@@ -1113,7 +1126,7 @@ ofo_entry_get_status_from_abr( const gchar *abr_status )
 	g_return_val_if_fail( my_strlen( abr_status ), ENT_STATUS_ROUGH );
 
 	for( i=0 ; st_status[i].num ; ++i ){
-		if( !g_utf8_collate( st_status[i].str, abr_status )){
+		if( !my_collate( st_status[i].str, abr_status )){
 			return( st_status[i].num );
 		}
 	}

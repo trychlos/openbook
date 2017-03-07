@@ -159,6 +159,7 @@ ofxAmount       ofo_entry_get_debit                  ( const ofoEntry *entry );
 ofxAmount       ofo_entry_get_credit                 ( const ofoEntry *entry );
 ofeEntryStatus  ofo_entry_get_status                 ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_abr_status             ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_abr_from_status        ( ofeEntryStatus status );
 const gchar    *ofo_entry_get_status_label           ( const ofoEntry *entry );
 ofeEntryStatus  ofo_entry_get_status_from_abr        ( const gchar *abr_status );
 ofeEntryRule    ofo_entry_get_rule                   ( const ofoEntry *entry );
