@@ -31,6 +31,7 @@
 
 #include "my/my-date-renderer.h"
 #include "my/my-double-renderer.h"
+#include "my/my-igridlist.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
@@ -81,9 +82,10 @@ typedef struct {
 	gchar               *settings_prefix;
 	GList               *store_handlers;
 
-	/* GtkStack
+	/* GtkStack and extended filters
 	 */
 	GtkWidget           *stack;
+	GtkWidget           *ext_grid;
 
 	/* frame 1: general selection
 	 */
@@ -164,6 +166,94 @@ enum {
 	ENT_ERR_ERROR
 };
 
+/* the extended filter columns in the dynamic grid
+ */
+enum {
+	XFIL_COL_OPERATOR = 0,
+	XFIL_COL_FIELD,
+	XFIL_COL_COND,
+	XFIL_COL_VALUE,
+	XFIL_N_COLUMNS
+};
+
+/* columns in the Operator (And/Or) combo box
+ */
+enum {
+	OPE_COL_LABEL = 0,
+	OPE_COL_OPERATOR,
+	OPE_N_COLUMNS
+};
+
+/* operators
+ */
+enum {
+	OPERATOR_AND = 1,
+	OPERATOR_OR,
+};
+
+typedef struct {
+	const gchar *label;
+	guint        operator;
+}
+	sOperator;
+
+static const sOperator st_operators[] = {
+		{ N_( "And" ), OPERATOR_AND },
+		{ N_( "Or" ),  OPERATOR_OR },
+		{ 0 }
+};
+
+/* columns in the Field combo box
+ */
+enum {
+	FLD_COL_LABEL = 0,
+	FLD_COL_ID,
+	FLD_N_COLUMNS
+};
+
+/* columns in the Condition combo box
+ */
+enum {
+	COND_COL_LABEL = 0,
+	COND_COL_COND,
+	COND_N_COLUMNS
+};
+
+/* conditions
+ */
+enum {
+	COND_EQUAL = 1,
+	COND_LT,
+	COND_GT,
+	COND_LE,
+	COND_GE,
+	COND_NE,
+	COND_BEGINS,
+	COND_NOTBEGINS,
+	COND_CONTAINS,
+	COND_NOTCONTAINS,
+};
+
+typedef struct {
+	const gchar *label;
+	guint        cond;
+}
+	sCondition;
+
+static const sCondition st_conditions[] = {
+		{ N_( "=" ),                   COND_EQUAL },
+		{ N_( "<" ),                   COND_LT },
+		{ N_( ">" ),                   COND_GT },
+		{ N_( "<=" ),                  COND_LE },
+		{ N_( ">=" ),                  COND_GE },
+		{ N_( "<>" ),                  COND_NE },
+		{ N_( "Begins with" ),         COND_BEGINS },
+		{ N_( "Does not begin with" ), COND_NOTBEGINS },
+		{ N_( "Contains" ),            COND_CONTAINS },
+		{ N_( "Does not contain" ),    COND_NOTCONTAINS },
+		{ 0 }
+};
+
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-entry-page.ui";
 static const gchar *st_ui_id            = "EntryPageWindow";
 
@@ -171,8 +261,6 @@ static const gchar *st_ui_id            = "EntryPageWindow";
 #define SEL_ACCOUNT                     "Account"
 
 static void       page_v_setup_page( ofaPage *page );
-static void       setup_ext_filter( ofaEntryPage *self );
-static void       on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self );
 static void       setup_gen_selection( ofaEntryPage *self );
 static void       setup_account_selection( ofaEntryPage *self );
 static void       setup_ledger_selection( ofaEntryPage *self );
@@ -186,6 +274,13 @@ static void       tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *select
 static void       tview_on_row_activated( ofaTVBin *bin, GList *selected, ofaEntryPage *self );
 static void       tview_on_row_insert( ofaTVBin *bin, ofaEntryPage *self );
 static void       tview_on_row_delete( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self );
+static void       setup_ext_filter( ofaEntryPage *self );
+static void       on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self );
+static void       igridlist_iface_init( myIGridlistInterface *iface );
+static guint      igridlist_get_interface_version( void );
+static void       igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *empty );
+static void       setup_row_widgets( ofaEntryPage *self, GtkGrid *grid, guint row );
+static void       setup_row_values( ofaEntryPage *self, GtkGrid *grid, guint row );
 static void       setup_footer( ofaEntryPage *self );
 static void       setup_actions( ofaEntryPage *self );
 static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
@@ -242,7 +337,8 @@ static void       write_settings_status( ofaEntryPage *self, myISettings *settin
 static void       store_on_changed( ofaEntryStore *store, ofaEntryPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryPage, ofa_entry_page, OFA_TYPE_PAGE, 0,
-		G_ADD_PRIVATE( ofaEntryPage ))
+		G_ADD_PRIVATE( ofaEntryPage )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ))
 
 static void
 entry_page_finalize( GObject *instance )
@@ -352,7 +448,6 @@ page_v_setup_page( ofaPage *page )
 
 	my_utils_container_attach_from_resource( GTK_CONTAINER( page ), st_resource_ui, st_ui_id, "px-top" );
 
-	setup_ext_filter( OFA_ENTRY_PAGE( page ));
 	setup_gen_selection( OFA_ENTRY_PAGE( page ));
 	setup_ledger_selection( OFA_ENTRY_PAGE( page ));
 	setup_account_selection( OFA_ENTRY_PAGE( page ));
@@ -360,6 +455,7 @@ page_v_setup_page( ofaPage *page )
 	setup_status_filter( OFA_ENTRY_PAGE( page ));
 	setup_edit_switch( OFA_ENTRY_PAGE( page ));
 	setup_treeview( OFA_ENTRY_PAGE( page ));
+	setup_ext_filter( OFA_ENTRY_PAGE( page ));
 	setup_footer( OFA_ENTRY_PAGE( page ));
 	setup_actions( OFA_ENTRY_PAGE( page ));
 
@@ -375,46 +471,6 @@ page_v_setup_page( ofaPage *page )
 	} else {
 		gen_selection_on_toggled(  GTK_TOGGLE_BUTTON( priv->ledger_btn ), OFA_ENTRY_PAGE( page ));
 	}
-}
-
-/*
- * Starting with 0.68, an extended filter is made available to the #ofaEntryPage.
- * A #GtkStackSwitcher let the user switch between standard and extended filters.
- * A #GtkExpander, associated with two #GtkRevealers, shows or hides the criteria.
- *
- * The status of the expander is not saved in user settings. Instead of that,
- * it is initially opened so that criteria are visible.
- */
-static void
-setup_ext_filter( ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	GtkWidget *expander, *stack;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	expander = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "expander1" );
-	g_return_if_fail( expander && GTK_IS_EXPANDER( expander ));
-	g_signal_connect( expander, "notify::expanded", G_CALLBACK( on_expander_toggled ), self );
-
-	stack = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "stack1" );
-	g_return_if_fail( stack && GTK_IS_STACK( stack ));
-	priv->stack = stack;
-
-	gtk_expander_set_expanded( GTK_EXPANDER( expander ), TRUE );
-}
-
-static void
-on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	GtkWidget *revealer;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	revealer = gtk_stack_get_visible_child( GTK_STACK( priv->stack ));
-	g_return_if_fail( revealer && GTK_IS_REVEALER( revealer ));
-	gtk_revealer_set_reveal_child( GTK_REVEALER( revealer ), gtk_expander_get_expanded( expander ));
 }
 
 /*
@@ -755,6 +811,206 @@ tview_on_row_delete( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *s
 	if( priv->is_writable && gtk_switch_get_active( GTK_SWITCH( priv->edit_switch ))){
 		delete_row( self, selection );
 	}
+}
+
+/*
+ * Starting with 0.68, an extended filter is made available to the #ofaEntryPage.
+ * A #GtkStackSwitcher let the user switch between standard and extended filters.
+ * A #GtkExpander, associated with two #GtkRevealers, shows or hides the criteria.
+ *
+ * The status of the expander is not saved in user settings. Instead of that,
+ * it is initially opened so that criteria are visible.
+ */
+static void
+setup_ext_filter( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	GtkWidget *expander, *stack, *grid;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	expander = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "expander1" );
+	g_return_if_fail( expander && GTK_IS_EXPANDER( expander ));
+	g_signal_connect( expander, "notify::expanded", G_CALLBACK( on_expander_toggled ), self );
+
+	stack = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "stack1" );
+	g_return_if_fail( stack && GTK_IS_STACK( stack ));
+	priv->stack = stack;
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ext-grid" );
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+	priv->ext_grid = grid;
+
+	gtk_expander_set_expanded( GTK_EXPANDER( expander ), TRUE );
+
+	my_igridlist_init(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ),
+			FALSE, TRUE, XFIL_N_COLUMNS );
+
+	my_igridlist_set_has_row_number( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), FALSE );
+	my_igridlist_set_has_up_down_buttons( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), FALSE );
+}
+
+static void
+on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	GtkWidget *revealer;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	revealer = gtk_stack_get_visible_child( GTK_STACK( priv->stack ));
+	g_return_if_fail( revealer && GTK_IS_REVEALER( revealer ));
+	gtk_revealer_set_reveal_child( GTK_REVEALER( revealer ), gtk_expander_get_expanded( expander ));
+}
+
+/*
+ * myIGridlist interface management
+ */
+static void
+igridlist_iface_init( myIGridlistInterface *iface )
+{
+	static const gchar *thisfn = "ofa_entry_page_igridlist_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = igridlist_get_interface_version;
+	iface->setup_row = igridlist_setup_row;
+}
+
+static guint
+igridlist_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static void
+igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *empty )
+{
+	ofaEntryPagePrivate *priv;
+
+	g_return_if_fail( instance && OFA_IS_ENTRY_PAGE( instance ));
+
+	priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( instance ));
+	g_return_if_fail( grid == GTK_GRID( priv->ext_grid ));
+
+	setup_row_widgets( OFA_ENTRY_PAGE( instance ), grid, row );
+	setup_row_values( OFA_ENTRY_PAGE( instance ), grid, row );
+}
+
+/*
+ * Operator (And/Or) - not on the first row
+ * + field
+ * + condition
+ * + value
+ */
+static void
+setup_row_widgets( ofaEntryPage *self, GtkGrid *grid, guint row )
+{
+	ofaEntryPagePrivate *priv;
+	GtkWidget *combo, *entry, *treeview;
+	GtkCellRenderer *cell;
+	GtkListStore *store;
+	guint i;
+	GtkTreeIter iter;
+	GList *children, *it;
+	GtkTreeViewColumn *column;
+	const gchar *title;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	/* operator combo box - not on first row */
+	combo = gtk_combo_box_new();
+
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", OPE_COL_LABEL );
+
+	store = gtk_list_store_new( OPE_N_COLUMNS, G_TYPE_STRING, G_TYPE_UINT );
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( store ));
+
+	for( i=0 ; st_operators[i].label ; ++i ){
+		gtk_list_store_insert_with_values(
+				store, &iter, -1,
+				OPE_COL_LABEL,    gettext( st_operators[i].label ),
+				OPE_COL_OPERATOR, st_operators[i].operator,
+				-1 );
+	}
+	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, combo, 1+XFIL_COL_OPERATOR, row, 1, 1 );
+	gtk_widget_set_sensitive( combo, row > 0 );
+
+	/* field combo box
+	 * does not consider columns which do not have a title */
+	combo = gtk_combo_box_new();
+
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", FLD_COL_LABEL );
+
+	store = gtk_list_store_new( FLD_N_COLUMNS, G_TYPE_STRING, G_TYPE_UINT );
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( store ));
+
+	treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( priv->tview ));
+	children = gtk_tree_view_get_columns( GTK_TREE_VIEW( treeview ));
+	for( it=children ; it ; it=it->next ){
+		g_return_if_fail( it->data && GTK_IS_TREE_VIEW_COLUMN( it->data ));
+		column = GTK_TREE_VIEW_COLUMN( it->data );
+		title = gtk_tree_view_column_get_title( column );
+		if( my_strlen( title )){
+			gtk_list_store_insert_with_values(
+					store, &iter, -1,
+					FLD_COL_LABEL, title,
+					FLD_COL_ID,    ofa_itvcolumnable_get_column_id( OFA_ITVCOLUMNABLE( priv->tview ), column ),
+					-1 );
+		}
+	}
+	g_list_free( children );
+	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, combo, 1+XFIL_COL_FIELD, row, 1, 1 );
+
+	/* condition combo box */
+	combo = gtk_combo_box_new();
+
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", COND_COL_LABEL );
+
+	store = gtk_list_store_new( COND_N_COLUMNS, G_TYPE_STRING, G_TYPE_UINT );
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( store ));
+
+	for( i=0 ; st_conditions[i].label ; ++i ){
+		gtk_list_store_insert_with_values(
+				store, &iter, -1,
+				COND_COL_LABEL, gettext( st_conditions[i].label ),
+				COND_COL_COND, st_conditions[i].cond,
+				-1 );
+	}
+	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, combo, 1+XFIL_COL_COND, row, 1, 1 );
+
+	/* value entry */
+	entry = gtk_entry_new();
+	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, entry, 1+XFIL_COL_VALUE, row, 1, 1 );
+}
+
+static void
+setup_row_values( ofaEntryPage *self, GtkGrid *grid, guint row )
+{
+#if 0
+	ofaClosingParmsBinPrivate *priv;
+	GtkWidget *combo, *entry;
+	const gchar *account;
+
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
+	if( my_strlen( currency )){
+		combo = get_currency_combo_at( self, row );
+		ofa_currency_combo_set_selected( OFA_CURRENCY_COMBO( combo ), currency );
+
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->acc_grid ), 1+COL_ACCOUNT, row );
+		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+		account = ofo_dossier_get_sld_account( priv->dossier, currency );
+		gtk_entry_set_text( GTK_ENTRY( entry ), account ? account : "" );
+	}
+#endif
 }
 
 static void

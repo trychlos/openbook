@@ -539,6 +539,28 @@ get_column_id( const ofaITVColumnable *instance, sITVColumnable *sdata, GtkTreeV
 }
 
 /**
+ * ofa_itvcolumnable_get_menu_label:
+ * @instance: the #ofaITVColumnable instance.
+ * @column: the #GtkTreeViewColumn.
+ *
+ * Returns: the menu label associated with the @column.
+ */
+const gchar *
+ofa_itvcolumnable_get_menu_label( ofaITVColumnable *instance, GtkTreeViewColumn *column )
+{
+	sITVColumnable *sdata;
+	sColumn *scol;
+
+	g_return_val_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ), NULL );
+	g_return_val_if_fail( column && GTK_IS_TREE_VIEW_COLUMN( column ), NULL );
+
+	sdata = get_instance_data( instance );
+	scol = get_column_data_by_ptr( instance, sdata, column );
+
+	return( scol ? scol->label : NULL );
+}
+
+/**
  * ofa_itvcolumnable_get_column_id_renderer:
  * @instance: this #ofaITVColumnable instance.
  * @renderer: a #GtkCellRenderer.

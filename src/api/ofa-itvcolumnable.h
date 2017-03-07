@@ -145,6 +145,9 @@ GtkTreeViewColumn *ofa_itvcolumnable_get_column                ( ofaITVColumnabl
 gint               ofa_itvcolumnable_get_column_id             ( ofaITVColumnable *instance,
 																		GtkTreeViewColumn *column );
 
+const gchar       *ofa_itvcolumnable_get_menu_label            ( ofaITVColumnable *instance,
+																		GtkTreeViewColumn *column );
+
 gint               ofa_itvcolumnable_get_column_id_renderer    ( ofaITVColumnable *instance,
 																		GtkCellRenderer *renderer );
 
