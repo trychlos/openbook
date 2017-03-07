@@ -78,10 +78,6 @@ typedef struct {
 }
 	ofaClosingParmsBinPrivate;
 
-#define DATA_COLUMN                     "ofa-data-column"
-#define DATA_ROW                        "ofa-data-row"
-#define DATA_COMBO                      "ofa-data-combo"
-
 /* the columns in the dynamic grid
  */
 enum {
@@ -395,7 +391,7 @@ setup_currency_accounts( ofaClosingParmsBin *self )
 static void
 igridlist_iface_init( myIGridlistInterface *iface )
 {
-	static const gchar *thisfn = "ofa_ofa_ope_template_properties_igridlist_iface_init";
+	static const gchar *thisfn = "ofa_closing_parms_bin_igridlist_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
