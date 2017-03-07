@@ -40,6 +40,7 @@
    - my_igridlist_set_has_up_down_buttons: new function.
    - ofaClosingParmsBin: implements myIGridlist interface (todo #1370).
    - ofa_itvcolumnable_enable_column(): renamed to ofa_itvcolumnable_set_invisible().
+   - ofa_itvcolumnable_get_column_type(): new function.
    - ofa_itvcolumnable_get_menu_label(): new function.
    - ofo_entry_get_abr_from_status(): new function.
    - Periodicity properties: review UI margins (todo #1366).

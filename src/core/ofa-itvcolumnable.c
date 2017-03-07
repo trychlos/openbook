@@ -63,6 +63,7 @@ typedef struct {
 	GtkTreeViewColumn *column;
 	GSimpleAction     *action;
 	gboolean           invisible;
+	ofeBoxType         type;
 }
 	sColumn;
 
@@ -400,7 +401,7 @@ ofa_itvcolumnable_set_treeview( ofaITVColumnable *instance, GtkTreeView *treevie
  */
 void
 ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
-					GtkTreeViewColumn *column, gint column_id, const gchar *menu_label )
+					GtkTreeViewColumn *column, gint column_id, const gchar *menu_label, ofeBoxType type )
 {
 	static const gchar *thisfn = "ofa_itvcolumnable_add_column";
 	sITVColumnable *sdata;
@@ -433,9 +434,10 @@ ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 	scol->column = column;
 	scol->def_visible = FALSE;
 	scol->invisible = FALSE;
+	scol->type = type;
 
-	g_debug( "%s: column_id=%u, menu_label=%s, action_group=%s, action_name=%s",
-			thisfn, column_id, menu_label, scol->group_name, scol->name );
+	g_debug( "%s: column_id=%u, menu_label=%s, action_group=%s, action_name=%s, type=%u",
+			thisfn, column_id, menu_label, scol->group_name, scol->name, type );
 
 	/* define a new action and attach it to the action group
 	 * default visibility state is cleared */
@@ -543,7 +545,7 @@ get_column_id( const ofaITVColumnable *instance, sITVColumnable *sdata, GtkTreeV
  * @instance: the #ofaITVColumnable instance.
  * @column: the #GtkTreeViewColumn.
  *
- * Returns: the menu label associated with the @column.
+ * Returns: the menu label associated with the @column, or %NULL.
  */
 const gchar *
 ofa_itvcolumnable_get_menu_label( ofaITVColumnable *instance, GtkTreeViewColumn *column )
@@ -558,6 +560,28 @@ ofa_itvcolumnable_get_menu_label( ofaITVColumnable *instance, GtkTreeViewColumn 
 	scol = get_column_data_by_ptr( instance, sdata, column );
 
 	return( scol ? scol->label : NULL );
+}
+
+/**
+ * ofa_itvcolumnable_get_column_type:
+ * @instance: the #ofaITVColumnable instance.
+ * @column: the #GtkTreeViewColumn.
+ *
+ * Returns: the #ofeBoxType associated with the @column, or zero.
+ */
+ofeBoxType
+ofa_itvcolumnable_get_column_type( ofaITVColumnable *instance, GtkTreeViewColumn *column )
+{
+	sITVColumnable *sdata;
+	sColumn *scol;
+
+	g_return_val_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ), 0 );
+	g_return_val_if_fail( column && GTK_IS_TREE_VIEW_COLUMN( column ), 0 );
+
+	sdata = get_instance_data( instance );
+	scol = get_column_data_by_ptr( instance, sdata, column );
+
+	return( scol ? scol->type : 0 );
 }
 
 /**

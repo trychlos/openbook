@@ -100,7 +100,7 @@ static void         init_top_widget( ofaTVBin *self );
 static void         tview_on_row_selected( GtkTreeSelection *selection, ofaTVBin *self );
 static void         tview_on_row_activated( GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVBin *self );
 static gboolean     tview_on_key_pressed( GtkWidget *treeview, GdkEventKey *event, ofaTVBin *self );
-static void         add_column( ofaTVBin *bin, GtkTreeViewColumn *column, gint column_id, const gchar *menu_label );
+static void         add_column( ofaTVBin *bin, GtkTreeViewColumn *column, gint column_id, const gchar *menu_label, ofeBoxType type );
 static void         iactionable_iface_init( ofaIActionableInterface *iface );
 static guint        iactionable_get_interface_version( void );
 static void         icontext_iface_init( ofaIContextInterface *iface );
@@ -1092,7 +1092,7 @@ ofa_tvbin_add_column_amount( ofaTVBin *bin, gint column_id, const gchar *header,
 					header ? header : _( "Amount" ), cell, "text", column_id, NULL );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
 
-	add_column( bin, column, column_id, menu );
+	add_column( bin, column, column_id, menu, OFA_TYPE_AMOUNT );
 }
 
 /*
@@ -1130,7 +1130,7 @@ ofa_tvbin_add_column_date( ofaTVBin *bin, gint column_id, const gchar *header, c
 	column = gtk_tree_view_column_new_with_attributes(
 					header ? header : _( "Date" ), cell, "text", column_id, NULL );
 
-	add_column( bin, column, column_id, menu );
+	add_column( bin, column, column_id, menu, OFA_TYPE_DATE );
 }
 
 /*
@@ -1168,7 +1168,7 @@ ofa_tvbin_add_column_int( ofaTVBin *bin, gint column_id, const gchar *header, co
 					header ? header : _( "Int" ), cell, "text", column_id, NULL );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
 
-	add_column( bin, column, column_id, menu );
+	add_column( bin, column, column_id, menu, OFA_TYPE_COUNTER );
 }
 
 /*
@@ -1204,7 +1204,7 @@ ofa_tvbin_add_column_pixbuf( ofaTVBin *bin, gint column_id, const gchar *header,
 	column = gtk_tree_view_column_new_with_attributes(
 					header ? header : _( "Pixbuf" ), cell, "pixbuf", column_id, NULL );
 
-	add_column( bin, column, column_id, menu );
+	add_column( bin, column, column_id, menu, 0 );
 }
 
 /*
@@ -1240,7 +1240,7 @@ ofa_tvbin_add_column_stamp( ofaTVBin *bin, gint column_id, const gchar *header, 
 	column = gtk_tree_view_column_new_with_attributes(
 					header ? header : _( "Timestamp" ), cell, "text", column_id, NULL );
 
-	add_column( bin, column, column_id, menu );
+	add_column( bin, column, column_id, menu, OFA_TYPE_TIMESTAMP );
 }
 
 /*
@@ -1276,7 +1276,7 @@ ofa_tvbin_add_column_text( ofaTVBin *bin, gint column_id, const gchar *header, c
 	column = gtk_tree_view_column_new_with_attributes(
 					header ? header : _( "Text" ), cell, "text", column_id, NULL );
 
-	add_column( bin, column, column_id, menu );
+	add_column( bin, column, column_id, menu, OFA_TYPE_STRING );
 }
 
 /*
@@ -1315,7 +1315,7 @@ ofa_tvbin_add_column_text_c( ofaTVBin *bin, gint column_id, const gchar *header,
 					header ? header : _( "Text" ), cell, "text", column_id, NULL );
 	gtk_tree_view_column_set_alignment( column, 0.5 );
 
-	add_column( bin, column, column_id, menu );
+	add_column( bin, column, column_id, menu, OFA_TYPE_STRING );
 }
 
 /*
@@ -1356,7 +1356,7 @@ ofa_tvbin_add_column_text_lx( ofaTVBin *bin, gint column_id, const gchar *header
 					header ? header : _( "Text" ), cell, "text", column_id, NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
 
-	add_column( bin, column, column_id, menu );
+	add_column( bin, column, column_id, menu, OFA_TYPE_STRING );
 }
 
 /*
@@ -1397,7 +1397,7 @@ ofa_tvbin_add_column_text_rx( ofaTVBin *bin, gint column_id, const gchar *header
 					header ? header : _( "Text" ), cell, "text", column_id, NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
 
-	add_column( bin, column, column_id, menu );
+	add_column( bin, column, column_id, menu, OFA_TYPE_STRING );
 }
 
 /*
@@ -1436,11 +1436,11 @@ ofa_tvbin_add_column_text_x( ofaTVBin *bin, gint column_id, const gchar *header,
 					header ? header : _( "Text" ), cell, "text", column_id, NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
 
-	add_column( bin, column, column_id, menu );
+	add_column( bin, column, column_id, menu, OFA_TYPE_STRING );
 }
 
 static void
-add_column( ofaTVBin *bin, GtkTreeViewColumn *column, gint column_id, const gchar *menu_label )
+add_column( ofaTVBin *bin, GtkTreeViewColumn *column, gint column_id, const gchar *menu_label, ofeBoxType type )
 {
 	ofaTVBinPrivate *priv;
 
@@ -1451,7 +1451,7 @@ add_column( ofaTVBin *bin, GtkTreeViewColumn *column, gint column_id, const gcha
 		ofa_itvcolumnable_set_treeview( OFA_ITVCOLUMNABLE( bin ), GTK_TREE_VIEW( priv->treeview ));
 	}
 
-	ofa_itvcolumnable_add_column( OFA_ITVCOLUMNABLE( bin ), column, column_id, menu_label );
+	ofa_itvcolumnable_add_column( OFA_ITVCOLUMNABLE( bin ), column, column_id, menu_label, type );
 }
 
 /*

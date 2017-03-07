@@ -72,6 +72,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -137,7 +138,8 @@ void               ofa_itvcolumnable_set_treeview              ( ofaITVColumnabl
 void               ofa_itvcolumnable_add_column                ( ofaITVColumnable *instance,
 																		GtkTreeViewColumn *column,
 																		gint column_id,
-																		const gchar *menu_label );
+																		const gchar *menu_label,
+																		ofeBoxType type );
 
 GtkTreeViewColumn *ofa_itvcolumnable_get_column                ( ofaITVColumnable *instance,
 																		gint column_id );
@@ -146,6 +148,9 @@ gint               ofa_itvcolumnable_get_column_id             ( ofaITVColumnabl
 																		GtkTreeViewColumn *column );
 
 const gchar       *ofa_itvcolumnable_get_menu_label            ( ofaITVColumnable *instance,
+																		GtkTreeViewColumn *column );
+
+ofeBoxType         ofa_itvcolumnable_get_column_type           ( ofaITVColumnable *instance,
 																		GtkTreeViewColumn *column );
 
 gint               ofa_itvcolumnable_get_column_id_renderer    ( ofaITVColumnable *instance,
