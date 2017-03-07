@@ -154,6 +154,10 @@ guint      my_igridlist_add_row                   ( const myIGridlist *instance,
 														GtkGrid *grid,
 														void *user_data );
 
+void       my_igridlist_remove_row                ( const myIGridlist *instance,
+														GtkGrid *grid,
+														gint row_index );
+
 void       my_igridlist_set_widget                ( const myIGridlist *instance,
 														GtkGrid *grid,
 														GtkWidget *widget,

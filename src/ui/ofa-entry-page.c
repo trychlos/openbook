@@ -1236,6 +1236,9 @@ extfilter_on_init_from_clicked( GtkButton *button, ofaEntryPage *self )
 		g_free( extend->value );
 		g_free( extend );
 	}
+
+	/* and apply this filter (which should not change anything) */
+	extfilter_do_apply( self );
 }
 
 static void
@@ -1258,14 +1261,34 @@ extfilter_on_init_status( ofaEntryPage *self, GtkWidget *btn, ofeEntryStatus sta
 	}
 }
 
+/*
+ * Remove all user rows from the myIGridlist
+ */
 static void
 extfilter_on_reset_clicked( GtkButton *button, ofaEntryPage *self )
 {
+	ofaEntryPagePrivate *priv;
+	guint count, i;
 
+	priv = ofa_entry_page_get_instance_private( self );
+
+	count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ));
+
+	for( i=0 ; i<count ; ++i ){
+		my_igridlist_remove_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), -1 );
+	}
+
+	extfilter_do_apply( self );
 }
 
 static void
 extfilter_on_apply_clicked( GtkButton *button, ofaEntryPage *self )
+{
+	extfilter_do_apply( self );
+}
+
+static void
+extfilter_do_apply( ofaEntryPage *self )
 {
 
 }

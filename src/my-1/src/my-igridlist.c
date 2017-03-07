@@ -324,8 +324,7 @@ on_button_clicked( GtkButton *button, sIGridList *sdata )
 		exchange_rows( sdata, row, row+1 );
 
 	} else if( column == COL_REMOVE ){
-		remove_row( sdata, row );
-		g_signal_emit_by_name(( gpointer ) sdata->instance, "my-row-changed", sdata->grid );
+		my_igridlist_remove_row( sdata->instance, sdata->grid, row );
 
 	} else {
 		g_warning( "%s: invalid column=%u", thisfn, column );
@@ -585,6 +584,36 @@ add_empty_row( sIGridList *sdata, guint row )
 		str = g_strdup_printf( "<i>%u</i>", row + ( sdata->has_header ? 0 : 1 ));
 		gtk_label_set_markup( GTK_LABEL( label ), str );
 		g_free( str );
+	}
+}
+
+/**
+ * my_igridlist_remove_row:
+ * @instance: this #myIGridlist instance.
+ * @grid: the target #GtkGrid.
+ * @row_index: the index (counted from zero) of the row to be deleted;
+ *  the header row (if present) cannot be deleted;
+ *  if @row_index is -1, then remove the last user row.
+ *
+ * Remove a row.
+ */
+void
+my_igridlist_remove_row( const myIGridlist *instance, GtkGrid *grid, gint row_index )
+{
+	sIGridList *sdata;
+
+	g_return_if_fail( instance && MY_IS_IGRIDLIST( instance ));
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+
+	sdata = get_igridlist_data( instance, grid );
+
+	if( row_index == -1 ){
+		row_index = sdata->first_row + sdata->rows_count - 1;
+	}
+
+	if( row_index >= sdata->first_row && row_index <= sdata->first_row + sdata->rows_count - 1 ){
+		remove_row( sdata, row_index );
+		g_signal_emit_by_name(( gpointer ) instance, "my-row-changed", grid );
 	}
 }
 

@@ -35,6 +35,7 @@
    - myIGridList: has new 'my-row-changed' signal (todo #1371).
    - my_igridlist_add_row(): add user data argument.
    - my_igridlist_get_rows_count(): renamed to my_igridlist_get_details_count().
+   - my_igridlist_remove_row(): new function.
    - my_igridlist_set_has_row_number(): new function.
    - my_igridlist_set_has_up_down_buttons: new function.
    - ofaClosingParmsBin: implements myIGridlist interface (todo #1370).
