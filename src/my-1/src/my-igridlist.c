@@ -262,7 +262,7 @@ my_igridlist_init( const myIGridlist *instance, GtkGrid *grid, gboolean has_head
 	sdata->first_row = has_header ? 1 : 0;
 	sdata->rows_count = 0;
 
-	add_button( sdata, "gtk-add", COL_ADD, sdata->first_row+sdata->rows_count, 4, G_CALLBACK( on_button_clicked ));
+	add_button( sdata, "gtk-add", COL_ADD, sdata->first_row+sdata->rows_count, 2, G_CALLBACK( on_button_clicked ));
 }
 
 /*
@@ -417,23 +417,25 @@ update_detail_buttons( sIGridList *sdata )
 	GtkWidget *up_btn, *down_btn;
 	guint i;
 
-	for( i=1 ; i<=sdata->rows_count ; ++i ){
+	if( sdata->rows_count > 0 ){
+		for( i=sdata->first_row ; i<=sdata->first_row+sdata->rows_count-1 ; ++i ){
 
-		up_btn = gtk_grid_get_child_at( sdata->grid, COL_UP, i );
-		g_return_if_fail( up_btn && GTK_IS_WIDGET( up_btn ));
+			up_btn = gtk_grid_get_child_at( sdata->grid, COL_UP, i );
+			g_return_if_fail( up_btn && GTK_IS_WIDGET( up_btn ));
 
-		down_btn = gtk_grid_get_child_at( sdata->grid, COL_DOWN, i );
-		g_return_if_fail( down_btn && GTK_IS_WIDGET( down_btn ));
+			down_btn = gtk_grid_get_child_at( sdata->grid, COL_DOWN, i );
+			g_return_if_fail( down_btn && GTK_IS_WIDGET( down_btn ));
 
-		gtk_widget_set_sensitive( up_btn, sdata->writable );
-		gtk_widget_set_sensitive( down_btn, sdata->writable );
+			gtk_widget_set_sensitive( up_btn, sdata->writable );
+			gtk_widget_set_sensitive( down_btn, sdata->writable );
 
-		if( i == 1 ){
-			gtk_widget_set_sensitive( up_btn, FALSE );
-		}
+			if( i == sdata->first_row ){
+				gtk_widget_set_sensitive( up_btn, FALSE );
+			}
 
-		if( i == sdata->rows_count ){
-			gtk_widget_set_sensitive( down_btn, FALSE );
+			if( i == sdata->rows_count ){
+				gtk_widget_set_sensitive( down_btn, FALSE );
+			}
 		}
 	}
 }
@@ -495,7 +497,7 @@ my_igridlist_add_row( const myIGridlist *instance, GtkGrid *grid, void *user_dat
 				thisfn, G_OBJECT_TYPE_NAME( instance ));
 	}
 
-	sdata->rows_count = row;
+	sdata->rows_count += 1;
 	signal_row_added( sdata );
 	gtk_widget_show_all( GTK_WIDGET( grid ));
 
