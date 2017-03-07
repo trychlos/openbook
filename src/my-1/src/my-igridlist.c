@@ -157,6 +157,7 @@ interface_base_init( myIGridlistInterface *klass )
 		 *
 		 * Handler is of type:
 		 * void ( *handler )( myIGridlist *instance,
+		 *                      GtkGrid   *grid,
 		 * 						gpointer   user_data );
 		 */
 		st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -168,8 +169,8 @@ interface_base_init( myIGridlistInterface *klass )
 					NULL,								/* accumulator data */
 					NULL,
 					G_TYPE_NONE,
-					0,
-					G_TYPE_NONE );
+					1,
+					GTK_TYPE_WIDGET );
 	}
 
 	st_initializations += 1;
@@ -313,7 +314,6 @@ on_button_clicked( GtkButton *button, sIGridList *sdata )
 
 	if( column == COL_ADD ){
 		my_igridlist_add_row( sdata->instance, sdata->grid, NULL );
-		g_signal_emit_by_name(( gpointer ) sdata->instance, "my-row-changed" );
 
 	} else if( column == COL_UP ){
 		g_return_if_fail( row > sdata->first_row );
@@ -325,7 +325,7 @@ on_button_clicked( GtkButton *button, sIGridList *sdata )
 
 	} else if( column == COL_REMOVE ){
 		remove_row( sdata, row );
-		g_signal_emit_by_name(( gpointer ) sdata->instance, "my-row-changed" );
+		g_signal_emit_by_name(( gpointer ) sdata->instance, "my-row-changed", sdata->grid );
 
 	} else {
 		g_warning( "%s: invalid column=%u", thisfn, column );
@@ -560,6 +560,7 @@ my_igridlist_add_row( const myIGridlist *instance, GtkGrid *grid, void *user_dat
 
 	sdata->rows_count += 1;
 	signal_row_added( sdata );
+	g_signal_emit_by_name(( gpointer ) instance, "my-row-changed", grid );
 	gtk_widget_show_all( GTK_WIDGET( grid ));
 
 	return( row );

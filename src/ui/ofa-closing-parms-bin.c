@@ -111,7 +111,7 @@ static void       on_for_ope_changed( GtkEditable *editable, ofaClosingParmsBin 
 static void       on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label );
 static void       on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaClosingParmsBin *self );
 static void       on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self );
-static void       on_detail_count_changed( myIGridlist *instance, void *empty );
+static void       on_detail_count_changed( myIGridlist *instance, GtkGrid *grid, void *empty );
 static GtkWidget *get_currency_combo_at( ofaClosingParmsBin *self, gint row );
 static void       check_bin( ofaClosingParmsBin *bin );
 static gboolean   check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg );
@@ -514,7 +514,7 @@ on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self )
 }
 
 static void
-on_detail_count_changed( myIGridlist *instance, void *empty )
+on_detail_count_changed( myIGridlist *instance, GtkGrid *grid, void *empty )
 {
 	check_bin( OFA_CLOSING_PARMS_BIN( instance ));
 }
