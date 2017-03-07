@@ -959,7 +959,7 @@ setup_row_widgets( ofaEntryPage *self, GtkGrid *grid, guint row )
 		if( my_strlen( title )){
 			gtk_list_store_insert_with_values(
 					store, &iter, -1,
-					FLD_COL_LABEL, title,
+					FLD_COL_LABEL, ofa_itvcolumnable_get_menu_label( OFA_ITVCOLUMNABLE( priv->tview ), column ),
 					FLD_COL_ID,    ofa_itvcolumnable_get_column_id( OFA_ITVCOLUMNABLE( priv->tview ), column ),
 					-1 );
 		}
