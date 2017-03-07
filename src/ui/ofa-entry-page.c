@@ -152,16 +152,6 @@ typedef struct {
  * the user prefs */
 #define DATA_ROW_STATUS                 "ofa-data-row-status"
 
-/* when editing an entry, we may have two levels of errors:
- * fatal error: the entry is not valid and cannot be saved
- *              (e.g. a mandatory data is empty)
- * warning: the entry may be valid, but will not be applied in standard
- *          conditions (e.g. effect date is before the exercice)
- */
-#define RGBA_NORMAL                     "#000000"		/* black */
-#define RGBA_ERROR                      "#ff0000"		/* full red */
-#define RGBA_WARNING                    "#ff8000"		/* orange */
-
 /* error levels, in ascending order
  */
 enum {
@@ -169,12 +159,6 @@ enum {
 	ENT_ERR_WARNING,
 	ENT_ERR_ERROR
 };
-
-/* other colors */
-#define RGBA_PAST                       "#d8ffa0"		/* green background */
-#define RGBA_VALIDATED                  "#ffe880"		/* pale gold background */
-#define RGBA_DELETED                    "#808080"		/* gray foreground */
-#define RGBA_FUTURE                     "#ffe8a8"		/* pale orange background */
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-entry-page.ui";
 static const gchar *st_ui_id            = "EntryPageWindow";

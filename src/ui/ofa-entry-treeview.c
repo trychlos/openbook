@@ -93,9 +93,9 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 /* status colors */
 #define RGBA_PAST                       "#d8ffa0"		/* green background */
-#define RGBA_VALIDATED                  "#ffe880"		/* pale gold background */
+#define RGBA_VALIDATED                  "#ffe8a8"		/* pale gold background */
 #define RGBA_DELETED                    "#808080"		/* gray foreground */
-#define RGBA_FUTURE                     "#ffe8a8"		/* pale orange background */
+#define RGBA_FUTURE                     "#c0ffff"		/* pale blue background */
 
 static void      setup_columns( ofaEntryTreeview *self );
 static void      on_selection_changed( ofaEntryTreeview *self, GtkTreeSelection *selection, void *empty );
