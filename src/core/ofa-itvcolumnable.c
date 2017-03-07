@@ -62,6 +62,7 @@ typedef struct {
 	gboolean           def_visible;
 	GtkTreeViewColumn *column;
 	GSimpleAction     *action;
+	gboolean           invisible;
 }
 	sColumn;
 
@@ -107,6 +108,7 @@ static void            interface_base_init( ofaITVColumnableInterface *klass );
 static void            interface_base_finalize( ofaITVColumnableInterface *klass );
 static void            on_action_changed_state( GSimpleAction *action, GVariant *value, ofaITVColumnable *instance );
 static gint            get_column_id( const ofaITVColumnable *instance, sITVColumnable *sdata, GtkTreeViewColumn *column );
+static void            enable_action( ofaITVColumnable *instance, sITVColumnable *sdata, sColumn *scol );
 static void            do_propagate_visible_columns( ofaITVColumnable *source, sITVColumnable *sdata, ofaITVColumnable *target );
 static void            itvcolumnable_clear_all( ofaITVColumnable *instance );
 static gboolean        twins_group_init( ofaITVColumnable *self, sITVColumnable *sdata, const gchar *name, GList *col_ids );
@@ -430,6 +432,7 @@ ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 	scol->label = g_strdup( menu_label ? menu_label : gtk_tree_view_column_get_title( column ));
 	scol->column = column;
 	scol->def_visible = FALSE;
+	scol->invisible = FALSE;
 
 	g_debug( "%s: column_id=%u, menu_label=%s, action_group=%s, action_name=%s",
 			thisfn, column_id, menu_label, scol->group_name, scol->name );
@@ -477,23 +480,9 @@ on_action_changed_state( GSimpleAction *action, GVariant *value, ofaITVColumnabl
 		//g_debug( "%s: visible_count=%d", thisfn, sdata->visible_count );
 
 		/* be sure that the last visible column will not be disabled */
-		if( sdata->visible_count == 1 ){
-			for( it=sdata->columns_list ; it ; it=it->next ){
-				scol = ( sColumn * ) it->data;
-				if( gtk_tree_view_column_get_visible( scol->column )){
-					g_simple_action_set_enabled( scol->action, FALSE );
-					break;
-				}
-			}
-		} else if( visible && sdata->visible_count == 2 ){
-			for( it=sdata->columns_list ; it ; it=it->next ){
-				scol = ( sColumn * ) it->data;
-				if( !g_action_get_enabled( G_ACTION( scol->action ))){
-					//g_debug( "%s: enabling action %s", thisfn, scol->label );
-					g_simple_action_set_enabled( scol->action, TRUE );
-					break;
-				}
-			}
+		for( it=sdata->columns_list ; it ; it=it->next ){
+			scol = ( sColumn * ) it->data;
+			enable_action( instance, sdata, scol );
 		}
 	}
 }
@@ -647,15 +636,18 @@ ofa_itvcolumnable_set_default_column( ofaITVColumnable *instance, gint column_id
 }
 
 /**
- * ofa_itvcolumnable_enable_column:
+ * ofa_itvcolumnable_set_invisible:
  * @instance: the #ofaITVColumnable instance.
  * @column_id: the identifier of the #GtkTreeViewColumn column.
- * @enable: whether this column should be activatable.
+ * @invisible: whether this column should be invisible.
  *
  * Determines if a column can be made visible.
+ *
+ * When invisible, the column will never be displayed.
+ * The corresponding action will be disabled.
  */
 void
-ofa_itvcolumnable_enable_column( ofaITVColumnable *instance, gint column_id, gboolean enable )
+ofa_itvcolumnable_set_invisible( ofaITVColumnable *instance, gint column_id, gboolean invisible )
 {
 	sITVColumnable *sdata;
 	sColumn *scol;
@@ -665,15 +657,39 @@ ofa_itvcolumnable_enable_column( ofaITVColumnable *instance, gint column_id, gbo
 
 	sdata = get_instance_data( instance );
 	scol = get_column_data_by_id( instance, sdata, column_id );
+	scol->invisible = invisible;
 
 	/* make the column not visible when disabled */
-	if( !enable ){
+	if( invisible ){
 		action_group = ofa_iactionable_get_action_group( OFA_IACTIONABLE( instance ), scol->group_name );
 		g_action_group_change_action_state( action_group, scol->name, g_variant_new_boolean( FALSE ));
 	}
 
 	/* enable/disable the action */
-	g_simple_action_set_enabled( scol->action, enable );
+	enable_action( instance, sdata, scol );
+}
+
+/*
+ * The action which let the user toggle the visiblity state of a GtkTreeViewColumn
+ * is always enabled, unless:
+ * - the column is the last visible
+ * - the column has been set invisible.
+ */
+static void
+enable_action( ofaITVColumnable *instance, sITVColumnable *sdata, sColumn *scol )
+{
+	gboolean enabled;
+
+	enabled = TRUE;
+
+	if( sdata->visible_count == 1 && gtk_tree_view_column_get_visible( scol->column )){
+		enabled = FALSE;
+
+	} else if( scol->invisible ){
+		enabled = FALSE;
+	}
+
+	g_simple_action_set_enabled( scol->action, enabled );
 }
 
 /**

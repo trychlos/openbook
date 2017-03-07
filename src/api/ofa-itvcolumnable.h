@@ -155,9 +155,9 @@ GMenu             *ofa_itvcolumnable_get_menu                  ( ofaITVColumnabl
 void               ofa_itvcolumnable_set_default_column        ( ofaITVColumnable *instance,
 																		gint column_id );
 
-void               ofa_itvcolumnable_enable_column             ( ofaITVColumnable *instance,
+void               ofa_itvcolumnable_set_invisible             ( ofaITVColumnable *instance,
 																		gint column_id,
-																		gboolean enable );
+																		gboolean invisible );
 
 void               ofa_itvcolumnable_show_columns              ( ofaITVColumnable *instance );
 

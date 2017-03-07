@@ -529,12 +529,10 @@ ofa_dossier_treeview_set_show_all( ofaDossierTreeview *view, gboolean show_all )
 
 	priv->show_all = show_all;
 
-	if( show_all ){
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_PERNAME, show_all );
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_END,     show_all );
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_BEGIN,   show_all );
-		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_STATUS,  show_all );
-	}
+	ofa_itvcolumnable_set_invisible( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_PERNAME, !show_all );
+	ofa_itvcolumnable_set_invisible( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_END,     !show_all );
+	ofa_itvcolumnable_set_invisible( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_BEGIN,   !show_all );
+	ofa_itvcolumnable_set_invisible( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_STATUS,  !show_all );
 
 	ofa_tvbin_refilter( OFA_TVBIN( view ));
 }
