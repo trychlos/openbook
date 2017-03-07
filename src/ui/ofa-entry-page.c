@@ -81,6 +81,10 @@ typedef struct {
 	gchar               *settings_prefix;
 	GList               *store_handlers;
 
+	/* GtkStack
+	 */
+	GtkWidget           *stack;
+
 	/* frame 1: general selection
 	 */
 	GtkWidget           *ledger_btn;
@@ -167,6 +171,8 @@ static const gchar *st_ui_id            = "EntryPageWindow";
 #define SEL_ACCOUNT                     "Account"
 
 static void       page_v_setup_page( ofaPage *page );
+static void       setup_ext_filter( ofaEntryPage *self );
+static void       on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self );
 static void       setup_gen_selection( ofaEntryPage *self );
 static void       setup_account_selection( ofaEntryPage *self );
 static void       setup_ledger_selection( ofaEntryPage *self );
@@ -344,8 +350,9 @@ page_v_setup_page( ofaPage *page )
 	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier );
 	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
-	my_utils_container_attach_from_resource( GTK_CONTAINER( page ), st_resource_ui, st_ui_id, "px-box" );
+	my_utils_container_attach_from_resource( GTK_CONTAINER( page ), st_resource_ui, st_ui_id, "px-top" );
 
+	setup_ext_filter( OFA_ENTRY_PAGE( page ));
 	setup_gen_selection( OFA_ENTRY_PAGE( page ));
 	setup_ledger_selection( OFA_ENTRY_PAGE( page ));
 	setup_account_selection( OFA_ENTRY_PAGE( page ));
@@ -368,6 +375,46 @@ page_v_setup_page( ofaPage *page )
 	} else {
 		gen_selection_on_toggled(  GTK_TOGGLE_BUTTON( priv->ledger_btn ), OFA_ENTRY_PAGE( page ));
 	}
+}
+
+/*
+ * Starting with 0.68, an extended filter is made available to the #ofaEntryPage.
+ * A #GtkStackSwitcher let the user switch between standard and extended filters.
+ * A #GtkExpander, associated with two #GtkRevealers, shows or hides the criteria.
+ *
+ * The status of the expander is not saved in user settings. Instead of that,
+ * it is initially opened so that criteria are visible.
+ */
+static void
+setup_ext_filter( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	GtkWidget *expander, *stack;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	expander = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "expander1" );
+	g_return_if_fail( expander && GTK_IS_EXPANDER( expander ));
+	g_signal_connect( expander, "notify::expanded", G_CALLBACK( on_expander_toggled ), self );
+
+	stack = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "stack1" );
+	g_return_if_fail( stack && GTK_IS_STACK( stack ));
+	priv->stack = stack;
+
+	gtk_expander_set_expanded( GTK_EXPANDER( expander ), TRUE );
+}
+
+static void
+on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	GtkWidget *revealer;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	revealer = gtk_stack_get_visible_child( GTK_STACK( priv->stack ));
+	g_return_if_fail( revealer && GTK_IS_REVEALER( revealer ));
+	gtk_revealer_set_reveal_child( GTK_REVEALER( revealer ), gtk_expander_get_expanded( expander ));
 }
 
 /*
