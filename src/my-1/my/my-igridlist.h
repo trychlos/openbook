@@ -142,6 +142,14 @@ void       my_igridlist_init                      ( const myIGridlist *instance,
 														gboolean writable,
 														guint columns_count );
 
+void       my_igridlist_set_has_row_number        ( myIGridlist *instance,
+														GtkGrid *grid,
+														gboolean has_row_number );
+
+void       my_igridlist_set_has_up_down_buttons   ( myIGridlist *instance,
+														GtkGrid *grid,
+														gboolean has_buttons );
+
 guint      my_igridlist_add_row                   ( const myIGridlist *instance,
 														GtkGrid *grid,
 														void *user_data );

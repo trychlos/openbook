@@ -41,6 +41,11 @@ typedef struct {
 	gboolean           writable;
 	guint              columns_count;
 
+	/* properties
+	 */
+	gboolean           display_row_number;
+	gboolean           display_up_down_buttons;
+
 	/* runtime
 	 */
 	guint              first_row;		/* is 1 if row zero is used by the headers */
@@ -256,13 +261,18 @@ my_igridlist_init( const myIGridlist *instance, GtkGrid *grid, gboolean has_head
 	g_return_if_fail( grid && GTK_IS_GRID( grid ));
 
 	sdata = get_igridlist_data( instance, grid );
+
 	sdata->has_header = has_header;
 	sdata->writable = writable;
 	sdata->columns_count = columns_count;
+
+	sdata->display_row_number = TRUE;
+	sdata->display_up_down_buttons = TRUE;
+
 	sdata->first_row = has_header ? 1 : 0;
 	sdata->rows_count = 0;
 
-	add_button( sdata, "gtk-add", COL_ADD, sdata->first_row+sdata->rows_count, 2, G_CALLBACK( on_button_clicked ));
+	add_button( sdata, "gtk-add", COL_ADD, sdata->first_row, 2, G_CALLBACK( on_button_clicked ));
 }
 
 /*
@@ -277,7 +287,7 @@ add_button( sIGridList *sdata, const gchar *stock_id, guint column, guint row, g
 	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
 	button = gtk_button_new();
 	gtk_widget_set_halign( button, GTK_ALIGN_END );
-	my_utils_widget_set_margins( GTK_WIDGET( button ), 0, 0, 0, right_margin );
+	my_utils_widget_set_margins( button, 0, 0, 0, right_margin );
 	gtk_button_set_image( GTK_BUTTON( button ), image );
 	g_signal_connect( button, "clicked", cb, sdata );
 
@@ -417,7 +427,7 @@ update_detail_buttons( sIGridList *sdata )
 	GtkWidget *up_btn, *down_btn;
 	guint i;
 
-	if( sdata->rows_count > 0 ){
+	if( sdata->rows_count > 0 && sdata->display_up_down_buttons ){
 		for( i=sdata->first_row ; i<=sdata->first_row+sdata->rows_count-1 ; ++i ){
 
 			up_btn = gtk_grid_get_child_at( sdata->grid, COL_UP, i );
@@ -453,6 +463,52 @@ signal_row_removed( sIGridList *sdata )
 }
 
 /**
+ * my_igridlist_set_has_row_number:
+ * @instance: this #myIGridlist instance.
+ * @grid: the target #GtkGrid.
+ * @has_row_number: whether the row number is displayed.
+ *
+ * Whether to display the user row number.
+ *
+ * Defaults to display the user row number, starting from 1.
+ */
+void
+my_igridlist_set_has_row_number( myIGridlist *instance, GtkGrid *grid, gboolean has_row_number )
+{
+	sIGridList *sdata;
+
+	g_return_if_fail( instance && MY_IS_IGRIDLIST( instance ));
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+
+	sdata = get_igridlist_data( instance, grid );
+
+	sdata->display_row_number = has_row_number;
+}
+
+/**
+ * my_igridlist_set_has_up_down_buttons:
+ * @instance: this #myIGridlist instance.
+ * @grid: the target #GtkGrid.
+ * @has_buttons: whether to display the up/down buttons.
+ *
+ * Whether to display the Up/Down buttons.
+ *
+ * Defaults to display the Up/Down buttons, which let the user to
+ * reorder the rows.
+ */
+void
+my_igridlist_set_has_up_down_buttons( myIGridlist *instance, GtkGrid *grid, gboolean has_buttons )
+{
+	sIGridList *sdata;
+
+	g_return_if_fail( instance && MY_IS_IGRIDLIST( instance ));
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+
+	sdata = get_igridlist_data( instance, grid );
+	sdata->display_up_down_buttons = has_buttons;
+}
+
+/**
  * my_igridlist_add_row:
  * @instance: this #myIGridlist instance.
  * @grid: the target #GtkGrid.
@@ -484,8 +540,13 @@ my_igridlist_add_row( const myIGridlist *instance, GtkGrid *grid, void *user_dat
 	sdata = get_igridlist_data( instance, grid );
 	row = sdata->first_row+sdata->rows_count;
 	add_empty_row( sdata, row );
-	add_button( sdata, "gtk-go-up", COL_UP, row, 0, G_CALLBACK( on_button_clicked ));
-	add_button( sdata, "gtk-go-down", COL_DOWN, row, 0, G_CALLBACK( on_button_clicked ));
+
+	/* if Up/Down buttons are not displayed, their place is still reserved */
+	if( sdata->display_up_down_buttons ){
+		add_button( sdata, "gtk-go-up", COL_UP, row, 0, G_CALLBACK( on_button_clicked ));
+		add_button( sdata, "gtk-go-down", COL_DOWN, row, 0, G_CALLBACK( on_button_clicked ));
+	}
+
 	add_button( sdata, "gtk-remove", COL_REMOVE, row, 0, G_CALLBACK( on_button_clicked ));
 	add_button( sdata, "gtk-add", COL_ADD, row+1, 4, G_CALLBACK( on_button_clicked ));
 
@@ -513,15 +574,17 @@ add_empty_row( sIGridList *sdata, guint row )
 	/* remove the Add button */
 	gtk_widget_destroy( gtk_grid_get_child_at( sdata->grid, COL_ADD, row ));
 
-	/* add the row number */
-	label = gtk_label_new( NULL );
-	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-	my_utils_widget_set_margins( label, 0, 0, 0, 4 );
-	my_utils_widget_set_xalign( label, 1.0 );
-	gtk_grid_attach( sdata->grid, label, COL_ROW, row, 1, 1 );
-	str = g_strdup_printf( "<i>%u</i>", row );
-	gtk_label_set_markup( GTK_LABEL( label ), str );
-	g_free( str );
+	/* add the user row number (counted from 1) */
+	if( sdata->display_row_number ){
+		label = gtk_label_new( NULL );
+		gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
+		my_utils_widget_set_margins( label, 0, 0, 0, 4 );
+		my_utils_widget_set_xalign( label, 1.0 );
+		gtk_grid_attach( sdata->grid, label, COL_ROW, row, 1, 1 );
+		str = g_strdup_printf( "<i>%u</i>", row + ( sdata->has_header ? 0 : 1 ));
+		gtk_label_set_markup( GTK_LABEL( label ), str );
+		g_free( str );
+	}
 }
 
 /**
