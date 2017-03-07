@@ -86,6 +86,9 @@ typedef struct {
 	 */
 	GtkWidget           *stack;
 	GtkWidget           *ext_grid;
+	GtkWidget           *ext_init_btn;
+	GtkWidget           *ext_reset_btn;
+	GtkWidget           *ext_apply_btn;
 
 	/* frame 1: general selection
 	 */
@@ -171,7 +174,7 @@ enum {
 enum {
 	XFIL_COL_OPERATOR = 0,
 	XFIL_COL_FIELD,
-	XFIL_COL_COND,
+	XFIL_COL_CONDITION,
 	XFIL_COL_VALUE,
 	XFIL_N_COLUMNS
 };
@@ -187,7 +190,8 @@ enum {
 /* operators
  */
 enum {
-	OPERATOR_AND = 1,
+	OPERATOR_NONE = 0,
+	OPERATOR_AND,
 	OPERATOR_OR,
 };
 
@@ -254,6 +258,16 @@ static const sCondition st_conditions[] = {
 		{ 0 }
 };
 
+/* a structure wich holds an extended filter criterium
+ */
+typedef struct {
+	guint  operator;
+	guint  field;
+	guint  condition;
+	gchar *value;
+}
+	sExtend;
+
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-entry-page.ui";
 static const gchar *st_ui_id            = "EntryPageWindow";
 
@@ -275,12 +289,22 @@ static void       tview_on_row_activated( ofaTVBin *bin, GList *selected, ofaEnt
 static void       tview_on_row_insert( ofaTVBin *bin, ofaEntryPage *self );
 static void       tview_on_row_delete( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self );
 static void       setup_ext_filter( ofaEntryPage *self );
-static void       on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self );
+static void       extfilter_on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self );
+static void       extfilter_on_stack_switched( GtkStack *stack, GParamSpec *param_spec, ofaEntryPage *self );
 static void       igridlist_iface_init( myIGridlistInterface *iface );
 static guint      igridlist_get_interface_version( void );
-static void       igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *empty );
+static void       igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *criterium );
 static void       setup_row_widgets( ofaEntryPage *self, GtkGrid *grid, guint row );
-static void       setup_row_values( ofaEntryPage *self, GtkGrid *grid, guint row );
+static void       setup_row_values( ofaEntryPage *self, GtkGrid *grid, guint row, sExtend *crit );
+static void       extfilter_on_operator_changed( GtkComboBox *combo, ofaEntryPage *self );
+static void       extfilter_on_field_changed( GtkComboBox *combo, ofaEntryPage *self );
+static void       extfilter_on_condition_changed( GtkComboBox *combo, ofaEntryPage *self );
+static void       extfilter_on_value_changed( GtkEntry *entry, ofaEntryPage *self );
+static void       extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, ofaEntryPage *self );
+static void       extfilter_on_init_from_clicked( GtkButton *button, ofaEntryPage *self );
+static void       extfilter_on_init_status( ofaEntryPage *self, GtkWidget *btn, ofeEntryStatus status, gboolean *first );
+static void       extfilter_on_reset_clicked( GtkButton *button, ofaEntryPage *self );
+static void       extfilter_on_apply_clicked( GtkButton *button, ofaEntryPage *self );
 static void       setup_footer( ofaEntryPage *self );
 static void       setup_actions( ofaEntryPage *self );
 static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
@@ -694,10 +718,10 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *sel
 		if( visible ){
 			switch( status ){
 				case ENT_STATUS_PAST:
-					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->past_btn ));;
+					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->past_btn ));
 					break;
 				case ENT_STATUS_ROUGH:
-					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->rough_btn ));;
+					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->rough_btn ));
 					break;
 				case ENT_STATUS_VALIDATED:
 					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_btn ));
@@ -825,34 +849,51 @@ static void
 setup_ext_filter( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
-	GtkWidget *expander, *stack, *grid;
+	GtkWidget *expander, *stack, *grid, *btn;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
 	expander = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "expander1" );
 	g_return_if_fail( expander && GTK_IS_EXPANDER( expander ));
-	g_signal_connect( expander, "notify::expanded", G_CALLBACK( on_expander_toggled ), self );
+	g_signal_connect( expander, "notify::expanded", G_CALLBACK( extfilter_on_expander_toggled ), self );
 
 	stack = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "stack1" );
 	g_return_if_fail( stack && GTK_IS_STACK( stack ));
 	priv->stack = stack;
+	g_signal_connect( stack, "notify::visible-child-name", G_CALLBACK( extfilter_on_stack_switched ), self );
 
 	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ext-grid" );
 	g_return_if_fail( grid && GTK_IS_GRID( grid ));
 	priv->ext_grid = grid;
 
-	gtk_expander_set_expanded( GTK_EXPANDER( expander ), TRUE );
-
 	my_igridlist_init(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ),
 			FALSE, TRUE, XFIL_N_COLUMNS );
-
 	my_igridlist_set_has_row_number( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), FALSE );
 	my_igridlist_set_has_up_down_buttons( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), FALSE );
+	g_signal_connect( self, "my-row-changed", G_CALLBACK( extfilter_on_row_changed ), self );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ext-init-from-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	priv->ext_init_btn = btn;
+	g_signal_connect( btn, "clicked", G_CALLBACK( extfilter_on_init_from_clicked ), self );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ext-reset-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	priv->ext_reset_btn = btn;
+	g_signal_connect( btn, "clicked", G_CALLBACK( extfilter_on_reset_clicked ), self );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ext-apply-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	priv->ext_apply_btn = btn;
+	g_signal_connect( btn, "clicked", G_CALLBACK( extfilter_on_apply_clicked ), self );
+
+	gtk_expander_set_expanded( GTK_EXPANDER( expander ), TRUE );
+	gtk_stack_set_visible_child_name( GTK_STACK( stack ), "standard" );
 }
 
 static void
-on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self )
+extfilter_on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	GtkWidget *revealer;
@@ -862,6 +903,26 @@ on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage
 	revealer = gtk_stack_get_visible_child( GTK_STACK( priv->stack ));
 	g_return_if_fail( revealer && GTK_IS_REVEALER( revealer ));
 	gtk_revealer_set_reveal_child( GTK_REVEALER( revealer ), gtk_expander_get_expanded( expander ));
+}
+
+static void
+extfilter_on_stack_switched( GtkStack *stack, GParamSpec *param_spec, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	const gchar *name;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	name = gtk_stack_get_visible_child_name( stack );
+
+	if( !my_collate( name, "standard" )){
+		gtk_widget_set_sensitive( priv->ext_init_btn, FALSE );
+		gtk_widget_set_sensitive( priv->ext_reset_btn, FALSE );
+		gtk_widget_set_sensitive( priv->ext_apply_btn, FALSE );
+
+	} else {
+		extfilter_on_row_changed( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), self );
+	}
 }
 
 /*
@@ -885,7 +946,7 @@ igridlist_get_interface_version( void )
 }
 
 static void
-igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *empty )
+igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *criterium )
 {
 	ofaEntryPagePrivate *priv;
 
@@ -895,7 +956,7 @@ igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void
 	g_return_if_fail( grid == GTK_GRID( priv->ext_grid ));
 
 	setup_row_widgets( OFA_ENTRY_PAGE( instance ), grid, row );
-	setup_row_values( OFA_ENTRY_PAGE( instance ), grid, row );
+	setup_row_values( OFA_ENTRY_PAGE( instance ), grid, row, ( sExtend * ) criterium );
 }
 
 /*
@@ -938,6 +999,7 @@ setup_row_widgets( ofaEntryPage *self, GtkGrid *grid, guint row )
 	}
 	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, combo, 1+XFIL_COL_OPERATOR, row, 1, 1 );
 	gtk_widget_set_sensitive( combo, row > 0 );
+	g_signal_connect( combo, "changed", G_CALLBACK( extfilter_on_operator_changed ), self );
 
 	/* field combo box
 	 * does not consider columns which do not have a title */
@@ -966,6 +1028,7 @@ setup_row_widgets( ofaEntryPage *self, GtkGrid *grid, guint row )
 	}
 	g_list_free( children );
 	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, combo, 1+XFIL_COL_FIELD, row, 1, 1 );
+	g_signal_connect( combo, "changed", G_CALLBACK( extfilter_on_field_changed ), self );
 
 	/* condition combo box */
 	combo = gtk_combo_box_new();
@@ -984,33 +1047,227 @@ setup_row_widgets( ofaEntryPage *self, GtkGrid *grid, guint row )
 				COND_COL_COND, st_conditions[i].cond,
 				-1 );
 	}
-	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, combo, 1+XFIL_COL_COND, row, 1, 1 );
+	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, combo, 1+XFIL_COL_CONDITION, row, 1, 1 );
+	g_signal_connect( combo, "changed", G_CALLBACK( extfilter_on_condition_changed ), self );
 
 	/* value entry */
 	entry = gtk_entry_new();
+	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), ACC_NUMBER_MAX_LENGTH );
 	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, entry, 1+XFIL_COL_VALUE, row, 1, 1 );
+	g_signal_connect( entry, "changed", G_CALLBACK( extfilter_on_value_changed ), self );
 }
 
 static void
-setup_row_values( ofaEntryPage *self, GtkGrid *grid, guint row )
+setup_row_values( ofaEntryPage *self, GtkGrid *grid, guint row, sExtend *crit )
 {
-#if 0
-	ofaClosingParmsBinPrivate *priv;
+	ofaEntryPagePrivate *priv;
 	GtkWidget *combo, *entry;
-	const gchar *account;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	guint operator, field, condition;
 
-	priv = ofa_closing_parms_bin_get_instance_private( self );
+	priv = ofa_entry_page_get_instance_private( self );
 
-	if( my_strlen( currency )){
-		combo = get_currency_combo_at( self, row );
-		ofa_currency_combo_set_selected( OFA_CURRENCY_COMBO( combo ), currency );
-
-		entry = gtk_grid_get_child_at( GTK_GRID( priv->acc_grid ), 1+COL_ACCOUNT, row );
-		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-		account = ofo_dossier_get_sld_account( priv->dossier, currency );
-		gtk_entry_set_text( GTK_ENTRY( entry ), account ? account : "" );
+	/* operator */
+	if( crit->operator != OPERATOR_NONE ){
+		combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_OPERATOR, row );
+		g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+			while( TRUE ){
+				gtk_tree_model_get( tmodel, &iter, OPE_COL_OPERATOR, &operator, -1 );
+				if( operator == crit->operator ){
+					gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
+					break;
+				}
+				if( !gtk_tree_model_iter_next( tmodel, &iter )){
+					break;
+				}
+			}
+		}
 	}
-#endif
+
+	/* field */
+	combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_FIELD, row );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, &iter, FLD_COL_ID, &field, -1 );
+			if( field == crit->field ){
+				gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
+				break;
+			}
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
+			}
+		}
+	}
+
+	/* condition */
+	combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_CONDITION, row );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, &iter, COND_COL_COND, &condition, -1 );
+			if( condition == crit->condition ){
+				gtk_combo_box_set_active_iter( GTK_COMBO_BOX( combo ), &iter );
+				break;
+			}
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
+			}
+		}
+	}
+
+	/* value */
+	if( my_strlen( crit->value )){
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_VALUE, row );
+		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+		gtk_entry_set_text( GTK_ENTRY( entry ), crit->value );
+	}
+}
+
+static void
+extfilter_on_operator_changed( GtkComboBox *combo, ofaEntryPage *self )
+{
+
+}
+
+static void
+extfilter_on_field_changed( GtkComboBox *combo, ofaEntryPage *self )
+{
+
+}
+
+static void
+extfilter_on_condition_changed( GtkComboBox *combo, ofaEntryPage *self )
+{
+
+}
+
+static void
+extfilter_on_value_changed( GtkEntry *entry, ofaEntryPage *self )
+{
+
+}
+
+static void
+extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	guint rows_count;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	rows_count = my_igridlist_get_details_count( instance, grid );
+
+	gtk_widget_set_sensitive( priv->ext_init_btn, rows_count == 0 );
+	gtk_widget_set_sensitive( priv->ext_reset_btn, rows_count > 0 );
+	gtk_widget_set_sensitive( priv->ext_apply_btn, rows_count > 0 );
+}
+
+/*
+ * Init extended filter from values taken from standard filter.
+ *
+ * We may assert here that the stack is switched on extended filter,
+ * and that there is no user row in the #myIGridlist.
+ */
+static void
+extfilter_on_init_from_clicked( GtkButton *button, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	sExtend *extend;
+	gboolean first;
+	const GDate *date;
+
+	priv = ofa_entry_page_get_instance_private( self );
+	first = TRUE;
+
+	/* check for status
+	 * as a side effect, if no status is selected in standard filter,
+	 * all status will be accepted here */
+	extfilter_on_init_status( self, priv->past_btn,      ENT_STATUS_PAST,      &first );
+	extfilter_on_init_status( self, priv->rough_btn,     ENT_STATUS_ROUGH,     &first );
+	extfilter_on_init_status( self, priv->validated_btn, ENT_STATUS_VALIDATED, &first );
+	extfilter_on_init_status( self, priv->deleted_btn,   ENT_STATUS_DELETED,   &first );
+	extfilter_on_init_status( self, priv->future_btn,    ENT_STATUS_FUTURE,    &first );
+
+	/* check for general selection ledger vs. account */
+	extend = g_new0( sExtend, 1 );
+	extend->operator = first ? OPERATOR_NONE : OPERATOR_AND;
+	if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ))){
+		extend->field = ENTRY_COL_LEDGER;
+		extend->value = priv->jou_mnemo;
+	} else if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->account_btn ))){
+		extend->field = ENTRY_COL_ACCOUNT;
+		extend->value = priv->acc_number;
+	}
+	if( extend->field ){
+		extend->condition = COND_EQUAL;
+		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), extend );
+		first = FALSE;
+	}
+	g_free( extend );
+
+	/* check for effect date */
+	date = ofa_idate_filter_get_date( OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_FROM );
+	if( my_date_is_valid( date )){
+		extend = g_new0( sExtend, 1 );
+		extend->operator = first ? OPERATOR_NONE : OPERATOR_AND;
+		extend->field = ENTRY_COL_DEFFECT;
+		extend->condition = COND_GE;
+		extend->value = my_date_to_str( date, ofa_prefs_date_display( priv->getter ));
+		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), extend );
+		first = FALSE;
+		g_free( extend->value );
+		g_free( extend );
+	}
+	date = ofa_idate_filter_get_date( OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_TO );
+	if( my_date_is_valid( date )){
+		extend = g_new0( sExtend, 1 );
+		extend->operator = first ? OPERATOR_NONE : OPERATOR_AND;
+		extend->field = ENTRY_COL_DEFFECT;
+		extend->condition = COND_LE;
+		extend->value = my_date_to_str( date, ofa_prefs_date_display( priv->getter ));
+		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), extend );
+		first = FALSE;
+		g_free( extend->value );
+		g_free( extend );
+	}
+}
+
+static void
+extfilter_on_init_status( ofaEntryPage *self, GtkWidget *btn, ofeEntryStatus status, gboolean *first )
+{
+	ofaEntryPagePrivate *priv;
+	sExtend *extend;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
+		extend = g_new0( sExtend, 1 );
+		extend->operator = *first ? OPERATOR_NONE : OPERATOR_OR;
+		extend->field = ENTRY_COL_STATUS;
+		extend->condition = COND_EQUAL;
+		extend->value = ( gchar * ) ofo_entry_get_abr_from_status( status );
+		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), extend );
+		*first = FALSE;
+		g_free( extend );
+	}
+}
+
+static void
+extfilter_on_reset_clicked( GtkButton *button, ofaEntryPage *self )
+{
+
+}
+
+static void
+extfilter_on_apply_clicked( GtkButton *button, ofaEntryPage *self )
+{
+
 }
 
 static void
