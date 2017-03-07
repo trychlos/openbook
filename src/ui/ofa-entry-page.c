@@ -263,15 +263,15 @@ static const sCondition st_conditions[] = {
  */
 typedef struct {
 	guint  operator;
-	guint  field;
+	gint   field;
 	guint  condition;
 	gchar *value;
 }
 	sExtend;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-entry-page.ui";
-static const gchar *st_green_check_png  = "/org/trychlos/openbook/ui/ofa-entry-page-green-check-14.png";
-static const gchar *st_red_cross_png    = "/org/trychlos/openbook/ui/ofa-entry-page-red-cross-14.png";
+static const gchar *st_green_check_png  = "/org/trychlos/openbook/ui/ofa-entry-page-green-check-16.png";
+static const gchar *st_red_cross_png    = "/org/trychlos/openbook/ui/ofa-entry-page-red-cross-16.png";
 static const gchar *st_ui_id            = "EntryPageWindow";
 
 #define SEL_LEDGER                      "Ledger"
@@ -306,11 +306,15 @@ static void       extfilter_on_operator_changed( GtkComboBox *combo, ofaEntryPag
 static void       extfilter_on_field_changed( GtkComboBox *combo, ofaEntryPage *self );
 static void       extfilter_on_condition_changed( GtkComboBox *combo, ofaEntryPage *self );
 static void       extfilter_on_value_changed( GtkEntry *entry, ofaEntryPage *self );
-static void       extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, ofaEntryPage *self );
+static void       extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, void *empty );
+static void       extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row );
 static void       extfilter_on_init_from_clicked( GtkButton *button, ofaEntryPage *self );
 static void       extfilter_on_init_status( ofaEntryPage *self, GtkWidget *btn, ofeEntryStatus status, gboolean *first );
 static void       extfilter_on_reset_clicked( GtkButton *button, ofaEntryPage *self );
 static void       extfilter_on_apply_clicked( GtkButton *button, ofaEntryPage *self );
+static sExtend   *extfilter_get_criterium( ofaEntryPage *self, guint row );
+static gboolean   extfilter_get_is_valid_criterium( ofaEntryPage *self, sExtend *criterium, guint row );
+static void       extfilter_free_criterium( ofaEntryPage *self, sExtend *criterium );
 static void       setup_footer( ofaEntryPage *self );
 static void       setup_actions( ofaEntryPage *self );
 static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
@@ -827,98 +831,53 @@ static gboolean
 tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint i, gboolean visible )
 {
 	static const gchar *thisfn = "tview_apply_extfilter_for_row";
-	ofaEntryPagePrivate *priv;
-	guint row, operator, field, condition;
-	GtkWidget *combo, *entry;
+	sExtend *criterium;
+	guint row;
 	gboolean valid, ok;
-	GtkTreeIter combo_iter;
-	GtkTreeModel *combo_model;
-	const gchar *value;
 	gchar *entry_value;
 
-	priv = ofa_entry_page_get_instance_private( self );
-
 	row = i; 				/* this myIGridlist does not have header */
-	valid = TRUE;
+	criterium = extfilter_get_criterium( self, row );
+	valid = extfilter_get_is_valid_criterium( self, criterium, row );
 	ok = TRUE;
-
-	/* operator */
-	if( row > 0 ){
-		combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_OPERATOR, row );
-		g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), FALSE );
-		if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &combo_iter )){
-			combo_model = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
-			gtk_tree_model_get( combo_model, &combo_iter, OPE_COL_OPERATOR, &operator, -1 );
-		} else {
-			valid = FALSE;
-		}
-	} else {
-		operator = OPERATOR_AND;
-	}
-
-	/* field */
-	combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_FIELD, row );
-	g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), FALSE );
-	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &combo_iter )){
-		combo_model = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
-		gtk_tree_model_get( combo_model, &combo_iter, FLD_COL_ID, &field, -1 );
-	} else {
-		valid = FALSE;
-	}
-
-	/* condition */
-	combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_CONDITION, row );
-	g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), FALSE );
-	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &combo_iter )){
-		combo_model = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
-		gtk_tree_model_get( combo_model, &combo_iter, COND_COL_COND, &condition, -1 );
-	} else {
-		valid = FALSE;
-	}
-
-	/* value */
-	entry = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_VALUE, row );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-	value = gtk_entry_get_text( GTK_ENTRY( entry ));
-	valid = ( my_strlen( value ) > 0 );
 
 	if( valid ){
 		/* TODO: should compare date vs. date, amount vs. amount */
 		/* TODO: should be case insensitive */
-		gtk_tree_model_get( tmodel, iter, field, &entry_value, -1 );
-		switch( condition ){
+		gtk_tree_model_get( tmodel, iter, criterium->field, &entry_value, -1 );
+		switch( criterium->condition ){
 			case COND_EQUAL:
-				ok = my_collate( entry_value, value ) == 0;
+				ok = my_collate( entry_value, criterium->value ) == 0;
 				break;
 			case COND_LE:
-				ok = my_collate( entry_value, value ) <= 0;
+				ok = my_collate( entry_value, criterium->value ) <= 0;
 				break;
 			case COND_LT:
-				ok = my_collate( entry_value, value ) < 0;
+				ok = my_collate( entry_value, criterium->value ) < 0;
 				break;
 			case COND_GE:
-				ok = my_collate( entry_value, value ) >= 0;
+				ok = my_collate( entry_value, criterium->value ) >= 0;
 				break;
 			case COND_GT:
-				ok = my_collate( entry_value, value ) > 0;
+				ok = my_collate( entry_value, criterium->value ) > 0;
 				break;
 			case COND_NE:
-				ok = my_collate( entry_value, value ) != 0;
+				ok = my_collate( entry_value, criterium->value ) != 0;
 				break;
 			case COND_BEGINS:
-				ok = g_str_has_prefix( entry_value, value );
+				ok = g_str_has_prefix( entry_value, criterium->value );
 				break;
 			case COND_NOTBEGINS:
-				ok = !g_str_has_prefix( entry_value, value );
+				ok = !g_str_has_prefix( entry_value, criterium->value );
 				break;
 			case COND_CONTAINS:
-				ok = g_strrstr( entry_value, value ) != NULL;
+				ok = g_strrstr( entry_value, criterium->value ) != NULL;
 				break;
 			case COND_NOTCONTAINS:
-				ok = g_strrstr( entry_value, value ) == NULL;
+				ok = g_strrstr( entry_value, criterium->value ) == NULL;
 				break;
 			default:
-				g_warning( "%s: row=%u, condition=%u is unknown", thisfn, row, condition );
+				g_warning( "%s: row=%u, condition=%u is unknown", thisfn, row, criterium->condition );
 				valid = FALSE;
 				break;
 		}
@@ -926,7 +885,7 @@ tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTree
 	}
 
 	if( valid ){
-		switch( operator ){
+		switch( criterium->operator ){
 			case OPERATOR_AND:
 				visible = visible && ok;
 				break;
@@ -938,6 +897,8 @@ tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTree
 				break;
 		}
 	}
+
+	extfilter_free_criterium( self, criterium );
 
 	return( visible );
 }
@@ -1052,7 +1013,7 @@ setup_ext_filter( ofaEntryPage *self )
 			FALSE, TRUE, XFIL_N_COLUMNS );
 	my_igridlist_set_has_row_number( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), FALSE );
 	my_igridlist_set_has_up_down_buttons( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), FALSE );
-	g_signal_connect( self, "my-row-changed", G_CALLBACK( extfilter_on_row_changed ), self );
+	g_signal_connect( self, "my-row-changed", G_CALLBACK( extfilter_on_row_changed ), NULL );
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ext-init-from-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
@@ -1316,40 +1277,86 @@ setup_row_values( ofaEntryPage *self, GtkGrid *grid, guint row, sExtend *crit )
 static void
 extfilter_on_operator_changed( GtkComboBox *combo, ofaEntryPage *self )
 {
+	ofaEntryPagePrivate *priv;
+	guint row;
 
+	priv = ofa_entry_page_get_instance_private( self );
+
+	row = my_igridlist_get_row_index( GTK_WIDGET( combo ));
+	extfilter_set_valid_image( self, GTK_GRID( priv->ext_grid ), row );
 }
 
 static void
 extfilter_on_field_changed( GtkComboBox *combo, ofaEntryPage *self )
 {
+	ofaEntryPagePrivate *priv;
+	guint row;
 
+	priv = ofa_entry_page_get_instance_private( self );
+
+	row = my_igridlist_get_row_index( GTK_WIDGET( combo ));
+	extfilter_set_valid_image( self, GTK_GRID( priv->ext_grid ), row );
 }
 
 static void
 extfilter_on_condition_changed( GtkComboBox *combo, ofaEntryPage *self )
 {
+	ofaEntryPagePrivate *priv;
+	guint row;
 
+	priv = ofa_entry_page_get_instance_private( self );
+
+	row = my_igridlist_get_row_index( GTK_WIDGET( combo ));
+	extfilter_set_valid_image( self, GTK_GRID( priv->ext_grid ), row );
 }
 
 static void
 extfilter_on_value_changed( GtkEntry *entry, ofaEntryPage *self )
 {
+	ofaEntryPagePrivate *priv;
+	guint row;
 
+	priv = ofa_entry_page_get_instance_private( self );
+
+	row = my_igridlist_get_row_index( GTK_WIDGET( entry ));
+	extfilter_set_valid_image( self, GTK_GRID( priv->ext_grid ), row );
 }
 
 static void
-extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, ofaEntryPage *self )
+extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, void *empty )
 {
 	ofaEntryPagePrivate *priv;
-	guint rows_count;
+	guint rows_count, row;
 
-	priv = ofa_entry_page_get_instance_private( self );
+	priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( instance ));
 
 	rows_count = my_igridlist_get_details_count( instance, grid );
 
 	gtk_widget_set_sensitive( priv->ext_init_btn, rows_count == 0 );
 	gtk_widget_set_sensitive( priv->ext_reset_btn, rows_count > 0 );
 	gtk_widget_set_sensitive( priv->ext_apply_btn, rows_count > 0 );
+
+	if( rows_count > 0 ){
+		row = rows_count - 1;	/* no header row here */
+		extfilter_set_valid_image( OFA_ENTRY_PAGE( instance ), GTK_GRID( priv->ext_grid ), row );
+	}
+}
+
+static void
+extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row )
+{
+	sExtend *crit;
+	gboolean valid;
+	GtkWidget *button, *image;
+
+	crit = extfilter_get_criterium( self, row );
+	valid = extfilter_get_is_valid_criterium( self, crit, row );
+	image = gtk_image_new_from_resource( valid ? st_green_check_png : st_red_cross_png );
+	button = gtk_button_new();
+	gtk_button_set_image( GTK_BUTTON( button ), image );
+	gtk_widget_set_sensitive( button, FALSE );
+	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, button, 1+XFIL_COL_STATUS, row, 1, 1 );
+	extfilter_free_criterium( self, crit );
 }
 
 /*
@@ -1469,6 +1476,98 @@ static void
 extfilter_on_apply_clicked( GtkButton *button, ofaEntryPage *self )
 {
 	refresh_display( self );
+}
+
+/*
+ * The returned #sExtend criterium should be extfilter_free_criterium()
+ * by the caller.
+ */
+static sExtend *
+extfilter_get_criterium( ofaEntryPage *self, guint row )
+{
+	ofaEntryPagePrivate *priv;
+	sExtend *criterium;
+	GtkWidget *combo, *entry;
+	GtkTreeIter combo_iter;
+	GtkTreeModel *combo_model;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	criterium = g_new0( sExtend, 1 );
+
+	/* operator */
+	criterium->operator = OPERATOR_NONE;
+	if( row > 0 ){
+		combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_OPERATOR, row );
+		g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), FALSE );
+		if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &combo_iter )){
+			combo_model = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+			gtk_tree_model_get( combo_model, &combo_iter, OPE_COL_OPERATOR, &criterium->operator, -1 );
+		}
+	}
+
+	/* field */
+	criterium->field = -1;
+	combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_FIELD, row );
+	g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), FALSE );
+	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &combo_iter )){
+		combo_model = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+		gtk_tree_model_get( combo_model, &combo_iter, FLD_COL_ID, &criterium->field, -1 );
+	}
+
+	/* condition */
+	criterium->condition = 0;
+	combo = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_CONDITION, row );
+	g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), FALSE );
+	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &combo_iter )){
+		combo_model = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
+		gtk_tree_model_get( combo_model, &combo_iter, COND_COL_COND, &criterium->condition, -1 );
+	}
+
+	/* value */
+	criterium->value = NULL;
+	entry = gtk_grid_get_child_at( GTK_GRID( priv->ext_grid ), 1+XFIL_COL_VALUE, row );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+	criterium->value = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
+
+	return( criterium );
+}
+
+static gboolean
+extfilter_get_is_valid_criterium( ofaEntryPage *self, sExtend *criterium, guint row )
+{
+	/* check for operator
+	 * must be set if row greater than zero */
+	if( row > 0 ){
+		if( criterium->operator != OPERATOR_AND && criterium->operator != OPERATOR_OR ){
+			return( FALSE );
+		}
+	}
+
+	/* check for field */
+	if( criterium->field < 0 ){
+		return( FALSE );
+	}
+
+	/* check for condition */
+	if( criterium->condition == 0 ){
+		return( FALSE );
+	}
+
+	/* check for value */
+	if( my_strlen( criterium->value ) == 0 ){
+		return( FALSE );
+	}
+
+	/* ok */
+	return( TRUE );
+}
+
+static void
+extfilter_free_criterium( ofaEntryPage *self, sExtend *criterium )
+{
+	g_free( criterium->value );
+	g_free( criterium );
 }
 
 static void
