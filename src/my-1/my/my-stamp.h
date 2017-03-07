@@ -53,6 +53,8 @@ typedef enum {
 
 GTimeVal *my_stamp_set_now       ( GTimeVal *stamp );
 
+gint      my_stamp_compare       ( GTimeVal *a, GTimeVal *b );
+
 GTimeVal *my_stamp_set_from_sql  ( GTimeVal *timeval, const gchar *str );
 GTimeVal *my_stamp_set_from_str  ( GTimeVal *timeval, const gchar *str, myStampFormat format );
 GTimeVal *my_stamp_set_from_stamp( GTimeVal *timeval, const GTimeVal *orig );

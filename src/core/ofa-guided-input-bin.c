@@ -778,7 +778,9 @@ row_widget_button( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row 
 	image = gtk_image_new_from_resource( st_resource_image_empty );
 	button = gtk_button_new();
 	gtk_button_set_image( GTK_BUTTON( button ), image );
-	gtk_widget_set_sensitive( button, FALSE );
+	//gtk_widget_set_sensitive( button, FALSE );
+	gtk_widget_set_can_focus( button, FALSE );
+	my_style_add( button, "flat" );
 
 	return( button );
 }

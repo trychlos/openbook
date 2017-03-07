@@ -139,8 +139,6 @@
                 it would be easier that row-activate on templates page
                 opens the guided input rather that the properties)
 
- 733 2015- 3-15 FEAT be able to search for an entry
-
  783 2015- 4- 3 FEAT have a summary of unsettle/unreconciliated entries
                      which will be reported after exercice closing
      2016- 4-28 use case: when preparing the exercice closing, have a
@@ -397,6 +395,9 @@
      2016- 4-20 see also #886.
      2016-10-12 + purge reconciliation groups (wich was actually the #886)
      2017- 2- 8 done
+
+ 733 2015- 3-15 FEAT be able to search for an entry
+     2017- 3- 7 done
 
  758 2015- 3-21 FEAT warns when deleting a settled or reconciliated
                      entry +unsettle/unreconciliate

@@ -23,6 +23,7 @@
    Recurrent DB Model v9
 
    - ClosingParms: improve account check (todo #513).
+   - EntryPage: have an extended filter (todo #733).
 
  Bug fixes:
 
@@ -38,6 +39,7 @@
    - my_igridlist_remove_row(): new function.
    - my_igridlist_set_has_row_number(): new function.
    - my_igridlist_set_has_up_down_buttons: new function.
+   - my_stamp_compare(): new function.
    - ofaClosingParmsBin: implements myIGridlist interface (todo #1370).
    - ofa_itvcolumnable_enable_column(): renamed to ofa_itvcolumnable_set_invisible().
    - ofa_itvcolumnable_get_column_type(): new function.

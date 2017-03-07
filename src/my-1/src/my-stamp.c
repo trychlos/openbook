@@ -56,6 +56,21 @@ my_stamp_set_now( GTimeVal *timeval )
 }
 
 /**
+ * my_stamp_compare:
+ * @a: a #GTimeVal.
+ * @b: another #GTimeVal.
+ *
+ * Returns: -1 if @a < @b, +1 if @a > @b, 0 if they are equal.
+ */
+gint
+my_stamp_compare( GTimeVal *a, GTimeVal *b )
+{
+	return( a->tv_sec < b->tv_sec
+			? -1 : ( a->tv_sec > b->tv_sec
+			? 1 : ( a->tv_usec < b->tv_usec ? -1 : ( a ->tv_usec > b->tv_usec ? 1 : 0 ))));
+}
+
+/**
  * my_stamp_set_from_sql:
  * @timeval: a pointer to a GTimeVal structure
  * @str: [allow-none]:

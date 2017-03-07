@@ -32,6 +32,7 @@
 #include "my/my-date-renderer.h"
 #include "my/my-double-renderer.h"
 #include "my/my-igridlist.h"
+#include "my/my-stamp.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
@@ -289,6 +290,11 @@ static gboolean   tview_is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter
 static gboolean   tview_apply_stdfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean   tview_apply_extfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean   tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint i, gboolean visible );
+static gboolean   tview_apply_extfilter_for_amount( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible );
+static gboolean   tview_apply_extfilter_for_counter( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible );
+static gboolean   tview_apply_extfilter_for_date( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible );
+static gboolean   tview_apply_extfilter_for_stamp( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible );
+static gboolean   tview_apply_extfilter_for_string( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible );
 static void       tview_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self );
 static void       tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self );
 static void       tview_on_row_activated( ofaTVBin *bin, GList *selected, ofaEntryPage *self );
@@ -830,11 +836,15 @@ tview_apply_extfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *it
 static gboolean
 tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint i, gboolean visible )
 {
-	static const gchar *thisfn = "tview_apply_extfilter_for_row";
+	ofaEntryPagePrivate *priv;
 	sExtend *criterium;
 	guint row;
 	gboolean valid, ok;
 	gchar *entry_value;
+	ofeBoxType type;
+	GtkTreeViewColumn *column;
+
+	priv = ofa_entry_page_get_instance_private( self );
 
 	row = i; 				/* this myIGridlist does not have header */
 	criterium = extfilter_get_criterium( self, row );
@@ -842,43 +852,25 @@ tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTree
 	ok = TRUE;
 
 	if( valid ){
-		/* TODO: should compare date vs. date, amount vs. amount */
-		/* TODO: should be case insensitive */
 		gtk_tree_model_get( tmodel, iter, criterium->field, &entry_value, -1 );
-		switch( criterium->condition ){
-			case COND_EQUAL:
-				ok = my_collate( entry_value, criterium->value ) == 0;
+		column = ofa_itvcolumnable_get_column( OFA_ITVCOLUMNABLE( priv->tview ), criterium->field );
+		type = ofa_itvcolumnable_get_column_type( OFA_ITVCOLUMNABLE( priv->tview ), column );
+		switch( type ){
+			case OFA_TYPE_AMOUNT:
+				ok = tview_apply_extfilter_for_amount( self, criterium, entry_value, visible );
 				break;
-			case COND_LE:
-				ok = my_collate( entry_value, criterium->value ) <= 0;
+			case OFA_TYPE_COUNTER:
+			case OFA_TYPE_INTEGER:
+				ok = tview_apply_extfilter_for_counter( self, criterium, entry_value, visible );
 				break;
-			case COND_LT:
-				ok = my_collate( entry_value, criterium->value ) < 0;
+			case OFA_TYPE_DATE:
+				ok = tview_apply_extfilter_for_date( self, criterium, entry_value, visible );
 				break;
-			case COND_GE:
-				ok = my_collate( entry_value, criterium->value ) >= 0;
+			case OFA_TYPE_STRING:
+				ok = tview_apply_extfilter_for_string( self, criterium, entry_value, visible );
 				break;
-			case COND_GT:
-				ok = my_collate( entry_value, criterium->value ) > 0;
-				break;
-			case COND_NE:
-				ok = my_collate( entry_value, criterium->value ) != 0;
-				break;
-			case COND_BEGINS:
-				ok = g_str_has_prefix( entry_value, criterium->value );
-				break;
-			case COND_NOTBEGINS:
-				ok = !g_str_has_prefix( entry_value, criterium->value );
-				break;
-			case COND_CONTAINS:
-				ok = g_strrstr( entry_value, criterium->value ) != NULL;
-				break;
-			case COND_NOTCONTAINS:
-				ok = g_strrstr( entry_value, criterium->value ) == NULL;
-				break;
-			default:
-				g_warning( "%s: row=%u, condition=%u is unknown", thisfn, row, criterium->condition );
-				valid = FALSE;
+			case OFA_TYPE_TIMESTAMP:
+				ok = tview_apply_extfilter_for_stamp( self, criterium, entry_value, visible );
 				break;
 		}
 		g_free( entry_value );
@@ -901,6 +893,257 @@ tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTree
 	extfilter_free_criterium( self, criterium );
 
 	return( visible );
+}
+
+static gboolean
+tview_apply_extfilter_for_amount( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible )
+{
+	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_for_amount";
+	ofaEntryPagePrivate *priv;
+	gboolean ok;
+	ofxAmount crit_amount, entry_amount;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	crit_amount = ofa_amount_from_str( criterium->value, priv->getter );
+	entry_amount = ofa_amount_from_str( entry_value, priv->getter );
+
+	switch( criterium->condition ){
+		case COND_EQUAL:
+			ok = ( entry_amount == crit_amount );
+			break;
+		case COND_LE:
+			ok = ( entry_amount <= crit_amount );
+			break;
+		case COND_LT:
+			ok = ( entry_amount < crit_amount );
+			break;
+		case COND_GE:
+			ok = ( entry_amount >= crit_amount );
+			break;
+		case COND_GT:
+			ok = ( entry_amount > crit_amount );
+			break;
+		case COND_NE:
+			ok = ( entry_amount != crit_amount );
+			break;
+
+		// does not apply
+		case COND_BEGINS:
+		case COND_NOTBEGINS:
+		case COND_CONTAINS:
+		case COND_NOTCONTAINS:
+			ok = FALSE;
+			break;
+
+		default:
+			g_warning( "%s: condition=%u is unknown (value=%s)", thisfn, criterium->condition, criterium->value );
+			ok = FALSE;
+			break;
+	}
+
+	return( ok );
+}
+
+static gboolean
+tview_apply_extfilter_for_counter( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible )
+{
+	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_for_counter";
+	gboolean ok;
+	ofxCounter crit_counter, entry_counter;
+
+	crit_counter = atol( criterium->value );
+	entry_counter = atol( entry_value );
+
+	switch( criterium->condition ){
+		case COND_EQUAL:
+			ok = ( entry_counter == crit_counter );
+			break;
+		case COND_LE:
+			ok = ( entry_counter <= crit_counter );
+			break;
+		case COND_LT:
+			ok = ( entry_counter < crit_counter );
+			break;
+		case COND_GE:
+			ok = ( entry_counter >= crit_counter );
+			break;
+		case COND_GT:
+			ok = ( entry_counter > crit_counter );
+			break;
+		case COND_NE:
+			ok = ( entry_counter != crit_counter );
+			break;
+
+		// does not apply
+		case COND_BEGINS:
+		case COND_NOTBEGINS:
+		case COND_CONTAINS:
+		case COND_NOTCONTAINS:
+			ok = FALSE;
+			break;
+
+		default:
+			g_warning( "%s: condition=%u is unknown (value=%s)", thisfn, criterium->condition, criterium->value );
+			ok = FALSE;
+			break;
+	}
+
+	return( ok );
+}
+
+static gboolean
+tview_apply_extfilter_for_date( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible )
+{
+	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_for_date";
+	ofaEntryPagePrivate *priv;
+	gboolean ok;
+	GDate crit_date, entry_date;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	my_date_set_from_str( &crit_date, criterium->value, ofa_prefs_date_display( priv->getter ));
+	my_date_set_from_str( &entry_date, entry_value, ofa_prefs_date_display( priv->getter ));
+
+	switch( criterium->condition ){
+		case COND_EQUAL:
+			ok = ( my_date_compare_ex( &entry_date, &crit_date, FALSE ) == 0 );
+			break;
+		case COND_LE:
+			ok = ( my_date_compare_ex( &entry_date, &crit_date, FALSE ) <= 0 );
+			break;
+		case COND_LT:
+			ok = ( my_date_compare_ex( &entry_date, &crit_date, FALSE ) < 0 );
+			break;
+		case COND_GE:
+			ok = ( my_date_compare_ex( &entry_date, &crit_date, FALSE ) >= 0 );
+			break;
+		case COND_GT:
+			ok = ( my_date_compare_ex( &entry_date, &crit_date, FALSE ) > 0 );
+			break;
+		case COND_NE:
+			ok = ( my_date_compare_ex( &entry_date, &crit_date, FALSE ) != 0 );
+			break;
+
+		// does not apply
+		case COND_BEGINS:
+		case COND_NOTBEGINS:
+		case COND_CONTAINS:
+		case COND_NOTCONTAINS:
+			ok = FALSE;
+			break;
+
+		default:
+			g_warning( "%s: condition=%u is unknown (value=%s)", thisfn, criterium->condition, criterium->value );
+			ok = FALSE;
+			break;
+	}
+
+	return( ok );
+}
+
+static gboolean
+tview_apply_extfilter_for_stamp( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible )
+{
+	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_for_stamp";
+	gboolean ok;
+	GTimeVal crit_stamp, entry_stamp;
+
+	my_stamp_set_from_str( &crit_stamp, criterium->value, MY_STAMP_DMYYHM );
+	my_stamp_set_from_str( &entry_stamp, entry_value, MY_STAMP_DMYYHM );
+
+	switch( criterium->condition ){
+		case COND_EQUAL:
+			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) == 0 );
+			break;
+		case COND_LE:
+			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) <= 0 );
+			break;
+		case COND_LT:
+			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) < 0 );
+			break;
+		case COND_GE:
+			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) >= 0 );
+			break;
+		case COND_GT:
+			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) > 0 );
+			break;
+		case COND_NE:
+			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) != 0 );
+			break;
+
+		// does not apply
+		case COND_BEGINS:
+		case COND_NOTBEGINS:
+		case COND_CONTAINS:
+		case COND_NOTCONTAINS:
+			ok = FALSE;
+			break;
+
+		default:
+			g_warning( "%s: condition=%u is unknown (value=%s)", thisfn, criterium->condition, criterium->value );
+			ok = FALSE;
+			break;
+	}
+
+	return( ok );
+}
+
+/*
+ * All conditions are considered case insensitive
+ */
+static gboolean
+tview_apply_extfilter_for_string( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible )
+{
+	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_for_string";
+	gboolean ok;
+	gchar *crit_str, *entry_str;
+
+	crit_str = g_utf8_casefold( criterium->value, -1 );
+	entry_str = g_utf8_casefold( entry_value, -1 );
+
+	switch( criterium->condition ){
+		case COND_EQUAL:
+			ok = ( my_collate( entry_str, crit_str ) == 0 );
+			break;
+		case COND_LE:
+			ok = ( my_collate( entry_str, crit_str ) <= 0 );
+			break;
+		case COND_LT:
+			ok = ( my_collate( entry_str, crit_str ) < 0 );
+			break;
+		case COND_GE:
+			ok = ( my_collate( entry_str, crit_str ) >= 0 );
+			break;
+		case COND_GT:
+			ok = ( my_collate( entry_str, crit_str ) > 0 );
+			break;
+		case COND_NE:
+			ok = ( my_collate( entry_str, crit_str ) != 0 );
+			break;
+		case COND_BEGINS:
+			ok = g_str_has_prefix( entry_str, crit_str );
+			break;
+		case COND_NOTBEGINS:
+			ok = !g_str_has_prefix( entry_str, crit_str );
+			break;
+		case COND_CONTAINS:
+			ok = ( g_strrstr( entry_str, crit_str ) != NULL );
+			break;
+		case COND_NOTCONTAINS:
+			ok = ( g_strrstr( entry_str, crit_str ) == NULL );
+			break;
+
+		default:
+			g_warning( "%s: condition=%u is unknown (value=%s)", thisfn, criterium->condition, criterium->value );
+			ok = FALSE;
+			break;
+	}
+
+	g_free( entry_str );
+	g_free( crit_str );
+
+	return( ok );
 }
 
 static void
@@ -1354,7 +1597,10 @@ extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row )
 	image = gtk_image_new_from_resource( valid ? st_green_check_png : st_red_cross_png );
 	button = gtk_button_new();
 	gtk_button_set_image( GTK_BUTTON( button ), image );
-	gtk_widget_set_sensitive( button, FALSE );
+	//gtk_widget_set_sensitive( button, FALSE );
+	gtk_widget_set_can_focus( button, FALSE );
+	my_style_add( button, "flat" );
+	//gtk_button_set_relief( GTK_BUTTON( button ), GTK_RELIEF_NONE );
 	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, button, 1+XFIL_COL_STATUS, row, 1, 1 );
 	extfilter_free_criterium( self, crit );
 }
