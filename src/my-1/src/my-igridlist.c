@@ -663,6 +663,7 @@ set_widget( sIGridList *sdata, GtkWidget *widget, guint column, guint row, guint
 	g_object_set_data( G_OBJECT( widget ), IGRIDLIST_COLUMN, GUINT_TO_POINTER( column ));
 	g_object_set_data( G_OBJECT( widget ), IGRIDLIST_ROW, GUINT_TO_POINTER( row ));
 	gtk_grid_attach( sdata->grid, widget, column, row, width, height );
+	gtk_widget_show_all( GTK_WIDGET( sdata->grid ));
 }
 
 /**
