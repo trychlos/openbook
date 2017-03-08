@@ -809,6 +809,36 @@ ofo_entry_get_count( ofaIGetter *getter )
 	return( count );
 }
 
+/**
+ * ofo_entry_get_by_number:
+ * @getter: a #ofaIGetter instance.
+ * @number: the #ofoEntry identifier.
+ *
+ * Returns: the searched #ofoEntry, or %NULL.
+ *
+ * The returned #ofoEntry is owned by the #myICollector of the application,
+ * and should not be released by the caller.
+ */
+ofoEntry *
+ofo_entry_get_by_number( ofaIGetter *getter, ofxCounter number )
+{
+	GList *dataset, *it;
+	ofoEntry *entry;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( number > 0, NULL );
+
+	dataset = ofo_entry_get_dataset( getter );
+	for( it=dataset ; it ; it=it->next ){
+		entry = OFO_ENTRY( it->data );
+		if( ofo_entry_get_number( entry ) == number ){
+			return( entry );
+		}
+	}
+
+	return( NULL );
+}
+
 /*
  * returns a #GList * of all #ofoEntry's which satisfy the @where clause
  */
@@ -2785,8 +2815,8 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIG
 
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ));
 		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
-		suser = g_strdup( concil ? ofo_concil_get_user( concil ) : "" );
-		sstamp = concil ? my_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS ) : g_strdup( "" );
+		suser = g_strdup( concil ? ofo_concil_get_upd_user( concil ) : "" );
+		sstamp = concil ? my_stamp_to_str( ofo_concil_get_upd_stamp( concil ), MY_STAMP_YYMDHMS ) : g_strdup( "" );
 
 		str2 = g_strdup_printf( "%u%c%s%c%s%c%s%c%s",
 				ENTRY_IE_FORMAT, field_sep,
@@ -3358,7 +3388,7 @@ iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoE
 		if( !my_strlen( userid )){
 			userid = ofa_idbconnect_get_account( connect );
 		}
-		ofo_concil_set_user( concil, userid );
+		ofo_concil_set_upd_user( concil, userid );
 		g_debug( "%s: new concil user=%s", thisfn, userid );
 	}
 
@@ -3372,7 +3402,7 @@ iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoE
 		} else {
 			my_stamp_set_from_sql( &stamp, cstr );
 		}
-		ofo_concil_set_stamp( concil, &stamp );
+		ofo_concil_set_upd_stamp( concil, &stamp );
 		g_debug( "%s: new concil stamp=%s", thisfn, cstr );
 	}
 

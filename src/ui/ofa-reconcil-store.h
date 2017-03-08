@@ -168,6 +168,9 @@ ofxCounter        ofa_reconcil_store_load_by_account  ( ofaReconcilStore *store,
 ofxCounter        ofa_reconcil_store_load_by_bat      ( ofaReconcilStore *store,
 															ofxCounter bat_id );
 
+ofxCounter        ofa_reconcil_store_load_by_concil   ( ofaReconcilStore *store,
+															ofxCounter concil_id );
+
 void              ofa_reconcil_store_insert_row       ( ofaReconcilStore *store,
 															ofaIConcil *iconcil,
 															GtkTreeIter *parent_iter,

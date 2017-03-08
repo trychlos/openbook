@@ -76,6 +76,7 @@ src/ui/ofa-period-close.ui
 src/ui/ofa-plugin-manager.ui
 src/ui/ofa-rate-properties.ui
 src/ui/ofa-reconcil-args.ui
+src/ui/ofa-reconcil-group.ui
 src/ui/ofa-reconcil-page.ui
 src/ui/ofa-recovery-assistant.ui
 src/ui/ofa-restore-assistant.ui

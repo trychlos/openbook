@@ -107,10 +107,8 @@ enum {
 
 GType               ofa_batline_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaBatlineTreeview *ofa_batline_treeview_new             ( ofaIGetter *getter );
-
-void                ofa_batline_treeview_set_settings_key( ofaBatlineTreeview *view,
-																const gchar *key );
+ofaBatlineTreeview *ofa_batline_treeview_new             ( ofaIGetter *getter,
+																const gchar *settings_prefix );
 
 void                ofa_batline_treeview_setup_columns   ( ofaBatlineTreeview *view );
 

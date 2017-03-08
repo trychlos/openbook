@@ -65,6 +65,11 @@ typedef struct {
 	ofoAccount  *account;
 	ofoCurrency *currency;
 
+	/* when loading the store by concil
+	 */
+	ofxCounter   concil_count;
+	GList       *concil_bats;
+
 	/* updating from hub signaling system
 	 */
 	gchar       *acc_number;
@@ -94,6 +99,7 @@ static void     entry_set_row_by_iter( ofaReconcilStore *store, const ofoEntry *
 static void     bat_insert_row( ofaReconcilStore *self, ofoBatLine *batline, gboolean search, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter, ofxCounter exclude );
 static void     bat_get_amount_strs( ofaReconcilStore *self, ofoBatLine *batline, gchar **sdebit, gchar **scredit );
 static void     bat_set_row_by_iter( ofaReconcilStore *self, ofoBatLine *batline, GtkTreeIter *iter );
+static void     concil_insert_row( ofoConcil *concil, const gchar *type, ofxCounter id, ofaReconcilStore *self );
 static void     concil_set_row_by_iter( ofaReconcilStore *self, ofaIConcil *iconcil, GtkTreeIter *iter );
 static void     concil_set_row_with_data( ofaReconcilStore *self, ofxCounter id, const GDate *date, GtkTreeIter *iter );
 static void     insert_with_remediation( ofaReconcilStore *self, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter, gboolean parent_preferred );
@@ -137,6 +143,7 @@ reconcil_store_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_reconcil_store_get_instance_private( OFA_RECONCIL_STORE( instance ));
 
+	g_list_free( priv->concil_bats );
 	g_free( priv->acc_number );
 	g_free( priv->acc_currency );
 
@@ -609,6 +616,68 @@ bat_get_amount_strs( ofaReconcilStore *self, ofoBatLine *batline, gchar **sdebit
 		*sdebit = g_strdup( "" );
 		*scredit = ofa_amount_to_str( amount, priv->currency, priv->getter );
 	}
+}
+
+/**
+ * ofa_reconcil_store_load_by_concil:
+ * store: this #ofaReconcilStore instance.
+ * @concil_id: the conciliation group identifier to be loaded.
+ *
+ * Loads the lines for this @concil_id.
+ *
+ * Returns: the count of loaded lines.
+ */
+ofxCounter
+ofa_reconcil_store_load_by_concil( ofaReconcilStore *store, ofxCounter concil_id )
+{
+	ofaReconcilStorePrivate *priv;
+	ofoConcil *concil;
+
+	g_return_val_if_fail( store && OFA_IS_RECONCIL_STORE( store ), 0 );
+	g_return_val_if_fail( concil_id > 0, 0 );
+
+	priv = ofa_reconcil_store_get_instance_private( store );
+
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+
+	priv->concil_count = 0;
+	priv->concil_bats = NULL;
+
+	concil = ofo_concil_get_by_id( priv->getter, concil_id );
+
+	if( concil ){
+		ofo_concil_for_each_member( concil, ( ofoConcilEnumerate ) concil_insert_row, store );
+	}
+
+	return( priv->concil_count );
+}
+
+static void
+concil_insert_row( ofoConcil *concil, const gchar *type, ofxCounter id, ofaReconcilStore *self )
+{
+	ofaReconcilStorePrivate *priv;
+	ofxCounter bat_id;
+	ofoEntry *entry;
+
+	g_debug( "concil_insert_row: type=%s, id=%lu", type, id );
+
+	priv = ofa_reconcil_store_get_instance_private( self );
+
+	if( !my_collate( type, CONCIL_TYPE_BAT )){
+		bat_id = ofo_bat_line_get_bat_id_from_bat_line_id( priv->getter, id );
+		g_debug( "concil_insert_row: bat_id=%lu", bat_id );
+		if( !g_list_find( priv->concil_bats, GUINT_TO_POINTER( bat_id ))){
+			ofa_reconcil_store_load_by_bat( self, bat_id );
+			priv->concil_bats = g_list_prepend( priv->concil_bats, GUINT_TO_POINTER( bat_id ));
+		}
+
+	} else {
+		g_return_if_fail( my_collate( type, CONCIL_TYPE_ENTRY ) == 0 );
+		entry = ofo_entry_get_by_number( priv->getter, id );
+		entry_insert_row( self, entry, TRUE, NULL, NULL, 0 );
+	}
+
+	priv->concil_count += 1;
 }
 
 /**

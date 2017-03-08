@@ -52,23 +52,33 @@
 #include "core/ofa-iconcil.h"
 
 #include "ui/ofa-batline-treeview.h"
+#include "ui/ofa-reconcil-group.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean      dispose_has_run;
+	gboolean       dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter   *getter;
+	ofaIGetter    *getter;
+	gchar         *settings_prefix;
 
 	/* runtime
 	 */
-	ofoCurrency  *currency;
+	ofoCurrency   *currency;
 
 	/* UI
 	 */
-	GtkListStore *store;
+	GtkListStore  *store;
+
+	/* actions
+	 */
+	GSimpleAction *disprec_action;		/* display reconciliation group */
+
+	/* current selection
+	 */
+	ofxCounter     concil_id;
 }
 	ofaBatlineTreeviewPrivate;
 
@@ -84,6 +94,7 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void        setup_columns( ofaBatlineTreeview *self );
+static void        setup_actions( ofaBatlineTreeview *self );
 static void        setup_store( ofaBatlineTreeview *view );
 static void        store_batline( ofaBatlineTreeview *self, ofoBatLine *line );
 static void        on_selection_changed( ofaBatlineTreeview *self, GtkTreeSelection *selection, void *empty );
@@ -91,6 +102,7 @@ static void        on_selection_activated( ofaBatlineTreeview *self, GtkTreeSele
 static void        on_selection_delete( ofaBatlineTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        get_and_send( ofaBatlineTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoBatLine *get_selected_with_selection( ofaBatlineTreeview *self, GtkTreeSelection *selection );
+static void        action_on_disprec_activated( GSimpleAction *action, GVariant *empty, ofaBatlineTreeview *self );
 static gint        tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatlineTreeview, ofa_batline_treeview, OFA_TYPE_TVBIN, 0,
@@ -100,6 +112,7 @@ static void
 batline_treeview_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_batline_treeview_finalize";
+	ofaBatlineTreeviewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -107,6 +120,9 @@ batline_treeview_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_BATLINE_TREEVIEW( instance ));
 
 	/* free data members here */
+	priv = ofa_batline_treeview_get_instance_private( OFA_BATLINE_TREEVIEW( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_batline_treeview_parent_class )->finalize( instance );
@@ -126,6 +142,7 @@ batline_treeview_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_object_unref( priv->disprec_action );
 		g_object_unref( priv->store );
 	}
 
@@ -147,6 +164,7 @@ ofa_batline_treeview_init( ofaBatlineTreeview *self )
 	priv = ofa_batline_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -246,14 +264,16 @@ ofa_batline_treeview_class_init( ofaBatlineTreeviewClass *klass )
 /**
  * ofa_batline_treeview_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_prefix: [allow-none]: the prefix of the settings key.
  *
  * Returns: a new #ofoBatlineTreeview object.
  */
 ofaBatlineTreeview *
-ofa_batline_treeview_new( ofaIGetter *getter )
+ofa_batline_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
 	ofaBatlineTreeview *view;
 	ofaBatlineTreeviewPrivate *priv;
+	gchar *str;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -264,6 +284,14 @@ ofa_batline_treeview_new( ofaIGetter *getter )
 	priv = ofa_batline_treeview_get_instance_private( view );
 
 	priv->getter = getter;
+
+	if( my_strlen( settings_prefix )){
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_prefix );
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = str;
+	}
+
+	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoBatLine object instead of just the raw GtkTreeSelection
@@ -281,35 +309,6 @@ ofa_batline_treeview_new( ofaIGetter *getter )
 }
 
 /**
- * ofa_batline_treeview_set_settings_key:
- * @view: this #ofaBatlineTreeview instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- *
- * Note that the default is the name of the base class ('ofaTVBin')
- * which is most probably *not* what you want.
- */
-void
-ofa_batline_treeview_set_settings_key( ofaBatlineTreeview *view, const gchar *key )
-{
-	static const gchar *thisfn = "ofa_batline_treeview_set_settings_key";
-	ofaBatlineTreeviewPrivate *priv;
-
-	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
-
-	g_return_if_fail( view && OFA_IS_BATLINE_TREEVIEW( view ));
-
-	priv = ofa_batline_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* we do not manage any settings here, so directly pass it to the
-	 * base class */
-	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
-}
-
-/**
  * ofa_batline_treeview_setup_columns:
  * @view: this #ofaBatlineTreeview instance.
  *
@@ -323,7 +322,6 @@ ofa_batline_treeview_setup_columns( ofaBatlineTreeview *view )
 {
 	static const gchar *thisfn = "ofa_batline_treeview_setup_columns";
 	ofaBatlineTreeviewPrivate *priv;
-	GMenu *menu;
 
 	g_debug( "%s: view=%p", thisfn, ( void * ) view );
 
@@ -334,14 +332,7 @@ ofa_batline_treeview_setup_columns( ofaBatlineTreeview *view )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	setup_columns( view );
-
-	menu = g_menu_new();
-	ofa_icontext_set_menu( OFA_ICONTEXT( view ), OFA_IACTIONABLE( view ), menu );
-	g_object_unref( menu );
-
-	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( view ));
-	ofa_icontext_append_submenu(
-			OFA_ICONTEXT( view ), OFA_IACTIONABLE( view ), OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
+	setup_actions( view );
 }
 
 /*
@@ -365,6 +356,33 @@ setup_columns( ofaBatlineTreeview *self )
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), BAL_COL_LABEL );
 	ofa_itvsortable_set_default_sort( OFA_ITVSORTABLE( self ), BAL_COL_DEFFECT, GTK_SORT_DESCENDING );
+}
+
+static void
+setup_actions( ofaBatlineTreeview *self )
+{
+	ofaBatlineTreeviewPrivate *priv;
+	GMenu *menu;
+
+	priv = ofa_batline_treeview_get_instance_private( self );
+
+	/* display conciliation group action */
+	priv->disprec_action = g_simple_action_new( "disprec", NULL );
+	g_signal_connect( priv->disprec_action, "activate", G_CALLBACK( action_on_disprec_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->disprec_action ),
+			_( "Display conciliation group..." ));
+	g_simple_action_set_enabled( priv->disprec_action, FALSE );
+
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
+	ofa_icontext_set_menu(
+			OFA_ICONTEXT( self ), OFA_IACTIONABLE( self ),
+			menu );
+
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( self ));
+	ofa_icontext_append_submenu(
+			OFA_ICONTEXT( self ), OFA_IACTIONABLE( self ),
+			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 }
 
 /**
@@ -475,8 +493,8 @@ store_batline( ofaBatlineTreeview *self, ofoBatLine *line )
 	snumbers = g_string_new( "" );
 	if( concil ){
 		sconcilid = g_strdup_printf( "%lu", ofo_concil_get_id( concil ));
-		cuser = ofo_concil_get_user( concil );
-		stamp = my_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS );
+		cuser = ofo_concil_get_upd_user( concil );
+		stamp = my_stamp_to_str( ofo_concil_get_upd_stamp( concil ), MY_STAMP_YYMDHMS );
 		ids = ofo_concil_get_ids( concil );
 		for( it=ids ; it ; it=it->next ){
 			scid = ( ofsConcilId * ) it->data;
@@ -521,6 +539,24 @@ store_batline( ofaBatlineTreeview *self, ofoBatLine *line )
 static void
 on_selection_changed( ofaBatlineTreeview *self, GtkTreeSelection *selection, void *empty )
 {
+	ofaBatlineTreeviewPrivate *priv;
+	ofoBatLine *batline;
+	ofoConcil *concil;
+
+	priv = ofa_batline_treeview_get_instance_private( self );
+
+	priv->concil_id = 0;
+	batline = get_selected_with_selection( self, selection );
+	g_return_if_fail( !batline || OFO_IS_BAT_LINE( batline ));
+
+	if( batline ){
+		concil = ofa_iconcil_get_concil( OFA_ICONCIL( batline ));
+		if( concil ){
+			priv->concil_id = ofo_concil_get_id( concil );
+		}
+	}
+	g_simple_action_set_enabled( priv->disprec_action, priv->concil_id > 0 );
+
 	get_and_send( self, selection, "ofa-balchanged" );
 }
 
@@ -576,6 +612,21 @@ get_selected_with_selection( ofaBatlineTreeview *self, GtkTreeSelection *selecti
 	}
 
 	return( line );
+}
+
+/*
+ * display the reconciliation group
+ */
+static void
+action_on_disprec_activated( GSimpleAction *action, GVariant *empty, ofaBatlineTreeview *self )
+{
+	ofaBatlineTreeviewPrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_batline_treeview_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_reconcil_group_run( priv->getter, toplevel, priv->concil_id );
 }
 
 static gint

@@ -60,6 +60,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter         *getter;
+	gchar              *settings_prefix;
 
 	/* UI
 	 */
@@ -101,6 +102,7 @@ static void
 bat_properties_bin_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_bat_properties_bin_finalize";
+	ofaBatPropertiesBinPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -108,6 +110,9 @@ bat_properties_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_BAT_PROPERTIES_BIN( instance ));
 
 	/* free data members here */
+	priv = ofa_bat_properties_bin_get_instance_private( OFA_BAT_PROPERTIES_BIN( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_bat_properties_bin_parent_class )->finalize( instance );
@@ -147,6 +152,7 @@ ofa_bat_properties_bin_init( ofaBatPropertiesBin *self )
 	priv = ofa_bat_properties_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -163,14 +169,16 @@ ofa_bat_properties_bin_class_init( ofaBatPropertiesBinClass *klass )
 /**
  * ofa_bat_properties_bin_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_prefix: [allow-none]: the prefix of the settings key.
  *
  * Returns: a new #ofaBatPropertiesBin instance.
  */
 ofaBatPropertiesBin *
-ofa_bat_properties_bin_new( ofaIGetter *getter )
+ofa_bat_properties_bin_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
 	ofaBatPropertiesBin *bin;
 	ofaBatPropertiesBinPrivate *priv;
+	gchar *str;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -179,6 +187,12 @@ ofa_bat_properties_bin_new( ofaIGetter *getter )
 	priv = ofa_bat_properties_bin_get_instance_private( bin );
 
 	priv->getter = getter;
+
+	if( my_strlen( settings_prefix )){
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_prefix );
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = str;
+	}
 
 	setup_bin( bin );
 	setup_treeview( bin );
@@ -255,31 +269,8 @@ setup_treeview( ofaBatPropertiesBin *self )
 	box = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-boxview" );
 	g_return_if_fail( box && GTK_IS_CONTAINER( box ));
 
-	priv->tview = ofa_batline_treeview_new( priv->getter );
+	priv->tview = ofa_batline_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( priv->tview ));
-}
-
-/**
- * ofa_bat_properties_bin_set_settings_key:
- * @view: this #ofaBatlineTreeview instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- */
-void
-ofa_bat_properties_bin_set_settings_key( ofaBatPropertiesBin *bin, const gchar *key )
-{
-	ofaBatPropertiesBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_BAT_PROPERTIES_BIN( bin ));
-
-	priv = ofa_bat_properties_bin_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* we do not manage any settings here, so directly pass it to
-	 * embedded classes */
-	ofa_batline_treeview_set_settings_key( priv->tview, key );
 }
 
 static void

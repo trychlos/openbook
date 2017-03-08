@@ -71,10 +71,8 @@ typedef struct {
 
 GType                ofa_bat_properties_bin_get_type            ( void ) G_GNUC_CONST;
 
-ofaBatPropertiesBin *ofa_bat_properties_bin_new                 ( ofaIGetter *getter );
-
-void                 ofa_bat_properties_bin_set_settings_key    ( ofaBatPropertiesBin *bin,
-																		const gchar *key );
+ofaBatPropertiesBin *ofa_bat_properties_bin_new                 ( ofaIGetter *getter,
+																		const gchar *settings_prefix );
 
 void                 ofa_bat_properties_bin_set_bat             ( ofaBatPropertiesBin *bin,
 																		ofoBat *bat );

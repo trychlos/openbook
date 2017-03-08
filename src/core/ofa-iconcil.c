@@ -243,8 +243,8 @@ ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval )
 
 	concil = ofo_concil_new( getter );
 	ofo_concil_set_dval( concil, dval );
-	ofo_concil_set_user( concil, userid );
-	ofo_concil_set_stamp( concil, my_stamp_set_now( &stamp ));
+	ofo_concil_set_upd_user( concil, userid );
+	ofo_concil_set_upd_stamp( concil, my_stamp_set_now( &stamp ));
 
 	ofa_iconcil_new_concil_ex( instance, concil );
 

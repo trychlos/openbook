@@ -471,14 +471,11 @@ setup_treeview( ofaReconcilPage *self, GtkContainer *parent )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	priv->tview = ofa_reconcil_treeview_new( priv->getter );
-
 	tview_parent = my_utils_container_get_child_by_name( parent, "treeview-parent" );
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
-	priv->tview = ofa_reconcil_treeview_new( priv->getter );
+	priv->tview = ofa_reconcil_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
-	ofa_reconcil_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_reconcil_treeview_setup_columns( priv->tview );
 	ofa_reconcil_treeview_set_filter_func( priv->tview, ( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row, self );
 
@@ -743,7 +740,7 @@ tview_is_session_conciliated( ofaReconcilPage *self, ofoConcil *concil )
 
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), FALSE );
 
-	stamp = ofo_concil_get_stamp( concil );
+	stamp = ofo_concil_get_upd_stamp( concil );
 	my_date_set_from_stamp( &date, stamp );
 	my_date_set_now( &dnow );
 

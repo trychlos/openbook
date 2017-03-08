@@ -24,6 +24,7 @@
 
    - ClosingParms: improve account check (todo #513).
    - EntryPage: have an extended filter (todo #733).
+   - Display conciliation group from an entry or a BAT line (todo #1372).
 
  Bug fixes:
 
@@ -46,6 +47,7 @@
    - ofa_itvcolumnable_enable_column(): renamed to ofa_itvcolumnable_set_invisible().
    - ofa_itvcolumnable_get_column_type(): new function.
    - ofa_itvcolumnable_get_menu_label(): new function.
+   - ofaReconcilGroup: new class.
    - ofo_entry_get_abr_from_status(): new function.
    - Periodicity properties: review UI margins (todo #1366).
 

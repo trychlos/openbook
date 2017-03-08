@@ -246,9 +246,9 @@ concil_get_by_query( const gchar *query, ofaIGetter *getter )
 			ofo_concil_set_dval( concil,
 					my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 			icol = icol->next;
-			ofo_concil_set_user( concil, ( const gchar * ) icol->data );
+			ofo_concil_set_upd_user( concil, ( const gchar * ) icol->data );
 			icol = icol->next;
-			ofo_concil_set_stamp( concil,
+			ofo_concil_set_upd_stamp( concil,
 					my_stamp_set_from_sql( &stamp, ( const gchar * ) icol->data ));
 		}
 		ofa_idbconnect_free_results( result );
@@ -332,11 +332,11 @@ ofo_concil_get_dval( ofoConcil *concil )
 }
 
 /**
- * ofo_concil_get_user:
+ * ofo_concil_get_upd_user:
  * @concil:
  */
 const gchar *
-ofo_concil_get_user( ofoConcil *concil )
+ofo_concil_get_upd_user( ofoConcil *concil )
 {
 	ofoConcilPrivate *priv;
 
@@ -349,11 +349,11 @@ ofo_concil_get_user( ofoConcil *concil )
 }
 
 /**
- * ofo_concil_get_stamp:
+ * ofo_concil_get_upd_stamp:
  * @concil:
  */
 const GTimeVal *
-ofo_concil_get_stamp( ofoConcil *concil )
+ofo_concil_get_upd_stamp( ofoConcil *concil )
 {
 	ofoConcilPrivate *priv;
 
@@ -474,12 +474,12 @@ ofo_concil_set_dval( ofoConcil *concil, const GDate *dval )
 }
 
 /**
- * ofo_concil_set_user:
+ * ofo_concil_set_upd_user:
  * @concil:
  * @user:
  */
 void
-ofo_concil_set_user( ofoConcil *concil, const gchar *user )
+ofo_concil_set_upd_user( ofoConcil *concil, const gchar *user )
 {
 	ofoConcilPrivate *priv;
 
@@ -493,12 +493,12 @@ ofo_concil_set_user( ofoConcil *concil, const gchar *user )
 }
 
 /**
- * ofo_concil_set_stamp:
+ * ofo_concil_set_upd_stamp:
  * @concil:
  * @stamp:
  */
 void
-ofo_concil_set_stamp( ofoConcil *concil, const GTimeVal *stamp )
+ofo_concil_set_upd_stamp( ofoConcil *concil, const GTimeVal *stamp )
 {
 	ofoConcilPrivate *priv;
 
@@ -689,13 +689,13 @@ concil_do_insert( ofoConcil *concil, const ofaIDBConnect *connect )
 	gboolean ok;
 
 	sdate = my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL );
-	stamp = my_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS );
+	stamp = my_stamp_to_str( ofo_concil_get_upd_stamp( concil ), MY_STAMP_YYMDHMS );
 
 	query = g_strdup_printf(
 			"INSERT INTO OFA_T_CONCIL "
 			"	(REC_ID,REC_DVAL,REC_USER,REC_STAMP) VALUES "
 			"	(%ld,'%s','%s','%s')",
-			ofo_concil_get_id( concil ), sdate, ofo_concil_get_user( concil ), stamp );
+			ofo_concil_get_id( concil ), sdate, ofo_concil_get_upd_user( concil ), stamp );
 
 	ok = ofa_idbconnect_query( connect, query, TRUE );
 
@@ -903,9 +903,9 @@ icollectionable_load_collection( void *user_data )
 				ofo_concil_set_dval( concil,
 						my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 				icol = icol->next;
-				ofo_concil_set_user( concil, ( const gchar * ) icol->data );
+				ofo_concil_set_upd_user( concil, ( const gchar * ) icol->data );
 				icol = icol->next;
-				ofo_concil_set_stamp( concil,
+				ofo_concil_set_upd_stamp( concil,
 						my_stamp_set_from_sql( &stamp, ( const gchar * ) icol->data ));
 				prev_id = id;
 			}

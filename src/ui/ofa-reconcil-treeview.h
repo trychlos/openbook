@@ -77,10 +77,8 @@ typedef struct {
 
 GType                ofa_reconcil_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaReconcilTreeview *ofa_reconcil_treeview_new               ( ofaIGetter *getter );
-
-void                 ofa_reconcil_treeview_set_settings_key  ( ofaReconcilTreeview *view,
-																const gchar *key );
+ofaReconcilTreeview *ofa_reconcil_treeview_new               ( ofaIGetter *getter,
+																	const gchar *settings_prefix );
 
 void                 ofa_reconcil_treeview_setup_columns     ( ofaReconcilTreeview *view );
 

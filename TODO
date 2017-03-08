@@ -310,6 +310,8 @@
      2017- 1-28 new settings_prefix behavior:
                 - ofaAccountFrameBin     (replace prefix + passed)
                 - ofaAdminCredentialsBin (removed)
+                - ofaBatPropertiesBin    (add to prefix + passed)
+                - ofaBatlineTreeview     (add to prefix + passed)
                 - ofaDossierActionsBin   (add to prefix + '-settings')
                 - ofaDossierNew          (add to prefix + <unused>)
                 - ofaEntryTreeview       (add to prefix+ unused here)
@@ -317,6 +319,7 @@
                 - ofaExerciceNew         (add to prefix + <unused>)
                 - ofaOpeTemplateFrameBin (replace prefix + passed)
                 - ofaPaimeanFrameBin     (replace prefix + passed)
+                - ofaReconcilTreeview    (add to prefix + passed)
                 - ofaTargetChooserBin    (add to prefix + <unused>)
 
 1263 2016-11-19 DBMS: store documents
@@ -357,11 +360,6 @@
 
 1369 2017- 2-20 recurrent operations validation: cancelled operations
                 should be italic+grayed
-
-1372 2017- 3- 8 FEAT: when consulting a BAT file, have an option to display
-                the entry(ies) which have been conciliated with a BAT line
-                + this should be the same when consulting entry
-                so: open a dialog which just display the reconciliation tree
 
 1378
 
@@ -737,6 +735,12 @@
 
 1371 2017- 2-22 myIGridlist should send a changed signal when removing a row
      2017- 2-22 done
+
+1372 2017- 3- 8 FEAT: when consulting a BAT file, have an option to display
+                the entry(ies) which have been conciliated with a BAT line
+                + this should be the same when consulting entry
+                so: open a dialog which just display the reconciliation tree
+     2017- 3- 9 done
 
 1373 2017- 3- 8 myIGridlist: down button is not disabled on last row
      2017- 3- 8 fixed

@@ -314,7 +314,6 @@ setup_properties( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
 	GtkWidget *container;
-	gchar *key;
 	ofaBatlineTreeview *line_tview;
 
 	priv = ofa_bat_select_get_instance_private( self );
@@ -322,13 +321,9 @@ setup_properties( ofaBatSelect *self )
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "properties-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
-	priv->bat_bin = ofa_bat_properties_bin_new( priv->getter );
+	priv->bat_bin = ofa_bat_properties_bin_new( priv->getter, priv->settings_prefix );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->bat_bin ), 0, 0, 2, 0 );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->bat_bin ));
-
-	key = g_strdup_printf( "%s-BatLine", priv->settings_prefix );
-	ofa_bat_properties_bin_set_settings_key( priv->bat_bin, key );
-	g_free( key );
 
 	line_tview = ofa_bat_properties_bin_get_batline_treeview( priv->bat_bin );
 	ofa_batline_treeview_setup_columns( line_tview );
