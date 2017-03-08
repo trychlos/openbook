@@ -424,25 +424,27 @@ static void
 update_detail_buttons( sIGridList *sdata )
 {
 	GtkWidget *up_btn, *down_btn;
-	guint i;
+	guint idx, first, last;
 
 	if( sdata->rows_count > 0 && sdata->display_up_down_buttons ){
-		for( i=sdata->first_row ; i<=sdata->first_row+sdata->rows_count-1 ; ++i ){
+		first = sdata->first_row;
+		last = sdata->first_row+sdata->rows_count-1;
 
-			up_btn = gtk_grid_get_child_at( sdata->grid, COL_UP, i );
+		for( idx=first ; idx<=last ; ++idx ){
+
+			up_btn = gtk_grid_get_child_at( sdata->grid, COL_UP, idx );
 			g_return_if_fail( up_btn && GTK_IS_WIDGET( up_btn ));
 
-			down_btn = gtk_grid_get_child_at( sdata->grid, COL_DOWN, i );
+			down_btn = gtk_grid_get_child_at( sdata->grid, COL_DOWN, idx );
 			g_return_if_fail( down_btn && GTK_IS_WIDGET( down_btn ));
 
 			gtk_widget_set_sensitive( up_btn, sdata->writable );
 			gtk_widget_set_sensitive( down_btn, sdata->writable );
 
-			if( i == sdata->first_row ){
+			if( idx == first ){
 				gtk_widget_set_sensitive( up_btn, FALSE );
 			}
-
-			if( i == sdata->rows_count ){
+			if( idx == last ){
 				gtk_widget_set_sensitive( down_btn, FALSE );
 			}
 		}

@@ -358,7 +358,23 @@
 1369 2017- 2-20 recurrent operations validation: cancelled operations
                 should be italic+grayed
 
-1372
+1372 2017- 3- 8 FEAT: when consulting a BAT file, have an option to display
+                the entry(ies) which have been conciliated with a BAT line
+                (open the entry page with the ad-hoc extended filter)
+
+1374 2017- 3- 8 EntryPage: refresh display when switching between standard
+                and extended filter (display should reflect the currently
+                visible filter)
+
+1375 2017- 3- 8 EntryPage extended filter: apply should be enabled even
+                if there is no criterium (display all)
+
+1376 2017- 3- 8 EntryPage extended filter: apply should be disabled as soon
+                as it has been clicked, until something is changed
+
+1377 2017- 3- 8 EntryPage extended filter: does not work ?
+
+1378
 
 -----------------------------------------------------------------------
  DONE
@@ -732,6 +748,9 @@
 
 1371 2017- 2-22 myIGridlist should send a changed signal when removing a row
      2017- 2-22 done
+
+1373 2017- 3- 8 myIGridlist: down button is not disabled on last row
+     2017- 3- 8 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

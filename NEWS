@@ -28,6 +28,7 @@
  Bug fixes:
 
    - myIDialog: fix focus issue when running 'maybe_non_modal()' (todo #1355).
+   - myIGridlist: fix behavior when there is no header (todo #1373).
    - ofaAccountTreeview: fix background color of pixbuf cells (todo #442).
    - Recurrent: fix periodicity details count.
 
