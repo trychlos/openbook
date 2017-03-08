@@ -37,6 +37,7 @@
 
 G_BEGIN_DECLS
 
+gchar        *my_casefold                             ( const gchar *str );
 gint          my_collate                              ( const gchar *a, const gchar *b );
 glong         my_strlen                               ( const gchar *str );
 

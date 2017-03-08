@@ -59,14 +59,29 @@ static gboolean    is_dir( GFile *file );
 static gboolean    is_readable_gfile( GFile *file );
 
 /**
+ * my_casefold:
+ * @str:
+ *
+ * Returns: a case-insensitive version of @str.
+ *
+ * Note that this function is just a work-around to the not-null
+ * assertion of g_utf8_casefold().
+ */
+gchar *
+my_casefold( const gchar *str )
+{
+	return( str ? g_utf8_casefold( str, -1 ) : g_strdup( "" ));
+}
+
+/**
  * my_collate:
  * @a:
  * @b:
  *
  * Returns: 1 if a > b, -1 if a < b 0 if equals.
  *
- * Note that this function shouldn't be generalized as it is a work-
- * around to the not-null assertion of g_utf8_collate().
+ * Note that this function is just a work-around to the not-null
+ * assertion of g_utf8_collate().
  */
 gint
 my_collate( const gchar *a, const gchar *b )

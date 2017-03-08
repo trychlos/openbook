@@ -1123,8 +1123,8 @@ tview_apply_extfilter_for_string( ofaEntryPage *self, sExtend *criterium, const 
 	gboolean ok;
 	gchar *crit_str, *entry_str;
 
-	crit_str = g_utf8_casefold( criterium->value, -1 );
-	entry_str = g_utf8_casefold( entry_value, -1 );
+	crit_str = my_casefold( criterium->value );
+	entry_str = my_casefold( entry_value );
 
 	switch( criterium->condition ){
 		case COND_EQUAL:

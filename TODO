@@ -360,7 +360,8 @@
 
 1372 2017- 3- 8 FEAT: when consulting a BAT file, have an option to display
                 the entry(ies) which have been conciliated with a BAT line
-                (open the entry page with the ad-hoc extended filter)
+                + this should be the same when consulting entry
+                so: open a dialog which just display the reconciliation tree
 
 1378
 
