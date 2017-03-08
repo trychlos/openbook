@@ -90,6 +90,7 @@ typedef struct {
 	GtkWidget           *ext_init_btn;
 	GtkWidget           *ext_reset_btn;
 	GtkWidget           *ext_apply_btn;
+	guint                ext_rows;
 
 	/* frame 1: general selection
 	 */
@@ -289,12 +290,12 @@ static void       setup_treeview( ofaEntryPage *self );
 static gboolean   tview_is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaEntryPage *self );
 static gboolean   tview_apply_stdfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean   tview_apply_extfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gboolean   tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint i, gboolean visible );
-static gboolean   tview_apply_extfilter_for_amount( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible );
-static gboolean   tview_apply_extfilter_for_counter( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible );
-static gboolean   tview_apply_extfilter_for_date( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible );
-static gboolean   tview_apply_extfilter_for_stamp( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible );
-static gboolean   tview_apply_extfilter_for_string( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible );
+static gboolean   tview_apply_extfilter_by_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint i, gboolean visible );
+static gboolean   tview_apply_extfilter_for_amount( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value );
+static gboolean   tview_apply_extfilter_for_counter( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value );
+static gboolean   tview_apply_extfilter_for_date( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value );
+static gboolean   tview_apply_extfilter_for_stamp( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value );
+static gboolean   tview_apply_extfilter_for_string( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value );
 static void       tview_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self );
 static void       tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self );
 static void       tview_on_row_activated( ofaTVBin *bin, GList *selected, ofaEntryPage *self );
@@ -450,6 +451,8 @@ ofa_entry_page_init( ofaEntryPage *self )
 
 	/* prevent the entries dataset to be loaded during initialization */
 	priv->initializing = TRUE;
+
+	priv->ext_rows = 0;
 }
 
 static void
@@ -822,24 +825,29 @@ tview_apply_extfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *it
 	visible = TRUE;
 	rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ));
 	for( i=0 ; i<rows_count ; ++i ){
-		visible = tview_apply_extfilter_for_row( self, tmodel, iter, i, visible );
+		visible = tview_apply_extfilter_by_row( self, tmodel, iter, i, visible );
 	}
+
+	//g_debug( "tview_apply_extfilter: visible=%s", visible ? "True":"False" );
 
 	return( visible );
 }
 
 /*
- * i is a counter from zero
+ * @i: a counter from zero.
+ * @prev_criteria: whether the previous criteria were successful.
  *
+ * Evaluates extended criteria for one criterium row.
  * Invalid rows are just ignored.
  */
 static gboolean
-tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint i, gboolean visible )
+tview_apply_extfilter_by_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint i, gboolean prev_criteria )
 {
+	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_by_row";
 	ofaEntryPagePrivate *priv;
 	sExtend *criterium;
 	guint row;
-	gboolean valid, ok;
+	gboolean valid, crit_ok, this_crit;
 	gchar *entry_value;
 	ofeBoxType type;
 	GtkTreeViewColumn *column;
@@ -849,7 +857,8 @@ tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTree
 	row = i; 				/* this myIGridlist does not have header */
 	criterium = extfilter_get_criterium( self, row );
 	valid = extfilter_get_is_valid_criterium( self, criterium, row );
-	ok = TRUE;
+	crit_ok = FALSE;
+	this_crit = crit_ok;
 
 	if( valid ){
 		gtk_tree_model_get( tmodel, iter, criterium->field, &entry_value, -1 );
@@ -857,46 +866,59 @@ tview_apply_extfilter_for_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTree
 		type = ofa_itvcolumnable_get_column_type( OFA_ITVCOLUMNABLE( priv->tview ), column );
 		switch( type ){
 			case OFA_TYPE_AMOUNT:
-				ok = tview_apply_extfilter_for_amount( self, criterium, entry_value, visible );
+				crit_ok = tview_apply_extfilter_for_amount( self, criterium, entry_value );
 				break;
 			case OFA_TYPE_COUNTER:
 			case OFA_TYPE_INTEGER:
-				ok = tview_apply_extfilter_for_counter( self, criterium, entry_value, visible );
+				crit_ok = tview_apply_extfilter_for_counter( self, criterium, entry_value );
 				break;
 			case OFA_TYPE_DATE:
-				ok = tview_apply_extfilter_for_date( self, criterium, entry_value, visible );
+				crit_ok = tview_apply_extfilter_for_date( self, criterium, entry_value );
 				break;
 			case OFA_TYPE_STRING:
-				ok = tview_apply_extfilter_for_string( self, criterium, entry_value, visible );
+				crit_ok = tview_apply_extfilter_for_string( self, criterium, entry_value );
 				break;
 			case OFA_TYPE_TIMESTAMP:
-				ok = tview_apply_extfilter_for_stamp( self, criterium, entry_value, visible );
+				crit_ok = tview_apply_extfilter_for_stamp( self, criterium, entry_value );
 				break;
 		}
 		g_free( entry_value );
 	}
 
 	if( valid ){
-		switch( criterium->operator ){
-			case OPERATOR_AND:
-				visible = visible && ok;
-				break;
-			case OPERATOR_OR:
-				visible = visible || ok;
-				break;
-			default:
-				// visible is left unchanged
-				break;
+		if( row == 0 ){
+			this_crit = crit_ok;
+
+		} else {
+			switch( criterium->operator ){
+				case OPERATOR_AND:
+					this_crit = prev_criteria && crit_ok;
+					break;
+				case OPERATOR_OR:
+					this_crit = prev_criteria || crit_ok;
+					break;
+				default:
+					// should not happen
+					g_warning( "%s: row=%u, unknown operator=%u", thisfn, row, criterium->operator );
+					this_crit = FALSE;
+					break;
+			}
 		}
 	}
 
 	extfilter_free_criterium( self, criterium );
 
-	return( visible );
+	if( 0 ){
+		g_debug( "%s: prev_criteria=%s, ok=%s, this_crit=%s",
+				thisfn,
+				prev_criteria ? "True":"False", crit_ok ? "True":"False", this_crit ? "True":"False" );
+	}
+
+	return( this_crit );
 }
 
 static gboolean
-tview_apply_extfilter_for_amount( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible )
+tview_apply_extfilter_for_amount( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value )
 {
 	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_for_amount";
 	ofaEntryPagePrivate *priv;
@@ -946,7 +968,7 @@ tview_apply_extfilter_for_amount( ofaEntryPage *self, sExtend *criterium, const 
 }
 
 static gboolean
-tview_apply_extfilter_for_counter( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible )
+tview_apply_extfilter_for_counter( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value )
 {
 	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_for_counter";
 	gboolean ok;
@@ -989,11 +1011,13 @@ tview_apply_extfilter_for_counter( ofaEntryPage *self, sExtend *criterium, const
 			break;
 	}
 
+	//g_debug( "%s: criterium=%lu, entry=%lu, ok=%s", thisfn, crit_counter, entry_counter, ok ? "True":"False" );
+
 	return( ok );
 }
 
 static gboolean
-tview_apply_extfilter_for_date( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible )
+tview_apply_extfilter_for_date( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value )
 {
 	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_for_date";
 	ofaEntryPagePrivate *priv;
@@ -1043,7 +1067,7 @@ tview_apply_extfilter_for_date( ofaEntryPage *self, sExtend *criterium, const gc
 }
 
 static gboolean
-tview_apply_extfilter_for_stamp( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible )
+tview_apply_extfilter_for_stamp( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value )
 {
 	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_for_stamp";
 	gboolean ok;
@@ -1093,7 +1117,7 @@ tview_apply_extfilter_for_stamp( ofaEntryPage *self, sExtend *criterium, const g
  * All conditions are considered case insensitive
  */
 static gboolean
-tview_apply_extfilter_for_string( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value, gboolean visible )
+tview_apply_extfilter_for_string( ofaEntryPage *self, sExtend *criterium, const gchar *entry_value )
 {
 	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_for_string";
 	gboolean ok;
@@ -1302,12 +1326,12 @@ extfilter_on_stack_switched( GtkStack *stack, GParamSpec *param_spec, ofaEntryPa
 	if( !my_collate( name, "standard" )){
 		gtk_widget_set_sensitive( priv->ext_init_btn, FALSE );
 		gtk_widget_set_sensitive( priv->ext_reset_btn, FALSE );
-		gtk_widget_set_sensitive( priv->ext_apply_btn, FALSE );
 
 	} else {
 		extfilter_on_row_changed( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), self );
 	}
 
+	gtk_widget_set_sensitive( priv->ext_apply_btn, FALSE );
 	refresh_display( self );
 }
 
@@ -1566,6 +1590,10 @@ extfilter_on_value_changed( GtkEntry *entry, ofaEntryPage *self )
 	extfilter_set_valid_image( self, GTK_GRID( priv->ext_grid ), row );
 }
 
+/*
+ * Adding an empty row does not require to enable the Apply button.
+ * Removing a row should enable the button as filters may have changed.
+ */
 static void
 extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, void *empty )
 {
@@ -1578,20 +1606,27 @@ extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, void *empty )
 
 	gtk_widget_set_sensitive( priv->ext_init_btn, rows_count == 0 );
 	gtk_widget_set_sensitive( priv->ext_reset_btn, rows_count > 0 );
-	gtk_widget_set_sensitive( priv->ext_apply_btn, rows_count > 0 );
 
 	if( rows_count > 0 ){
 		row = rows_count - 1;	/* no header row here */
 		extfilter_set_valid_image( OFA_ENTRY_PAGE( instance ), GTK_GRID( priv->ext_grid ), row );
+
+	} else if( rows_count < priv->ext_rows ){
+		gtk_widget_set_sensitive( priv->ext_apply_btn, TRUE );
 	}
+
+	priv->ext_rows = rows_count;
 }
 
 static void
 extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row )
 {
+	ofaEntryPagePrivate *priv;
 	sExtend *crit;
 	gboolean valid;
 	GtkWidget *button, *image;
+
+	priv = ofa_entry_page_get_instance_private( self );
 
 	crit = extfilter_get_criterium( self, row );
 	valid = extfilter_get_is_valid_criterium( self, crit, row );
@@ -1605,6 +1640,8 @@ extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row )
 
 	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, button, 1+XFIL_COL_STATUS, row, 1, 1 );
 	extfilter_free_criterium( self, crit );
+
+	gtk_widget_set_sensitive( priv->ext_apply_btn, valid );
 }
 
 /*
@@ -1723,6 +1760,12 @@ extfilter_on_reset_clicked( GtkButton *button, ofaEntryPage *self )
 static void
 extfilter_on_apply_clicked( GtkButton *button, ofaEntryPage *self )
 {
+	ofaEntryPagePrivate *priv;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	gtk_widget_set_sensitive( priv->ext_apply_btn, FALSE );
+
 	refresh_display( self );
 }
 

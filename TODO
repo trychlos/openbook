@@ -362,14 +362,6 @@
                 the entry(ies) which have been conciliated with a BAT line
                 (open the entry page with the ad-hoc extended filter)
 
-1375 2017- 3- 8 EntryPage extended filter: apply should be enabled even
-                if there is no criterium (display all)
-
-1376 2017- 3- 8 EntryPage extended filter: apply should be disabled as soon
-                as it has been clicked, until something is changed
-
-1377 2017- 3- 8 EntryPage extended filter: does not work ?
-
 1378
 
 -----------------------------------------------------------------------
@@ -752,6 +744,17 @@
                 and extended filter (display should reflect the currently
                 visible filter)
      2017- 3- 8 done
+
+1375 2017- 3- 8 EntryPage extended filter: apply should be enabled even
+                if there is no criterium (display all)
+     2017- 3- 8 fixed
+
+1376 2017- 3- 8 EntryPage extended filter: apply should be disabled as soon
+                as it has been clicked, until something is changed
+     2017- 3- 8 fixed
+
+1377 2017- 3- 8 EntryPage extended filter: does not work ?
+     2017- 3- 8 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
