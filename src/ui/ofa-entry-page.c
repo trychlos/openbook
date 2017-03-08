@@ -1307,6 +1307,8 @@ extfilter_on_stack_switched( GtkStack *stack, GParamSpec *param_spec, ofaEntryPa
 	} else {
 		extfilter_on_row_changed( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), self );
 	}
+
+	refresh_display( self );
 }
 
 /*
@@ -1596,10 +1598,11 @@ extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row )
 	image = gtk_image_new_from_resource( valid ? st_green_check_png : st_red_cross_png );
 	button = gtk_button_new();
 	gtk_button_set_image( GTK_BUTTON( button ), image );
-	//gtk_widget_set_sensitive( button, FALSE );
+
 	gtk_widget_set_can_focus( button, FALSE );
-	my_style_add( button, "flat" );
+	my_style_add( button, "flat" );			/* same than setting relief to none */
 	//gtk_button_set_relief( GTK_BUTTON( button ), GTK_RELIEF_NONE );
+
 	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, button, 1+XFIL_COL_STATUS, row, 1, 1 );
 	extfilter_free_criterium( self, crit );
 }

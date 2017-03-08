@@ -362,10 +362,6 @@
                 the entry(ies) which have been conciliated with a BAT line
                 (open the entry page with the ad-hoc extended filter)
 
-1374 2017- 3- 8 EntryPage: refresh display when switching between standard
-                and extended filter (display should reflect the currently
-                visible filter)
-
 1375 2017- 3- 8 EntryPage extended filter: apply should be enabled even
                 if there is no criterium (display all)
 
@@ -751,6 +747,11 @@
 
 1373 2017- 3- 8 myIGridlist: down button is not disabled on last row
      2017- 3- 8 fixed
+
+1374 2017- 3- 8 EntryPage: refresh display when switching between standard
+                and extended filter (display should reflect the currently
+                visible filter)
+     2017- 3- 8 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
