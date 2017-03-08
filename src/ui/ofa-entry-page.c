@@ -1255,7 +1255,6 @@ setup_ext_filter( ofaEntryPage *self )
 			MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ),
 			FALSE, TRUE, XFIL_N_COLUMNS );
 	my_igridlist_set_has_row_number( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), FALSE );
-	my_igridlist_set_has_up_down_buttons( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), FALSE );
 	g_signal_connect( self, "my-row-changed", G_CALLBACK( extfilter_on_row_changed ), NULL );
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ext-init-from-btn" );

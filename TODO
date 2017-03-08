@@ -145,8 +145,6 @@
                 direct view of unsettled entries on settleable accounts
                 + idem for unreconciliated on reconciliable
 
- 790 2015- 4- 6 DISP GuidedInputEx: replace the treeview by a revealer ?
-
  796 2015- 4-13 FEAT IRenderable: have a second level of grouping
                      (subgroup) use case: when printing accounts book,
                      have a subtotal per class
@@ -409,6 +407,9 @@
                      database, display the target database in bold (or
                      red)
      2017- 1-27 cancelled as obsolete
+
+ 790 2015- 4- 6 DISP GuidedInputEx: replace the treeview by a revealer ?
+     2017- 3- 8 cancelled
 
  792 2015- 4- 6 FEAT have a comment in the backup
      2017- 1-13 done
