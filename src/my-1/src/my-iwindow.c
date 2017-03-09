@@ -48,7 +48,7 @@ typedef struct {
 	GtkWindow   *parent;				/* the set parent of the window */
 	myISettings *settings;
 	gboolean     manage_geometry;
-	gboolean     close_allowed;
+	gboolean     allow_close;
 
 	/* runtime
 	 */
@@ -284,9 +284,9 @@ my_iwindow_set_manage_geometry( myIWindow *instance, gboolean manage )
 }
 
 /**
- * my_iwindow_set_close_allowed:
+ * my_iwindow_set_allow_close:
  * @instance: this #myIWindow instance.
- * @allowed: whether destroying this window is allowed.
+ * @allow: whether destroying this window is allowed.
  *
  * Sets the @allowed indicator.
  *
@@ -297,7 +297,7 @@ my_iwindow_set_manage_geometry( myIWindow *instance, gboolean manage )
  * is able to close the window.
  */
 void
-my_iwindow_set_close_allowed( myIWindow *instance, gboolean allowed )
+my_iwindow_set_allow_close( myIWindow *instance, gboolean allow )
 {
 	sIWindow *sdata;
 
@@ -305,7 +305,7 @@ my_iwindow_set_close_allowed( myIWindow *instance, gboolean allowed )
 
 	sdata = get_instance_data( instance );
 
-	sdata->close_allowed = allowed;
+	sdata->allow_close = allow;
 }
 
 /**
@@ -563,7 +563,7 @@ on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance )
  * - hiding it (eg. ofaAccountSelect, ofaOpeTemplateSelect);
  * - doing nothing (eg. ofaExerciceCloseAssistant, ofaRestoreAssistant).
  *
- * The 'close_allowed' indicator only manages the first and last
+ * The 'allow_close' indicator only manages the first and last
  * items. Hding a window must be explicitely done in the actual
  * application code.
  */
@@ -575,9 +575,9 @@ do_close( myIWindow *instance )
 
 	sdata = get_instance_data( instance );
 
-	if( sdata->close_allowed ){
-		g_debug( "%s: close_allowed=%s, destroying widget=%p (%s)",
-				thisfn, sdata->close_allowed ? "True":"False",
+	if( sdata->allow_close ){
+		g_debug( "%s: allow_close=%s, destroying widget=%p (%s)",
+				thisfn, sdata->allow_close ? "True":"False",
 				( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		if( sdata->manage_geometry ){
@@ -691,7 +691,7 @@ get_instance_data( const myIWindow *instance )
 
 		sdata->parent = NULL;
 		sdata->manage_geometry = TRUE;
-		sdata->close_allowed = TRUE;
+		sdata->allow_close = TRUE;
 		sdata->initialized = FALSE;
 	}
 

@@ -998,10 +998,10 @@ p6_do_close( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_wid
 	 * - do not disturb the user with a dimultaneous display
 	 * - gain in performances due to not updating the UI
 	 */
-	my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
+	my_iwindow_set_allow_close( MY_IWINDOW( self ), FALSE );
 	main_window = ofa_igetter_get_main_window( priv->getter );
 	ofa_main_window_dossier_close_windows( OFA_MAIN_WINDOW( main_window ));
-	my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
+	my_iwindow_set_allow_close( MY_IWINDOW( self ), TRUE );
 
 	gtk_label_set_text( GTK_LABEL( label ), _( "Done" ));
 
@@ -1474,9 +1474,9 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			/* opening the new exercice means also closing the old one
 			 * prevent the window manager to close this assistant
 			 */
-			my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
+			my_iwindow_set_allow_close( MY_IWINDOW( self ), FALSE );
 			ofa_hub_close_dossier( hub );
-			my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
+			my_iwindow_set_allow_close( MY_IWINDOW( self ), TRUE );
 
 			ok = ofa_hub_open_dossier( hub, GTK_WINDOW( main_window ), cnx, FALSE, FALSE );
 			if( ok ){

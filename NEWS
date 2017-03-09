@@ -45,6 +45,7 @@
    - my_igridlist_set_has_row_number(): new function.
    - my_igridlist_set_has_up_down_buttons: new function.
    - myIWindow: set_restore_position() and set_restore_size() are replaced by set_manage_geometry().
+   - myIWindow: set_close_allowed() is renamed to set_allow_close().
    - my_stamp_compare(): new function.
    - ofaClosingParmsBin: implements myIGridlist interface (todo #1370).
    - ofa_itvcolumnable_enable_column(): renamed to ofa_itvcolumnable_set_invisible().

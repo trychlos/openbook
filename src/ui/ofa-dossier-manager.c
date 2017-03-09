@@ -482,11 +482,11 @@ do_open( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *p
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
+	my_iwindow_set_allow_close( MY_IWINDOW( self ), FALSE );
 
 	ok = ofa_dossier_open_run( priv->getter, GTK_WINDOW( self ), period, NULL, NULL, FALSE );
 
-	my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
+	my_iwindow_set_allow_close( MY_IWINDOW( self ), TRUE );
 
 	if( ok ){
 		priv->apply_actions = TRUE;
@@ -516,9 +516,9 @@ action_on_close_activated( GSimpleAction *action, GVariant *empty, ofaDossierMan
 			ofa_hub_is_opened_dossier( hub, period )){
 
 		/* does not close this dossier manager on dossier close */
-		my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
+		my_iwindow_set_allow_close( MY_IWINDOW( self ), FALSE );
 		ofa_hub_close_dossier( hub );
-		my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
+		my_iwindow_set_allow_close( MY_IWINDOW( self ), TRUE );
 
 		/* re-enable the actions for the same selection */
 		do_enable_actions( self, meta, period );

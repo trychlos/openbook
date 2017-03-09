@@ -1395,10 +1395,10 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 		my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), FALSE );
 
 		/* prevent the window manager to close this assistant */
-		my_iwindow_set_close_allowed( MY_IWINDOW( self ), FALSE );
+		my_iwindow_set_allow_close( MY_IWINDOW( self ), FALSE );
 		hub = ofa_igetter_get_hub( priv->getter );
 		ofa_hub_close_dossier( hub );
-		my_iwindow_set_close_allowed( MY_IWINDOW( self ), TRUE );
+		my_iwindow_set_allow_close( MY_IWINDOW( self ), TRUE );
 
 		g_idle_add(( GSourceFunc ) p6_do_restore, self );
 	}
