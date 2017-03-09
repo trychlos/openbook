@@ -87,6 +87,7 @@ typedef struct {
 	/* GtkStack and extended filters
 	 */
 	GtkWidget           *stack;
+	GtkWidget           *expander;
 	GtkWidget           *ext_grid;
 	GtkWidget           *ext_init_btn;
 	GtkWidget           *ext_reset_btn;
@@ -306,7 +307,9 @@ static void       tview_on_row_insert( ofaTVBin *bin, ofaEntryPage *self );
 static void       tview_on_row_delete( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self );
 static void       setup_ext_filter( ofaEntryPage *self );
 static void       extfilter_on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self );
+static void       extfilter_set_expander_toggled( ofaEntryPage *self, GtkExpander *expander );
 static void       extfilter_on_stack_switched( GtkStack *stack, GParamSpec *param_spec, ofaEntryPage *self );
+static void       extfilter_set_stack_switched( ofaEntryPage *self, GtkStack *stack );
 static void       igridlist_iface_init( myIGridlistInterface *iface );
 static guint      igridlist_get_interface_version( void );
 static void       igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *criterium );
@@ -509,6 +512,7 @@ page_v_setup_page( ofaPage *page )
 	setup_actions( OFA_ENTRY_PAGE( page ));
 
 	read_settings( OFA_ENTRY_PAGE( page ));
+	extfilter_set_stack_switched( OFA_ENTRY_PAGE( page ), GTK_STACK( priv->stack ));
 
 	/* allow the entry dataset to be loaded */
 	g_debug( "%s: end of initialization phase", thisfn );
@@ -1277,6 +1281,7 @@ setup_ext_filter( ofaEntryPage *self )
 
 	expander = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "expander1" );
 	g_return_if_fail( expander && GTK_IS_EXPANDER( expander ));
+	priv->expander = expander;
 	g_signal_connect( expander, "notify::expanded", G_CALLBACK( extfilter_on_expander_toggled ), self );
 
 	stack = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "stack1" );
@@ -1316,6 +1321,12 @@ setup_ext_filter( ofaEntryPage *self )
 static void
 extfilter_on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, ofaEntryPage *self )
 {
+	extfilter_set_expander_toggled( self, expander );
+}
+
+static void
+extfilter_set_expander_toggled( ofaEntryPage *self, GtkExpander *expander )
+{
 	ofaEntryPagePrivate *priv;
 	GtkWidget *revealer;
 
@@ -1328,6 +1339,12 @@ extfilter_on_expander_toggled( GtkExpander *expander, GParamSpec *param_spec, of
 
 static void
 extfilter_on_stack_switched( GtkStack *stack, GParamSpec *param_spec, ofaEntryPage *self )
+{
+	extfilter_set_stack_switched( self, stack );
+}
+
+static void
+extfilter_set_stack_switched( ofaEntryPage *self, GtkStack *stack )
 {
 	ofaEntryPagePrivate *priv;
 	const gchar *name;
@@ -1345,6 +1362,8 @@ extfilter_on_stack_switched( GtkStack *stack, GParamSpec *param_spec, ofaEntryPa
 	}
 
 	gtk_widget_set_sensitive( priv->ext_apply_btn, FALSE );
+	extfilter_set_expander_toggled( self, GTK_EXPANDER( priv->expander ));
+
 	refresh_display( self );
 }
 
@@ -1766,6 +1785,8 @@ extfilter_on_reset_clicked( GtkButton *button, ofaEntryPage *self )
 	for( i=0 ; i<count ; ++i ){
 		my_igridlist_remove_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), -1 );
 	}
+
+	gtk_widget_set_sensitive( priv->ext_apply_btn, FALSE );
 
 	refresh_display( self );
 }
