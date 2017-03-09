@@ -71,6 +71,9 @@ typedef struct {
 
 	/* UI - Quitting
 	 */
+	GtkWidget                *p1_dnd_reorder_btn;
+	GtkWidget                *p1_pin_detach_btn;
+	GtkWidget                *p1_dnd_detach_btn;
 	GtkCheckButton           *confirm_on_escape_btn;
 
 	/* UI - Dossier page
@@ -155,6 +158,7 @@ static void     init_import_page( ofaPreferences *self );
 static gboolean enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn );
 static gboolean init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *plugin );
 //static void     activate_first_page( ofaPreferences *self );
+static void     on_dnd_main_tabs_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void     on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void     on_settle_warns_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void     on_reconciliate_warns_toggled( GtkToggleButton *button, ofaPreferences *self );
@@ -167,8 +171,8 @@ static void     on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences
 static void     check_for_activable_dlg( ofaPreferences *self );
 static void     on_ok_clicked( ofaPreferences *self );
 static gboolean do_update_user_interface_page( ofaPreferences *self, gchar **msgerr );
-static gchar   *dnd_main_tabs_read_settings( ofaIGetter *getter );
-static void     dnd_main_tabs_write_settings( ofaPreferences *self, GtkWidget *reorder_btn );
+static gchar   *dnd_main_tabs_read_settings( ofaIGetter *getter, gboolean *have_pin );
+static void     dnd_main_tabs_write_settings( ofaPreferences *self );
 static gboolean is_willing_to_quit( void );
 static gboolean do_update_dossier_page( ofaPreferences *self, gchar **msgerr );
 static gboolean do_update_account_page( ofaPreferences *self, gchar **msgerr );
@@ -378,16 +382,27 @@ init_user_interface_page( ofaPreferences *self )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	/* reorder vs. detach man tabs */
+	/* reorder vs. detach main tabs */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-reorder" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
 	bvalue = ofa_prefs_dnd_reorder( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	priv->p1_dnd_reorder_btn = button;
+	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-pin-detach" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	bvalue = ofa_prefs_pin_detach( priv->getter );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	priv->p1_pin_detach_btn = button;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-detach" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
 	bvalue = ofa_prefs_dnd_detach( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	priv->p1_dnd_detach_btn = button;
+	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
+	on_dnd_main_tabs_toggled( GTK_TOGGLE_BUTTON( button ), self );
 
 	/* priv->confirm_on_escape_btn is set before acting on
 	 *  quit-on-escape button as triggered signal use the variable */
@@ -779,6 +794,18 @@ activate_first_page( ofaPreferences *self )
 #endif
 
 static void
+on_dnd_main_tabs_toggled( GtkToggleButton *button, ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+
+	priv = ofa_preferences_get_instance_private( self );
+
+	gtk_widget_set_sensitive(
+			priv->p1_pin_detach_btn,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_dnd_reorder_btn )));
+}
+
+static void
 on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
@@ -950,9 +977,7 @@ do_update_user_interface_page( ofaPreferences *self, gchar **msgerr )
 
 	settings = ofa_igetter_get_user_settings( priv->getter );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-reorder" );
-	g_return_val_if_fail( button && GTK_IS_RADIO_BUTTON( button ), FALSE );
-	dnd_main_tabs_write_settings( self, button );
+	dnd_main_tabs_write_settings( self );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-quit-on-escape" );
 	g_return_val_if_fail( button && GTK_IS_CHECK_BUTTON( button ), FALSE );
@@ -1004,11 +1029,34 @@ ofa_prefs_dnd_reorder( ofaIGetter *getter )
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	str = dnd_main_tabs_read_settings( getter );
+	str = dnd_main_tabs_read_settings( getter, NULL );
 	reorder = ( my_collate( str, SETTINGS_REORDER ) == 0 );
 	g_free( str );
 
 	return( reorder );
+}
+
+/**
+ * ofa_prefs_pin_detach:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: %TRUE if the user can detach the main tabs via a pin button.
+ *
+ * This option is only valid when the user has also chosen to be able to
+ * reorder the tabs instead of DnD them.
+ *
+ * Defaults is %FALSE.
+ */
+gboolean
+ofa_prefs_pin_detach( ofaIGetter *getter )
+{
+	gboolean have_pin;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	g_free( dnd_main_tabs_read_settings( getter, &have_pin ));
+
+	return( have_pin );
 }
 
 /**
@@ -1025,7 +1073,7 @@ ofa_prefs_dnd_detach( ofaIGetter *getter )
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	str = dnd_main_tabs_read_settings( getter );
+	str = dnd_main_tabs_read_settings( getter, NULL );
 	detach = ( my_collate( str, SETTINGS_DETACH ) == 0 );
 	g_free( str );
 
@@ -1033,11 +1081,11 @@ ofa_prefs_dnd_detach( ofaIGetter *getter )
 }
 
 /*
- * DndMainTabs settings: R(reorder) | D(detach);
+ * DndMainTabs settings: R(reorder) | D(detach); HavePinButton(b);
  * Defaults is Reorder
  */
 static gchar *
-dnd_main_tabs_read_settings( ofaIGetter *getter )
+dnd_main_tabs_read_settings( ofaIGetter *getter, gboolean *have_pin )
 {
 	myISettings *settings;
 	GList *strlist, *it;
@@ -1056,11 +1104,17 @@ dnd_main_tabs_read_settings( ofaIGetter *getter )
 		str = g_strdup( cstr );
 	}
 
+	if( have_pin ){
+		it = it ? it->next : NULL;
+		cstr = it ? ( const gchar * ) it->data : NULL;
+		*have_pin = my_utils_boolean_from_str( cstr );
+	}
+
 	return( str );
 }
 
 static void
-dnd_main_tabs_write_settings( ofaPreferences *self, GtkWidget *reorder_btn )
+dnd_main_tabs_write_settings( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	myISettings *settings;
@@ -1068,8 +1122,9 @@ dnd_main_tabs_write_settings( ofaPreferences *self, GtkWidget *reorder_btn )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	str = g_strdup_printf( "%s;",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( reorder_btn )) ? SETTINGS_REORDER : SETTINGS_DETACH );
+	str = g_strdup_printf( "%s;%s;",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_dnd_reorder_btn )) ? SETTINGS_REORDER : SETTINGS_DETACH,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_pin_detach_btn )) ? "True":"False" );
 
 	settings = ofa_igetter_get_user_settings( priv->getter );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_dnd_main_tabs, str );

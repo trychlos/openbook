@@ -80,6 +80,7 @@ void         ofa_preferences_run                        ( ofaIGetter *getter,
 /* these are helpers globally available
  */
 gboolean     ofa_prefs_dnd_reorder                      ( ofaIGetter *getter );
+gboolean     ofa_prefs_pin_detach                       ( ofaIGetter *getter );
 gboolean     ofa_prefs_dnd_detach                       ( ofaIGetter *getter );
 
 gboolean     ofa_prefs_assistant_quit_on_escape         ( ofaIGetter *getter );
