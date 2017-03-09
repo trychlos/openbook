@@ -32,8 +32,9 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
-#define IWINDOW_LAST_VERSION            1
+#define IWINDOW_LAST_VERSION              1
 #define IWINDOW_DATA                    "my-iwindow-data"
+#define IWINDOW_SHIFT                    36
 
 static guint    st_initializations      = 0;		/* interface initialization count */
 static gboolean st_dump_container       = FALSE;
@@ -47,7 +48,8 @@ typedef struct {
 	 */
 	GtkWindow   *parent;				/* the set parent of the window */
 	gchar       *identifier;
-	myISettings *settings;
+	myISettings *geometry_settings;
+	gchar       *geometry_key;
 	gboolean     manage_geometry;
 	gboolean     allow_close;
 
@@ -58,20 +60,21 @@ typedef struct {
 }
 	sIWindow;
 
-static GType      register_type( void );
-static void       interface_base_init( myIWindowInterface *klass );
-static void       interface_base_finalize( myIWindowInterface *klass );
-static void       iwindow_init_window( myIWindow *instance );
-static void       iwindow_init_set_transient_for( myIWindow *instance, sIWindow *sdata );
-static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
-static void       do_close( myIWindow *instance );
-static gchar     *get_iwindow_key_prefix( const myIWindow *instance );
-static void       position_restore( myIWindow *instance, sIWindow *sdata );
-static void       position_save( myIWindow *instance, sIWindow *sdata );
-static gchar     *get_default_identifier( const myIWindow *instance );
-static sIWindow  *get_instance_data( const myIWindow *instance );
-static void       on_instance_finalized( sIWindow *sdata, GObject *finalized_iwindow );
-static void       dump_live_list( void );
+static GType     register_type( void );
+static void      interface_base_init( myIWindowInterface *klass );
+static void      interface_base_finalize( myIWindowInterface *klass );
+static void      iwindow_init_window( myIWindow *instance );
+static void      iwindow_init_set_transient_for( myIWindow *instance, sIWindow *sdata );
+static gboolean  on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
+static void      do_close( myIWindow *instance );
+static void      position_restore( myIWindow *instance, sIWindow *sdata );
+static void      position_save( myIWindow *instance, sIWindow *sdata );
+static void      position_shift( myIWindow *instance, myIWindow *prev );
+static gchar    *get_default_identifier( const myIWindow *instance );
+static gchar    *get_default_geometry_key( const myIWindow *instance );
+static sIWindow *get_instance_data( const myIWindow *instance );
+static void      on_instance_finalized( sIWindow *sdata, GObject *finalized_iwindow );
+static void      dump_live_list( void );
 
 /**
  * my_iwindow_get_type:
@@ -261,7 +264,7 @@ my_iwindow_set_identifier( myIWindow *instance, const gchar *identifier )
 	sdata = get_instance_data( instance );
 
 	g_free( sdata->identifier );
-	sdata->identifier = g_strdup( my_strlen( identifier ) ? identifier : G_OBJECT_TYPE_NAME( instance ));
+	sdata->identifier = my_strlen( identifier ) ? g_strdup( identifier ) : get_default_identifier( instance );
 }
 
 /**
@@ -281,7 +284,32 @@ my_iwindow_set_geometry_settings( myIWindow *instance, myISettings *settings )
 
 	sdata = get_instance_data( instance );
 
-	sdata->settings = settings;
+	sdata->geometry_settings = settings;
+}
+
+/**
+ * my_iwindow_set_geometry_key:
+ * @instance: this #myIWindow instance.
+ * @key: [allow-none]: the key prefix in geometry settings.
+ *
+ * Sets the key prefix.
+ *
+ * The identifier is primarily used to only display one window of every
+ * distinct identifier.
+ *
+ * The identifier defaults to the class name of the @instance.
+ */
+void
+my_iwindow_set_geometry_key( myIWindow *instance, const gchar *key )
+{
+	sIWindow *sdata;
+
+	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
+
+	sdata = get_instance_data( instance );
+
+	g_free( sdata->geometry_key );
+	sdata->geometry_key = my_strlen( key ) ? g_strdup( key ) : get_default_geometry_key( instance );
 }
 
 /**
@@ -455,29 +483,41 @@ my_iwindow_present( myIWindow *instance )
 	static const gchar *thisfn = "my_iwindow_present";
 	GList *it;
 	sIWindow *sdata_instance, *sdata_other;
-	myIWindow *other, *found;
-	gint cmp;
+	myIWindow *other, *found, *prev;
+	const gchar *instance_class, *other_class;
 
 	g_debug( "%s: instance=%p (%s), st_live_list_count=%d",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), g_list_length( st_live_list ));
 
 	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
 
+	my_iwindow_init( instance );
 	found = NULL;
+	prev = NULL;
 	sdata_instance = get_instance_data( instance );
+	instance_class = G_OBJECT_TYPE_NAME( instance );
 
 	for( it=st_live_list ; it ; it=it->next ){
-		//g_debug( "it=%p, it->data=%p", it, it->data );
+
+		/* if we find the same instance, just break the search */
 		other = MY_IWINDOW( it->data );
 		if( other == instance ){
 			found = other;
 			break;
 		}
+
+		/* if we find another instance with same identifier, break the search too */
 		sdata_other = get_instance_data( other );
-		cmp = my_collate( sdata_instance->identifier, sdata_other->identifier );
-		if( cmp == 0 ){
+		if( my_collate( sdata_instance->identifier, sdata_other->identifier ) == 0 ){
 			found = other;
 			break;
+
+		/* check for another instance of same class */
+		} else if( !prev ){
+			other_class = G_OBJECT_TYPE_NAME( other );
+			if( my_collate( instance_class, other_class ) == 0 ){
+				prev = other;
+			}
 		}
 	}
 
@@ -485,9 +525,10 @@ my_iwindow_present( myIWindow *instance )
 	 * - either found this same instance
 	 *   -> just display it (found)
 	 * - either found another instance with same identifier
-	 *   -> close this instance and display the another one (found)
+	 *   -> close the provided @instance, and display the 'other' one (found)
 	 * - either not found anything relevant
 	 *   -> record this instance and initialize and display it
+	 *   -> position is shifted from 'prev'
 	 */
 	if( found ){
 		if( found != instance ){
@@ -495,14 +536,16 @@ my_iwindow_present( myIWindow *instance )
 		}
 
 	} else {
-		my_iwindow_init( instance );
 		g_return_val_if_fail( !g_list_find( st_live_list, instance ), NULL );
 		st_live_list = g_list_prepend( st_live_list, instance );
 		found = instance;
+		if( prev ){
+			position_shift( instance, prev );
+		}
 		dump_live_list();
 	}
 
-	g_debug( "%s: found=%p (%s)", thisfn, ( void * ) found, G_OBJECT_TYPE_NAME( found ));
+	g_debug( "%s: presenting %p (%s)", thisfn, ( void * ) found, G_OBJECT_TYPE_NAME( found ));
 	gtk_window_present( GTK_WINDOW( found ));
 
 	return( found );
@@ -611,30 +654,6 @@ do_close( myIWindow *instance )
 }
 
 /*
- * Returns: the settings key as a newly allocated string which should
- * be g_free() by the caller.
- *
- * The key defaults to the identifier.
- */
-static gchar *
-get_iwindow_key_prefix( const myIWindow *instance )
-{
-	static const gchar *thisfn = "my_get_iwindow_key_prefix";
-	sIWindow *sdata;
-
-	if( MY_IWINDOW_GET_INTERFACE( instance )->get_key_prefix ){
-		return( MY_IWINDOW_GET_INTERFACE( instance )->get_key_prefix( instance ));
-	}
-
-	g_info( "%s: myIWindow's %s implementation does not provide 'get_key_prefix()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-
-	sdata = get_instance_data( instance );
-
-	return( g_strdup( sdata->identifier ));
-}
-
-/*
  * Save/restore the size and position for each identified myIWindow.
  * Have a default to ClassName
  */
@@ -643,15 +662,15 @@ position_restore( myIWindow *instance, sIWindow *sdata )
 {
 	gchar *key_prefix;
 
-	if( sdata->settings ){
-		key_prefix = get_iwindow_key_prefix( instance );
+	if( sdata->geometry_settings ){
+		key_prefix = g_strdup( sdata->geometry_key );
 
-		if( !my_utils_window_position_get_has_pos( sdata->settings, key_prefix )){
+		if( !my_utils_window_position_get_has_pos( sdata->geometry_settings, key_prefix )){
 			g_free( key_prefix );
-			key_prefix = get_default_identifier( instance );
+			key_prefix = get_default_geometry_key( instance );
 		}
 
-		my_utils_window_position_restore( GTK_WINDOW( instance ), sdata->settings, key_prefix );
+		my_utils_window_position_restore( GTK_WINDOW( instance ), sdata->geometry_settings, key_prefix );
 		g_free( key_prefix );
 	}
 }
@@ -661,20 +680,40 @@ position_save( myIWindow *instance, sIWindow *sdata )
 {
 	gchar *key_prefix, *default_key;
 
-	if( sdata->settings ){
-		key_prefix = get_iwindow_key_prefix( instance );
-		my_utils_window_position_save( GTK_WINDOW( instance ), sdata->settings, key_prefix );
+	if( sdata->geometry_settings ){
+		key_prefix = g_strdup( sdata->geometry_key );
+		my_utils_window_position_save( GTK_WINDOW( instance ), sdata->geometry_settings, key_prefix );
 		g_free( key_prefix );
 
-		default_key = get_default_identifier( instance );
-		if( !my_utils_window_position_get_has_pos( sdata->settings, default_key )){
-			my_utils_window_position_save( GTK_WINDOW( instance ), sdata->settings, default_key );
+		default_key = get_default_geometry_key( instance );
+		if( !my_utils_window_position_get_has_pos( sdata->geometry_settings, default_key )){
+			my_utils_window_position_save( GTK_WINDOW( instance ), sdata->geometry_settings, default_key );
 		}
+		g_free( default_key );
 	}
+}
+
+/*
+ * When opening a new window of the same class that already displayed,
+ * just position the new position with a shift from the previous one.
+ */
+static void
+position_shift( myIWindow *instance, myIWindow *prev )
+{
+	gint x, y;
+
+	gtk_window_get_position( GTK_WINDOW( prev ), &x, &y );
+	gtk_window_move( GTK_WINDOW( instance ), x+IWINDOW_SHIFT, y+IWINDOW_SHIFT );
 }
 
 static gchar *
 get_default_identifier( const myIWindow *instance )
+{
+	return( g_strdup( G_OBJECT_TYPE_NAME( instance )));
+}
+
+static gchar *
+get_default_geometry_key( const myIWindow *instance )
 {
 	return( g_strdup( G_OBJECT_TYPE_NAME( instance )));
 }
@@ -693,6 +732,8 @@ get_instance_data( const myIWindow *instance )
 
 		sdata->parent = NULL;
 		sdata->identifier = get_default_identifier( instance );
+		sdata->geometry_settings = NULL;
+		sdata->geometry_key = get_default_geometry_key( instance );
 		sdata->manage_geometry = TRUE;
 		sdata->allow_close = TRUE;
 		sdata->initialized = FALSE;
@@ -709,6 +750,8 @@ on_instance_finalized( sIWindow *sdata, GObject *finalized_iwindow )
 	g_debug( "%s: sdata=%p, finalized_iwindow=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_iwindow );
 
+	g_free( sdata->identifier );
+	g_free( sdata->geometry_key );
 	g_free( sdata );
 
 	st_live_list = g_list_remove( st_live_list, finalized_iwindow );

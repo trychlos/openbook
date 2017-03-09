@@ -50,9 +50,9 @@
  * Size and position of the window default to be:
  * - restored from the user settings at one-time window initialization,
  * - saved to user settings at close time.
- * The key of the size/position settings defaults to the #myIWindow
- * identifier, plus a '-pos' suffix added by my_utils.
- * The key may be overriden by the get_key_prefix() method.
+ * The key of the size/position settings defaults to the class name,
+ * plus a '-pos' suffix added by my_utils.
+ * The key may be overriden by the my_iwindow_set_geometry_key() function.
  *
  * Note on my_iwindow_close().
  * The application should call my_iwindow_close() to close a #myIWindow
@@ -77,7 +77,6 @@ typedef struct _myIWindow                    myIWindow;
  * myIWindowInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
- * @get_key_prefix: [may]: returns the key prefix.
  * @init: [should]: one-time initialization.
  *
  * This defines the interface that an #myIWindow may/should/must
@@ -102,18 +101,6 @@ typedef struct {
 	guint    ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
-	/**
-	 * get_key_prefix:
-	 * @instance: the #myIWindow instance.
-	 *
-	 * Returns: The prefix of the keys in geometry settings
-	 *
-	 * Defaults to identifier.
-	 *
-	 * Since: version 1.
-	 */
-	gchar *  ( *get_key_prefix )       ( const myIWindow *instance );
-
 	/**
 	 * init:
 	 * @instance: the #myIWindow instance.
@@ -153,6 +140,9 @@ void         my_iwindow_set_identifier            ( myIWindow *instance,
 
 void         my_iwindow_set_geometry_settings     ( myIWindow *instance,
 														myISettings *settings );
+
+void         my_iwindow_set_geometry_key          ( myIWindow *instance,
+														const gchar *key );
 
 void         my_iwindow_set_manage_geometry       ( myIWindow *instance,
 														gboolean manage );

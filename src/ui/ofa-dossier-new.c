@@ -94,7 +94,6 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
-static gchar   *iwindow_get_key_prefix( const myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     on_dossier_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self );
@@ -312,7 +311,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
-	iface->get_key_prefix = iwindow_get_key_prefix;
 }
 
 static void
@@ -326,18 +324,8 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
-}
-
-static gchar *
-iwindow_get_key_prefix( const myIWindow *instance )
-{
-	ofaDossierNewPrivate *priv;
-
-	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
-
-	return( g_strdup( priv->settings_prefix ));
+	my_iwindow_set_geometry_key( instance, priv->settings_prefix );
 }
 
 /*

@@ -195,7 +195,7 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_guided_input_iwindow_init";
 	ofaGuidedInputPrivate *priv;
-	gchar *id;
+	gchar *id, *key;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -208,6 +208,11 @@ iwindow_init( myIWindow *instance )
 				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_get_mnemo( priv->model ));
 	my_iwindow_set_identifier( instance, id );
 	g_free( id );
+
+	key = g_strdup_printf( "%s-%d",
+				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_get_detail_count( priv->model ));
+	my_iwindow_set_geometry_key( instance, key );
+	g_free( key );
 }
 
 /*

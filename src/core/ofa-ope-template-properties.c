@@ -290,7 +290,7 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_ope_template_properties_iwindow_init";
 	ofaOpeTemplatePropertiesPrivate *priv;
-	gchar *id;
+	gchar *id, *key;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -303,6 +303,11 @@ iwindow_init( myIWindow *instance )
 				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_get_mnemo( priv->ope_template ));
 	my_iwindow_set_identifier( instance, id );
 	g_free( id );
+
+	key = g_strdup_printf( "%s-%d",
+				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_get_detail_count( priv->ope_template ));
+	my_iwindow_set_geometry_key( instance, key );
+	g_free( key );
 }
 
 /*

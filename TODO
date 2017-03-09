@@ -314,16 +314,6 @@
                 - accounts: all documents for this account
      2017- 2- 6 dbms is prepared
 
-1285 2016-12-13 myIWindow: deprecate ::get_identifier() method
-                when several windows of same name are opened, just shift them 
-     2017- 2-17 but OpeTemplate because ope templates may have different
-                count of detail lines, and so better display with different
-                height
-     2017- 2-20 and so OpeTemplate identifiers should be with count of lines
-     2017- 3- 9 Identifiers are also used to manage single windows:
-                they are so needed to be able to have several windows for
-                the same class
-
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 
 1344 2017- 2- 3 re-authorize dossier open from command-line
@@ -491,6 +481,17 @@
                 so that this may be managed by the application instead of
                 by the dbms plugin
      2017- 1- 9 done
+
+1285 2016-12-13 myIWindow: deprecate ::get_identifier() method
+                when several windows of same name are opened, just shift them 
+     2017- 2-17 but OpeTemplate because ope templates may have different
+                count of detail lines, and so better display with different
+                height
+     2017- 2-20 and so OpeTemplate identifiers should be with count of lines
+     2017- 3- 9 Identifiers are also used to manage single windows:
+                they are so needed to be able to have several windows for
+                the same class
+     2017- 3- 9 done
 
 1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
                 by a my_iwindow_set_is_destroy_allowed() method
