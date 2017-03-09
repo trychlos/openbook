@@ -51,6 +51,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter    *getter;
+	gchar         *settings_prefix;
 
 	/* UI
 	 */
@@ -84,6 +85,7 @@ static void
 class_treeview_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_class_treeview_finalize";
+	ofaClassTreeviewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -91,6 +93,9 @@ class_treeview_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_CLASS_TREEVIEW( instance ));
 
 	/* free data members here */
+	priv = ofa_class_treeview_get_instance_private( OFA_CLASS_TREEVIEW( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_class_treeview_parent_class )->finalize( instance );
@@ -130,6 +135,7 @@ ofa_class_treeview_init( ofaClassTreeview *self )
 	priv = ofa_class_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->store = NULL;
 }
 
@@ -230,14 +236,16 @@ ofa_class_treeview_class_init( ofaClassTreeviewClass *klass )
 /**
  * ofa_class_treeview_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_prefix: the key prefix in user settings.
  *
  * Returns: a new #ofaClassTreeview instance.
  */
 ofaClassTreeview *
-ofa_class_treeview_new( ofaIGetter *getter )
+ofa_class_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
 	ofaClassTreeview *view;
 	ofaClassTreeviewPrivate *priv;
+	gchar *str;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -249,6 +257,14 @@ ofa_class_treeview_new( ofaIGetter *getter )
 	priv = ofa_class_treeview_get_instance_private( view );
 
 	priv->getter = getter;
+
+	if( my_strlen( settings_prefix )){
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_prefix );
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = str;
+	}
+
+	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoClass object instead of just the raw GtkTreeSelection
@@ -263,32 +279,6 @@ ofa_class_treeview_new( ofaIGetter *getter )
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
 	return( view );
-}
-
-/**
- * ofa_class_treeview_set_settings_key:
- * @view: this #ofaClassTreeview instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- */
-void
-ofa_class_treeview_set_settings_key( ofaClassTreeview *view, const gchar *key )
-{
-	static const gchar *thisfn = "ofa_class_treeview_set_settings_key";
-	ofaClassTreeviewPrivate *priv;
-
-	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
-
-	g_return_if_fail( view && OFA_IS_CLASS_TREEVIEW( view ));
-
-	priv = ofa_class_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* we do not manage any settings here, so directly pass it to the
-	 * base class */
-	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
 }
 
 /**

@@ -69,18 +69,16 @@ typedef struct {
 }
 	ofaClassTreeviewClass;
 
-GType             ofa_class_treeview_get_type        ( void ) G_GNUC_CONST;
+GType             ofa_class_treeview_get_type     ( void ) G_GNUC_CONST;
 
-ofaClassTreeview *ofa_class_treeview_new             ( ofaIGetter *getter );
+ofaClassTreeview *ofa_class_treeview_new          ( ofaIGetter *getter,
+															const gchar *settings_prefix );
 
-void              ofa_class_treeview_set_settings_key( ofaClassTreeview *view,
-															const gchar *key );
+void              ofa_class_treeview_setup_columns( ofaClassTreeview *view );
 
-void              ofa_class_treeview_setup_columns   ( ofaClassTreeview *view );
+void              ofa_class_treeview_setup_store  ( ofaClassTreeview *view );
 
-void              ofa_class_treeview_setup_store     ( ofaClassTreeview *view );
-
-ofoClass         *ofa_class_treeview_get_selected    ( ofaClassTreeview *view );
+ofoClass         *ofa_class_treeview_get_selected ( ofaClassTreeview *view );
 
 G_END_DECLS
 
