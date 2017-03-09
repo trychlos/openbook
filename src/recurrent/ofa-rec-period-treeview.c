@@ -47,6 +47,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter *getter;
+	gchar      *settings_prefix;
 }
 	ofaRecPeriodTreeviewPrivate;
 
@@ -76,6 +77,7 @@ static void
 rec_period_treeview_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_rec_period_treeview_finalize";
+	ofaRecPeriodTreeviewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -83,6 +85,9 @@ rec_period_treeview_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_REC_PERIOD_TREEVIEW( instance ));
 
 	/* free data members here */
+	priv = ofa_rec_period_treeview_get_instance_private( OFA_REC_PERIOD_TREEVIEW( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_rec_period_treeview_parent_class )->finalize( instance );
@@ -122,6 +127,7 @@ ofa_rec_period_treeview_init( ofaRecPeriodTreeview *self )
 	priv = ofa_rec_period_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -221,6 +227,7 @@ ofa_rec_period_treeview_class_init( ofaRecPeriodTreeviewClass *klass )
 /**
  * ofa_rec_period_treeview_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_prefix: the key prefix in user settings.
  *
  * Returns: a new empty #ofaRecPeriodTreeview composite object.
  *
@@ -229,10 +236,11 @@ ofa_rec_period_treeview_class_init( ofaRecPeriodTreeviewClass *klass )
  * later should not be updated when new operations are inserted.
  */
 ofaRecPeriodTreeview *
-ofa_rec_period_treeview_new( ofaIGetter *getter )
+ofa_rec_period_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
 	ofaRecPeriodTreeview *view;
 	ofaRecPeriodTreeviewPrivate *priv;
+	gchar *str;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -244,6 +252,14 @@ ofa_rec_period_treeview_new( ofaIGetter *getter )
 	priv = ofa_rec_period_treeview_get_instance_private( view );
 
 	priv->getter = getter;
+
+	if( my_strlen( settings_prefix )){
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_prefix );
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = str;
+	}
+
+	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoRecPeriod object instead of just the raw GtkTreeSelection
@@ -258,32 +274,6 @@ ofa_rec_period_treeview_new( ofaIGetter *getter )
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
 	return( view );
-}
-
-/**
- * ofa_rec_period_treeview_set_settings_key:
- * @view: this #ofaRecPeriodTreeview instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- */
-void
-ofa_rec_period_treeview_set_settings_key( ofaRecPeriodTreeview *view, const gchar *key )
-{
-	static const gchar *thisfn = "ofa_rec_period_treeview_set_settings_key";
-	ofaRecPeriodTreeviewPrivate *priv;
-
-	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
-
-	g_return_if_fail( view && OFA_IS_REC_PERIOD_TREEVIEW( view ));
-
-	priv = ofa_rec_period_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* we do not manage any settings here, so directly pass it to the
-	 * base class */
-	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
 }
 
 /**

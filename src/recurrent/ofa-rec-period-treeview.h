@@ -70,16 +70,14 @@ typedef struct {
 }
 	ofaRecPeriodTreeviewClass;
 
-GType                 ofa_rec_period_treeview_get_type        ( void ) G_GNUC_CONST;
+GType                 ofa_rec_period_treeview_get_type     ( void ) G_GNUC_CONST;
 
-ofaRecPeriodTreeview *ofa_rec_period_treeview_new             ( ofaIGetter *getter );
+ofaRecPeriodTreeview *ofa_rec_period_treeview_new          ( ofaIGetter *getter,
+																	const gchar *settings_prefix );
 
-void                  ofa_rec_period_treeview_set_settings_key( ofaRecPeriodTreeview *view,
-																			const gchar *settings_key );
+void                  ofa_rec_period_treeview_setup_columns( ofaRecPeriodTreeview *view );
 
-void                  ofa_rec_period_treeview_setup_columns   ( ofaRecPeriodTreeview *view );
-
-ofoRecPeriod         *ofa_rec_period_treeview_get_selected    ( ofaRecPeriodTreeview *view );
+ofoRecPeriod         *ofa_rec_period_treeview_get_selected ( ofaRecPeriodTreeview *view );
 
 G_END_DECLS
 
