@@ -147,6 +147,9 @@ void         my_iwindow_set_geometry_key          ( myIWindow *instance,
 void         my_iwindow_set_manage_geometry       ( myIWindow *instance,
 														gboolean manage );
 
+void         my_iwindow_set_allow_transient       ( myIWindow *instance,
+														gboolean allow );
+
 void         my_iwindow_set_allow_close           ( myIWindow *instance,
 														gboolean allow );
 

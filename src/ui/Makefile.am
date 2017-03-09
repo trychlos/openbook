@@ -215,6 +215,8 @@ openbook_SOURCES = \
 	ofa-misc-audit-ui.h									\
 	ofa-misc-collector-ui.c								\
 	ofa-misc-collector-ui.h								\
+	ofa-nomodal-page.c									\
+	ofa-nomodal-page.h									\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
 	ofa-paimean-page.c									\

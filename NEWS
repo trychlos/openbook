@@ -54,6 +54,7 @@
    - ofa_itvcolumnable_enable_column(): renamed to ofa_itvcolumnable_set_invisible().
    - ofa_itvcolumnable_get_column_type(): new function.
    - ofa_itvcolumnable_get_menu_label(): new function.
+   - ofaNomodalPage: class is restored from v0.55.
    - ofa_prefs_pin_detach(): new function.
    - ofaReconcilGroup: new class.
    - ofo_entry_get_abr_from_status(): new function.

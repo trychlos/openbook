@@ -51,6 +51,7 @@ typedef struct {
 	myISettings *geometry_settings;
 	gchar       *geometry_key;
 	gboolean     manage_geometry;
+	gboolean     allow_transient;
 	gboolean     allow_close;
 
 	/* runtime
@@ -337,16 +338,40 @@ my_iwindow_set_manage_geometry( myIWindow *instance, gboolean manage )
 }
 
 /**
+ * my_iwindow_set_allow_transient:
+ * @instance: this #myIWindow instance.
+ * @allow: whether this @instance should be transient for the parent.
+ *
+ * Sets the @allow indicator.
+ *
+ * When cleared, the @allow indicator prevents the @instance to be set
+ * transient for its parent.
+ *
+ * Defaults to %TRUE.
+ */
+void
+my_iwindow_set_allow_transient( myIWindow *instance, gboolean allow )
+{
+	sIWindow *sdata;
+
+	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
+
+	sdata = get_instance_data( instance );
+
+	sdata->allow_transient = allow;
+}
+
+/**
  * my_iwindow_set_allow_close:
  * @instance: this #myIWindow instance.
  * @allow: whether destroying this window is allowed.
  *
- * Sets the @allowed indicator.
+ * Sets the @allow indicator.
  *
- * The @allowed indicator prevents the @instance to be closed by the
- * #my_iwindow_close() function.
+ * The @allow indicator prevents the @instance to be closed by the
+ * my_iwindow_close() function.
  *
- * When this indicator is set, only a direct call to #gtk_widget_destroy()
+ * When this indicator is set, only a direct call to gtk_widget_destroy()
  * is able to close the window.
  */
 void
@@ -382,7 +407,10 @@ my_iwindow_init( myIWindow *instance )
 		g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 		iwindow_init_window( instance );
-		iwindow_init_set_transient_for( instance, sdata );
+
+		if( sdata->allow_transient ){
+			iwindow_init_set_transient_for( instance, sdata );
+		}
 
 		if( sdata->manage_geometry ){
 			position_restore( instance, sdata );
@@ -735,6 +763,7 @@ get_instance_data( const myIWindow *instance )
 		sdata->geometry_settings = NULL;
 		sdata->geometry_key = get_default_geometry_key( instance );
 		sdata->manage_geometry = TRUE;
+		sdata->allow_transient = TRUE;
 		sdata->allow_close = TRUE;
 		sdata->initialized = FALSE;
 	}

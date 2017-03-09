@@ -78,6 +78,7 @@
 #include "ui/ofa-ledger-summary-render.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-misc-audit-ui.h"
+#include "ui/ofa-nomodal-page.h"
 #include "ui/ofa-ope-template-page.h"
 #include "ui/ofa-paimean-page.h"
 #include "ui/ofa-period-close.h"
@@ -104,6 +105,7 @@ typedef struct {
 	GtkMenuBar      *menubar;
 	myAccelGroup    *accel_group;
 	guint            paned_position;
+	gboolean         have_detach_pin;
 
 	/* when a dossier is opened
 	 */
@@ -311,6 +313,7 @@ static void         on_tab_close_clicked( myTab *tab, ofaPage *page );
 static void         do_close( ofaPage *page );
 static void         on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *self );
 static void         close_all_pages( ofaMainWindow *self );
+static void         on_tab_pin_clicked( myTab *tab, ofaPage *page );
 static void         read_settings( ofaMainWindow *self );
 static void         write_settings( ofaMainWindow *self );
 static void         ipage_manager_iface_init( ofaIPageManagerInterface *iface );
@@ -535,9 +538,14 @@ ofa_main_window_new( ofaIGetter *getter )
 	menubar_setup( window, G_ACTION_MAP( application ));
 
 	/* the window title defaults to the application title
-	 * the application menubar does not have any dynamic item *
+	 * the application menubar does not have any dynamic item
 	 * no background image
 	 */
+
+	/* get the 'pin detach' user pref
+	 * it will be not re-evaluated unless the application is restarted
+	 */
+	priv->have_detach_pin = ofa_prefs_pin_detach( getter );
 
 	return( window );
 }
@@ -1708,8 +1716,11 @@ notebook_create_page( ofaMainWindow *self, GtkNotebook *book, const sThemeDef *d
 static void
 book_attach_page( ofaMainWindow *self, GtkNotebook *book, GtkWidget *page, const gchar *title )
 {
+	ofaMainWindowPrivate *priv;
 	myTab *tab;
 	GtkWidget *label;
+
+	priv = ofa_main_window_get_instance_private( self );
 
 	/* the tab widget */
 	tab = my_tab_new( NULL, title );
@@ -1717,7 +1728,8 @@ book_attach_page( ofaMainWindow *self, GtkNotebook *book, GtkWidget *page, const
 	my_tab_set_show_close( tab, TRUE );
 	g_signal_connect( tab, MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), page );
 
-	my_tab_set_show_detach( tab, FALSE );
+	my_tab_set_show_detach( tab, priv->have_detach_pin );
+	g_signal_connect( tab, MY_SIGNAL_TAB_PIN_CLICKED, G_CALLBACK( on_tab_pin_clicked ), page );
 
 	/* the menu widget */
 	label = gtk_label_new( title );
@@ -1864,6 +1876,34 @@ close_all_pages( ofaMainWindow *main_window )
 		}
 	}
 	my_dnd_window_close_all();
+	ofa_nomodal_page_close_all();
+}
+
+static void
+on_tab_pin_clicked( myTab *tab, ofaPage *page )
+{
+	static const gchar *thisfn = "ofa_main_window_on_tab_pin_clicked";
+	ofaMainWindowPrivate *priv;
+	gchar *title1, *title2;
+	GtkWindow *toplevel;
+
+	g_debug( "%s: tab=%p, page=%p", thisfn, ( void * ) tab, ( void * ) page );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( page ));
+	g_return_if_fail( toplevel && OFA_IS_MAIN_WINDOW( toplevel ));
+
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( toplevel ));
+
+	title1 = my_tab_get_label( tab );
+	title2 = my_utils_str_remove_underlines( title1 );
+	g_free( title1 );
+
+	g_object_ref( G_OBJECT( page ));
+	do_close( page );
+	ofa_nomodal_page_run( priv->getter, toplevel, title2, GTK_WIDGET( page ));
+	g_object_unref( G_OBJECT( page ));
+
+	g_free( title2 );
 }
 
 /*
@@ -1961,7 +2001,7 @@ ipage_manager_activate( ofaIPageManager *instance, GType type )
 	GtkNotebook *book;
 	ofaPage *page;
 	sThemeDef *theme_def;
-	gboolean dnd_found;
+	gboolean found;
 
 	g_debug( "%s: instance=%p (%s), type=%lu",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), type );
@@ -1971,7 +2011,7 @@ ipage_manager_activate( ofaIPageManager *instance, GType type )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	page = NULL;
-	dnd_found = FALSE;
+	found = FALSE;
 	book = notebook_get_book( OFA_MAIN_WINDOW( instance ));
 	g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
 
@@ -1979,12 +2019,12 @@ ipage_manager_activate( ofaIPageManager *instance, GType type )
 
 	if( theme_def ){
 		if( theme_def->single ){
-			dnd_found = my_dnd_window_present_by_type( type );
-			if( !dnd_found ){
+			found = my_dnd_window_present_by_type( type ) || ofa_nomodal_page_present_by_type( type );
+			if( !found ){
 				page = notebook_get_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
 			}
 		}
-		if( !dnd_found ){
+		if( !found ){
 			if( !page ){
 				page = notebook_create_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
 			}

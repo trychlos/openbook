@@ -210,7 +210,6 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_misc_audit_ui_get_instance_private( OFA_MISC_AUDIT_UI( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
