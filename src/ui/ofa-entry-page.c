@@ -93,6 +93,7 @@ typedef struct {
 	GtkWidget           *ext_reset_btn;
 	GtkWidget           *ext_apply_btn;
 	guint                ext_rows;
+	gint                 btn_size;
 
 	/* frame 1: general selection
 	 */
@@ -276,8 +277,8 @@ typedef struct {
 	sExtend;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-entry-page.ui";
-static const gchar *st_green_check_png  = "/org/trychlos/openbook/ui/ofa-entry-page-green-check-16.png";
-static const gchar *st_red_cross_png    = "/org/trychlos/openbook/ui/ofa-entry-page-red-cross-16.png";
+static const gchar *st_green_check_png  = "/org/trychlos/openbook/ui/ofa-entry-page-green-check-68.png";
+static const gchar *st_red_cross_png    = "/org/trychlos/openbook/ui/ofa-entry-page-red-cross-68.png";
 static const gchar *st_ui_id            = "EntryPageWindow";
 
 #define SEL_LEDGER                      "Ledger"
@@ -1428,6 +1429,7 @@ setup_row_widgets( ofaEntryPage *self, GtkGrid *grid, guint row )
 	GList *children, *it;
 	GtkTreeViewColumn *column;
 	const gchar *title;
+	GtkRequisition rq;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
@@ -1506,6 +1508,8 @@ setup_row_widgets( ofaEntryPage *self, GtkGrid *grid, guint row )
 	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), ACC_NUMBER_MAX_LENGTH );
 	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, entry, 1+XFIL_COL_VALUE, row, 1, 1 );
 	g_signal_connect( entry, "changed", G_CALLBACK( extfilter_on_value_changed ), self );
+	gtk_widget_get_preferred_size( entry, NULL, &rq );
+	priv->btn_size = rq.height;
 }
 
 static void
@@ -1659,26 +1663,34 @@ extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, void *empty )
 static void
 extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row )
 {
+	static const gchar *thisfn = "ofa_entry_page_extfilter_set_valid_image";
 	ofaEntryPagePrivate *priv;
 	sExtend *crit;
 	gboolean valid;
-	GtkWidget *button, *image;
+	GdkPixbuf *pixbuf;
+	GError *error;
+	GtkWidget *image;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
 	crit = extfilter_get_criterium( self, row );
 	valid = extfilter_get_is_valid_criterium( self, crit, row );
-	image = gtk_image_new_from_resource( valid ? st_green_check_png : st_red_cross_png );
-	button = gtk_button_new();
-	gtk_button_set_image( GTK_BUTTON( button ), image );
 
-	gtk_widget_set_can_focus( button, FALSE );
-	my_style_add( button, "flat" );			/* same than setting relief to none */
-	//gtk_button_set_relief( GTK_BUTTON( button ), GTK_RELIEF_NONE );
+	error = NULL;
+	pixbuf = gdk_pixbuf_new_from_resource_at_scale(
+					valid ? st_green_check_png : st_red_cross_png,
+					priv->btn_size, -1, TRUE, &error );
+	if( !pixbuf ){
+		g_warning( "%s: %s", thisfn, error->message );
+		g_error_free( error );
 
-	my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, button, 1+XFIL_COL_STATUS, row, 1, 1 );
+	} else {
+		image = gtk_image_new_from_pixbuf( pixbuf );
+		g_object_unref( pixbuf );
+		my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, image, 1+XFIL_COL_STATUS, row, 1, 1 );
+	}
+
 	extfilter_free_criterium( self, crit );
-
 	gtk_widget_set_sensitive( priv->ext_apply_btn, valid );
 }
 
