@@ -336,6 +336,9 @@
                 count of detail lines, and so better display with different
                 height
      2017- 2-20 and so OpeTemplate identifiers should be with count of lines
+     2017- 3- 9 Identifiers are also used to manage single windows:
+                they are so needed to be able to have several windows for
+                the same class
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 
@@ -351,9 +354,6 @@
                 when inserting of a new object
 
 1361 2017- 2-17 add a date filter on vat declarations view
-
-1363 2017- 2-20 space between buttons in pages args should be 2
-     2017- 2-20 RecurrentRunPage: done
 
 1369 2017- 2-20 recurrent operations validation: cancelled operations
                 should be italic+grayed
@@ -712,6 +712,12 @@
 
 1362 2017- 2-20 buttons in NewDossier/NewPeriod are too large. why ?
      2017- 2-20 fixed
+
+1363 2017- 2-20 space between buttons in pages args should be 2
+     2017- 2-20 RecurrentRunPage: done
+     2017- 3- 9 ReconcilPage: done
+                RenderPage: done
+                SettlementPage: done
 
 1364 2017- 2-20 vat declarations: should be an extra height before validate btn
      2017- 2-20 done
