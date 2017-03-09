@@ -141,25 +141,6 @@ typedef struct {
 	 * Since: version 1
 	 */
 	void     ( *init )                 ( myIWindow *instance );
-
-	/**
-	 * get_default_size:
-	 * @instance: the #myIWindow instance.
-	 * @x: [out]:
-	 * @y: [out]:
-	 * @cx: [out]:
-	 * @cy: [out]:
-	 *
-	 * Let the user provide its own default size and position when no
-	 * size and position have been recorded from a previous use.
-	 *
-	 * Since: version 1.
-	 */
-	void     ( *get_default_size )     ( myIWindow *instance,
-												gint *x,
-												gint *y,
-												gint *cx,
-												gint *cy );
 }
 	myIWindowInterface;
 

@@ -68,7 +68,6 @@ static void       do_close( myIWindow *instance );
 static gchar     *get_iwindow_identifier( const myIWindow *instance );
 static gchar     *get_default_identifier( const myIWindow *instance );
 static gchar     *get_iwindow_key_prefix( const myIWindow *instance );
-static void       set_iwindow_default_size( myIWindow *instance, sIWindow *sdata );
 static void       position_restore( myIWindow *instance, sIWindow *sdata );
 static void       position_save( myIWindow *instance, sIWindow *sdata );
 static sIWindow  *get_instance_data( const myIWindow *instance );
@@ -658,32 +657,6 @@ get_iwindow_key_prefix( const myIWindow *instance )
 }
 
 /*
- * Let the immplementation provide its own default size and position
- * when no previous size and position have already been recorded.
- * This is only used when no record is found in user settings.
- */
-static void
-set_iwindow_default_size( myIWindow *instance, sIWindow *sdata )
-{
-	static const gchar *thisfn = "my_set_iwindow_default_size";
-	gint x, y, cx, cy;
-
-	if( MY_IWINDOW_GET_INTERFACE( instance )->get_default_size ){
-		MY_IWINDOW_GET_INTERFACE( instance )->get_default_size( instance, &x, &y, &cx, &cy );
-		if( sdata->does_restore_pos ){
-			gtk_window_move( GTK_WINDOW( instance ), x, y );
-		}
-		if( sdata->does_restore_size ){
-			gtk_window_resize( GTK_WINDOW( instance ), cx, cy );
-		}
-
-	} else {
-		g_info( "%s: myIWindow's %s implementation does not provide 'get_default_size()' method",
-				thisfn, G_OBJECT_TYPE_NAME( instance ));
-	}
-}
-
-/*
  * Save/restore the size and position for each identified myIWindow.
  * Have a default to ClassName
  */
@@ -700,14 +673,9 @@ position_restore( myIWindow *instance, sIWindow *sdata )
 			key_prefix = get_default_identifier( instance );
 		}
 		if( sdata->does_restore_pos || sdata->does_restore_size ){
-			if( !my_utils_window_position_restore( GTK_WINDOW( instance ), sdata->settings, key_prefix )){
-				set_iwindow_default_size( instance, sdata );
-			}
+			my_utils_window_position_restore( GTK_WINDOW( instance ), sdata->settings, key_prefix );
 		}
 		g_free( key_prefix );
-
-	} else {
-		set_iwindow_default_size( instance, sdata );
 	}
 }
 
