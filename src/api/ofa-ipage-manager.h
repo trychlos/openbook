@@ -83,6 +83,8 @@ typedef struct {
 	 * @instance: the #ofaIPageManager instance.
 	 * @type: the GType of the page (and identifier of the theme).
 	 * @label: the tab notebook label.
+	 * @single: whether the page is unique, or may be opened several
+	 *  times.
 	 *
 	 * Defines a new theme.
 	 *
@@ -90,7 +92,8 @@ typedef struct {
 	 */
 	void      ( *define )               ( ofaIPageManager *instance,
 												GType type,
-												const gchar *label );
+												const gchar *label,
+												gboolean single );
 
 	/**
 	 * activate:
@@ -123,7 +126,8 @@ guint    ofa_ipage_manager_get_interface_version     ( GType type );
  */
 void     ofa_ipage_manager_define                    ( ofaIPageManager *instance,
 															GType type,
-															const gchar *label );
+															const gchar *label,
+															gboolean single );
 
 ofaPage *ofa_ipage_manager_activate                  ( ofaIPageManager *instance,
 															GType type );

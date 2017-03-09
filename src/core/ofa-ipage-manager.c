@@ -169,18 +169,19 @@ ofa_ipage_manager_get_interface_version( GType type )
  * @type: the desired GType type which happens to be used as the theme
  *  identifier.
  * @label: the tab title of the corresponding notebook page.
+ * @single: whether the page is unique, or may be opened several times.
  *
  * Returns: the new theme identifier, strictly greater than zero.
  */
 void
-ofa_ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label )
+ofa_ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label, gboolean single )
 {
 	static const gchar *thisfn = "ofa_ipage_manager_define";
 
 	g_return_if_fail( instance && OFA_IS_IPAGE_MANAGER( instance ));
 
 	if( OFA_IPAGE_MANAGER_GET_INTERFACE( instance )->define ){
-		OFA_IPAGE_MANAGER_GET_INTERFACE( instance )->define( instance, type, label );
+		OFA_IPAGE_MANAGER_GET_INTERFACE( instance )->define( instance, type, label, single );
 		return;
 	}
 

@@ -200,6 +200,8 @@ static const GActionEntry st_dos_entries[] = {
  *  aka the notebook tab title,
  *  aka the non modal window title.
  *
+ * @single: whether the page is unique or may be displayed several times.
+ *
  * This structure is allocated in #theme_manager_define() method, but
  * cannot be used to initialize our themes (because GType is not a
  * compilation constant).
@@ -207,8 +209,9 @@ static const GActionEntry st_dos_entries[] = {
  * This structure is part of ofaIPageManager implementation.
  */
 typedef struct {
-	GType   type;
-	gchar  *label;
+	GType    type;
+	gchar   *label;
+	gboolean single;
 }
 	sThemeDef;
 
@@ -219,27 +222,28 @@ typedef struct {
 typedef struct {
 	gchar     *label;
 	GType    (*fn_get_type)( void );
+	gboolean   single;
 }
 	sThemeInit;
 
 static sThemeInit st_theme_defs[] = {
-		{ N_( "Accounts book" ),         ofa_account_book_render_get_type },
-		{ N_( "Chart of accounts" ),     ofa_account_page_get_type },
-		{ N_( "Entries balance" ),       ofa_balance_render_get_type },
-		{ N_( "Imported BAT files" ),    ofa_bat_page_get_type },
-		{ N_( "Account classes" ),       ofa_class_page_get_type },
-		{ N_( "Currencies" ),            ofa_currency_page_get_type },
-		{ N_( "View entries" ),          ofa_entry_page_get_type },
-		{ N_( "Guided input" ),          ofa_guided_ex_get_type },
-		{ N_( "Ledgers book" ),          ofa_ledger_book_render_get_type },
-		{ N_( "Ledgers" ),               ofa_ledger_page_get_type },
-		{ N_( "Ledgers summary" ),       ofa_ledger_summary_render_get_type },
-		{ N_( "Means of paiement" ),     ofa_paimean_page_get_type },
-		{ N_( "Operation templates" ),   ofa_ope_template_page_get_type },
-		{ N_( "Rates" ),                 ofa_rate_page_get_type },
-		{ N_( "Reconciliation" ),        ofa_reconcil_page_get_type },
-		{ N_( "Reconciliation Sumary" ), ofa_reconcil_render_get_type },
-		{ N_( "Settlement" ),            ofa_settlement_page_get_type },
+		{ N_( "Accounts book" ),         ofa_account_book_render_get_type,   TRUE },
+		{ N_( "Chart of accounts" ),     ofa_account_page_get_type,          TRUE },
+		{ N_( "Entries balance" ),       ofa_balance_render_get_type,        TRUE },
+		{ N_( "Imported BAT files" ),    ofa_bat_page_get_type,              TRUE },
+		{ N_( "Account classes" ),       ofa_class_page_get_type,            TRUE },
+		{ N_( "Currencies" ),            ofa_currency_page_get_type,         TRUE },
+		{ N_( "View entries" ),          ofa_entry_page_get_type,            FALSE },
+		{ N_( "Guided input" ),          ofa_guided_ex_get_type,             TRUE },
+		{ N_( "Ledgers book" ),          ofa_ledger_book_render_get_type,    TRUE },
+		{ N_( "Ledgers" ),               ofa_ledger_page_get_type,           TRUE },
+		{ N_( "Ledgers summary" ),       ofa_ledger_summary_render_get_type, TRUE },
+		{ N_( "Means of paiement" ),     ofa_paimean_page_get_type,          TRUE },
+		{ N_( "Operation templates" ),   ofa_ope_template_page_get_type,     TRUE },
+		{ N_( "Rates" ),                 ofa_rate_page_get_type,             TRUE },
+		{ N_( "Reconciliation" ),        ofa_reconcil_page_get_type,         TRUE },
+		{ N_( "Reconciliation Sumary" ), ofa_reconcil_render_get_type,       TRUE },
+		{ N_( "Settlement" ),            ofa_settlement_page_get_type,       TRUE },
 		{ 0 }
 };
 
@@ -310,9 +314,9 @@ static void         close_all_pages( ofaMainWindow *self );
 static void         read_settings( ofaMainWindow *self );
 static void         write_settings( ofaMainWindow *self );
 static void         ipage_manager_iface_init( ofaIPageManagerInterface *iface );
-static void         ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label );
+static void         ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label, gboolean single );
 static ofaPage     *ipage_manager_activate( ofaIPageManager *instance, GType type );
-static sThemeDef   *theme_get_by_type( GList **list, GType type );
+static sThemeDef   *theme_get_by_type( GList **list, GType type, gboolean create );
 static void         theme_free( sThemeDef *def );
 
 G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW, 0,
@@ -675,9 +679,8 @@ init_themes( ofaMainWindow *self )
 
 	/* define the themes for the main window */
 	for( i=0 ; st_theme_defs[i].label ; ++i ){
-		ofa_ipage_manager_define(
-				OFA_IPAGE_MANAGER( self ),
-				( *st_theme_defs[i].fn_get_type )(), gettext( st_theme_defs[i].label ));
+		ofa_ipage_manager_define( OFA_IPAGE_MANAGER( self ),
+				( *st_theme_defs[i].fn_get_type )(), gettext( st_theme_defs[i].label ), st_theme_defs[i].single);
 	}
 
 	/* declare then the theme manager general availability */
@@ -1928,23 +1931,26 @@ ipage_manager_iface_init( ofaIPageManagerInterface *iface )
 }
 
 static void
-ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label )
+ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label, gboolean single )
 {
 	static const gchar *thisfn = "ofa_ipage_manager_define";
 	ofaMainWindowPrivate *priv;
 	sThemeDef *sdata;
 
-	g_debug( "%s: instance=%p (%s), type=%lu, label=%s",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), type, label );
+	g_debug( "%s: instance=%p (%s), type=%lu, label=%s, single=%s",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			type, label, single ? "True":"False" );
 
 	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	sdata = theme_get_by_type( &priv->themes, type );
+	sdata = theme_get_by_type( &priv->themes, type, TRUE );
 
 	g_free( sdata->label );
 	sdata->label = g_strdup( label );
+
+	sdata->single = single;
 }
 
 static ofaPage *
@@ -1955,6 +1961,7 @@ ipage_manager_activate( ofaIPageManager *instance, GType type )
 	GtkNotebook *book;
 	ofaPage *page;
 	sThemeDef *theme_def;
+	gboolean dnd_found;
 
 	g_debug( "%s: instance=%p (%s), type=%lu",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), type );
@@ -1964,25 +1971,33 @@ ipage_manager_activate( ofaIPageManager *instance, GType type )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	page = NULL;
+	dnd_found = FALSE;
 	book = notebook_get_book( OFA_MAIN_WINDOW( instance ));
 	g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
 
-	theme_def = theme_get_by_type( &priv->themes, type );
+	theme_def = theme_get_by_type( &priv->themes, type, FALSE );
 
-	if( !my_dnd_window_present_by_type( type )){
-		page = notebook_get_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
-		if( !page ){
-			page = notebook_create_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
+	if( theme_def ){
+		if( theme_def->single ){
+			dnd_found = my_dnd_window_present_by_type( type );
+			if( !dnd_found ){
+				page = notebook_get_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
+			}
 		}
-		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-		notebook_activate_page( OFA_MAIN_WINDOW( instance ), book, page );
+		if( !dnd_found ){
+			if( !page ){
+				page = notebook_create_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
+			}
+			g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+			notebook_activate_page( OFA_MAIN_WINDOW( instance ), book, page );
+		}
 	}
 
 	return( page );
 }
 
 static sThemeDef *
-theme_get_by_type( GList **list, GType type )
+theme_get_by_type( GList **list, GType type, gboolean create )
 {
 	sThemeDef *sdata;
 	GList *it;
@@ -1994,10 +2009,13 @@ theme_get_by_type( GList **list, GType type )
 		}
 	}
 
-	sdata = g_new0( sThemeDef, 1 );
-	sdata->type = type;
+	sdata = NULL;
 
-	*list = g_list_prepend( *list, sdata );
+	if( create ){
+		sdata = g_new0( sThemeDef, 1 );
+		sdata->type = type;
+		*list = g_list_prepend( *list, sdata );
+	}
 
 	return( sdata );
 }

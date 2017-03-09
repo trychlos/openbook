@@ -58,6 +58,7 @@ typedef struct {
 	const gchar *action_name;
 	const gchar *theme_label;
 	GType      (*fntype)( void );
+	gboolean     single;
 }
 	sThemeDef;
 
@@ -93,9 +94,9 @@ static const sItemDef st_items_ref[] = {
 /* The themes which also define the tab titles
  */
 static sThemeDef st_theme_defs[] = {
-		{ "rec-period",       N_( "Recurrent periodicities" ),         ofa_rec_period_page_get_type },
-		{ "recurrent-run",    N_( "Recurrent operations validation" ), ofa_recurrent_run_page_get_type },
-		{ "recurrent-define", N_( "Recurrent models management" ),     ofa_recurrent_model_page_get_type },
+		{ "rec-period",       N_( "Recurrent periodicities" ),         ofa_rec_period_page_get_type,      TRUE },
+		{ "recurrent-run",    N_( "Recurrent operations validation" ), ofa_recurrent_run_page_get_type,   TRUE },
+		{ "recurrent-define", N_( "Recurrent models management" ),     ofa_recurrent_model_page_get_type, TRUE },
 		{ 0 }
 };
 
@@ -198,7 +199,8 @@ on_page_manager_available( ofaISignaler *signaler, ofaIPageManager *manager, voi
 			thisfn, ( void * ) signaler, ( void * ) manager, empty );
 
 	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
-		ofa_ipage_manager_define( manager, ( *st_theme_defs[i].fntype )(), st_theme_defs[i].theme_label );
+		ofa_ipage_manager_define( manager,
+				( *st_theme_defs[i].fntype )(), gettext( st_theme_defs[i].theme_label ), st_theme_defs[i].single );
 	}
 }
 

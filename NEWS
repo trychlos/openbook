@@ -24,6 +24,7 @@
 
    - ClosingParms: improve account check (todo #513).
    - EntryPage: have an extended filter (todo #733).
+   - EntryPage: may be opened several times.
    - Improve error messages when entering an operation (todo #1356).
    - Display conciliation group from an entry or a BAT line (todo #1372).
 
