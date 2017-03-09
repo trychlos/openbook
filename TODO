@@ -327,6 +327,7 @@
                 - ofaRecurrentRunTreeview   (add to prefix + passed)
                 - ofaTargetChooserBin       (add to prefix + <unused>)
                 - ofaTvaFormTreeview        (add to prefix + passed)
+                - ofaTvaRecordTreeview      (add to prefix + passed)
 
 1263 2016-11-19 DBMS: store documents
                 + attach documents via an interface to:

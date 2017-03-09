@@ -211,8 +211,7 @@ setup_treeview( ofaTVARecordPage *self )
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
-	priv->tview = ofa_tva_record_treeview_new( priv->getter );
-	ofa_tva_record_treeview_set_settings_key( priv->tview, priv->settings_prefix );
+	priv->tview = ofa_tva_record_treeview_new( priv->getter, priv->settings_prefix );
 	ofa_tva_record_treeview_setup_columns( priv->tview );
 
 	/* Insert key is not handled here
