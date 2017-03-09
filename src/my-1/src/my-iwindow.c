@@ -47,8 +47,7 @@ typedef struct {
 	 */
 	GtkWindow   *parent;				/* the set parent of the window */
 	myISettings *settings;
-	gboolean     does_restore_pos;
-	gboolean     does_restore_size;
+	gboolean     manage_geometry;
 	gboolean     close_allowed;
 
 	/* runtime
@@ -261,19 +260,19 @@ my_iwindow_set_geometry_settings( myIWindow *instance, myISettings *settings )
 }
 
 /**
- * my_iwindow_set_restore_pos:
+ * my_iwindow_set_manage_geometry:
  * @instance: this #myIWindow instance.
- * @restore_pos: whether the @instance should try to restore its
- * position (and thus save position at end).
+ * @manage: whether the @instance should try to restore (resp. save)
+ *  its geometry (size and position).
  *
- * Sets the restore-position flag.
+ * Sets the 'manage' flag.
  *
- * Use case: the size of the @instance window is set by the application
- * oof may be restored from a configuration file, while its position is
- * managged at runtime by e.g. the mouse pointer.
+ * The #myIWindow interface defaults to try to restore (resp. save) the
+ * geometry settings - size and position - of the corresponding
+ * #GtkWindow.
  */
 void
-my_iwindow_set_restore_pos( myIWindow *instance, gboolean restore_pos )
+my_iwindow_set_manage_geometry( myIWindow *instance, gboolean manage )
 {
 	sIWindow *sdata;
 
@@ -281,27 +280,7 @@ my_iwindow_set_restore_pos( myIWindow *instance, gboolean restore_pos )
 
 	sdata = get_instance_data( instance );
 
-	sdata->does_restore_pos = restore_pos;
-}
-
-/**
- * my_iwindow_set_restore_size:
- * @instance: this #myIWindow instance.
- * @restore_size: whether the @instance should try to restore its
- * size (and thus save size at end).
- *
- * Sets the restore-size flag.
- */
-void
-my_iwindow_set_restore_size( myIWindow *instance, gboolean restore_size )
-{
-	sIWindow *sdata;
-
-	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
-
-	sdata = get_instance_data( instance );
-
-	sdata->does_restore_size = restore_size;
+	sdata->manage_geometry = manage;
 }
 
 /**
@@ -352,7 +331,9 @@ my_iwindow_init( myIWindow *instance )
 		iwindow_init_window( instance );
 		iwindow_init_set_transient_for( instance, sdata );
 
-		position_restore( instance, sdata );
+		if( sdata->manage_geometry ){
+			position_restore( instance, sdata );
+		}
 
 		if( st_dump_container ){
 			my_utils_container_dump( GTK_CONTAINER( instance ));
@@ -599,7 +580,9 @@ do_close( myIWindow *instance )
 				thisfn, sdata->close_allowed ? "True":"False",
 				( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-		position_save( instance, sdata );
+		if( sdata->manage_geometry ){
+			position_save( instance, sdata );
+		}
 
 		gtk_widget_destroy( GTK_WIDGET( instance ));
 	}
@@ -672,9 +655,7 @@ position_restore( myIWindow *instance, sIWindow *sdata )
 			g_free( key_prefix );
 			key_prefix = get_default_identifier( instance );
 		}
-		if( sdata->does_restore_pos || sdata->does_restore_size ){
-			my_utils_window_position_restore( GTK_WINDOW( instance ), sdata->settings, key_prefix );
-		}
+		my_utils_window_position_restore( GTK_WINDOW( instance ), sdata->settings, key_prefix );
 		g_free( key_prefix );
 	}
 }
@@ -709,8 +690,7 @@ get_instance_data( const myIWindow *instance )
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
 
 		sdata->parent = NULL;
-		sdata->does_restore_pos = TRUE;
-		sdata->does_restore_size = TRUE;
+		sdata->manage_geometry = TRUE;
 		sdata->close_allowed = TRUE;
 		sdata->initialized = FALSE;
 	}

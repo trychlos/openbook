@@ -167,11 +167,8 @@ void         my_iwindow_set_parent                ( myIWindow *instance,
 void         my_iwindow_set_geometry_settings     ( myIWindow *instance,
 														myISettings *settings );
 
-void         my_iwindow_set_restore_pos           ( myIWindow *instance,
-														gboolean restore_pos );
-
-void         my_iwindow_set_restore_size          ( myIWindow *instance,
-														gboolean restore_size );
+void         my_iwindow_set_manage_geometry       ( myIWindow *instance,
+														gboolean manage );
 
 void         my_iwindow_set_close_allowed         ( myIWindow *instance,
 														gboolean allowed );

@@ -169,8 +169,7 @@ my_dnd_window_new( GtkWidget *widget, const gchar *title, gint x, gint y, gint w
 	gtk_window_move( GTK_WINDOW( window ), x-MY_DND_SHIFT, y-MY_DND_SHIFT );
 	gtk_window_resize( GTK_WINDOW( window ), 0.9*width, 0.9*height );
 
-	my_iwindow_set_restore_pos( MY_IWINDOW( window ), FALSE );
-	my_iwindow_set_restore_size( MY_IWINDOW( window ), FALSE );
+	my_iwindow_set_manage_geometry( MY_IWINDOW( window ), FALSE );
 
 	return( window );
 }
