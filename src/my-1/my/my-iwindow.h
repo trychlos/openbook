@@ -40,21 +40,24 @@
  * - the non-modal windows.
  *
  * Note on myIWindow identifier.
- * #my_iwindow_present() method makes sure at most one instance of each
+ * my_iwindow_present() method makes sure at most one instance of each
  * #myIWindow identifier is opened as every time. This identifier defaults
  * to the class name.
+ * The identifier may be overriden by the my_iwindow_set_identifier()
+ * function.
  *
- * Note on size and position.
+ * Note on geometry management.
  * Size and position of the window default to be:
  * - restored from the user settings at one-time window initialization,
  * - saved to user settings at close time.
  * The key of the size/position settings defaults to the #myIWindow
  * identifier, plus a '-pos' suffix added by my_utils.
+ * The key may be overriden by the get_key_prefix() method.
  *
- * Note on #my_iwindow_close().
- * The application should call #my_iwindow_close() to close a #myIWindow
- * instance. Its default behavior is to #gtk_widget_destroy() the window
- * unless the 'close_allowed' indicator has been previously cleared.
+ * Note on my_iwindow_close().
+ * The application should call my_iwindow_close() to close a #myIWindow
+ * instance. Its default behavior is to gtk_widget_destroy() the window
+ * unless the 'allow_close' indicator has been previously cleared.
  */
 
 #include <gtk/gtk.h>
@@ -74,12 +77,8 @@ typedef struct _myIWindow                    myIWindow;
  * myIWindowInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
- * @get_identifier: [may]: returns the identifier of this window.
- * @init: [may]: one-time initialization.
- * @get_default_size: [may]: returns default size.
- * @quit_on_escape: [may]: let ask for a user confirmation.
- * @read_settings: [may]: read user preferences.
- * @write_settings: [may]: write user preferences.
+ * @get_key_prefix: [may]: returns the key prefix.
+ * @init: [should]: one-time initialization.
  *
  * This defines the interface that an #myIWindow may/should/must
  * implement.
@@ -104,27 +103,10 @@ typedef struct {
 
 	/*** instance-wide ***/
 	/**
-	 * get_identifier:
-	 * @instance: the #myIWindow instance.
-	 *
-	 * Returns: The identifier of this window, as a newly allocated
-	 * string which will be #g_free() by the interface code.
-	 *
-	 * This is the default for the settings name.
-	 * This is also used on non-modal windows management, in order to
-	 * make sure there is only one instance for a given 'identifier'.
-	 *
-	 * Defaults to class name.
-	 *
-	 * Since: version 1.
-	 */
-	gchar *  ( *get_identifier )       ( const myIWindow *instance );
-
-	/**
 	 * get_key_prefix:
 	 * @instance: the #myIWindow instance.
 	 *
-	 * Returns: The prefix of the keys in settings file.
+	 * Returns: The prefix of the keys in geometry settings
 	 *
 	 * Defaults to identifier.
 	 *
@@ -136,7 +118,9 @@ typedef struct {
 	 * init:
 	 * @instance: the #myIWindow instance.
 	 *
-	 * This is called once, before the first presentation.
+	 * This is called once, at the very first stage of the initialization.
+	 *
+	 * Other methods are called after this one.
 	 *
 	 * Since: version 1
 	 */
@@ -163,6 +147,9 @@ GtkWindow   *my_iwindow_get_parent                ( const myIWindow *instance );
 
 void         my_iwindow_set_parent                ( myIWindow *instance,
 														GtkWindow *parent );
+
+void         my_iwindow_set_identifier            ( myIWindow *instance,
+														const gchar *identifier );
 
 void         my_iwindow_set_geometry_settings     ( myIWindow *instance,
 														myISettings *settings );

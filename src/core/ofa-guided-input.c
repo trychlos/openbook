@@ -65,7 +65,6 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-guide
 
 static void   iwindow_iface_init( myIWindowInterface *iface );
 static void   iwindow_init( myIWindow *instance );
-static gchar *iwindow_get_identifier( const myIWindow *instance );
 static void   idialog_iface_init( myIDialogInterface *iface );
 static void   idialog_init( myIDialog *instance );
 static void   on_input_bin_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedInput *self );
@@ -189,7 +188,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
-	iface->get_identifier = iwindow_get_identifier;
 }
 
 static void
@@ -197,6 +195,7 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_guided_input_iwindow_init";
 	ofaGuidedInputPrivate *priv;
+	gchar *id;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -204,24 +203,11 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, priv->parent );
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
-}
-
-/*
- * identifier is built with class name and template mnemo
- */
-static gchar *
-iwindow_get_identifier( const myIWindow *instance )
-{
-	ofaGuidedInputPrivate *priv;
-	gchar *id;
-
-	priv = ofa_guided_input_get_instance_private( OFA_GUIDED_INPUT( instance ));
 
 	id = g_strdup_printf( "%s-%s",
-				G_OBJECT_TYPE_NAME( instance ),
-				ofo_ope_template_get_mnemo( priv->model ));
-
-	return( id );
+				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_get_mnemo( priv->model ));
+	my_iwindow_set_identifier( instance, id );
+	g_free( id );
 }
 
 /*

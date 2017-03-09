@@ -46,6 +46,7 @@ typedef struct {
 	/* properties
 	 */
 	GtkWindow   *parent;				/* the set parent of the window */
+	gchar       *identifier;
 	myISettings *settings;
 	gboolean     manage_geometry;
 	gboolean     allow_close;
@@ -64,11 +65,10 @@ static void       iwindow_init_window( myIWindow *instance );
 static void       iwindow_init_set_transient_for( myIWindow *instance, sIWindow *sdata );
 static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
 static void       do_close( myIWindow *instance );
-static gchar     *get_iwindow_identifier( const myIWindow *instance );
-static gchar     *get_default_identifier( const myIWindow *instance );
 static gchar     *get_iwindow_key_prefix( const myIWindow *instance );
 static void       position_restore( myIWindow *instance, sIWindow *sdata );
 static void       position_save( myIWindow *instance, sIWindow *sdata );
+static gchar     *get_default_identifier( const myIWindow *instance );
 static sIWindow  *get_instance_data( const myIWindow *instance );
 static void       on_instance_finalized( sIWindow *sdata, GObject *finalized_iwindow );
 static void       dump_live_list( void );
@@ -237,6 +237,31 @@ my_iwindow_set_parent( myIWindow *instance, GtkWindow *parent )
 	sdata = get_instance_data( instance );
 
 	sdata->parent = parent;
+}
+
+/**
+ * my_iwindow_set_identifier:
+ * @instance: this #myIWindow instance.
+ * @identifier: [allow-none]: the identifier of this #myIWindow instance.
+ *
+ * Sets the identifier.
+ *
+ * The identifier is primarily used to only display one window of every
+ * distinct identifier.
+ *
+ * The identifier defaults to the class name of the @instance.
+ */
+void
+my_iwindow_set_identifier( myIWindow *instance, const gchar *identifier )
+{
+	sIWindow *sdata;
+
+	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
+
+	sdata = get_instance_data( instance );
+
+	g_free( sdata->identifier );
+	sdata->identifier = g_strdup( my_strlen( identifier ) ? identifier : G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -429,8 +454,8 @@ my_iwindow_present( myIWindow *instance )
 {
 	static const gchar *thisfn = "my_iwindow_present";
 	GList *it;
+	sIWindow *sdata_instance, *sdata_other;
 	myIWindow *other, *found;
-	gchar *instance_id, *other_id;
 	gint cmp;
 
 	g_debug( "%s: instance=%p (%s), st_live_list_count=%d",
@@ -439,7 +464,7 @@ my_iwindow_present( myIWindow *instance )
 	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
 
 	found = NULL;
-	instance_id = get_iwindow_identifier( instance );
+	sdata_instance = get_instance_data( instance );
 
 	for( it=st_live_list ; it ; it=it->next ){
 		//g_debug( "it=%p, it->data=%p", it, it->data );
@@ -448,16 +473,13 @@ my_iwindow_present( myIWindow *instance )
 			found = other;
 			break;
 		}
-		other_id = get_iwindow_identifier( other );
-		cmp = my_collate( instance_id, other_id );
-		g_free( other_id );
+		sdata_other = get_instance_data( other );
+		cmp = my_collate( sdata_instance->identifier, sdata_other->identifier );
 		if( cmp == 0 ){
 			found = other;
 			break;
 		}
 	}
-
-	g_free( instance_id );
 
 	/* we have :
 	 * - either found this same instance
@@ -589,36 +611,6 @@ do_close( myIWindow *instance )
 }
 
 /*
- * get_iwindow_identifier:
- * @instance: this #myIWindow instance.
- *
- * Returns: the instance identifier as a newly allocated string which
- * should be g_free() by the caller.
- *
- * Defaults to the class name of the window implementation.
- */
-static gchar *
-get_iwindow_identifier( const myIWindow *instance )
-{
-	static const gchar *thisfn = "my_get_iwindow_identifier";
-
-	if( MY_IWINDOW_GET_INTERFACE( instance )->get_identifier ){
-		return( MY_IWINDOW_GET_INTERFACE( instance )->get_identifier( instance ));
-	}
-
-	g_info( "%s: myIWindow's %s implementation does not provide 'get_identifier()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-
-	return( get_default_identifier( instance ));
-}
-
-static gchar *
-get_default_identifier( const myIWindow *instance )
-{
-	return( g_strdup( G_OBJECT_TYPE_NAME( instance )));
-}
-
-/*
  * Returns: the settings key as a newly allocated string which should
  * be g_free() by the caller.
  *
@@ -628,6 +620,7 @@ static gchar *
 get_iwindow_key_prefix( const myIWindow *instance )
 {
 	static const gchar *thisfn = "my_get_iwindow_key_prefix";
+	sIWindow *sdata;
 
 	if( MY_IWINDOW_GET_INTERFACE( instance )->get_key_prefix ){
 		return( MY_IWINDOW_GET_INTERFACE( instance )->get_key_prefix( instance ));
@@ -636,7 +629,9 @@ get_iwindow_key_prefix( const myIWindow *instance )
 	g_info( "%s: myIWindow's %s implementation does not provide 'get_key_prefix()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 
-	return( get_iwindow_identifier( instance ));
+	sdata = get_instance_data( instance );
+
+	return( g_strdup( sdata->identifier ));
 }
 
 /*
@@ -655,6 +650,7 @@ position_restore( myIWindow *instance, sIWindow *sdata )
 			g_free( key_prefix );
 			key_prefix = get_default_identifier( instance );
 		}
+
 		my_utils_window_position_restore( GTK_WINDOW( instance ), sdata->settings, key_prefix );
 		g_free( key_prefix );
 	}
@@ -677,6 +673,12 @@ position_save( myIWindow *instance, sIWindow *sdata )
 	}
 }
 
+static gchar *
+get_default_identifier( const myIWindow *instance )
+{
+	return( g_strdup( G_OBJECT_TYPE_NAME( instance )));
+}
+
 static sIWindow *
 get_instance_data( const myIWindow *instance )
 {
@@ -690,6 +692,7 @@ get_instance_data( const myIWindow *instance )
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
 
 		sdata->parent = NULL;
+		sdata->identifier = get_default_identifier( instance );
 		sdata->manage_geometry = TRUE;
 		sdata->allow_close = TRUE;
 		sdata->initialized = FALSE;

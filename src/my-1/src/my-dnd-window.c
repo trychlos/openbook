@@ -49,11 +49,10 @@ static const GtkTargetEntry st_dnd_format[] = {
 	{ MY_DND_TARGET, 0, 0 },
 };
 
-static void     iwindow_iface_init( myIWindowInterface *iface );
-static gchar   *iwindow_get_identifier( const myIWindow *instance );
-static void     iwindow_init( myIWindow *instance );
-static void     on_drag_begin( GtkWidget *self, GdkDragContext *context, void *empty );
-static void     on_drag_data_get( GtkWidget *self, GdkDragContext *context, GtkSelectionData *data, guint info, guint time, void *empty );
+static void iwindow_iface_init( myIWindowInterface *iface );
+static void iwindow_init( myIWindow *instance );
+static void on_drag_begin( GtkWidget *self, GdkDragContext *context, void *empty );
+static void on_drag_data_get( GtkWidget *self, GdkDragContext *context, GtkSelectionData *data, guint info, guint time, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( myDndWindow, my_dnd_window, GTK_TYPE_WINDOW, 0,
 		G_ADD_PRIVATE( myDndWindow )
@@ -184,23 +183,18 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_identifier = iwindow_get_identifier;
 	iface->init = iwindow_init;
-}
-
-static gchar *
-iwindow_get_identifier( const myIWindow *instance )
-{
-	myDndWindowPrivate *priv;
-
-	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
-
-	return( g_strdup( G_OBJECT_TYPE_NAME( priv->child_widget )));
 }
 
 static void
 iwindow_init( myIWindow *instance )
 {
+	myDndWindowPrivate *priv;
+
+	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
+
+	my_iwindow_set_identifier( instance, G_OBJECT_TYPE_NAME( priv->child_widget ));
+
 	gtk_window_set_resizable( GTK_WINDOW( instance ), TRUE );
 	gtk_window_set_modal( GTK_WINDOW( instance ), FALSE );
 }

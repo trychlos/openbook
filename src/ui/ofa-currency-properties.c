@@ -76,7 +76,6 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-currenc
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
-static gchar   *iwindow_get_identifier( const myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     on_code_changed( GtkEntry *entry, ofaCurrencyProperties *self );
@@ -212,7 +211,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
-	iface->get_identifier = iwindow_get_identifier;
 }
 
 static void
@@ -220,32 +218,19 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_currency_properties_iwindow_init";
 	ofaCurrencyPropertiesPrivate *priv;
+	gchar *id;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_currency_properties_get_instance_private( OFA_CURRENCY_PROPERTIES( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
-}
-
-/*
- * identifier is built with class name and currency iso 3a code
- */
-static gchar *
-iwindow_get_identifier( const myIWindow *instance )
-{
-	ofaCurrencyPropertiesPrivate *priv;
-	gchar *id;
-
-	priv = ofa_currency_properties_get_instance_private( OFA_CURRENCY_PROPERTIES( instance ));
 
 	id = g_strdup_printf( "%s-%s",
-				G_OBJECT_TYPE_NAME( instance ),
-				ofo_currency_get_code( priv->currency ));
-
-	return( id );
+				G_OBJECT_TYPE_NAME( instance ), ofo_currency_get_code( priv->currency ));
+	my_iwindow_set_identifier( instance, id );
+	g_free( id );
 }
 
 /*
