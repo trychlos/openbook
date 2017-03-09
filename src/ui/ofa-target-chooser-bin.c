@@ -263,7 +263,6 @@ setup_bin( ofaTargetChooserBin *self )
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *parent, *btn;
-	gchar *settings_prefix;
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
@@ -291,9 +290,7 @@ setup_bin( ofaTargetChooserBin *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-period-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	settings_prefix = g_strdup_printf( "%s-%s", priv->settings_prefix, g_type_name( OFA_TYPE_EXERCICE_TREEVIEW ));
-	priv->exercice_tview = ofa_exercice_treeview_new( priv->getter, settings_prefix );
-	g_free( settings_prefix );
+	priv->exercice_tview = ofa_exercice_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_tview ));
 	g_signal_connect( priv->exercice_tview, "ofa-exechanged", G_CALLBACK( exercice_on_selection_changed ), self );
 

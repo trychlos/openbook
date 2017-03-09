@@ -241,12 +241,12 @@ ofa_exercice_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
 	ofaExerciceTreeview *view;
 	ofaExerciceTreeviewPrivate *priv;
+	gchar *str;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_EXERCICE_TREEVIEW,
 					"ofa-tvbin-getter", getter,
-					"ofa-tvbin-name",   settings_prefix,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 
@@ -254,8 +254,13 @@ ofa_exercice_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 
 	priv->getter = getter;
 
-	g_free( priv->settings_prefix );
-	priv->settings_prefix = g_strdup( settings_prefix );
+	if( my_strlen( settings_prefix )){
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_prefix );
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = str;
+	}
+
+	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * #ofoIDBMEta/#ofaIDBExerciceMeta objects instead of just the raw
