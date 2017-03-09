@@ -59,16 +59,14 @@ typedef struct {
 }
 	ofaMiscAuditTreeviewClass;
 
-GType                 ofa_misc_audit_treeview_get_type        ( void ) G_GNUC_CONST;
+GType                 ofa_misc_audit_treeview_get_type     ( void ) G_GNUC_CONST;
 
-ofaMiscAuditTreeview *ofa_misc_audit_treeview_new             ( ofaIGetter *getter );
+ofaMiscAuditTreeview *ofa_misc_audit_treeview_new          ( ofaIGetter *getter,
+																	const gchar *settings_prefix );
 
-void                  ofa_misc_audit_treeview_set_settings_key( ofaMiscAuditTreeview *view,
-																	const gchar *key );
+void                  ofa_misc_audit_treeview_setup_columns( ofaMiscAuditTreeview *view );
 
-void                  ofa_misc_audit_treeview_setup_columns   ( ofaMiscAuditTreeview *view );
-
-ofaMiscAuditStore    *ofa_misc_audit_treeview_setup_store     ( ofaMiscAuditTreeview *view );
+ofaMiscAuditStore    *ofa_misc_audit_treeview_setup_store  ( ofaMiscAuditTreeview *view );
 
 G_END_DECLS
 

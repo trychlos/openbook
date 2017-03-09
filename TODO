@@ -324,6 +324,7 @@
                 - ofaIDateFilter            - keep set_settings_key
                 - ofaIDBExerciceMeta        - keep set_settings_key
                 - ofaLedgerTreeview         (add to prefix + passed)
+                - ofaMiscAuditTreeview      (add to prefix + passed)
                 - ofaOpeTemplateFrameBin    (replace prefix + passed)
                 - ofaPaimeanFrameBin        (replace prefix + passed)
                 - ofaReconcilTreeview       (add to prefix + passed)
