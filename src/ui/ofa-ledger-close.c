@@ -358,9 +358,8 @@ setup_treeview( ofaLedgerClose *self )
 	tview_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-treeview-parent" );
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
-	priv->tview = ofa_ledger_treeview_new( priv->getter );
+	priv->tview = ofa_ledger_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
-	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-frame-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

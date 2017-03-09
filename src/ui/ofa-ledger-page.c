@@ -207,8 +207,7 @@ setup_treeview( ofaLedgerPage *page )
 
 	priv = ofa_ledger_page_get_instance_private( page );
 
-	priv->tview = ofa_ledger_treeview_new( priv->getter );
-	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
+	priv->tview = ofa_ledger_treeview_new( priv->getter, priv->settings_prefix );
 	ofa_ledger_treeview_setup_columns( priv->tview );
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
 

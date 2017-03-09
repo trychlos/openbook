@@ -75,10 +75,8 @@ typedef struct {
 
 GType              ofa_ledger_treeview_get_type         ( void ) G_GNUC_CONST;
 
-ofaLedgerTreeview *ofa_ledger_treeview_new              ( ofaIGetter *getter );
-
-void               ofa_ledger_treeview_set_settings_key ( ofaLedgerTreeview *view,
-																const gchar *key );
+ofaLedgerTreeview *ofa_ledger_treeview_new              ( ofaIGetter *getter,
+																const gchar *settings_prefix );
 
 void               ofa_ledger_treeview_setup_columns    ( ofaLedgerTreeview *view );
 

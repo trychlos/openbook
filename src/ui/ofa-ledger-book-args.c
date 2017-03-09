@@ -261,10 +261,9 @@ setup_ledger_selection( ofaLedgerBookArgs *self )
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 	priv->ledgers_parent = widget;
 
-	priv->tview = ofa_ledger_treeview_new( priv->getter );
+	priv->tview = ofa_ledger_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 	ofa_tvbin_set_hexpand( OFA_TVBIN( priv->tview ), FALSE );
-	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_ledger_treeview_setup_store( priv->tview );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-frame-label" );
