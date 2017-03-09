@@ -1141,6 +1141,7 @@ eval_balance( ofsFormulaHelper *helper )
 	const gchar *cbegin, *cend, *acc_id;
 	ofxAmount amount;
 	ofoAccount *account;
+	gint cmp_begin, cmp_end;
 
 	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( helper->user_data ));
 
@@ -1159,12 +1160,22 @@ eval_balance( ofsFormulaHelper *helper )
 	for( it=dataset ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
 		acc_id = ofo_account_get_number( account );
-		if( my_collate( cbegin, acc_id ) <= 0 && my_collate( acc_id, cend ) <= 0 ){
+		cmp_begin = my_collate( cbegin, acc_id );
+		cmp_end = my_collate( acc_id, cend );
+
+		if( 0 ){
+			DEBUG( "%s: acc_id=%s, my_collate( %s, acc_id )=%d, my_collate( acc_id, %s )=%d",
+					thisfn, acc_id, cbegin, cmp_begin, cend, cmp_end );
+		}
+
+		if( cmp_begin <= 0 && cmp_end <= 0 ){
 			/* credit is -, debit is + */
 			amount -= ofo_account_get_rough_credit( account );
 			amount += ofo_account_get_rough_debit( account );
 			amount -= ofo_account_get_val_credit( account );
 			amount += ofo_account_get_val_debit( account );
+			amount -= ofo_account_get_futur_credit( account );
+			amount += ofo_account_get_futur_debit( account );
 		}
 	}
 

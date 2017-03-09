@@ -332,7 +332,13 @@
 1369 2017- 2-20 recurrent operations validation: cancelled operations
                 should be italic+grayed
 
-1378
+1378 2017- 3- 9 VatRecord: let the label be edited
+
+1379 2017- 3- 9 VatForm: set template column to fixed width, rather expand label
+
+1380 2017- 3- 9 when a page can be multiple, add a number to the title
+
+1381
 
 -----------------------------------------------------------------------
  DONE
