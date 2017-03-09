@@ -189,8 +189,7 @@ action_page_v_setup_view( ofaActionPage *page )
 
 	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
-	priv->tview = ofa_rate_treeview_new( priv->getter );
-	ofa_rate_treeview_set_settings_key( priv->tview, priv->settings_prefix );
+	priv->tview = ofa_rate_treeview_new( priv->getter, priv->settings_prefix );
 	ofa_rate_treeview_setup_columns( priv->tview );
 
 	/* ofaTVBin signals */
