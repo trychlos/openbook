@@ -1328,13 +1328,19 @@ static void
 extfilter_set_expander_toggled( ofaEntryPage *self, GtkExpander *expander )
 {
 	ofaEntryPagePrivate *priv;
-	GtkWidget *revealer;
+	gboolean expanded;
+	GtkWidget *revealer, *label;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
+	expanded = gtk_expander_get_expanded( expander );
 	revealer = gtk_stack_get_visible_child( GTK_STACK( priv->stack ));
 	g_return_if_fail( revealer && GTK_IS_REVEALER( revealer ));
-	gtk_revealer_set_reveal_child( GTK_REVEALER( revealer ), gtk_expander_get_expanded( expander ));
+	gtk_revealer_set_reveal_child( GTK_REVEALER( revealer ), expanded );
+
+	label = gtk_expander_get_label_widget( expander );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_text( GTK_LABEL( label ), expanded ? _( "Hide criteria" ) : _( "Show criteria" ));
 }
 
 static void
