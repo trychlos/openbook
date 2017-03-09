@@ -135,7 +135,7 @@ static ofsOpeDetail    *get_ope_detail( const gchar *row_str, ofsFormulaHelper *
 static gchar           *get_rate_by_name( const gchar *name, ofsFormulaHelper *helper );
 static gboolean         check_for_ledger( sChecker *checker );
 static gboolean         check_for_dates( sChecker *checker );
-static gboolean         check_for_all_entries( sChecker *checker );
+static gboolean         check_for_entries( sChecker *checker );
 static gboolean         check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num );
 static gboolean         check_for_currencies( sChecker *checker );
 static ofsOpeDetail    *get_detail_from_cell_def( const ofsOpe *ope, const gchar *cell_def, gboolean *is_debit, gchar **msg );
@@ -1086,45 +1086,73 @@ get_rate_by_name( const gchar *name, ofsFormulaHelper *helper )
 gboolean
 ofs_ope_is_valid( const ofsOpe *ope, gchar **message, GList **currencies )
 {
+	static const gchar *thisfn = "ofs_ope_is_valid";
 	sChecker *checker;
-	gboolean ok, oki;
+	gboolean ok;
+	GList *it;
+	ofsOpeDetail *detail;
 
 	checker = g_new0( sChecker, 1 );
 	checker->ope = ope;
 	ok = TRUE;
 
-	/* check for non empty accounts and labels, updating the currencies */
-	oki = check_for_all_entries( checker );
-	ok &= oki;
+	for( it=ope->detail ; it ; it=it->next ){
+		detail = ( ofsOpeDetail * ) it->data;
+		detail->account_is_valid = FALSE;
+		detail->label_is_valid = FALSE;
+		detail->amounts_are_valid = FALSE;
+		detail->currency = NULL;
+	}
+
+	/* check for a valid ledger
+	 * must be checked before the dates */
+	if( ok ){
+		ok &= check_for_ledger( checker );
+		g_debug( "%s: check_for_ledger: ok=%s", thisfn, ok ? "True":"False" );
+	}
+
+	/* check for valid operation and effect dates
+	 * note that the min effect date depends of the selected ledger */
+	if( ok ){
+		ok &= check_for_dates( checker );
+		g_debug( "%s: check_for_dates: ok=%s", thisfn, ok ? "True":"False" );
+	}
+
+	/* check for non empty accounts, labels and amounts
+	 * update the currencies */
+	if( ok ){
+		ok &= check_for_entries( checker );
+		g_debug( "%s: check_for_entries: ok=%s", thisfn, ok ? "True":"False" );
+	}
 
 	/* check for balance by currency */
-	oki = check_for_currencies( checker );
-	ok &= oki;
-
-	/* check for a valid ledger */
-	oki = check_for_ledger( checker );
-	ok &= oki;
-
-	/* check for valid operation and effect dates */
-	oki = check_for_dates( checker );
-	ok &= oki;
+	if( ok ){
+		ok &= check_for_currencies( checker );
+		g_debug( "%s: check_for_currencies: ok=%s", thisfn, ok ? "True":"False" );
+	}
 
 	if( message ){
 		*message = checker->message;
 	} else {
 		g_free( checker->message );
 	}
+
 	if( currencies ){
 		*currencies = checker->currencies;
 	} else {
 		ofs_currency_list_free( &checker->currencies );
 	}
 
+	g_free( checker );
+
 	return( ok );
 }
 
 /*
  * Returns TRUE if a ledger is set and valid
+ *
+ * The ledger has to be checked before the dates as the minimal effect
+ * date depends of the selected ledger.
  */
 static gboolean
 check_for_ledger( sChecker *checker )
@@ -1134,23 +1162,22 @@ check_for_ledger( sChecker *checker )
 	ofaIGetter *getter;
 	ofoLedger *ledger;
 
-	ok = FALSE;
+	ok = TRUE;
 	ope = checker->ope;
 
 	if( !my_strlen( ope->ledger )){
-		g_free( checker->message );
 		checker->message = g_strdup( _( "Ledger is empty" ));
+		ok = FALSE;
 
 	} else {
 		getter = ofo_base_get_getter( OFO_BASE( checker->ope->ope_template ));
 		ledger = ofo_ledger_get_by_mnemo( getter, ope->ledger );
 		if( !ledger || !OFO_IS_LEDGER( ledger )){
-			g_free( checker->message );
 			checker->message = g_strdup_printf( _( "Unknown ledger: %s" ), ope->ledger );
+			ok = FALSE;
 
 		} else {
 			checker->ledger = ledger;
-			ok = TRUE;
 		}
 	}
 
@@ -1180,15 +1207,15 @@ check_for_dates( sChecker *checker )
 	getter = ofo_base_get_getter( OFO_BASE( ope->ope_template ));
 	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
-	ok = FALSE;
+	ok = TRUE;
 
 	if( !my_date_is_valid( &ope->dope )){
-		g_free( checker->message );
 		checker->message = g_strdup( _( "Invalid operation date" ));
+		ok = FALSE;
 
 	} else if( !my_date_is_valid( &ope->deffect )){
-		g_free( checker->message );
 		checker->message = g_strdup( _( "Invalid effect date" ));
+		ok = FALSE;
 
 	} else if( checker->ledger ){
 		ofo_dossier_get_min_deffect( dossier, checker->ledger, &dmin );
@@ -1196,15 +1223,16 @@ check_for_dates( sChecker *checker )
 			cmp = my_date_compare( &dmin, &ope->deffect );
 			if( cmp > 0 ){
 				str = my_date_to_str( &dmin, ofa_prefs_date_display( getter ));
-				g_free( checker->message );
 				checker->message = g_strdup_printf(
 						_( "Effect date less than the minimum allowed on this ledger: %s" ), str );
 				g_free( str );
-
-			} else {
-				ok = TRUE;
+				ok = FALSE;
 			}
 		}
+
+	} else {
+		checker->message = g_strdup( _( "Ledger is not set or not valid" ));
+		ok = FALSE;
 	}
 
 	return( ok );
@@ -1221,7 +1249,7 @@ check_for_dates( sChecker *checker )
  * visually highlight the erroneous fields
  */
 static gboolean
-check_for_all_entries( sChecker *checker )
+check_for_entries( sChecker *checker )
 {
 	const ofsOpe *ope;
 	ofsOpeDetail *detail;
@@ -1232,13 +1260,13 @@ check_for_all_entries( sChecker *checker )
 	ok = TRUE;
 	ope = checker->ope;
 
-	for( it=ope->detail, num=1 ; it ; it=it->next, ++num ){
+	for( it=ope->detail, num=1 ; it && ok ; it=it->next, ++num ){
 		detail = ( ofsOpeDetail * ) it->data;
 		ok &= check_for_entry( checker, detail, num );
 	}
 
 	/* if all is correct, also check that we would be able to generate
-	 * at least one entry */
+	 * at least two entries */
 	if( ok ){
 		for( it=ope->detail, count=0 ; it ; it=it->next ){
 			detail = ( ofsOpeDetail * ) it->data;
@@ -1246,10 +1274,9 @@ check_for_all_entries( sChecker *checker )
 				count += 1;
 			}
 		}
-		if( count <= 1 ){
-			g_free( checker->message );
+		if( count < 2 ){
 			checker->message = g_strdup(
-					_( "No entry would be generated (may amounts be all zero ?)" ));
+					_( "No entry will be generated (may amounts be all zero ?)" ));
 			ok = FALSE;
 		}
 	}
@@ -1278,66 +1305,77 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 	ok = TRUE;
 	account = NULL;
 	currency = NULL;
-	detail->account_is_valid = FALSE;
-	detail->label_is_valid = FALSE;
-	detail->amounts_are_valid = FALSE;
-	detail->currency = NULL;
 	getter = ofo_base_get_getter( OFO_BASE( checker->ope->ope_template ));
 
-	if( my_strlen( detail->label )){
-		detail->label_is_valid = TRUE;
-	}
-
-	if( my_strlen( detail->account )){
-		account = ofo_account_get_by_number( getter, detail->account );
-		if( !account || !OFO_IS_ACCOUNT( account )){
-			g_free( checker->message );
+	if( ok ){
+		if( !my_strlen( detail->account )){
 			checker->message = g_strdup_printf(
-					_( "(row %d) unknown account: %s" ), num, detail->account );
-			ok = FALSE;
-
-		} else if( ofo_account_is_root( account )){
-			g_free( checker->message );
-			checker->message = g_strdup_printf(
-					_( "(row %d) account is root: %s" ), num, detail->account );
-			ok = FALSE;
-
-		} else if( ofo_account_is_closed( account )){
-			g_free( checker->message );
-			checker->message = g_strdup_printf(
-					_( "(row %d) account is closed: %s" ), num, detail->account );
+					_( "(row %d) account is not set" ), num );
 			ok = FALSE;
 
 		} else {
-			currency = ofo_account_get_currency( account );
-			if( !my_strlen( currency )){
-				g_free( checker->message );
+			account = ofo_account_get_by_number( getter, detail->account );
+			if( !account || !OFO_IS_ACCOUNT( account )){
 				checker->message = g_strdup_printf(
-						_( "(row %d) empty currency for %s account" ), num, detail->account );
+						_( "(row %d) unknown account: %s" ), num, detail->account );
+				ok = FALSE;
+
+			} else if( ofo_account_is_root( account )){
+				checker->message = g_strdup_printf(
+						_( "(row %d) account is root: %s" ), num, detail->account );
+				ok = FALSE;
+
+			} else if( ofo_account_is_closed( account )){
+				checker->message = g_strdup_printf(
+						_( "(row %d) account is closed: %s" ), num, detail->account );
 				ok = FALSE;
 
 			} else {
-				detail->account_is_valid = TRUE;
-				detail->currency = ofo_currency_get_by_code( getter, currency );
-				g_return_val_if_fail( detail->currency && OFO_IS_CURRENCY( detail->currency ), FALSE );
+				currency = ofo_account_get_currency( account );
+				if( !my_strlen( currency )){
+					checker->message = g_strdup_printf(
+							_( "(row %d) account %s does not have any currency set (though is a detail account" ),
+							num, detail->account );
+					ok = FALSE;
+
+				} else {
+					detail->account_is_valid = TRUE;
+					detail->currency = ofo_currency_get_by_code( getter, currency );
+					g_return_val_if_fail( detail->currency && OFO_IS_CURRENCY( detail->currency ), FALSE );
+				}
 			}
 		}
 	}
 
-	if(( detail->debit && !detail->credit ) || ( !detail->debit && detail->credit )){
-		detail->amounts_are_valid = TRUE;
+	if( ok ){
+		if( my_strlen( detail->label )){
+			detail->label_is_valid = TRUE;
 
-	/* only an error if both amounts are set */
-	} else if( detail->debit && detail->credit ){
-		g_free( checker->message );
-		checker->message = g_strdup_printf(
-				_( "(row %d) invalid amounts" ), num );
-		ok = FALSE;
+		} else {
+			checker->message = g_strdup_printf(
+					_( "(row %d) label is empty" ), num );
+			ok = FALSE;
+		}
 	}
 
-	if( detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid ){
-		g_debug( "check_for_entry: currency=%s, debit=%lf, credit=%lf", currency, detail->debit, detail->credit );
-		ofs_currency_add_by_object( &checker->currencies, detail->currency, detail->debit, detail->credit );
+	if( ok ){
+		if(( detail->debit && !detail->credit ) || ( !detail->debit && detail->credit )){
+			detail->amounts_are_valid = TRUE;
+
+		/* only an error if both amounts are set */
+		} else if( detail->debit && detail->credit ){
+			g_free( checker->message );
+			checker->message = g_strdup_printf(
+					_( "(row %d) invalid amounts" ), num );
+			ok = FALSE;
+		}
+	}
+
+	if( ok ){
+		if( detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid ){
+			g_debug( "check_for_entry: currency=%s, debit=%lf, credit=%lf", currency, detail->debit, detail->credit );
+			ofs_currency_add_by_object( &checker->currencies, detail->currency, detail->debit, detail->credit );
+		}
 	}
 
 	return( ok );

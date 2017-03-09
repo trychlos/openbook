@@ -347,9 +347,6 @@
                 with children and companions (e.g. entries+concil)
                 + have a version number
 
-1356 2017- 2-17 when entering an operation, have a message 'account does
-                not exist' instead of 'unbalanced currencies'
-
 1359 2017- 2-17 clarify the reference management of the collections
                 when inserting of a new object
 
@@ -699,6 +696,10 @@
 1355 2017- 2-17 focus issue when new account from account select
                 (unable to create a new account)
      2017- 2-21 fixed
+
+1356 2017- 2-17 when entering an operation, have a message 'account does
+                not exist' instead of 'unbalanced currencies'
+     2017- 3- 9 fixed
 
 1357 2017- 2-17 change RecoverAssistant keyboard shortcut (Ctrl-C is bad!)
      2017- 2-20 done
