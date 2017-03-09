@@ -308,23 +308,24 @@
 
 1262 2016-11-17 pass settings_prefix as a constructor argument (or know why)
      2017- 1-28 new settings_prefix behavior:
-                - ofaAccountFrameBin      (replace prefix + passed)
-                - ofaAdminCredentialsBin  (removed)
-                - ofaBatPropertiesBin     (add to prefix + passed)
-                - ofaBatlineTreeview      (add to prefix + passed)
-                - ofaDossierActionsBin    (add to prefix + '-settings')
-                - ofaDossierNew           (add to prefix + <unused>)
-                - ofaEntryTreeview        (add to prefix+ unused here)
-                - ofaExerciceEditBin      (add to prefix + <unused>)
-                - ofaExerciceNew          (add to prefix + <unused>)
-                - ofaIDateFilter          - keep set_settings_key
-                - ofaIDBExerciceMeta      - keep set_settings_key
-                - ofaOpeTemplateFrameBin  (replace prefix + passed)
-                - ofaPaimeanFrameBin      (replace prefix + passed)
-                - ofaReconcilTreeview     (add to prefix + passed)
-                - ofaRecPeriodTreeview    (add to prefix + passed)
-                - ofaRecurrentRunTreeview (add to prefix + passed)
-                - ofaTargetChooserBin     (add to prefix + <unused>)
+                - ofaAccountFrameBin        (replace prefix + passed)
+                - ofaAdminCredentialsBin    (removed)
+                - ofaBatPropertiesBin       (add to prefix + passed)
+                - ofaBatlineTreeview        (add to prefix + passed)
+                - ofaDossierActionsBin      (add to prefix + '-settings')
+                - ofaDossierNew             (add to prefix + <unused>)
+                - ofaEntryTreeview          (add to prefix+ unused here)
+                - ofaExerciceEditBin        (add to prefix + <unused>)
+                - ofaExerciceNew            (add to prefix + <unused>)
+                - ofaIDateFilter            - keep set_settings_key
+                - ofaIDBExerciceMeta        - keep set_settings_key
+                - ofaOpeTemplateFrameBin    (replace prefix + passed)
+                - ofaPaimeanFrameBin        (replace prefix + passed)
+                - ofaReconcilTreeview       (add to prefix + passed)
+                - ofaRecPeriodTreeview      (add to prefix + passed)
+                - ofaRecurrentModelTreeview (add to prefix + passed)
+                - ofaRecurrentRunTreeview   (add to prefix + passed)
+                - ofaTargetChooserBin       (add to prefix + <unused>)
 
 1263 2016-11-19 DBMS: store documents
                 + attach documents via an interface to:

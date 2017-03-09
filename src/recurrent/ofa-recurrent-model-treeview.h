@@ -76,10 +76,8 @@ typedef struct {
 
 GType                      ofa_recurrent_model_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaRecurrentModelTreeview *ofa_recurrent_model_treeview_new               ( ofaIGetter *getter );
-
-void                       ofa_recurrent_model_treeview_set_settings_key  ( ofaRecurrentModelTreeview *view,
-																					const gchar *key );
+ofaRecurrentModelTreeview *ofa_recurrent_model_treeview_new               ( ofaIGetter *getter,
+																				const gchar *settings_prefix );
 
 void                       ofa_recurrent_model_treeview_setup_columns     ( ofaRecurrentModelTreeview *view );
 

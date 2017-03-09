@@ -298,8 +298,6 @@ ofa_entry_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 		priv->settings_prefix = str;
 	}
 
-	/* we do not manage any settings here, so directly pass it to the
-	 * base class */
 	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide

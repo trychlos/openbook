@@ -217,8 +217,7 @@ setup_treeview( ofaRecurrentModelPage *self )
 
 	priv = ofa_recurrent_model_page_get_instance_private( self );
 
-	priv->tview = ofa_recurrent_model_treeview_new( priv->getter );
-	ofa_recurrent_model_treeview_set_settings_key( priv->tview, priv->settings_prefix );
+	priv->tview = ofa_recurrent_model_treeview_new( priv->getter, priv->settings_prefix );
 	ofa_recurrent_model_treeview_setup_columns( priv->tview );
 
 	/* ofaTVBin signals */
