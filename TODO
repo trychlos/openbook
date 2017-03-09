@@ -312,6 +312,7 @@
                 - ofaAdminCredentialsBin    (removed)
                 - ofaBatPropertiesBin       (add to prefix + passed)
                 - ofaBatlineTreeview        (add to prefix + passed)
+                - ofaBatTreeview            (add to prefix + passed)
                 - ofaDossierActionsBin      (add to prefix + '-settings')
                 - ofaDossierNew             (add to prefix + <unused>)
                 - ofaEntryTreeview          (add to prefix+ unused here)
