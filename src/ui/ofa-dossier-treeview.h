@@ -72,26 +72,24 @@ typedef struct {
 }
 	ofaDossierTreeviewClass;
 
-GType               ofa_dossier_treeview_get_type        ( void ) G_GNUC_CONST;
+GType               ofa_dossier_treeview_get_type     ( void ) G_GNUC_CONST;
 
-ofaDossierTreeview *ofa_dossier_treeview_new             ( ofaIGetter *getter );
+ofaDossierTreeview *ofa_dossier_treeview_new          ( ofaIGetter *getter,
+															const gchar *settings_prefix );
 
-void                ofa_dossier_treeview_set_settings_key( ofaDossierTreeview *view,
-																const gchar *key );
+void                ofa_dossier_treeview_setup_columns( ofaDossierTreeview *view );
 
-void                ofa_dossier_treeview_setup_columns   ( ofaDossierTreeview *view );
+gboolean            ofa_dossier_treeview_get_selected ( ofaDossierTreeview *view,
+															ofaIDBDossierMeta **meta,
+															ofaIDBExerciceMeta **period );
 
-gboolean            ofa_dossier_treeview_get_selected    ( ofaDossierTreeview *view,
-																ofaIDBDossierMeta **meta,
-																ofaIDBExerciceMeta **period );
+void                ofa_dossier_treeview_set_selected ( ofaDossierTreeview *view,
+															const gchar *dname );
 
-void                ofa_dossier_treeview_set_selected    ( ofaDossierTreeview *view,
-																const gchar *dname );
+void                ofa_dossier_treeview_set_show_all ( ofaDossierTreeview *view,
+															gboolean show_all );
 
-void                ofa_dossier_treeview_set_show_all    ( ofaDossierTreeview *view,
-																gboolean show_all );
-
-void                ofa_dossier_treeview_setup_store     ( ofaDossierTreeview *view );
+void                ofa_dossier_treeview_setup_store  ( ofaDossierTreeview *view );
 
 G_END_DECLS
 

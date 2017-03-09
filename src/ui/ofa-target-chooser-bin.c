@@ -277,11 +277,8 @@ setup_bin( ofaTargetChooserBin *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->dossier_tview = ofa_dossier_treeview_new( priv->getter );
+	priv->dossier_tview = ofa_dossier_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_tview ));
-	settings_prefix = g_strdup_printf( "%s-%s", priv->settings_prefix, G_OBJECT_TYPE_NAME( priv->dossier_tview ));
-	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, settings_prefix );
-	g_free( settings_prefix );
 	ofa_dossier_treeview_setup_columns( priv->dossier_tview );
 	ofa_dossier_treeview_set_show_all( priv->dossier_tview, FALSE );
 	ofa_dossier_treeview_setup_store( priv->dossier_tview );

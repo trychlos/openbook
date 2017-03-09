@@ -241,14 +241,16 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 /**
  * ofa_dossier_treeview_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_prefix: the key prefix in user settings.
  *
  * Returns: a new ofaDossierTreeview instance.
  */
 ofaDossierTreeview *
-ofa_dossier_treeview_new( ofaIGetter *getter )
+ofa_dossier_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
 	ofaDossierTreeview *view;
 	ofaDossierTreeviewPrivate *priv;
+	gchar *str;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -260,6 +262,14 @@ ofa_dossier_treeview_new( ofaIGetter *getter )
 	priv = ofa_dossier_treeview_get_instance_private( view );
 
 	priv->getter = getter;
+
+	if( my_strlen( settings_prefix )){
+		str = g_strdup_printf( "%s-%s", settings_prefix, priv->settings_prefix );
+		g_free( priv->settings_prefix );
+		priv->settings_prefix = str;
+	}
+
+	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * #ofoIDBDossierMEta/#ofaIDBExerciceMeta objects instead of just
@@ -275,34 +285,6 @@ ofa_dossier_treeview_new( ofaIGetter *getter )
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
 	return( view );
-}
-
-/**
- * ofa_dossier_treeview_set_settings_key:
- * @view: this #ofaDossierTreeview instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- */
-void
-ofa_dossier_treeview_set_settings_key( ofaDossierTreeview *view, const gchar *key )
-{
-	static const gchar *thisfn = "ofa_dossier_treeview_set_settings_key";
-	ofaDossierTreeviewPrivate *priv;
-
-	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
-
-	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
-
-	priv = ofa_dossier_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* we do not manage any settings here, so directly pass it to the
-	 * base class */
-	g_free( priv->settings_prefix );
-	priv->settings_prefix = g_strdup( key );
-	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 }
 
 /**

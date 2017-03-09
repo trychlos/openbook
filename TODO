@@ -317,6 +317,7 @@
                 - ofaCurrencyTreeview       (add to prefix + passed)
                 - ofaDossierActionsBin      (add to prefix + '-settings')
                 - ofaDossierNew             (add to prefix + <unused>)
+                - ofaDossierTreeview        (add to prefix + passed)
                 - ofaEntryTreeview          (add to prefix+ unused here)
                 - ofaExerciceEditBin        (add to prefix + <unused>)
                 - ofaExerciceNew            (add to prefix + <unused>)
