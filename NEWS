@@ -29,6 +29,7 @@
    - Display conciliation group from an entry or a BAT line (todo #1372).
    - Review the window geometry management (todo #1285).
    - Let the user have a pin button to detach main tabs.
+   - Pages which may be opened several times are numbered (todo #1380).
 
  Bug fixes:
 

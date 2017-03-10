@@ -336,8 +336,6 @@
 
 1379 2017- 3- 9 VatForm: set template column to fixed width, rather expand label
 
-1380 2017- 3- 9 when a page can be multiple, add a number to the title
-
 1381
 
 -----------------------------------------------------------------------
@@ -788,6 +786,9 @@
 
 1377 2017- 3- 8 EntryPage extended filter: does not work ?
      2017- 3- 8 fixed
+
+1380 2017- 3- 9 when a page can be multiple, add a number to the title
+     2017- 3-10 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

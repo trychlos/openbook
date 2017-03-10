@@ -204,6 +204,9 @@ static const GActionEntry st_dos_entries[] = {
  *
  * @single: whether the page is unique or may be displayed several times.
  *
+ * @count: the count of page creation fot this @type;
+ *  it is used to number the multiple pages.
+ *
  * This structure is allocated in #theme_manager_define() method, but
  * cannot be used to initialize our themes (because GType is not a
  * compilation constant).
@@ -214,6 +217,7 @@ typedef struct {
 	GType    type;
 	gchar   *label;
 	gboolean single;
+	guint    count;
 }
 	sThemeDef;
 
@@ -304,7 +308,7 @@ static void         do_backup( ofaMainWindow *self );
 static void         do_properties( ofaMainWindow *self );
 static GtkNotebook *notebook_get_book( ofaMainWindow *window );
 static ofaPage     *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
-static ofaPage     *notebook_create_page( ofaMainWindow *self, GtkNotebook *book, const sThemeDef *def );
+static ofaPage     *notebook_create_page( ofaMainWindow *self, GtkNotebook *book, sThemeDef *def );
 static void         book_attach_page( ofaMainWindow *self, GtkNotebook *book, GtkWidget *page, const gchar *title );
 static void         notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
 static gboolean     notebook_on_draw( GtkWidget *widget, cairo_t *cr, ofaMainWindow *self );
@@ -1697,18 +1701,28 @@ notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeD
  * so, create it here
  */
 static ofaPage *
-notebook_create_page( ofaMainWindow *self, GtkNotebook *book, const sThemeDef *def )
+notebook_create_page( ofaMainWindow *self, GtkNotebook *book, sThemeDef *def )
 {
 	ofaMainWindowPrivate *priv;
 	ofaPage *page;
-	const gchar *title;
+	const gchar *ctitle;
+	gchar *title;
 
 	priv = ofa_main_window_get_instance_private( self );
 
 	page = g_object_new( def->type, "ofa-page-getter", priv->getter, NULL );
-	title = gettext( def->label );
+	ctitle = gettext( def->label );
+	def->count += 1;
+
+	if( def->single ){
+		title = g_strdup( ctitle );
+	} else {
+		title = g_strdup_printf( "%s [%u]", ctitle, def->count );
+	}
 
 	book_attach_page( self, book, GTK_WIDGET( page ), title );
+
+	g_free( title );
 
 	return( page );
 }
@@ -1991,6 +2005,7 @@ ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label,
 	sdata->label = g_strdup( label );
 
 	sdata->single = single;
+	sdata->count = 0;
 }
 
 static ofaPage *
@@ -2022,15 +2037,14 @@ ipage_manager_activate( ofaIPageManager *instance, GType type )
 			found = my_dnd_window_present_by_type( type ) || ofa_nomodal_page_present_by_type( type );
 			if( !found ){
 				page = notebook_get_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
+				found = ( page != NULL );
 			}
 		}
 		if( !found ){
-			if( !page ){
-				page = notebook_create_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
-			}
-			g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-			notebook_activate_page( OFA_MAIN_WINDOW( instance ), book, page );
+			page = notebook_create_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
 		}
+		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+		notebook_activate_page( OFA_MAIN_WINDOW( instance ), book, page );
 	}
 
 	return( page );
