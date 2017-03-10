@@ -79,6 +79,8 @@ static gboolean dbmodel_to_v6( ofaTvaDBModel *self, guint version );
 static gulong   count_v6( ofaTvaDBModel *self );
 static gboolean dbmodel_to_v7( ofaTvaDBModel *self, guint version );
 static gulong   count_v7( ofaTvaDBModel *self );
+static gboolean dbmodel_to_v8( ofaTvaDBModel *self, guint version );
+static gulong   count_v8( ofaTvaDBModel *self );
 
 typedef struct {
 	gint        ver_target;
@@ -95,6 +97,7 @@ static sMigration st_migrates[] = {
 		{ 5, dbmodel_to_v5, count_v5 },
 		{ 6, dbmodel_to_v6, count_v6 },
 		{ 7, dbmodel_to_v7, count_v7 },
+		{ 8, dbmodel_to_v8, count_v8 },
 		{ 0 }
 };
 
@@ -820,6 +823,37 @@ static gulong
 count_v7( ofaTvaDBModel *self )
 {
 	return( 4 );
+}
+
+/*
+ * Add an editable label to VAT record (#1378)
+ */
+static gboolean
+dbmodel_to_v8( ofaTvaDBModel *self, guint version )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_to_v8";
+
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
+
+	if( !exec_query( self,
+			"ALTER TABLE TVA_T_RECORDS "
+			"	ADD    COLUMN TFO_LABEL            VARCHAR(256)                         COMMENT 'VAT record label'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE TVA_T_RECORDS a"
+			"	SET TFO_LABEL=(SELECT TFO_LABEL FROM TVA_T_FORMS b WHERE b.TFO_MNEMO=a.TFO_MNEMO)" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v8( ofaTvaDBModel *self )
+{
+	return( 2 );
 }
 
 /*

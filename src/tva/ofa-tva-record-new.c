@@ -63,6 +63,7 @@ typedef struct {
 
 	/* UI
 	 */
+	GtkWidget    *label_entry;
 	GtkWidget    *end_date;
 	GtkWidget    *ok_btn;
 	GtkWidget    *msg_label;
@@ -76,6 +77,7 @@ static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     init_properties( ofaTVARecordNew *self );
+static void     on_label_changed( GtkEditable *entry, ofaTVARecordNew *self );
 static void     on_end_changed( GtkEntry *entry, ofaTVARecordNew *self );
 static void     check_for_enable_dlg( ofaTVARecordNew *self );
 static void     on_ok_clicked( ofaTVARecordNew *self );
@@ -278,6 +280,7 @@ init_properties( ofaTVARecordNew *self )
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
+	/* mnemonic (invariant) */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-mnemo-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	cstr = ofo_tva_record_get_mnemo( priv->tva_record );
@@ -289,12 +292,18 @@ init_properties( ofaTVARecordNew *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-label" );
+	/* label */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	cstr = ofo_tva_record_get_label( priv->tva_record );
+	g_return_if_fail( my_strlen( cstr ));
+	gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), self );
+	priv->label_entry = entry;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	cstr = ofo_tva_form_get_label( priv->form );
-	if( my_strlen( cstr )){
-		gtk_label_set_text( GTK_LABEL( label ), cstr );
-	}
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* declaration date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-entry" );
@@ -319,6 +328,12 @@ init_properties( ofaTVARecordNew *self )
 }
 
 static void
+on_label_changed( GtkEditable *entry, ofaTVARecordNew *self )
+{
+	check_for_enable_dlg( self );
+}
+
+static void
 on_end_changed( GtkEntry *entry, ofaTVARecordNew *self )
 {
 	ofaTVARecordNewPrivate *priv;
@@ -340,25 +355,33 @@ check_for_enable_dlg( ofaTVARecordNew *self )
 {
 	ofaTVARecordNewPrivate *priv;
 	const GDate *dend;
-	const gchar *mnemo;
+	const gchar *mnemo, *cstr;
 	gboolean ok_valid, exists;
 	gchar *msgerr;
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
 	msgerr = NULL;
-	ok_valid = FALSE;
+	ok_valid = TRUE;
 
-	dend = ofo_tva_record_get_end( priv->tva_record );
-	if( !my_date_is_valid( dend )){
-		msgerr = g_strdup( _( "End date is not valid" ));
+	cstr = gtk_entry_get_text( GTK_ENTRY( priv->label_entry ));
+	if( !my_strlen( cstr )){
+		msgerr = g_strdup( _( "Label is empty" ));
+		ok_valid = FALSE;
+
 	} else {
-		mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-		exists = ( ofo_tva_record_get_by_key( priv->getter, mnemo, dend ) != NULL );
-		if( exists ){
-			msgerr = g_strdup( _( "End date overlaps with an already defined declaration" ));
+		dend = ofo_tva_record_get_end( priv->tva_record );
+		if( !my_date_is_valid( dend )){
+			msgerr = g_strdup( _( "End date is not valid" ));
+			ok_valid = FALSE;
+
 		} else {
-			ok_valid = TRUE;
+			mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
+			exists = ( ofo_tva_record_get_by_key( priv->getter, mnemo, dend ) != NULL );
+			if( exists ){
+				msgerr = g_strdup( _( "End date overlaps with an already defined declaration" ));
+				ok_valid = FALSE;
+			}
 		}
 	}
 
@@ -413,6 +436,8 @@ do_update( ofaTVARecordNew *self, gchar **msgerr )
 		g_date_add_days( &last_end, 1 );
 		ofo_tva_record_set_begin( priv->tva_record, &last_end );
 	}
+
+	ofo_tva_record_set_label( priv->tva_record, gtk_entry_get_text( GTK_ENTRY( priv->label_entry )));
 
 	ok = ofo_tva_record_insert( priv->tva_record );
 	if( !ok ){

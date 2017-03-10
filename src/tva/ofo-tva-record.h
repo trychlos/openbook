@@ -83,6 +83,7 @@ ofoTVARecord   *ofo_tva_record_new_from_form          ( ofoTVAForm *form );
 void            ofo_tva_record_dump                   ( const ofoTVARecord *record );
 
 const gchar    *ofo_tva_record_get_mnemo              ( const ofoTVARecord *record );
+const gchar    *ofo_tva_record_get_label              ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_get_correspondence     ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_get_notes              ( const ofoTVARecord *record );
 gboolean        ofo_tva_record_get_is_validated       ( const ofoTVARecord *record );
@@ -100,6 +101,7 @@ gboolean        ofo_tva_record_is_validable           ( const gchar *mnemo, cons
 
 gint            ofo_tva_record_compare_by_key         ( const ofoTVARecord *record, const gchar *mnemo, const GDate *end );
 
+void            ofo_tva_record_set_label              ( ofoTVARecord *record, const gchar *label );
 void            ofo_tva_record_set_correspondence     ( ofoTVARecord *record, const gchar *correspondence );
 void            ofo_tva_record_set_notes              ( ofoTVARecord *record, const gchar *notes );
 void            ofo_tva_record_set_is_validated       ( ofoTVARecord *record, gboolean is_validated );

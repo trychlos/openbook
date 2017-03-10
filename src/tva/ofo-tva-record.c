@@ -54,6 +54,7 @@
  */
 enum {
 	TFO_MNEMO = 1,
+	TFO_LABEL,
 	TFO_CORRESPONDENCE,
 	TFO_NOTES,
 	TFO_VALIDATED,
@@ -82,6 +83,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
 				FALSE },				/* export zero as empty */
+		{ OFA_BOX_CSV( TFO_LABEL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( TFO_CORRESPONDENCE ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -494,6 +499,7 @@ ofo_tva_record_new_from_form( ofoTVAForm *form )
 	dest = ofo_tva_record_new( getter );
 
 	record_set_mnemo( dest, ofo_tva_form_get_mnemo( form ));
+	ofo_tva_record_set_label( dest, ofo_tva_form_get_label( form ));
 
 	count = ofo_tva_form_detail_get_count( form );
 	for( i=0 ; i<count ; ++i ){
@@ -527,6 +533,15 @@ const gchar *
 ofo_tva_record_get_mnemo( const ofoTVARecord *record )
 {
 	ofo_base_getter( TVA_RECORD, record, string, NULL, TFO_MNEMO );
+}
+
+/**
+ * ofo_tva_record_get_label:
+ */
+const gchar *
+ofo_tva_record_get_label( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, string, NULL, TFO_LABEL );
 }
 
 /**
@@ -779,12 +794,21 @@ record_set_mnemo( ofoTVARecord *record, const gchar *mnemo )
 }
 
 /**
+ * ofo_tva_record_set_label:
+ */
+void
+ofo_tva_record_set_label( ofoTVARecord *record, const gchar *label )
+{
+	ofo_base_setter( TVA_RECORD, record, string, TFO_LABEL, label );
+}
+
+/**
  * ofo_tva_record_set_correspondence:
  */
 void
-ofo_tva_record_set_correspondence( ofoTVARecord *record, const gchar *notes )
+ofo_tva_record_set_correspondence( ofoTVARecord *record, const gchar *correspondence )
 {
-	ofo_base_setter( TVA_RECORD, record, string, TFO_CORRESPONDENCE, notes );
+	ofo_base_setter( TVA_RECORD, record, string, TFO_CORRESPONDENCE, correspondence );
 }
 
 /**
@@ -1226,11 +1250,12 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *notes, *corresp, *sbegin, *send, *sdope, *stamp_str;
+	gchar *notes, *label, *corresp, *sbegin, *send, *sdope, *stamp_str;
 	GTimeVal stamp;
 	const gchar *userid;
 
 	userid = ofa_idbconnect_get_account( connect );
+	label = my_utils_quote_sql( ofo_tva_record_get_label( record ));
 	corresp = my_utils_quote_sql( ofo_tva_record_get_correspondence( record ));
 	notes = my_utils_quote_sql( ofo_tva_record_get_notes( record ));
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), MY_DATE_SQL );
@@ -1242,10 +1267,16 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	query = g_string_new( "INSERT INTO TVA_T_RECORDS" );
 
 	g_string_append_printf( query,
-			"	(TFO_MNEMO,TFO_CORRESPONDENCE,"
+			"	(TFO_MNEMO,TFO_LABEL,TFO_CORRESPONDENCE,"
 			"	 TFO_NOTES,TFO_VALIDATED,TFO_BEGIN,TFO_END,TFO_DOPE,"
 			"	 TFO_UPD_USER, TFO_UPD_STAMP) VALUES ('%s'",
 			ofo_tva_record_get_mnemo( record ));
+
+	if( my_strlen( label )){
+		g_string_append_printf( query, ",'%s'", label );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
 
 	if( my_strlen( corresp )){
 		g_string_append_printf( query, ",'%s'", corresp );
@@ -1486,11 +1517,12 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *notes, *corresp, *sbegin, *send, *sdope, *stamp_str;
+	gchar *notes, *label, *corresp, *sbegin, *send, *sdope, *stamp_str;
 	const gchar *mnemo, *userid;
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
+	label = my_utils_quote_sql( ofo_tva_record_get_label( record ));
 	corresp = my_utils_quote_sql( ofo_tva_record_get_correspondence( record ));
 	notes = my_utils_quote_sql( ofo_tva_record_get_notes( record ));
 	mnemo = ofo_tva_record_get_mnemo( record );
@@ -1502,10 +1534,16 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 
 	query = g_string_new( "UPDATE TVA_T_RECORDS SET " );
 
-	if( my_strlen( corresp )){
-		g_string_append_printf( query, "TFO_CORRESPONDENCE='%s'", corresp );
+	if( my_strlen( label )){
+		g_string_append_printf( query, "TFO_LABEL='%s'", label );
 	} else {
-		query = g_string_append( query, "TFO_CORRESPONDENCE=NULL" );
+		query = g_string_append( query, "TFO_LABEL=NULL" );
+	}
+
+	if( my_strlen( corresp )){
+		g_string_append_printf( query, ",TFO_CORRESPONDENCE='%s'", corresp );
+	} else {
+		query = g_string_append( query, ",TFO_CORRESPONDENCE=NULL" );
 	}
 
 	if( my_strlen( notes )){
@@ -1543,6 +1581,8 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	tva_record_set_upd_stamp( record, &stamp );
 
 	g_string_free( query, TRUE );
+	g_free( label );
+	g_free( corresp );
 	g_free( notes );
 	g_free( stamp_str );
 	g_free( sbegin );

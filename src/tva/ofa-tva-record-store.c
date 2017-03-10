@@ -295,7 +295,7 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 			GTK_LIST_STORE( self ),
 			iter,
 			TVA_RECORD_COL_MNEMO,          ofo_tva_record_get_mnemo( record ),
-			TVA_RECORD_COL_LABEL,          ofo_tva_form_get_label( form ),
+			TVA_RECORD_COL_LABEL,          ofo_tva_record_get_label( record ),
 			TVA_RECORD_COL_CORRESPONDENCE, ofo_tva_record_get_correspondence( record ),
 			TVA_RECORD_COL_BEGIN,          sbegin,
 			TVA_RECORD_COL_END,            send,

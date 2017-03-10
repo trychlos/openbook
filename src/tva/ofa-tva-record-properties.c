@@ -75,6 +75,7 @@ typedef struct {
 
 	/* UI
 	 */
+	GtkWidget    *label_entry;
 	GtkWidget    *begin_editable;
 	GtkWidget    *end_editable;
 	GtkWidget    *dope_editable;
@@ -142,6 +143,7 @@ static void             init_generated_opes( ofaTVARecordProperties *self );
 static void             init_booleans( ofaTVARecordProperties *self );
 static void             init_taxes( ofaTVARecordProperties *self );
 static void             init_correspondence( ofaTVARecordProperties *self );
+static void             on_label_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void             on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void             on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void             on_dope_changed( GtkEditable *entry, ofaTVARecordProperties *self );
@@ -429,12 +431,19 @@ init_properties( ofaTVARecordProperties *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	/* label (invariant from form) */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-label" );
+	/* label */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	cstr = ofo_tva_record_get_label( priv->tva_record );
+	if( my_strlen( cstr )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+	}
+	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), self );
+	priv->label_entry = entry;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	cstr = ofo_tva_form_get_label( priv->form );
-	g_return_if_fail( cstr && my_strlen( cstr ));
-	gtk_label_set_text( GTK_LABEL( label ), cstr );
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	/* has correspondence (invariant from form) */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-has-corresp-label" );
@@ -691,6 +700,12 @@ init_correspondence( ofaTVARecordProperties *self )
 }
 
 static void
+on_label_changed( GtkEditable *entry, ofaTVARecordProperties *self )
+{
+	check_for_enable_dlg( self );
+}
+
+static void
 on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
@@ -783,6 +798,7 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 	ofaTVARecordPropertiesPrivate *priv;
 	gboolean is_valid, is_computable, is_validable;
 	gchar *msgerr;
+	const gchar *cstr;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
@@ -793,6 +809,14 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 		is_valid = ofo_tva_record_is_valid_data( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
 		is_computable = FALSE;
 		is_validable = FALSE;
+
+		if( is_valid ){
+			cstr = gtk_entry_get_text( GTK_ENTRY( priv->label_entry ));
+			if( !my_strlen( cstr )){
+				msgerr = g_strdup( _( "Label is empty" ));
+				is_valid = FALSE;
+			}
+		}
 
 		if( is_valid ){
 			is_computable = ofo_tva_record_is_computable( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
@@ -871,6 +895,9 @@ setup_tva_record( ofaTVARecordProperties *self )
 	gchar *str;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	ofo_tva_record_set_label( priv->tva_record,
+			gtk_entry_get_text( GTK_ENTRY( priv->label_entry )));
 
 	ofo_tva_record_set_begin( priv->tva_record,
 			my_date_editable_get_date( GTK_EDITABLE( priv->begin_editable ), NULL ));
