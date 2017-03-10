@@ -68,6 +68,7 @@ typedef struct {
 	/* runtime
 	 */
 	GList          *signaler_handlers;
+	gint            btn_size;
 
 	/* from dossier
 	 */
@@ -125,7 +126,7 @@ enum {
 	TYPE_NONE = 0,
 	TYPE_ENTRY,
 	TYPE_LABEL,
-	TYPE_BUTTON
+	TYPE_IMAGE
 };
 
 /* definition of the columns
@@ -181,7 +182,7 @@ static sColumnDef st_col_defs[] = {
 				CURRENCY_WIDTH, CURRENCY_WIDTH, FALSE, 0, FALSE, NULL
 		},
 		{ OPE_COL_VALID,
-				TYPE_BUTTON,
+				TYPE_IMAGE	,
 				NULL,
 				NULL,
 				-1, -1, FALSE, 0.5, FALSE, NULL
@@ -217,7 +218,7 @@ static GDate st_last_dope                   = { 0 };
 static GDate st_last_deff                   = { 0 };
 
 static const gchar *st_resource_image_empty = "/org/trychlos/openbook/core/filler.png";
-static const gchar *st_resource_image_check = "/org/trychlos/openbook/core/ofa-guided-input-bin-green-check-16.png";
+static const gchar *st_resource_image_check = "/org/trychlos/openbook/core/ofa-guided-input-bin-green-check-68.png";
 static const gchar *st_resource_ui          = "/org/trychlos/openbook/core/ofa-guided-input-bin.ui";
 
 static void              setup_main_window( ofaGuidedInputBin *self );
@@ -227,7 +228,7 @@ static void              add_entry_row( ofaGuidedInputBin *self, gint i );
 static void              add_entry_row_widget( ofaGuidedInputBin *self, gint col_id, gint row );
 static GtkWidget        *row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row );
 static GtkWidget        *row_widget_label( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row );
-static GtkWidget        *row_widget_button( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row );
+static GtkWidget        *row_widget_image( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row );
 static void              on_entry_finalized( sEntryData *sdata, GObject *finalized_entry );
 static void              on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin *self );
 static void              on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *self );
@@ -250,6 +251,7 @@ static gboolean          is_dialog_validable( ofaGuidedInputBin *self );
 static void              set_ope_to_ui( ofaGuidedInputBin *self, gint row, gint col_id, const gchar *content );
 static void              display_currency( ofaGuidedInputBin *self, gint row, ofsOpeDetail *detail );
 static void              draw_valid_coche( ofaGuidedInputBin *self, gint row, gboolean bvalid );
+static GtkWidget        *get_image_for_valid( ofaGuidedInputBin *self, gboolean valid );
 static void              set_comment( ofaGuidedInputBin *self, const gchar *comment );
 static void              set_message( ofaGuidedInputBin *self, const gchar *errmsg );
 static gboolean          update_totals( ofaGuidedInputBin *self );
@@ -570,6 +572,7 @@ init_model_data( ofaGuidedInputBin *self )
 	ofaGuidedInputBinPrivate *priv;
 	gchar *str;
 	const gchar *cstr;
+	GtkRequisition rq;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
@@ -602,6 +605,9 @@ init_model_data( ofaGuidedInputBin *self )
 	}
 	gtk_widget_set_sensitive(
 			priv->ref_entry, !ofo_ope_template_get_ref_locked( priv->model ));
+
+	gtk_widget_get_preferred_size( priv->ref_entry, NULL, &rq );
+	priv->btn_size = rq.height;
 }
 
 /*
@@ -664,8 +670,8 @@ add_entry_row_widget( ofaGuidedInputBin *self, gint col_id, gint row )
 			widget = row_widget_label( self, col_def, row );
 			break;
 
-		case TYPE_BUTTON:
-			widget = row_widget_button( self, col_def, row );
+		case TYPE_IMAGE:
+			widget = row_widget_image( self, col_def, row );
 			break;
 
 		default:
@@ -771,18 +777,9 @@ row_widget_label( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 }
 
 static GtkWidget *
-row_widget_button( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
+row_widget_image( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 {
-	GtkWidget *image, *button;
-
-	image = gtk_image_new_from_resource( st_resource_image_empty );
-	button = gtk_button_new();
-	gtk_button_set_image( GTK_BUTTON( button ), image );
-	//gtk_widget_set_sensitive( button, FALSE );
-	gtk_widget_set_can_focus( button, FALSE );
-	my_style_add( button, "flat" );
-
-	return( button );
+	return( get_image_for_valid( self, FALSE ));
 }
 
 static void
@@ -1457,27 +1454,46 @@ static void
 draw_valid_coche( ofaGuidedInputBin *self, gint row, gboolean bvalid )
 {
 	ofaGuidedInputBinPrivate *priv;
-	const sColumnDef *def;
-	GtkWidget *button, *image;
-
-	//g_debug( "draw_valid_coche: row=%d, bvalid=%s", row, bvalid ? "True":"False" );
+	GtkWidget *image;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	def = find_column_def_from_col_id( self, OPE_COL_VALID );
-	g_return_if_fail( def && def->column_type == TYPE_BUTTON );
+	image = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_VALID, row );
+	g_return_if_fail( image && GTK_IS_IMAGE( image ));
+	gtk_widget_destroy( image );
 
-	button = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_VALID, row );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	image = gtk_button_get_image( GTK_BUTTON( button ));
+	image = get_image_for_valid( self, bvalid );
+	gtk_grid_attach( priv->entries_grid, image, OPE_COL_VALID, row, 1, 1 );
 
-	if( bvalid ){
-		gtk_image_set_from_resource( GTK_IMAGE( image ), st_resource_image_check );
+	gtk_widget_show_all( GTK_WIDGET( priv->entries_grid ));
+}
+
+static GtkWidget *
+get_image_for_valid( ofaGuidedInputBin *self, gboolean valid )
+{
+	static const gchar *thisfn = "ofa_guided_input_bin_get_image_for_valid";
+	ofaGuidedInputBinPrivate *priv;
+	GError *error;
+	GdkPixbuf *pixbuf;
+	GtkWidget *image;
+
+	priv = ofa_guided_input_bin_get_instance_private( self );
+
+	error = NULL;
+	image = NULL;
+	pixbuf = gdk_pixbuf_new_from_resource_at_scale(
+					valid ? st_resource_image_check : st_resource_image_empty,
+					priv->btn_size, -1, TRUE, &error );
+	if( !pixbuf ){
+		g_warning( "%s: %s", thisfn, error->message );
+		g_error_free( error );
+
 	} else {
-		gtk_image_set_from_resource( GTK_IMAGE( image ), st_resource_image_empty );
+		image = gtk_image_new_from_pixbuf( pixbuf );
+		g_object_unref( pixbuf );
 	}
 
-	gtk_widget_queue_draw( image );
+	return( image );
 }
 
 static void
