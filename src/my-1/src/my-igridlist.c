@@ -64,6 +64,7 @@ typedef struct {
 #define COL_DOWN                        (sdata->columns_count+2)
 #define COL_REMOVE                      (sdata->columns_count+3)
 #define RANG_WIDTH                          3
+#define RIGHT_MARGIN                        2
 
 /* signals defined here
  */
@@ -273,7 +274,7 @@ my_igridlist_init( const myIGridlist *instance, GtkGrid *grid, gboolean has_head
 	sdata->first_row = has_header ? 1 : 0;
 	sdata->rows_count = 0;
 
-	add_button( sdata, "gtk-add", COL_ADD, sdata->first_row, 2, G_CALLBACK( on_button_clicked ));
+	add_button( sdata, "gtk-add", COL_ADD, sdata->first_row, RIGHT_MARGIN, G_CALLBACK( on_button_clicked ));
 }
 
 /*
@@ -549,7 +550,7 @@ my_igridlist_add_row( const myIGridlist *instance, GtkGrid *grid, void *user_dat
 	}
 
 	add_button( sdata, "gtk-remove", COL_REMOVE, row, 0, G_CALLBACK( on_button_clicked ));
-	add_button( sdata, "gtk-add", COL_ADD, row+1, 4, G_CALLBACK( on_button_clicked ));
+	add_button( sdata, "gtk-add", COL_ADD, row+1, RIGHT_MARGIN, G_CALLBACK( on_button_clicked ));
 
 	if( MY_IGRIDLIST_GET_INTERFACE( instance )->setup_row ){
 		MY_IGRIDLIST_GET_INTERFACE( instance )->setup_row( instance, grid, row, user_data );
@@ -580,7 +581,7 @@ add_empty_row( sIGridList *sdata, guint row )
 	if( sdata->display_row_number ){
 		label = gtk_label_new( NULL );
 		gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-		my_utils_widget_set_margins( label, 0, 0, 0, 4 );
+		my_utils_widget_set_margins( label, 0, 0, 0, RIGHT_MARGIN );
 		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_grid_attach( sdata->grid, label, COL_ROW, row, 1, 1 );
 		str = g_strdup_printf( "<i>%u</i>", row + ( sdata->has_header ? 0 : 1 ));
