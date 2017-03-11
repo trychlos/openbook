@@ -65,9 +65,10 @@ static void      on_editable_finalized( sAccount *sdata, GObject *finalized_edit
 void
 ofa_account_editable_init( GtkEditable *editable, ofaIGetter *getter, ofeAccountAllowed allowed )
 {
+	static const gchar *thisfn = "ofa_account_editable_init";
 	sAccount *sdata;
-	GtkWidget *image;
 	GdkPixbuf *pixbuf;
+	GError *error;
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
@@ -83,32 +84,14 @@ ofa_account_editable_init( GtkEditable *editable, ofaIGetter *getter, ofeAccount
 		gtk_entry_set_max_width_chars( GTK_ENTRY( editable ), ACC_NUMBER_MAX_LENGTH );
 		gtk_entry_set_max_length( GTK_ENTRY( editable ), ACC_NUMBER_MAX_LENGTH );
 
-		image = gtk_image_new_from_resource( st_resource_account );
-
-#if 0
-		GtkImageType type = gtk_image_get_storage_type( GTK_IMAGE( image ));
-		g_debug( "ofa_account_editable_init: storage_type=%s",
-				type == GTK_IMAGE_EMPTY ? "GTK_IMAGE_EMPTY" : (
-				type == GTK_IMAGE_PIXBUF ? "GTK_IMAGE_PIXBUF":(
-				type == GTK_IMAGE_STOCK ? "GTK_IMAGE_STOCK" : (
-				type == GTK_IMAGE_ICON_SET ? "GTK_IMAGE_ICON_SET" : (
-				type == GTK_IMAGE_ANIMATION ? "GTK_IMAGE_ANIMATION" : (
-				type == GTK_IMAGE_ICON_NAME ? "GTK_IMAGE_ICON_NAME" : (
-				type == GTK_IMAGE_GICON ? "GTK_IMAGE_GICON" : (
-				type == GTK_IMAGE_SURFACE ? "GTK_IMAGE_SURFACE" : "unknwon" ))))))));
-#endif
-
-		pixbuf = gtk_image_get_pixbuf( GTK_IMAGE( image ));
-		gtk_entry_set_icon_from_pixbuf( GTK_ENTRY( editable ), GTK_ENTRY_ICON_SECONDARY, pixbuf );
-
-#if 0
-		if( type == GTK_IMAGE_ICON_NAME ){
-			const gchar *icon_name;
-			gtk_image_get_icon_name( GTK_IMAGE( image ), &icon_name, NULL );
-			g_debug( "icon_name=%s", icon_name );
-			gtk_entry_set_icon_from_icon_name( entry, GTK_ENTRY_ICON_SECONDARY, icon_name );
+		error = NULL;
+		pixbuf = gdk_pixbuf_new_from_resource( st_resource_account, &error );
+		if( pixbuf ){
+			gtk_entry_set_icon_from_pixbuf( GTK_ENTRY( editable ), GTK_ENTRY_ICON_SECONDARY, pixbuf );
+		} else {
+			g_warning( "%s: %s", thisfn, error->message );
+			g_error_free( error );
 		}
-#endif
 
 		g_signal_connect( GTK_ENTRY( editable ), "icon-press", G_CALLBACK( on_icon_pressed ), NULL );
 	}
