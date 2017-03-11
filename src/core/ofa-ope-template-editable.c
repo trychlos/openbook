@@ -60,9 +60,10 @@ static void          on_editable_finalized( sOpeTemplate *data, GObject *finaliz
 void
 ofa_ope_template_editable_init( GtkEditable *editable, ofaIGetter *getter )
 {
+	static const gchar *thisfn = "ofa_ope_template_editable_init";
 	sOpeTemplate *sdata;
-	GtkWidget *image;
 	GdkPixbuf *pixbuf;
+	GError *error;
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
@@ -76,10 +77,14 @@ ofa_ope_template_editable_init( GtkEditable *editable, ofaIGetter *getter )
 		gtk_entry_set_max_width_chars( GTK_ENTRY( editable ), OTE_MNEMO_MAX_LENGTH );
 		gtk_entry_set_max_length( GTK_ENTRY( editable ), OTE_MNEMO_MAX_LENGTH );
 
-		image = gtk_image_new_from_resource( st_resource_ope_template );
-
-		pixbuf = gtk_image_get_pixbuf( GTK_IMAGE( image ));
-		gtk_entry_set_icon_from_pixbuf( GTK_ENTRY( editable ), GTK_ENTRY_ICON_SECONDARY, pixbuf );
+		error = NULL;
+		pixbuf = gdk_pixbuf_new_from_resource( st_resource_ope_template, &error );
+		if( pixbuf ){
+			gtk_entry_set_icon_from_pixbuf( GTK_ENTRY( editable ), GTK_ENTRY_ICON_SECONDARY, pixbuf );
+		} else {
+			g_warning( "%s: %s", thisfn, error->message );
+			g_error_free( error );
+		}
 
 		g_signal_connect( editable, "icon-press", G_CALLBACK( on_icon_pressed ), NULL );
 	}
