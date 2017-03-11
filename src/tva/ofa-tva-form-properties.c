@@ -85,7 +85,6 @@ typedef struct {
 #define DET_SPIN_WIDTH                    2
 #define DET_SPIN_MAX_WIDTH                2
 #define DET_CODE_MAX_LENGTH              64
-#define DET_TEMPLATE_MAX_LENGTH          64
 #define DET_LABEL_MAX_LENGTH            256
 #define DET_BASE_MAX_LENGTH             256
 #define DET_AMOUNT_MAX_LENGTH           256
@@ -514,7 +513,6 @@ setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 	/* base */
 	entry = gtk_entry_new();
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_base_changed ), self );
-	gtk_widget_set_hexpand( entry, TRUE );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_BASE_MAX_LENGTH );
 	gtk_widget_set_sensitive( entry, FALSE );
 	my_igridlist_set_widget(
@@ -532,7 +530,6 @@ setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 	/* amount */
 	entry = gtk_entry_new();
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_amount_changed ), self );
-	gtk_widget_set_hexpand( entry, TRUE );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_AMOUNT_MAX_LENGTH );
 	gtk_widget_set_sensitive( entry, FALSE );
 	my_igridlist_set_widget(
@@ -550,8 +547,6 @@ setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 	/* template */
 	entry = gtk_entry_new();
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_template_changed ), self );
-	gtk_widget_set_hexpand( entry, TRUE );
-	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_TEMPLATE_MAX_LENGTH );
 	gtk_widget_set_sensitive( entry, FALSE );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
@@ -824,22 +819,25 @@ check_for_enable_dlg( ofaTVAFormProperties *self )
 
 /*
  * are we able to validate this tva form ?
+ *
+ * NB: check for all errors first
+ * only display a warning if there is no error
  */
 static gboolean
 is_dialog_validable( ofaTVAFormProperties *self )
 {
 	ofaTVAFormPropertiesPrivate *priv;
-	gboolean ok, exists, subok, enabled;
-	gchar *msgerr;
+	gboolean ok, exists, subok, enabled, has_template;
+	gchar *msgerr, *warning;
 	guint rows_count, i;
-	GtkWidget *entry;
-	const gchar *template, *style;
+	GtkWidget *entry, *btn;
+	const gchar *template;
 	ofoOpeTemplate *template_obj;
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	msgerr = NULL;
-	style = NULL;
+	warning = NULL;
 
 	ok = ofo_tva_form_is_valid_data( priv->mnemo, priv->label, &msgerr );
 
@@ -850,31 +848,49 @@ is_dialog_validable( ofaTVAFormProperties *self )
 		ok = !exists || subok;
 		if( !ok ){
 			msgerr = g_strdup( _( "Mnemonic is already defined" ));
-			style = "labelerror";
 		}
 	}
 
 	if( ok ){
 		enabled = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ));
 		rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ));
+
 		for( i=1 ; i<=rows_count ; ++i ){
+			btn = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_TEMPLATE, i );
+			g_return_val_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ), FALSE );
+			has_template = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ));
+
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_TEMPLATE, i );
 			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 			template = gtk_entry_get_text( GTK_ENTRY( entry ));
+
 			if( my_strlen( template )){
 				template_obj = ofo_ope_template_get_by_mnemo( priv->getter, template );
 				if( !template_obj || !OFO_IS_OPE_TEMPLATE( template_obj )){
-					ok = FALSE;
 					msgerr = g_strdup_printf( _( "Operation template %s does not exist" ), template );
-					style = enabled ? "labelerror" : "labelwarning";
-					break;
+
+					/* break on error */
+					if( enabled && has_template ){
+						break;
+
+					/* keep first warning */
+					} else if( !warning ){
+						warning = msgerr;
+						msgerr = NULL;
+					}
 				}
 			}
 		}
 	}
 
-	set_msgerr( self, msgerr, style );
-	g_free( msgerr );
+	if( msgerr ){
+		set_msgerr( self, msgerr, "labelerror" );
+		g_free( msgerr );
+
+	} else if( warning ){
+		set_msgerr( self, warning, "labelwarning" );
+		g_free( warning );
+	}
 
 	return( ok );
 }
