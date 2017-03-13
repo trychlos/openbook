@@ -55,6 +55,7 @@ typedef struct _ofaIPageManager                     ofaIPageManager;
  * @get_interface_version: [should]: get the version number of the
  *                                   interface implementation.
  * @define: [should]: define a new theme.
+ * @activate: [should]: activate a theme.
  *
  * This defines the interface that an #ofaIPageManager must/should/may
  * implement.
