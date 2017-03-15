@@ -334,7 +334,14 @@
 
 1379 2017- 3- 9 VatForm: set template column to fixed width, rather expand label
 
-1381
+1381 2017- 3-14 Settlement: have an option to display all entries on
+                settleable account waiting for a settlement (so a treestore)
+
+1382 2017- 3-15 have a list of reconciliable accounts
+
+1383 2017- 3-15 have a list of settleable accounts
+
+1384
 
 -----------------------------------------------------------------------
  DONE

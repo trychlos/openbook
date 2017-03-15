@@ -59,9 +59,10 @@
  * and is later used when settling or unsettling the selection
  */
 typedef struct {
-	guint      rows;				/* count of. */
-	guint      settled;				/* count of. */
-	guint      unsettled;			/* count of. */
+	guint       rows;					/* count of. */
+	guint       settled;				/* count of. */
+	guint       unsettled;				/* count of. */
+	ofsCurrency scur;
 }
 	sEnumSelected;
 
@@ -116,8 +117,8 @@ typedef struct {
 	/* selection management
 	 */
 	sEnumSelected      ses;
-	ofsCurrency        scur;
 	ofxCounter         snumber;
+	gboolean           updating;
 }
 	ofaSettlementPagePrivate;
 
@@ -494,6 +495,7 @@ tview_on_row_selected( ofaEntryTreeview *view, GList *selected, ofaSettlementPag
 
 	g_simple_action_set_enabled( priv->edit_action, g_list_length( selected ) > 0 );
 
+	priv->updating = FALSE;
 	refresh_selection_compute_with_selected( self, selected );
 }
 
@@ -521,8 +523,8 @@ tview_enum_selected( ofoEntry *entry, ofaSettlementPage *self )
 		priv->ses.unsettled += 1;
 	}
 
-	priv->scur.debit += debit;
-	priv->scur.credit += credit;
+	priv->ses.scur.debit += debit;
+	priv->ses.scur.credit += credit;
 }
 
 static GtkWidget *
@@ -812,7 +814,7 @@ action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaSettlemen
 
 	/* ask for a user confirmation when selection is not balanced
 	 *  (and Ctrl key is not pressed) */
-	if( !ofs_currency_is_balanced( &priv->scur ) &&
+	if( !ofs_currency_is_balanced( &priv->ses.scur ) &&
 			( ofa_prefs_settle_warns_if_unbalanced( priv->getter ) &&
 			( !ofa_prefs_settle_warns_unless_ctrl( priv->getter ) || !priv->ctrl_pressed ))){
 		if( !do_settle_user_confirm( self )){
@@ -836,8 +838,8 @@ do_settle_user_confirm( ofaSettlementPage *self )
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
-	sdeb = ofa_amount_to_str( priv->scur.debit, priv->account_currency, priv->getter );
-	scre = ofa_amount_to_str( priv->scur.credit, priv->account_currency, priv->getter );
+	sdeb = ofa_amount_to_str( priv->ses.scur.debit, priv->account_currency, priv->getter );
+	scre = ofa_amount_to_str( priv->ses.scur.credit, priv->account_currency, priv->getter );
 	str = g_strdup_printf( _( "Caution: settleable amounts are not balanced:\n"
 			"debit=%s, credit=%s.\n"
 			"Are you sure you want to settle this group ?" ), sdeb, scre );
@@ -872,6 +874,8 @@ update_selection( ofaSettlementPage *self, gboolean settle )
 	GList *selected;
 
 	priv = ofa_settlement_page_get_instance_private( self );
+
+	priv->updating = TRUE;
 
 	if( settle ){
 		hub = ofa_igetter_get_hub( priv->getter );
@@ -951,54 +955,55 @@ refresh_selection_compute_with_selected( ofaSettlementPage *self, GList *selecte
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
-	memset( &priv->ses, '\0', sizeof( sEnumSelected ));
-	memset( &priv->scur, '\0', sizeof( ofsCurrency ));
-	priv->snumber = -1;
+	if( !priv->updating ){
+		memset( &priv->ses, '\0', sizeof( sEnumSelected ));
+		priv->snumber = -1;
 
-	if( priv->account_currency ){
-		priv->scur.currency = priv->account_currency;
-		g_list_foreach( selected, ( GFunc ) tview_enum_selected, self );
+		if( priv->account_currency ){
+			priv->ses.scur.currency = priv->account_currency;
+			g_list_foreach( selected, ( GFunc ) tview_enum_selected, self );
+		}
+
+		g_simple_action_set_enabled( priv->settle_action, priv->ses.unsettled > 0 );
+		g_simple_action_set_enabled( priv->unsettle_action, priv->ses.settled > 0 );
+
+		if( priv->last_style ){
+			my_style_remove( priv->footer_label, priv->last_style );
+			my_style_remove( priv->debit_balance, priv->last_style );
+			my_style_remove( priv->credit_balance, priv->last_style );
+			my_style_remove( priv->currency_balance, priv->last_style );
+		}
+
+		samount = priv->account_currency
+				? ofa_amount_to_str( priv->ses.scur.debit, priv->account_currency, priv->getter )
+				: g_strdup( "" );
+		gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
+		g_free( samount );
+
+		samount = priv->account_currency
+				? ofa_amount_to_str( priv->ses.scur.credit, priv->account_currency, priv->getter )
+				: g_strdup( "" );
+		gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
+		g_free( samount );
+
+		code = priv->account_currency ? ofo_currency_get_code( priv->account_currency ) : "",
+		gtk_label_set_text( GTK_LABEL( priv->currency_balance ), code );
+
+		if( priv->ses.rows == 0 ){
+			priv->last_style = "labelinvalid";
+
+		} else if( ofs_currency_is_balanced( &priv->ses.scur )){
+			priv->last_style = "labelinfo";
+
+		} else {
+			priv->last_style = "labelwarning";
+		}
+
+		my_style_add( priv->footer_label, priv->last_style );
+		my_style_add( priv->debit_balance, priv->last_style );
+		my_style_add( priv->credit_balance, priv->last_style );
+		my_style_add( priv->currency_balance, priv->last_style );
 	}
-
-	g_simple_action_set_enabled( priv->settle_action, priv->ses.unsettled > 0 );
-	g_simple_action_set_enabled( priv->unsettle_action, priv->ses.settled > 0 );
-
-	if( priv->last_style ){
-		my_style_remove( priv->footer_label, priv->last_style );
-		my_style_remove( priv->debit_balance, priv->last_style );
-		my_style_remove( priv->credit_balance, priv->last_style );
-		my_style_remove( priv->currency_balance, priv->last_style );
-	}
-
-	samount = priv->account_currency
-			? ofa_amount_to_str( priv->scur.debit, priv->account_currency, priv->getter )
-			: g_strdup( "" );
-	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
-	g_free( samount );
-
-	samount = priv->account_currency
-			? ofa_amount_to_str( priv->scur.credit, priv->account_currency, priv->getter )
-			: g_strdup( "" );
-	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
-	g_free( samount );
-
-	code = priv->account_currency ? ofo_currency_get_code( priv->account_currency ) : "",
-	gtk_label_set_text( GTK_LABEL( priv->currency_balance ), code );
-
-	if( priv->ses.rows == 0 ){
-		priv->last_style = "labelinvalid";
-
-	} else if( priv->scur.debit == priv->scur.credit ){
-		priv->last_style = "labelinfo";
-
-	} else {
-		priv->last_style = "labelwarning";
-	}
-
-	my_style_add( priv->footer_label, priv->last_style );
-	my_style_add( priv->debit_balance, priv->last_style );
-	my_style_add( priv->credit_balance, priv->last_style );
-	my_style_add( priv->currency_balance, priv->last_style );
 }
 
 static void
