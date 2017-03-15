@@ -1300,19 +1300,21 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 	ofaIGetter *getter;
 	ofoAccount *account;
 	const gchar *currency;
-	gboolean ok;
+	gboolean ok, amounts_are_null;
 
 	ok = TRUE;
 	account = NULL;
 	currency = NULL;
 	getter = ofo_base_get_getter( OFO_BASE( checker->ope->ope_template ));
+	amounts_are_null = !detail->debit && !detail->credit;
 
 	if( ok ){
 		if( !my_strlen( detail->account )){
-			checker->message = g_strdup_printf(
-					_( "(row %d) account is not set" ), num );
-			ok = FALSE;
-
+			if( !amounts_are_null ){
+				checker->message = g_strdup_printf(
+						_( "(row %d) account is not set" ), num );
+				ok = FALSE;
+			}
 		} else {
 			account = ofo_account_get_by_number( getter, detail->account );
 			if( !account || !OFO_IS_ACCOUNT( account )){
@@ -1351,7 +1353,7 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 		if( my_strlen( detail->label )){
 			detail->label_is_valid = TRUE;
 
-		} else {
+		} else if( !amounts_are_null ){
 			checker->message = g_strdup_printf(
 					_( "(row %d) label is empty" ), num );
 			ok = FALSE;

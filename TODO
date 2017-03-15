@@ -341,7 +341,13 @@
 
 1383 2017- 3-15 have a list of settleable accounts
 
-1384
+1384 2017- 3-15 all printings: erase a previous render when an argument
+                changes (as in entries balance)
+
+1385 2017- 3-15 have a printing with solde at the beginning + solde of
+                entries = solde at the end of the period
+
+1386
 
 -----------------------------------------------------------------------
  DONE
