@@ -582,9 +582,9 @@ tview_on_row_activated( GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewCol
 	GtkTreeSelection *selection;
 
 	selection = gtk_tree_view_get_selection( treeview );
-	g_return_if_fail( gtk_tree_selection_count_selected_rows( selection ) > 0 );
-
-	g_signal_emit_by_name( self, "ofa-selactivated", selection );
+	if( gtk_tree_selection_count_selected_rows( selection ) > 0 ){
+		g_signal_emit_by_name( self, "ofa-selactivated", selection );
+	}
 }
 
 /*
