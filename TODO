@@ -384,10 +384,6 @@
 
 1398 2017- 3-16 check balances: fix the error message (see trash/todo_1398)
 
-1399 2017- 3-16 modifying an ope template mnemo does not modify the loaded
-                entry store (but should) - while dbms is ok
-                idem when importing entries
-
 1400 2017- 3-16 Gtk-CRITICAL **: gtk_tree_model_sort_get_path: assertion 'priv->stamp == iter->stamp' failed
                 when deleting the 69 account (last account of a page)
 
@@ -847,6 +843,11 @@
 
 1380 2017- 3- 9 when a page can be multiple, add a number to the title
      2017- 3-10 done
+
+1399 2017- 3-16 modifying an ope template mnemo does not modify the loaded
+                entry store (but should) - while dbms is ok
+                idem when importing entries
+     2017- 3-16 unreproductible
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

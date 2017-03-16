@@ -2269,7 +2269,7 @@ edit_set_cells_editable( ofaEntryPage *self, GtkTreeSelection *selection, gboole
 	delete_enabled = priv->editable_row && count > 0;
 	g_simple_action_set_enabled( priv->delete_action, delete_enabled );
 
-	if( 1 ){
+	if( 0 ){
 		g_debug( "%s: new_enabled=%s, update_enabled=%s, delete_enabled=%s",
 				thisfn, new_enabled ? "True":"False",
 				update_enabled ? "True":"False", delete_enabled ? "True":"False" );
