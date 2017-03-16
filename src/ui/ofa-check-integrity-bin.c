@@ -1713,6 +1713,7 @@ check_concil_run( ofaCheckIntegrityBin *self )
 	priv->concil_errs = 0;
 	i = 0;
 
+	if( 0 ){
 	/* check that all details have a parent */
 	orphans = ofo_concil_get_concil_orphans( priv->getter );
 	if( g_list_length( orphans ) > 0 ){
@@ -1757,6 +1758,7 @@ check_concil_run( ofaCheckIntegrityBin *self )
 	}
 	ofo_concil_free_entry_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+	}
 
 	/* progress end */
 	my_iprogress_set_text( MY_IPROGRESS( self ), worker, "" );

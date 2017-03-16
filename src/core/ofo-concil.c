@@ -582,9 +582,9 @@ get_orphans( ofaIGetter *getter, const gchar *table )
  * ofo_concil_get_bat_orphans:
  * @getter: a #ofaIGetter instance.
  *
- * Returns: the list of conciliation group identifiers which are
- * referenced as Bat lines in conciliation members, but do not (or no
- * more) exist.
+ * Returns: the list of conciliation group identifiers which
+ * referenced a BatLine in conciliation members, but this BatLine does
+ * not (or no more) exists.
  *
  * The returned list should not be #ofo_concil_free_bat_orphans() by
  * the caller.
@@ -599,9 +599,9 @@ ofo_concil_get_bat_orphans( ofaIGetter *getter )
  * ofo_concil_get_entry_orphans:
  * @getter: a #ofaIGetter instance.
  *
- * Returns: the list of conciliation group identifiers which are
- * referenced as entries in conciliation members, but do not (or no
- * more) exist.
+ * Returns: the list of conciliation group identifiers which
+ * referenced an entries in conciliation members, but this entry does
+ * not (or no more) exists.
  *
  * The returned list should not be #ofo_concil_free_entry_orphans() by
  * the caller.
