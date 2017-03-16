@@ -591,14 +591,18 @@ ofa_account_treeview_set_selected( ofaAccountTreeview *view, const gchar *accoun
 }
 
 /*
- * On enter, @iter is expected to point to the first row.
+ * @iter: [int][out]:
+ *  on enter, is expected to point to the first row;
+ *  when returning, points to the closest found row.
  *
- * Returns: %TRUE if found.
+ * Returns: -1, 0 or +1 as the result of the last done comparison.
+ *
+ * @iter is always valid.
  */
 static gint
 find_account_iter( ofaAccountTreeview *self, const gchar *account_id, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	GtkTreeIter child_iter;
+	GtkTreeIter row_iter, child_iter;
 	gchar *row_id;
 	gint cmp;
 
@@ -627,9 +631,11 @@ find_account_iter( ofaAccountTreeview *self, const gchar *account_id, GtkTreeMod
 		}
 
 		/* continue on next iter of same level */
-		if( !gtk_tree_model_iter_next( tmodel, iter )){
+		row_iter = *iter;
+		if( !gtk_tree_model_iter_next( tmodel, &row_iter )){
 			break;
 		}
+		*iter = row_iter;
 	}
 
 	/* not found, and worth to continue */
