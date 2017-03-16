@@ -38,6 +38,7 @@
    - myIGridlist: fix behavior when there is no header (todo #1373).
    - ofaAccountTreeview: fix background color of pixbuf cells (todo #442).
    - ofaAccountTreeview: fix selection post-delete (todo #1400).
+   - ofoAccount: make sure the DBMS stays sane when deleting an account (todo #1394).
    - Recurrent: fix periodicity details count.
 
  Other changes:

@@ -313,6 +313,8 @@
                 - entries: idem operation,
                 - accounts: all documents for this account
      2017- 2- 6 dbms is prepared
+     2017- 3-16 do not omit to check for deletabilityo of all objects
+                which might have a document
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 
@@ -371,13 +373,13 @@
 1393 2017- 3-16 operations generated on tva record: the month should be
                 those of the declarated period instead of those of the run
 
-1394 2017- 3-16 when delete an account, also delete the archive
-
 1395 2017- 3-16 check dbms integrity: errors should be displayed in red
 
 1396 2017- 3-16 check conciliation groups integrity is wrong
                 - display erroneous orphan conciliation member with BatLineId xxx
                 - count is wrong
+                + anyway, this cannot be really done while the exercice has
+                not been rightly archived
 
 1397 2017- 3-16 when deleting an entry, must actually delete the operation
                 force this behavior unless otherwise specified
@@ -840,6 +842,9 @@
 
 1380 2017- 3- 9 when a page can be multiple, add a number to the title
      2017- 3-10 done
+
+1394 2017- 3-16 when delete an account, also delete the archive
+     2017- 3-16 done
 
 1399 2017- 3-16 modifying an ope template mnemo does not modify the loaded
                 entry store (but should) - while dbms is ok

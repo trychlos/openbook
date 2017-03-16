@@ -2162,13 +2162,16 @@ account_do_delete( ofoAccount *account, const ofaIDBConnect *connect )
 	gboolean ok;
 
 	query = g_strdup_printf(
-			"DELETE FROM OFA_T_ACCOUNTS"
-			"	WHERE ACC_NUMBER='%s'",
-					ofo_account_get_number( account ));
-
+			"DELETE FROM OFA_T_ACCOUNTS WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
 	ok = ofa_idbconnect_query( connect, query, TRUE );
-
 	g_free( query );
+
+	if( ok ){
+		query = g_strdup_printf(
+				"DELETE FROM OFA_T_ACCOUNTS_ARC WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
+		ok = ofa_idbconnect_query( connect, query, TRUE );
+		g_free( query );
+	}
 
 	return( ok );
 }
