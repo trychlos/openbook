@@ -1513,13 +1513,17 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_cleanup";
 	ofaExerciceCloseAssistantPrivate *priv;
-	gchar *query, *sub;
+	gchar *query, *sub, *sdfin;
 	gboolean ok;
 	GtkWidget *label;
+	const GDate *dfin;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
+
+	dfin = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
+	sdfin = my_date_to_str( dfin, MY_DATE_SQL );
 
 	query = g_strdup( "TRUNCATE TABLE OFA_T_AUDIT" );
 	ok = ofa_idbconnect_query( priv->connect, query, TRUE );
@@ -1581,13 +1585,15 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "CREATE TABLE ARCHIVE_T_ACCOUNTS_ARC "
-					"SELECT * FROM OFA_T_ACCOUNTS_ARC" );
+		query = g_strdup_printf(
+					"CREATE TABLE ARCHIVE_T_ACCOUNTS_ARC "
+					"SELECT * FROM OFA_T_ACCOUNTS_ARC WHERE ACC_ARC_DATE<='%s'", sdfin );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "DELETE FROM OFA_T_ACCOUNTS_ARC" );
+		query = g_strdup_printf(
+					"DELETE FROM OFA_T_ACCOUNTS_ARC WHERE ACC_ARC_DATE<='%s'", sdfin );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
@@ -1600,13 +1606,15 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "CREATE TABLE ARCHIVE_T_LEDGERS_ARC "
-					"SELECT * FROM OFA_T_LEDGERS_ARC" );
+		query = g_strdup_printf(
+					"CREATE TABLE ARCHIVE_T_LEDGERS_ARC "
+					"SELECT * FROM OFA_T_LEDGERS_ARC WHERE LED_ARC_DATE<='%s'", sdfin );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "DELETE FROM OFA_T_LEDGERS_ARC" );
+		query = g_strdup_printf(
+					"DELETE FROM OFA_T_LEDGERS_ARC WHERE LED_ARC_DATE<='%s'", sdfin );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
@@ -1616,7 +1624,7 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	 * keep and report:
 	 *  - unsettled entries on settleable accounts
 	 *  - unreconciliated entries on reconciliable accounts
-	 *  - future entries
+	 *  - future entries (even if settled or reconciliated)
 	 */
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_KEEP_ENTRIES" );
@@ -1637,7 +1645,8 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	}
 	if( ok ){
 		query = g_strdup_printf( "INSERT IGNORE INTO ARCHIVE_T_KEEP_ENTRIES "
-					"SELECT ENT_NUMBER FROM OFA_T_ENTRIES WHERE ENT_STATUS=%d", ENT_STATUS_FUTURE );
+					"SELECT ENT_NUMBER FROM OFA_T_ENTRIES WHERE ENT_STATUS=%d",
+						ENT_STATUS_FUTURE );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
@@ -1669,7 +1678,7 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 
-	/* keep bat files which are not fully reconciliated
+	/* keep bat files which are not fully reconciliated or not in the new exercice
 	 * and archived others
 	 */
 	if( ok ){
@@ -1683,6 +1692,13 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 					"	WHERE BAT_LINE_ID NOT IN "
 					"		(SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS "
 					"			WHERE REC_IDS_TYPE='%s')", CONCIL_TYPE_BAT );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup_printf( "INSERT IGNORE INTO ARCHIVE_T_KEEP_BATS "
+					"SELECT DISTINCT(BAT_ID) FROM OFA_T_BAT "
+					"	WHERE BAT_END>'%s'", sdfin );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
@@ -1793,6 +1809,8 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-cleanup" );
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
 	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
+
+	g_free( sdfin );
 
 	if( ok ){
 		g_idle_add(( GSourceFunc ) p6_forward, self );
