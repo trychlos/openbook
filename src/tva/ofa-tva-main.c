@@ -58,7 +58,7 @@ typedef struct {
 	const gchar *action_name;
 	const gchar *theme_label;
 	GType      (*fntype)( void );
-	gboolean     single;
+	gboolean     multiple;
 }
 	sThemeDef;
 
@@ -90,8 +90,8 @@ static const sItemDef st_items_ref[] = {
 /* the themes which also define the tab titles
  */
 static sThemeDef st_theme_defs[] = {
-		{ "vat-declare",  N_( "VAT declarations" ),  ofa_tva_record_page_get_type,  TRUE },
-		{ "vat-manage",  N_( "VAT forms management" ),  ofa_tva_form_page_get_type, TRUE },
+		{ "vat-declare",  N_( "VAT declarations" ),  ofa_tva_record_page_get_type,  FALSE },
+		{ "vat-manage",  N_( "VAT forms management" ),  ofa_tva_form_page_get_type, FALSE },
 		{ 0 }
 };
 
@@ -188,7 +188,7 @@ on_page_manager_available( ofaISignaler *signaler, ofaIPageManager *manager, voi
 
 	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
 		ofa_ipage_manager_define( manager,
-				( *st_theme_defs[i].fntype )(), gettext( st_theme_defs[i].theme_label ), st_theme_defs[i].single );
+				( *st_theme_defs[i].fntype )(), gettext( st_theme_defs[i].theme_label ), st_theme_defs[i].multiple );
 	}
 }
 

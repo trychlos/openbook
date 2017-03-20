@@ -128,7 +128,7 @@ guint    ofa_ipage_manager_get_interface_version     ( GType type );
 void     ofa_ipage_manager_define                    ( ofaIPageManager *instance,
 															GType type,
 															const gchar *label,
-															gboolean single );
+															gboolean multiple );
 
 ofaPage *ofa_ipage_manager_activate                  ( ofaIPageManager *instance,
 															GType type );

@@ -359,9 +359,6 @@
 
 1390 2017- 3-15 general book summary: have a new page on new class
 
-1391 2017- 3-15 signal multiple pages instead of single ones
-                + take care of reinitializing the counter on new dossier
-
 1392 2017- 3-16 check account soldes (val, rough, fut) vs balances of entries
 
 1393 2017- 3-16 operations generated on tva record: the month should be
@@ -854,6 +851,10 @@
 1388 2017- 3-15 when opening an exercice, should archive the RAN soldes
                 of the accounts, including the sum of the balancing account
                 (121EUR)
+     2017- 3-20 done
+
+1391 2017- 3-15 signal multiple pages instead of single ones
+                + take care of reinitializing the counter on new dossier
      2017- 3-20 done
 
 1394 2017- 3-16 when delete an account, also delete the archive
