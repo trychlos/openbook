@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 #include <math.h>
 
+#include "my/my-progress-bar.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
@@ -46,11 +47,13 @@ typedef struct {
 
 	/* UI
 	 */
-	GtkWidget *paned;
-	GtkWidget *drawing_area;
-	GtkWidget *msg_label;
-	GtkWidget *render_btn;
-	GtkWidget *print_btn;
+	GtkWidget     *paned;
+	GtkWidget     *drawing_area;
+	GtkWidget     *status_box;
+	GtkWidget     *msg_label;
+	myProgressBar *progress_bar;
+	GtkWidget     *render_btn;
+	GtkWidget     *print_btn;
 
 	/* from the derived class
 	 * this takes paper name and orientation into account
@@ -99,6 +102,9 @@ static void               on_print_clicked( GtkButton *button, ofaRenderPage *pa
 static cairo_t           *create_context( ofaRenderPage *page, gdouble width, gdouble height );
 static void               set_message( ofaRenderPage *page, const gchar *message, const gchar *color_name );
 static void               pdf_crs_free( GList **pdf_crs );
+static void               progress_begin( ofaRenderPage *self );
+static void               progress_end( ofaRenderPage *self );
+static void               on_irenderable_draw_page( ofaIRenderable *instance, gboolean paginating, guint page_num, guint pages_count, ofaRenderPage *self );
 static void               iprintable_iface_init( ofaIPrintableInterface *iface );
 static guint              iprintable_get_interface_version( const ofaIPrintable *instance );
 static const gchar       *iprintable_get_paper_name( ofaIPrintable *instance );
@@ -197,7 +203,7 @@ static GtkWidget *
 setup_view1( ofaRenderPage *self )
 {
 	ofaRenderPagePrivate *priv;
-	GtkWidget *grid, *scrolled, *viewport, *drawing, *label;
+	GtkWidget *grid, *scrolled, *viewport, *drawing;
 
 	priv = ofa_render_page_get_instance_private( self );
 
@@ -218,11 +224,18 @@ setup_view1( ofaRenderPage *self )
 	g_signal_connect( drawing, "draw", G_CALLBACK( on_draw ), self );
 	priv->drawing_area = drawing;
 
-	/* setup the message zone */
-	label = gtk_label_new( NULL );
-	gtk_grid_attach( GTK_GRID( grid ), label, 0, 1, 1, 1 );
-	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-	priv->msg_label = label;
+	/* setup the box
+	 * it defaults to contain a message zone (GtkLabel)
+	 * but during rendering, the label is substituted withg a progress bar
+	 */
+	priv->status_box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	gtk_grid_attach( GTK_GRID( grid ), priv->status_box, 0, 1, 1, 1 );
+
+	priv->msg_label = gtk_label_new( NULL );
+	gtk_label_set_xalign( GTK_LABEL( priv->msg_label ), 0 );
+	gtk_container_add( GTK_CONTAINER( priv->status_box ), priv->msg_label );
+
+	g_signal_connect( self, "ofa-draw-page", G_CALLBACK( on_irenderable_draw_page ), self );
 
 	return( grid );
 }
@@ -525,8 +538,10 @@ on_render_clicked( GtkButton *button, ofaRenderPage *page )
 
 	priv = ofa_render_page_get_instance_private( page );
 
+	progress_begin( page );
 	render_pdf( page );
 	gtk_widget_queue_draw( priv->drawing_area );
+	progress_end( page );
 }
 
 static void
@@ -624,6 +639,65 @@ ofa_render_page_get_top_paned( ofaRenderPage *page )
 	priv = ofa_render_page_get_instance_private( page );
 
 	return( priv->paned );
+}
+
+/*
+ * During pagination and rendering, replace the message label from the
+ * status box by a progress bar
+ */
+static void
+progress_begin( ofaRenderPage *self )
+{
+	ofaRenderPagePrivate *priv;
+
+	priv = ofa_render_page_get_instance_private( self );
+
+	g_object_ref( priv->msg_label );
+	gtk_container_remove( GTK_CONTAINER( priv->status_box ), priv->msg_label );
+
+	priv->progress_bar = my_progress_bar_new();
+	gtk_container_add( GTK_CONTAINER( priv->status_box ), GTK_WIDGET( priv->progress_bar ));
+
+	gtk_widget_show_all( priv->status_box );
+}
+
+static void
+progress_end( ofaRenderPage *self )
+{
+	ofaRenderPagePrivate *priv;
+
+	priv = ofa_render_page_get_instance_private( self );
+
+	gtk_container_remove( GTK_CONTAINER( priv->status_box ), GTK_WIDGET( priv->progress_bar ));
+	priv->progress_bar = NULL;
+
+	gtk_container_add( GTK_CONTAINER( priv->status_box ), priv->msg_label );
+	g_object_unref( priv->msg_label );
+
+	gtk_widget_show_all( priv->status_box );
+}
+
+static void
+on_irenderable_draw_page( ofaIRenderable *instance, gboolean paginating, guint page_num, guint pages_count, ofaRenderPage *self )
+{
+	ofaRenderPagePrivate *priv;
+	gdouble progress;
+	gchar *text;
+
+	priv = ofa_render_page_get_instance_private( self );
+
+	g_return_if_fail( priv->progress_bar && MY_IS_PROGRESS_BAR( priv->progress_bar ));
+
+	if( paginating ){
+		text = g_strdup_printf( _( "Paginating %u" ), page_num );
+		g_signal_emit_by_name( priv->progress_bar, "my-text", text );
+		g_free( text );
+
+	} else {
+		gtk_progress_bar_set_show_text( GTK_PROGRESS_BAR( priv->progress_bar ), FALSE );
+		progress = ( gdouble ) page_num / ( gdouble ) pages_count;
+		g_signal_emit_by_name( priv->progress_bar, "my-double", progress );
+	}
 }
 
 /*

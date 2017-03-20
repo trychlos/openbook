@@ -375,8 +375,6 @@
 1402 2017- 3-17 when generating the ODs for non-deductible CSG, should
                 also generate an OD for deductible CSG to 629 account 
 
-1403 2017- 3-17 have a progress bar on renderings
-
 1404 2017- 3-17 have a progress bar on printing (at least a sablier)
 
 1405
@@ -871,6 +869,9 @@
 1400 2017- 3-16 Gtk-CRITICAL **: gtk_tree_model_sort_get_path: assertion 'priv->stamp == iter->stamp' failed
                 when deleting the 69 account (last account of a page)
      2017- 3-16 fixed
+
+1403 2017- 3-17 have a progress bar on renderings
+     2017- 3-20 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

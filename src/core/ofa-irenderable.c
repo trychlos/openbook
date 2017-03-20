@@ -116,7 +116,16 @@ static const gchar  *st_default_no_data_font               = "Sans 18";
 
 static const gdouble st_page_margin                        = 2.0;
 
-static guint st_initializations = 0;	/* interface initialization count */
+/* signals defined here
+ */
+enum {
+	DRAWPAGE = 0,
+	N_SIGNALS
+};
+
+static gint  st_signals[ N_SIGNALS ]    = { 0 };
+
+static guint st_initializations         =   0;	/* interface initialization count */
 
 static GType         register_type( void );
 static void          interface_base_init( ofaIRenderableInterface *klass );
@@ -217,6 +226,7 @@ interface_base_init( ofaIRenderableInterface *klass )
 	static const gchar *thisfn = "ofa_irenderable_interface_base_init";
 
 	if( st_initializations == 0 ){
+
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
 		klass->get_body_font = irenderable_get_body_font;
@@ -227,6 +237,35 @@ interface_base_init( ofaIRenderableInterface *klass )
 		klass->draw_page_header = irenderable_draw_page_header;
 		klass->is_new_group = irenderable_is_new_group;
 		klass->draw_page_footer = irenderable_draw_page_footer;
+
+		/**
+		 * ofaIRenderable::ofa-draw-page:
+		 * @page_num: counted from 1.
+		 * @pages_count:
+		 *  while pagination, is equal to current @page_num;
+		 *  equal to total pages count during rendering.
+		 *
+		 * The signal is emitted each time a page is drawned, first when
+		 * paginating and then when randering.
+		 *
+		 * Handler is of type:
+		 * 		void user_handler( ofaIRenderable *instance,
+		 * 		                    gboolean       paginating,
+		 * 							guint          page_num,
+		 * 							guint          pages_count,
+		 * 							gpointer       user_data );
+		 */
+		st_signals[ DRAWPAGE ] = g_signal_new_class_handler(
+					"ofa-draw-page",
+					OFA_TYPE_IRENDERABLE,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					3,
+					G_TYPE_BOOLEAN, G_TYPE_UINT, G_TYPE_UINT );
 	}
 
 	st_initializations += 1;
@@ -403,6 +442,9 @@ draw_page( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
 	gint count;
 	gboolean is_last;
 	gdouble req_height;
+
+	g_signal_emit_by_name( instance, "ofa-draw-page",
+			sdata->paginating, 1+page_num, sdata->pages_count ? sdata->pages_count : 1+page_num );
 
 	/*g_debug( "draw_page: page_num=%d, count=%d", page_num, g_list_length( sdata->dataset ));*/
 	sdata->last_y = 0;

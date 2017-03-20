@@ -33,6 +33,7 @@
    - Review the window geometry management (todo #1285).
    - Let the user have a pin button to detach main tabs.
    - Pages which may be opened several times are numbered (todo #1380).
+   - Printings: have a progression bar during pagination and rendering (todo #1403).
    - VAT declaration: let the label be edited by the user (todo #1378).
 
  Bug fixes:

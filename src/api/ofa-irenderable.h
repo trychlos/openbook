@@ -33,6 +33,12 @@
  *
  * The #ofaIRenderable interface lets its users benefit of the
  * standardized printing system of Openbook.
+ *
+ * Signals:
+ * - 'ofa-draw-page': is emitted during pagination, both when computing
+ *   the pages count, then when actually drawing the pages;
+ *   example, if the final printing has 5 pages, the signal will be
+ *   emitted 10 times.
  */
 
 #include <glib.h>
