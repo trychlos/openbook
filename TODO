@@ -376,6 +376,7 @@
                 also generate an OD for deductible CSG to 629 account 
 
 1404 2017- 3-17 have a progress bar on printing (at least a sablier)
+     2017- 3-20 probably should use gdk_cursor_new_from_name( display, "wait" );
 
 1405
 
