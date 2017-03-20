@@ -352,10 +352,7 @@
 1385 2017- 3-15 have a printing with solde at the beginning + solde of
                 entries = solde at the end of the period
 
-1386 2017- 3-15 merge ledgers book and ledger summary renders
-
-1389 2017- 3-15 export count is wrong (e.g. account displays 602/201)
-                is not reinitialized between exports
+1386 2017- 3-15 merge ledgers book and ledger summary renders ?
 
 1390 2017- 3-15 general book summary: have a new page on new class
 
@@ -852,6 +849,10 @@
                 of the accounts, including the sum of the balancing account
                 (121EUR)
      2017- 3-20 done
+
+1389 2017- 3-15 export count is wrong (e.g. account displays 602/201)
+                is not reinitialized between exports
+     2017- 3-20 fixed
 
 1391 2017- 3-15 signal multiple pages instead of single ones
                 + take care of reinitializing the counter on new dossier

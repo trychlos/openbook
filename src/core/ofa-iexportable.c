@@ -254,6 +254,8 @@ ofa_iexportable_export_to_uri( ofaIExportable *exportable,
 
 	sdata->settings = settings;
 	sdata->instance = progress;
+	sdata->count = 0;
+	sdata->progress = 0;
 
 	if( !my_utils_output_stream_new( uri, &output_file, &output_stream )){
 		return( FALSE );
