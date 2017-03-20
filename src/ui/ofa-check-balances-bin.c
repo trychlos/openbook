@@ -605,40 +605,44 @@ set_checks_result( ofaCheckBalancesBin *self )
 {
 	ofaCheckBalancesBinPrivate *priv;
 	GtkWidget *label;
+	gboolean cmpres;
 
 	priv = ofa_check_balances_bin_get_instance_private( self );
 
+	cmpres = TRUE;
 	priv->result = priv->entries_ok && priv->ledgers_ok && priv->accounts_ok;
 
-	if( !priv->result ){
-		if( priv->display ){
-			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING,
-					_( "We have detected losses of balance in your books.\n\n"
-						"In this current state, we will be unable to close this "
-						"exercice until you fix your balances." ));
-		}
+	if( priv->result &&
+		( priv->entries_list || priv->ledgers_list || priv->accounts_list )){
 
-	} else if( !priv->entries_list && !priv->ledgers_list && !priv->accounts_list ){
-		my_utils_msg_dialog( NULL, GTK_MESSAGE_INFO,
-				_( "Your books appear empty." ));
-
-	} else {
 		g_return_if_fail( priv->entries_list );
 		g_return_if_fail( priv->ledgers_list );
 		g_return_if_fail( priv->accounts_list );
 
-		priv->result &= cmp_lists( self, priv->entries_list, priv->ledgers_list );
-		priv->result &= cmp_lists( self, priv->entries_list, priv->accounts_list );
+		cmpres &= cmp_lists( self, priv->entries_list, priv->ledgers_list );
+		cmpres &= cmp_lists( self, priv->entries_list, priv->accounts_list );
 	}
 
 	if( priv->display ){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-label-end" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-		if( priv->result ){
+		if( !priv->entries_list && !priv->ledgers_list && !priv->accounts_list ){
+			gtk_label_set_text( GTK_LABEL( label ),
+					_( "Your books appear empty." ));
+			my_style_add( label, "labelinfo" );
+
+		} else if( priv->result && cmpres ){
 			gtk_label_set_text( GTK_LABEL( label ),
 					_( "Your books are rightly balanced. Good !" ));
 			my_style_add( label, "labelinfo" );
+
+		} else if( !priv->result ){
+			gtk_label_set_text( GTK_LABEL( label ),
+					_( "We have detected losses of balance in your books.\n"
+						"In this current state, we will be unable to close this "
+						"exercice until you fix your balances." ));
+			my_style_add( label, "labelerror" );
 
 		} else {
 			gtk_label_set_text( GTK_LABEL( label ),
@@ -649,6 +653,8 @@ set_checks_result( ofaCheckBalancesBin *self )
 			my_style_add( label, "labelerror" );
 		}
 	}
+
+	priv->result &= cmpres;
 }
 
 static gboolean
