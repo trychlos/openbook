@@ -368,7 +368,7 @@ my_icollector_collection_sort( myICollector *instance, GType type, GCompareFunc 
 /**
  * my_icollector_collection_free:
  * @instance: this #myICollector instance.
- * @type: the GType of the collection to be re-sorted.
+ * @type: the GType of the collection to be released.
  *
  * Free the collection of objects.
  */

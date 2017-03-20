@@ -1190,6 +1190,28 @@ ofo_entry_get_rule( const ofoEntry *entry )
 }
 
 /**
+ * ofo_entry_get_rule_dbms:
+ * @rule: a #ofeEntryRule rule.
+ *
+ * Returns: the dbms indicator corresponding to @rule.
+ */
+const gchar *
+ofo_entry_get_rule_dbms( ofeEntryRule rule )
+{
+	static const gchar *thisfn = "ofo_entry_get_rule_dbms";
+	gint i;
+
+	for( i=0 ; st_rule[i].num ; ++i ){
+		if( st_rule[i].num == rule ){
+			return( st_rule[i].str );
+		}
+	}
+
+	g_warning( "%s: unknown rule %u", thisfn, rule );
+	return( NULL );
+}
+
+/**
  * ofo_entry_get_rule_str:
  *
  * Returns: the localized rule indicator for this @entry.

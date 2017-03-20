@@ -354,10 +354,6 @@
 
 1386 2017- 3-15 merge ledgers book and ledger summary renders
 
-1388 2017- 3-15 when opening an exercice, should archive the RAN soldes
-                of the accounts, including the sum of the balancing account
-                (121EUR)
-
 1389 2017- 3-15 export count is wrong (e.g. account displays 602/201)
                 is not reinitialized between exports
 
@@ -854,6 +850,11 @@
                 closing, only archive which were reconciliated/settled
                 during the corresponding exercice
      2017- 3-20 fixed
+
+1388 2017- 3-15 when opening an exercice, should archive the RAN soldes
+                of the accounts, including the sum of the balancing account
+                (121EUR)
+     2017- 3-20 done
 
 1394 2017- 3-16 when delete an account, also delete the archive
      2017- 3-16 done

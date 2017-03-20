@@ -45,6 +45,7 @@
 #include "api/ofo-account.h"
 #include "api/ofo-account-v34.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-entry.h"
 #include "api/ofo-ope-template.h"
 
 #include "mysql/ofa-mysql-dbmodel.h"
@@ -130,6 +131,8 @@ static gboolean dbmodel_v34( ofaMysqlDBModel *self, gint version );
 static gulong   count_v34( ofaMysqlDBModel *self );
 static gboolean dbmodel_v35( ofaMysqlDBModel *self, gint version );
 static gulong   count_v35( ofaMysqlDBModel *self );
+static gboolean dbmodel_v36( ofaMysqlDBModel *self, gint version );
+static gulong   count_v36( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -148,6 +151,7 @@ static sMigration st_migrates[] = {
 		{ 33, dbmodel_v33, count_v33 },
 		{ 34, dbmodel_v34, count_v34 },
 		{ 35, dbmodel_v35, count_v35 },
+		{ 36, dbmodel_v36, count_v36 },
 		{ 0 }
 };
 
@@ -1725,6 +1729,7 @@ dbmodel_v31( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
+	/* altered in v36 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS_ARC ("
 			"	ACC_NUMBER          VARCHAR(64)    BINARY NOT NULL    COMMENT 'Account identifier',"
@@ -2265,4 +2270,90 @@ static gulong
 count_v35( ofaMysqlDBModel *self )
 {
 	return( 24 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v36:
+ *
+ * - OFA_T_ACCOUNTS_ARC: have a balance type (#1388)
+ */
+static gboolean
+dbmodel_v36( ofaMysqlDBModel *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v36";
+	ofaMysqlDBModelPrivate *priv;
+	gchar *query;
+	gboolean ok;
+	const gchar *normal_type, *open_type, *forward_rule;
+	gchar *sdbegin;
+	GSList *result, *irow;
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	priv = ofa_mysql_dbmodel_get_instance_private( self );
+
+	normal_type = ofo_account_get_balance_type_dbms( ACC_TYPE_NORMAL );
+	open_type = ofo_account_get_balance_type_dbms( ACC_TYPE_OPEN );
+	forward_rule = ofo_entry_get_rule_dbms( ENT_RULE_FORWARD );
+
+	/* 1 - get dossier begin exercice */
+	query = g_strdup_printf( "SELECT DOS_EXE_BEGIN FROM OFA_T_DOSSIER WHERE DOS_ID=%u", DOSSIER_ROW_ID );
+	ok = ofa_idbconnect_query_ex( priv->connect, query, &result, TRUE );
+	priv->current += 1;
+	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
+	g_free( query );
+	if( !ok ){
+		return( FALSE );
+	}
+	irow = ( GSList * ) result->data;
+	sdbegin = g_strdup(( const gchar * )(( irow && irow->data ) ? irow->data : NULL ));
+	ofa_idbconnect_free_results( result );
+	g_debug( "%s: sdbegin='%s'", thisfn, sdbegin );
+
+	/* 2. alter accounts_arc */
+	query = g_strdup_printf(
+			"ALTER TABLE OFA_T_ACCOUNTS_ARC "
+			"	ADD COLUMN    ACC_ARC_TYPE  CHAR(1) NOT NULL DEFAULT '%s'           COMMENT 'Account archived balance type',"
+			"	DROP INDEX ACC_NUMBER,"
+			"	ADD UNIQUE(ACC_NUMBER,ACC_ARC_DATE,ACC_ARC_TYPE)",
+				normal_type );
+	ok = exec_query( self, query );
+	g_free( query );
+	if( !ok ){
+		g_free( sdbegin );
+		return( FALSE );
+	}
+
+	/* 3. compute opening exercice balance */
+	if( my_strlen( sdbegin )){
+		query = g_strdup_printf(
+				"INSERT INTO OFA_T_ACCOUNTS_ARC "
+				"	(ACC_NUMBER,ACC_ARC_DATE,ACC_ARC_TYPE,ACC_ARC_DEBIT,ACC_ARC_CREDIT) "
+				"		SELECT ENT_ACCOUNT,'%s','%s',SUM(ENT_DEBIT),SUM(ENT_CREDIT) "
+				"			FROM OFA_T_ENTRIES WHERE ENT_RULE='%s' GROUP BY ENT_ACCOUNT",
+					sdbegin, open_type, forward_rule );
+		ok = exec_query( self, query );
+		g_free( query );
+		if( !ok ){
+			g_free( sdbegin );
+			return( FALSE );
+		}
+	} else {
+		priv->current += 1;
+		my_iprogress_pulse( priv->window, self, priv->current, priv->total );
+	}
+
+	g_free( sdbegin );
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v36( ofaMysqlDBModel *self )
+{
+	return( 3 );
 }

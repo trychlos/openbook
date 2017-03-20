@@ -84,6 +84,7 @@ enum {
 	ACC_FUT_DEBIT,
 	ACC_FUT_CREDIT,
 	ACC_ARC_DATE,
+	ACC_ARC_TYPE,
 	ACC_ARC_DEBIT,
 	ACC_ARC_CREDIT,
 };
@@ -185,6 +186,10 @@ static const ofsBoxDef st_archive_defs[] = {
 				OFA_TYPE_DATE,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( ACC_ARC_TYPE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( ACC_ARC_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
@@ -231,14 +236,34 @@ typedef struct {
 #define EXPORTED_FORWARDABLE            "F"
 #define EXPORTED_CLOSED                 "C"
 
+/* manage the type of the account archived balance
+ * @dbms: the character stored in dbms
+ * @sls: a short localized string
+ * @lls: a long localized string
+ */
+typedef struct {
+	ofeAccountType type;
+	const gchar   *dbms;
+	const gchar   *sls;
+	const gchar   *lls;
+}
+	sType;
+
+static sType st_type[] = {
+		{ ACC_TYPE_OPEN,   "O", N_( "O" ), N_( "Opening" ) },
+		{ ACC_TYPE_NORMAL, "N", N_( "N" ), N_( "Normal" ) },
+		{ 0 },
+};
+
 static void         archives_list_free_detail( GList *fields );
 static void         archives_list_free( ofoAccount *account );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
-static gboolean     archive_do_add_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit );
-static void         archive_do_add_list( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit );
+static gboolean     archive_balances_ex( ofoAccount *account, const GDate *exe_begin, const GDate *archive_date, ofeAccountType type );
+static gboolean     archive_do_add_dbms( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
+static void         archive_do_add_list( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
 static gint         archive_get_last_index( ofoAccount *account, const GDate *requested );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
@@ -1159,6 +1184,102 @@ ofo_account_is_allowed( const ofoAccount *account, gint allowed )
 }
 
 /**
+ * ofo_account_get_balance_type_dbms:
+ * @type: an #ofeAccountType.
+ *
+ * Returns the dbms indicator corresponding to @type.
+ *
+ * The returned string is owned by #ofoAccount class, and should not be
+ * released by the caller.
+ */
+const gchar *
+ofo_account_get_balance_type_dbms( ofeAccountType type )
+{
+	static const gchar *thisfn = "ofo_account_get_balance_type_dbms";
+	gint i;
+
+	for( i=0 ; st_type[i].type ; ++i ){
+		if( st_type[i].type == type ){
+			return( st_type[i].dbms );
+		}
+	}
+
+	g_warning( "%s: unknown type %u", thisfn, type );
+	return( NULL );
+}
+
+/**
+ * ofo_account_get_balance_type_short:
+ * @type: an #ofeAccountType.
+ *
+ * Returns the short localized string corresponding to @type.
+ *
+ * The returned string is owned by #ofoAccount class, and should not be
+ * released by the caller.
+ */
+const gchar *
+ofo_account_get_balance_type_short( ofeAccountType type )
+{
+	static const gchar *thisfn = "ofo_account_get_balance_type_short";
+	gint i;
+
+	for( i=0 ; st_type[i].type ; ++i ){
+		if( st_type[i].type == type ){
+			return( gettext( st_type[i].sls ));
+		}
+	}
+
+	g_warning( "%s: unknown type %u", thisfn, type );
+	return( NULL );
+}
+
+/**
+ * ofo_account_archive_openings:
+ * @getter: the #ofaIGetter of the application.
+ * @exe_begin: the beginning of the exercice
+ *
+ * Archive the balance of the accounts at the beginning of the exercice.
+ */
+gboolean
+ofo_account_archive_openings( ofaIGetter *getter, const GDate *exe_begin )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	gchar *sdbegin, *query;
+	const gchar *open_type, *forward_rule;
+	gboolean ok;
+	myICollector *collector;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	sdbegin = my_date_to_str( exe_begin, MY_DATE_SQL );
+	open_type = ofo_account_get_balance_type_dbms( ACC_TYPE_OPEN );
+	forward_rule = ofo_entry_get_rule_dbms( ENT_RULE_FORWARD );
+
+	query = g_strdup_printf(
+			"INSERT INTO OFA_T_ACCOUNTS_ARC "
+			"	(ACC_NUMBER,ACC_ARC_DATE,ACC_ARC_TYPE,ACC_ARC_DEBIT,ACC_ARC_CREDIT) "
+			"		SELECT ENT_ACCOUNT,'%s','%s',SUM(ENT_DEBIT),SUM(ENT_CREDIT) "
+			"			FROM OFA_T_ENTRIES WHERE ENT_RULE='%s' GROUP BY ENT_ACCOUNT",
+				sdbegin, open_type, forward_rule );
+
+	ok = ofa_idbconnect_query( connect, query, TRUE );
+
+	g_free( query );
+	g_free( sdbegin );
+
+	if( ok ){
+		collector = ofa_igetter_get_collector( getter );
+		my_icollector_collection_free( collector, OFO_TYPE_ACCOUNT );
+	}
+
+	return( ok );
+}
+
+/**
  * ofo_account_archive_balances:
  * @account: this #ofoAccount object.
  * @archive_date: the archived date.
@@ -1192,19 +1313,19 @@ ofo_account_archive_balances( ofoAccount *account, const GDate *archive_date )
 	dossier = ofa_hub_get_dossier( hub );
 	exe_begin = ofo_dossier_get_exe_begin( dossier );
 
-	return( ofo_account_archive_balances_ex( account, exe_begin, archive_date ));
+	return( archive_balances_ex( account, exe_begin, archive_date, ACC_TYPE_NORMAL ));
 }
 
-/**
- * ofo_account_archive_balances:
+/*
+ * ofo_account_archive_balances_ex:
  * @account: this #ofoAccount object.
  * @exe_begin: the beginning of the exercice.
  * @archive_date: the archived date.
  *
  * Archive accounts balances.
  */
-gboolean
-ofo_account_archive_balances_ex( ofoAccount *account, const GDate *exe_begin, const GDate *archive_date )
+static gboolean
+archive_balances_ex( ofoAccount *account, const GDate *exe_begin, const GDate *archive_date, ofeAccountType type )
 {
 	gboolean ok;
 	ofaIGetter *getter;
@@ -1223,6 +1344,7 @@ ofo_account_archive_balances_ex( ofoAccount *account, const GDate *exe_begin, co
 	getter = ofo_base_get_getter( OFO_BASE( account ));
 	my_date_clear( &from_date );
 	last_index = archive_get_last_index( account, archive_date );
+	type = ACC_TYPE_NORMAL;
 
 	if( last_index >= 0 ){
 		my_date_set_from_date( &from_date, ofo_account_archive_get_date( account, last_index ));
@@ -1252,8 +1374,8 @@ ofo_account_archive_balances_ex( ofoAccount *account, const GDate *exe_begin, co
 		credit += ofo_account_archive_get_credit( account, last_index );
 	}
 
-	if( archive_do_add_dbms( account, archive_date, debit, credit )){
-		archive_do_add_list( account, archive_date, debit, credit );
+	if( archive_do_add_dbms( account, archive_date, type, debit, credit )){
+		archive_do_add_list( account, archive_date, type, debit, credit );
 		ok = TRUE;
 	}
 
@@ -1261,7 +1383,7 @@ ofo_account_archive_balances_ex( ofoAccount *account, const GDate *exe_begin, co
 }
 
 static gboolean
-archive_do_add_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit )
+archive_do_add_dbms( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit )
 {
 	ofaIGetter *getter;
 	ofaHub *hub;
@@ -1286,10 +1408,10 @@ archive_do_add_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, of
 
 	query = g_strdup_printf(
 				"INSERT INTO OFA_T_ACCOUNTS_ARC "
-				"	(ACC_NUMBER, ACC_ARC_DATE, ACC_ARC_DEBIT, ACC_ARC_CREDIT) VALUES "
-				"	('%s','%s',%s,%s)",
+				"	(ACC_NUMBER,ACC_ARC_DATE,ACC_ARC_TYPE,ACC_ARC_DEBIT,ACC_ARC_CREDIT) VALUES "
+				"	('%s','%s','%s',%s,%s)",
 				ofo_account_get_number( account ),
-				sdate, sdebit, scredit );
+				sdate, ofo_account_get_balance_type_dbms( type ), sdebit, scredit );
 
 	ok = ofa_idbconnect_query( connect, query, TRUE );
 
@@ -1302,7 +1424,7 @@ archive_do_add_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, of
 }
 
 static void
-archive_do_add_list( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit )
+archive_do_add_list( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit )
 {
 	ofoAccountPrivate *priv;
 	GList *fields;
@@ -1312,6 +1434,7 @@ archive_do_add_list( ofoAccount *account, const GDate *date, ofxAmount debit, of
 	fields = ofa_box_init_fields_list( st_archive_defs );
 	ofa_box_set_string( fields, ACC_NUMBER, ofo_account_get_number( account ));
 	ofa_box_set_date( fields, ACC_ARC_DATE, date );
+	ofa_box_set_string( fields, ACC_ARC_TYPE, ofo_account_get_balance_type_dbms( type ));
 	ofa_box_set_amount( fields, ACC_ARC_DEBIT, debit );
 	ofa_box_set_amount( fields, ACC_ARC_CREDIT, credit );
 
@@ -1361,6 +1484,40 @@ ofo_account_archive_get_date( ofoAccount *account, guint idx )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofo_account_archive_get_type:
+ * @account: the #ofoAccount account.
+ * @idx: the desired index, counted from zero.
+ *
+ * Returns: the balance type.
+ */
+ofeAccountType
+ofo_account_archive_get_type( ofoAccount *account, guint idx )
+{
+	ofoAccountPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+	gint i;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), ACC_TYPE_NORMAL );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, ACC_TYPE_NORMAL );
+
+	priv = ofo_account_get_instance_private( account );
+
+	nth = g_list_nth( priv->archives, idx );
+	if( nth ){
+		cstr = ofa_box_get_string( nth->data, ACC_ARC_TYPE );
+
+		for( i=0 ; st_type[i].type ; ++i ){
+			if( !my_collate( st_type[i].dbms, cstr )){
+				return( st_type[i].type );
+			}
+		}
+	}
+
+	return( ACC_TYPE_NORMAL );
 }
 
 /**

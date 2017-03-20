@@ -75,6 +75,7 @@ typedef struct {
  * @ACCOUNT_ARC_COL_SYMBOL1   : currency symbol                String       Yes
  * @ACCOUNT_ARC_COL_CREDIT    : credit                         String       Yes
  * @ACCOUNT_ARC_COL_SYMBOL2   : currency symbol                String       Yes
+ * @ACCOUNT_ARC_COL_TYPE      : balance type                   String       Yes
  * @ACCOUNT_ARC_COL_ACCOUNT   : account object                 GObject       No
  * @ACCOUNT_ARC_COL_CURRENCY  : currency object                GObject       No
  */
@@ -84,6 +85,7 @@ enum {
 	ACCOUNT_ARC_COL_SYMBOL1,
 	ACCOUNT_ARC_COL_CREDIT,
 	ACCOUNT_ARC_COL_SYMBOL2,
+	ACCOUNT_ARC_COL_TYPE,
 	ACCOUNT_ARC_COL_ACCOUNT,
 	ACCOUNT_ARC_COL_CURRENCY,
 	ACCOUNT_ARC_N_COLUMNS

@@ -52,7 +52,7 @@ typedef struct {
 
 static GType st_col_types[ACCOUNT_ARC_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* date, debit, symbol1 */
-		G_TYPE_STRING, G_TYPE_STRING,					/* credit, symbol2 */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* credit, symbol2, type */
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* #ofoAccount, #ofoCurrency */
 };
 
@@ -216,7 +216,8 @@ set_row_by_iter( ofaAccountArcStore *self, ofoAccount *account, gint i, GtkTreeI
 	ofaAccountArcStorePrivate *priv;
 	gchar *sdate, *sdebit, *scredit;
 	ofoCurrency *currency;
-	const gchar *symbol;
+	const gchar *symbol, *stype;
+	ofeAccountType type;
 
 	priv = ofa_account_arc_store_get_instance_private( self );
 
@@ -228,6 +229,9 @@ set_row_by_iter( ofaAccountArcStore *self, ofoAccount *account, gint i, GtkTreeI
 	sdebit = ofa_amount_to_str( ofo_account_archive_get_debit( account, i ), currency, priv->getter );
 	scredit = ofa_amount_to_str( ofo_account_archive_get_credit( account, i ), currency, priv->getter );
 
+	type = ofo_account_archive_get_type( account, i );
+	stype = ofo_account_get_balance_type_short( type );
+
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
@@ -236,6 +240,7 @@ set_row_by_iter( ofaAccountArcStore *self, ofoAccount *account, gint i, GtkTreeI
 			ACCOUNT_ARC_COL_SYMBOL1,  symbol,
 			ACCOUNT_ARC_COL_CREDIT,   scredit,
 			ACCOUNT_ARC_COL_SYMBOL2,  symbol,
+			ACCOUNT_ARC_COL_TYPE,     stype,
 			ACCOUNT_ARC_COL_ACCOUNT,  account,
 			ACCOUNT_ARC_COL_CURRENCY, currency,
 			-1 );

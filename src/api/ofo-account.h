@@ -84,6 +84,20 @@ typedef enum {
 }
 	ofeAccountAllowed;
 
+/**
+ * ofeAccountType:
+ *
+ * This is a type attached to the archvied of account balance.
+ *
+ * @ACC_TYPE_OPEN: the balance of the account when opening the exercice.
+ * @ACC_TYPE_NORMAL: a balance archived dduring the exercice.
+ */
+typedef enum {
+	ACC_TYPE_OPEN = 1,
+	ACC_TYPE_NORMAL
+}
+	ofeAccountType;
+
 /* data max length */
 #define ACC_NUMBER_WIDTH                10
 #define ACC_NUMBER_MAX_LENGTH           64
@@ -130,12 +144,16 @@ gboolean        ofo_account_has_children            ( const ofoAccount *account 
 GList          *ofo_account_get_children            ( const ofoAccount *account );
 gboolean        ofo_account_is_child_of             ( const ofoAccount *account, const gchar *candidate );
 gboolean        ofo_account_is_allowed              ( const ofoAccount *account, gint allowed );
+const gchar    *ofo_account_get_balance_type_dbms   ( ofeAccountType type );
+const gchar    *ofo_account_get_balance_type_short  ( ofeAccountType type );
 
+gboolean        ofo_account_archive_openings        ( ofaIGetter *getter, const GDate *exe_begin );
 gboolean        ofo_account_archive_balances        ( ofoAccount *account, const GDate *date );
-gboolean        ofo_account_archive_balances_ex     ( ofoAccount *account, const GDate *exe_begin, const GDate *date );
+gboolean        ofo_account_archive_balances_ex     ( ofoAccount *account, const GDate *exe_begin, const GDate *date, ofeAccountType type );
 
 guint           ofo_account_archive_get_count       ( ofoAccount *account );
 const GDate    *ofo_account_archive_get_date        ( ofoAccount *account, guint idx );
+ofeAccountType  ofo_account_archive_get_type        ( ofoAccount *account, guint idx );
 ofxAmount       ofo_account_archive_get_debit       ( ofoAccount *account, guint idx );
 ofxAmount       ofo_account_archive_get_credit      ( ofoAccount *account, guint idx );
 

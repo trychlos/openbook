@@ -171,6 +171,7 @@ setup_columns( ofaAccountArcTreeview *self )
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_ARC_COL_SYMBOL1,      " ",        NULL );
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_ARC_COL_CREDIT,    _( "Credit" ), NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_ARC_COL_SYMBOL2,      " ",        NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_ARC_COL_TYPE,      _( "Type" ),   NULL );
 
 	ofa_itvcolumnable_show_columns_all( OFA_ITVCOLUMNABLE( self ));
 
@@ -201,8 +202,8 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	static const gchar *thisfn = "ofa_account_arc_treeview_v_sort";
 	ofaAccountArcTreeviewPrivate *priv;
 	gint cmp;
-	gchar *sdatea, *debita, *credita, *symbola;
-	gchar *sdateb, *debitb, *creditb, *symbolb;
+	gchar *sdatea, *debita, *credita, *symbola, *stypea;
+	gchar *sdateb, *debitb, *creditb, *symbolb, *stypeb;
 
 	priv = ofa_account_arc_treeview_get_instance_private( OFA_ACCOUNT_ARC_TREEVIEW( tvbin ));
 
@@ -211,6 +212,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			ACCOUNT_ARC_COL_DEBIT,   &debita,
 			ACCOUNT_ARC_COL_SYMBOL1, &symbola,
 			ACCOUNT_ARC_COL_CREDIT,  &credita,
+			ACCOUNT_ARC_COL_TYPE,    &stypea,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
@@ -218,6 +220,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			ACCOUNT_ARC_COL_DEBIT,   &debitb,
 			ACCOUNT_ARC_COL_SYMBOL1, &symbolb,
 			ACCOUNT_ARC_COL_CREDIT,  &creditb,
+			ACCOUNT_ARC_COL_TYPE,    &stypeb,
 			-1 );
 
 	cmp = 0;
@@ -236,6 +239,9 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 		case ACCOUNT_ARC_COL_SYMBOL2:
 			cmp = my_collate( symbola, symbolb );
 			break;
+		case ACCOUNT_ARC_COL_TYPE:
+			cmp = my_collate( stypea, stypeb );
+			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, column_id );
 			break;
@@ -245,11 +251,13 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( debita );
 	g_free( credita );
 	g_free( symbola );
+	g_free( stypea );
 
 	g_free( sdateb );
 	g_free( debitb );
 	g_free( creditb );
 	g_free( symbolb );
+	g_free( stypeb );
 
 	return( cmp );
 }

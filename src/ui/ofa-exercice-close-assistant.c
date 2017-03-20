@@ -193,6 +193,7 @@ static gboolean       p6_do_archive_exercice( ofaExerciceCloseAssistant *self, g
 static gboolean       p6_cleanup( ofaExerciceCloseAssistant *self );
 static gboolean       p6_forward( ofaExerciceCloseAssistant *self );
 static gboolean       p6_open( ofaExerciceCloseAssistant *self );
+static gboolean       p6_accarc( ofaExerciceCloseAssistant *self );
 static gboolean       p6_future( ofaExerciceCloseAssistant *self );
 static gboolean       p6_opening_plugin( ofaExerciceCloseAssistant *self );
 static myProgressBar *get_new_bar( ofaExerciceCloseAssistant *self, const gchar *w_name );
@@ -1928,6 +1929,40 @@ p6_open( ofaExerciceCloseAssistant *self )
 			ofo_ledger_archive_balances( for_ledger, begin_next );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-open" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
+	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
+
+	if( ok ){
+		g_idle_add(( GSourceFunc ) p6_accarc, self );
+
+	} else {
+		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
+		my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
+	}
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
+}
+
+/*
+ * archive the opening balances of detail accounts
+ * only considering those which have a non-null balance
+ */
+static gboolean
+p6_accarc( ofaExerciceCloseAssistant *self )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	const GDate *begin_next;
+	gboolean ok;
+	GtkWidget *label;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( self );
+
+	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
+
+	ok = ofo_account_archive_openings( priv->getter, begin_next );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-accarc" );
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
 	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
 

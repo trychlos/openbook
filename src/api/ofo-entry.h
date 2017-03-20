@@ -164,6 +164,7 @@ const gchar    *ofo_entry_get_abr_from_status        ( ofeEntryStatus status );
 const gchar    *ofo_entry_get_status_label           ( const ofoEntry *entry );
 ofeEntryStatus  ofo_entry_get_status_from_abr        ( const gchar *abr_status );
 ofeEntryRule    ofo_entry_get_rule                   ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_rule_dbms              ( ofeEntryRule rule );
 const gchar    *ofo_entry_get_rule_str               ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_rule_label             ( const ofoEntry *entry );
 ofxCounter      ofo_entry_get_ope_number             ( const ofoEntry *entry );
