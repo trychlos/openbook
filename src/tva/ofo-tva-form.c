@@ -2285,7 +2285,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	const gchar *mnemo;
 	ofoTVAForm *form;
 	gboolean insert;
-	guint total;
+	guint total, type;
 	gchar *str;
 
 	total = g_list_length( dataset );
@@ -2310,6 +2310,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 		if( form_get_exists( form, connect )){
 			parms->duplicate_count += 1;
 			mnemo = ofo_tva_form_get_mnemo( form );
+			type = MY_PROGRESS_NORMAL;
 
 			switch( parms->mode ){
 				case OFA_IDUPLICATE_REPLACE:
@@ -2323,6 +2324,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 					break;
 				case OFA_IDUPLICATE_ABORT:
 					str = g_strdup_printf( _( "%s: erroneous duplicate VAT form" ), mnemo );
+					type = MY_PROGRESS_ERROR;
 					insert = FALSE;
 					total -= 1;
 					parms->insert_errs += 1;
@@ -2330,7 +2332,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			}
 		}
 		if( str ){
-			ofa_iimporter_progress_text( importer, parms, str );
+			ofa_iimporter_progress_text( importer, parms, type, str );
 			g_free( str );
 		}
 		if( insert ){

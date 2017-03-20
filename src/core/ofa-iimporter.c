@@ -419,7 +419,7 @@ ofa_iimporter_import( ofaIImporter *instance, ofsImporterParms *parms )
 	/* then import the parsed datas
 	 */
 	if( msgerr ){
-		ofa_iimporter_progress_text( instance, parms, msgerr );
+		ofa_iimporter_progress_text( instance, parms, MY_PROGRESS_ERROR, msgerr );
 		g_free( msgerr );
 		error_count += 1;
 
@@ -439,7 +439,7 @@ ofa_iimporter_import( ofaIImporter *instance, ofsImporterParms *parms )
 			msgerr = g_strdup_printf(
 							_( "Expected headers count=%u greater than count of lines=%u read from '%s' file" ),
 								headers_count, parms->lines_count, parms->uri );
-			ofa_iimporter_progress_text( instance, parms, msgerr );
+			ofa_iimporter_progress_text( instance, parms, MY_PROGRESS_ERROR, msgerr );
 			g_free( msgerr );
 		}
 
@@ -447,7 +447,7 @@ ofa_iimporter_import( ofaIImporter *instance, ofsImporterParms *parms )
 
 	} else {
 		msgerr = g_strdup( _( "empty parsed set" ));
-		ofa_iimporter_progress_text( instance, parms, msgerr );
+		ofa_iimporter_progress_text( instance, parms, MY_PROGRESS_NORMAL, msgerr );
 		g_free( msgerr );
 	}
 
@@ -507,7 +507,7 @@ ofa_iimporter_progress_num_text( ofaIImporter *instance, ofsImporterParms *parms
 
 	if( parms->progress ){
 		str = g_strdup_printf( "[%u] %s\n", numline, text );
-		ofa_iimporter_progress_text( instance, parms, str );
+		ofa_iimporter_progress_text( instance, parms, MY_PROGRESS_NONE, str );
 		g_free( str );
 	}
 }
@@ -516,14 +516,15 @@ ofa_iimporter_progress_num_text( ofaIImporter *instance, ofsImporterParms *parms
  * ofa_iimporter_progress_text:
  * @instance: this #ofaIImporter instance.
  * @parms: the arguments of the methods.
+ * @type: the type of the @text.
  * @text: the text to be displayed.
  *
  * Acts as a proxy to #myIProgress::set_text() method.
  */
 void
-ofa_iimporter_progress_text( ofaIImporter *instance, ofsImporterParms *parms, const gchar *text )
+ofa_iimporter_progress_text( ofaIImporter *instance, ofsImporterParms *parms, guint type, const gchar *text )
 {
 	if( parms->progress ){
-		my_iprogress_set_text( parms->progress, instance, text );
+		my_iprogress_set_text( parms->progress, instance, type, text );
 	}
 }

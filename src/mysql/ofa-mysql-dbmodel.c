@@ -408,7 +408,7 @@ exec_query( ofaMysqlDBModel *self, const gchar *query )
 
 	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
-	my_iprogress_set_text( priv->window, self, query );
+	my_iprogress_set_text( priv->window, self, MY_PROGRESS_NONE, query );
 
 	ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 

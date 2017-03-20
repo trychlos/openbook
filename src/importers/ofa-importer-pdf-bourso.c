@@ -392,7 +392,7 @@ bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImpor
 	doc = poppler_document_new_from_file( parms->uri, NULL, &error );
 	if( !doc ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, error->message );
+			my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, error->message );
 		}
 		g_error_free( error );
 		return( NULL );
@@ -526,28 +526,28 @@ bourso_pdf_v1_parse_header_first( ofaImporterPdfBourso *self, const sParser *par
 
 	if( !begin_found ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, _( "beginning date not found" ));
+			my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, _( "beginning date not found" ));
 		}
 		parms->parse_errs += 1;
 		ok = FALSE;
 	}
 	if( !end_found ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, _( "ending date not found" ));
+			my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, _( "ending date not found" ));
 		}
 		parms->parse_errs += 1;
 		ok = FALSE;
 	}
 	if( !iban_found ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, _( "IBAN not found" ));
+			my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, _( "IBAN not found" ));
 		}
 		parms->parse_errs += 1;
 		ok = FALSE;
 	}
 	if( !begin_solde_found ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, _( "beginning solde not found" ));
+			my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, _( "beginning solde not found" ));
 		}
 		parms->parse_errs += 1;
 		ok = FALSE;
@@ -598,7 +598,7 @@ bourso_pdf_v1_parse_header_last( ofaImporterPdfBourso *self, const sParser *pars
 
 	if( !end_solde_found ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, _( "ending solde not found" ));
+			my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, _( "ending solde not found" ));
 		}
 		parms->parse_errs += 1;
 		ok = FALSE;
@@ -732,7 +732,7 @@ bourso_pdf_v1_parse_lines_merge( ofaImporterPdfBourso *self, const sParser *pars
 				str = g_strdup_printf( _( "invalid line: operation=%s, label=%s, value=%s, amount=%s" ),
 						line->dope, line->label, line->deffect, line->amount );
 				if( parms->progress ){
-					my_iprogress_set_text( parms->progress, self, str );
+					my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, str );
 				} else {
 					g_debug( "%s: %s", thisfn, str );
 				}
@@ -760,7 +760,7 @@ bourso_pdf_v1_parse_lines_merge( ofaImporterPdfBourso *self, const sParser *pars
 				str = g_strdup_printf( _( "invalid line: operation=%s, label=%s, value=%s, amount=%s" ),
 						line->dope, line->label, line->deffect, line->amount );
 				if( parms->progress ){
-					my_iprogress_set_text( parms->progress, self, str );
+					my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, str );
 				} else {
 					g_debug( "%s: %s", thisfn, str );
 				}

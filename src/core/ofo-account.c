@@ -2840,7 +2840,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	const ofaIDBConnect *connect;
 	const gchar *acc_id;
 	gboolean insert;
-	guint total;
+	guint total, type;
 	ofoAccount *account;
 	gchar *str;
 
@@ -2866,6 +2866,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 		if( account_get_exists( account, connect )){
 			parms->duplicate_count += 1;
 			acc_id = ofo_account_get_number( account );
+			type = MY_PROGRESS_NORMAL;
 
 			switch( parms->mode ){
 				case OFA_IDUPLICATE_REPLACE:
@@ -2879,13 +2880,14 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 					break;
 				case OFA_IDUPLICATE_ABORT:
 					str = g_strdup_printf( _( "%s: erroneous duplicate account" ), acc_id );
+					type = MY_PROGRESS_ERROR;
 					insert = FALSE;
 					total -= 1;
 					parms->insert_errs += 1;
 					break;
 			}
 
-			ofa_iimporter_progress_text( importer, parms, str );
+			ofa_iimporter_progress_text( importer, parms, type, str );
 			g_free( str );
 		}
 

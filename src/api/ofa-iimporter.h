@@ -256,6 +256,7 @@ void             ofa_iimporter_progress_num_text         ( ofaIImporter *instanc
 
 void             ofa_iimporter_progress_text             ( ofaIImporter *instance,
 																ofsImporterParms *parms,
+																guint type,
 																const gchar *text );
 
 G_END_DECLS

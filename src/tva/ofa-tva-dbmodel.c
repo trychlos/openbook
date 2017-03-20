@@ -379,7 +379,7 @@ exec_query( ofaTvaDBModel *self, const gchar *query )
 
 	priv = ofa_tva_dbmodel_get_instance_private( self );
 
-	my_iprogress_set_text( priv->window, self, query );
+	my_iprogress_set_text( priv->window, self, MY_PROGRESS_NONE, query );
 
 	ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 
@@ -919,23 +919,12 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 			has_template = ofo_tva_form_detail_get_has_template( form_obj, idet );
 			template = ofo_tva_form_detail_get_template( form_obj, idet );
 
-			if( !has_template && my_strlen( template )){
-				if( progress ){
-					str = g_strdup_printf(
-							_( "VAT form %s, detail %u, is said to not have template, but template %s is set" ),
-							mnemo, idet, template );
-					my_iprogress_set_text( progress, worker, str );
-					g_free( str );
-				}
-				errs += 1;
-				objerrs += 1;
-
-			} else if( has_template && !my_strlen( template )){
+			if( has_template && !my_strlen( template )){
 				if( progress ){
 					str = g_strdup_printf(
 							_( "VAT form %s, detail %u, is said to have template, but template is not set" ),
 							mnemo, idet );
-					my_iprogress_set_text( progress, worker, str );
+					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 					g_free( str );
 				}
 				errs += 1;
@@ -948,7 +937,7 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 						str = g_strdup_printf(
 								_( "VAT form %s, detail %u, has operation template '%s' which doesn't exist" ),
 								mnemo, idet, template );
-						my_iprogress_set_text( progress, worker, str );
+						my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 						g_free( str );
 					}
 					errs += 1;
@@ -970,7 +959,7 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 				docid = ( ofxCounter ) ito->data;
 				if( progress ){
 					str = g_strdup_printf( _( "Found orphan document(s) with DocId %lu" ), docid );
-					my_iprogress_set_text( progress, worker, str );
+					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 					g_free( str );
 				}
 				errs += 1;
@@ -984,7 +973,7 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 
 		if( objerrs == 0 && progress ){
 			str = g_strdup_printf( _( "VAT form %s does not exhibit any error: OK" ), mnemo );
-			my_iprogress_set_text( progress, worker, str );
+			my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
 		}
 	}
@@ -995,13 +984,13 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
 				str = g_strdup_printf( _( "Found orphan boolean(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
-				my_iprogress_set_text( progress, worker, str );
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 			}
 			errs += 1;
 		}
 	} else {
-		my_iprogress_set_text( progress, worker, _( "No orphan VAT form boolean found: OK" ));
+		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT form boolean found: OK" ));
 	}
 	ofo_tva_form_free_bool_orphans( orphans );
 	if( progress ){
@@ -1014,13 +1003,13 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
 				str = g_strdup_printf( _( "Found orphan detail(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
-				my_iprogress_set_text( progress, worker, str );
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 			}
 			errs += 1;
 		}
 	} else {
-		my_iprogress_set_text( progress, worker, _( "No orphan VAT form found: OK" ));
+		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT form found: OK" ));
 	}
 	ofo_tva_form_free_det_orphans( orphans );
 	if( progress ){
@@ -1033,13 +1022,13 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
 				str = g_strdup_printf( _( "Found orphan document(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
-				my_iprogress_set_text( progress, worker, str );
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 			}
 			errs += 1;
 		}
 	} else {
-		my_iprogress_set_text( progress, worker, _( "No orphan VAT form document found: OK" ));
+		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT form document found: OK" ));
 	}
 	ofo_tva_form_free_doc_orphans( orphans );
 	if( progress ){
@@ -1048,7 +1037,7 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 
 	/* progress end */
 	if( progress ){
-		my_iprogress_set_text( progress, worker, "" );
+		my_iprogress_set_text( progress, worker, MY_PROGRESS_NONE, "" );
 		my_iprogress_set_ok( progress, worker, NULL, errs );
 	}
 
@@ -1099,7 +1088,7 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 		if( !form_obj || !OFO_IS_TVA_FORM( form_obj )){
 			if( progress ){
 				str = g_strdup_printf( _( "Found orphan VAT record(s) with TfoMnemo %s" ), mnemo );
-				my_iprogress_set_text( progress, worker, str );
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 			}
 			errs += 1;
@@ -1116,7 +1105,7 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 				docid = ( ofxCounter ) ito->data;
 				if( progress ){
 					str = g_strdup_printf( _( "Found orphan document(s) with DocId %lu" ), docid );
-					my_iprogress_set_text( progress, worker, str );
+					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 					g_free( str );
 				}
 				errs += 1;
@@ -1130,7 +1119,7 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 
 		if( objerrs == 0 && progress ){
 			str = g_strdup_printf( _( "VAT record %s-%s does not exhibit any error: OK" ), mnemo, sdate );
-			my_iprogress_set_text( progress, worker, str );
+			my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
 		}
 
@@ -1143,13 +1132,13 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
 				str = g_strdup_printf( _( "Found orphan boolean(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
-				my_iprogress_set_text( progress, worker, str );
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 			}
 			errs += 1;
 		}
 	} else {
-		my_iprogress_set_text( progress, worker, _( "No orphan VAT record boolean found: OK" ));
+		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT record boolean found: OK" ));
 	}
 	ofo_tva_record_free_bool_orphans( orphans );
 	if( progress ){
@@ -1162,13 +1151,13 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
 				str = g_strdup_printf( _( "Found orphan detail(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
-				my_iprogress_set_text( progress, worker, str );
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 			}
 			errs += 1;
 		}
 	} else {
-		my_iprogress_set_text( progress, worker, _( "No orphan VAT record found: OK" ));
+		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT record found: OK" ));
 	}
 	ofo_tva_record_free_det_orphans( orphans );
 	if( progress ){
@@ -1181,13 +1170,13 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
 				str = g_strdup_printf( _( "Found orphan document(s) with TfoMnemo %s" ), ( const gchar * ) it->data );
-				my_iprogress_set_text( progress, worker, str );
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 			}
 			errs += 1;
 		}
 	} else {
-		my_iprogress_set_text( progress, worker, _( "No orphan VAT record document found: OK" ));
+		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT record document found: OK" ));
 	}
 	ofo_tva_record_free_doc_orphans( orphans );
 	if( progress ){
@@ -1196,7 +1185,7 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 
 	/* progress end */
 	if( progress ){
-		my_iprogress_set_text( progress, worker, "" );
+		my_iprogress_set_text( progress, worker, MY_PROGRESS_NONE, "" );
 		my_iprogress_set_ok( progress, worker, NULL, errs );
 	}
 

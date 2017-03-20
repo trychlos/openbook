@@ -1865,7 +1865,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gboolean insert, skipped;
-	guint total;
+	guint total, type;
 	gchar *str, *sdate;
 	ofoBase *object;
 	const gchar *rib, *label;
@@ -1901,6 +1901,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 
 			if( bat_get_exists( OFO_BAT( object ), connect )){
 				parms->duplicate_count += 1;
+				type = MY_PROGRESS_NORMAL;
 
 				rib = ofo_bat_get_rib( OFO_BAT( object ));
 				sdbegin = my_date_to_str( ofo_bat_get_begin_date( OFO_BAT( object )), ofa_prefs_date_display( parms->getter ));
@@ -1919,6 +1920,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 						break;
 					case OFA_IDUPLICATE_ABORT:
 						str = g_strdup_printf( _( "%s %s %s: duplicate BAT file, making it erroneous" ), rib, sdbegin, sdend );
+						type = MY_PROGRESS_ERROR;
 						insert = FALSE;
 						total -= 1;
 						parms->insert_errs += 1;
@@ -1929,7 +1931,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				g_free( sdend );
 
 				if( parms->progress ){
-					ofa_iimporter_progress_text( importer, parms, str );
+					ofa_iimporter_progress_text( importer, parms, type, str );
 				} else {
 					my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 				}
@@ -1961,7 +1963,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				} else {
 					str = g_strdup_printf( _( "%s %s: line ignored due to previous BAT being have been set erroneous" ), sdate, label );
 				}
-				ofa_iimporter_progress_text( importer, parms, str );
+				ofa_iimporter_progress_text( importer, parms, MY_PROGRESS_NORMAL, str );
 				g_free( str );
 				g_free( sdate );
 				total -= 1;

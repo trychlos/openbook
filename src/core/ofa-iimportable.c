@@ -209,7 +209,7 @@ ofa_iimportable_import( GType type, ofaIImporter *importer, ofsImporterParms *pa
 						_( "%s implementation does not provide 'ofaIImportable::import()' method" ),
 						g_type_name( type ));
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, importer, msgerr );
+			my_iprogress_set_text( parms->progress, importer, MY_PROGRESS_NONE, msgerr );
 		} else {
 			g_info( "%s", msgerr );
 		}

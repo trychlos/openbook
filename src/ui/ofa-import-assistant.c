@@ -178,6 +178,7 @@ typedef struct {
 	GtkWidget           *p7_text;
 	guint                p7_phase;
 	GtkWidget           *p7_bar;
+	GtkTextBuffer       *p7_buffer;
 }
 	ofaImportAssistantPrivate;
 
@@ -258,7 +259,7 @@ static void     iprogress_iface_init( myIProgressInterface *iface );
 static void     iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget );
 static void     iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *widget, gboolean with_bar );
 static void     iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total );
-static void     iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text );
+static void     iprogress_set_text( myIProgress *instance, const void *worker, guint type, const gchar *text );
 
 G_DEFINE_TYPE_EXTENDED( ofaImportAssistant, ofa_import_assistant, GTK_TYPE_ASSISTANT, 0,
 		G_ADD_PRIVATE( ofaImportAssistant )
@@ -1429,7 +1430,9 @@ p7_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 		priv->p7_text = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p7-textview" );
 		g_return_if_fail( priv->p7_text && GTK_IS_TEXT_VIEW( priv->p7_text ));
-		//gtk_widget_set_can_focus( priv->p7_text, FALSE );
+
+		priv->p7_buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( priv->p7_text ));
+		gtk_text_buffer_create_tag( priv->p7_buffer, "error", "foreground", "red", NULL );
 
 		gtk_widget_show_all( page );
 
@@ -1706,10 +1709,9 @@ iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong
 }
 
 static void
-iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text )
+iprogress_set_text( myIProgress *instance, const void *worker, guint type, const gchar *text )
 {
 	ofaImportAssistantPrivate *priv;
-	GtkTextBuffer *buffer;
 	GtkTextIter iter;
 	gchar *str;
 	GtkAdjustment* adjustment;
@@ -1717,9 +1719,12 @@ iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text
 	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
 
 	str = g_strdup_printf( "%s\n", text );
-	buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( priv->p7_text ));
-	gtk_text_buffer_get_end_iter( buffer, &iter );
-	gtk_text_buffer_insert( buffer, &iter, str, -1 );
+	gtk_text_buffer_get_end_iter( priv->p7_buffer, &iter );
+	if( type == MY_PROGRESS_ERROR ){
+		gtk_text_buffer_insert_with_tags_by_name( priv->p7_buffer, &iter, str, -1, "error", NULL );
+	} else {
+		gtk_text_buffer_insert( priv->p7_buffer, &iter, str, -1 );
+	}
 	g_free( str );
 
 	adjustment = gtk_scrollable_get_vadjustment( GTK_SCROLLABLE( priv->p7_text ));

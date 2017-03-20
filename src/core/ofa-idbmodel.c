@@ -185,7 +185,7 @@ static void     iprogress_start_progress( myIProgress *instance, const void *wor
 static void     iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total );
 static void     iprogress_set_row( myIProgress *instance, const void *worker, GtkWidget *widget );
 static void     iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, gulong errs_count );
-static void     iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text );
+static void     iprogress_set_text( myIProgress *instance, const void *worker, guint type, const gchar *text );
 
 G_DEFINE_TYPE_EXTENDED( ofaDBModelWindow, ofa_dbmodel_window, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDBModelWindow )
@@ -708,6 +708,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->textview && GTK_IS_TEXT_VIEW( priv->textview ));
 	priv->text_buffer = gtk_text_buffer_new( NULL );
 	gtk_text_buffer_set_text( priv->text_buffer, "", -1 );
+	gtk_text_buffer_create_tag( priv->text_buffer, "error", "foreground", "red", NULL );
 	gtk_text_view_set_buffer( GTK_TEXT_VIEW( priv->textview ), priv->text_buffer );
 
 	g_idle_add(( GSourceFunc ) do_run, instance );
@@ -1136,7 +1137,7 @@ iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, 
 }
 
 static void
-iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text )
+iprogress_set_text( myIProgress *instance, const void *worker, guint type, const gchar *text )
 {
 	ofaDBModelWindowPrivate *priv;
 	GtkTextIter iter;
@@ -1145,10 +1146,13 @@ iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text
 
 	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
 
-	gtk_text_buffer_get_end_iter( priv->text_buffer, &iter );
-
 	str = g_strdup_printf( "%s\n", text );
-	gtk_text_buffer_insert( priv->text_buffer, &iter, str, -1 );
+	gtk_text_buffer_get_end_iter( priv->text_buffer, &iter );
+	if( type == MY_PROGRESS_ERROR ){
+		gtk_text_buffer_insert_with_tags_by_name( priv->text_buffer, &iter, str, -1, "error", NULL );
+	} else {
+		gtk_text_buffer_insert( priv->text_buffer, &iter, str, -1 );
+	}
 	g_free( str );
 
 	adjustment = gtk_scrollable_get_vadjustment( GTK_SCROLLABLE( priv->textview ));

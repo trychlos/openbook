@@ -375,7 +375,7 @@ lcl_pdf_v1_parse( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterPar
 	doc = poppler_document_new_from_file( parms->uri, NULL, &error );
 	if( !doc ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, error->message );
+			my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, error->message );
 		}
 		g_error_free( error );
 		return( NULL );
@@ -480,28 +480,28 @@ lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImpo
 
 	if( !begin_end_found ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, _( "neither beginning not ending dates found" ));
+			my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, _( "neither beginning not ending dates found" ));
 		}
 		parms->parse_errs += 1;
 		ok = FALSE;
 	}
 	if( !iban_found ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, _( "IBAN not found" ));
+			my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, _( "IBAN not found" ));
 		}
 		parms->parse_errs += 1;
 		ok = FALSE;
 	}
 	if( !begin_solde_found ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, _( "beginning solde not found" ));
+			my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, _( "beginning solde not found" ));
 		}
 		parms->parse_errs += 1;
 		ok = FALSE;
 	}
 	if( !end_solde_found ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, _( "ending solde not found" ));
+			my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, _( "ending solde not found" ));
 		}
 		parms->parse_errs += 1;
 		ok = FALSE;
@@ -645,7 +645,7 @@ lcl_pdf_v1_parse_lines_merge( ofaImporterPdfLcl *self, const sParser *parser, of
 				str = g_strdup_printf( _( "invalid line: operation=%s, label=%s, value=%s, amount=%s" ),
 						line->dope, line->label, line->deffect, line->amount );
 				if( parms->progress ){
-					my_iprogress_set_text( parms->progress, self, str );
+					my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, str );
 				} else {
 					g_debug( "%s: %s", thisfn, str );
 				}
@@ -673,7 +673,7 @@ lcl_pdf_v1_parse_lines_merge( ofaImporterPdfLcl *self, const sParser *parser, of
 				str = g_strdup_printf( _( "invalid line: operation=%s, label=%s, value=%s, amount=%s" ),
 						line->dope, line->label, line->deffect, line->amount );
 				if( parms->progress ){
-					my_iprogress_set_text( parms->progress, self, str );
+					my_iprogress_set_text( parms->progress, self, MY_PROGRESS_ERROR, str );
 				} else {
 					g_debug( "%s: %s", thisfn, str );
 				}

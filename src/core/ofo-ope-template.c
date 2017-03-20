@@ -2061,7 +2061,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	const ofaIDBConnect *connect;
 	const gchar *mnemo;
 	gboolean insert;
-	guint total;
+	guint total, type;
 	gchar *str;
 	ofoOpeTemplate *model;
 
@@ -2087,6 +2087,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 		if( model_get_exists( model, connect )){
 			parms->duplicate_count += 1;
 			mnemo = ofo_ope_template_get_mnemo( model );
+			type = MY_PROGRESS_NORMAL;
 
 			switch( parms->mode ){
 				case OFA_IDUPLICATE_REPLACE:
@@ -2100,13 +2101,14 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 					break;
 				case OFA_IDUPLICATE_ABORT:
 					str = g_strdup_printf( _( "%s: erroneous duplicate operation template" ), mnemo );
+					type = MY_PROGRESS_ERROR;
 					insert = FALSE;
 					total -= 1;
 					parms->insert_errs += 1;
 					break;
 			}
 
-			ofa_iimporter_progress_text( importer, parms, str );
+			ofa_iimporter_progress_text( importer, parms, type, str );
 			g_free( str );
 		}
 

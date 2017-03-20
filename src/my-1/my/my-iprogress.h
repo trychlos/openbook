@@ -174,6 +174,7 @@ typedef struct {
 	 * set_text:
 	 * @instance: the #myIProgress instance.
 	 * @worker: any worker.
+	 * @type: [allow-none]: the type of the @text.
 	 * @text: [allow-none]: a text to be added in a text view.
 	 *
 	 * Display the @text.
@@ -182,9 +183,19 @@ typedef struct {
 	 */
 	void     ( *set_text )             ( myIProgress *instance,
 												const void *worker,
+												guint type,
 												const gchar *text );
 }
 	myIProgressInterface;
+
+/*
+ * Text type
+ */
+enum {
+	MY_PROGRESS_NONE = 0,
+	MY_PROGRESS_NORMAL,
+	MY_PROGRESS_ERROR
+};
 
 /*
  * Interface-wide
@@ -226,6 +237,7 @@ void            my_iprogress_set_ok                    ( myIProgress *instance,
 
 void            my_iprogress_set_text                  ( myIProgress *instance,
 																const void *worker,
+																guint type,
 																const gchar *text );
 
 G_END_DECLS

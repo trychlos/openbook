@@ -1060,7 +1060,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gboolean insert;
-	guint total;
+	guint total, type;
 	gchar *str;
 	ofoCurrency *currency;
 	const gchar *cur_id;
@@ -1087,6 +1087,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 		if( currency_get_exists( currency, connect )){
 			parms->duplicate_count += 1;
 			cur_id = ofo_currency_get_code( currency );
+			type = MY_PROGRESS_NORMAL;
 
 			switch( parms->mode ){
 				case OFA_IDUPLICATE_REPLACE:
@@ -1100,13 +1101,14 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 					break;
 				case OFA_IDUPLICATE_ABORT:
 					str = g_strdup_printf( _( "%s: erroneous duplicate currency" ), cur_id );
+					type = MY_PROGRESS_ERROR;
 					insert = FALSE;
 					total -= 1;
 					parms->insert_errs += 1;
 					break;
 			}
 
-			ofa_iimporter_progress_text( importer, parms, str );
+			ofa_iimporter_progress_text( importer, parms, type, str );
 			g_free( str );
 		}
 

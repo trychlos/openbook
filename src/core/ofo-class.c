@@ -994,7 +994,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gboolean insert;
-	guint total;
+	guint total, type;
 	gchar *str;
 	ofoClass *class;
 	gint class_id;
@@ -1021,6 +1021,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 		if( class_get_exists( class, connect )){
 			parms->duplicate_count += 1;
 			class_id = ofo_class_get_number( class );
+			type = MY_PROGRESS_NORMAL;
 
 			switch( parms->mode ){
 				case OFA_IDUPLICATE_REPLACE:
@@ -1034,13 +1035,14 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 					break;
 				case OFA_IDUPLICATE_ABORT:
 					str = g_strdup_printf( _( "%d: erroneous duplicate class" ), class_id );
+					type = MY_PROGRESS_ERROR;
 					insert = FALSE;
 					total -= 1;
 					parms->insert_errs += 1;
 					break;
 			}
 
-			ofa_iimporter_progress_text( importer, parms, str );
+			ofa_iimporter_progress_text( importer, parms, type, str );
 			g_free( str );
 		}
 

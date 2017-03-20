@@ -309,6 +309,7 @@ my_iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widge
  * my_iprogress_set_text:
  * @instance: the #myIProgress instance.
  * @worker: any worker.
+ * @type: [allow-none]: the type of the @text.
  * @text: [allow-none]: a text to be displayed in a text view.
  *
  * Display the @widget.
@@ -316,7 +317,7 @@ my_iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widge
  * Since: version 1.
  */
 void
-my_iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text )
+my_iprogress_set_text( myIProgress *instance, const void *worker, guint type, const gchar *text )
 {
 	static const gchar *thisfn = "my_iprogress_set_text";
 
@@ -324,7 +325,7 @@ my_iprogress_set_text( myIProgress *instance, const void *worker, const gchar *t
 	g_return_if_fail( worker );
 
 	if( MY_IPROGRESS_GET_INTERFACE( instance )->set_text ){
-		MY_IPROGRESS_GET_INTERFACE( instance )->set_text( instance, worker, text );
+		MY_IPROGRESS_GET_INTERFACE( instance )->set_text( instance, worker, type, text );
 		return;
 	}
 

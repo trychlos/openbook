@@ -23,6 +23,7 @@
    Core DB Model v36
    Recurrent DB Model v9
 
+   - CheckDBMSIntegrity: errors are displayed in red (todo #1395).
    - ClosingParms: improve account check (todo #513).
    - EntryPage: have an extended filter (todo #733).
    - EntryPage: may be opened several times.
