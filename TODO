@@ -377,8 +377,6 @@
 1404 2017- 3-17 have a progress bar on printing (at least a sablier)
      2017- 3-20 probably should use gdk_cursor_new_from_name( display, "wait" );
 
-1406 2017- 3-21 BatPropertites: 'imported on' label is not grayed
-
 1407
 
 -----------------------------------------------------------------------
@@ -882,6 +880,9 @@
 1405 2017- 3-21 TvaRecordProperties: 'last update' label is not grayed
                 while others are, but don't know how...
      2017- 3-21 fixed: the labels were un-sensitive
+
+1406 2017- 3-21 BatPropertites: 'imported on' label is not grayed
+     2017- 3-21 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

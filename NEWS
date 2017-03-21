@@ -45,6 +45,7 @@
    - ofaAccountTreeview: fix background color of pixbuf cells (todo #442).
    - ofaAccountTreeview: fix selection post-delete (todo #1400).
    - ofoAccount: make sure the DBMS stays sane when deleting an account (todo #1394).
+   - ofaBatProperties: fix the display of last update (todo #1406).
    - ofaCheckBalances: fix error message (todo #1398).
    - ofaExerciceCloseAssistant: make sure only entries of the closed exercice are archived (todo #1387).
    - ofaExerciceCloseAssistant: fix first entry insertion on new exercice.
