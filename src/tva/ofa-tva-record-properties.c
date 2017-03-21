@@ -346,7 +346,6 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_tva_record_properties_idialog_init";
 	ofaTVARecordPropertiesPrivate *priv;
 	ofaHub *hub;
-	const gchar *cstr;
 	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -387,15 +386,12 @@ idialog_init( myIDialog *instance )
 	init_taxes( OFA_TVA_RECORD_PROPERTIES( instance ));
 	init_correspondence( OFA_TVA_RECORD_PROPERTIES( instance ));
 
-	priv->notes_textview = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "pn-notes" );
-	g_return_if_fail( priv->notes_textview && GTK_IS_TEXT_VIEW( priv->notes_textview ));
-	cstr = ofo_tva_record_get_notes( priv->tva_record );
-	my_utils_container_notes_setup_ex( GTK_TEXT_VIEW( priv->notes_textview ), cstr, TRUE );
-	gtk_widget_set_sensitive( priv->notes_textview, priv->is_writable );
-
+	my_utils_container_notes_init( GTK_CONTAINER( instance ), tva_record );
 	my_utils_container_updstamp_init( GTK_CONTAINER( instance ), tva_record );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
+
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !priv->is_writable ){
@@ -403,7 +399,6 @@ idialog_init( myIDialog *instance )
 		priv->ok_btn = NULL;
 	}
 
-	set_dialog_title( OFA_TVA_RECORD_PROPERTIES( instance ));
 	check_for_enable_dlg( OFA_TVA_RECORD_PROPERTIES( instance ));
 }
 
@@ -739,7 +734,6 @@ on_dope_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 
 	my_date_set_from_date( &priv->dope_date, my_date_editable_get_date( entry, NULL ));
 
-	set_dialog_title( self );
 	check_for_enable_dlg( self );
 }
 
@@ -772,6 +766,8 @@ on_generated_opes_changed( ofaTVARecordProperties *self )
 	if( priv->opes_generated == 0 ){
 		if( ofo_tva_record_get_is_validated( priv->tva_record )){
 			str = g_strdup( _( "No generated operation, and the declaration is validated." ));
+		} else if( !priv->is_writable ){
+			str = g_strdup( _( "No generated operation, and the dossier is not writable." ));
 		} else {
 			str = g_strdup( _( "No generated operation yet, but this is not too late." ));
 		}
@@ -917,7 +913,7 @@ setup_tva_record( ofaTVARecordProperties *self )
 		g_free( notes );
 	}
 
-	my_utils_container_notes_get_ex( GTK_TEXT_VIEW( priv->notes_textview ), tva_record );
+	my_utils_container_notes_get( GTK_WINDOW( self ), tva_record );
 
 	count = ofo_tva_record_boolean_get_count( priv->tva_record );
 	ofo_tva_record_boolean_free_all( priv->tva_record );
