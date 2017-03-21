@@ -355,6 +355,8 @@
 1386 2017- 3-15 merge ledgers book and ledger summary renders ?
 
 1390 2017- 3-15 general book summary: have a new page on new class
+     2017- 3-21 + subtotals per class
+                this needs a second level of subgrouping
 
 1392 2017- 3-16 check account soldes (val, rough, fut) vs balances of entries
 
@@ -375,7 +377,12 @@
 1404 2017- 3-17 have a progress bar on printing (at least a sablier)
      2017- 3-20 probably should use gdk_cursor_new_from_name( display, "wait" );
 
-1405
+1405 2017- 3-21 TvaRecordProperties: 'last update' label is not grayed
+                while others are, but don't know how...
+
+1406 2017- 3-21 BatPropertites: 'imported on' label is not grayed
+
+1407
 
 -----------------------------------------------------------------------
  DONE

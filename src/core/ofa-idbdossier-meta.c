@@ -768,6 +768,54 @@ ofa_idbdossier_meta_get_current_period( const ofaIDBDossierMeta *meta )
 }
 
 /**
+ * ofa_idbdossier_meta_get_most_recent_period:
+ * @meta: this #ofaIDBDossierMeta instance.
+ *
+ * Returns: the #ofaIDBExerciceMeta which identifies the most recent
+ * financial period, or %NULL.
+ *
+ * When it exists, the current period should always be the most recent
+ * one.
+ *
+ * If not %NULL, the returned reference is owned by the @meta, and should
+ * not be released by the caller.
+ */
+ofaIDBExerciceMeta *
+ofa_idbdossier_meta_get_most_recent_period( const ofaIDBDossierMeta *meta )
+{
+	sIDBMeta *sdata;
+	GList *it;
+	ofaIDBExerciceMeta *period;
+	GDate most_recent;
+	const GDate *exercice_end;
+
+	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
+
+	sdata = get_instance_data( meta );
+	my_date_clear( &most_recent );
+
+	for( it=sdata->periods ; it ; it=it->next ){
+		period = ( ofaIDBExerciceMeta * ) it->data;
+		g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
+		exercice_end = ofa_idbexercice_meta_get_end_date( period );
+		if( !my_date_is_valid( exercice_end )){
+			return( period );
+		} else if( my_date_is_valid( &most_recent )){
+			if( my_date_compare( &most_recent, exercice_end ) < 0 ){
+				my_date_set_from_date( &most_recent, exercice_end );
+			}
+		} else {
+			my_date_set_from_date( &most_recent, exercice_end );
+		}
+	}
+
+	period = my_date_is_valid( &most_recent ) ?
+				ofa_idbdossier_meta_get_suitable_period( meta, NULL, &most_recent ) : NULL;
+
+	return( period );
+}
+
+/**
  * ofa_idbdossier_meta_get_archived_period:
  * @meta: this #ofaIDBDossierMeta instance.
  * @date: a valid date.

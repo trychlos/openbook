@@ -237,6 +237,8 @@ ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_period                ( const ofaI
 
 ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_current_period        ( const ofaIDBDossierMeta *meta );
 
+ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_most_recent_period    ( const ofaIDBDossierMeta *meta );
+
 ofaIDBExerciceMeta   *ofa_idbdossier_meta_get_archived_period       ( const ofaIDBDossierMeta *meta,
 																			const GDate *date );
 

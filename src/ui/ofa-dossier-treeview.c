@@ -553,7 +553,7 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 	ofaDossierTreeviewPrivate *priv;
 	gboolean visible;
 	ofaIDBDossierMeta *meta;
-	ofaIDBExerciceMeta *period;
+	ofaIDBExerciceMeta *period, *most_recent;
 	guint count;
 
 	priv = ofa_dossier_treeview_get_instance_private( OFA_DOSSIER_TREEVIEW( tvbin ));
@@ -576,7 +576,8 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 		if( count == 1 ){
 			visible = TRUE;
 		} else {
-			visible = ofa_idbexercice_meta_get_current( period );
+			most_recent = ofa_idbdossier_meta_get_most_recent_period( meta );
+			visible = ( period == most_recent );
 		}
 	}
 
