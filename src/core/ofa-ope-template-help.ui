@@ -73,12 +73,9 @@
    . debit and credit amounts.
 
 Each entry-generation-data may be locked in the template: it will be used as a mandatory, non-modifiable (though possibly not fixed, see formula below) value for the generated entries.
-
 If not locked, the user may choose to modify this data in the operation, thus eventually generating different entries.
-
 Formulas may be used to automatically compute the value of some fields, based on the value of other fields.
 Formulas are mainly a substituting system, outputing an new string after having replaced tokens by their value.
-
 Tokens are identified by a percent character '%', followed by an uppercase letter. Unrecognized tokens are just reconducted as-is to the output string. Tokens are case sensitive.
 
 Tokens may be:
@@ -91,7 +88,7 @@ Tokens may be:
      E.g.: the '%A1' string (without the quotes) will be substituted with the account number from row n° 1.
 
  2/ a reference to a global field of the operation
-     - 'DEFFECT'	: effect date (format from user preferences)
+     - 'DEFFECT'		: effect date (format from user preferences)
      - 'DOMY'		: operation date as mmm yyyy
      - 'DOPE'		: operation date (format from user preferences)
      - 'IDEM'		: the content of the same field from the previous row
@@ -99,16 +96,16 @@ Tokens may be:
      - 'LEMN'		: ledger mnemo
      - 'OPLA'		: operation template label
      - 'OPMN'		: operation template mnemo
-     - 'REF'		: the operation piece reference
+     - 'REF'			: the operation piece reference
      - 'SOLDE'		: the solde of the entries debit and credit to balance the operation
 
 Other keywords are searched as rate mnemonics (as a convenient shortcut to RATE() function).
 
  3/ a function, arguments being passed between parenthesis:
-     - 'ACCL(&lt;account_id&gt;)'	: returns the closing account identifier for the currency of the &lt;account_id&gt; account
-     - 'ACCOUNT(&lt;i&gt;)'		: returns the account identifier from the &lt;i&gt; row ; is the same than %Ai
-     - 'ACCU(&lt;account_id&gt;)'	: returns the account currency
-     - 'ACLA(&lt;account_id&gt;)'	: returns the account label
+     - 'ACCL(&lt;account_id&gt;)'		: returns the closing account identifier for the currency of the &lt;account_id&gt; account
+     - 'ACCOUNT(&lt;i&gt;)'			: returns the account identifier from the &lt;i&gt; row ; is the same than %Ai
+     - 'ACCU(&lt;account_id&gt;)'		: returns the account currency
+     - 'ACLA(&lt;account_id&gt;)'		: returns the account label
      - 'BALCR(&lt;account_id&gt;)'	: returns the balance of the account if it is credit, or zero
      - 'BALDB(&lt;account_id&gt;)'	: returns the balance of the account if it is debit, or zero
      - 'CREDIT(&lt;i&gt;)'			: returns the credit amount from the &lt;i&gt; row ; is the same than %Ci
