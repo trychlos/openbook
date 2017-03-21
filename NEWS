@@ -35,6 +35,7 @@
    - Pages which may be opened several times are numbered (todo #1380).
    - Printings: have a progression bar during pagination and rendering (todo #1403).
    - VAT declaration: let the label be edited by the user (todo #1378).
+   - VAT declaration: operation label depends of the managed period (todo #1393).
 
  Bug fixes:
 

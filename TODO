@@ -358,9 +358,6 @@
 
 1392 2017- 3-16 check account soldes (val, rough, fut) vs balances of entries
 
-1393 2017- 3-16 operations generated on tva record: the month should be
-                those of the declarated period instead of those of the run
-
 1396 2017- 3-16 check conciliation groups integrity is wrong
                 - display erroneous orphan conciliation member with BatLineId xxx
                 - count is wrong
@@ -852,6 +849,10 @@
 1391 2017- 3-15 signal multiple pages instead of single ones
                 + take care of reinitializing the counter on new dossier
      2017- 3-20 done
+
+1393 2017- 3-16 operations generated on tva record: the month should be
+                those of the declarated period instead of those of the run
+     2017- 3-21 done
 
 1394 2017- 3-16 when delete an account, also delete the archive
      2017- 3-16 done
