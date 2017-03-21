@@ -1427,6 +1427,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	gboolean ok;
 	const GDate *begin_old, *end_old;
 	const GDate *begin_next, *end_next;
+	const gchar *account, *password;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1435,6 +1436,9 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	signaler = ofa_igetter_get_signaler( priv->getter );
 	hub = ofa_igetter_get_hub( priv->getter );
 	main_window = ofa_igetter_get_main_window( priv->getter );
+
+	account = ofa_idbconnect_get_account( priv->connect );
+	password = ofa_idbconnect_get_password( priv->connect );
 
 	ofo_dossier_set_current( priv->dossier, FALSE );
 	ofo_dossier_update( priv->dossier );
@@ -1464,7 +1468,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 		ofa_idbexercice_meta_dump( period );
 		cnx = ofa_idbdossier_meta_new_connect( priv->dossier_meta, period );
-		ok = ofa_idbconnect_open_with_superuser( cnx, priv->p2_dbsu_credentials );
+		ok = ofa_idbconnect_open_with_account( cnx, account, password );
 
 		if( !ok ){
 			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to open a connection on the new exercice" ));
