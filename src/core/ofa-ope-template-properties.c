@@ -839,10 +839,13 @@ static void
 on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
+	GtkWindow *parent;
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
-	ofa_ope_template_help_run( priv->getter, GTK_WINDOW( self ));
+	parent = my_iwindow_get_parent( MY_IWINDOW( self ));
+
+	ofa_ope_template_help_run( priv->getter, parent );
 }
 
 /*
