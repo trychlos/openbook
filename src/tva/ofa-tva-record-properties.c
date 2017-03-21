@@ -1351,7 +1351,7 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 				template = ofo_ope_template_get_by_mnemo( priv->getter, cstr );
 				if( template && OFO_IS_OPE_TEMPLATE( template )){
 					/*
-					 * generate an operation when the amount is greater thant zero
+					 * generate an operation when the amount is greater than zero
 					 * and the operation template is set and found
 					 * inject the positive amount into the first row/debit/credit
 					 * slot
@@ -1383,6 +1383,9 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 								break;
 
 							}
+						} else {
+							g_warning( "%s: operation template %s does not have any placeholder to host an amount",
+									thisfn, ofo_ope_template_get_mnemo( template ));
 						}
 					}
 				} else {
