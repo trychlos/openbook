@@ -47,6 +47,7 @@
    - ofoAccount: make sure the DBMS stays sane when deleting an account (todo #1394).
    - ofaCheckBalances: fix error message (todo #1398).
    - ofaExerciceCloseAssistant: make sure only entries of the closed exercice are archived (todo #1387).
+   - ofaExerciceCloseAssistant: fix first entry insertion on new exercice.
    - ofaIExportable: reinitalize progress count between exports (todo #1389).
    - ofaMainWindow: reset the count of opened multiple pages when closing the dossier (todo #1391).
    - Recurrent: fix periodicity details count.
