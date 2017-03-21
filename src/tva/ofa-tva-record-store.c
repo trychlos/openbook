@@ -281,7 +281,7 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 	cvalidated = ofo_tva_record_get_is_validated( record ) ? _( "Yes" ) : _( "No" );
 	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), ofa_prefs_date_display( priv->getter ));
 
-	notes = ofo_tva_form_get_notes( form );
+	notes = ofo_tva_record_get_notes( record );
 	error = NULL;
 	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
 	if( error ){

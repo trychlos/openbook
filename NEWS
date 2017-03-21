@@ -49,6 +49,7 @@
    - ofaIExportable: reinitalize progress count between exports (todo #1389).
    - ofaMainWindow: reset the count of opened multiple pages when closing the dossier (todo #1391).
    - Recurrent: fix periodicity details count.
+   - VAT declaration: fix the display of notes indicator.
 
  Other changes:
 
