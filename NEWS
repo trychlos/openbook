@@ -52,6 +52,7 @@
    - ofaMainWindow: reset the count of opened multiple pages when closing the dossier (todo #1391).
    - Recurrent: fix periodicity details count.
    - VAT declaration: fix the display of notes indicator.
+   - VAT declaration: fix the display of last update (todo #1405).
 
  Other changes:
 
