@@ -1445,7 +1445,7 @@ p6_do_restore( ofaRestoreAssistant *self )
 
 	/* restore the backup */
 	ok = ofa_idbconnect_restore_db(
-				priv->p2_connect, NULL, priv->p1_uri, priv->p1_format,
+				priv->p2_connect, priv->p6_exercice_meta, priv->p1_uri, priv->p1_format,
 				priv->p4_account, priv->p4_password, ( ofaMsgCb ) p6_msg_cb, self ) &&
 
 			p6_do_remediate_settings( self );
