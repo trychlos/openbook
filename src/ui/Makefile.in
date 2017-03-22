@@ -136,6 +136,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(applicationsdir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
+	ofa-accentry-store.$(OBJEXT) ofa-accentry-treeview.$(OBJEXT) \
 	ofa-account-book-args.$(OBJEXT) \
 	ofa-account-book-render.$(OBJEXT) \
 	ofa-account-filter-vv-bin.$(OBJEXT) ofa-account-page.$(OBJEXT) \
@@ -187,7 +188,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-reconcil-treeview.$(OBJEXT) \
 	ofa-recovery-assistant.$(OBJEXT) \
 	ofa-restore-assistant.$(OBJEXT) ofa-settlement-page.$(OBJEXT) \
-	ofa-target-chooser-bin.$(OBJEXT) \
+	ofa-target-chooser-bin.$(OBJEXT) ofa-unsettled-page.$(OBJEXT) \
 	ofa-user-credentials-bin.$(OBJEXT)
 am__objects_1 = resources.$(OBJEXT)
 nodist_openbook_OBJECTS = $(am__objects_1)
@@ -504,6 +505,10 @@ openbook_SOURCES = \
 	main.c												\
 	ofa-about.c											\
 	ofa-about.h											\
+	ofa-accentry-store.c								\
+	ofa-accentry-store.h								\
+	ofa-accentry-treeview.c								\
+	ofa-accentry-treeview.h								\
 	ofa-account-book-args.c								\
 	ofa-account-book-args.h								\
 	ofa-account-book-render.c							\
@@ -684,6 +689,8 @@ openbook_SOURCES = \
 	ofa-settlement-page.h								\
 	ofa-target-chooser-bin.c							\
 	ofa-target-chooser-bin.h							\
+	ofa-unsettled-page.c								\
+	ofa-unsettled-page.h								\
 	ofa-user-credentials-bin.c							\
 	ofa-user-credentials-bin.h							\
 	$(NULL)
@@ -812,6 +819,8 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-about.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accentry-store.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accentry-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-filter-vv-bin.Po@am__quote@
@@ -901,6 +910,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-restore-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-target-chooser-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-unsettled-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-user-credentials-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resources.Po@am__quote@
 

@@ -333,15 +333,6 @@
 
 1379 2017- 3- 9 VatForm: set template column to fixed width, rather expand label
 
-1381 2017- 3-14 Settlement: have an option to display all entries on
-                settleable account waiting for a settlement (so a treestore)
-     2017- 3-16 or an account selection which only display settleable accounts
-                which have still unsettled entries
-
-1382 2017- 3-15 have a list of reconciliable accounts
-
-1383 2017- 3-15 have a list of settleable accounts
-
 1384 2017- 3-15 all printings: erase a previous render when an argument
                 changes (as in entries balance) or when reclicking on render
                 (because the content may have changed)
@@ -349,7 +340,7 @@
 1385 2017- 3-15 have a printing with solde at the beginning + solde of
                 entries = solde at the end of the period
 
-1386 2017- 3-15 merge ledgers book and ledger summary renders ?
+1386 2017- 3-15 merge ledgers book and ledger summary renders
 
 1390 2017- 3-15 general book summary: have a new page on new class
      2017- 3-21 + subtotals per class
@@ -374,7 +365,9 @@
 1404 2017- 3-17 have a progress bar on printing (at least a sablier)
      2017- 3-20 probably should use gdk_cursor_new_from_name( display, "wait" );
 
-1407
+1407 2017- 3-22 reconciliation page: update external ids from signaler handler
+
+1408
 
 -----------------------------------------------------------------------
  DONE
@@ -834,6 +827,18 @@
 
 1380 2017- 3- 9 when a page can be multiple, add a number to the title
      2017- 3-10 done
+
+1381 2017- 3-14 Settlement: have an option to display all entries on
+                settleable account waiting for a settlement (so a treestore)
+     2017- 3-16 or an account selection which only display settleable accounts
+                which have still unsettled entries
+     2017- 3-22 done
+
+1382 2017- 3-15 have a list of reconciliable accounts
+     2017- 3-22 cancelled as duplicate of #1381
+
+1383 2017- 3-15 have a list of settleable accounts
+     2017- 3-22 cancelled as duplicate of #1381
 
 1387 2017- 3-15 when archiving reconciliated/settled entries on exercice
                 closing, only archive which were reconciliated/settled

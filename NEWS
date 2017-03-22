@@ -21,7 +21,7 @@
 
  New features and improvements:
 
-   - 
+   - Display unsettled entries on settleable accounts (todo #1381).
 
  Bug fixes:
 
@@ -36,6 +36,9 @@
  Other changes:
 
    - Clarify the reference management of the collection (todo #1359).
+   - ofaAccentryStore: new class.
+   - ofaAccentryTreeview: new class.
+   - ofaUnsettledPage: new class.
 
 -----------------------------------------------------------------------
  Version 0.68

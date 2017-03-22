@@ -71,6 +71,10 @@ openbook_SOURCES = \
 	main.c												\
 	ofa-about.c											\
 	ofa-about.h											\
+	ofa-accentry-store.c								\
+	ofa-accentry-store.h								\
+	ofa-accentry-treeview.c								\
+	ofa-accentry-treeview.h								\
 	ofa-account-book-args.c								\
 	ofa-account-book-args.h								\
 	ofa-account-book-render.c							\
@@ -251,6 +255,8 @@ openbook_SOURCES = \
 	ofa-settlement-page.h								\
 	ofa-target-chooser-bin.c							\
 	ofa-target-chooser-bin.h							\
+	ofa-unsettled-page.c								\
+	ofa-unsettled-page.h								\
 	ofa-user-credentials-bin.c							\
 	ofa-user-credentials-bin.h							\
 	$(NULL)

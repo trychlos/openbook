@@ -785,7 +785,7 @@ ofo_account_is_settleable( const ofoAccount *account )
 }
 
 /**
- * ofo_account_keep_unsettled:
+ * ofo_account_get_keep_unsettled:
  * @account: the #ofoAccount account
  *
  * Returns: %TRUE if unsettled entries on this account should be kept
@@ -827,7 +827,7 @@ ofo_account_is_reconciliable( const ofoAccount *account )
 }
 
 /**
- * ofo_account_keep_unreconciliated:
+ * ofo_account_get_keep_unreconciliated:
  * @account: the #ofoAccount account
  *
  * Returns: %TRUE if unreconciliated entries on this account should be

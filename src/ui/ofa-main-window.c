@@ -86,6 +86,7 @@
 #include "ui/ofa-reconcil-render.h"
 #include "ui/ofa-reconcil-page.h"
 #include "ui/ofa-settlement-page.h"
+#include "ui/ofa-unsettled-page.h"
 
 /* private instance data
  */
@@ -138,6 +139,7 @@ static void on_backup                ( GSimpleAction *action, GVariant *paramete
 static void on_close                 ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_guided            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_entry_page        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_unsettled_page    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_concil            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_settlement        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_ledger_close      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -168,6 +170,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "close",                  on_close,                  NULL, NULL, NULL },
 		{ "guided",                 on_ope_guided,             NULL, NULL, NULL },
 		{ "entries",                on_ope_entry_page,         NULL, NULL, NULL },
+		{ "unsentries",             on_ope_unsettled_page,     NULL, NULL, NULL },
 		{ "concil",                 on_ope_concil,             NULL, NULL, NULL },
 		{ "settlement",             on_ope_settlement,         NULL, NULL, NULL },
 		{ "ledclosing",             on_ope_ledger_close,       NULL, NULL, NULL },
@@ -250,6 +253,7 @@ static sThemeInit st_theme_defs[] = {
 		{ N_( "Reconciliation" ),        ofa_reconcil_page_get_type,         FALSE },
 		{ N_( "Reconciliation Sumary" ), ofa_reconcil_render_get_type,       FALSE },
 		{ N_( "Settlement" ),            ofa_settlement_page_get_type,       FALSE },
+		{ N_( "Unsettled entries" ),     ofa_unsettled_page_get_type,        FALSE },
 		{ 0 }
 };
 
@@ -1345,7 +1349,7 @@ on_ope_guided( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 static void
 on_ope_entry_page( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_ope_guided";
+	static const gchar *thisfn = "ofa_main_window_on_ope_entry_page";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -1353,6 +1357,19 @@ on_ope_entry_page( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_ENTRY_PAGE );
+}
+
+static void
+on_ope_unsettled_page( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ope_unsettled_page";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_UNSETTLED_PAGE );
 }
 
 static void
@@ -2064,6 +2081,9 @@ ipage_manager_activate( ofaIPageManager *instance, GType type )
 		}
 		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 		notebook_activate_page( OFA_MAIN_WINDOW( instance ), book, page );
+
+	} else {
+		g_warning( "%s: theme not found for type=%lu", thisfn, type );
 	}
 
 	return( page );

@@ -95,6 +95,11 @@
 					<attribute name="label" translatable="yes">_View entries...</attribute>
 					<attribute name="action">win.entries</attribute>
 				</item>
+				<item>
+					<attribute name="id">operations-10-unsentries</attribute>
+					<attribute name="label" translatable="yes">_View unsettled entries...</attribute>
+					<attribute name="action">win.unsentries</attribute>
+				</item>
 			</section>
 			<section>
 				<attribute name="id">operations-20</attribute>
