@@ -395,6 +395,8 @@ setup_bin( ofaAccountFrameBin *self )
 
 	/* UI notebook */
 	priv->notebook = gtk_notebook_new();
+	gtk_widget_set_hexpand( priv->notebook, TRUE );
+	gtk_widget_set_vexpand( priv->notebook, TRUE );
 	gtk_notebook_popup_enable( GTK_NOTEBOOK( priv->notebook ));
 	gtk_notebook_set_scrollable( GTK_NOTEBOOK( priv->notebook ), TRUE );
 	gtk_notebook_set_show_tabs( GTK_NOTEBOOK( priv->notebook ), TRUE );
@@ -657,7 +659,8 @@ book_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountFrameBin *
  * ofa_account_frame_bin_get_current_page:
  * @bin: this #ofaAccountFrameBin instance.
  *
- * Returns the #ofaAccountTreeview associated to the current page.
+ * Returns: the #ofaAccountTreeview associated to the current page,
+ * which may be %NULL if the #ofoAccount dataset is empty.
  */
 GtkWidget *
 ofa_account_frame_bin_get_current_page( ofaAccountFrameBin *bin )
