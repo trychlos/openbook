@@ -914,12 +914,16 @@ static void
 signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaAccountStore *self )
 {
 	static const gchar *thisfn = "ofa_account_store_signaler_on_reload_collection";
+	ofaAccountStorePrivate *priv;
 
 	g_debug( "%s: signaler=%p, type=%lu, self=%p",
 			thisfn, ( void * ) signaler, type, ( void * ) self );
 
+	priv = ofa_account_store_get_instance_private( self );
+
 	if( type == OFO_TYPE_ACCOUNT ){
 		gtk_tree_store_clear( GTK_TREE_STORE( self ));
+		priv->dataset_is_loaded = FALSE;
 		tree_store_v_load_dataset( OFA_TREE_STORE( self ));
 	}
 }

@@ -27,6 +27,7 @@
 
    - ofaAccountFrameBin: fix notebook size when the dataset is empty.
    - ofaAccountPage: fix page display when the dataset is empty.
+   - ofaAccountStore: let the treeview be repopulated on collection reload.
    - ofaOpeTemplateFrameBin: fix notebook size when the dataset is empty.
    - ofaOpeTemplatePage: fix page display when the dataset is empty.
 
