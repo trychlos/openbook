@@ -199,7 +199,10 @@ ope_template_frame_bin_dispose( GObject *instance )
 
 		/* we expect that the last page seen by the user is those which
 		 * has the better sizes and positions for the columns */
-		ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( priv->current_page ));
+		if( priv->current_page ){
+			ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( priv->current_page ));
+		}
+
 		write_settings( OFA_OPE_TEMPLATE_FRAME_BIN( instance ));
 	}
 

@@ -28,6 +28,7 @@
    - ofaAccountFrameBin: fix notebook size when the dataset is empty.
    - ofaAccountPage: fix page display when the dataset is empty.
    - ofaOpeTemplateFrameBin: fix notebook size when the dataset is empty.
+   - ofaOpeTemplatePage: fix page display when the dataset is empty.
 
  Other changes:
 

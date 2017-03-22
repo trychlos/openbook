@@ -169,9 +169,7 @@ page_v_get_top_focusable_widget( const ofaPage *page )
 	priv = ofa_account_page_get_instance_private( OFA_ACCOUNT_PAGE( page ));
 
 	current_page = ofa_account_frame_bin_get_current_page( priv->account_bin );
-	if( current_page ){
-		g_return_val_if_fail( OFA_IS_ACCOUNT_TREEVIEW( current_page ), NULL );
-	}
+	g_return_val_if_fail( !current_page || OFA_IS_ACCOUNT_TREEVIEW( current_page ), NULL );
 
 	widget = current_page ? ofa_tvbin_get_tree_view( OFA_TVBIN( current_page )) : NULL;
 

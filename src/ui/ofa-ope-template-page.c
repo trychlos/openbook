@@ -162,16 +162,18 @@ static GtkWidget *
 page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaOpeTemplatePagePrivate *priv;
-	GtkWidget *current_page;
+	GtkWidget *current_page, *widget;
 
 	g_return_val_if_fail( page && OFA_IS_OPE_TEMPLATE_PAGE( page ), NULL );
 
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
 	current_page = ofa_ope_template_frame_bin_get_current_page( priv->template_bin );
-	g_return_val_if_fail( current_page && OFA_IS_OPE_TEMPLATE_TREEVIEW( current_page ), NULL );
+	g_return_val_if_fail( !current_page || OFA_IS_OPE_TEMPLATE_TREEVIEW( current_page ), NULL );
 
-	return( ofa_tvbin_get_tree_view( OFA_TVBIN( current_page )));
+	widget = current_page ? ofa_tvbin_get_tree_view( OFA_TVBIN( current_page )) : NULL;
+
+	return( widget );
 }
 
 /*
