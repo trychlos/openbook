@@ -579,12 +579,16 @@ static void
 signaler_on_reload_collection( ofaISignaler *signaler, GType type, ofaOpeTemplateStore *self )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_signaler_on_reload_collection";
+	ofaOpeTemplateStorePrivate *priv;
 
 	g_debug( "%s: signaler=%p, type=%lu, self=%p",
 			thisfn, ( void * ) signaler, type, ( void * ) self );
 
+	priv = ofa_ope_template_store_get_instance_private( self );
+
 	if( type == OFO_TYPE_OPE_TEMPLATE ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));
+		priv->dataset_is_loaded = FALSE;
 		list_store_v_load_dataset( OFA_LIST_STORE( self ));
 	}
 }
