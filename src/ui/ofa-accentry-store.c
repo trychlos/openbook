@@ -91,6 +91,8 @@ static gboolean find_entry_by_number_rec( ofaAccentryStore *self, ofxCounter num
 static void     set_currency_new_id( ofaAccentryStore *self, const gchar *prev_id, const gchar *new_id );
 static void     set_ledger_new_id( ofaAccentryStore *self, const gchar *prev_id, const gchar *new_id );
 static void     set_ope_template_new_id( ofaAccentryStore *self, const gchar *prev_id, const gchar *new_id );
+static void     update_column( ofaAccentryStore *self, const gchar *prev_id, const gchar *new_id, guint column );
+static void     update_column_rec( ofaAccentryStore *self, const gchar *prev_id, const gchar *new_id, guint column, GtkTreeIter *iter );
 static void     signaler_connect_to_signaling_system( ofaAccentryStore *self );
 static void     signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaAccentryStore *self );
 static void     signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaAccentryStore *self );
@@ -387,6 +389,30 @@ entry_set_row_by_iter( ofaAccentryStore *self, const ofoEntry *entry, GtkTreeIte
 	g_free( sdope );
 }
 
+/**
+ * ofa_accentry_store_is_empty:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: %TRUE if the store is empty.
+ */
+gboolean
+ofa_accentry_store_is_empty( ofaAccentryStore *store )
+{
+	ofaAccentryStorePrivate *priv;
+	GtkTreeIter iter;
+	gboolean has_row;
+
+	g_return_val_if_fail( store && OFA_IS_ACCENTRY_STORE( store ), TRUE );
+
+	priv = ofa_accentry_store_get_instance_private( store );
+
+	g_return_val_if_fail( !priv->dispose_has_run, TRUE );
+
+	has_row = gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), &iter );
+
+	return( !has_row );
+}
+
 /*
  * Returns: %TRUE if the account has been found.
  */
@@ -455,28 +481,50 @@ find_entry_by_number_rec( ofaAccentryStore *self, ofxCounter number, GtkTreeIter
 static void
 set_currency_new_id( ofaAccentryStore *self, const gchar *prev_id, const gchar *new_id )
 {
-	/*
-	 * how do I know that my currency identifier has changed without
-	 * examining all rows ?
-	 */
+	update_column( self, prev_id, new_id, ACCENTRY_COL_CURRENCY );
 }
 
 static void
 set_ledger_new_id( ofaAccentryStore *self, const gchar *prev_id, const gchar *new_id )
 {
-	/*
-	 * how do I know that my ledger identifier has changed without
-	 * examining all rows ?
-	 */
+	update_column( self, prev_id, new_id, ACCENTRY_COL_LEDGER );
 }
 
 static void
 set_ope_template_new_id( ofaAccentryStore *self, const gchar *prev_id, const gchar *new_id )
 {
-	/*
-	 * how do I know that my operation template identifier has changed
-	 * without examining all rows ?
-	 */
+	update_column( self, prev_id, new_id, ACCENTRY_COL_OPE_TEMPLATE );
+}
+
+static void
+update_column( ofaAccentryStore *self, const gchar *prev_id, const gchar *new_id, guint column )
+{
+	GtkTreeIter iter;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
+		update_column_rec( self, prev_id, new_id, column, &iter );
+	}
+}
+
+static void
+update_column_rec( ofaAccentryStore *self, const gchar *prev_id, const gchar *new_id, guint column, GtkTreeIter *iter )
+{
+	GtkTreeIter child_iter;
+	gchar *row_id;
+
+	while( TRUE ){
+		if( gtk_tree_model_iter_children( GTK_TREE_MODEL( self ), &child_iter, iter )){
+			update_column_rec( self, prev_id, new_id, column, &child_iter );
+		}
+		gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, column, &row_id, -1 );
+		if( !my_collate( row_id, prev_id )){
+			gtk_tree_store_set( GTK_TREE_STORE( self ), iter, column, new_id, -1 );
+		}
+		g_free( row_id );
+		if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
+			break;
+		}
+	}
 }
 
 /*

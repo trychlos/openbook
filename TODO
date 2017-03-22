@@ -361,8 +361,6 @@
 
 1407 2017- 3-22 reconciliation store: update external ids from signaler handler
 
-1408 2017- 3-22 accentry store: update external ids from signaler handler
-
 1409
 
 -----------------------------------------------------------------------
@@ -892,6 +890,9 @@
 
 1406 2017- 3-21 BatPropertites: 'imported on' label is not grayed
      2017- 3-21 fixed
+
+1408 2017- 3-22 accentry store: update external ids from signaler handler
+     2017- 3-22 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

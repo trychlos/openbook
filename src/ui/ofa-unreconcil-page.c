@@ -76,10 +76,12 @@ static void       action_page_v_init_view( ofaActionPage *page );
 static gboolean   tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaUnreconcilPage *self );
 static gboolean   tview_is_visible_account( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoAccount *account );
 static gboolean   tview_is_visible_entry( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
+static void       tview_on_accchanged( ofaAccentryTreeview *view, ofoBase *object, ofaUnreconcilPage *self );
+static void       tview_on_accactivated( ofaAccentryTreeview *view, ofoBase *object, ofaUnreconcilPage *self );
 static void       action_on_collapse_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
 static void       action_on_expand_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
 static void       action_on_reconcil_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
-//static void       store_on_changed( ofaAccentryStore *store, ofaUnreconcilPage *self );
+static void       action_do_reconcil( ofaUnreconcilPage *self, ofoBase *object );
 
 G_DEFINE_TYPE_EXTENDED( ofaUnreconcilPage, ofa_unreconcil_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaUnreconcilPage ))
@@ -193,6 +195,9 @@ action_page_v_setup_view( ofaActionPage *page )
 	ofa_accentry_treeview_setup_columns( priv->tview );
 	ofa_accentry_treeview_set_filter_func( priv->tview, ( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row, page );
 
+	g_signal_connect( priv->tview, "ofa-accchanged", G_CALLBACK( tview_on_accchanged ), page );
+	g_signal_connect( priv->tview, "ofa-accactivated", G_CALLBACK( tview_on_accactivated ), page );
+
 	return( GTK_WIDGET( priv->tview ));
 }
 
@@ -248,6 +253,7 @@ action_page_v_init_view( ofaActionPage *page )
 	static const gchar *thisfn = "ofa_unreconcil_page_v_init_view";
 	ofaUnreconcilPagePrivate *priv;
 	GMenu *menu;
+	gboolean is_empty;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -270,6 +276,10 @@ action_page_v_init_view( ofaActionPage *page )
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
 
 	ofa_accentry_treeview_expand_all( priv->tview );
+
+	is_empty = ofa_accentry_store_is_empty( priv->store );
+	g_simple_action_set_enabled( priv->collapse_action, !is_empty );
+	g_simple_action_set_enabled( priv->expand_action, !is_empty );
 }
 
 static gboolean
@@ -338,6 +348,22 @@ tview_is_visible_entry( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIt
 }
 
 static void
+tview_on_accchanged( ofaAccentryTreeview *view, ofoBase *object, ofaUnreconcilPage *self )
+{
+	ofaUnreconcilPagePrivate *priv;
+
+	priv = ofa_unreconcil_page_get_instance_private( self );
+
+	g_simple_action_set_enabled( priv->reconcil_action, object != NULL );
+}
+
+static void
+tview_on_accactivated( ofaAccentryTreeview *view, ofoBase *object, ofaUnreconcilPage *self )
+{
+	action_do_reconcil( self, object );
+}
+
+static void
 action_on_collapse_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self )
 {
 	static const gchar *thisfn = "ofa_uncollapsed_page_action_on_collapse_activated";
@@ -370,20 +396,31 @@ action_on_reconcil_activated( GSimpleAction *action, GVariant *empty, ofaUnrecon
 {
 	static const gchar *thisfn = "ofa_unreconcil_page_action_on_reconcil_activated";
 	ofaUnreconcilPagePrivate *priv;
-	ofaIPageManager *manager;
 	ofoBase *object;
-	const gchar *account;
-	ofaPage *page;
 
 	g_debug( "%s: action=%p, empty=%p, self=%p",
 			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
 	priv = ofa_unreconcil_page_get_instance_private( self );
 
-	manager = ofa_igetter_get_page_manager( priv->getter );
-
 	object = ofa_accentry_treeview_get_selected( priv->tview );
+
+	action_do_reconcil( self, object );
+}
+
+static void
+action_do_reconcil( ofaUnreconcilPage *self, ofoBase *object )
+{
+	ofaUnreconcilPagePrivate *priv;
+	ofaIPageManager *manager;
+	const gchar *account;
+	ofaPage *page;
+
 	g_return_if_fail( object && ( OFO_IS_ACCOUNT( object ) || OFO_IS_ENTRY( object )));
+
+	priv = ofa_unreconcil_page_get_instance_private( self );
+
+	manager = ofa_igetter_get_page_manager( priv->getter );
 
 	account = OFO_IS_ACCOUNT( object ) ?
 			ofo_account_get_number( OFO_ACCOUNT( object )) : ofo_entry_get_account( OFO_ENTRY( object ));

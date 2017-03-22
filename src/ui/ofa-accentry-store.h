@@ -127,6 +127,8 @@ GType             ofa_accentry_store_get_type( void );
 
 ofaAccentryStore *ofa_accentry_store_new     ( ofaIGetter *getter );
 
+gboolean          ofa_accentry_store_is_empty( ofaAccentryStore *store );
+
 G_END_DECLS
 
 #endif /* __OFA_ACCENTRY_STORE_H__ */
