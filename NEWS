@@ -26,6 +26,7 @@
  Bug fixes:
 
    - ofaAccountFrameBin: fix notebook size when the dataset is empty.
+   - ofaAccountPage: fix page display when the dataset is empty.
 
  Other changes:
 
