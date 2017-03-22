@@ -1,108 +1,64 @@
- Open Firm Accounting
+ Open Firm Accounting - ImportFormats.README
 
  Summary
  =======
 
-   Accounts
-   Classes
-   Currencies
-   Entries
-   Ledgers
-   Rates
+   Rationale
+     Column name vs. field order
+     Child tables
+     Versioning
+     Importing without header
 
 -----------------------------------------------------------------------
- Accounts
- ========
+ Rationale
+ =========
 
- Mode: Replace
+ Column names vs. field order
 
- No  Field        Format                 Mandatory
- --  -----------  ---------------------  ------------------------------
-  1  Number       Strings 20 chars       yes
-  2  Label        String 80 chars        yes
-  3  Currency     String 3 chars         no, defaults to dossier default
-  4  Type         String 1 char          no, defaults to 'D'
-  5  Notes        String 4096 chars      no
+   Import/export ascending compatibility used to be based on the fields
+   order in the imported/exported file. This field order is primarily
+   based on the #ofsBoxDef structure defined by each class.
 
------------------------------------------------------------------------
- Classes
- =======
+   It happens that data fields may be removed/added between distinct DBMS
+   version. The field order cannot be anymore the way to identify the
+   fields.
 
- Mode: Replace
+   This is definitevely the goal of the header lines, and inside of these
+   header lines, of the header column names.
 
- No  Field        Format                 Mandatory
- --  -----------  ---------------------  ------------------------------
-  1  Number       Digit between 1 and 9  yes
-  2  Label        String 80 chars        yes
-  3  Notes        String 4096 chars      no
+   So, while exporting may safely rely on the field order defined by the
+   #ofsBoxDef structure, importing must identify the fields based on
+   their column names.
 
------------------------------------------------------------------------
- Currencies
- ==========
+ Child tables
 
- Mode: Replace
+   Many classes are implemented with child tables. The presence of these
+   child tables must be documented in the export file as suplementary
+   header lines, each being numbered:
 
- No  Field        Format                 Mandatory
- --  -----------  ---------------------  ------------------------------
-  1  Code ISO 3A  String 3 chars         yes
-  2  Label        String 80 chars        yes
-  3  Symbol       String 3 chars         yes
-  4  Digits       Integer                no, defaults to 2
-  5  Notes        String 4096 chars      no
+   - e.g. the "0" line describes the main table
+   - while the "1", "2", ... describe the child tables.
 
------------------------------------------------------------------------
- Entries
- =======
+   Export code only makes sure that header lines are all on the very
+   beginning on the file. It does not ensure that records are ordered
+   in any way.
+   The import code thus should expect to have all "0" lines, then all
+   "1" lines, ..., as well as lines "0", then "1", ... by record.
 
- Mode: Add
+ Versioning
 
- No  Field        Format                 Mandatory
- --  -----------  ---------------------  ------------------------------
-  1  Operation    Date yyyy-mm-dd        yes
-  2  Effect       Date yyyy-mm-dd        yes
-  3  Label        String 80 chars        yes
-  4  Piece ref.   String 20 chars        no
-  5  Currency     String 3 chars         no
-  6  Ledger       String 6 chars         no
-  7  Operation    String 6 chars         no
-  8  Account      String 20 chars        yes
-  9  Debit        Double                 no
- 10  Credit       Double                 no
+   A version number may be prepended to the headers.
+
+ Importing without header
+
+   If no header is provided in the import file, then the field order has
+   to be compliant with the order expected by the import code. No other
+   way may be imagined.
+
+   As such, only one import format without header may be provided.
+
+   It is up to the import code to not be too strict on missing/unknown
+   fields.
 
 -----------------------------------------------------------------------
- Ledgers
- =======
-
- Mode: Replace
-
- No  Field        Format                 Mandatory
- --  -----------  ---------------------  ------------------------------
-  1  Mnemo        String 6 chars         yes
-  2  Label        String 80 chars        yes
-  3  Notes        String 4096 chars      no
-
------------------------------------------------------------------------
- Rates
- =====
-
- Mode: Replace
-
- No  Field        Format                 Mandatory
- --  -----------  ---------------------  ------------------------------
-  1  Type         Numeric                yes, 1=rate, 2=values
-
- Type  No  Field        Format                 Mandatory
- ----  --  -----------  ---------------------  ------------------------
-    1   2  Mnemo        String 6 chars         yes
-    1   3  Label        String 80 chars        yes
-    1   4  Notes        String 4096 chars      no
-
- Type  No  Field        Format                 Mandatory
- ----  --  -----------  ---------------------  ------------------------
-    2   2  Mnemo        String 6 chars         yes
-    2   3  Begin        Date yyyy-mm-dd        no 
-    2   4  End          Date yyyy-mm-dd        no
-    2   5  Value        Float                  no
-
------------------------------------------------------------------------
- P. Wieser - Last updated on 2014, dec. 5th
+ P. Wieser - Last updated on 2017, mar. 22nd

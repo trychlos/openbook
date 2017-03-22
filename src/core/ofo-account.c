@@ -91,11 +91,8 @@ enum {
 
 /*
  * MAINTAINER NOTE: the dataset is exported in this same order. So:
- * 1/ put in in an order compatible with import
- * 2/ no more modify it
- * 3/ take attention to be able to support the import of a previously
- *    exported file
- * 4/ new datas must be added to the end of the list
+ * 1/ put in in an order compatible with import without header
+ * 2/ new datas should be added to the end of the list.
  */
 static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( ACC_NUMBER ),
@@ -2786,13 +2783,44 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			}
 		}
 
-		/* notes
-		 * we are tolerant on the last field... */
+		/* notes */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		splitted = my_utils_import_multi_lines( cstr );
 		ofo_account_set_notes( account, splitted );
 		g_free( splitted );
+
+		/* last update user
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* last update timestamp
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* validated debit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* validated credit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* rough debit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* rough credit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* future debit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* future credit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
 
 		/* keep unsettled entries ? */
 		itf = itf ? itf->next : NULL;
