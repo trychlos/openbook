@@ -579,6 +579,9 @@ ofo_recurrent_run_insert( ofoRecurrentRun *recurrent_run )
 	getter = ofo_base_get_getter( OFO_BASE( recurrent_run ));
 	signaler = ofa_igetter_get_signaler( getter );
 
+	/* rationale: see ofo-account.c */
+	ofo_recurrent_run_get_dataset( getter );
+
 	if( recurrent_run_do_insert( recurrent_run, getter )){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( recurrent_run ), NULL, getter );

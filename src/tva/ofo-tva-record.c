@@ -1228,6 +1228,9 @@ ofo_tva_record_insert( ofoTVARecord *tva_record )
 	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
+	/* rationale: see ofo-account.c */
+	ofo_tva_record_get_dataset( getter );
+
 	if( record_do_insert( tva_record, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( tva_record ), NULL, getter );

@@ -672,6 +672,9 @@ ofo_concil_insert( ofoConcil *concil )
 	dossier = ofa_hub_get_dossier( hub );
 	concil_set_id( concil, ofo_dossier_get_next_concil( dossier ));
 
+	/* rationale: see ofo-account.c */
+	ofo_concil_get_dataset( getter );
+
 	if( concil_do_insert( concil, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( concil ), NULL, getter );

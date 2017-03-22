@@ -25,6 +25,7 @@
 
  Bug fixes:
 
+   - myICollectionable: make sure the dataset is loaded before first insertion.
    - ofaAccountFrameBin: fix notebook size when the dataset is empty.
    - ofaAccountPage: fix page display when the dataset is empty.
    - ofaAccountStore: let the treeview be repopulated on collection reload.

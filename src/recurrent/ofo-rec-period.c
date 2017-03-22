@@ -904,6 +904,9 @@ ofo_rec_period_insert( ofoRecPeriod *period )
 	getter = ofo_base_get_getter( OFO_BASE( period ));
 	signaler = ofa_igetter_get_signaler( getter );
 
+	/* rationale: see ofo-account.c */
+	ofo_rec_period_get_dataset( getter );
+
 	if( rec_period_do_insert( period, getter )){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( period ), NULL, getter );

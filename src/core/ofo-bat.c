@@ -1030,6 +1030,9 @@ ofo_bat_insert( ofoBat *bat )
 	dossier = ofa_hub_get_dossier( hub );
 	bat_set_id( bat, ofo_dossier_get_next_bat( dossier ));
 
+	/* rationale: see ofo-account.c */
+	ofo_bat_get_dataset( getter );
+
 	if( bat_do_insert( bat, getter )){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( bat ), NULL, getter );

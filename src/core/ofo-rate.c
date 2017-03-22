@@ -780,6 +780,9 @@ ofo_rate_insert( ofoRate *rate )
 	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
+	/* rationale: see ofo-account.c */
+	ofo_rate_get_dataset( getter );
+
 	if( rate_do_insert( rate, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( rate ), NULL, getter );

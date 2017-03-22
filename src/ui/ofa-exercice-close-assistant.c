@@ -1858,9 +1858,6 @@ p6_forward( ofaExerciceCloseAssistant *self )
 	signaler = ofa_igetter_get_signaler( priv->getter );
 	dbegin = ofo_dossier_get_exe_begin( priv->dossier );
 
-	/* preload the entries dataset to make the myICollector ready */
-	ofo_entry_get_dataset( priv->getter );
-
 	bar = get_new_bar( self, "p6-forward" );
 	gtk_widget_show_all( priv->p6_page );
 	count = g_list_length( priv->p6_forwards );

@@ -1160,6 +1160,9 @@ ofo_ope_template_insert( ofoOpeTemplate *ope_template )
 	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
+	/* rationale: see ofo-account.c */
+	ofo_ope_template_get_dataset( getter );
+
 	if( model_do_insert( ope_template, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( ope_template ), NULL, getter );

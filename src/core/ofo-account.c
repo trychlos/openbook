@@ -1888,6 +1888,11 @@ ofo_account_insert( ofoAccount *account )
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
+	/* make sure the dataset is loaded before insertion
+	 * so that my_icollector_collection_add_object() doesn't then double
+	 * add the same record another time */
+	ofo_account_get_dataset( getter );
+
 	if( account_do_insert( account, connect )){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( account ), NULL, getter );

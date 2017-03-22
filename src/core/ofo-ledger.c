@@ -1581,6 +1581,9 @@ ofo_ledger_insert( ofoLedger *ledger )
 	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
+	/* rationale: see ofo-account.c */
+	ofo_ledger_get_dataset( getter );
+
 	if( ledger_do_insert( ledger, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( ledger ), NULL, getter );

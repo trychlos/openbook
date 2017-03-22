@@ -805,6 +805,9 @@ ofo_recurrent_model_insert( ofoRecurrentModel *recurrent_model )
 	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
+	/* rationale: see ofo-account.c */
+	ofo_recurrent_model_get_dataset( getter );
+
 	if( model_do_insert( recurrent_model, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
 				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( recurrent_model ), NULL, getter );

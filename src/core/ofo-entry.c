@@ -2103,6 +2103,9 @@ ofo_entry_insert( ofoEntry *entry )
 	entry_set_number( entry, ofo_dossier_get_next_entry( dossier ));
 	entry_compute_status( entry, FALSE, getter );
 
+	/* rationale: see ofo-account.c */
+	ofo_entry_get_dataset( getter );
+
 	if( entry_do_insert( entry, getter )){
 		if( ofo_entry_get_status( entry ) != ENT_STATUS_PAST ){
 			my_icollector_collection_add_object(
