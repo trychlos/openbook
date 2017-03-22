@@ -139,12 +139,6 @@
                 it would be easier that row-activate on templates page
                 opens the guided input rather that the properties)
 
- 783 2015- 4- 3 FEAT have a summary of unsettle/unreconciliated entries
-                     which will be reported after exercice closing
-     2016- 4-28 use case: when preparing the exercice closing, have a
-                direct view of unsettled entries on settleable accounts
-                + idem for unreconciliated on reconciliable
-
  796 2015- 4-13 FEAT IRenderable: have a second level of grouping
                      (subgroup) use case: when printing accounts book,
                      have a subtotal per class
@@ -365,9 +359,11 @@
 1404 2017- 3-17 have a progress bar on printing (at least a sablier)
      2017- 3-20 probably should use gdk_cursor_new_from_name( display, "wait" );
 
-1407 2017- 3-22 reconciliation page: update external ids from signaler handler
+1407 2017- 3-22 reconciliation store: update external ids from signaler handler
 
-1408
+1408 2017- 3-22 accentry store: update external ids from signaler handler
+
+1409
 
 -----------------------------------------------------------------------
  DONE
@@ -416,6 +412,13 @@
                      database, display the target database in bold (or
                      red)
      2017- 1-27 cancelled as obsolete
+
+ 783 2015- 4- 3 FEAT have a summary of unsettle/unreconciliated entries
+                     which will be reported after exercice closing
+     2016- 4-28 use case: when preparing the exercice closing, have a
+                direct view of unsettled entries on settleable accounts
+                + idem for unreconciliated on reconciliable
+     2017- 3-22 done
 
  790 2015- 4- 6 DISP GuidedInputEx: replace the treeview by a revealer ?
      2017- 3- 8 cancelled

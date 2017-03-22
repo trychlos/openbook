@@ -255,6 +255,8 @@ openbook_SOURCES = \
 	ofa-settlement-page.h								\
 	ofa-target-chooser-bin.c							\
 	ofa-target-chooser-bin.h							\
+	ofa-unreconcil-page.c								\
+	ofa-unreconcil-page.h								\
 	ofa-unsettled-page.c								\
 	ofa-unsettled-page.h								\
 	ofa-user-credentials-bin.c							\

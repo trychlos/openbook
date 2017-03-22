@@ -22,6 +22,7 @@
  New features and improvements:
 
    - Display unsettled entries on settleable accounts (todo #1381).
+   - Display unreconciliated entries on reconciliable accounts (todo #783).
 
  Bug fixes:
 
@@ -38,6 +39,7 @@
    - Clarify the reference management of the collection (todo #1359).
    - ofaAccentryStore: new class.
    - ofaAccentryTreeview: new class.
+   - ofaUnreconcilPage: new class.
    - ofaUnsettledPage: new class.
 
 -----------------------------------------------------------------------

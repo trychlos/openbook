@@ -36,12 +36,15 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofo-account.h"
+#include "api/ofo-concil.h"
 #include "api/ofo-entry.h"
+
+#include "core/ofa-iconcil.h"
 
 #include "ui/ofa-accentry-store.h"
 #include "ui/ofa-accentry-treeview.h"
-#include "ui/ofa-settlement-page.h"
-#include "ui/ofa-unsettled-page.h"
+#include "ui/ofa-reconcil-page.h"
+#include "ui/ofa-unreconcil-page.h"
 
 /* priv instance data
  */
@@ -62,56 +65,56 @@ typedef struct {
 	 */
 	GSimpleAction       *collapse_action;
 	GSimpleAction       *expand_action;
-	GSimpleAction       *settle_action;
+	GSimpleAction       *reconcil_action;
 }
-	ofaUnsettledPagePrivate;
+	ofaUnreconcilPagePrivate;
 
 static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget *action_page_v_setup_view( ofaActionPage *page );
 static void       action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
 static void       action_page_v_init_view( ofaActionPage *page );
-static gboolean   tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaUnsettledPage *self );
-static gboolean   tview_is_visible_account( ofaUnsettledPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoAccount *account );
-static gboolean   tview_is_visible_entry( ofaUnsettledPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
-static void       action_on_collapse_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self );
-static void       action_on_expand_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self );
-static void       action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self );
-//static void       store_on_changed( ofaAccentryStore *store, ofaUnsettledPage *self );
+static gboolean   tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaUnreconcilPage *self );
+static gboolean   tview_is_visible_account( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoAccount *account );
+static gboolean   tview_is_visible_entry( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
+static void       action_on_collapse_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
+static void       action_on_expand_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
+static void       action_on_reconcil_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
+//static void       store_on_changed( ofaAccentryStore *store, ofaUnreconcilPage *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaUnsettledPage, ofa_unsettled_page, OFA_TYPE_ACTION_PAGE, 0,
-		G_ADD_PRIVATE( ofaUnsettledPage ))
+G_DEFINE_TYPE_EXTENDED( ofaUnreconcilPage, ofa_unreconcil_page, OFA_TYPE_ACTION_PAGE, 0,
+		G_ADD_PRIVATE( ofaUnreconcilPage ))
 
 static void
-unsettled_page_finalize( GObject *instance )
+unreconcil_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_unsettled_page_finalize";
-	ofaUnsettledPagePrivate *priv;
+	static const gchar *thisfn = "ofa_unreconcil_page_finalize";
+	ofaUnreconcilPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_UNSETTLED_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_UNRECONCIL_PAGE( instance ));
 
 	/* free data members here */
-	priv = ofa_unsettled_page_get_instance_private( OFA_UNSETTLED_PAGE( instance ));
+	priv = ofa_unreconcil_page_get_instance_private( OFA_UNRECONCIL_PAGE( instance ));
 
 	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_unsettled_page_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_unreconcil_page_parent_class )->finalize( instance );
 }
 
 static void
-unsettled_page_dispose( GObject *instance )
+unreconcil_page_dispose( GObject *instance )
 {
-	ofaUnsettledPagePrivate *priv;
+	ofaUnreconcilPagePrivate *priv;
 	GList *it;
 
-	g_return_if_fail( instance && OFA_IS_UNSETTLED_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_UNRECONCIL_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		priv = ofa_unsettled_page_get_instance_private( OFA_UNSETTLED_PAGE( instance ));
+		priv = ofa_unreconcil_page_get_instance_private( OFA_UNRECONCIL_PAGE( instance ));
 
 		/* disconnect ofaEntryStore signal handlers */
 		for( it=priv->store_handlers ; it ; it=it->next ){
@@ -122,38 +125,38 @@ unsettled_page_dispose( GObject *instance )
 		/* unref object members here */
 		g_object_unref( priv->collapse_action );
 		g_object_unref( priv->expand_action );
-		g_object_unref( priv->settle_action );
+		g_object_unref( priv->reconcil_action );
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_unsettled_page_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_unreconcil_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_unsettled_page_init( ofaUnsettledPage *self )
+ofa_unreconcil_page_init( ofaUnreconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_unsettled_page_init";
-	ofaUnsettledPagePrivate *priv;
+	static const gchar *thisfn = "ofa_unreconcil_page_init";
+	ofaUnreconcilPagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_UNSETTLED_PAGE( self ));
+	g_return_if_fail( self && OFA_IS_UNRECONCIL_PAGE( self ));
 
-	priv = ofa_unsettled_page_get_instance_private( self );
+	priv = ofa_unreconcil_page_get_instance_private( self );
 
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
-ofa_unsettled_page_class_init( ofaUnsettledPageClass *klass )
+ofa_unreconcil_page_class_init( ofaUnreconcilPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_unsettled_page_class_init";
+	static const gchar *thisfn = "ofa_unreconcil_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = unsettled_page_dispose;
-	G_OBJECT_CLASS( klass )->finalize = unsettled_page_finalize;
+	G_OBJECT_CLASS( klass )->dispose = unreconcil_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = unreconcil_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
@@ -165,11 +168,11 @@ ofa_unsettled_page_class_init( ofaUnsettledPageClass *klass )
 static GtkWidget *
 page_v_get_top_focusable_widget( const ofaPage *page )
 {
-	ofaUnsettledPagePrivate *priv;
+	ofaUnreconcilPagePrivate *priv;
 
-	g_return_val_if_fail( page && OFA_IS_UNSETTLED_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_UNRECONCIL_PAGE( page ), NULL );
 
-	priv = ofa_unsettled_page_get_instance_private( OFA_UNSETTLED_PAGE( page ));
+	priv = ofa_unreconcil_page_get_instance_private( OFA_UNRECONCIL_PAGE( page ));
 
 	return( ofa_tvbin_get_tree_view( OFA_TVBIN( priv->tview )));
 }
@@ -177,12 +180,12 @@ page_v_get_top_focusable_widget( const ofaPage *page )
 static GtkWidget *
 action_page_v_setup_view( ofaActionPage *page )
 {
-	static const gchar *thisfn = "ofa_unsettled_page_v_setup_view";
-	ofaUnsettledPagePrivate *priv;
+	static const gchar *thisfn = "ofa_unreconcil_page_v_setup_view";
+	ofaUnreconcilPagePrivate *priv;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = ofa_unsettled_page_get_instance_private( OFA_UNSETTLED_PAGE( page ));
+	priv = ofa_unreconcil_page_get_instance_private( OFA_UNRECONCIL_PAGE( page ));
 
 	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
@@ -196,9 +199,9 @@ action_page_v_setup_view( ofaActionPage *page )
 static void
 action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
-	ofaUnsettledPagePrivate *priv;
+	ofaUnreconcilPagePrivate *priv;
 
-	priv = ofa_unsettled_page_get_instance_private( OFA_UNSETTLED_PAGE( page ));
+	priv = ofa_unreconcil_page_get_instance_private( OFA_UNRECONCIL_PAGE( page ));
 
 	/* collapse action */
 	priv->collapse_action = g_simple_action_new( "collapse", NULL );
@@ -226,29 +229,29 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 
 	ofa_buttons_box_add_spacer( buttons_box );
 
-	/* settle action */
-	priv->settle_action = g_simple_action_new( "settle", NULL );
-	g_signal_connect( priv->settle_action, "activate", G_CALLBACK( action_on_settle_activated ), page );
+	/* reconcil action */
+	priv->reconcil_action = g_simple_action_new( "reconcil", NULL );
+	g_signal_connect( priv->reconcil_action, "activate", G_CALLBACK( action_on_reconcil_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->settle_action ),
-			_( "Settle..." ));
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->reconcil_action ),
+			_( "Reconciliate..." ));
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_new_button(
-					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->settle_action ),
-					_( "_Settle..." )));
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->reconcil_action ),
+					_( "_Reconciliate..." )));
 }
 
 static void
 action_page_v_init_view( ofaActionPage *page )
 {
-	static const gchar *thisfn = "ofa_unsettled_page_v_init_view";
-	ofaUnsettledPagePrivate *priv;
+	static const gchar *thisfn = "ofa_unreconcil_page_v_init_view";
+	ofaUnreconcilPagePrivate *priv;
 	GMenu *menu;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = ofa_unsettled_page_get_instance_private( OFA_UNSETTLED_PAGE( page ));
+	priv = ofa_unreconcil_page_get_instance_private( OFA_UNRECONCIL_PAGE( page ));
 
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), priv->settings_prefix );
 	ofa_icontext_set_menu(
@@ -270,7 +273,7 @@ action_page_v_init_view( ofaActionPage *page )
 }
 
 static gboolean
-tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaUnsettledPage *self )
+tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaUnreconcilPage *self )
 {
 	gboolean visible;
 	GObject *object;
@@ -292,30 +295,30 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaUnsettledPage 
 }
 
 /*
- * account is visible if it is settleable
+ * account is visible if it is reconciliable
  */
 static gboolean
-tview_is_visible_account( ofaUnsettledPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoAccount *account )
+tview_is_visible_account( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoAccount *account )
 {
 	gboolean visible;
 
-	visible = ofo_account_is_settleable( account );
+	visible = ofo_account_is_reconciliable( account );
 
 	return( visible );
 }
 
 /*
- * entry is visible if on a settleable account, and not settled
+ * entry is visible if on a reconciliable account, and not reconciliated
  */
 static gboolean
-tview_is_visible_entry( ofaUnsettledPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
+tview_is_visible_entry( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
 {
-	ofaUnsettledPagePrivate *priv;
+	ofaUnreconcilPagePrivate *priv;
 	const gchar *acc_number;
 	ofoAccount *account;
-	ofxCounter stlmt_number;
+	ofoConcil *concil;
 
-	priv = ofa_unsettled_page_get_instance_private( self );
+	priv = ofa_unreconcil_page_get_instance_private( self );
 
 	acc_number = ofo_entry_get_account( entry );
 	account = ofo_account_get_by_number( priv->getter, acc_number );
@@ -323,9 +326,9 @@ tview_is_visible_entry( ofaUnsettledPage *self, GtkTreeModel *tmodel, GtkTreeIte
 	if( account ){
 		g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
 
-		if( ofo_account_is_settleable( account )){
-			stlmt_number = ofo_entry_get_settlement_number( entry );
-			if( stlmt_number == 0 ){
+		if( ofo_account_is_reconciliable( account )){
+			concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
+			if( concil == NULL ){
 				return( TRUE );
 			}
 		}
@@ -335,38 +338,38 @@ tview_is_visible_entry( ofaUnsettledPage *self, GtkTreeModel *tmodel, GtkTreeIte
 }
 
 static void
-action_on_collapse_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self )
+action_on_collapse_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self )
 {
 	static const gchar *thisfn = "ofa_uncollapsed_page_action_on_collapse_activated";
-	ofaUnsettledPagePrivate *priv;
+	ofaUnreconcilPagePrivate *priv;
 
 	g_debug( "%s: action=%p, empty=%p, self=%p",
 			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
-	priv = ofa_unsettled_page_get_instance_private( self );
+	priv = ofa_unreconcil_page_get_instance_private( self );
 
 	ofa_accentry_treeview_collapse_all( priv->tview );
 }
 
 static void
-action_on_expand_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self )
+action_on_expand_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_unsettled_page_action_on_expand_activated";
-	ofaUnsettledPagePrivate *priv;
+	static const gchar *thisfn = "ofa_unreconcil_page_action_on_expand_activated";
+	ofaUnreconcilPagePrivate *priv;
 
 	g_debug( "%s: action=%p, empty=%p, self=%p",
 			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
-	priv = ofa_unsettled_page_get_instance_private( self );
+	priv = ofa_unreconcil_page_get_instance_private( self );
 
 	ofa_accentry_treeview_expand_all( priv->tview );
 }
 
 static void
-action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self )
+action_on_reconcil_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_unsettled_page_action_on_settle_activated";
-	ofaUnsettledPagePrivate *priv;
+	static const gchar *thisfn = "ofa_unreconcil_page_action_on_reconcil_activated";
+	ofaUnreconcilPagePrivate *priv;
 	ofaIPageManager *manager;
 	ofoBase *object;
 	const gchar *account;
@@ -375,7 +378,7 @@ action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaUnsettled
 	g_debug( "%s: action=%p, empty=%p, self=%p",
 			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
-	priv = ofa_unsettled_page_get_instance_private( self );
+	priv = ofa_unreconcil_page_get_instance_private( self );
 
 	manager = ofa_igetter_get_page_manager( priv->getter );
 
@@ -385,6 +388,6 @@ action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaUnsettled
 	account = OFO_IS_ACCOUNT( object ) ?
 			ofo_account_get_number( OFO_ACCOUNT( object )) : ofo_entry_get_account( OFO_ENTRY( object ));
 
-	page = ofa_ipage_manager_activate( manager, OFA_TYPE_SETTLEMENT_PAGE );
-	ofa_settlement_page_set_account( OFA_SETTLEMENT_PAGE( page ), account );
+	page = ofa_ipage_manager_activate( manager, OFA_TYPE_RECONCIL_PAGE );
+	ofa_reconcil_page_set_account( OFA_RECONCIL_PAGE( page ), account );
 }
