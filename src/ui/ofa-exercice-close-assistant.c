@@ -1281,7 +1281,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 					ofa_iconcil_new_concil( OFA_ICONCIL( entry ), end_cur );
 				}
 			}
-			ofo_entry_free_dataset( sld_entries );
+			g_list_free( sld_entries );
 
 			/* forward entries:
 			 * -> set forward rule indicator
@@ -1884,7 +1884,7 @@ p6_forward( ofaExerciceCloseAssistant *self )
 		update_bar( bar, &i, count, thisfn );
 	}
 
-	ofo_entry_free_dataset( priv->p6_forwards );
+	g_list_free( priv->p6_forwards );
 
 	gtk_widget_show_all( GTK_WIDGET( bar ));
 	g_idle_add(( GSourceFunc ) p6_open, self );

@@ -274,10 +274,14 @@ load_collection( myICollector *instance, GType type, void *user_data )
  * @object: the #myICollectionable object to be added.
  * @func: [allow-none]: a #GCompareFunc to make sure the object is
  *  added in a sorted list.
- * @user_data: user data to be passed to ::load_collection() method.
+ * @user_data: user data to be passed to
+ *  my_icollectionable_load_collection() method.
  *
  * Adds the @object to the collection of objects of the same type.
  * The collection is maintained sorted with @func function.
+ *
+ * The @instance #myICollector takes ownership of the provided reference;
+ * the @object's reference count is not incremented.
  *
  * A new collection is defined if it did not exist yet.
  */

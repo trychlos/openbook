@@ -40,6 +40,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -1322,10 +1323,11 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 	ofsOpe *ope;
 	ofsOpeDetail *detail;
 	ofoOpeTemplate *template;
-	gboolean done;
+	gboolean done, ok;
 	GList *entries, *it;
 	ofxCounter ope_number;
 	ofoDossier *dossier;
+	ofaIDBConnect *connect;
 	ofoEntry *entry;
 	gchar *period_label;
 
@@ -1333,6 +1335,7 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	dossier = ofa_hub_get_dossier( hub );
+	connect = ofa_hub_get_connect( hub );
 
 	*ope_count = 0;
 	*ent_count = 0;
@@ -1408,17 +1411,27 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 				if( done ){
 					ofs_ope_apply_template( ope );
 					if( ofs_ope_is_valid( ope, msgerr, NULL )){
-						ope_number = ofo_dossier_get_next_ope( dossier );
 						entries = ofs_ope_generate_entries( ope );
-						for( it=entries ; it ; it=it->next ){
-							entry = OFO_ENTRY( it->data );
-							ofo_entry_set_ope_number( entry, ope_number );
-							ofo_entry_insert( entry );
-							*ent_count += 1;
+						ok = ofa_idbconnect_transaction_start( connect, FALSE, NULL );
+						if( ok ){
+							ope_number = ofo_dossier_get_next_ope( dossier );
+							for( it=entries ; it && ok ; it=it->next ){
+								entry = OFO_ENTRY( it->data );
+								ofo_entry_set_ope_number( entry, ope_number );
+								ok = ofo_entry_insert( entry );
+								*ent_count += 1;
+							}
 						}
-						g_list_free_full( entries, ( GDestroyNotify ) g_object_unref );
-						ofo_tva_record_detail_set_ope_number( priv->tva_record, rec_idx, ope_number );
-						*ope_count += 1;
+						if( ok ){
+							ofa_idbconnect_transaction_commit( connect, FALSE, NULL );
+							g_list_free( entries );
+							ofo_tva_record_detail_set_ope_number( priv->tva_record, rec_idx, ope_number );
+							*ope_count += 1;
+
+						} else {
+							ok = ofa_idbconnect_transaction_cancel( connect, FALSE, NULL );
+							g_list_free_full( entries, g_object_unref );
+						}
 					}
 				}
 				ofs_ope_free( ope );

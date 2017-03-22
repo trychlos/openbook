@@ -39,6 +39,7 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-idate-filter.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
@@ -689,6 +690,8 @@ action_on_object_validated( ofaRecurrentRunPage *self )
 	ofaRecurrentRunPagePrivate *priv;
 	const gchar *rec_id, *tmpl_id, *ledger_id;
 	ofoDossier *dossier;
+	ofaIDBConnect *connect;
+	gboolean ok;
 	ofoRecurrentModel *model;
 	ofoOpeTemplate *template_obj;
 	ofoLedger *ledger_obj;
@@ -706,6 +709,9 @@ action_on_object_validated( ofaRecurrentRunPage *self )
 	hub = ofa_igetter_get_hub( priv->getter );
 	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), G_SOURCE_REMOVE );
+
+	connect = ofa_hub_get_connect( hub );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), G_SOURCE_REMOVE );
 
 	rec_id = ofo_recurrent_run_get_mnemo( priv->update_recrun );
 	model = ofo_recurrent_model_get_by_mnemo( priv->getter, rec_id );
@@ -746,14 +752,27 @@ action_on_object_validated( ofaRecurrentRunPage *self )
 	ofs_ope_apply_template( ope );
 	entries = ofs_ope_generate_entries( ope );
 
-	ope_number = ofo_dossier_get_next_ope( dossier );
-	priv->update_ope_count += 1;
+	ok = ofa_idbconnect_transaction_start( connect, FALSE, NULL );
 
-	for( it=entries ; it ; it=it->next ){
-		entry = OFO_ENTRY( it->data );
-		ofo_entry_set_ope_number( entry, ope_number );
-		ofo_entry_insert( entry );
-		priv->update_entry_count += 1;
+	if( ok ){
+		ope_number = ofo_dossier_get_next_ope( dossier );
+		priv->update_ope_count += 1;
+
+		for( it=entries ; it && ok ; it=it->next ){
+			entry = OFO_ENTRY( it->data );
+			ofo_entry_set_ope_number( entry, ope_number );
+			ok = ofo_entry_insert( entry );
+			priv->update_entry_count += 1;
+		}
+	}
+
+	if( ok ){
+		ofa_idbconnect_transaction_commit( connect, FALSE, NULL );
+		g_list_free( entries );
+
+	} else {
+		ok = ofa_idbconnect_transaction_cancel( connect, FALSE, NULL );
+		g_list_free_full( entries, g_object_unref );
 	}
 
 	/* do not continue and remove from idle callbacks list */

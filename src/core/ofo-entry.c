@@ -2109,7 +2109,7 @@ ofo_entry_insert( ofoEntry *entry )
 	if( entry_do_insert( entry, getter )){
 		if( ofo_entry_get_status( entry ) != ENT_STATUS_PAST ){
 			my_icollector_collection_add_object(
-					ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( g_object_ref( entry )), NULL, getter );
+					ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( entry ), NULL, getter );
 			g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, entry );
 		}
 		ok = TRUE;

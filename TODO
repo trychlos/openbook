@@ -326,9 +326,6 @@
                 with children and companions (e.g. entries+concil)
                 + have a version number
 
-1359 2017- 2-17 clarify the reference management of the collections
-                when inserting of a new object
-
 1361 2017- 2-17 add a date filter on vat declarations view
 
 1369 2017- 2-20 recurrent operations validation: cancelled operations
@@ -766,6 +763,10 @@
 
 1358 2017- 2-17 when importing a batline, debit 0.05 is translated to .-5
      2017- 2-17 fixed
+
+1359 2017- 2-17 clarify the reference management of the collections
+                when inserting of a new object
+     2017- 2-22 done
 
 1360 2017- 2-17 add a date filter on recurrent operations view
      2017- 2-20 done

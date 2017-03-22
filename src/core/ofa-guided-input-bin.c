@@ -258,7 +258,7 @@ static gboolean          update_totals( ofaGuidedInputBin *self );
 static void              add_total_diff_lines( ofaGuidedInputBin *self, gint model_count );
 static void              total_display_diff( ofaGuidedInputBin *self, ofoCurrency *currency, gint row, gdouble ddiff, gdouble cdiff );
 static gboolean          do_validate( ofaGuidedInputBin *self );
-static void              display_ok_message( ofaGuidedInputBin *self, gint count );
+static void              display_ok_message( ofaGuidedInputBin *self, guint count );
 static void              do_reset_entries_rows( ofaGuidedInputBin *self );
 static void              signaler_connect_to_signaling_system( ofaGuidedInputBin *self );
 static void              signaler_on_updated_base( ofaISignaler *signaler, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self );
@@ -1757,6 +1757,7 @@ do_validate( ofaGuidedInputBin *self )
 	ofoEntry *entry;
 	GList *entries, *it;
 	ofxCounter number;
+	guint count;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
@@ -1764,25 +1765,29 @@ do_validate( ofaGuidedInputBin *self )
 	connect = ofa_hub_get_connect( hub );
 	dossier = ofa_hub_get_dossier( hub );
 
-	ok = ofa_idbconnect_transaction_start( connect, FALSE, NULL );
 	entries = ofs_ope_generate_entries( priv->ope );
-	number = ofo_dossier_get_next_ope( dossier );
+	count = g_list_length( entries );
 
-	for( it=entries ; it ; it=it->next ){
-		entry = OFO_ENTRY( it->data );
-		ofo_entry_set_ope_number( entry, number );
-		ok &= ofo_entry_insert( entry );
+	ok = ofa_idbconnect_transaction_start( connect, FALSE, NULL );
+
+	if( ok ){
+		number = ofo_dossier_get_next_ope( dossier );
+		for( it=entries ; it && ok ; it=it->next ){
+			entry = OFO_ENTRY( it->data );
+			ofo_entry_set_ope_number( entry, number );
+			ok = ofo_entry_insert( entry );
+		}
 	}
 
 	if( ok ){
-		display_ok_message( self, g_list_length( entries ));
 		ofa_idbconnect_transaction_commit( connect, FALSE, NULL );
+		g_list_free( entries );
+		display_ok_message( self, count );
 
 	} else {
 		ok = ofa_idbconnect_transaction_cancel( connect, FALSE, NULL );
+		g_list_free_full( entries, g_object_unref );
 	}
-
-	g_list_free_full( entries, g_object_unref );
 
 	my_date_set_from_date( &st_last_dope, &priv->ope->dope );
 	my_date_set_from_date( &st_last_deff, &priv->ope->deffect );
@@ -1791,7 +1796,7 @@ do_validate( ofaGuidedInputBin *self )
 }
 
 static void
-display_ok_message( ofaGuidedInputBin *self, gint count )
+display_ok_message( ofaGuidedInputBin *self, guint count )
 {
 	gchar *message;
 	GtkWindow *toplevel;
