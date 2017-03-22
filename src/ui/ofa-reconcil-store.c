@@ -113,10 +113,11 @@ static gboolean find_row_by_concil_member( ofaReconcilStore *self, const gchar *
 static gboolean find_row_by_concil_member_rec( ofaReconcilStore *self, const gchar *type, ofxCounter id, GtkTreeIter *iter );
 static void     insert_new_entry( ofaReconcilStore *self, ofoEntry *entry );
 static void     set_account_new_id( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id );
-static void     set_account_new_id_rec( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id, GtkTreeIter *iter );
 static void     set_currency_new_id( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id );
 static void     set_ledger_new_id( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id );
 static void     set_ope_template_new_id( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id );
+static void     update_column( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id, guint column );
+static void     update_column_rec( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id, guint column, GtkTreeIter *iter );
 static void     signaler_connect_to_signaling_system( ofaReconcilStore *self );
 static void     signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaReconcilStore *self );
 static void     signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaReconcilStore *self );
@@ -1203,71 +1204,65 @@ static void
 set_account_new_id( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id )
 {
 	ofaReconcilStorePrivate *priv;
-	GtkTreeIter iter;
 
 	priv = ofa_reconcil_store_get_instance_private( self );
 
+	/* update in-memory private data */
 	if( !my_collate( priv->acc_number, prev_id )){
-
-		/* update in-memory private data */
 		g_free( priv->acc_number );
 		priv->acc_number = g_strdup( new_id );
-
-		/* update entries */
-		if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
-			set_account_new_id_rec( self, prev_id, new_id, &iter );
-		}
 	}
-}
 
-static void
-set_account_new_id_rec( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id, GtkTreeIter *iter )
-{
-	GtkTreeIter child_iter;
-	gchar *str;
-	gint cmp;
-
-	while( TRUE ){
-		if( gtk_tree_model_iter_children( GTK_TREE_MODEL( self ), &child_iter, iter )){
-			set_account_new_id_rec( self, prev_id, new_id, &child_iter );
-		}
-		gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, RECONCIL_COL_ACCOUNT, &str, -1 );
-		cmp = my_collate( str, prev_id);
-		g_free( str );
-		if( cmp == 0 ){
-			gtk_tree_store_set( GTK_TREE_STORE( self ), iter, RECONCIL_COL_ACCOUNT, new_id, -1 );
-		}
-		if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
-			break;
-		}
-	}
+	update_column( self, prev_id, new_id, RECONCIL_COL_ACCOUNT );
 }
 
 static void
 set_currency_new_id( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id )
 {
-	/*
-	 * how do I know that my currency identifier has changed without
-	 * examining all rows ?
-	 */
+	update_column( self, prev_id, new_id, RECONCIL_COL_CURRENCY );
 }
 
 static void
 set_ledger_new_id( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id )
 {
-	/*
-	 * how do I know that my ledger identifier has changed without
-	 * examining all rows ?
-	 */
+	update_column( self, prev_id, new_id, RECONCIL_COL_LEDGER );
 }
 
 static void
 set_ope_template_new_id( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id )
 {
-	/*
-	 * how do I know that my operation template identifier has changed
-	 * without examining all rows ?
-	 */
+	update_column( self, prev_id, new_id, RECONCIL_COL_OPE_TEMPLATE );
+}
+
+static void
+update_column( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id, guint column )
+{
+	GtkTreeIter iter;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
+		update_column_rec( self, prev_id, new_id, column, &iter );
+	}
+}
+
+static void
+update_column_rec( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id, guint column, GtkTreeIter *iter )
+{
+	GtkTreeIter child_iter;
+	gchar *row_id;
+
+	while( TRUE ){
+		if( gtk_tree_model_iter_children( GTK_TREE_MODEL( self ), &child_iter, iter )){
+			update_column_rec( self, prev_id, new_id, column, &child_iter );
+		}
+		gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, column, &row_id, -1 );
+		if( !my_collate( row_id, prev_id )){
+			gtk_tree_store_set( GTK_TREE_STORE( self ), iter, column, new_id, -1 );
+		}
+		g_free( row_id );
+		if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
+			break;
+		}
+	}
 }
 
 /*

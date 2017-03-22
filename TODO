@@ -359,8 +359,6 @@
 1404 2017- 3-17 have a progress bar on printing (at least a sablier)
      2017- 3-20 probably should use gdk_cursor_new_from_name( display, "wait" );
 
-1407 2017- 3-22 reconciliation store: update external ids from signaler handler
-
 1409
 
 -----------------------------------------------------------------------
@@ -890,6 +888,9 @@
 
 1406 2017- 3-21 BatPropertites: 'imported on' label is not grayed
      2017- 3-21 fixed
+
+1407 2017- 3-22 reconciliation store: update external ids from signaler handler
+     2017- 3-22 done
 
 1408 2017- 3-22 accentry store: update external ids from signaler handler
      2017- 3-22 done
