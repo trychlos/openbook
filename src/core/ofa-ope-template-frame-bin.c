@@ -375,6 +375,8 @@ setup_bin( ofaOpeTemplateFrameBin *self )
 
 	/* UI notebook */
 	priv->notebook = gtk_notebook_new();
+	gtk_widget_set_hexpand( priv->notebook, TRUE );
+	gtk_widget_set_vexpand( priv->notebook, TRUE );
 	gtk_notebook_popup_enable( GTK_NOTEBOOK( priv->notebook ));
 	gtk_notebook_set_scrollable( GTK_NOTEBOOK( priv->notebook ), TRUE );
 	gtk_notebook_set_show_tabs( GTK_NOTEBOOK( priv->notebook ), TRUE );
@@ -537,8 +539,8 @@ book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeT
  * ofa_ope_template_frame_bin_get_current_page:
  * @bin: this #ofaOpeTemplateFrameBin instance.
  *
- * Returns the current page of the notebook, which happens to be an
- * #ofaOpeTemplateTreeview.
+ * Returns: the #ofaOpeTemplateTreeview associated to the current page,
+ * which may be %NULL if the #ofoOpeTemplate dataset is empty.
  */
 GtkWidget *
 ofa_ope_template_frame_bin_get_current_page( ofaOpeTemplateFrameBin *bin )
