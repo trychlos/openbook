@@ -31,13 +31,20 @@
  * @include: ui/ofa-balance-grid-bin.h
  *
  * A convenience class to manage a balance grid.
- * It defines one "update" action signal to let the user update a
- * balance row in the grid.
+ *
+ * A balance grid contains at least four row groups for rough, validated
+ * and future entries, each row group containing itself one row per
+ * currency.
+ *
+ * The class defines one "ofa-update" action signal to let the user
+ * update a balance row in the grid.
  */
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
+#include "api/ofs-currency.h"
 
 G_BEGIN_DECLS
 
@@ -60,9 +67,29 @@ typedef struct {
 }
 	ofaBalanceGridBinClass;
 
-GType              ofa_balance_grid_bin_get_type ( void ) G_GNUC_CONST;
+/**
+ * The target row group in the grid.
+ */
+enum {
+	OFA_BALANCE_ROUGH = 1,
+	OFA_BALANCE_VALIDATED,
+	OFA_BALANCE_FUTURE,
+	OFA_BALANCE_TOTAL
+};
 
-ofaBalanceGridBin *ofa_balance_grid_bin_new      ( ofaIGetter *getter );
+GType              ofa_balance_grid_bin_get_type    ( void ) G_GNUC_CONST;
+
+ofaBalanceGridBin *ofa_balance_grid_bin_new         ( ofaIGetter *getter );
+
+void               ofa_balance_grid_bin_set_amounts ( ofaBalanceGridBin *bin,
+															guint group,
+															const gchar *currency,
+															ofxAmount debit,
+															ofxAmount credit );
+
+void               ofa_balance_grid_bin_set_currency( ofaBalanceGridBin *bin,
+															guint group,
+															ofsCurrency *sbal );
 
 G_END_DECLS
 

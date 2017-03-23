@@ -26,12 +26,18 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
 #include "api/ofa-igetter.h"
+#include "api/ofo-currency.h"
 
 #include "ui/ofa-balance-grid-bin.h"
+
+#define BALANCE_GRID_GROUP              "ofa-balance-grid-bin-group"
+#define BALANCE_GRID_CURRENCY           "ofa-balance-grid-bin-currency"
 
 /* private instance data
  */
@@ -51,10 +57,13 @@ typedef struct {
 /* columns of the balance grid
  */
 enum {
-	COL_DEBIT = 0,
+	COL_LABEL = 0,
+	COL_DEBIT,
 	COL_SPACE,
 	COL_CREDIT,
-	COL_CURRENCY
+	COL_CURRENCY,
+	COL_STATUS,
+	COL_REF
 };
 
 /* signals defined here
@@ -67,7 +76,11 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void setup_grid( ofaBalanceGridBin *self );
-static void on_update( ofaBalanceGridBin *self, const gchar *currency, gdouble debit, gdouble credit, void *empty );
+static void on_update( ofaBalanceGridBin *self, guint group, const gchar *currency, gdouble debit, gdouble credit, void *empty );
+static void do_update( ofaBalanceGridBin *self, guint group, const gchar *currency, gdouble debit, gdouble credit );
+static gint find_currency_row( ofaBalanceGridBin *self, guint group, const gchar *currency );
+static gint add_currency_row( ofaBalanceGridBin *self, guint group, const gchar *currency );
+static void grid_insert_row( ofaBalanceGridBin *self, guint group, gint row );
 static void write_double( ofaBalanceGridBin *self, gdouble amount, gint left, gint top );
 
 G_DEFINE_TYPE_EXTENDED( ofaBalanceGridBin, ofa_balance_grid_bin, GTK_TYPE_BIN, 0,
@@ -136,16 +149,17 @@ ofa_balance_grid_bin_class_init( ofaBalanceGridBinClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = balance_grid_bin_finalize;
 
 	/**
-	 * ofaBalanceGridBin::update:
+	 * ofaBalanceGridBin::ofa-update:
 	 *
-	 * This signal may be sent to update the balance grid.
+	 * This signal is to be sent to update the balance grid.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaBalanceGridBin *grid,
-	 *						const gchar   *currency,
-	 * 						gdouble        debit,
-	 * 						gdouble        credit,
-	 * 						gpointer       user_data );
+	 *						guint            group,
+	 *						const gchar     *currency,
+	 * 						gdouble          debit,
+	 * 						gdouble          credit,
+	 * 						gpointer         user_data );
 	 */
 	st_signals[ UPDATE ] = g_signal_new_class_handler(
 				"ofa-update",
@@ -156,8 +170,8 @@ ofa_balance_grid_bin_class_init( ofaBalanceGridBinClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				3,
-				G_TYPE_STRING, G_TYPE_DOUBLE, G_TYPE_DOUBLE );
+				4,
+				G_TYPE_INT, G_TYPE_STRING, G_TYPE_DOUBLE, G_TYPE_DOUBLE );
 }
 
 /**
@@ -189,7 +203,7 @@ static void
 setup_grid( ofaBalanceGridBin *self )
 {
 	ofaBalanceGridBinPrivate *priv;
-	GtkWidget *grid;
+	GtkWidget *grid, *label;
 
 	priv = ofa_balance_grid_bin_get_instance_private( self );
 
@@ -199,72 +213,261 @@ setup_grid( ofaBalanceGridBin *self )
 	priv->grid = GTK_GRID( grid );
 	gtk_grid_set_column_spacing( priv->grid, 4 );
 
+	label = gtk_label_new( _( "Rough :" ));
+	my_utils_widget_set_xalign( label, 1.0 );
+	gtk_grid_attach( priv->grid, label, COL_LABEL, 0, 1, 1 );
+
+	label = gtk_label_new( NULL );
+	gtk_grid_attach( priv->grid, label, COL_REF, 0, 1, 1 );
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( OFA_BALANCE_ROUGH ));
+
+	label = gtk_label_new( _( "Validated :" ));
+	my_utils_widget_set_xalign( label, 1.0 );
+	gtk_grid_attach( priv->grid, label, COL_LABEL, 1, 1, 1 );
+
+	label = gtk_label_new( NULL );
+	gtk_grid_attach( priv->grid, label, COL_REF, 1, 1, 1 );
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( OFA_BALANCE_VALIDATED ));
+
+	label = gtk_label_new( _( "Future :" ));
+	my_utils_widget_set_xalign( label, 1.0 );
+	gtk_grid_attach( priv->grid, label, COL_LABEL, 2, 1, 1 );
+
+	label = gtk_label_new( NULL );
+	gtk_grid_attach( priv->grid, label, COL_REF, 2, 1, 1 );
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( OFA_BALANCE_FUTURE ));
+
+	label = gtk_label_new( _( "Total :" ));
+	my_utils_widget_set_xalign( label, 1.0 );
+	gtk_grid_attach( priv->grid, label, COL_LABEL, 3, 1, 1 );
+
+	label = gtk_label_new( NULL );
+	gtk_grid_attach( priv->grid, label, COL_REF, 3, 1, 1 );
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( OFA_BALANCE_TOTAL ));
+
 	g_signal_connect( self, "ofa-update", G_CALLBACK( on_update ), NULL );
 
 	gtk_widget_show_all( GTK_WIDGET( self ));
 }
 
-static void
-on_update( ofaBalanceGridBin *self, const gchar *currency, gdouble debit, gdouble credit, void *empty )
+/**
+ * ofa_balance_grid_bin_set_amounts:
+ * @bin: this #ofaBalanceGridBin widget.
+ * @group: the targeted row group.
+ * @currency: the currency code.
+ * @debit: the debit to be displayed.
+ * @credit: the credit to be displayed.
+ *
+ * Update the balance.
+ */
+void
+ofa_balance_grid_bin_set_amounts( ofaBalanceGridBin *bin, guint group, const gchar *currency, ofxAmount debit, ofxAmount credit )
 {
 	ofaBalanceGridBinPrivate *priv;
-	gint i;
-	gboolean found;
-	GtkWidget *widget;
-	const gchar *cstr;
+
+	g_return_if_fail( bin && OFA_IS_BALANCE_GRID_BIN( bin ));
+
+	priv = ofa_balance_grid_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	do_update( bin, group, currency, debit, credit );
+}
+
+/**
+ * ofa_balance_grid_bin_set_currency:
+ * @bin: this #ofaBalanceGridBin widget.
+ * @group: the targeted row group.
+ * @sbal: a #ofsCurrency to be displayed.
+ *
+ * Update the balance.
+ */
+void
+ofa_balance_grid_bin_set_currency( ofaBalanceGridBin *bin, guint group, ofsCurrency *sbal )
+{
+	ofaBalanceGridBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_BALANCE_GRID_BIN( bin ));
+
+	priv = ofa_balance_grid_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	do_update( bin, group, ofo_currency_get_code( sbal->currency ), sbal->debit, sbal->credit );
+}
+
+static void
+on_update( ofaBalanceGridBin *self, guint group, const gchar *currency, gdouble debit, gdouble credit, void *empty )
+{
+	do_update( self, group, currency, debit, credit );
+}
+
+static void
+do_update( ofaBalanceGridBin *self, guint group, const gchar *currency, gdouble debit, gdouble credit )
+{
+	ofaBalanceGridBinPrivate *priv;
+	gint currency_row;
 
 	g_return_if_fail( self && OFA_IS_BALANCE_GRID_BIN( self ));
 
+	if( debit || credit ){
+
+		priv = ofa_balance_grid_bin_get_instance_private( self );
+
+		currency_row = find_currency_row( self, group, currency );
+
+		if( currency_row == -1 ){
+			currency_row = add_currency_row( self, group, currency );
+		}
+
+		if( currency_row == -1 ){
+			return;
+		}
+
+		write_double( self, debit, COL_DEBIT, currency_row );
+		write_double( self, credit, COL_CREDIT, currency_row );
+
+		gtk_widget_show_all( GTK_WIDGET( priv->grid ));
+
+		/* let Gtk update the display */
+		while( gtk_events_pending()){
+			gtk_main_iteration();
+		}
+	}
+}
+
+/*
+ * @group:
+ * @currency:
+ *
+ * Find the row for the specified @row and the specified @currency.
+ *
+ * Returns: the index of the row, or -1.
+ */
+static gint
+find_currency_row( ofaBalanceGridBin *self, guint group, const gchar *currency )
+{
+	ofaBalanceGridBinPrivate *priv;
+	guint i;
+	GtkWidget *widget;
+	guint widget_group;
+	const gchar *widget_currency;
+
 	priv = ofa_balance_grid_bin_get_instance_private( self );
 
-	found = FALSE;
-
 	for( i=0 ; ; ++i ){
-		widget = gtk_grid_get_child_at( priv->grid, COL_CURRENCY, i );
+		widget = gtk_grid_get_child_at( priv->grid, COL_REF, i );
 		if( !widget ){
 			break;
 		}
-		g_return_if_fail( GTK_IS_LABEL( widget ));
-		cstr = gtk_label_get_text( GTK_LABEL( widget ));
-		if( !g_utf8_collate( cstr, currency )){
-			found = TRUE;
+		g_return_val_if_fail( GTK_IS_LABEL( widget ), -1 );
+
+		widget_group = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( widget ), BALANCE_GRID_GROUP ));
+		if( widget_group == group ){
+			widget_currency = g_object_get_data( G_OBJECT( widget ), BALANCE_GRID_CURRENCY );
+			if( !my_collate( widget_currency, currency )){
+				return( i );
+			}
+		}
+	}
+
+	return( -1 );
+}
+
+/*
+ * @group:
+ * @currency:
+ *
+ * Insert a new row in the specified @group for the specified @currency.
+ *
+ * Returns: the index of the new row.
+ */
+static gint
+add_currency_row( ofaBalanceGridBin *self, guint group, const gchar *currency )
+{
+	ofaBalanceGridBinPrivate *priv;
+	guint i;
+	GtkWidget *widget, *label;
+	guint widget_group;
+	const gchar *widget_currency;
+
+	priv = ofa_balance_grid_bin_get_instance_private( self );
+
+	for( i=0 ; ; ++i ){
+		widget_group = 0;
+		widget_currency = NULL;
+		widget = gtk_grid_get_child_at( priv->grid, COL_REF, i );
+		if( !widget ){
+			break;
+		}
+		g_return_val_if_fail( GTK_IS_LABEL( widget ), -1 );
+
+		widget_group = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( widget ), BALANCE_GRID_GROUP ));
+		if( widget_group == group ){
+			widget_currency = g_object_get_data( G_OBJECT( widget ), BALANCE_GRID_CURRENCY );
+			if( !widget_currency || my_collate( widget_currency, currency ) > 0 ){
+				break;
+			}
+		} else if( widget_group > group ){
 			break;
 		}
 	}
 
-	if( !found ){
-		widget = gtk_label_new( NULL );
-		my_utils_widget_set_xalign( widget, 1.0 );
-		gtk_label_set_width_chars( GTK_LABEL( widget ), 12 );
-		gtk_grid_attach( priv->grid, widget, COL_DEBIT, i, 1, 1 );
-		write_double( self, debit, COL_DEBIT, i );
+	/* i points past the last row - the grid will be automatically extended */
+	if( !widget_group ){
+		;
 
-		widget = gtk_label_new( "" );
-		gtk_widget_set_hexpand( widget, TRUE );
-		gtk_grid_attach( priv->grid, widget, COL_SPACE, i, 1, 1 );
+	/* i points to the first row of the next group - insert a row */
+	} else if( widget_group > group ){
+		grid_insert_row( self, group, i );
 
-		widget = gtk_label_new( NULL );
-		my_utils_widget_set_xalign( widget, 1.0 );
-		gtk_label_set_width_chars( GTK_LABEL( widget ), 12 );
-		gtk_grid_attach( priv->grid, widget, COL_CREDIT, i, 1, 1 );
-		write_double( self, credit, COL_CREDIT, i );
+	/* i points to the right group but the currency is empty */
+	} else if( !widget_currency ){
+		;
 
-		widget = gtk_label_new( NULL );
-		my_utils_widget_set_xalign( widget, 0 );
-		gtk_grid_attach( priv->grid, widget, COL_CURRENCY, i, 1, 1 );
-		gtk_label_set_text( GTK_LABEL( widget ), currency );
-
+	/* i points to the next currency */
 	} else {
-		write_double( self, debit, COL_DEBIT, i );
-		write_double( self, credit, COL_CREDIT, i );
+		grid_insert_row( self, group, i );
 	}
 
-	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
+	label = gtk_label_new( NULL );
+	my_utils_widget_set_xalign( label, 1.0 );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 15 );
+	gtk_grid_attach( priv->grid, label, COL_DEBIT, i, 1, 1 );
 
-	/* let Gtk update the display */
-	while( gtk_events_pending()){
-		gtk_main_iteration();
-	}
+	label = gtk_label_new( NULL );
+	my_utils_widget_set_xalign( label, 1.0 );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 15 );
+	gtk_grid_attach( priv->grid, label, COL_CREDIT, i, 1, 1 );
+
+	label = gtk_label_new( currency );
+	my_utils_widget_set_xalign( label, 0 );
+	gtk_grid_attach( priv->grid, label, COL_CURRENCY, i, 1, 1 );
+
+	label = gtk_grid_get_child_at( priv->grid, COL_REF, i );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), -1 );
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_CURRENCY, g_strdup( currency ));
+
+	return( i );
+}
+
+static void
+grid_insert_row( ofaBalanceGridBin *self, guint group, gint row )
+{
+	ofaBalanceGridBinPrivate *priv;
+	GtkWidget *label;
+
+	priv = ofa_balance_grid_bin_get_instance_private( self );
+
+	gtk_grid_insert_row( priv->grid, row );
+
+	label = gtk_label_new( "" );
+	gtk_widget_set_hexpand( label, TRUE );
+	gtk_grid_attach( priv->grid, label, COL_SPACE, row, 1, 1 );
+
+	label = gtk_label_new( NULL );
+	gtk_grid_attach( priv->grid, label, COL_REF, row, 1, 1 );
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( group ));
 }
 
 static void

@@ -340,8 +340,6 @@
      2017- 3-21 + subtotals per class
                 this needs a second level of subgrouping
 
-1392 2017- 3-16 check account soldes (val, rough, fut) vs balances of entries
-
 1396 2017- 3-16 check conciliation groups integrity is wrong
                 - display erroneous orphan conciliation member with BatLineId xxx
                 - count is wrong
@@ -359,7 +357,10 @@
 1404 2017- 3-17 have a progress bar on printing (at least a sablier)
      2017- 3-20 probably should use gdk_cursor_new_from_name( display, "wait" );
 
-1409
+1409 2017- 3-22 dbms integrity: whether to display all messages or only
+                errors should be a user preference
+
+1410
 
 -----------------------------------------------------------------------
  DONE
@@ -856,6 +857,9 @@
 1391 2017- 3-15 signal multiple pages instead of single ones
                 + take care of reinitializing the counter on new dossier
      2017- 3-20 done
+
+1392 2017- 3-16 check account soldes (val, rough, fut) vs balances of entries
+     2017- 3-22 done
 
 1393 2017- 3-16 operations generated on tva record: the month should be
                 those of the declarated period instead of those of the run

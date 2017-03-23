@@ -21,6 +21,7 @@
 
  New features and improvements:
 
+   - Balance check: distinguish between rough, validated and future balances (todo #1392).
    - Display unsettled entries on settleable accounts (todo #1381).
    - Display unreconciliated entries on reconciliable accounts (todo #783).
    - Reconciliation page auto-updates when an external identifier changes (todo #1407).
