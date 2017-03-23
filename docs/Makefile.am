@@ -23,7 +23,6 @@
 pkgdocdir = $(datarootdir)/doc/@PACKAGE@-@VERSION@
 
 dist_pkgdoc_DATA = \
-	DataDictionary.xls					\
 	DBModel.odg							\
 	DBModel.pdf							\
 	Rules.ods							\
