@@ -347,7 +347,7 @@ do_print( ofaIPrintable *instance, sIPrintable *sdata )
 /*
  * load_settings:
  * @instance:
- * sdata:
+ * @sdata:
  *
  * Note that print settings do not include page setup
  */
@@ -387,7 +387,7 @@ load_settings( ofaIPrintable *instance, sIPrintable *sdata )
 /*
  * save_settings:
  * @instance:
- * sdata:
+ * @sdata:
  */
 static void
 save_settings( ofaIPrintable *instance, sIPrintable *sdata )
