@@ -126,8 +126,8 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ax_code_coverage.m4 \
 	$(top_srcdir)/m4/pwi-maintainer.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(dist_pkgdoc_DATA) \
-	$(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am $(dist_appcode_DATA) \
+	$(dist_dgi_DATA) $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h
 CONFIG_CLEAN_FILES =
@@ -178,8 +178,8 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(pkgdocdir)"
-DATA = $(dist_pkgdoc_DATA)
+am__installdirs = "$(DESTDIR)$(appcodedir)" "$(DESTDIR)$(dgidir)"
+DATA = $(dist_appcode_DATA) $(dist_dgi_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 am__DIST_COMMON = $(srcdir)/Makefile.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -365,14 +365,22 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 pkgdocdir = $(datarootdir)/doc/@PACKAGE@-@VERSION@
-dist_pkgdoc_DATA = \
-	DBModel.odg							\
-	DBModel.pdf							\
-	Rules.ods							\
-	UserInterface.odg					\
-	ImportFormats.README				\
-	Signals.README						\
-	Styles.README						\
+appcodedir = $(pkgdocdir)/AppCode
+dist_appcode_DATA = \
+	DBModel.odg										\
+	DBModel.pdf										\
+	ImportFormats.README							\
+	ObjectsHierarchy.odg							\
+	Rules.ods										\
+	Settings.README									\
+	Signals.README									\
+	Styles.README									\
+	UserInterface.odg								\
+	$(NULL)
+
+dgidir = $(pkgdocdir)/DGI
+dist_dgi_DATA = \
+	DGI/Legifrance-LPF-Article_A47_A-1_FEC.pdf		\
 	$(NULL)
 
 all: all-am
@@ -413,27 +421,48 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
-install-dist_pkgdocDATA: $(dist_pkgdoc_DATA)
+install-dist_appcodeDATA: $(dist_appcode_DATA)
 	@$(NORMAL_INSTALL)
-	@list='$(dist_pkgdoc_DATA)'; test -n "$(pkgdocdir)" || list=; \
+	@list='$(dist_appcode_DATA)'; test -n "$(appcodedir)" || list=; \
 	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(pkgdocdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(pkgdocdir)" || exit 1; \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(appcodedir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(appcodedir)" || exit 1; \
 	fi; \
 	for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
 	  echo "$$d$$p"; \
 	done | $(am__base_list) | \
 	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(pkgdocdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(pkgdocdir)" || exit $$?; \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(appcodedir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(appcodedir)" || exit $$?; \
 	done
 
-uninstall-dist_pkgdocDATA:
+uninstall-dist_appcodeDATA:
 	@$(NORMAL_UNINSTALL)
-	@list='$(dist_pkgdoc_DATA)'; test -n "$(pkgdocdir)" || list=; \
+	@list='$(dist_appcode_DATA)'; test -n "$(appcodedir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(pkgdocdir)'; $(am__uninstall_files_from_dir)
+	dir='$(DESTDIR)$(appcodedir)'; $(am__uninstall_files_from_dir)
+install-dist_dgiDATA: $(dist_dgi_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_dgi_DATA)'; test -n "$(dgidir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(dgidir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(dgidir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(dgidir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(dgidir)" || exit $$?; \
+	done
+
+uninstall-dist_dgiDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_dgi_DATA)'; test -n "$(dgidir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(dgidir)'; $(am__uninstall_files_from_dir)
 tags TAGS:
 
 ctags CTAGS:
@@ -475,7 +504,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(pkgdocdir)"; do \
+	for dir in "$(DESTDIR)$(appcodedir)" "$(DESTDIR)$(dgidir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -528,7 +557,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-dist_pkgdocDATA
+install-data-am: install-dist_appcodeDATA install-dist_dgiDATA
 
 install-dvi: install-dvi-am
 
@@ -572,7 +601,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-dist_pkgdocDATA
+uninstall-am: uninstall-dist_appcodeDATA uninstall-dist_dgiDATA
 
 .MAKE: install-am install-strip
 
@@ -580,14 +609,15 @@ uninstall-am: uninstall-dist_pkgdocDATA
 	cscopelist-am ctags-am distclean distclean-generic \
 	distclean-libtool distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am \
-	install-dist_pkgdocDATA install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags-am uninstall \
-	uninstall-am uninstall-dist_pkgdocDATA
+	install-dist_appcodeDATA install-dist_dgiDATA install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags-am uninstall uninstall-am uninstall-dist_appcodeDATA \
+	uninstall-dist_dgiDATA
 
 .PRECIOUS: Makefile
 

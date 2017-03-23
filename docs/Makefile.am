@@ -22,12 +22,22 @@
 
 pkgdocdir = $(datarootdir)/doc/@PACKAGE@-@VERSION@
 
-dist_pkgdoc_DATA = \
-	DBModel.odg							\
-	DBModel.pdf							\
-	Rules.ods							\
-	UserInterface.odg					\
-	ImportFormats.README				\
-	Signals.README						\
-	Styles.README						\
+appcodedir = $(pkgdocdir)/AppCode
+
+dist_appcode_DATA = \
+	DBModel.odg										\
+	DBModel.pdf										\
+	ImportFormats.README							\
+	ObjectsHierarchy.odg							\
+	Rules.ods										\
+	Settings.README									\
+	Signals.README									\
+	Styles.README									\
+	UserInterface.odg								\
+	$(NULL)
+
+dgidir = $(pkgdocdir)/DGI
+
+dist_dgi_DATA = \
+	DGI/Legifrance-LPF-Article_A47_A-1_FEC.pdf		\
 	$(NULL)
