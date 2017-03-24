@@ -686,17 +686,19 @@ on_irenderable_draw_page( ofaIRenderable *instance, gboolean paginating, guint p
 
 	priv = ofa_render_page_get_instance_private( self );
 
-	g_return_if_fail( priv->progress_bar && MY_IS_PROGRESS_BAR( priv->progress_bar ));
+	if( priv->progress_bar ){
+		g_return_if_fail( MY_IS_PROGRESS_BAR( priv->progress_bar ));
 
-	if( paginating ){
-		text = g_strdup_printf( _( "Paginating %u" ), page_num );
-		g_signal_emit_by_name( priv->progress_bar, "my-text", text );
-		g_free( text );
+		if( paginating ){
+			text = g_strdup_printf( _( "Paginating %u" ), page_num );
+			g_signal_emit_by_name( priv->progress_bar, "my-text", text );
+			g_free( text );
 
-	} else {
-		gtk_progress_bar_set_show_text( GTK_PROGRESS_BAR( priv->progress_bar ), FALSE );
-		progress = ( gdouble ) page_num / ( gdouble ) pages_count;
-		g_signal_emit_by_name( priv->progress_bar, "my-double", progress );
+		} else {
+			gtk_progress_bar_set_show_text( GTK_PROGRESS_BAR( priv->progress_bar ), FALSE );
+			progress = ( gdouble ) page_num / ( gdouble ) pages_count;
+			g_signal_emit_by_name( priv->progress_bar, "my-double", progress );
+		}
 	}
 }
 

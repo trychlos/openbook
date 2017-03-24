@@ -369,7 +369,15 @@
                 + replace the GtkEntry with a GtkComboBox+GtkEntry
                 (this is for new profiles)
 
-1413
+1413 2017- 3-24 review reconciliation summary at date
+
+1414 2017- 3-24 dbms entry status should come back as a char indicator
+
+1415 2017- 3-24 rendering should use dossier label instead of dossier name
+
+1416 2017- 3-24 dossier administrative credentials: does not remember the account
+
+1417
 
 -----------------------------------------------------------------------
  DONE
