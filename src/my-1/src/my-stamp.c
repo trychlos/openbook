@@ -63,7 +63,7 @@ my_stamp_set_now( GTimeVal *timeval )
  * Returns: -1 if @a < @b, +1 if @a > @b, 0 if they are equal.
  */
 gint
-my_stamp_compare( GTimeVal *a, GTimeVal *b )
+my_stamp_compare( const GTimeVal *a, const GTimeVal *b )
 {
 	return( a->tv_sec < b->tv_sec
 			? -1 : ( a->tv_sec > b->tv_sec
@@ -205,6 +205,11 @@ my_stamp_to_str( const GTimeVal *stamp, myStampFormat format )
 				/* this is a display format */
 				case MY_STAMP_DMYYHM:
 					str = g_date_time_format( dt, "%d/%m/%Y %H:%M" );
+					break;
+
+				/* this is the format for FEC export */
+				case MY_STAMP_YYMD:
+					str = g_date_time_format( dt, "%Y%m%d" );
 					break;
 			}
 			g_date_time_unref( dt );

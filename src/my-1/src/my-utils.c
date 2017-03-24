@@ -43,6 +43,7 @@ typedef struct {
 	sBuildableByName;
 
 static GRegex         *st_quote_single_regex    = NULL;
+static GRegex         *st_long_dash_regex       = NULL;
 static const gchar    *st_save_restore_group    = "orgtrychlosmy";
 
 static gchar      *quote_backslashes( const gchar *str );
@@ -342,6 +343,46 @@ utils_unquote_cb( const GMatchInfo *info, GString *res, gpointer data )
 	g_string_append_printf( res, "%s", match );
 
 	return( FALSE );
+}
+
+/**
+ * my_utils_subst_long_dash:
+ * @str:
+ *
+ * Returns: the same string, after having substituted long dash with
+ * simple dash.
+ *
+ * Rationale: g_convert() doesn't known how to convert long dash from
+ * UTF-8 to ISO-8859-15
+ */
+gchar *
+my_utils_subst_long_dash( const gchar *str )
+{
+	static const gchar *thisfn = "my_utils_subst_long_dash";
+	GError *error;
+	gchar *out_str;
+
+	out_str = NULL;
+
+	if( str ){
+		error = NULL;
+		if( !st_long_dash_regex ){
+			st_long_dash_regex = g_regex_new( "–", 0, 0, &error );
+			if( error ){
+				g_warning( "%s: g_regex_new=%s", thisfn, error->message );
+				g_error_free( error );
+				return( NULL );
+			}
+		}
+		out_str = g_regex_replace( st_long_dash_regex, str, -1, 0, "-", 0, &error );
+		if( error ){
+			g_warning( "%s: g_regex_replace=%s", thisfn, error->message );
+			g_error_free( error );
+			return( NULL );
+		}
+	}
+
+	return( out_str );
 }
 
 /**

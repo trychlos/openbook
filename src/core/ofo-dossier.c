@@ -239,7 +239,7 @@ static guint       idoc_get_interface_version( void );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
+static gboolean    iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
 static void        free_currency_details( ofoDossier *dossier );
 static void        free_cur_detail( GList *fields );
 static void        isignalable_iface_init( ofaISignalableInterface *iface );
@@ -1854,7 +1854,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	ofoDossier *dossier;
 	ofoDossierPrivate *priv;

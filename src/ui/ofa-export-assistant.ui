@@ -87,7 +87,7 @@ Press Next to begin.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
+                <property name="top_attach">2</property>
               </packing>
             </child>
             <child>
@@ -98,7 +98,7 @@ Press Next to begin.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">2</property>
+                <property name="top_attach">3</property>
                 <property name="width">2</property>
               </packing>
             </child>
@@ -169,7 +169,59 @@ Press Next to begin.</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
+                <property name="top_attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkFrame">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label_xalign">0</property>
+                <property name="shadow_type">in</property>
+                <child>
+                  <object class="GtkGrid">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="margin_left">8</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
+                    <property name="row_spacing">2</property>
+                    <property name="column_spacing">4</property>
+                    <child>
+                      <object class="GtkComboBox" id="p2-format-combo">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="p2-label222">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                  </object>
+                </child>
+                <child type="label">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes"> Have a specific export format </property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
                 <property name="top_attach">1</property>
+                <property name="width">2</property>
               </packing>
             </child>
           </object>
@@ -254,11 +306,34 @@ Press Next to begin.</property>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">1</property>
+                        <property name="top_attach">2</property>
                       </packing>
                     </child>
                     <child>
                       <object class="GtkLabel" id="p3-format">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label2">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Specific format :</property>
+                        <property name="xalign">1</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="p3-specific">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
@@ -334,7 +409,7 @@ Press Next to begin.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">2</property>
+            <property name="top_attach">5</property>
           </packing>
         </child>
         <child>
@@ -347,7 +422,7 @@ Press Next to begin.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">4</property>
+            <property name="top_attach">7</property>
           </packing>
         </child>
         <child>
@@ -359,7 +434,7 @@ Press Next to begin.</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">5</property>
+            <property name="top_attach">8</property>
           </packing>
         </child>
         <child>
@@ -373,9 +448,54 @@ Press Next to begin.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">3</property>
+            <property name="top_attach">6</property>
             <property name="width">2</property>
           </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="p4-format-label1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">&lt;b&gt;Specific format&lt;/b&gt;</property>
+            <property name="use_markup">True</property>
+            <property name="xalign">0</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="p4-specific-id">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">3</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="p4-specific-label">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="wrap">True</property>
+            <property name="xalign">0</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">4</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
         </child>
         <child>
           <placeholder/>

@@ -93,6 +93,9 @@ enum {
  * 2/ no more modify it
  * 3/ take attention to be able to support the import of a previously
  *    exported file
+ *
+ * Adding a field here should be reported in iexportable_export_fec()
+ * function (Fichier des Ecritures Comptables).
  */
 static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( ENT_DOPE ),
@@ -191,17 +194,18 @@ typedef struct {
  */
 typedef struct {
 	ofeEntryStatus num;
+	const gchar   *dbms;
 	const gchar   *str;
 	const gchar   *label;
 }
 	sStatus;
 
 static sStatus st_status[] = {
-		{ ENT_STATUS_PAST,      N_( "P" ), N_( "Past" ) },
-		{ ENT_STATUS_ROUGH,     N_( "R" ), N_( "Rough" ) },
-		{ ENT_STATUS_VALIDATED, N_( "V" ), N_( "Validated" ) },
-		{ ENT_STATUS_DELETED,   N_( "D" ), N_( "Deleted" ) },
-		{ ENT_STATUS_FUTURE,    N_( "F" ), N_( "Future" ) },
+		{ ENT_STATUS_PAST,      "P", N_( "P" ), N_( "Past" ) },
+		{ ENT_STATUS_ROUGH,     "R", N_( "R" ), N_( "Rough" ) },
+		{ ENT_STATUS_VALIDATED, "V", N_( "V" ), N_( "Validated" ) },
+		{ ENT_STATUS_DELETED,   "D", N_( "D" ), N_( "Deleted" ) },
+		{ ENT_STATUS_FUTURE,    "F", N_( "F" ), N_( "Future" ) },
 		{ 0 },
 };
 
@@ -224,70 +228,84 @@ static sRule st_rule[] = {
 		{ 0 },
 };
 
-static gchar       *effect_in_exercice( ofaIGetter *getter );
-static GList       *entry_load_dataset( ofaIGetter *getter, const gchar *where, const gchar *order );
-static GDate       *entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaIGetter *getter );
-static gboolean     entry_get_import_settled( ofoEntry *entry );
-static void         entry_set_number( ofoEntry *entry, ofxCounter number );
-static void         entry_set_status( ofoEntry *entry, ofeEntryStatus status );
-static void         entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
-static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
-static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
-static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
-static void         entry_set_import_settled( ofoEntry *entry, gboolean settled );
-static gboolean     entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaIGetter *getter );
-static GList       *get_orphans( ofaIGetter *getter, const gchar *table );
-static gboolean     entry_do_insert( ofoEntry *entry, ofaIGetter *getter );
-static void         error_ledger( const gchar *ledger );
-static void         error_ope_template( const gchar *model );
-static void         error_currency( const gchar *currency );
-static void         error_acc_number( void );
-static void         error_account( const gchar *number );
-static void         error_acc_currency( const gchar *currency, ofoAccount *account );
-static void         error_amounts( ofxAmount debit, ofxAmount credit );
-static gboolean     entry_do_update( ofoEntry *entry, ofaIGetter *getter );
-static gboolean     do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter number );
-static void         icollectionable_iface_init( myICollectionableInterface *iface );
-static guint        icollectionable_get_interface_version( void );
-static GList       *icollectionable_load_collection( void *user_data );
-static void         iconcil_iface_init( ofaIConcilInterface *iface );
-static guint        iconcil_get_interface_version( void );
-static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
-static const gchar *iconcil_get_object_type( const ofaIConcil *instance );
-static void         idoc_iface_init( ofaIDocInterface *iface );
-static guint        idoc_get_interface_version( void );
-static void         iexportable_iface_init( ofaIExportableInterface *iface );
-static guint        iexportable_get_interface_version( void );
-static gchar       *iexportable_get_label( const ofaIExportable *instance );
-static gboolean     iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
-static gchar       *export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
-static void         iimportable_iface_init( ofaIImportableInterface *iface );
-static guint        iimportable_get_interface_version( void );
-static gchar       *iimportable_get_label( const ofaIImportable *instance );
-static guint        iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
-static GList       *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
-static void         iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoEntry *entry, GSList **fields );
-static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
-static gboolean     entry_drop_content( const ofaIDBConnect *connect );
-static void         isignalable_iface_init( ofaISignalableInterface *iface );
-static void         isignalable_connect_to( ofaISignaler *signaler );
-static gboolean     signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
-static gboolean     signaler_is_deletable_account( ofaISignaler *signaler, ofoAccount *account );
-static gboolean     signaler_is_deletable_currency( ofaISignaler *signaler, ofoCurrency *currency );
-static gboolean     signaler_is_deletable_ledger( ofaISignaler *signaler, ofoLedger *ledger );
-static gboolean     signaler_is_deletable_ope_template( ofaISignaler *signaler, ofoOpeTemplate *template );
-static void         signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, void *empty );
-static void         signaler_on_deleted_entry( ofaISignaler *signaler, ofoEntry *entry );
-static void         signaler_on_exe_dates_changed( ofaISignaler *signaler, const GDate *prev_begin, const GDate *prev_end, void *empty );
-static gint         check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
-static gint         check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, const GDate *new_end, gboolean remediate );
-static gint         remediate_status( ofaIGetter *getter, gboolean remediate, const gchar *where, ofeEntryStatus new_status );
-static void         signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty );
-static void         signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
-static void         signaler_on_updated_account_number( ofaISignaler *signaler, const gchar *prev_id, const gchar *number );
-static void         signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
-static void         signaler_on_updated_ledger_mnemo( ofaISignaler *signaler, const gchar *prev_id, const gchar *mnemo );
-static void         signaler_on_updated_model_mnemo( ofaISignaler *signaler, const gchar *prev_id, const gchar *mnemo );
+/* ofoEntry may export some specific format
+ */
+#define EXPORT_FORMAT_FEC               "FEC"
+
+static ofsIExportableFormat st_export_formats[] = {
+		{ EXPORT_FORMAT_FEC, N_( "Fichier des Ecritures Comptables (FEC)" ) },
+		{ 0 },
+};
+
+static gchar                *effect_in_exercice( ofaIGetter *getter );
+static GList                *entry_load_dataset( ofaIGetter *getter, const gchar *where, const gchar *order );
+static GDate                *entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaIGetter *getter );
+static gboolean              entry_get_import_settled( ofoEntry *entry );
+static void                  entry_set_number( ofoEntry *entry, ofxCounter number );
+static void                  entry_set_status( ofoEntry *entry, ofeEntryStatus status );
+static void                  entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
+static void                  entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
+static void                  entry_set_settlement_user( ofoEntry *entry, const gchar *user );
+static void                  entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
+static void                  entry_set_import_settled( ofoEntry *entry, gboolean settled );
+static gboolean              entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaIGetter *getter );
+static GList                *get_orphans( ofaIGetter *getter, const gchar *table );
+static gboolean              entry_do_insert( ofoEntry *entry, ofaIGetter *getter );
+static void                  error_ledger( const gchar *ledger );
+static void                  error_ope_template( const gchar *model );
+static void                  error_currency( const gchar *currency );
+static void                  error_acc_number( void );
+static void                  error_account( const gchar *number );
+static void                  error_acc_currency( const gchar *currency, ofoAccount *account );
+static void                  error_amounts( ofxAmount debit, ofxAmount credit );
+static gboolean              entry_do_update( ofoEntry *entry, ofaIGetter *getter );
+static gboolean              do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter number );
+static void                  icollectionable_iface_init( myICollectionableInterface *iface );
+static guint                 icollectionable_get_interface_version( void );
+static GList                *icollectionable_load_collection( void *user_data );
+static void                  iconcil_iface_init( ofaIConcilInterface *iface );
+static guint                 iconcil_get_interface_version( void );
+static ofxCounter            iconcil_get_object_id( const ofaIConcil *instance );
+static const gchar          *iconcil_get_object_type( const ofaIConcil *instance );
+static void                  idoc_iface_init( ofaIDocInterface *iface );
+static guint                 idoc_get_interface_version( void );
+static void                  iexportable_iface_init( ofaIExportableInterface *iface );
+static guint                 iexportable_get_interface_version( void );
+static gchar                *iexportable_get_label( const ofaIExportable *instance );
+static ofsIExportableFormat *iexportable_get_formats( ofaIExportable *exportable );
+static gboolean              iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
+static gboolean              iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
+static gboolean              iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
+static GList                *iexportable_export_fec_get_entries( ofaIGetter *getter );
+static gint                  iexportable_export_fec_cmp_entries( ofoEntry *a, ofoEntry *b );
+static gchar                *iexportable_export_default_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
+static void                  iimportable_iface_init( ofaIImportableInterface *iface );
+static guint                 iimportable_get_interface_version( void );
+static gchar                *iimportable_get_label( const ofaIImportable *instance );
+static guint                 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static GList                *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static void                  iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoEntry *entry, GSList **fields );
+static void                  iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
+static gboolean              entry_drop_content( const ofaIDBConnect *connect );
+static void                  isignalable_iface_init( ofaISignalableInterface *iface );
+static void                  isignalable_connect_to( ofaISignaler *signaler );
+static gboolean              signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
+static gboolean              signaler_is_deletable_account( ofaISignaler *signaler, ofoAccount *account );
+static gboolean              signaler_is_deletable_currency( ofaISignaler *signaler, ofoCurrency *currency );
+static gboolean              signaler_is_deletable_ledger( ofaISignaler *signaler, ofoLedger *ledger );
+static gboolean              signaler_is_deletable_ope_template( ofaISignaler *signaler, ofoOpeTemplate *template );
+static void                  signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, void *empty );
+static void                  signaler_on_deleted_entry( ofaISignaler *signaler, ofoEntry *entry );
+static void                  signaler_on_exe_dates_changed( ofaISignaler *signaler, const GDate *prev_begin, const GDate *prev_end, void *empty );
+static gint                  check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
+static gint                  check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, const GDate *new_end, gboolean remediate );
+static gint                  remediate_status( ofaIGetter *getter, gboolean remediate, const gchar *where, ofeEntryStatus new_status );
+static void                  signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty );
+static void                  signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
+static void                  signaler_on_updated_account_number( ofaISignaler *signaler, const gchar *prev_id, const gchar *number );
+static void                  signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
+static void                  signaler_on_updated_ledger_mnemo( ofaISignaler *signaler, const gchar *prev_id, const gchar *mnemo );
+static void                  signaler_on_updated_model_mnemo( ofaISignaler *signaler, const gchar *prev_id, const gchar *mnemo );
 
 G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoEntry )
@@ -1098,26 +1116,6 @@ ofo_entry_get_abr_status( const ofoEntry *entry )
 }
 
 /**
- * ofo_entry_get_abr_from_status:
- * @status: the #ofeEntryStatus.
- *
- * Returns an abbreviated localized string for the @status.
- */
-const gchar *
-ofo_entry_get_abr_from_status( ofeEntryStatus status )
-{
-	gint i;
-
-	for( i=0 ; st_status[i].num ; ++i ){
-		if( st_status[i].num == status ){
-			return( gettext( st_status[i].str ));
-		}
-	}
-
-	return( NULL );
-}
-
-/**
  * ofo_entry_get_status_label:
  *
  * Returns: a localized label for the current status.
@@ -1162,6 +1160,46 @@ ofo_entry_get_status_from_abr( const gchar *abr_status )
 	}
 
 	return( ENT_STATUS_ROUGH );
+}
+
+/**
+ * ofo_entry_get_abr_from_status:
+ * @status: the #ofeEntryStatus.
+ *
+ * Returns an abbreviated localized string for the @status.
+ */
+const gchar *
+ofo_entry_get_abr_from_status( ofeEntryStatus status )
+{
+	gint i;
+
+	for( i=0 ; st_status[i].num ; ++i ){
+		if( st_status[i].num == status ){
+			return( gettext( st_status[i].str ));
+		}
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_entry_get_status_dbms:
+ * @status: the #ofeEntryStatus.
+ *
+ * Returns a non-localized string for the @status.
+ */
+const gchar *
+ofo_entry_get_status_dbms( ofeEntryStatus status )
+{
+	gint i;
+
+	for( i=0 ; st_status[i].num ; ++i ){
+		if( st_status[i].num == status ){
+			return( st_status[i].dbms );
+		}
+	}
+
+	return( NULL );
 }
 
 /**
@@ -2758,6 +2796,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 
 	iface->get_interface_version = iexportable_get_interface_version;
 	iface->get_label = iexportable_get_label;
+	iface->get_formats = iexportable_get_formats;
 	iface->export = iexportable_export;
 }
 
@@ -2771,6 +2810,12 @@ static gchar *
 iexportable_get_label( const ofaIExportable *instance )
 {
 	return( g_strdup( _( "_Entries" )));
+}
+
+static ofsIExportableFormat *
+iexportable_get_formats( ofaIExportable *instance )
+{
+	return( st_export_formats );
 }
 
 /*
@@ -2790,7 +2835,27 @@ iexportable_get_label( const ofaIExportable *instance )
  * at the end of the entry.
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
+{
+	static const gchar *thisfn = "ofo_entry_iexportable_export";
+	gboolean res;
+
+	if( !my_collate( format_id, OFA_IEXPORTABLE_DEFAULT_FORMAT_ID )){
+		res = iexportable_export_default( exportable, settings, getter );
+
+	} else if( !my_collate( format_id, EXPORT_FORMAT_FEC )){
+		res = iexportable_export_fec( exportable, settings, getter );
+
+	} else {
+		res = FALSE;
+		g_warning( "%s: unknown or invalid export format %s", thisfn, format_id );
+	}
+
+	return( res );
+}
+
+static gboolean
+iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	GList *result, *it;
 	gboolean ok, with_headers;
@@ -2836,7 +2901,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIG
 		g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
 		currency = ofo_currency_get_by_code( getter, cur_code );
 		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-		str = ofa_box_csv_get_line_ex( OFO_BASE( it->data )->prot->fields, settings, ( CSVExportFunc ) export_cb, currency );
+		str = ofa_box_csv_get_line_ex( OFO_BASE( it->data )->prot->fields, settings, ( CSVExportFunc ) iexportable_export_default_cb, currency );
 
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ));
 		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
@@ -2866,7 +2931,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIG
  * currency of the account of the entry
  */
 static gchar *
-export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency )
+iexportable_export_default_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency )
 {
 	const ofsBoxDef *box_def;
 	gchar *str;
@@ -2878,6 +2943,271 @@ export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *tex
 		str = g_strdup( text );
 	}
 	return( str );
+}
+
+/*
+ * Export 'Fichier des Ecritures Comptables' (FEC)
+ * cf. Article A47 A-1 du Livre des Procédures Fiscales de la DGI
+ *
+ * charmap: ASCII, norme ISO 8859-15 ou EBCDIC
+ * date format: AAAAMMJJ (obligatoire, champ correspondant ignoré)
+ * thousand sep: none (obligatoire, champ correspondant ignoré)
+ * decimal sep: comma (obligatoire, champ correspondant ignoré)
+ * field separator: tabulation ou le caractère " | "
+ * string delim: not specified
+ * with headers: yes
+ *
+ * Entries must be ordered by chronological order of validation; here,
+ * this means by effect_date+upd_timestamp+entry_number
+ *
+ * Filenaming: <siren>FEC<AAAAMMJJ>, where 'AAAAMMJJ' is the end of
+ * the exercice.
+ *
+ * Ce fichier est constitué des écritures après opérations d'inventaire,
+ * hors écritures de centralisation et hors écritures de solde des comptes
+ * de charges et de produits. Il comprend les écritures de reprise des
+ * soldes de l'exercice antérieur.
+ *
+ * NOTE TO THE MAINTAINER: every update here should be described in the
+ * 'docs/DGI/FEC_Description.ods' sheet.
+ */
+static gboolean
+iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
+{
+	GList *sorted, *it;
+	gboolean ok, with_headers;
+	gchar field_sep;
+	gulong count;
+	ofoEntry *entry;
+	GString *str;
+	gchar *sdope, *sdeffect, *sdebit, *scredit, *sletid, *sletdate, *sref, *sopemne, *sopelib, *sopenum;
+	ofoConcil *concil;
+	const gchar *led_id, *acc_id, *cur_code, *cref, *cope;
+	ofoAccount *account;
+	ofoLedger *ledger;
+	ofoCurrency *currency;
+	guint date_fmt;
+	ofxCounter counter;
+	ofoOpeTemplate *template;
+	ofeEntryStatus status;
+	ofeEntryRule rule;
+
+	sorted = iexportable_export_fec_get_entries( getter );
+
+	with_headers = TRUE;
+	date_fmt = MY_DATE_YYMD;
+	field_sep = ofa_stream_format_get_field_sep( settings );
+
+	count = ( gulong ) g_list_length( sorted );
+	if( with_headers ){
+		count += 1;
+	}
+	ofa_iexportable_set_count( exportable, count );
+
+	if( with_headers ){
+		/* 18 mandatory columns */
+		str = g_string_new( "JournalCode" );
+		g_string_append_printf( str, "%cJournalLib", field_sep );
+		g_string_append_printf( str, "%cEcritureNum", field_sep );
+		g_string_append_printf( str, "%cEcritureDate", field_sep );
+		g_string_append_printf( str, "%cCompteNum", field_sep );
+		g_string_append_printf( str, "%cCompteLib", field_sep );
+		g_string_append_printf( str, "%cCompAuxNum", field_sep );
+		g_string_append_printf( str, "%cCompAuxLib", field_sep );
+		g_string_append_printf( str, "%cPieceRef", field_sep );
+		g_string_append_printf( str, "%cPieceDate", field_sep );
+		g_string_append_printf( str, "%cEcritureLib", field_sep );
+		g_string_append_printf( str, "%cDebit", field_sep );
+		g_string_append_printf( str, "%cCredit", field_sep );
+		g_string_append_printf( str, "%cEcritureLet", field_sep );
+		g_string_append_printf( str, "%cDateLet", field_sep );
+		g_string_append_printf( str, "%cValidDate", field_sep );
+		g_string_append_printf( str, "%cMontantDevise", field_sep );
+		g_string_append_printf( str, "%cIDevise", field_sep );
+		/* other columns from the application */
+		g_string_append_printf( str, "%cOpeTemplateMnemo", field_sep );
+		g_string_append_printf( str, "%cOpeTemplateLib", field_sep );
+		g_string_append_printf( str, "%cStatus", field_sep );
+		g_string_append_printf( str, "%cOpeNum", field_sep );
+		g_string_append_printf( str, "%cRule", field_sep );
+
+		ok = ofa_iexportable_set_line( exportable, str->str );
+
+		g_string_free( str, TRUE );
+
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	for( it=sorted ; it ; it=it->next ){
+		entry = ( ofoEntry * ) it->data;
+		g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+
+		led_id = ofo_entry_get_ledger( entry );
+		g_return_val_if_fail( led_id && my_strlen( led_id ), FALSE );
+		ledger = ofo_ledger_get_by_mnemo( getter, led_id );
+		g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
+
+		acc_id = ofo_entry_get_account( entry );
+		g_return_val_if_fail( acc_id && my_strlen( acc_id ), FALSE );
+		account = ofo_account_get_by_number( getter, acc_id );
+		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+
+		cur_code = ofo_entry_get_currency( entry );
+		g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
+		currency = ofo_currency_get_by_code( getter, cur_code );
+		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
+
+		cope = ofo_entry_get_ope_template( entry );
+		template = my_strlen( cope ) ? ofo_ope_template_get_by_mnemo( getter, cope ) : NULL;
+		g_return_val_if_fail( !template || OFO_IS_OPE_TEMPLATE( template ), FALSE );
+
+		sdope = my_date_to_str( ofo_entry_get_dope( entry ), date_fmt );
+		sdeffect = my_date_to_str( ofo_entry_get_deffect( entry ), date_fmt );
+		sdebit = ofa_amount_to_csv( ofo_entry_get_debit( entry ), currency, settings );
+		scredit = ofa_amount_to_csv( ofo_entry_get_credit( entry ), currency, settings );
+
+		cref = ofo_entry_get_ref( entry );
+		sref = g_strdup( cref ? cref : "" );
+
+		sopemne = g_strdup( cope ? cope : "" );
+		sopelib = g_strdup( template ? ofo_ope_template_get_label( template ) : "" );
+
+		counter = ofo_entry_get_ope_number( entry );
+		sopenum = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
+
+		/* we put in 'lettrage' columns both conciliation and settlement infos
+		 * with an indicator of the origin */
+		concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
+		if( concil ){
+			sletid = g_strdup_printf( "R%lu", ofo_concil_get_id( concil ));
+			sletdate = my_date_to_str( ofo_concil_get_dval( concil ), date_fmt );
+		} else {
+			counter = ofo_entry_get_settlement_number( entry );
+			if( counter ){
+				sletid = g_strdup_printf( "S%lu", counter );
+				sletdate = my_stamp_to_str( ofo_entry_get_settlement_stamp( entry ), MY_STAMP_YYMD );
+			} else {
+				sletid = g_strdup( "" );
+				sletdate = g_strdup( "" );
+			}
+		}
+
+		status = ofo_entry_get_status( entry );
+		rule = ofo_entry_get_rule( entry );
+
+		/* 18 mandatory columns */
+		str = g_string_new( led_id );
+		g_string_append_printf( str, "%c%s", field_sep, ofo_ledger_get_label( ledger ));
+		g_string_append_printf( str, "%c%lu", field_sep, ofo_entry_get_number( entry ));
+		g_string_append_printf( str, "%c%s", field_sep, sdope );
+		g_string_append_printf( str, "%c%s", field_sep, acc_id );
+		g_string_append_printf( str, "%c%s", field_sep, ofo_account_get_label( account ));
+		g_string_append_printf( str, "%c", field_sep );
+		g_string_append_printf( str, "%c", field_sep );
+		g_string_append_printf( str, "%c%s", field_sep, sref );
+		g_string_append_printf( str, "%c%s", field_sep, sdope );
+		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_get_label( entry ));
+		g_string_append_printf( str, "%c%s", field_sep, sdebit );
+		g_string_append_printf( str, "%c%s", field_sep, scredit );
+		g_string_append_printf( str, "%c%s", field_sep, sletid );
+		g_string_append_printf( str, "%c%s", field_sep, sletdate );
+		g_string_append_printf( str, "%c%s", field_sep, sdeffect );
+		g_string_append_printf( str, "%c", field_sep );
+		g_string_append_printf( str, "%c%s", field_sep, cur_code );
+		/* other columns from the system */
+		g_string_append_printf( str, "%c%s", field_sep, sopemne );
+		g_string_append_printf( str, "%c%s", field_sep, sopelib );
+		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_get_status_dbms( status ));
+		g_string_append_printf( str, "%c%s", field_sep, sopenum );
+		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_get_rule_dbms( rule ));
+
+		ok = ofa_iexportable_set_line( exportable, str->str );
+
+		g_string_free( str, TRUE );
+		g_free( sdope );
+		g_free( sdeffect );
+		g_free( sdebit );
+		g_free( scredit );
+		g_free( sletid );
+		g_free( sletdate );
+		g_free( sref );
+		g_free( sopemne );
+		g_free( sopelib );
+		g_free( sopenum );
+
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	g_list_free( sorted );
+
+	return( TRUE );
+}
+
+/*
+ * The returned list should be g_list_free() by the caller.
+ */
+static GList *
+iexportable_export_fec_get_entries( ofaIGetter *getter )
+{
+	GList *dataset, *sorted, *it;
+	ofaHub *hub;
+	ofoDossier *dossier;
+	ofoEntry *entry;
+	const GDate *dbegin, *dend, *deffect;
+
+	hub = ofa_igetter_get_hub( getter );
+	dossier = ofa_hub_get_dossier( hub );
+	dbegin = ofo_dossier_get_exe_begin( dossier );
+	dend = ofo_dossier_get_exe_end( dossier );
+
+	sorted = NULL;
+	dataset = ofo_entry_get_dataset( getter );
+
+	for( it=dataset ; it ; it=it->next ){
+		entry = ( ofoEntry * ) it->data;
+		g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
+		deffect = ofo_entry_get_deffect( entry );
+
+		if( my_date_compare_ex( dbegin, deffect, TRUE ) <= 0 &&
+				my_date_compare_ex( deffect, dend, FALSE ) <= 0 &&
+				ofo_entry_get_rule( entry ) != ENT_RULE_CLOSE ){
+
+			sorted = g_list_insert_sorted( sorted, entry, ( GCompareFunc ) iexportable_export_fec_cmp_entries );
+		}
+	}
+
+	return( sorted );
+}
+
+static gint
+iexportable_export_fec_cmp_entries( ofoEntry *a, ofoEntry *b )
+{
+	const GDate *deffecta, *deffectb;
+	const GTimeVal *stampa, *stampb;
+	ofxCounter numa, numb;
+	gint cmp;
+
+	deffecta = ofo_entry_get_deffect( a );
+	deffectb = ofo_entry_get_deffect( b );
+	cmp = my_date_compare( deffecta, deffectb );
+
+	if( cmp == 0 ){
+		stampa = ofo_entry_get_upd_stamp( a );
+		stampb = ofo_entry_get_upd_stamp( b );
+		cmp = my_stamp_compare( stampa, stampb );
+	}
+
+	if( cmp == 0 ){
+		numa = ofo_entry_get_number( a );
+		numb = ofo_entry_get_number( b );
+		cmp = numa < numb ? -1 : ( numa > numb ? +1 : 0 );
+	}
+
+	return( cmp );
 }
 
 /*

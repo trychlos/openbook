@@ -40,6 +40,7 @@ G_BEGIN_DECLS
  *
  * @MY_STAMP_YYMDHMS: display as 'yyyy-mm-dd hh:mi:ss' (SQL-like format)
  * @MY_STAMP_DMYYHM:  display as 'dd/mm/yyyy hh:mi'.
+ * @MY_STAMP_YYMD: display as 'yyyymmdd'
  *
  * MAINTAINER_NOTE: only add a new format at the end of the list as the
  * format number is stored as a user settings
@@ -47,13 +48,14 @@ G_BEGIN_DECLS
  */
 typedef enum {
 	MY_STAMP_YYMDHMS = 1,
-	MY_STAMP_DMYYHM
+	MY_STAMP_DMYYHM,
+	MY_STAMP_YYMD
 }
 	myStampFormat;
 
 GTimeVal *my_stamp_set_now       ( GTimeVal *stamp );
 
-gint      my_stamp_compare       ( GTimeVal *a, GTimeVal *b );
+gint      my_stamp_compare       ( const GTimeVal *a, const GTimeVal *b );
 
 GTimeVal *my_stamp_set_from_sql  ( GTimeVal *timeval, const gchar *str );
 GTimeVal *my_stamp_set_from_str  ( GTimeVal *timeval, const gchar *str, myStampFormat format );

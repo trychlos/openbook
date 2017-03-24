@@ -216,7 +216,7 @@ static guint       idoc_get_interface_version( void );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
+static gboolean    iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( void );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
@@ -1769,7 +1769,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	ofoTVAFormPrivate *priv;
 	GList *dataset, *it, *det;

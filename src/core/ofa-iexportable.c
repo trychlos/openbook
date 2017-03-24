@@ -61,7 +61,7 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIExportableInterface *klass );
 static void          interface_base_finalize( ofaIExportableInterface *klass );
-static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, ofaStreamFormat *settings, ofaIGetter *getter );
+static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
 static sIExportable *get_iexportable_data( ofaIExportable *exportable );
 static void          on_exportable_finalized( sIExportable *sdata, GObject *finalized_object );
 
@@ -224,10 +224,58 @@ ofa_iexportable_get_label( const ofaIExportable *instance )
 }
 
 /**
+ * ofa_iexporter_get_formats:
+ * @instance: this #ofaIExportable instance.
+ *
+ * Returns: %NULL, or a null-terminated array of #ofsIExportableFormat
+ * structures.
+ */
+ofsIExportableFormat *
+ofa_iexportable_get_formats( ofaIExportable *instance )
+{
+	static const gchar *thisfn = "ofa_iexportable_get_formats";
+
+	g_return_val_if_fail( instance && OFA_IS_IEXPORTABLE( instance ), NULL );
+
+	if( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_formats ){
+		return( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_formats( instance ));
+	}
+
+	g_info( "%s: ofaIExportable's %s implementation does not provide 'get_formats()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( NULL );
+}
+
+/**
+ * ofa_iexporter_free_formats:
+ * @instance: this #ofaIExportable instance.
+ * @formats: [allow-none]: the #ofsIExportableFormat array as returned
+ *  by ofa_iexportable_get_formats() function.
+ *
+ * Let the implementation release the @formats resources.
+ */
+void
+ofa_iexportable_free_formats( ofaIExportable *instance, ofsIExportableFormat *formats )
+{
+	static const gchar *thisfn = "ofa_iexportable_free_formats";
+
+	g_return_if_fail( instance && OFA_IS_IEXPORTABLE( instance ));
+
+	if( OFA_IEXPORTABLE_GET_INTERFACE( instance )->free_formats ){
+		OFA_IEXPORTABLE_GET_INTERFACE( instance )->free_formats( instance, formats );
+		return;
+	}
+
+	g_info( "%s: ofaIExportable's %s implementation does not provide 'free_formats()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+}
+
+/**
  * ofa_iexportable_export_to_uri:
  * @exportable: a #ofaIExportable instance.
  * @uri: the output URI,
  *  will be overriden without any further confirmation if already exists.
+ * @format_id: the identifier of the export format.
  * @settings: a #ofaStreamFormat object.
  * @getter: a #ofaIGetter instance.
  * @progress: the #myIProgress instance which display the export progress.
@@ -238,7 +286,7 @@ ofa_iexportable_get_label( const ofaIExportable *instance )
  */
 gboolean
 ofa_iexportable_export_to_uri( ofaIExportable *exportable,
-									const gchar *uri, ofaStreamFormat *settings,
+									const gchar *uri, const gchar *format_id, ofaStreamFormat *settings,
 									ofaIGetter *getter, myIProgress *progress )
 {
 	GFile *output_file;
@@ -262,7 +310,7 @@ ofa_iexportable_export_to_uri( ofaIExportable *exportable,
 	}
 	g_return_val_if_fail( G_IS_FILE_OUTPUT_STREAM( output_stream ), FALSE );
 
-	ok = iexportable_export_to_stream( exportable, output_stream, settings, getter );
+	ok = iexportable_export_to_stream( exportable, output_stream, format_id, settings, getter );
 
 	g_output_stream_close( output_stream, NULL, NULL );
 	g_object_unref( output_file );
@@ -271,9 +319,8 @@ ofa_iexportable_export_to_uri( ofaIExportable *exportable,
 }
 
 static gboolean
-iexportable_export_to_stream( ofaIExportable *exportable,
-									GOutputStream *stream, ofaStreamFormat *settings,
-									ofaIGetter *getter )
+iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream,
+									const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_iexportable_export_to_stream";
 	sIExportable *sdata;
@@ -286,7 +333,7 @@ iexportable_export_to_stream( ofaIExportable *exportable,
 	my_iprogress_start_work( sdata->instance, exportable, NULL );
 
 	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export ){
-		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export( exportable, settings, getter ));
+		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export( exportable, format_id, settings, getter ));
 	}
 
 	g_info( "%s: ofaIExportable's %s implementation does not provide 'export()' method",
@@ -354,9 +401,11 @@ gboolean
 ofa_iexportable_set_line( ofaIExportable *exportable, const gchar *line )
 {
 	sIExportable *sdata;
-	gchar *str, *converted, *msg;
+	gchar *str, *converted, *msg, *str2;
 	GError *error;
 	gint ret;
+	gsize bytes_read;
+	const gchar *dest_codeset;
 
 	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), FALSE );
 
@@ -372,17 +421,35 @@ ofa_iexportable_set_line( ofaIExportable *exportable, const gchar *line )
 			g_usleep( 0.01*G_USEC_PER_SEC );
 		}
 
+		/* pwi 2017- 3-23 It happens that g_convert doesn't know how to
+		 * convert from long dash (utf8) to dash (iso-8859-15)
+		 * help it in this matter
+		 */
 		str = g_strdup_printf( "%s\n", line );
-		converted = g_convert( str, -1,
-								ofa_stream_format_get_charmap( sdata->settings ),
-								"UTF-8", NULL, NULL, &error );
-		g_free( str );
+		dest_codeset = ofa_stream_format_get_charmap( sdata->settings );
+		if( !g_str_has_prefix( dest_codeset, "UTF" )){
+			str2 = my_utils_subst_long_dash( str );
+			g_free( str );
+			str = str2;
+		}
+		converted = g_convert( str, -1, dest_codeset, "UTF-8", &bytes_read, NULL, &error );
 		if( !converted ){
-			msg = g_strdup_printf( _( "Charset conversion error: %s" ), error->message );
-			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, msg );
+			msg = g_strdup_printf(
+					_( "Charset conversion error: %s, str='%s', bytes_read=%lu" ),
+					error->message, str, bytes_read );
+			//my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, msg );
+			g_warning( "%s", msg );
 			g_free( msg );
+		}
+		if( !converted ){
+			converted = g_strdup( str );
+		}
+		g_free( str );
+#if 0
+		if( !converted ){
 			return( FALSE );
 		}
+#endif
 
 		/* use strlen() rather than g_utf8_strlen() as we want a count
 		 * of bytes rather than a count of chars */

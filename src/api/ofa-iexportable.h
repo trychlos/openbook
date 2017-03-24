@@ -55,6 +55,7 @@ G_BEGIN_DECLS
 #define OFA_IEXPORTABLE_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IEXPORTABLE, ofaIExportableInterface ))
 
 typedef struct _ofaIExportable                    ofaIExportable;
+typedef struct _ofsIExportableFormat              ofsIExportableFormat;
 
 /**
  * ofaIExportableInterface:
@@ -81,7 +82,7 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint    ( *get_interface_version )( void );
+	guint                  ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 	/**
@@ -91,11 +92,34 @@ typedef struct {
 	 * Return: the label to be associated with this @instance, as a
 	 * newly allocated string which should be g_free() by the caller.
 	 */
-	gchar *  ( *get_label )            ( const ofaIExportable *instance );
+	gchar *                ( *get_label )            ( const ofaIExportable *instance );
+
+	/**
+	 * get_formats:
+	 * @instance: the #ofaIExportable provider.
+	 * @getter: a #ofaIGetter instance.
+	 *
+	 * Returns: a null-terminated array of specific #ofsIExportableFormat
+	 * structures managed by the target class.
+	 */
+	ofsIExportableFormat * ( *get_formats )          ( ofaIExportable *instance );
+
+	/**
+	 * free_formats:
+	 * @instance: the #ofaIExportable provider.
+	 * @formats: [allow-none]: the #ofsIExportableFormats as returned by
+	 *  get_formats() method.
+	 *
+	 * Let the implementation free the @formats resources.
+	 */
+	void                   ( *free_formats )         ( ofaIExportable *instance,
+															ofsIExportableFormat *formats );
 
 	/**
 	 * export:
 	 * @instance: the #ofaIExportable provider.
+	 * @format_id: the name of the export format,
+	 *  which defaults to OFA_IEXPORTABLE_DEFAULT_FORMAT_ID.
 	 * @settings: the current export settings for the operation.
 	 * @getter: a #ofaIGetter instance.
 	 *
@@ -103,42 +127,68 @@ typedef struct {
 	 *
 	 * Return: %TRUE if the dataset has been successfully exported.
 	 */
-	gboolean ( *export )               ( ofaIExportable *instance,
-												ofaStreamFormat *settings,
-												ofaIGetter *getter );
+	gboolean               ( *export )               ( ofaIExportable *instance,
+															const gchar *format_id,
+															ofaStreamFormat *settings,
+															ofaIGetter *getter );
 }
 	ofaIExportableInterface;
+
+/**
+ * ofsIExportableFormat:
+ * @format_id: a string which identifies the format.
+ * @format_label: a localized string to be displayed.
+ *
+ * A structure which defined a specific export format for a target
+ * class.
+ *
+ * A null-terminated array of these structures has to be provided in
+ * answer to the get_formats() method.
+ */
+struct _ofsIExportableFormat {
+	gchar           *format_id;
+	gchar           *format_label;
+	ofaStreamFormat *stream_format;
+};
+
+#define OFA_IEXPORTABLE_DEFAULT_FORMAT_ID   "DEFAULT"
 
 /*
  * Interface-wide
  */
-GType    ofa_iexportable_get_type                  ( void );
+GType                 ofa_iexportable_get_type                  ( void );
 
-guint    ofa_iexportable_get_interface_last_version( void );
+guint                 ofa_iexportable_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint    ofa_iexportable_get_interface_version     ( GType type );
+guint                 ofa_iexportable_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-gchar   *ofa_iexportable_get_label                 ( const ofaIExportable *exportable );
+gchar                *ofa_iexportable_get_label                 ( const ofaIExportable *exportable );
 
-gboolean ofa_iexportable_export_to_uri             ( ofaIExportable *exportable,
-															const gchar *uri,
-															ofaStreamFormat *settings,
-															ofaIGetter *getter,
-															myIProgress *progress );
+ofsIExportableFormat *ofa_iexportable_get_formats               ( ofaIExportable *exportable );
 
-gulong   ofa_iexportable_get_count                 ( ofaIExportable *exportable );
+void                  ofa_iexportable_free_formats              ( ofaIExportable *exportable,
+																		ofsIExportableFormat *formats );
 
-void     ofa_iexportable_set_count                 ( ofaIExportable *exportable,
-															gulong count );
+gboolean              ofa_iexportable_export_to_uri             ( ofaIExportable *exportable,
+																		const gchar *uri,
+																		const gchar *format_id,
+																		ofaStreamFormat *settings,
+																		ofaIGetter *getter,
+																		myIProgress *progress );
 
-gboolean ofa_iexportable_set_line                  ( ofaIExportable *exportable,
-															const gchar *line );
+gulong                ofa_iexportable_get_count                 ( ofaIExportable *exportable );
+
+void                  ofa_iexportable_set_count                 ( ofaIExportable *exportable,
+																		gulong count );
+
+gboolean              ofa_iexportable_set_line                  ( ofaIExportable *exportable,
+																		const gchar *line );
 
 G_END_DECLS
 

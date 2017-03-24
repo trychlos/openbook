@@ -24,6 +24,7 @@
    - Balance check: distinguish between rough, validated and future balances (todo #1392).
    - Display unsettled entries on settleable accounts (todo #1381).
    - Display unreconciliated entries on reconciliable accounts (todo #783).
+   - Export the FEC file (LPF - Article A47 A-1).
    - Reconciliation page auto-updates when an external identifier changes (todo #1407).
 
  Bug fixes:
@@ -48,7 +49,7 @@
  Version 0.68
  ============
 
- Released on 2017- 3-21
+ Released on 2017-03-21
 
  Total files count:    798
  Total lines count: 532196
