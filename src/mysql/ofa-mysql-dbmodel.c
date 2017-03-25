@@ -748,7 +748,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* locked indicators are remediated in v27 */
 	/* Identifiers and labels are resized in v28 */
 	/* add row of mean of paiement in v33 */
-	/* ref_mandatory, have_client, have_qppro added in v37 */
+	/* ref_mandatory, have_client, have_qppro, have_rule added in v37 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES ("
 			"	OTE_MNEMO      VARCHAR(6) BINARY NOT NULL UNIQUE     COMMENT 'Operation template mnemonic',"
@@ -2430,6 +2430,9 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 			"	ADD    COLUMN OTE_HAVE_TIERS         CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays a tiers',"
 			"	ADD    COLUMN OTE_TIERS              VARCHAR(256)                   COMMENT 'Tiers',"
 			"	ADD    COLUMN OTE_TIERS_LOCKED       CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the tiers is locked',"
+			"	ADD    COLUMN OTE_HAVE_RULE          CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays entries rule',"
+			"	ADD    COLUMN OTE_RULE               CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Entries rule',"
+			"	ADD    COLUMN OTE_RULE_LOCKED        CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the rule is locked',"
 			"	ADD    COLUMN OTE_HAVE_QPPRO         CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays prof. share',"
 			"	ADD    COLUMN OTE_QPPRO              VARCHAR(256)                   COMMENT 'Professional share',"
 			"	ADD    COLUMN OTE_QPPRO_LOCKED       CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the prof. share is locked'" )){
