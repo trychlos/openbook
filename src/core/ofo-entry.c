@@ -2980,7 +2980,8 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 	gulong count;
 	ofoEntry *entry;
 	GString *str;
-	gchar *sdope, *sdeffect, *sdebit, *scredit, *sletid, *sletdate, *sref, *sopemne, *sopelib, *sopenum;
+	gchar *sdope, *sdeffect, *sdebit, *scredit, *sletid, *sletdate, *sref;
+	gchar *sopemne, *sopelib, *sopenum, *sdregl, *smodregl;
 	ofoConcil *concil;
 	const gchar *led_id, *acc_id, *cur_code, *cref, *cope;
 	ofoAccount *account;
@@ -3024,8 +3025,12 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		g_string_append_printf( str, "%cValidDate", field_sep );
 		g_string_append_printf( str, "%cMontantDevise", field_sep );
 		g_string_append_printf( str, "%cIDevise", field_sep );
+		/* 4 columns for BNC recettes/dépenses */
+		g_string_append_printf( str, "%cDateRglt", field_sep );
+		g_string_append_printf( str, "%cModeRglt", field_sep );
+		g_string_append_printf( str, "%cNatOp", field_sep );
+		g_string_append_printf( str, "%cIdClient", field_sep );
 		/* other columns from the application */
-		g_string_append_printf( str, "%cOpeTemplateMnemo", field_sep );
 		g_string_append_printf( str, "%cOpeTemplateLib", field_sep );
 		g_string_append_printf( str, "%cStatus", field_sep );
 		g_string_append_printf( str, "%cOpeNum", field_sep );
@@ -3069,7 +3074,8 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		scredit = ofa_amount_to_csv( ofo_entry_get_credit( entry ), currency, settings );
 
 		cref = ofo_entry_get_ref( entry );
-		sref = g_strdup( cref ? cref : "" );
+		/* piece ref is mandatory */
+		sref = g_strdup( cref ? cref : sdope );
 
 		sopemne = g_strdup( cope ? cope : "" );
 		sopelib = g_strdup( template ? ofo_ope_template_get_label( template ) : "" );
@@ -3079,10 +3085,12 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 
 		/* we put in 'lettrage' columns both conciliation and settlement infos
 		 * with an indicator of the origin */
+		sdregl = NULL;
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 		if( concil ){
 			sletid = g_strdup_printf( "R%lu", ofo_concil_get_id( concil ));
 			sletdate = my_date_to_str( ofo_concil_get_dval( concil ), date_fmt );
+			sdregl = g_strdup( sletdate );
 		} else {
 			counter = ofo_entry_get_settlement_number( entry );
 			if( counter ){
@@ -3093,6 +3101,12 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 				sletdate = g_strdup( "" );
 			}
 		}
+		/* reglement date is conciliation value date if exists
+		 * reglement mode is piece ref if exists */
+		if( !sdregl ){
+			sdregl = g_strdup( "" );
+		}
+		smodregl = g_strdup( cref ? cref : "" );
 
 		status = ofo_entry_get_status( entry );
 		rule = ofo_entry_get_rule( entry );
@@ -3116,8 +3130,12 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		g_string_append_printf( str, "%c%s", field_sep, sdeffect );
 		g_string_append_printf( str, "%c", field_sep );
 		g_string_append_printf( str, "%c%s", field_sep, cur_code );
-		/* other columns from the system */
+		/* 4 columns for BNC recettes/dépenses */
+		g_string_append_printf( str, "%c%s", field_sep, sdregl );
+		g_string_append_printf( str, "%c%s", field_sep, smodregl );
 		g_string_append_printf( str, "%c%s", field_sep, sopemne );
+		g_string_append_printf( str, "%c", field_sep );
+		/* other columns from the system */
 		g_string_append_printf( str, "%c%s", field_sep, sopelib );
 		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_get_status_dbms( status ));
 		g_string_append_printf( str, "%c%s", field_sep, sopenum );

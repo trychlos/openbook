@@ -377,7 +377,11 @@
 
 1416 2017- 3-24 dossier administrative credentials: does not remember the account
 
-1417
+1417 2017- 3-24 ope_template: have a client id field depending of the template
+
+1418 2017- 3-24 entry ref should be mandatory (cf. FEC)
+
+1419
 
 -----------------------------------------------------------------------
  DONE
