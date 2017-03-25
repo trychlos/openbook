@@ -119,7 +119,7 @@ static const gdouble st_page_margin                        = 2.0;
 /* signals defined here
  */
 enum {
-	DRAWPAGE = 0,
+	RENDER = 0,
 	N_SIGNALS
 };
 
@@ -239,7 +239,7 @@ interface_base_init( ofaIRenderableInterface *klass )
 		klass->draw_page_footer = irenderable_draw_page_footer;
 
 		/**
-		 * ofaIRenderable::ofa-draw-page:
+		 * ofaIRenderable::ofa-render-page:
 		 * @page_num: counted from 1.
 		 * @pages_count:
 		 *  while pagination, is equal to current @page_num;
@@ -255,8 +255,8 @@ interface_base_init( ofaIRenderableInterface *klass )
 		 * 							guint          pages_count,
 		 * 							gpointer       user_data );
 		 */
-		st_signals[ DRAWPAGE ] = g_signal_new_class_handler(
-					"ofa-draw-page",
+		st_signals[ RENDER ] = g_signal_new_class_handler(
+					"ofa-render-page",
 					OFA_TYPE_IRENDERABLE,
 					G_SIGNAL_RUN_LAST,
 					NULL,
@@ -443,7 +443,7 @@ draw_page( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
 	gboolean is_last;
 	gdouble req_height;
 
-	g_signal_emit_by_name( instance, "ofa-draw-page",
+	g_signal_emit_by_name( instance, "ofa-render-page",
 			sdata->paginating, 1+page_num, sdata->pages_count ? sdata->pages_count : 1+page_num );
 
 	/*g_debug( "draw_page: page_num=%d, count=%d", page_num, g_list_length( sdata->dataset ));*/

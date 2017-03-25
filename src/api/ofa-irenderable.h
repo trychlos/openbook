@@ -32,12 +32,30 @@
  * @include: api/ofa-irenderable.h
  *
  * The #ofaIRenderable interface lets its users benefit of the
- * standardized printing system of Openbook.
+ * standardized rendering system of Openbook.
  *
- * Signals:
- * - 'ofa-draw-page': is emitted during pagination, both when computing
- *   the pages count, then when actually drawing the pages;
- *   example, if the final printing has 5 pages, the signal will be
+ * The #ofaIRenderable interface is meant to be implemented by the final
+ * class, itself being derived from #ofaRenderPage.
+ *
+ * Architecture
+ * ------------
+ *
+ *       ofaRenderPage
+ *       |
+ *       +- implements ofaIPrintable      ->     ofa<Something>Render
+ *       |                                       |
+ *       +- render via ofaIRenderable            +- is derived from ofaRenderPage
+ *          client API interface                 |
+ *                                               +- implements ofaIRenderable
+ *                                                             |
+ *                                                             +- defines 'ofa-render-page' signal
+ *
+ * Signals
+ * -------
+ * - 'ofa-render-page': is emitted during pagination, both when
+ *   computing the pages count (paginating), then when actually drawing
+ *   the pages (rendering);
+ *   i.e. if the final rendering has 5 pages, the signal will be
  *   emitted 10 times.
  */
 

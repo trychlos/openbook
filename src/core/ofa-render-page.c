@@ -104,7 +104,7 @@ static void               set_message( ofaRenderPage *page, const gchar *message
 static void               pdf_crs_free( GList **pdf_crs );
 static void               progress_begin( ofaRenderPage *self );
 static void               progress_end( ofaRenderPage *self );
-static void               on_irenderable_draw_page( ofaIRenderable *instance, gboolean paginating, guint page_num, guint pages_count, ofaRenderPage *self );
+static void               on_irenderable_render_page( ofaIRenderable *instance, gboolean paginating, guint page_num, guint pages_count, ofaRenderPage *self );
 static void               iprintable_iface_init( ofaIPrintableInterface *iface );
 static guint              iprintable_get_interface_version( const ofaIPrintable *instance );
 static const gchar       *iprintable_get_paper_name( ofaIPrintable *instance );
@@ -235,7 +235,7 @@ setup_view1( ofaRenderPage *self )
 	gtk_label_set_xalign( GTK_LABEL( priv->msg_label ), 0 );
 	gtk_container_add( GTK_CONTAINER( priv->status_box ), priv->msg_label );
 
-	g_signal_connect( self, "ofa-draw-page", G_CALLBACK( on_irenderable_draw_page ), self );
+	g_signal_connect( self, "ofa-render-page", G_CALLBACK( on_irenderable_render_page ), self );
 
 	return( grid );
 }
@@ -538,10 +538,9 @@ on_render_clicked( GtkButton *button, ofaRenderPage *page )
 
 	priv = ofa_render_page_get_instance_private( page );
 
-	progress_begin( page );
 	render_pdf( page );
+
 	gtk_widget_queue_draw( priv->drawing_area );
-	progress_end( page );
 }
 
 static void
@@ -553,6 +552,8 @@ render_pdf( ofaRenderPage *page )
 	gint pages_count, i;
 
 	priv = ofa_render_page_get_instance_private( page );
+
+	progress_begin( page );
 
 	if( !priv->dataset ){
 		priv->dataset = get_dataset( page );
@@ -572,6 +573,8 @@ render_pdf( ofaRenderPage *page )
 		ofa_irenderable_end_render( OFA_IRENDERABLE( page ), cr );
 		cairo_destroy( cr );
 	}
+
+	progress_end( page );
 
 	str = g_strdup_printf( "%d printed page(s).", g_list_length( priv->pdf_crs ));
 	set_message( page, str, MSG_INFO );
@@ -678,7 +681,7 @@ progress_end( ofaRenderPage *self )
 }
 
 static void
-on_irenderable_draw_page( ofaIRenderable *instance, gboolean paginating, guint page_num, guint pages_count, ofaRenderPage *self )
+on_irenderable_render_page( ofaIRenderable *instance, gboolean paginating, guint page_num, guint pages_count, ofaRenderPage *self )
 {
 	ofaRenderPagePrivate *priv;
 	gdouble progress;
@@ -760,7 +763,6 @@ iprintable_get_print_settings( ofaIPrintable *instance, GKeyFile **keyfile, gcha
 		OFA_RENDER_PAGE_GET_CLASS( instance )->get_print_settings( OFA_RENDER_PAGE( instance ), keyfile, group_name );
 	}
 }
-
 
 static void
 iprintable_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )

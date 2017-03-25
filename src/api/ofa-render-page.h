@@ -80,6 +80,10 @@ typedef struct {
 	 * Returns the paper format name.
 	 *
 	 * This is used to compute the drawn page width and height.
+	 *
+	 * This base class does not provide any default.
+	 * The derived class MUST implement this method and return a
+	 * suitable value.
 	 */
 	const gchar *      ( *get_paper_name )      ( ofaRenderPage *page );
 
@@ -90,6 +94,10 @@ typedef struct {
 	 * Returns the page orientation.
 	 *
 	 * This is used to compute the drawn page width and height.
+	 *
+	 * This base class does not provide any default.
+	 * The derived class MUST implement this method and return a
+	 * suitable value.
 	 */
 	GtkPageOrientation ( *get_page_orientation )( ofaRenderPage *page );
 

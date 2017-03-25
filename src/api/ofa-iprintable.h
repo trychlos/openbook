@@ -33,6 +33,10 @@
  *
  * The #ofaIPrintable interface lets its users benefit of the
  * standardized printing system of Openbook.
+ *
+ * The #ofaIPrintable interface is implemented by the #ofaRenderPage
+ * base class (see ofa-irenderable.h interface definition for a full
+ * description).
  */
 
 #include <gtk/gtk.h>

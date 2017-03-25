@@ -376,8 +376,8 @@ on_args_changed( ofaReconcilArgs *bin, ofaReconcilRender *page )
  *
  * pwi 2014- 4-18: I do prefer expose this api and just redirect to
  * ofaReconcilArgs rather than exposing an get_reconcil_args() which
- * would return the composite widget - Say that ofaReconcilRender page
- * doesn't expose its internal composition
+ * would return the composite widget (say that ofaReconcilRender page
+ * doesn't expose its internal composition).
  */
 void
 ofa_reconcil_render_set_account( ofaReconcilRender *page, const gchar *account_number )
@@ -391,7 +391,6 @@ ofa_reconcil_render_set_account( ofaReconcilRender *page, const gchar *account_n
 	priv = ofa_reconcil_render_get_instance_private( page );
 
 	ofa_reconcil_args_set_account( priv->args_bin, account_number );
-	ofa_render_page_clear_drawing_area( OFA_RENDER_PAGE( page ));
 }
 
 static void
