@@ -347,6 +347,8 @@ setup_ui_properties( ofaEntryProperties *self )
 	static const gint st_ledger_cols[] = { LEDGER_COL_LABEL, -1 };
 	gchar *str;
 	const gchar *cstr;
+	ofeEntryStatus status;
+	ofeEntryRule rule;
 
 	priv = ofa_entry_properties_get_instance_private( self );
 
@@ -471,13 +473,15 @@ setup_ui_properties( ofaEntryProperties *self )
 	/* status */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-status-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	cstr = ofo_entry_get_status_label( priv->entry );
+	status = ofo_entry_get_status( priv->entry );
+	cstr = ofo_entry_status_get_label( status );
 	gtk_label_set_text( GTK_LABEL( label ), cstr );
 
 	/* rule */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-rule-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	cstr = ofo_entry_get_rule_label( priv->entry );
+	rule = ofo_entry_get_rule( priv->entry );
+	cstr = ofo_entry_rule_get_label( rule );
 	gtk_label_set_text( GTK_LABEL( label ), cstr );
 
 	/* notes */

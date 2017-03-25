@@ -325,6 +325,7 @@ entry_set_row_by_iter( ofaAccentryStore *self, const ofoEntry *entry, GtkTreeIte
 	const gchar *cstr, *cref, *cupduser, *ccur;
 	ofxCounter counter, entnum;
 	ofxAmount amount;
+	ofeEntryStatus status;
 
 	priv = ofa_accentry_store_get_instance_private( self );
 
@@ -357,6 +358,7 @@ entry_set_row_by_iter( ofaAccentryStore *self, const ofoEntry *entry, GtkTreeIte
 	cupduser = cstr ? cstr : "";
 	supdstamp = my_stamp_to_str( ofo_entry_get_upd_stamp( entry ), MY_STAMP_DMYYHM );
 
+	status = ofo_entry_get_status( entry );
 
 	gtk_tree_store_set(
 				GTK_TREE_STORE( self ),
@@ -376,7 +378,7 @@ entry_set_row_by_iter( ofaAccentryStore *self, const ofoEntry *entry, GtkTreeIte
 				ACCENTRY_COL_OPE_NUMBER,           sopenum,
 				ACCENTRY_COL_ENT_NUMBER,           sentnum,
 				ACCENTRY_COL_ENT_NUMBER_I,         entnum,
-				ACCENTRY_COL_STATUS,               ofo_entry_get_abr_status( entry ),
+				ACCENTRY_COL_STATUS,               ofo_entry_status_get_abr( status ),
 				ACCENTRY_COL_OBJECT,               entry,
 				-1 );
 

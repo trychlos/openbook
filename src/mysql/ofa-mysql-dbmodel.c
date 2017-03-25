@@ -133,6 +133,8 @@ static gboolean dbmodel_v35( ofaMysqlDBModel *self, gint version );
 static gulong   count_v35( ofaMysqlDBModel *self );
 static gboolean dbmodel_v36( ofaMysqlDBModel *self, gint version );
 static gulong   count_v36( ofaMysqlDBModel *self );
+static gboolean dbmodel_v37( ofaMysqlDBModel *self, gint version );
+static gulong   count_v37( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -152,6 +154,7 @@ static sMigration st_migrates[] = {
 		{ 34, dbmodel_v34, count_v34 },
 		{ 35, dbmodel_v35, count_v35 },
 		{ 36, dbmodel_v36, count_v36 },
+		{ 37, dbmodel_v37, count_v37 },
 		{ 0 }
 };
 
@@ -683,6 +686,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* Identifiers and labels are resized in v28 */
 	/* ope number is added in v32 */
 	/* rule, notes are added in v35 */
+	/* status changed to x(1), client added in v37 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
 			"	ENT_DEFFECT      DATE NOT NULL                       COMMENT 'Imputation effect date',"
@@ -744,6 +748,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* locked indicators are remediated in v27 */
 	/* Identifiers and labels are resized in v28 */
 	/* add row of mean of paiement in v33 */
+	/* ref_mandatory, have_client, have_qppro added in v37 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES ("
 			"	OTE_MNEMO      VARCHAR(6) BINARY NOT NULL UNIQUE     COMMENT 'Operation template mnemonic',"
@@ -2294,7 +2299,7 @@ dbmodel_v36( ofaMysqlDBModel *self, gint version )
 
 	normal_type = ofo_account_get_balance_type_dbms( ACC_TYPE_NORMAL );
 	open_type = ofo_account_get_balance_type_dbms( ACC_TYPE_OPEN );
-	forward_rule = ofo_entry_get_rule_dbms( ENT_RULE_FORWARD );
+	forward_rule = ofo_entry_rule_get_dbms( ENT_RULE_FORWARD );
 
 	/* 1 - get dossier begin exercice */
 	query = g_strdup_printf( "SELECT DOS_EXE_BEGIN FROM OFA_T_DOSSIER WHERE DOS_ID=%u", DOSSIER_ROW_ID );
@@ -2356,4 +2361,90 @@ static gulong
 count_v36( ofaMysqlDBModel *self )
 {
 	return( 3 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v37:
+ *
+ * - ENT_STATUS: back to x(1) (#1414)
+ * - ENT_CLIENT: new
+ * - OTE_REF_MANDATORY: new
+ * - OTE_HAVE_CLIENT: new
+ */
+static gboolean
+dbmodel_v37( ofaMysqlDBModel *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v37";
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	/* 1. change ent_status, add ent_client */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_ENTRIES "
+			"	CHANGE COLUMN ENT_STATUS    ENT_STATUS_I INTEGER,"
+			"	ADD    COLUMN ENT_STATUS    CHAR(1)      NOT NULL                   COMMENT 'Entry status',"
+			"	ADD    COLUMN ENT_CLIENT    VARCHAR(64)                             COMMENT 'Entry client'" )){
+		return( FALSE );
+	}
+
+	/* 2. update status */
+	if( !exec_query( self,
+			"UPDATE OFA_T_ENTRIES SET ENT_STATUS='P' WHERE ENT_STATUS_I=1" )){
+		return( FALSE );
+	}
+
+	/* 3. update status */
+	if( !exec_query( self,
+			"UPDATE OFA_T_ENTRIES SET ENT_STATUS='R' WHERE ENT_STATUS_I=2" )){
+		return( FALSE );
+	}
+
+	/* 4. update status */
+	if( !exec_query( self,
+			"UPDATE OFA_T_ENTRIES SET ENT_STATUS='V' WHERE ENT_STATUS_I=3" )){
+		return( FALSE );
+	}
+
+	/* 5. update status */
+	if( !exec_query( self,
+			"UPDATE OFA_T_ENTRIES SET ENT_STATUS='D' WHERE ENT_STATUS_I=4" )){
+		return( FALSE );
+	}
+
+	/* 6. update status */
+	if( !exec_query( self,
+			"UPDATE OFA_T_ENTRIES SET ENT_STATUS='F' WHERE ENT_STATUS_I=5" )){
+		return( FALSE );
+	}
+
+	/* 7. remove old column */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_ENTRIES DROP COLUMN ENT_STATUS_I" )){
+		return( FALSE );
+	}
+
+	/* 8. add ref_mandatory, have_client, have_qppro */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_OPE_TEMPLATES "
+			"	ADD    COLUMN OTE_REF_MANDATORY      CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether piece reference is mandatory',"
+			"	ADD    COLUMN OTE_HAVE_CLIENT        CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays a client',"
+			"	ADD    COLUMN OTE_CLIENT             VARCHAR(256)                   COMMENT 'Client',"
+			"	ADD    COLUMN OTE_CLIENT_LOCKED      CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the client is locked',"
+			"	ADD    COLUMN OTE_HAVE_QPPRO         CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays prof. share',"
+			"	ADD    COLUMN OTE_QPPRO              VARCHAR(256)                   COMMENT 'Professional share',"
+			"	ADD    COLUMN OTE_QPPRO_LOCKED       CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the prof. share is locked'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v37( ofaMysqlDBModel *self )
+{
+	return( 8 );
 }

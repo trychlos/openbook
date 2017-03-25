@@ -85,6 +85,7 @@ enum {
 	ENT_STLMT_USER,
 	ENT_STLMT_STAMP,
 	ENT_NOTES,
+	ENT_CLIENT,
 };
 
 /*
@@ -160,7 +161,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 				FALSE,
 				FALSE },
 		{ OFA_BOX_CSV( ENT_STATUS ),
-				OFA_TYPE_INTEGER,
+				OFA_TYPE_STRING,
 				FALSE,
 				FALSE },
 		{ OFA_BOX_CSV( ENT_UPD_USER ),
@@ -180,6 +181,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( ENT_CLIENT),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ 0 }
 };
 
@@ -190,12 +195,16 @@ typedef struct {
 
 #define ENTRY_IE_FORMAT                 1
 
-/* manage the abbreviated localized status
+/* manage the status
+ * - the identifier is from a public enum (easier for the code)
+ * - a non-localized char stored in dbms
+ * - a localized char (short string for treeviews)
+ * - a localized label
  */
 typedef struct {
-	ofeEntryStatus num;
+	ofeEntryStatus id;
 	const gchar   *dbms;
-	const gchar   *str;
+	const gchar   *abr;
 	const gchar   *label;
 }
 	sStatus;
@@ -210,13 +219,15 @@ static sStatus st_status[] = {
 };
 
 /* manage the rule
- * a (non-localized) character is stored in dbms
- * while the code is easier with an enum
+ * - the identifier is from a public enum (easier for the code)
+ * - a non-localized char stored in dbms
+ * - a localized char (short string for treeviews)
+ * - a localized label
  */
 typedef struct {
-	ofeEntryRule   num;
-	const gchar   *str;
-	const gchar   *localized;
+	ofeEntryRule   id;
+	const gchar   *dbms;
+	const gchar   *abr;
 	const gchar   *label;
 }
 	sRule;
@@ -434,7 +445,7 @@ ofo_entry_get_dataset_account_balance( ofaIGetter *getter,
 	if( first ){
 		query = g_string_append( query, "AND " );
 	}
-	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
+	g_string_append_printf( query, "ENT_STATUS!='%s' ", ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 	query = g_string_append( query, "GROUP BY ENT_ACCOUNT ORDER BY ENT_ACCOUNT ASC " );
 
 	hub = ofa_igetter_get_hub( getter );
@@ -521,7 +532,7 @@ ofo_entry_get_dataset_ledger_balance( ofaIGetter *getter,
 	if( first ){
 		query = g_string_append( query, "AND " );
 	}
-	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
+	g_string_append_printf( query, "ENT_STATUS!='%s' ", ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 	query = g_string_append( query, "GROUP BY ENT_LEDGER,ENT_CURRENCY ORDER BY ENT_LEDGER,ENT_CURRENCY ASC " );
 
 	hub = ofa_igetter_get_hub( getter );
@@ -610,7 +621,7 @@ ofo_entry_get_dataset_for_print_by_account( ofaIGetter *getter,
 	if( !first ){
 		query = g_string_append( query, "AND " );
 	}
-	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
+	g_string_append_printf( query, "ENT_STATUS!='%s' ", ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 
 	dataset = entry_load_dataset( getter,  query->str,
 			"ORDER BY ENT_ACCOUNT ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC" );
@@ -669,7 +680,7 @@ ofo_entry_get_dataset_for_print_by_ledger( ofaIGetter *getter,
 		g_string_append_printf( query, "AND ENT_DEFFECT<='%s' ", str );
 		g_free( str );
 	}
-	g_string_append_printf( query, "AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
+	g_string_append_printf( query, "AND ENT_STATUS!='%s' ", ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 
 	dataset = entry_load_dataset( getter, query->str,
 			"ORDER BY ENT_LEDGER ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC" );
@@ -713,7 +724,7 @@ ofo_entry_get_dataset_for_print_reconcil( ofaIGetter *getter,
 		g_free( str );
 	}
 
-	g_string_append_printf( where, " AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
+	g_string_append_printf( where, " AND ENT_STATUS!='%s' ", ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 
 	dataset = entry_load_dataset( getter, where->str, NULL );
 
@@ -745,7 +756,7 @@ ofo_entry_get_dataset_for_exercice_by_status( ofaIGetter *getter, ofeEntryStatus
 	where = g_string_new( "" );
 
 	str = effect_in_exercice( getter);
-	g_string_append_printf( where, "%s AND ENT_STATUS=%u ", str, status );
+	g_string_append_printf( where, "%s AND ENT_STATUS='%s' ", str, ofo_entry_status_get_dbms( status ));
 	g_free( str );
 
 	dataset = entry_load_dataset( getter, where->str, NULL );
@@ -1093,113 +1104,90 @@ ofo_entry_get_credit( const ofoEntry *entry )
 ofeEntryStatus
 ofo_entry_get_status( const ofoEntry *entry )
 {
-	ofo_base_getter( ENTRY, entry, int, 0, ENT_STATUS );
-}
-
-/**
- * ofo_entry_get_abr_status:
- *
- * Returns an abbreviated localized string for the status.
- * Use case: view entries.
- */
-const gchar *
-ofo_entry_get_abr_status( const ofoEntry *entry )
-{
-	ofeEntryStatus status;
-
-	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
-	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, NULL );
-
-	status = ofo_entry_get_status( entry );
-
-	return( ofo_entry_get_abr_from_status( status ));
-}
-
-/**
- * ofo_entry_get_status_label:
- *
- * Returns: a localized label for the current status.
- */
-const gchar *
-ofo_entry_get_status_label( const ofoEntry *entry )
-{
-	ofeEntryStatus status;
+	static const gchar *thisfn = "ofo_entry_get_status";
+	const gchar *cstr;
 	gint i;
 
-	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
-	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, NULL );
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), ENT_STATUS_ROUGH );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, ENT_STATUS_ROUGH );
 
-	status = ofo_entry_get_status( entry );
+	cstr = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_STATUS );
 
-	for( i=0 ; st_status[i].num ; ++i ){
-		if( st_status[i].num == status ){
-			return( gettext( st_status[i].label ));
+	for( i=0 ; st_status[i].id ; ++i ){
+		if( !my_collate( st_status[i].dbms, cstr )){
+			return( st_status[i].id );
 		}
 	}
 
-	return( NULL );
-}
-
-/**
- * ofo_entry_get_status_from_abr:
- *
- * Returns an abbreviated localized string for the status.
- * Use case: view entries.
- */
-ofeEntryStatus
-ofo_entry_get_status_from_abr( const gchar *abr_status )
-{
-	gint i;
-
-	g_return_val_if_fail( my_strlen( abr_status ), ENT_STATUS_ROUGH );
-
-	for( i=0 ; st_status[i].num ; ++i ){
-		if( !my_collate( st_status[i].str, abr_status )){
-			return( st_status[i].num );
-		}
-	}
+	g_warning( "%s: unknown or invalid dbms status: %s", thisfn, cstr );
 
 	return( ENT_STATUS_ROUGH );
 }
 
 /**
- * ofo_entry_get_abr_from_status:
- * @status: the #ofeEntryStatus.
+ * ofo_entry_status_get_dbms:
  *
- * Returns an abbreviated localized string for the @status.
+ * Returns: the dbms string corresponding to the status.
  */
 const gchar *
-ofo_entry_get_abr_from_status( ofeEntryStatus status )
+ofo_entry_status_get_dbms( ofeEntryStatus status )
 {
+	static const gchar *thisfn = "ofo_entry_status_get_dbms";
 	gint i;
 
-	for( i=0 ; st_status[i].num ; ++i ){
-		if( st_status[i].num == status ){
-			return( gettext( st_status[i].str ));
-		}
-	}
-
-	return( NULL );
-}
-
-/**
- * ofo_entry_get_status_dbms:
- * @status: the #ofeEntryStatus.
- *
- * Returns a non-localized string for the @status.
- */
-const gchar *
-ofo_entry_get_status_dbms( ofeEntryStatus status )
-{
-	gint i;
-
-	for( i=0 ; st_status[i].num ; ++i ){
-		if( st_status[i].num == status ){
+	for( i=0 ; st_status[i].id ; ++i ){
+		if( st_status[i].id == status ){
 			return( st_status[i].dbms );
 		}
 	}
 
-	return( NULL );
+	g_warning( "%s: unknown or invalid status identifier: %u", thisfn, status );
+
+	return( "" );
+}
+
+/**
+ * ofo_entry_status_get_abr:
+ *
+ * Returns: the abbreviated localized string corresponding to the status.
+ */
+const gchar *
+ofo_entry_status_get_abr( ofeEntryStatus status )
+{
+	static const gchar *thisfn = "ofo_entry_status_get_abr";
+	gint i;
+
+	for( i=0 ; st_status[i].id ; ++i ){
+		if( st_status[i].id == status ){
+			return( gettext( st_status[i].abr ));
+		}
+	}
+
+	g_warning( "%s: unknown or invalid status identifier: %u", thisfn, status );
+
+	return( "" );
+}
+
+/**
+ * ofo_entry_status_get_label:
+ *
+ * Returns: the abbreviated localized label corresponding to the status.
+ */
+const gchar *
+ofo_entry_status_get_label( ofeEntryStatus status )
+{
+	static const gchar *thisfn = "ofo_entry_status_get_label";
+	gint i;
+
+	for( i=0 ; st_status[i].id ; ++i ){
+		if( st_status[i].id == status ){
+			return( gettext( st_status[i].label ));
+		}
+	}
+
+	g_warning( "%s: unknown or invalid status identifier: %u", thisfn, status );
+
+	return( "" );
 }
 
 /**
@@ -1210,6 +1198,7 @@ ofo_entry_get_status_dbms( ofeEntryStatus status )
 ofeEntryRule
 ofo_entry_get_rule( const ofoEntry *entry )
 {
+	static const gchar *thisfn = "ofo_entry_get_rule";
 	const gchar *cstr;
 	gint i;
 
@@ -1218,62 +1207,60 @@ ofo_entry_get_rule( const ofoEntry *entry )
 
 	cstr = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_RULE );
 
-	for( i=0 ; st_rule[i].num ; ++i ){
-		if( !my_collate( st_rule[i].str, cstr )){
-			return( st_rule[i].num );
+	for( i=0 ; st_rule[i].id ; ++i ){
+		if( !my_collate( st_rule[i].dbms, cstr )){
+			return( st_rule[i].id );
 		}
 	}
+
+	g_warning( "%s: unknown or invalid dbms rule: %s", thisfn, cstr );
 
 	return( ENT_RULE_NORMAL );
 }
 
 /**
- * ofo_entry_get_rule_dbms:
+ * ofo_entry_rule_get_dbms:
  * @rule: a #ofeEntryRule rule.
  *
  * Returns: the dbms indicator corresponding to @rule.
  */
 const gchar *
-ofo_entry_get_rule_dbms( ofeEntryRule rule )
+ofo_entry_rule_get_dbms( ofeEntryRule rule )
 {
-	static const gchar *thisfn = "ofo_entry_get_rule_dbms";
+	static const gchar *thisfn = "ofo_entry_rule_get_dbms";
 	gint i;
 
-	for( i=0 ; st_rule[i].num ; ++i ){
-		if( st_rule[i].num == rule ){
-			return( st_rule[i].str );
+	for( i=0 ; st_rule[i].id ; ++i ){
+		if( st_rule[i].id == rule ){
+			return( st_rule[i].dbms );
 		}
 	}
 
-	g_warning( "%s: unknown rule %u", thisfn, rule );
+	g_warning( "%s: unknown or invalid rule identifier: %u", thisfn, rule );
+
 	return( NULL );
 }
 
 /**
- * ofo_entry_get_rule_str:
+ * ofo_entry_rule_get_abr:
  *
- * Returns: the localized rule indicator for this @entry.
- *
- * Use case: treeview
+ * Returns: the localized rule indicator for this @rule.
  */
 const gchar *
-ofo_entry_get_rule_str( const ofoEntry *entry )
+ofo_entry_rule_get_abr( ofeEntryRule rule )
 {
-	const gchar *cstr;
+	static const gchar *thisfn = "ofo_entry_rule_get_abr";
 	gint i;
 
-	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), _( "N" ));
-	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, _( "N" ));
-
-	cstr = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_RULE );
-
-	for( i=0 ; st_rule[i].num ; ++i ){
-		if( !my_collate( st_rule[i].str, cstr )){
-			return( gettext( st_rule[i].localized ));
+	for( i=0 ; st_rule[i].id ; ++i ){
+		if( st_rule[i].id == rule ){
+			return( gettext( st_rule[i].abr ));
 		}
 	}
 
-	return( _( "N" ));
+	g_warning( "%s: unknown or invalid rule identifier: %u", thisfn, rule );
+
+	return( "" );
 }
 
 /**
@@ -1284,23 +1271,20 @@ ofo_entry_get_rule_str( const ofoEntry *entry )
  * Use case: properties
  */
 const gchar *
-ofo_entry_get_rule_label( const ofoEntry *entry )
+ofo_entry_rule_get_label( ofeEntryRule rule )
 {
-	const gchar *cstr;
+	static const gchar *thisfn = "ofo_entry_rule_get_abr";
 	gint i;
 
-	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
-	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, NULL );
-
-	cstr = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_RULE );
-
-	for( i=0 ; st_rule[i].num ; ++i ){
-		if( !my_collate( st_rule[i].str, cstr )){
+	for( i=0 ; st_rule[i].id ; ++i ){
+		if( st_rule[i].id == rule ){
 			return( gettext( st_rule[i].label ));
 		}
 	}
 
-	return( NULL );
+	g_warning( "%s: unknown or invalid rule identifier: %u", thisfn, rule );
+
+	return( "" );
 }
 
 /**
@@ -1355,7 +1339,7 @@ ofo_entry_get_notes( const ofoEntry *entry )
 }
 
 /**
- * ofo_entry_get_settlement_user:
+ * ofo_entry_get_upd_user:
  */
 const gchar *
 ofo_entry_get_upd_user( const ofoEntry *entry )
@@ -1364,12 +1348,21 @@ ofo_entry_get_upd_user( const ofoEntry *entry )
 }
 
 /**
- * ofo_entry_get_settlement_stamp:
+ * ofo_entry_get_upd_stamp:
  */
 const GTimeVal *
 ofo_entry_get_upd_stamp( const ofoEntry *entry )
 {
 	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_UPD_STAMP );
+}
+
+/**
+ * ofo_entry_get_client:
+ */
+const gchar *
+ofo_entry_get_client( const ofoEntry *entry )
+{
+	ofo_base_getter( ENTRY, entry, string, NULL, ENT_CLIENT );
 }
 
 /**
@@ -1463,8 +1456,8 @@ ofo_entry_get_max_val_deffect( ofaIGetter *getter, const gchar *account, GDate *
 
 	query = g_strdup_printf(
 			"SELECT MAX(ENT_DEFFECT) FROM OFA_T_ENTRIES WHERE "
-			"	ENT_ACCOUNT='%s' AND ENT_STATUS=%d",
-				account, ENT_STATUS_VALIDATED );
+			"	ENT_ACCOUNT='%s' AND ENT_STATUS='%s'",
+				account, ofo_entry_status_get_dbms( ENT_STATUS_VALIDATED ));
 
 	hub = ofa_igetter_get_hub( getter );
 
@@ -1513,7 +1506,8 @@ ofo_entry_get_max_rough_deffect( ofaIGetter *getter, const gchar *account, GDate
 			"SELECT MAX(ENT_DEFFECT) FROM OFA_T_ENTRIES WHERE " );
 
 	g_string_append_printf( query,
-			"ENT_ACCOUNT='%s' AND ENT_STATUS=%d ", account, ENT_STATUS_ROUGH );
+			"ENT_ACCOUNT='%s' AND ENT_STATUS='%s' ",
+			account, ofo_entry_status_get_dbms( ENT_STATUS_ROUGH ));
 
 	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
@@ -1579,8 +1573,8 @@ ofo_entry_get_max_futur_deffect( ofaIGetter *getter, const gchar *account, GDate
 		sdate = my_date_to_str( exe_end, MY_DATE_SQL );
 
 		g_string_append_printf( query,
-				"ENT_ACCOUNT='%s' AND ENT_STATUS=%d AND ENT_DEFFECT>'%s'",
-				account, ENT_STATUS_FUTURE, sdate );
+				"ENT_ACCOUNT='%s' AND ENT_STATUS='%s' AND ENT_DEFFECT>'%s'",
+				account, ofo_entry_status_get_dbms( ENT_STATUS_FUTURE ), sdate );
 
 		g_free( sdate );
 
@@ -1783,7 +1777,13 @@ ofo_entry_set_credit( ofoEntry *entry, ofxAmount credit )
 static void
 entry_set_status( ofoEntry *entry, ofeEntryStatus status )
 {
-	ofo_base_setter( ENTRY, entry, int, ENT_STATUS, status );
+	const gchar *cstr;
+
+	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+	g_return_if_fail( !OFO_BASE( entry )->prot->dispose_has_run );
+
+	cstr = ofo_entry_status_get_dbms( status );
+	ofa_box_set_string( OFO_BASE( entry )->prot->fields, ENT_STATUS, cstr );
 }
 
 /*
@@ -1864,17 +1864,13 @@ entry_set_import_settled( ofoEntry *entry, gboolean settled )
 void
 ofo_entry_set_rule( ofoEntry *entry, ofeEntryRule rule )
 {
-	gint i;
+	const gchar *cstr;
 
 	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 	g_return_if_fail( !OFO_BASE( entry )->prot->dispose_has_run );
 
-	for( i=0 ; st_rule[i].num ; ++i ){
-		if( st_rule[i].num == rule ){
-			ofa_box_set_string( OFO_BASE( entry )->prot->fields, ENT_RULE, st_rule[i].str );
-			break;
-		}
-	}
+	cstr = ofo_entry_rule_get_dbms( rule );
+	ofa_box_set_string( OFO_BASE( entry )->prot->fields, ENT_RULE, cstr );
 }
 
 /**
@@ -1884,6 +1880,15 @@ void
 ofo_entry_set_notes( ofoEntry *entry, const gchar *notes )
 {
 	ofo_base_setter( ENTRY, entry, string, ENT_NOTES, notes );
+}
+
+/**
+ * ofo_entry_set_client:
+ */
+void
+ofo_entry_set_client( ofoEntry *entry, const gchar *client )
+{
+	ofo_base_setter( ENTRY, entry, string, ENT_CLIENT, client );
 }
 
 /*
@@ -2164,7 +2169,7 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	gchar *sdeff, *sdope, *sdebit, *scredit, *stamp_str, *notes;
 	gboolean ok;
 	GTimeVal stamp;
-	const gchar *model, *cur_code, *userid, *rule;
+	const gchar *model, *cur_code, *userid, *rule, *status, *client;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
 	ofxCounter ope_number;
@@ -2194,6 +2199,7 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 			"	(ENT_DEFFECT,ENT_NUMBER,ENT_DOPE,ENT_LABEL,ENT_REF,ENT_ACCOUNT,"
 			"	ENT_CURRENCY,ENT_LEDGER,ENT_OPE_TEMPLATE,"
 			"	ENT_DEBIT,ENT_CREDIT,ENT_STATUS,ENT_OPE_NUMBER,ENT_RULE,"
+			"	ENT_CLIENT,"
 			"	ENT_NOTES,ENT_UPD_USER, ENT_UPD_STAMP) "
 			"	VALUES ('%s',%ld,'%s','%s',",
 			sdeff,
@@ -2223,11 +2229,14 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	sdebit = ofa_amount_to_sql( ofo_entry_get_debit( entry ), cur_obj );
 	scredit = ofa_amount_to_sql( ofo_entry_get_credit( entry ), cur_obj );
 
+	status = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_STATUS );
+	g_return_val_if_fail( my_strlen( status ) == 1, FALSE );
+
 	g_string_append_printf( query,
-				"%s,%s,%d,",
+				"%s,%s,'%s',",
 				sdebit,
 				scredit,
-				ofo_entry_get_status( entry ));
+				status );
 
 	ope_number = ofo_entry_get_ope_number( entry );
 	if( ope_number > 0 ){
@@ -2239,6 +2248,13 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	rule = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_RULE );
 	g_return_val_if_fail( my_strlen( rule ) == 1, FALSE );
 	g_string_append_printf( query, "'%s',", rule );
+
+	client = ofo_entry_get_client( entry );
+	if( my_strlen( client )){
+		g_string_append_printf( query, "'%s',", client );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
 
 	notes = my_utils_quote_sql( ofo_entry_get_notes( entry ));
 	if( my_strlen( notes )){
@@ -2408,7 +2424,7 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 	gchar *stamp_str, *label, *ref;
 	GTimeVal stamp;
 	gboolean ok;
-	const gchar *model, *cstr, *userid, *rule;
+	const gchar *model, *cstr, *userid, *rule, *client;
 	const gchar *cur_code;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
@@ -2463,6 +2479,13 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 	rule = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_RULE );
 	g_return_val_if_fail( my_strlen( rule ) == 1, FALSE );
 	g_string_append_printf( query, "ENT_RULE='%s',", rule );
+
+	client = ofo_entry_get_client( entry );
+	if( my_strlen( client )){
+		g_string_append_printf( query, "ENT_CLIENT='%s',", client );
+	} else {
+		query = g_string_append( query, "ENT_CLIENT=NULL," );
+	}
 
 	notes = my_utils_quote_sql( ofo_entry_get_notes( entry ));
 	if( my_strlen( notes )){
@@ -2647,8 +2670,8 @@ ofo_entry_validate_by_ledger( ofaIGetter *getter, const gchar *mnemo, const GDat
 
 	sdate = my_date_to_str( deffect, MY_DATE_SQL );
 	query = g_strdup_printf(
-					"OFA_T_ENTRIES WHERE ENT_LEDGER='%s' AND ENT_STATUS=%d AND ENT_DEFFECT<='%s'",
-					mnemo, ENT_STATUS_ROUGH, sdate );
+					"OFA_T_ENTRIES WHERE ENT_LEDGER='%s' AND ENT_STATUS='%s' AND ENT_DEFFECT<='%s'",
+					mnemo, ofo_entry_status_get_dbms( ENT_STATUS_ROUGH ), sdate );
 	g_free( sdate );
 
 	dataset = ofo_base_load_dataset(
@@ -2980,10 +3003,10 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 	gulong count;
 	ofoEntry *entry;
 	GString *str;
-	gchar *sdope, *sdeffect, *sdebit, *scredit, *sletid, *sletdate, *sref;
+	gchar *sdope, *sdeffect, *sdebit, *scredit, *sletid, *sletdate, *sref, *sclient;
 	gchar *sopemne, *sopelib, *sopenum, *sdregl, *smodregl;
 	ofoConcil *concil;
-	const gchar *led_id, *acc_id, *cur_code, *cref, *cope;
+	const gchar *led_id, *acc_id, *cur_code, *cref, *cope, *client;
 	ofoAccount *account;
 	ofoLedger *ledger;
 	ofoCurrency *currency;
@@ -3108,6 +3131,9 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		}
 		smodregl = g_strdup( cref ? cref : "" );
 
+		client = ofo_entry_get_client( entry );
+		sclient = g_strdup( client ? client : "" );
+
 		status = ofo_entry_get_status( entry );
 		rule = ofo_entry_get_rule( entry );
 
@@ -3134,12 +3160,12 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		g_string_append_printf( str, "%c%s", field_sep, sdregl );
 		g_string_append_printf( str, "%c%s", field_sep, smodregl );
 		g_string_append_printf( str, "%c%s", field_sep, sopemne );
-		g_string_append_printf( str, "%c", field_sep );
+		g_string_append_printf( str, "%c%s", field_sep, sclient );
 		/* other columns from the system */
 		g_string_append_printf( str, "%c%s", field_sep, sopelib );
-		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_get_status_dbms( status ));
+		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_status_get_dbms( status ));
 		g_string_append_printf( str, "%c%s", field_sep, sopenum );
-		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_get_rule_dbms( rule ));
+		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_rule_get_dbms( rule ));
 
 		ok = ofa_iexportable_set_line( exportable, str->str );
 
@@ -3154,6 +3180,7 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		g_free( sopemne );
 		g_free( sopelib );
 		g_free( sopenum );
+		g_free( sclient );
 
 		if( !ok ){
 			return( FALSE );
@@ -3630,6 +3657,13 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			if( my_strlen( cstr )){
 				ofo_entry_set_notes( entry, cstr );
 			}
+
+			/* client */
+			itf = itf ? itf->next : NULL;
+			cstr = itf ? ( const gchar * ) itf->data : NULL;
+			if( my_strlen( cstr )){
+				ofo_entry_set_client( entry, cstr );
+			}
 		}
 
 		/* what to do regarding the effect date ?
@@ -4087,7 +4121,8 @@ check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, 
 			 * considered in the past */
 			/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
 			where = g_strdup_printf(
-					"ENT_DEFFECT<'%s' AND ENT_STATUS!=%u", snew, ENT_STATUS_DELETED );
+					"ENT_DEFFECT<'%s' AND ENT_STATUS!='%s'",
+					snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 			count = remediate_status( getter, remediate, where, ENT_STATUS_PAST );
 		}
 	} else if( !my_date_is_valid( new_begin )){
@@ -4096,7 +4131,8 @@ check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, 
 		 * but are now considered in the exercice */
 		/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
 		where = g_strdup_printf(
-				"ENT_DEFFECT<'%s' AND ENT_STATUS!=%u", sprev, ENT_STATUS_DELETED );
+				"ENT_DEFFECT<'%s' AND ENT_STATUS!='%s'",
+				sprev, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
 
 	} else if( my_date_compare( prev_begin, new_begin ) < 0 ){
@@ -4104,8 +4140,8 @@ check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, 
 		 * but are now considered in the past */
 		/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
 		where = g_strdup_printf(
-				"ENT_DEFFECT>='%s' AND ENT_DEFFECT<'%s' AND ENT_STATUS!=%u",
-				sprev, snew, ENT_STATUS_DELETED );
+				"ENT_DEFFECT>='%s' AND ENT_DEFFECT<'%s' AND ENT_STATUS!='%s'",
+				sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 		count = remediate_status( getter, remediate, where, ENT_STATUS_PAST );
 
 	} else if( my_date_compare( prev_begin, new_begin ) > 0 ){
@@ -4113,8 +4149,8 @@ check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, 
 		 * but are now considered in the exercice */
 		/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
 		where = g_strdup_printf(
-				"ENT_DEFFECT<'%s' AND ENT_DEFFECT>='%s' AND ENT_STATUS!=%u",
-				sprev, snew, ENT_STATUS_DELETED );
+				"ENT_DEFFECT<'%s' AND ENT_DEFFECT>='%s' AND ENT_STATUS!='%s'",
+				sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
 	}
 
@@ -4147,7 +4183,8 @@ check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, cons
 			 * considered in the future */
 			/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
 			where = g_strdup_printf(
-					"ENT_DEFFECT>'%s' AND ENT_STATUS!=%u", snew, ENT_STATUS_DELETED );
+					"ENT_DEFFECT>'%s' AND ENT_STATUS!='%s'",
+					snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 			count = remediate_status( getter, remediate, where, ENT_STATUS_FUTURE );
 		}
 	} else if( !my_date_is_valid( new_end )){
@@ -4156,7 +4193,8 @@ check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, cons
 		 * but are now considered in the exercice */
 		/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
 		where = g_strdup_printf(
-				"ENT_DEFFECT>'%s' AND ENT_STATUS!=%u", sprev, ENT_STATUS_DELETED );
+				"ENT_DEFFECT>'%s' AND ENT_STATUS!='%s'",
+				sprev, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
 
 	} else if( my_date_compare( prev_end, new_end ) < 0 ){
@@ -4164,8 +4202,8 @@ check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, cons
 		 * but are now considered in the exercice */
 		/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
 		where = g_strdup_printf(
-				"ENT_DEFFECT>'%s' AND ENT_DEFFECT<='%s' AND ENT_STATUS!=%u",
-				sprev, snew, ENT_STATUS_DELETED );
+				"ENT_DEFFECT>'%s' AND ENT_DEFFECT<='%s' AND ENT_STATUS!='%s'",
+				sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
 
 	} else if( my_date_compare( prev_end, new_end ) > 0 ){
@@ -4173,8 +4211,8 @@ check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, cons
 		 * but are now considered in the future */
 		/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
 		where = g_strdup_printf(
-				"ENT_DEFFECT<='%s' AND ENT_DEFFECT>'%s' AND ENT_STATUS!=%u",
-				sprev, snew, ENT_STATUS_DELETED );
+				"ENT_DEFFECT<='%s' AND ENT_DEFFECT>'%s' AND ENT_STATUS!='%s'",
+				sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 		count = remediate_status( getter, remediate, where, ENT_STATUS_FUTURE );
 	}
 
@@ -4248,8 +4286,8 @@ signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEnt
 	entry_set_status( entry, new_status );
 
 	query = g_strdup_printf(
-					"UPDATE OFA_T_ENTRIES SET ENT_STATUS=%u WHERE ENT_NUMBER=%ld",
-						new_status,
+					"UPDATE OFA_T_ENTRIES SET ENT_STATUS='%s' WHERE ENT_NUMBER=%ld",
+					ofo_entry_status_get_dbms( new_status ),
 						ofo_entry_get_number( entry ));
 
 	ofo_ledger_get_dataset( getter );

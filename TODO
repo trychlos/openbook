@@ -371,17 +371,17 @@
 
 1413 2017- 3-24 review reconciliation summary at date
 
-1414 2017- 3-24 dbms entry status should come back as a char indicator
-
 1415 2017- 3-24 rendering should use dossier label instead of dossier name
 
 1416 2017- 3-24 dossier administrative credentials: does not remember the account
 
 1417 2017- 3-24 ope_template: have a client id field depending of the template
 
-1418 2017- 3-24 entry ref should be mandatory (cf. FEC)
+1418 2017- 3-24 ope template has a prof. share (quote-part pro)
 
-1419
+1419 2017- 3-24 account book summary: sort by dope or deffect
+
+1420
 
 -----------------------------------------------------------------------
  DONE
@@ -919,6 +919,9 @@
 
 1408 2017- 3-22 accentry store: update external ids from signaler handler
      2017- 3-22 done
+
+1414 2017- 3-24 dbms entry status should come back as a char indicator
+     2017- 3-25 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

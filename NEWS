@@ -21,6 +21,8 @@
 
  New features and improvements:
 
+   Core DB Model v37
+
    - Balance check: distinguish between rough, validated and future balances (todo #1392).
    - Display unsettled entries on settleable accounts (todo #1381).
    - Display unreconciliated entries on reconciliable accounts (todo #783).
@@ -44,6 +46,7 @@
    - ofaAccentryTreeview: new class.
    - ofaUnreconcilPage: new class.
    - ofaUnsettledPage: new class.
+   - ofoEntry: status is stored in DBMS as a char indicator (todo #1414).
 
 -----------------------------------------------------------------------
  Version 0.68

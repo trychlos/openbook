@@ -1780,7 +1780,7 @@ extfilter_on_init_status( ofaEntryPage *self, GtkWidget *btn, ofeEntryStatus sta
 		extend->operator = *first ? OPERATOR_NONE : OPERATOR_OR;
 		extend->field = ENTRY_COL_STATUS;
 		extend->condition = COND_EQUAL;
-		extend->value = ( gchar * ) ofo_entry_get_abr_from_status( status );
+		extend->value = ( gchar * ) ofo_entry_status_get_abr( status );
 		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), extend );
 		*first = FALSE;
 		g_free( extend );

@@ -318,6 +318,8 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	ofoConcil *concil;
 	GdkPixbuf *notes_png;
 	GError *error;
+	ofeEntryStatus status;
+	ofeEntryRule rule;
 
 	priv = ofa_entry_store_get_instance_private( self );
 
@@ -353,6 +355,9 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	cupduser = cstr ? cstr : "";
 	supdstamp = my_stamp_to_str( ofo_entry_get_upd_stamp( entry ), MY_STAMP_DMYYHM );
 
+	status = ofo_entry_get_status( entry );
+	rule = ofo_entry_get_rule( entry );
+
 	error = NULL;
 	notes = ofo_entry_get_notes( entry );
 	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
@@ -383,16 +388,16 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 				ENTRY_COL_UPD_STAMP,     supdstamp,
 				ENTRY_COL_CONCIL_NUMBER, "",
 				ENTRY_COL_CONCIL_DATE,   "",
-				ENTRY_COL_STATUS,        ofo_entry_get_abr_status( entry ),
-				ENTRY_COL_STATUS_I,      ofo_entry_get_status( entry ),
+				ENTRY_COL_STATUS,        ofo_entry_status_get_abr( status ),
+				ENTRY_COL_STATUS_I,      status,
 				ENTRY_COL_OBJECT,        entry,
 				ENTRY_COL_MSGERR,        "",
 				ENTRY_COL_MSGWARN,       "",
 				ENTRY_COL_DOPE_SET,      FALSE,
 				ENTRY_COL_DEFFECT_SET,   FALSE,
 				ENTRY_COL_CURRENCY_SET,  FALSE,
-				ENTRY_COL_RULE_I,        ofo_entry_get_rule( entry ),
-				ENTRY_COL_RULE,          ofo_entry_get_rule_str( entry ),
+				ENTRY_COL_RULE_I,        rule,
+				ENTRY_COL_RULE,          ofo_entry_rule_get_abr( rule ),
 				ENTRY_COL_NOTES,         notes,
 				ENTRY_COL_NOTES_PNG,     notes_png,
 				-1 );

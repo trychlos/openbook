@@ -1643,15 +1643,15 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 					"		(ACC_SETTLEABLE='Y' AND ACC_KEEP_UNSETTLED='Y' AND ENT_STLMT_NUMBER IS NULL) OR "
 					"		(ACC_RECONCILIABLE='Y' AND ACC_KEEP_UNRECONCILIATED='Y' AND ENT_NUMBER NOT IN ("
 					"			SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS WHERE REC_IDS_TYPE='%s'))) AND "
-					"		ENT_STATUS!=%d",
-					CONCIL_TYPE_ENTRY, ENT_STATUS_DELETED );
+					"		ENT_STATUS!='%s'",
+					CONCIL_TYPE_ENTRY, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
 		query = g_strdup_printf( "INSERT IGNORE INTO ARCHIVE_T_KEEP_ENTRIES "
-					"SELECT ENT_NUMBER FROM OFA_T_ENTRIES WHERE ENT_STATUS=%d",
-						ENT_STATUS_FUTURE );
+					"SELECT ENT_NUMBER FROM OFA_T_ENTRIES WHERE ENT_STATUS='%s'",
+					ofo_entry_status_get_dbms( ENT_STATUS_FUTURE ));
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
@@ -1678,7 +1678,9 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	/* set previous exercice entries status to 'past' */
 	if( ok ){
 		query = g_strdup_printf( "UPDATE OFA_T_ENTRIES SET "
-					"ENT_STATUS=%d WHERE ENT_STATUS=%d", ENT_STATUS_PAST, ENT_STATUS_VALIDATED );
+					"ENT_STATUS='%s' WHERE ENT_STATUS='%s'",
+					ofo_entry_status_get_dbms( ENT_STATUS_PAST),
+					ofo_entry_status_get_dbms( ENT_STATUS_VALIDATED ));
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}

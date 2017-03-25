@@ -1254,7 +1254,7 @@ ofo_account_archive_openings( ofaIGetter *getter, const GDate *exe_begin )
 
 	sdbegin = my_date_to_str( exe_begin, MY_DATE_SQL );
 	open_type = ofo_account_get_balance_type_dbms( ACC_TYPE_OPEN );
-	forward_rule = ofo_entry_get_rule_dbms( ENT_RULE_FORWARD );
+	forward_rule = ofo_entry_rule_get_dbms( ENT_RULE_FORWARD );
 
 	query = g_strdup_printf(
 			"INSERT INTO OFA_T_ACCOUNTS_ARC "

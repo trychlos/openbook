@@ -381,6 +381,7 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 	gchar *sdope, *sdeff, *sdeb, *scre, *sopenum, *ssetnum, *ssetstamp, *sentnum, *supdstamp;
 	const gchar *cstr, *cref, *csetuser, *cupduser;
 	ofxCounter counter, entnum;
+	ofeEntryStatus status;
 
 	priv = ofa_reconcil_store_get_instance_private( self );
 
@@ -409,6 +410,7 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 	cupduser = cstr ? cstr : "";
 	supdstamp = my_stamp_to_str( ofo_entry_get_upd_stamp( entry ), MY_STAMP_DMYYHM );
 
+	status = ofo_entry_get_status( entry );
 
 	gtk_tree_store_set(
 				GTK_TREE_STORE( self ),
@@ -431,8 +433,8 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 				RECONCIL_COL_ENT_NUMBER_I,    entnum,
 				RECONCIL_COL_UPD_USER,        cupduser,
 				RECONCIL_COL_UPD_STAMP,       supdstamp,
-				RECONCIL_COL_STATUS,          ofo_entry_get_abr_status( entry ),
-				RECONCIL_COL_STATUS_I,        ofo_entry_get_status( entry ),
+				RECONCIL_COL_STATUS,          ofo_entry_status_get_abr( status ),
+				RECONCIL_COL_STATUS_I,        status,
 				RECONCIL_COL_CONCIL_TYPE,     ofa_iconcil_get_instance_type( OFA_ICONCIL( entry )),
 				RECONCIL_COL_OBJECT,          entry,
 				-1 );

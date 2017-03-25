@@ -62,8 +62,9 @@ typedef struct {
 /**
  * ofeEntryStatus:
  *
- * @ENT_STATUS_PAST: status attached to the entries imported from a past
- *  exercice; these entries are not imputed on accounts nor ledgers
+ * @ENT_STATUS_PAST: status attached to the entries forwarded from a past
+ *  exercice; these entries are not imputed on accounts nor ledgers;
+ *  these entries have been validated during their exercice.
  *
  * @ENT_STATUS_ROUGH:
  * @ENT_STATUS_VALIDATED:
@@ -71,11 +72,7 @@ typedef struct {
  *
  * @ENT_STATUS_FUTURE: status attached to the entries imported or created
  *  for a future exercice; these entries are imputed on the corresponding
- *  solde of accounts and ledgers.
- *
- * IMPORTANT MAINTAINER NOTE: do NOT modify the value of the already
- * defined status as this same value is written in the database
- * (or refactor the database content).
+ *  solde of accounts and ledgers. They are considered as rough.
  */
 typedef enum {
 	ENT_STATUS_PAST = 1,
@@ -159,14 +156,13 @@ const gchar    *ofo_entry_get_ope_template           ( const ofoEntry *entry );
 ofxAmount       ofo_entry_get_debit                  ( const ofoEntry *entry );
 ofxAmount       ofo_entry_get_credit                 ( const ofoEntry *entry );
 ofeEntryStatus  ofo_entry_get_status                 ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_abr_status             ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_status_label           ( const ofoEntry *entry );
-ofeEntryStatus  ofo_entry_get_status_from_abr        ( const gchar *abr_status );
-const gchar    *ofo_entry_get_abr_from_status        ( ofeEntryStatus status );
-const gchar    *ofo_entry_get_status_dbms            ( ofeEntryStatus status );
+const gchar    *ofo_entry_status_get_dbms            ( ofeEntryStatus status );
+const gchar    *ofo_entry_status_get_abr             ( ofeEntryStatus status );
+const gchar    *ofo_entry_status_get_label           ( ofeEntryStatus status );
 ofeEntryRule    ofo_entry_get_rule                   ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_rule_dbms              ( ofeEntryRule rule );
-const gchar    *ofo_entry_get_rule_str               ( const ofoEntry *entry );
+const gchar    *ofo_entry_rule_get_dbms              ( ofeEntryRule rule );
+const gchar    *ofo_entry_rule_get_abr               ( ofeEntryRule rule );
+const gchar    *ofo_entry_rule_get_label             ( ofeEntryRule rule );
 const gchar    *ofo_entry_get_rule_label             ( const ofoEntry *entry );
 ofxCounter      ofo_entry_get_ope_number             ( const ofoEntry *entry );
 ofxCounter      ofo_entry_get_settlement_number      ( const ofoEntry *entry );
@@ -175,6 +171,7 @@ const GTimeVal *ofo_entry_get_settlement_stamp       ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_notes                  ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_upd_user               ( const ofoEntry *entry );
 const GTimeVal *ofo_entry_get_upd_stamp              ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_client                 ( const ofoEntry *entry );
 
 gint            ofo_entry_get_exe_changed_count      ( ofaIGetter *getter,
 															const GDate *prev_begin, const GDate *prev_end,
@@ -203,6 +200,7 @@ void            ofo_entry_set_ope_number             ( ofoEntry *entry, ofxCount
 void            ofo_entry_set_settlement_number      ( ofoEntry *entry, ofxCounter counter );
 void            ofo_entry_set_rule                   ( ofoEntry *entry, ofeEntryRule rule );
 void            ofo_entry_set_notes                  ( ofoEntry *entry, const gchar *notes );
+void            ofo_entry_set_client                 ( ofoEntry *entry, const gchar *client );
 
 gboolean        ofo_entry_is_valid_data              ( ofaIGetter *getter,
 															const GDate *deffect, const GDate *dope,
