@@ -84,8 +84,8 @@ enum {
 	ENT_STLMT_NUMBER,
 	ENT_STLMT_USER,
 	ENT_STLMT_STAMP,
+	ENT_TIERS,
 	ENT_NOTES,
-	ENT_CLIENT,
 };
 
 /*
@@ -181,7 +181,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( ENT_CLIENT),
+		{ OFA_BOX_CSV( ENT_TIERS),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -1330,6 +1330,15 @@ ofo_entry_get_settlement_stamp( const ofoEntry *entry )
 }
 
 /**
+ * ofo_entry_get_tiers:
+ */
+const gchar *
+ofo_entry_get_tiers( const ofoEntry *entry )
+{
+	ofo_base_getter( ENTRY, entry, string, NULL, ENT_TIERS );
+}
+
+/**
  * ofo_entry_get_notes:
  */
 const gchar *
@@ -1354,15 +1363,6 @@ const GTimeVal *
 ofo_entry_get_upd_stamp( const ofoEntry *entry )
 {
 	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_UPD_STAMP );
-}
-
-/**
- * ofo_entry_get_client:
- */
-const gchar *
-ofo_entry_get_client( const ofoEntry *entry )
-{
-	ofo_base_getter( ENTRY, entry, string, NULL, ENT_CLIENT );
 }
 
 /**
@@ -1874,21 +1874,21 @@ ofo_entry_set_rule( ofoEntry *entry, ofeEntryRule rule )
 }
 
 /**
+ * ofo_entry_set_tiers:
+ */
+void
+ofo_entry_set_tiers( ofoEntry *entry, const gchar *tiers )
+{
+	ofo_base_setter( ENTRY, entry, string, ENT_TIERS, tiers );
+}
+
+/**
  * ofo_entry_set_notes:
  */
 void
 ofo_entry_set_notes( ofoEntry *entry, const gchar *notes )
 {
 	ofo_base_setter( ENTRY, entry, string, ENT_NOTES, notes );
-}
-
-/**
- * ofo_entry_set_client:
- */
-void
-ofo_entry_set_client( ofoEntry *entry, const gchar *client )
-{
-	ofo_base_setter( ENTRY, entry, string, ENT_CLIENT, client );
 }
 
 /*
@@ -2169,7 +2169,7 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	gchar *sdeff, *sdope, *sdebit, *scredit, *stamp_str, *notes;
 	gboolean ok;
 	GTimeVal stamp;
-	const gchar *model, *cur_code, *userid, *rule, *status, *client;
+	const gchar *model, *cur_code, *userid, *rule, *status, *tiers;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
 	ofxCounter ope_number;
@@ -2199,7 +2199,7 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 			"	(ENT_DEFFECT,ENT_NUMBER,ENT_DOPE,ENT_LABEL,ENT_REF,ENT_ACCOUNT,"
 			"	ENT_CURRENCY,ENT_LEDGER,ENT_OPE_TEMPLATE,"
 			"	ENT_DEBIT,ENT_CREDIT,ENT_STATUS,ENT_OPE_NUMBER,ENT_RULE,"
-			"	ENT_CLIENT,"
+			"	ENT_TIERS,"
 			"	ENT_NOTES,ENT_UPD_USER, ENT_UPD_STAMP) "
 			"	VALUES ('%s',%ld,'%s','%s',",
 			sdeff,
@@ -2249,9 +2249,9 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	g_return_val_if_fail( my_strlen( rule ) == 1, FALSE );
 	g_string_append_printf( query, "'%s',", rule );
 
-	client = ofo_entry_get_client( entry );
-	if( my_strlen( client )){
-		g_string_append_printf( query, "'%s',", client );
+	tiers = ofo_entry_get_tiers( entry );
+	if( my_strlen( tiers )){
+		g_string_append_printf( query, "'%s',", tiers );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
@@ -2424,7 +2424,7 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 	gchar *stamp_str, *label, *ref;
 	GTimeVal stamp;
 	gboolean ok;
-	const gchar *model, *cstr, *userid, *rule, *client;
+	const gchar *model, *cstr, *userid, *rule, *tiers;
 	const gchar *cur_code;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
@@ -2480,11 +2480,11 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 	g_return_val_if_fail( my_strlen( rule ) == 1, FALSE );
 	g_string_append_printf( query, "ENT_RULE='%s',", rule );
 
-	client = ofo_entry_get_client( entry );
-	if( my_strlen( client )){
-		g_string_append_printf( query, "ENT_CLIENT='%s',", client );
+	tiers = ofo_entry_get_tiers( entry );
+	if( my_strlen( tiers )){
+		g_string_append_printf( query, "ENT_TIERS='%s',", tiers );
 	} else {
-		query = g_string_append( query, "ENT_CLIENT=NULL," );
+		query = g_string_append( query, "ENT_TIERS=NULL," );
 	}
 
 	notes = my_utils_quote_sql( ofo_entry_get_notes( entry ));
@@ -3003,10 +3003,10 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 	gulong count;
 	ofoEntry *entry;
 	GString *str;
-	gchar *sdope, *sdeffect, *sdebit, *scredit, *sletid, *sletdate, *sref, *sclient;
+	gchar *sdope, *sdeffect, *sdebit, *scredit, *sletid, *sletdate, *sref, *stiers;
 	gchar *sopemne, *sopelib, *sopenum, *sdregl, *smodregl;
 	ofoConcil *concil;
-	const gchar *led_id, *acc_id, *cur_code, *cref, *cope, *client;
+	const gchar *led_id, *acc_id, *cur_code, *cref, *cope, *tiers;
 	ofoAccount *account;
 	ofoLedger *ledger;
 	ofoCurrency *currency;
@@ -3131,8 +3131,8 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		}
 		smodregl = g_strdup( cref ? cref : "" );
 
-		client = ofo_entry_get_client( entry );
-		sclient = g_strdup( client ? client : "" );
+		tiers = ofo_entry_get_tiers( entry );
+		stiers = g_strdup( tiers ? tiers : "" );
 
 		status = ofo_entry_get_status( entry );
 		rule = ofo_entry_get_rule( entry );
@@ -3160,7 +3160,7 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		g_string_append_printf( str, "%c%s", field_sep, sdregl );
 		g_string_append_printf( str, "%c%s", field_sep, smodregl );
 		g_string_append_printf( str, "%c%s", field_sep, sopemne );
-		g_string_append_printf( str, "%c%s", field_sep, sclient );
+		g_string_append_printf( str, "%c%s", field_sep, stiers );
 		/* other columns from the system */
 		g_string_append_printf( str, "%c%s", field_sep, sopelib );
 		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_status_get_dbms( status ));
@@ -3180,7 +3180,7 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		g_free( sopemne );
 		g_free( sopelib );
 		g_free( sopenum );
-		g_free( sclient );
+		g_free( stiers );
 
 		if( !ok ){
 			return( FALSE );
@@ -3658,11 +3658,11 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				ofo_entry_set_notes( entry, cstr );
 			}
 
-			/* client */
+			/* tiers */
 			itf = itf ? itf->next : NULL;
 			cstr = itf ? ( const gchar * ) itf->data : NULL;
 			if( my_strlen( cstr )){
-				ofo_entry_set_client( entry, cstr );
+				ofo_entry_set_tiers( entry, cstr );
 			}
 		}
 

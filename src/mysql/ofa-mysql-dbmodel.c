@@ -2383,7 +2383,7 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 			"ALTER TABLE OFA_T_ENTRIES "
 			"	CHANGE COLUMN ENT_STATUS    ENT_STATUS_I INTEGER,"
 			"	ADD    COLUMN ENT_STATUS    CHAR(1)      NOT NULL                   COMMENT 'Entry status',"
-			"	ADD    COLUMN ENT_CLIENT    VARCHAR(64)                             COMMENT 'Entry client'" )){
+			"	ADD    COLUMN ENT_TIERS     VARCHAR(64)                             COMMENT 'Tiers identifier'" )){
 		return( FALSE );
 	}
 
@@ -2427,9 +2427,9 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES "
 			"	ADD    COLUMN OTE_REF_MANDATORY      CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether piece reference is mandatory',"
-			"	ADD    COLUMN OTE_HAVE_CLIENT        CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays a client',"
-			"	ADD    COLUMN OTE_CLIENT             VARCHAR(256)                   COMMENT 'Client',"
-			"	ADD    COLUMN OTE_CLIENT_LOCKED      CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the client is locked',"
+			"	ADD    COLUMN OTE_HAVE_TIERS         CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays a tiers',"
+			"	ADD    COLUMN OTE_TIERS              VARCHAR(256)                   COMMENT 'Tiers',"
+			"	ADD    COLUMN OTE_TIERS_LOCKED       CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the tiers is locked',"
 			"	ADD    COLUMN OTE_HAVE_QPPRO         CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays prof. share',"
 			"	ADD    COLUMN OTE_QPPRO              VARCHAR(256)                   COMMENT 'Professional share',"
 			"	ADD    COLUMN OTE_QPPRO_LOCKED       CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the prof. share is locked'" )){

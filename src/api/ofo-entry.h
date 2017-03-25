@@ -168,10 +168,10 @@ ofxCounter      ofo_entry_get_ope_number             ( const ofoEntry *entry );
 ofxCounter      ofo_entry_get_settlement_number      ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_settlement_user        ( const ofoEntry *entry );
 const GTimeVal *ofo_entry_get_settlement_stamp       ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_tiers                  ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_notes                  ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_upd_user               ( const ofoEntry *entry );
 const GTimeVal *ofo_entry_get_upd_stamp              ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_client                 ( const ofoEntry *entry );
 
 gint            ofo_entry_get_exe_changed_count      ( ofaIGetter *getter,
 															const GDate *prev_begin, const GDate *prev_end,
@@ -199,8 +199,8 @@ void            ofo_entry_set_credit                 ( ofoEntry *entry, ofxAmoun
 void            ofo_entry_set_ope_number             ( ofoEntry *entry, ofxCounter counter );
 void            ofo_entry_set_settlement_number      ( ofoEntry *entry, ofxCounter counter );
 void            ofo_entry_set_rule                   ( ofoEntry *entry, ofeEntryRule rule );
+void            ofo_entry_set_tiers                  ( ofoEntry *entry, const gchar *tiers );
 void            ofo_entry_set_notes                  ( ofoEntry *entry, const gchar *notes );
-void            ofo_entry_set_client                 ( ofoEntry *entry, const gchar *client );
 
 gboolean        ofo_entry_is_valid_data              ( ofaIGetter *getter,
 															const GDate *deffect, const GDate *dope,

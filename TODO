@@ -375,9 +375,11 @@
 
 1416 2017- 3-24 dossier administrative credentials: does not remember the account
 
-1417 2017- 3-24 ope_template: have a client id field depending of the template
+1417 2017- 3-24 ope_template: have a tiers id field depending of the template
+     2017- 3-25 dbms is updated
 
 1418 2017- 3-24 ope template has a prof. share (quote-part pro)
+     2017- 3-25 dbms is updated
 
 1419 2017- 3-24 account book summary: sort by dope or deffect
 
