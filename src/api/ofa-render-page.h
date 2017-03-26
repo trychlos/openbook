@@ -131,17 +131,13 @@ typedef struct {
 }
 	ofaRenderPageClass;
 
-GType      ofa_render_page_get_type          ( void ) G_GNUC_CONST;
+GType      ofa_render_page_get_type        ( void ) G_GNUC_CONST;
 
-void       ofa_render_page_clear_drawing_area( ofaRenderPage *page );
-
-void       ofa_render_page_set_args_changed  ( ofaRenderPage *page,
+void       ofa_render_page_set_args_changed( ofaRenderPage *page,
 												gboolean is_valid,
 												const gchar *message );
 
-void       ofa_render_page_free_dataset      ( ofaRenderPage *page );
-
-GtkWidget *ofa_render_page_get_top_paned     ( ofaRenderPage *page );
+GtkWidget *ofa_render_page_get_top_paned   ( ofaRenderPage *page );
 
 G_END_DECLS
 

@@ -27,6 +27,7 @@
    - Display unsettled entries on settleable accounts (todo #1381).
    - Display unreconciliated entries on reconciliable accounts (todo #783).
    - Export the FEC file (LPF - Article A47 A-1).
+   - Printings: allow the user to re-render as often as he wishes (todo #1384).
    - Reconciliation page auto-updates when an external identifier changes (todo #1407).
 
  Bug fixes:
