@@ -134,8 +134,8 @@ typedef struct {
 GType      ofa_render_page_get_type        ( void ) G_GNUC_CONST;
 
 void       ofa_render_page_set_args_changed( ofaRenderPage *page,
-												gboolean is_valid,
-												const gchar *message );
+													gboolean is_valid,
+													const gchar *message );
 
 GtkWidget *ofa_render_page_get_top_paned   ( ofaRenderPage *page );
 

@@ -626,6 +626,8 @@ static void
 on_print_clicked( GtkButton *button, ofaRenderPage *page )
 {
 	ofaRenderPagePrivate *priv;
+	gchar *str;
+	guint pages_count;
 
 	priv = ofa_render_page_get_instance_private( page );
 
@@ -636,6 +638,16 @@ on_print_clicked( GtkButton *button, ofaRenderPage *page )
 	progress_begin( page );
 	ofa_iprintable_print( OFA_IPRINTABLE( page ));
 	progress_end( page );
+
+	pages_count = g_list_length( priv->pdf_crs );
+
+	if( pages_count == 1 ){
+		str = g_strdup_printf( _( "%d printed page." ), pages_count );
+	} else {
+		str = g_strdup_printf( _( "%d printed pages." ), pages_count );
+	}
+
+	set_message( page, str, MSG_INFO );
 }
 
 /*
