@@ -594,7 +594,7 @@ typedef struct {
 	 * @instance: the #ofaIRenderable instance.
 	 * @page_num: the page number, counted from zero.
 	 * @line_num: the line number in this @page_num, counted from zero.
-	 * @current: the element to be printed on this line.
+	 * @line: the element to be printed on this line.
 	 *
 	 * If implemented, this method must draw the @current line on the
 	 * current context.
@@ -606,47 +606,7 @@ typedef struct {
 	void          ( *draw_line )                ( ofaIRenderable *instance,
 														guint page_num,
 														guint line_num,
-														GList *current );
-
-#if 0
-	/**
-	 * want_groups:
-	 * @instance: the #ofaIRenderable instance.
-	 *
-	 * Returns: %TRUE if the implementation manages groups
-	 *
-	 * Defaults to %FALSE.
-	 */
-	gboolean           ( *want_groups )              ( const ofaIRenderable *instance );
-
-	/**
-	 * want_new_page:
-	 * @instance: the #ofaIRenderable instance.
-	 *
-	 * Returns: If implemented, this method should return %TRUE if the
-	 * implementation wishes to begin a new page on new groups.
-	 *
-	 * This is only called if #want_groups() has returned %TRUE.
-	 *
-	 * Defaults to %FALSE (on the same page while there is enough place).
-	 */
-	gboolean           ( *want_new_page )            ( const ofaIRenderable *instance );
-
-	/**
-	 * want_line_separation:
-	 * @instance: the #ofaIRenderable instance.
-	 *
-	 * Returns: If implemented, this method should return %TRUE if the
-	 * implementation wishes to separate groups on the same page by a line
-	 * separation/.
-	 *
-	 * This is only called if #want_groups() has returned %TRUE and
-	 * #want_new_page() has returned %FALSE.
-	 *
-	 * Defaults to %TRUE (groups are line-separated).
-	 */
-	gboolean           ( *want_line_separation )     ( const ofaIRenderable *instance );
-#endif
+														GList *line );
 
 	/**
 	 * draw_bottom_report:
@@ -674,6 +634,8 @@ typedef struct {
 	/**
 	 * draw_group_footer:
 	 * @instance: the #ofaIRenderable instance.
+	 * @page_num: the current page number, counted from zero.
+	 * @line: the line just rendered.
 	 *
 	 * If implemented, this method must draw the footer summary for
 	 * the current group.
@@ -684,7 +646,9 @@ typedef struct {
 	 * The application must take care itself of updating the 'last_y'
 	 * ordonate according to the vertical space it has used.
 	 */
-	void          ( *draw_group_footer )        ( ofaIRenderable *instance );
+	void          ( *draw_group_footer )        ( ofaIRenderable *instance,
+														guint page_num,
+														GList *line );
 
 	/**
 	 * draw_last_summary:

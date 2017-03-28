@@ -33,6 +33,20 @@
  * The class which manages the rendering (preview/print) of books.
  * Arguments are entered via the #ofaAccountBookArgs composite widget.
  *
+ * Accounts Book Summary list the entries for the requested account(s)
+ * before the requested effect date(s), and displays the balance of
+ * these entries by account, and for the total.
+ *
+ * All entries (but the deleted ones) are taken into account given the
+ * specified effect dates.
+ *
+ * Have a balance of entries by account: always.
+ * Have a general balance of entries by currency: always.
+ *
+ * Have a new page by account: on option.
+ * Have a new page by class: on option.
+ * Have a balance of entries by class (and by currency): on option.
+ *
  * ofaIRenderable group management:
  * - by account: header+footer
  * - by class: header+footer (if requested to)

@@ -27,6 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "my/my-date.h"
 #include "my/my-utils.h"
@@ -51,13 +52,20 @@ typedef struct {
 	/* runtime
 	 */
 	myISettings           *settings;
-	gboolean               new_page;
+	gboolean               class_subtotal;
+	gboolean               account_break;
+	gboolean               class_break;
+	guint                  sort_ind;
 
 	/* UI
 	 */
 	ofaAccountFilterVVBin *account_filter;
 	ofaDateFilterHVBin    *date_filter;
-	GtkWidget             *new_page_btn;
+	GtkWidget             *account_break_btn;
+	GtkWidget             *class_break_btn;
+	GtkWidget             *class_total_btn;
+	GtkWidget             *sort_dope_btn;
+	GtkWidget             *sort_deffect_btn;
 }
 	ofaAccountBookArgsPrivate;
 
@@ -78,8 +86,12 @@ static void setup_account_selection( ofaAccountBookArgs *self );
 static void setup_date_selection( ofaAccountBookArgs *self );
 static void setup_others( ofaAccountBookArgs *self );
 static void on_account_filter_changed( ofaIAccountFilter *filter, ofaAccountBookArgs *self );
-static void on_new_page_toggled( GtkToggleButton *button, ofaAccountBookArgs *self );
 static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountBookArgs *self );
+static void on_class_subtotal_toggled( GtkToggleButton *button, ofaAccountBookArgs *self );
+static void on_account_break_toggled( GtkToggleButton *button, ofaAccountBookArgs *self );
+static void on_class_break_toggled( GtkToggleButton *button, ofaAccountBookArgs *self );
+static void on_sort_dope_toggled( GtkToggleButton *button, ofaAccountBookArgs *self );
+static void on_sort_deffect_toggled( GtkToggleButton *button, ofaAccountBookArgs *self );
 static void read_settings( ofaAccountBookArgs *self );
 static void write_settings( ofaAccountBookArgs *self );
 
@@ -288,15 +300,34 @@ static void
 setup_others( ofaAccountBookArgs *self )
 {
 	ofaAccountBookArgsPrivate *priv;
-	GtkWidget *toggle;
+	GtkWidget *toggle, *btn;
 
 	priv = ofa_account_book_args_get_instance_private( self );
 
-	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-one-page" );
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-class-total" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	priv->new_page_btn = toggle;
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_class_subtotal_toggled ), self );
+	priv->class_total_btn = toggle;
 
-	g_signal_connect( toggle, "toggled", G_CALLBACK( on_new_page_toggled ), self );
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-account-break" );
+	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_account_break_toggled ), self );
+	priv->account_break_btn = toggle;
+
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-class-break" );
+	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_class_break_toggled ), self );
+	priv->class_break_btn = toggle;
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-sort-dope" );
+	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_sort_dope_toggled ), self );
+	priv->sort_dope_btn = btn;
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-sort-deffect" );
+	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_sort_deffect_toggled ), self );
+	priv->sort_deffect_btn = btn;
 }
 
 static void
@@ -306,26 +337,76 @@ on_account_filter_changed( ofaIAccountFilter *filter, ofaAccountBookArgs *self )
 }
 
 static void
-on_new_page_toggled( GtkToggleButton *button, ofaAccountBookArgs *self )
-{
-	ofaAccountBookArgsPrivate *priv;
-
-	priv = ofa_account_book_args_get_instance_private( self );
-
-	priv->new_page = gtk_toggle_button_get_active( button );
-
-	g_signal_emit_by_name( self, "ofa-changed" );
-}
-
-static void
 on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaAccountBookArgs *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
+static void
+on_class_subtotal_toggled( GtkToggleButton *button, ofaAccountBookArgs *self )
+{
+	ofaAccountBookArgsPrivate *priv;
+
+	priv = ofa_account_book_args_get_instance_private( self );
+
+	priv->class_subtotal = gtk_toggle_button_get_active( button );
+
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+static void
+on_account_break_toggled( GtkToggleButton *button, ofaAccountBookArgs *self )
+{
+	ofaAccountBookArgsPrivate *priv;
+
+	priv = ofa_account_book_args_get_instance_private( self );
+
+	priv->account_break = gtk_toggle_button_get_active( button );
+
+	gtk_widget_set_sensitive( priv->class_break_btn, !priv->account_break );
+
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+static void
+on_class_break_toggled( GtkToggleButton *button, ofaAccountBookArgs *self )
+{
+	ofaAccountBookArgsPrivate *priv;
+
+	priv = ofa_account_book_args_get_instance_private( self );
+
+	priv->class_break = gtk_toggle_button_get_active( button );
+
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+static void
+on_sort_dope_toggled( GtkToggleButton *button, ofaAccountBookArgs *self )
+{
+	ofaAccountBookArgsPrivate *priv;
+
+	priv = ofa_account_book_args_get_instance_private( self );
+
+	priv->sort_ind = gtk_toggle_button_get_active( button ) ? ARG_SORT_DOPE : ARG_SORT_NONE;
+
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+static void
+on_sort_deffect_toggled( GtkToggleButton *button, ofaAccountBookArgs *self )
+{
+	ofaAccountBookArgsPrivate *priv;
+
+	priv = ofa_account_book_args_get_instance_private( self );
+
+	priv->sort_ind = gtk_toggle_button_get_active( button ) ? ARG_SORT_DEFFECT : ARG_SORT_NONE;
+
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
 /**
  * ofa_account_book_args_is_valid:
- * @bin:
+ * @bin: this #ofaAccountBookArgs widget.
  * @message: [out][allow-none]: the error message if any.
  *
  * Returns: %TRUE if the composite widget content is valid.
@@ -356,6 +437,9 @@ ofa_account_book_args_is_valid( ofaAccountBookArgs *bin, gchar **message )
 
 /**
  * ofa_account_book_args_get_account_filter:
+ * @bin: this #ofaAccountBookArgs widget.
+ *
+ * Returns: the #ofaIAccountFilter widget.
  */
 ofaIAccountFilter *
 ofa_account_book_args_get_account_filter( ofaAccountBookArgs *bin )
@@ -375,26 +459,10 @@ ofa_account_book_args_get_account_filter( ofaAccountBookArgs *bin )
 }
 
 /**
- * ofa_account_book_args_get_new_page_per_account:
- */
-gboolean
-ofa_account_book_args_get_new_page_per_account( ofaAccountBookArgs *bin )
-{
-	ofaAccountBookArgsPrivate *priv;
-	gboolean new_page;
-
-	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_ARGS( bin ), FALSE );
-
-	priv = ofa_account_book_args_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	new_page = priv->new_page;
-return( new_page );
-}
-
-/**
  * ofa_account_book_args_get_date_filter:
+ * @bin: this #ofaAccountBookArgs widget.
+ *
+ * Returns: the #ofaIDateFilter widget.
  */
 ofaIDateFilter *
 ofa_account_book_args_get_date_filter( ofaAccountBookArgs *bin )
@@ -413,9 +481,92 @@ ofa_account_book_args_get_date_filter( ofaAccountBookArgs *bin )
 	return( date_filter );
 }
 
+/**
+ * ofa_account_book_args_get_new_page_per_account:
+ * @bin: this #ofaAccountBookArgs widget.
+ *
+ * Returns: whether we want a page break on new account.
+ */
+gboolean
+ofa_account_book_args_get_new_page_per_account( ofaAccountBookArgs *bin )
+{
+	ofaAccountBookArgsPrivate *priv;
+	gboolean account_break;
+
+	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_ARGS( bin ), FALSE );
+
+	priv = ofa_account_book_args_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	account_break = priv->account_break;
+
+	return( account_break );
+}
+
+/**
+ * ofa_account_book_args_get_new_page_per_class:
+ * @bin: this #ofaAccountBookArgs widget.
+ *
+ * Returns: whether we want a page break on new class.
+ */
+gboolean
+ofa_account_book_args_get_new_page_per_class( ofaAccountBookArgs *bin )
+{
+	ofaAccountBookArgsPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_ARGS( bin ), FALSE );
+
+	priv = ofa_account_book_args_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->class_break );
+}
+
+/**
+ * ofa_account_book_args_get_subtotal_per_class:
+ * @bin: this #ofaAccountBookArgs widget.
+ *
+ * Returns: whether we want a subtotal by class (and by currency).
+ */
+gboolean
+ofa_account_book_args_get_subtotal_per_class( ofaAccountBookArgs *bin )
+{
+	ofaAccountBookArgsPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_ARGS( bin ), FALSE );
+
+	priv = ofa_account_book_args_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->class_subtotal );
+}
+
+/**
+ * ofa_account_book_args_get_sort_ind:
+ * @bin: this #ofaAccountBookArgs widget.
+ *
+ * Returns: the sort indicator.
+ */
+guint
+ofa_account_book_args_get_sort_ind( ofaAccountBookArgs *bin )
+{
+	ofaAccountBookArgsPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_BOOK_ARGS( bin ), 0 );
+
+	priv = ofa_account_book_args_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+
+	return( priv->sort_ind );
+}
+
 /*
  * setttings:
- * account_from;account_to;all_accounts;effect_from;effect_to;new_page_per_account;
+ * account_from;account_to;all_accounts;effect_from;effect_to;new_page_per_account;sort;class_break;class_subtotal;
  */
 static void
 read_settings( ofaAccountBookArgs *self )
@@ -425,6 +576,7 @@ read_settings( ofaAccountBookArgs *self )
 	const gchar *cstr;
 	GDate date;
 	gchar *key;
+	guint isort;
 
 	priv = ofa_account_book_args_get_instance_private( self );
 
@@ -472,8 +624,41 @@ read_settings( ofaAccountBookArgs *self )
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active(
-				GTK_TOGGLE_BUTTON( priv->new_page_btn ), my_utils_boolean_from_str( cstr ));
-		on_new_page_toggled( GTK_TOGGLE_BUTTON( priv->new_page_btn ), self );
+				GTK_TOGGLE_BUTTON( priv->account_break_btn ), my_utils_boolean_from_str( cstr ));
+		on_account_break_toggled( GTK_TOGGLE_BUTTON( priv->account_break_btn ), self );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->sort_deffect_btn ), FALSE );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->sort_dope_btn ), TRUE );
+	on_sort_dope_toggled( GTK_TOGGLE_BUTTON( priv->account_break_btn ), self );
+	if( my_strlen( cstr )){
+		isort = atoi( cstr );
+		switch( isort ){
+			case ARG_SORT_DOPE:
+				gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->sort_dope_btn ), TRUE );
+				break;
+			case ARG_SORT_DEFFECT:
+				gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->sort_deffect_btn ), TRUE );
+				break;
+		}
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active(
+				GTK_TOGGLE_BUTTON( priv->class_break_btn ), my_utils_boolean_from_str( cstr ));
+		on_class_break_toggled( GTK_TOGGLE_BUTTON( priv->class_break_btn ), self );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active(
+				GTK_TOGGLE_BUTTON( priv->class_total_btn ), my_utils_boolean_from_str( cstr ));
+		on_class_subtotal_toggled( GTK_TOGGLE_BUTTON( priv->class_total_btn ), self );
 	}
 
 	my_isettings_free_string_list( priv->settings, strlist );
@@ -504,13 +689,16 @@ write_settings( ofaAccountBookArgs *self )
 			ofa_idate_filter_get_date(
 					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO ), MY_DATE_SQL );
 
-	str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;",
+	str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;%u;%s;%s;",
 			from_account ? from_account : "",
 			to_account ? to_account : "",
 			all_accounts ? "True":"False",
 			my_strlen( sdfrom ) ? sdfrom : "",
 			my_strlen( sdto ) ? sdto : "",
-			priv->new_page ? "True":"False" );
+			priv->account_break ? "True":"False",
+			priv->sort_ind,
+			priv->class_break ? "True":"False",
+			priv->class_subtotal ? "True":"False" );
 
 	key = g_strdup_printf( "%s-args", priv->settings_prefix );
 	my_isettings_set_string( priv->settings, HUB_USER_SETTINGS_GROUP, key, str );

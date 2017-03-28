@@ -23,11 +23,14 @@
 
    Core DB Model v37
 
+   - AccountsBookSummary: have balance and page break by class (todo #1390). 
+   - AccountsBookSummary: sort by operation date or effect date (todo #1419). 
    - Balance check: distinguish between rough, validated and future balances (todo #1392).
    - Display unsettled entries on settleable accounts (todo #1381).
    - Display unreconciliated entries on reconciliable accounts (todo #783).
    - Export the FEC file (LPF - Article A47 A-1).
    - Printings: allow the user to re-render as often as he wishes (todo #1384).
+   - Printings: have a progress bar when printing (todo #1404).
    - Reconciliation page auto-updates when an external identifier changes (todo #1407).
 
  Bug fixes:

@@ -87,6 +87,18 @@ typedef struct {
 }
 	ofaAccountBookArgsClass;
 
+/*
+ * Sort by operation date or effect date.
+ *
+ * Note that this same value is written in the user settings:
+ * do not motify it.
+ */
+enum {
+	ARG_SORT_NONE = 0,
+	ARG_SORT_DOPE,
+	ARG_SORT_DEFFECT
+};
+
 GType              ofa_account_book_args_get_type                ( void ) G_GNUC_CONST;
 
 ofaAccountBookArgs *ofa_account_book_args_new                     ( ofaIGetter *getter,
@@ -97,9 +109,15 @@ gboolean           ofa_account_book_args_is_valid                ( ofaAccountBoo
 
 ofaIAccountFilter *ofa_account_book_args_get_account_filter      ( ofaAccountBookArgs *bin );
 
+ofaIDateFilter    *ofa_account_book_args_get_date_filter         ( ofaAccountBookArgs *bin );
+
 gboolean           ofa_account_book_args_get_new_page_per_account( ofaAccountBookArgs *bin );
 
-ofaIDateFilter    *ofa_account_book_args_get_date_filter         ( ofaAccountBookArgs *bin );
+gboolean           ofa_account_book_args_get_new_page_per_class  ( ofaAccountBookArgs *bin );
+
+gboolean           ofa_account_book_args_get_subtotal_per_class  ( ofaAccountBookArgs *bin );
+
+guint              ofa_account_book_args_get_sort_ind            ( ofaAccountBookArgs *bin );
 
 G_END_DECLS
 

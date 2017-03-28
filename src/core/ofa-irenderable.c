@@ -152,8 +152,8 @@ static gdouble       draw_group_separation( ofaIRenderable *instance, sIRenderab
 static gdouble       get_group_header_height( ofaIRenderable *instance, guint page_num, GList *line, sIRenderable *sdata );
 static void          irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
 static gdouble       get_bottom_report_height( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
-static void          irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, guint line_num, sIRenderable *sdata );
-static gdouble       get_group_footer_height( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
+static void          irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, guint line_num, GList *line, sIRenderable *sdata );
+static gdouble       get_group_footer_height( ofaIRenderable *instance, guint page_num, GList *line, sIRenderable *sdata );
 static void          irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
 static void          irenderable_draw_page_footer( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
 static gdouble       get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata );
@@ -626,7 +626,7 @@ draw_line( ofaIRenderable *instance,
 	if( sdata->have_groups ){
 		new_group = irenderable_is_new_group( instance, line, next, &next_sep, sdata );
 		if( new_group ){
-			req_height += get_group_footer_height( instance, page_num, sdata );
+			req_height += get_group_footer_height( instance, page_num, line, sdata );
 			draw_group_footer = TRUE;
 		}
 	}
@@ -684,7 +684,7 @@ draw_line( ofaIRenderable *instance,
 		if( 0 ){
 			g_debug( "%s: draw group footer for page_num=%u, line_num=%u", thisfn, page_num, line_num );
 		}
-		irenderable_draw_group_footer( instance, page_num, line_num, sdata );
+		irenderable_draw_group_footer( instance, page_num, line_num, line, sdata );
 
 	} else if( sdata->last_y + bottom_report_height + line_height > sdata->max_y ){
 		irenderable_draw_bottom_report( instance, page_num, sdata );
@@ -992,7 +992,7 @@ get_bottom_report_height( ofaIRenderable *instance, guint page_num, sIRenderable
 }
 
 static void
-irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, guint line_num, sIRenderable *sdata )
+irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, guint line_num, GList *line, sIRenderable *sdata )
 {
 	gdouble r, g, b;
 
@@ -1002,7 +1002,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, guint l
 		ofa_irenderable_set_color( instance, r, g, b );
 		ofa_irenderable_set_font( instance, ofa_irenderable_get_group_font( instance, page_num ));
 
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_footer( instance );
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_footer( instance, page_num, line );
 	}
 }
 
@@ -1012,7 +1012,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, guint l
  * the data
  */
 static gdouble
-get_group_footer_height( ofaIRenderable *instance, guint page_num, sIRenderable *sdata )
+get_group_footer_height( ofaIRenderable *instance, guint page_num, GList *line, sIRenderable *sdata )
 {
 	gboolean prev_paginating;
 	gdouble height, prev_y;
@@ -1027,7 +1027,7 @@ get_group_footer_height( ofaIRenderable *instance, guint page_num, sIRenderable 
 	prev_paginating = sdata->paginating;
 	sdata->paginating = TRUE;
 
-	irenderable_draw_group_footer( instance, page_num, 0, sdata );
+	irenderable_draw_group_footer( instance, page_num, 0, line, sdata );
 
 	height = sdata->last_y - prev_y;
 	sdata->last_y = prev_y;

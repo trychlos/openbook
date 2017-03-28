@@ -152,7 +152,7 @@ static void               irenderable_draw_header_column_names( ofaIRenderable *
 static void               irenderable_draw_top_summary( ofaIRenderable *instance, guint page_num );
 static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *line, ofeIRenderableBreak *sep );
 static void               irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line );
-static void               irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *current );
+static void               irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line );
 static void               draw_line_entry( ofaIRenderable *instance, ofoEntry *entry );
 static void               draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline );
 static void               irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num );
@@ -646,13 +646,13 @@ irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *
 }
 
 static void
-irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *current )
+irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line )
 {
-	if( OFO_IS_ENTRY( current->data )){
-		draw_line_entry( instance, OFO_ENTRY( current->data ));
+	if( OFO_IS_ENTRY( line->data )){
+		draw_line_entry( instance, OFO_ENTRY( line->data ));
 
-	} else if( OFO_IS_BAT_LINE( current->data )){
-		draw_line_bat( instance, OFO_BAT_LINE( current->data ));
+	} else if( OFO_IS_BAT_LINE( line->data )){
+		draw_line_bat( instance, OFO_BAT_LINE( line->data ));
 	}
 }
 
