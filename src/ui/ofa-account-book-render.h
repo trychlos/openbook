@@ -32,6 +32,17 @@
  *
  * The class which manages the rendering (preview/print) of books.
  * Arguments are entered via the #ofaAccountBookArgs composite widget.
+ *
+ * ofaIRenderable group management:
+ * - by account: header+footer
+ * - by class: header+footer (if requested to)
+ *
+ * ofaIRenderable page report management:
+ * - top/bottom report: current solde of the account
+ * - top/bottom report: current solde of the class (if requested to)
+ *
+ * ofaIRenderable last summary:
+ * - general balance
  */
 
 #include "api/ofa-render-page.h"

@@ -396,6 +396,11 @@ render_page_clear_drawing_area( ofaRenderPage *page )
 	cr = create_context( page, priv->render_width, priv->render_height );
 	draw_widget_background( cr, priv->drawing_area );
 	cairo_destroy( cr );
+
+	/* let Gtk update the display */
+	while( gtk_events_pending()){
+		gtk_main_iteration();
+	}
 }
 
 static GList *
@@ -559,9 +564,9 @@ on_render_clicked( GtkButton *button, ofaRenderPage *page )
 	priv = ofa_render_page_get_instance_private( page );
 
 	/* clear all datas as well as drawing area */
+	render_page_clear_drawing_area( page );
 	render_page_free_pages( &priv->pdf_crs );
 	render_page_free_dataset( page );
-	render_page_clear_drawing_area( page );
 
 	/* render pages */
 	render_pdf_pages( page );

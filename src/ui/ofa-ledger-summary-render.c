@@ -90,6 +90,7 @@ typedef struct {
 #define THIS_PAGE_ORIENTATION            GTK_PAGE_ORIENTATION_LANDSCAPE
 #define THIS_PAPER_NAME                  GTK_PAPER_NAME_A4
 
+#if 0
 static const gchar *st_page_header_title = N_( "General Ledgers Summary" );
 
 /* these are parms which describe the page layout
@@ -123,6 +124,8 @@ static void               irenderable_draw_line( ofaIRenderable *instance, GList
 static void               irenderable_draw_bottom_summary( ofaIRenderable *instance );
 static void               read_settings( ofaLedgerSummaryRender *self );
 static void               write_settings( ofaLedgerSummaryRender *self );
+#endif
+static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerSummaryRender, ofa_ledger_summary_render, OFA_TYPE_RENDER_PAGE, 0,
 		G_ADD_PRIVATE( ofaLedgerSummaryRender )
@@ -157,7 +160,7 @@ ledger_summary_render_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		write_settings( OFA_LEDGER_SUMMARY_RENDER( instance ));
+		//write_settings( OFA_LEDGER_SUMMARY_RENDER( instance ));
 
 		/* unref object members here */
 	}
@@ -192,6 +195,7 @@ ofa_ledger_summary_render_class_init( ofaLedgerSummaryRenderClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ledger_summary_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_summary_render_finalize;
 
+	/*
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
 	OFA_PANED_PAGE_CLASS( klass )->init_view = paned_page_v_init_view;
@@ -201,8 +205,18 @@ ofa_ledger_summary_render_class_init( ofaLedgerSummaryRenderClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->get_page_orientation = render_page_v_get_page_orientation;
 	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_v_get_print_settings;
 	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_v_get_dataset;
+	*/
 }
 
+static void
+irenderable_iface_init( ofaIRenderableInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ledger_summary_render_irenderable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
+#if 0
 static void
 paned_page_v_init_view( ofaPanedPage *page )
 {
@@ -685,3 +699,4 @@ write_settings( ofaLedgerSummaryRender *self )
 	g_free( key );
 	g_free( str );
 }
+#endif

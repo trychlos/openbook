@@ -35,6 +35,19 @@
  * We are trying to:
  * - get the solde of the account at the requested effect date
  * - get the most closest BAT file.
+ *
+ * ofaIRenderable group management:
+ * - group of entry lines: no header, no footer
+ * - group of bat lines: one title line, no footer
+ *
+ * ofaIRenderable page report management:
+ * - top/bottom report: current solde of the account
+ *
+ * ofaIRenderable last summary:
+ * - total of debits and credits of entry+bat lines
+ * - last solde of the account
+ * - somes notes
+ * - comparison with bat solde
  */
 
 #include "api/ofa-render-page.h"

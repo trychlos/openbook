@@ -38,30 +38,33 @@
 /* data associated to each implementor object
  */
 typedef struct {
-	/* constant data
-	 * they are set on begin rendering, from #begin_render() unless
-	 * otherwise specified, and use through all the rest of the code
+
+	/* begin_render() initialization
 	 */
 	gdouble      render_width;
 	gdouble      render_height;
-	gchar       *body_font;
-	gdouble      body_vspace_rate;
-	gdouble      page_header_columns_height;
-	gdouble      page_footer_height;
+	GList       *dataset;
+
+	/* begin_render() computings
+	 */
+	gdouble      header_columns_height;
+	gdouble      footer_height;
+	gdouble      group_sep_line_height;
 	gdouble      max_y;
-	gint         pages_count;
+	guint        pages_count;
+
+	/* data reset from each api entry point:
+	 * begin_render(), render_page() and end_render()
+	 * cf. create_temp_context()
+	 */
+	cairo_t     *in_context;			/* the provided cairo context with its associated pango layout */
+	PangoLayout *in_layout;
+	cairo_t     *temp_context;			/* a temp context and its layout to be used for pagination */
+	PangoLayout *temp_layout;
+
 	gboolean     want_groups;			/* whether the implementation manages groups */
 	gboolean     want_new_page;			/* whether if wants new page on new group */
 	gboolean     want_line_separation;	/* whether if wants groups to be line-separated */
-	GList       *dataset;
-
-	/* data reset from each entry point of the api:
-	 * #begin_render(), #render_page() and #end_render()
-	 */
-	cairo_t     *in_context;			/* the provided context with an associated layout */
-	PangoLayout *in_layout;
-	cairo_t     *temp_context;			/* new temp context and layout for pagination */
-	PangoLayout *temp_layout;
 
 	/* runtime data
 	 */
@@ -69,21 +72,27 @@ typedef struct {
 	cairo_t     *current_context;
 	PangoLayout *current_layout;
 	gdouble      last_y;
-	GList       *last_printed;			/* reset_runtime */
-
-	/* @group_footer_printed: is reset to %TRUE in #reset_runtime()
-	 *  so that we do not try to draw it if the implementation does
-	 *  not manage groups
-	 */
-	gboolean     group_footer_printed;	/* reset_runtime */
+	GList       *prev_rendered;
+	guint        count_rendered;
+	gboolean     have_groups;
 }
 	sIRenderable;
 
 #define IRENDERABLE_LAST_VERSION         1
 #define IRENDERABLE_DATA                 "ofa-irenderable-data"
 
+/* these are default values for rendering
+ * each of these is expected to be overridable by the implementation
+ *
+ * Usage                   Default font                    Default foreground color  Default background color
+ * ----------------------  ------------------------------  ------------------------  ------------------------
+ * Dossier identification  st_default_header_dossier_font  COLOR_HEADER_DOSSIER      (none)
+ * Title                   st_default_header_title_font    COLOR_HEADER_TITLE        (none)
+ * Columns header          st_default_header_columns_font  COLOR_HEADER_COLUMNS_FG   COLOR_HEADER_COLUMNS_BG
+ * Body                    st_default_body_font            COLOR_BLACK               (none)
+ */
 #define COLOR_BLACK                     0,      0,      0
-#define COLOR_DARK_CYAN                 0,      0.5,    0.5
+#define COLOR_DARK_CYAN                 0,      0.3765, 0.5
 #define COLOR_DARK_RED                  0.5,    0,      0
 #define COLOR_GRAY                      0.6,    0.6,    0.6			/* #999999 */
 #define COLOR_LIGHT_GRAY                0.9375, 0.9375, 0.9375		/* #f0f0f0 */
@@ -92,13 +101,9 @@ typedef struct {
 
 #define COLOR_HEADER_DOSSIER            COLOR_DARK_RED
 #define COLOR_HEADER_TITLE              COLOR_DARK_CYAN
-#define COLOR_HEADER_SUBTITLE           COLOR_DARK_CYAN
 #define COLOR_HEADER_NOTES              COLOR_BLACK
 #define COLOR_HEADER_COLUMNS_BG         COLOR_DARK_CYAN
 #define COLOR_HEADER_COLUMNS_FG         COLOR_WHITE
-#define COLOR_SUMMARY                   COLOR_DARK_CYAN
-#define COLOR_GROUP                     COLOR_DARK_CYAN
-#define COLOR_REPORT                    COLOR_DARK_CYAN
 #define COLOR_BODY                      COLOR_BLACK
 #define COLOR_FOOTER                    COLOR_GRAY
 #define COLOR_NO_DATA                   COLOR_MIDDLE_GRAY
@@ -106,7 +111,6 @@ typedef struct {
 static const gchar  *st_default_body_font                  = "Sans 6";
 static const gchar  *st_default_header_dossier_font        = "Sans Bold Italic 11";
 static const gchar  *st_default_header_title_font          = "Sans Bold 10";
-static const gchar  *st_default_header_subtitle_font       = "Sans Bold 8";
 static const gchar  *st_default_header_columns_font        = "Sans Bold 5";
 static const gchar  *st_default_summary_font               = "Sans Bold 7";
 static const gchar  *st_default_group_font                 = "Sans Bold 6";
@@ -115,6 +119,8 @@ static const gchar  *st_default_footer_font                = "Sans Italic 5";
 static const gchar  *st_default_no_data_font               = "Sans 18";
 
 static const gdouble st_page_margin                        = 2.0;
+static const gdouble st_body_vspace_rate                   = 0.25;
+static const gdouble st_column_hspacing                    = 4.0;
 
 /* signals defined here
  */
@@ -130,46 +136,34 @@ static guint st_initializations         =   0;	/* interface initialization count
 static GType         register_type( void );
 static void          interface_base_init( ofaIRenderableInterface *klass );
 static void          interface_base_finalize( ofaIRenderableInterface *klass );
-static gchar        *irenderable_get_body_font( ofaIRenderable *instance );
-static gdouble       irenderable_get_body_vspace_rate( ofaIRenderable *instance );
-static gboolean      irenderable_want_groups( const ofaIRenderable *instance );
-static gboolean      irenderable_want_new_page( const ofaIRenderable *instance );
-static gboolean      irenderable_want_line_separation( const ofaIRenderable *instance );
-static gboolean      draw_page( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static void          irenderable_draw_page_header( ofaIRenderable *instance, gint page_num );
-static void          draw_page_header_dossier( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static void          draw_page_header_title( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static void          draw_page_header_subtitle( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static void          draw_page_header_subtitle2( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static void          draw_page_header_notes( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static gdouble       draw_page_header_columns( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static gdouble       get_page_header_columns_height( ofaIRenderable *instance, sIRenderable *sdata );
-static void          draw_top_summary( ofaIRenderable *instance, sIRenderable *sdata );
-static void          draw_page_top_report( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static gboolean      draw_line( ofaIRenderable *instance, gint page_num, gint line_num, GList *line, GList *next, sIRenderable *sdata );
-static gboolean      is_new_group( const ofaIRenderable *instance, GList *current, GList *prev );
-static gboolean      irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev );
-static void          draw_group_header( ofaIRenderable *instance, gint line_num, GList *line, sIRenderable *sdata );
-static gdouble       get_group_header_height( ofaIRenderable *instance, gint line_num, GList *line, sIRenderable *sdata );
-static void          draw_group_top_report( ofaIRenderable *instance, sIRenderable *sdata );
-static void          draw_group_bottom_report( ofaIRenderable *instance, sIRenderable *sdata );
-static gdouble       get_group_bottom_report_height( ofaIRenderable *instance, sIRenderable *sdata );
-static void          draw_group_footer( ofaIRenderable *instance, gint line_num, sIRenderable *sdata );
-static gdouble       get_group_footer_height( ofaIRenderable *instance, sIRenderable *sdata );
-static void          draw_page_bottom_report( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static gdouble       get_page_bottom_report_height( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static void          draw_bottom_summary( ofaIRenderable *instance, sIRenderable *sdata );
-static gdouble       get_bottom_summary_height( ofaIRenderable *instance, sIRenderable *sdata );
-static void          draw_page_footer( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static void          irenderable_draw_page_footer( ofaIRenderable *instance, gint page_num );
+static void          create_temp_context( ofaIRenderable *instance, cairo_t *context, sIRenderable *sdata );
+static void          clear_runtime_data( ofaIRenderable *instance, sIRenderable *sdata );
+static gboolean      draw_page( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
+static gboolean      draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line, GList *next, sIRenderable *sdata );
+static void          irenderable_draw_page_header_dossier( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
+static void          irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
+static void          irenderable_draw_page_header_notes( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
+static void          irenderable_draw_page_header_columns( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
+static void          irenderable_draw_top_summary( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
+static void          irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *line, sIRenderable *sdata );
+static gboolean      irenderable_is_new_group( ofaIRenderable *instance, GList *line, GList *next, ofeIRenderableBreak *sep, sIRenderable *sdata );
+static void          irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line, sIRenderable *sdata );
+static gdouble       draw_group_separation( ofaIRenderable *instance, sIRenderable *sdata );
+static gdouble       get_group_header_height( ofaIRenderable *instance, guint page_num, GList *line, sIRenderable *sdata );
+static void          irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
+static gdouble       get_bottom_report_height( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
+static void          irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, guint line_num, sIRenderable *sdata );
+static gdouble       get_group_footer_height( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
+static void          irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num, sIRenderable *sdata );
+static void          irenderable_draw_page_footer( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
 static gdouble       get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata );
-static void          reset_runtime( ofaIRenderable *instance, sIRenderable *sdata );
-static sIRenderable *get_irenderable_data( ofaIRenderable *instance );
-static void          set_irenderable_input_context( ofaIRenderable *instance, cairo_t *context, sIRenderable *sdata );
-static void          on_instance_finalized( sIRenderable *sdata, void *instance );
-static void          free_irenderable_data( sIRenderable *sdata );
+static const gchar  *irenderable_get_footer_font( const ofaIRenderable *instance, sIRenderable *sdata );
+static void          irenderable_get_footer_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b, sIRenderable *sdata );
+static void          set_rgb( gdouble *r, gdouble *g, gdouble *b, gdouble sr, gdouble sg, gdouble sb );
 static void          set_font( PangoLayout *layout, const gchar *font_str, gdouble *size );
 static gdouble       set_text( PangoLayout *layout, cairo_t *context, gdouble x, gdouble y, const gchar *text, PangoAlignment align );
+static sIRenderable *get_instance_data( const ofaIRenderable *instance );
+static void          on_instance_finalized( sIRenderable *sdata, void *instance );
 
 /**
  * ofa_irenderable_get_type:
@@ -229,24 +223,26 @@ interface_base_init( ofaIRenderableInterface *klass )
 
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
-		klass->get_body_font = irenderable_get_body_font;
-		klass->get_body_vspace_rate = irenderable_get_body_vspace_rate;
-		klass->want_groups = irenderable_want_groups;
-		klass->want_new_page = irenderable_want_new_page;
-		klass->want_line_separation = irenderable_want_line_separation;
-		klass->draw_page_header = irenderable_draw_page_header;
-		klass->is_new_group = irenderable_is_new_group;
-		klass->draw_page_footer = irenderable_draw_page_footer;
+		//klass->get_body_font = ofa_irenderable_get_body_font;
+		//klass->get_body_vspace_rate = irenderable_get_body_vspace_rate;
+		//klass->want_groups = irenderable_want_groups;
+		//klass->want_new_page = irenderable_want_new_page;
+		//klass->want_line_separation = irenderable_want_line_separation;
+		//klass->draw_page_header = irenderable_draw_page_header;
+		//klass->is_new_group = irenderable_is_new_group;
+		//klass->draw_page_footer = irenderable_draw_page_footer;
 
 		/**
 		 * ofaIRenderable::ofa-render-page:
-		 * @page_num: counted from 1.
+		 * @page_num: page number, counted from 1.
 		 * @pages_count:
 		 *  while pagination, is equal to current @page_num;
 		 *  equal to total pages count during rendering.
 		 *
-		 * The signal is emitted each time a page is drawned, first when
-		 * paginating and then when randering.
+		 * The signal is emitted each time a page is about to drawned,
+		 * first when paginating, then when rendering.
+		 * If print is requested, then all pages are re-drawn another
+		 * time.
 		 *
 		 * Handler is of type:
 		 * 		void user_handler( ofaIRenderable *instance,
@@ -297,13 +293,14 @@ ofa_irenderable_get_interface_last_version( const ofaIRenderable *instance )
 
 /**
  * ofa_irenderable_begin_render:
- * @instance:
- * @cr:
- * @render_width:
- * @render_height:
+ * @instance: this #ofaIRenderable instance.
+ * @cr: the target cairo context.
+ * @render_width: the max renderable width in points.
+ * @render_height: the max renderable height in points.
+ *  the max renderable size is the page size, less the print margins.
  *
  * The first entry point of the interface.
- * This initialize all main variables, and paginates the render.
+ * This initialize all main variables, and paginates the rendering.
  * Must be called before any rendering.
  *
  * Returns: the pages count.
@@ -313,900 +310,94 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 {
 	static const gchar *thisfn = "ofa_irenderable_begin_render";
 	sIRenderable *sdata;
-	gint page_num;
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
 
-	sdata = get_irenderable_data( instance );
+	sdata = get_instance_data( instance );
 	sdata->render_width = render_width;
 	sdata->render_height = render_height;
 	sdata->dataset = dataset;
-	set_irenderable_input_context( instance, cr, sdata );
+	create_temp_context( instance, cr, sdata );
 
 	sdata->paginating = TRUE;
 	sdata->current_context = sdata->temp_context;
 	sdata->current_layout = sdata->temp_layout;
 
-	sdata->body_font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font( instance );
-	sdata->body_vspace_rate = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_vspace_rate( instance );
-	sdata->page_header_columns_height = get_page_header_columns_height( instance, sdata );
-	sdata->page_footer_height = get_page_footer_height( instance, sdata );
-	sdata->max_y = render_height - sdata->page_footer_height;
+	sdata->have_groups = ( OFA_IRENDERABLE_GET_INTERFACE( instance )->is_new_group != NULL );
 
-	sdata->want_groups = OFA_IRENDERABLE_GET_INTERFACE( instance )->want_groups( instance );
-	if( sdata->want_groups ){
-		sdata->want_new_page = OFA_IRENDERABLE_GET_INTERFACE( instance )->want_new_page( instance );
-		sdata->want_line_separation = OFA_IRENDERABLE_GET_INTERFACE( instance )->want_line_separation( instance );
-	}
+	sdata->footer_height = get_page_footer_height( instance, sdata );
+	sdata->max_y = render_height - sdata->footer_height;
+	sdata->group_sep_line_height = draw_group_separation( instance, sdata );
 
 	g_debug( "%s: instance=%p, cr=%p, render_width=%lf, render_height=%lf, max_y=%lf, dataset_count=%d",
 			thisfn, ( void * ) instance, ( void * ) cr, render_width, render_height, sdata->max_y,
 			g_list_length( sdata->dataset ));
 
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->begin_render ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->begin_render( instance, render_width, render_height );
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->begin_render( instance, cr, render_width, render_height, dataset );
 	}
 
-	reset_runtime( instance, sdata );
-	page_num = 0;
-	while( draw_page( instance, page_num++, sdata ));
+	/* run the pagination
+	 */
+	clear_runtime_data( instance, sdata );
 
-	sdata->pages_count = page_num;
+	sdata->pages_count = 0;
+	while( draw_page( instance, sdata->pages_count++, sdata ))
+		;
+	sdata->paginating = FALSE;
+
 	g_debug( "%s: about to render %d page(s)", thisfn, sdata->pages_count );
 
-	reset_runtime( instance, sdata );
-	sdata->paginating = FALSE;
+	clear_runtime_data( instance, sdata );
 
 	return( sdata->pages_count );
 
 }
 
-/*
- * default implementation of some virtuals
- */
-static gchar *
-irenderable_get_body_font( ofaIRenderable *instance )
-{
-	return( g_strdup( st_default_body_font ));
-}
-
-static gdouble
-irenderable_get_body_vspace_rate( ofaIRenderable *instance )
-{
-	static const gdouble st_vspace_rate = 0.35;
-
-	return( st_vspace_rate );
-}
-
-static gboolean
-irenderable_want_groups( const ofaIRenderable *instance )
-{
-	return( FALSE );
-}
-
-static gboolean
-irenderable_want_new_page( const ofaIRenderable *instance )
-{
-	return( FALSE );
-}
-
-static gboolean
-irenderable_want_line_separation( const ofaIRenderable *instance )
-{
-	return( TRUE );
-}
-
 /**
  * ofa_irenderable_render_page:
- * @instance:
- * @cr:
- * @page_number: counted from zero.
+ * @instance: this #ofaIRenderable instance.
+ * @cr: the target cairo context.
+ * @page_number: the page number, counted from zero.
  *
- * The main entry point of the interface.
+ * The second main entry point of the interface.
  * Must be called once for each page in order each page be rendered.
  */
 void
-ofa_irenderable_render_page( ofaIRenderable *instance, cairo_t *context, gint page_number )
+ofa_irenderable_render_page( ofaIRenderable *instance, cairo_t *cr, guint page_number )
 {
 	static const gchar *thisfn = "ofa_irenderable_render_page";
 	sIRenderable *sdata;
 
-	sdata = get_irenderable_data( instance );
-	set_irenderable_input_context( instance, context, sdata );
-
-	g_debug( "%s: instance=%p, context=%p, page_number=%d, count=%d",
-			thisfn, ( void * ) instance, ( void * ) context, page_number, g_list_length( sdata->dataset ));
+	g_debug( "%s: instance=%p, cr=%p, page_number=%d",
+			thisfn, ( void * ) instance, ( void * ) cr, page_number );
 
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 
-	sdata->current_context = sdata->in_context;
-	sdata->current_layout = sdata->in_layout;
-
-	draw_page( instance, page_number, sdata );
-
-	/*g_debug( "%s: quitting with count=%d", thisfn, g_list_length( sdata->dataset ));*/
-}
-
-/*
- * Used when paginating first, then for actually drawing
- *
- * Returns: %TRUE while there is still page(s) to be printed,
- * %FALSE at the end.
- *
- * The returned value is only used while paginating.
- */
-static gboolean
-draw_page( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
-{
-	GList *line, *next;
-	gint count;
-	gboolean is_last;
-	gdouble req_height;
-
-	g_signal_emit_by_name( instance, "ofa-render-page",
-			sdata->paginating, 1+page_num, sdata->pages_count ? sdata->pages_count : 1+page_num );
-
-	/*g_debug( "draw_page: page_num=%d, count=%d", page_num, g_list_length( sdata->dataset ));*/
-	sdata->last_y = 0;
-
-	OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header( instance, page_num );
-
-	if( page_num == 0 ){
-		draw_top_summary( instance, sdata );
-	}
-
-	line = sdata->last_printed ? g_list_next( sdata->last_printed ) : sdata->dataset;
-
-	for( count=0 ; line ; count+=1 ){
-		next = g_list_next( line );		/* may be %NULL */
-		if( !draw_line( instance, page_num, count, line, next, sdata )){
-			/*g_debug( "draw_page: draw_line returned False, count=%d", g_list_length( sdata->dataset ));*/
-			break;
-		}
-		sdata->last_printed = line;
-		line = next;
-	}
-
-	/* end of the last page ? */
-	is_last = FALSE;
-
-	if( !line ){
-		if( !sdata->group_footer_printed ){
-			draw_group_footer( instance, count, sdata );
-		}
-		req_height = get_bottom_summary_height( instance, sdata );
-		if( sdata->last_y + req_height <= sdata->max_y ){
-			is_last = TRUE;
-		}
-		if( is_last ){
-			draw_bottom_summary( instance, sdata );
-			/*g_debug( "draw_page: page_num=%d, is_last=%s", page_num, is_last ? "True":"False" );*/
-		}
-	}
-
-	/*g_debug( "draw_page: page_num=%d, is_last=%s, last_y=%lf, max_y=%lf",
-			page_num, is_last ? "True":"False", sdata->last_y, sdata->max_y );*/
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer( instance, page_num );
-	}
-
-	/*g_debug( "draw_page: is_last=%s, count=%d", is_last ? "True":"False", g_list_length( sdata->dataset ));*/
-
-	return( !is_last );
-}
-
-/*
- * default implementation of #draw_page_header() virtual
- */
-static void
-irenderable_draw_page_header( ofaIRenderable *instance, gint page_num )
-{
-	sIRenderable *sdata;
-
-	sdata = get_irenderable_data( instance );
-
-	draw_page_header_dossier( instance, page_num, sdata );
-	draw_page_header_title( instance, page_num, sdata );
-	draw_page_header_subtitle( instance, page_num, sdata );
-	draw_page_header_subtitle2( instance, page_num, sdata );
-	draw_page_header_notes( instance, page_num, sdata );
-	draw_page_header_columns( instance, page_num, sdata );
-}
-
-/*
- * default implementation of #draw_page_header() virtual
- * - dossier name
- */
-static void
-draw_page_header_dossier( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
-{
-	gchar *dossier_name;
-	gdouble y, height;
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_name ){
-		dossier_name = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_name( instance );
-		y = sdata->last_y;
-
-		ofa_irenderable_set_color( instance, COLOR_HEADER_DOSSIER );
-		ofa_irenderable_set_font( instance, st_default_header_dossier_font );
-		height = ofa_irenderable_set_text( instance, 0, y, dossier_name, PANGO_ALIGN_LEFT );
-
-		y += height;
-		sdata->last_y = y;
-		g_free( dossier_name );
-	}
-}
-
-/*
- * default implementation of #draw_page_header() virtual
- * - report title
- */
-static void
-draw_page_header_title( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
-{
-	gdouble y, height;
-	gchar *title;
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_title ){
-		title = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_title( instance );
-		if( my_strlen( title )){
-			y = sdata->last_y;
-
-			ofa_irenderable_set_color( instance, COLOR_HEADER_TITLE );
-			ofa_irenderable_set_font( instance, st_default_header_title_font );
-			height = ofa_irenderable_set_text(
-					instance, sdata->render_width/2, y, title, PANGO_ALIGN_CENTER );
-
-			y += height;
-			sdata->last_y = y;
-		}
-		g_free( title );
-	}
-}
-
-/*
- * default implementation of #draw_page_header() virtual
- * - report subtitle
- */
-static void
-draw_page_header_subtitle( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
-{
-	gdouble y, height;
-	gchar *title;
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_subtitle ){
-		title = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_subtitle( instance );
-		if( my_strlen( title )){
-			y = sdata->last_y;
-
-			ofa_irenderable_set_color( instance, COLOR_HEADER_SUBTITLE );
-			ofa_irenderable_set_font( instance, st_default_header_subtitle_font );
-			height = ofa_irenderable_set_text(
-					instance, sdata->render_width/2, y, title, PANGO_ALIGN_CENTER );
-
-			y += height;
-			sdata->last_y = y;
-		}
-		g_free( title );
-	}
-}
-
-static void
-draw_page_header_subtitle2( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
-{
-	static const gdouble st_vspace_rate_before = 0.15;
-	gdouble y, height;
-	gchar *title;
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_subtitle2 ){
-		title = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_subtitle2( instance );
-		if( my_strlen( title )){
-			y = sdata->last_y;
-
-			ofa_irenderable_set_color( instance, COLOR_HEADER_SUBTITLE );
-			ofa_irenderable_set_font( instance, st_default_header_subtitle_font );
-			y += ofa_irenderable_get_text_height( instance ) * st_vspace_rate_before;
-
-			height = ofa_irenderable_set_text(
-					instance, sdata->render_width/2, y, title, PANGO_ALIGN_CENTER );
-
-			y += height;
-			sdata->last_y = y;
-		}
-		g_free( title );
-	}
-}
-
-static void
-draw_page_header_notes( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
-{
-	static const gdouble st_vspace_rate_before = 0.5;
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_notes ){
-
-		ofa_irenderable_set_color( instance, COLOR_HEADER_NOTES );
-		ofa_irenderable_set_font( instance, sdata->body_font );
-		sdata->last_y += ofa_irenderable_get_text_height( instance ) * st_vspace_rate_before;
-
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_notes( instance, page_num );
-	}
-}
-
-/*
- * default implementation of #draw_page_header() virtual
- * - columns header
- *
- * May be called first with @page_num=-1 when computing the height of
- * the columns headers
- *
- * Returns: the height of the columns header from the *user* point of
- * view, i.e. excluding before and after vertical spaces added by the
- * interface itself.
- * This is actually the height of the colored rectangle which acts as
- * the columns headers background.
- */
-static gdouble
-draw_page_header_columns( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
-{
-	static const gdouble st_vspace_rate_before = 0.5;
-	static const gdouble st_vspace_rate_after = 0.5;
-	gdouble cy_before, cy_after, prev_y, rc_height;
-
-	rc_height = 0;
-	cy_before = 0;
-	cy_after = 0;
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_columns ){
-		ofa_irenderable_set_font( instance, st_default_header_columns_font );
-		cy_before = ofa_irenderable_get_text_height( instance ) * st_vspace_rate_before;
-		cy_after = ofa_irenderable_get_text_height( instance ) * st_vspace_rate_after;
-	}
-
-	/* draw and paint a rectangle
-	 * this must be done before writing the columns headers */
-	if( page_num >= 0 ){
-		ofa_irenderable_set_color( instance, COLOR_HEADER_COLUMNS_BG );
-		cairo_rectangle( sdata->current_context,
-				0, sdata->last_y + cy_before, sdata->render_width, sdata->page_header_columns_height );
-		cairo_fill( sdata->current_context );
-	}
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_columns ){
-		sdata->last_y += cy_before;
-		ofa_irenderable_set_color( instance, COLOR_HEADER_COLUMNS_FG );
-		ofa_irenderable_set_font( instance, st_default_header_columns_font );
-		prev_y = sdata->last_y;
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_columns( instance, page_num );
-		rc_height = sdata->last_y - prev_y;
-		sdata->last_y += cy_after;
-	}
-
-	return( rc_height );
-}
-
-/*
- * columns header is expected to have a fixed height
- * so it is worth to caching it
- * so it is called once from begin_render() on start of the pagination phase.
- */
-static gdouble
-get_page_header_columns_height( ofaIRenderable *instance, sIRenderable *sdata )
-{
-	static gboolean in_function = FALSE;	/* against recursion */
-	gdouble height;
-
-	height = 0;
-
-	if( !in_function ){
-		in_function = TRUE;
-		g_return_val_if_fail( sdata->paginating, 0 );
-
-		height = draw_page_header_columns( instance, -1, sdata );
-
-		in_function = FALSE;
-	}
-
-	return( height );
-}
-
-/**
- * ofa_irenderable_get_page_header_columns_height
- *
- * Returns: the height of the surrounding rectangle of the columns
- * header.
- *
- * This height is computed by just drawing on a context, and then
- * measuring the 'last_y' difference.
- *
- * It is expected this function returns 0 when called more or less
- * directly from #draw_page_header_columns() while computing the height.
- * This should happen only the first time it is called, only during the
- * pagination phase.
- */
-gdouble
-ofa_irenderable_get_page_header_columns_height( ofaIRenderable *instance )
-{
-	sIRenderable *sdata;
-
-	sdata = get_irenderable_data( instance );
-
-	return( sdata->page_header_columns_height );
-}
-
-static void
-draw_top_summary( ofaIRenderable *instance, sIRenderable *sdata )
-{
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_top_summary ){
-		ofa_irenderable_set_color( instance, COLOR_SUMMARY );
-		ofa_irenderable_set_font( instance, st_default_summary_font );
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_top_summary( instance );
-	}
-}
-
-static void
-draw_page_top_report( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
-{
-}
-
-/*
- * @line_num: line number in the page, counted from 0
- * @line: the line candidate to be printed
- *  called from draw_page(), which makes sure @line is non null
- * @next: the next line after this one, may be %NULL if we are at the
- *  end of the list
- *
- * Returns: %TRUE if this line has been printed, %FALSE else.
- */
-static gboolean
-draw_line( ofaIRenderable *instance,
-					gint page_num, gint line_num, GList *line, GList *next, sIRenderable *sdata )
-{
-	static const gchar *thisfn = "ofa_irenderable_draw_line";
-	gdouble y, req_height, end_height, line_height, font_height;
-
-	/* must be set before any height computing as this is the main
-	 * parameter  */
-	ofa_irenderable_set_color( instance, COLOR_BODY );
-	ofa_irenderable_set_font( instance, sdata->body_font );
-	font_height = ofa_irenderable_get_text_height( instance );
-	line_height = ofa_irenderable_get_line_height( instance );
-
-	if( 0 ){
-		g_debug( "%s: paginating=%s, page_num=%d, line_num=%d, line=%p, next=%p, last_y=%lf, font_height=%lf, line_height=%lf, count=%d",
-				thisfn, sdata->paginating ? "True":"False",
-				page_num, line_num, ( void * ) line, ( void * ) next,
-				sdata->last_y, font_height, line_height, g_list_length( sdata->dataset ));
-	}
-
-	/* this line + a group bottom report or a group footer or a page bottom report */
-	end_height =
-			line_height +
-			( sdata->want_groups ?
-					(( !next || is_new_group( instance, next, line )) ?
-							get_group_footer_height( instance, sdata ) :
-							get_group_bottom_report_height( instance, sdata )) :
-					get_page_bottom_report_height( instance, page_num, sdata ));
-
-	/* does the group change ? */
-	if( sdata->want_groups &&
-			is_new_group( instance, line, sdata->last_printed )){
-
-		/* do we have a previous group footer not yet printed ? */
-		if( sdata->last_printed && !sdata->group_footer_printed ){
-			draw_group_footer( instance, line_num, sdata );
-		}
-		/* is the group header requested on a new page ? */
-		if( line_num > 0 && sdata->want_new_page ){
-			return( FALSE );
-		}
-		/* do we have enough vertical space for the group header,
-		 * at least one line, and a group bottom report or a group
-		 * footer ? */
-		req_height =
-				get_group_header_height( instance, line_num, line, sdata )
-				+ end_height;
-		if( sdata->last_y + req_height > sdata->max_y ){
-			return( FALSE );
-		}
-		/* so draw the group header */
-		draw_group_header( instance, line_num, line, sdata );
-
-	} else if( line_num == 0 ){
-		if( sdata->want_groups ){
-			draw_group_top_report( instance, sdata );
-		} else {
-			draw_page_top_report( instance, page_num, sdata );
-		}
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->render_page ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->render_page( instance, cr, page_number );
 
 	} else {
-		/* either no groups or no new group */
-		/* do we have enough vertical space for this line, and a group
-		 * bottom report or a group footer or a page bottom report ? */
-		req_height = end_height;
-		if( sdata->last_y + req_height > sdata->max_y ){
-			if( sdata->want_groups ){
-				draw_group_bottom_report( instance, sdata );
-			} else {
-				draw_page_bottom_report( instance, page_num, sdata );
-			}
-			/*g_debug( "draw_line: last_y=%lf, font_height=%lf, line_height=%lf, req_height=%lf, max_y=%lf",
-					sdata->last_y, font_height, line_height, req_height, sdata->max_y );*/
-			return( FALSE );
-		}
+		sdata = get_instance_data( instance );
+		create_temp_context( instance, cr, sdata );
+
+		sdata->current_context = sdata->in_context;
+		sdata->current_layout = sdata->in_layout;
+
+		draw_page( instance, page_number, sdata );
 	}
-
-	/* so, we are OK to draw the line ! */
-	/* we are using a unique font to draw the lines */
-	y = sdata->last_y;
-
-	/* have a rubber every other line */
-	if( line_num % 2 ){
-		ofa_irenderable_draw_rubber( instance, y-(line_height-font_height)*0.5, line_height );
-	}
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_line ){
-		ofa_irenderable_set_color( instance, COLOR_BODY );
-		ofa_irenderable_set_font( instance, sdata->body_font );
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_line( instance, line );
-	}
-
-	y += line_height;
-	sdata->last_y = y;
-
-	return( TRUE );
-}
-
-/*
- * Do not put here any other default value than FALSE as it is used to
- * draw group header and footer (so do not even test here for prev=NULL).
- * It is up to the implementor to decide if it will make use of groups
- * and to return TRUE on a new group.
- */
-static gboolean
-is_new_group( const ofaIRenderable *instance, GList *current, GList *prev )
-{
-	return( OFA_IRENDERABLE_GET_INTERFACE( instance )->is_new_group( instance, current, prev ));
-}
-
-static gboolean
-irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev )
-{
-	return( FALSE );
-}
-
-/*
- * only called when there is actually a group header in this report
- * ( is_new_group() has returned %TRUE)
- *
- * we take care of not having just the group header on the bottom of
- * the page, but at least:
- * - the group header
- * - a line
- * - a bottom page report or the group footer if the group only
- *   contains one single line
- */
-static void
-draw_group_header( ofaIRenderable *instance, gint line_num, GList *line, sIRenderable *sdata )
-{
-	gdouble y, text_height;
-
-	ofa_irenderable_set_color( instance, COLOR_GROUP );
-	ofa_irenderable_set_font( instance, st_default_group_font );
-	text_height = ofa_irenderable_get_text_height( instance );
-
-	/* separation line */
-	if( line_num > 0 && sdata->want_line_separation ){
-		y = sdata->last_y;
-		cairo_set_line_width( sdata->current_context, 0.5 );
-		cairo_move_to( sdata->current_context, 0, y );
-		cairo_line_to( sdata->current_context, sdata->render_width, y );
-		cairo_stroke( sdata->current_context );
-		y += 1.5;
-		cairo_move_to( sdata->current_context, 0, y );
-		cairo_line_to( sdata->current_context, sdata->render_width, y );
-		cairo_stroke( sdata->current_context );
-		y += sdata->body_vspace_rate * text_height;
-		sdata->last_y = y;
-	}
-
-	/* display the group header */
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_header ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_header( instance, line );
-	}
-
-	/* setup the group properties */
-	sdata->group_footer_printed = FALSE;
-}
-
-/*
- * the value cannot be cached as the height may depend of the
- * position of the group header in the sheet, and of the content of
- * the data
- */
-static gdouble
-get_group_header_height( ofaIRenderable *instance, gint line_num, GList *line, sIRenderable *sdata )
-{
-	gdouble height, prev_y;
-	gboolean prev_printed, prev_paginating;
-	cairo_t *prev_context;
-	PangoLayout *prev_layout;
-
-	prev_y = sdata->last_y;
-	prev_printed = sdata->group_footer_printed;
-	sdata->last_y = 0;
-	prev_context = sdata->current_context;
-	sdata->current_context = sdata->temp_context;
-	prev_layout = sdata->current_layout;
-	sdata->current_layout = sdata->temp_layout;
-	prev_paginating = sdata->paginating;
-	sdata->paginating = TRUE;
-
-	draw_group_header( instance, line_num, line, sdata );
-
-	height = sdata->last_y;
-	sdata->group_footer_printed = prev_printed;
-	sdata->last_y = prev_y;
-	sdata->current_context = prev_context;
-	sdata->current_layout = prev_layout;
-	sdata->paginating = prev_paginating;
-
-	return( height );
-}
-
-/*
- * draw the report for the group at the top of the next body page
- */
-static void
-draw_group_top_report( ofaIRenderable *instance, sIRenderable *sdata )
-{
-	ofa_irenderable_set_color( instance, COLOR_REPORT );
-	ofa_irenderable_set_font( instance, st_default_report_font );
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_top_report ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_top_report( instance );
-	}
-}
-
-/*
- * draw the report for the group at the bottom of the current body page
- */
-static void
-draw_group_bottom_report( ofaIRenderable *instance, sIRenderable *sdata )
-{
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_bottom_report ){
-		ofa_irenderable_set_color( instance, COLOR_REPORT );
-		ofa_irenderable_set_font( instance, st_default_report_font );
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_bottom_report( instance );
-	}
-}
-
-/*
- * the value cannot be cached as the height may depend of the
- * position of the group header in the sheet, and of the content of
- * the data
- */
-static gdouble
-get_group_bottom_report_height( ofaIRenderable *instance, sIRenderable *sdata )
-{
-	gdouble height, prev_y;
-	cairo_t *prev_context;
-	PangoLayout *prev_layout;
-	gboolean prev_paginating;
-
-	prev_y = sdata->last_y;
-	sdata->last_y = 0;
-	prev_context = sdata->current_context;
-	sdata->current_context = sdata->temp_context;
-	prev_layout = sdata->current_layout;
-	sdata->current_layout = sdata->temp_layout;
-	prev_paginating = sdata->paginating;
-	sdata->paginating = TRUE;
-
-	draw_group_bottom_report( instance, sdata );
-
-	height = sdata->last_y;
-	sdata->last_y = prev_y;
-	sdata->current_context = prev_context;
-	sdata->current_layout = prev_layout;
-	sdata->paginating = prev_paginating;
-
-	return( height );
-}
-
-/*
- * only called if there is actually a group footer in this report
- */
-static void
-draw_group_footer( ofaIRenderable *instance, gint line_num, sIRenderable *sdata )
-{
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_footer ){
-		ofa_irenderable_set_color( instance, COLOR_GROUP );
-		ofa_irenderable_set_font( instance, st_default_group_font );
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_footer( instance );
-	}
-
-	sdata->group_footer_printed = TRUE;
-}
-
-/*
- * the value cannot be cached as the height may depend of the
- * position of the group header in the sheet, and of the content of
- * the data
- */
-static gdouble
-get_group_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
-{
-	gboolean prev_printed, prev_paginating;
-	gdouble height, prev_y;
-	cairo_t *prev_context;
-	PangoLayout *prev_layout;
-
-	prev_y = sdata->last_y;
-	prev_printed = sdata->group_footer_printed;
-	prev_context = sdata->current_context;
-	sdata->current_context = sdata->temp_context;
-	prev_layout = sdata->current_layout;
-	sdata->current_layout = sdata->temp_layout;
-	prev_paginating = sdata->paginating;
-	sdata->paginating = TRUE;
-
-	draw_group_footer( instance, -1, sdata );
-
-	height = sdata->last_y - prev_y;
-	sdata->last_y = prev_y;
-	sdata->group_footer_printed = prev_printed;
-	sdata->current_context = prev_context;
-	sdata->current_layout = prev_layout;
-	sdata->paginating = prev_paginating;
-
-	return( height );
-}
-static void
-draw_page_bottom_report( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
-{
-
-}
-
-static gdouble
-get_page_bottom_report_height( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
-{
-	draw_page_bottom_report( instance, page_num, sdata );
-	return( 0 );
-}
-
-/*
- * Returns %TRUE if we have been able to print the bottom summary,
- * %FALSE else (and we need another page)
- */
-static void
-draw_bottom_summary( ofaIRenderable *instance, sIRenderable *sdata )
-{
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_bottom_summary ){
-		ofa_irenderable_set_color( instance, COLOR_SUMMARY );
-		ofa_irenderable_set_font( instance, st_default_summary_font );
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_bottom_summary( instance );
-	}
-}
-
-/*
- * the value cannot be cached as the height may depend of the
- * position of the group header in the sheet, and of the content of
- * the data
- */
-static gdouble
-get_bottom_summary_height( ofaIRenderable *instance, sIRenderable *sdata )
-{
-	gdouble height, prev_y;
-	cairo_t *prev_context;
-	PangoLayout *prev_layout;
-	gboolean prev_paginating;
-
-	prev_y = sdata->last_y;
-	sdata->last_y = 0;
-	prev_context = sdata->current_context;
-	sdata->current_context = sdata->temp_context;
-	prev_layout = sdata->current_layout;
-	sdata->current_layout = sdata->temp_layout;
-	prev_paginating = sdata->paginating;
-	sdata->paginating = TRUE;
-
-	draw_bottom_summary( instance, sdata );
-
-	height = sdata->last_y;
-	sdata->last_y = prev_y;
-	sdata->current_context = prev_context;
-	sdata->current_layout = prev_layout;
-	sdata->paginating = prev_paginating;
-
-	return( height );
-}
-
-static void
-draw_page_footer( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
-{
-	OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer( instance, page_num );
-}
-
-static void
-irenderable_draw_page_footer( ofaIRenderable *instance, gint page_num )
-{
-	static gdouble vspace_before_footer = 2.0; /* points */
-	static gdouble vspace_after_line = 1.0; /* points */
-	sIRenderable *sdata;
-	gchar *str, *stamp_str;
-	GTimeVal stamp;
-	gdouble y, height;
-
-	sdata = get_irenderable_data( instance );
-
-	ofa_irenderable_set_color( instance, COLOR_FOOTER );
-	ofa_irenderable_set_font( instance, st_default_footer_font );
-
-	y = sdata->max_y;
-	y += vspace_before_footer;
-	cairo_set_line_width( sdata->current_context, 0.5 );
-	cairo_move_to( sdata->current_context, 0, y );
-	cairo_line_to( sdata->current_context, sdata->render_width, y );
-	cairo_stroke( sdata->current_context );
-	y += vspace_after_line;
-
-	str = g_strdup_printf( "%s v %s", PACKAGE_NAME, PACKAGE_VERSION );
-	height = ofa_irenderable_set_text( instance, st_page_margin, y, str, PANGO_ALIGN_LEFT );
-	g_free( str );
-
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_DMYYHM );
-	str = g_strdup_printf(
-			_( "Printed on %s - Page %d/%d" ), stamp_str, 1+page_num, sdata->pages_count );
-	g_free( stamp_str );
-	ofa_irenderable_set_text( instance, sdata->render_width-st_page_margin, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
-
-	y += height;
-	sdata->last_y = y;
-}
-
-/*
- * the height of the default page footer is computed by just drawing it
- * at y=0, and then requiring Pango the layout height
- *
- * page footer is expected to have a fixed height
- * so it is worth to caching it
- * so it is called once from begin_render() on start of the pagination phase.
- */
-static gdouble
-get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
-{
-	gdouble prev_y, prev_render_height, height;
-
-	if(( height = sdata->page_footer_height ) == 0 ){
-
-		prev_y = sdata->last_y;
-		sdata->last_y = 0;
-		prev_render_height = sdata->render_height;
-		sdata->render_height = 0;
-
-		draw_page_footer( instance, 0, sdata );
-
-		height = sdata->last_y;
-		sdata->last_y = prev_y;
-		sdata->render_height = prev_render_height;
-	}
-
-	return( height );
 }
 
 /**
  * ofa_irenderable_end_render:
- * @instance:
- * @cr:
+ * @instance: this #ofaIRenderable instance.
+ * @cr: the target cairo context.
  *
  * The last entry point of the interface.
  * Must be called after all pages have been rendered.
  */
 void
-ofa_irenderable_end_render( ofaIRenderable *instance, cairo_t *context )
+ofa_irenderable_end_render( ofaIRenderable *instance, cairo_t *cr )
 {
 	static const gchar *thisfn = "ofa_irenderable_end_render";
 	sIRenderable *sdata;
@@ -1215,67 +406,30 @@ ofa_irenderable_end_render( ofaIRenderable *instance, cairo_t *context )
 
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 
-	sdata = get_irenderable_data( instance );
-	set_irenderable_input_context( instance, context, sdata );
-
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->end_render ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->end_render( instance );
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->end_render( instance, cr );
 	}
 
-	/* #795 - sIRenderable struct should have the same life cycle
-	 * than the implementation page */
-	/*
-	free_irenderable_data( sdata );
-	g_object_set_data( G_OBJECT( instance ), IRENDERABLE_DATA, NULL );
-	g_object_weak_unref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
-	*/
+	sdata = get_instance_data( instance );
+
+	g_debug( "%s: dataset_count=%u, rendered_count=%u",
+			thisfn, g_list_length( sdata->dataset ), sdata->count_rendered );
 }
 
 /*
- * Note that our own reset runtime is not a default that the
- * application would supersede. Instead, it is actually part of the
- * whole algorithm, and the application may only add its own code.
- */
-static void
-reset_runtime( ofaIRenderable *instance, sIRenderable *sdata )
-{
-	sdata->last_printed = NULL;
-	sdata->group_footer_printed = TRUE;
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->reset_runtime ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->reset_runtime( instance );
-	}
-}
-
-static sIRenderable *
-get_irenderable_data( ofaIRenderable *instance )
-{
-	sIRenderable *sdata;
-
-	sdata = ( sIRenderable * ) g_object_get_data( G_OBJECT( instance ), IRENDERABLE_DATA );
-
-	if( !sdata ){
-		sdata = g_new0( sIRenderable, 1 );
-		g_object_set_data( G_OBJECT( instance ), IRENDERABLE_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
-	}
-
-	return( sdata );
-}
-
-/*
- * save the provided context, and create an associated layout
+ * Save the provided context, and create an associated layout
  * this is called on each entry point of the interface:
  * - begin_render(), render_page() and end_render().
  *
- * simultaneously create a temp context which is used:
+ * Simultaneously create a temp context which is used:
  * - first during pagination phase
  * - then each time we need to compute some dimension without actually
  *   drawing anything
  */
 static void
-set_irenderable_input_context( ofaIRenderable *instance, cairo_t *context, sIRenderable *sdata )
+create_temp_context( ofaIRenderable *instance, cairo_t *context, sIRenderable *sdata )
 {
+	static const gchar *thisfn = "ofa_irenderable_create_temp_context";
 	cairo_surface_t *surface;
 
 	/* save the provided context */
@@ -1299,40 +453,762 @@ set_irenderable_input_context( ofaIRenderable *instance, cairo_t *context, sIRen
 
 	/* draw a text in input context/layout and get its dimensions
 	   => check that dimensions are same in both input and temp contexts */
-	/*
-	set_font( sdata->in_layout, "Sans 8", NULL );
-	gdouble height = set_text( sdata->in_layout, sdata->in_context, 0, 0, "This is a text", PANGO_ALIGN_LEFT );
-	g_debug( "set_irenderable_input_context: input context/layout: height=%lf", height );
-	set_font( sdata->temp_layout, "Sans 8", NULL );
-	height = set_text( sdata->temp_layout, sdata->temp_context, 0, 0, "This is a text", PANGO_ALIGN_LEFT );
-	g_debug( "set_irenderable_input_context: temp context/layout: height=%lf", height );
-	*/
+	if( 0 ){
+		set_font( sdata->in_layout, "Sans 8", NULL );
+		gdouble height = set_text( sdata->in_layout, sdata->in_context, 0, 0, "This is a text", PANGO_ALIGN_LEFT );
+		g_debug( "%s: input context/layout: height=%lf", thisfn, height );
+		set_font( sdata->temp_layout, "Sans 8", NULL );
+		height = set_text( sdata->temp_layout, sdata->temp_context, 0, 0, "This is a text", PANGO_ALIGN_LEFT );
+		g_debug( "%s: temp context/layout: height=%lf", thisfn, height );
+	}
 }
 
 static void
-on_instance_finalized( sIRenderable *sdata, void *instance )
+clear_runtime_data( ofaIRenderable *instance, sIRenderable *sdata )
 {
-	static const gchar *thisfn = "ofa_irenderable_on_instance_finalized";
+	sdata->prev_rendered = NULL;
+	sdata->count_rendered = 0;
 
-	g_debug( "%s: sdata=%p, instance=%p", thisfn, ( void * ) sdata, ( void * ) instance );
-
-	free_irenderable_data( sdata );
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->clear_runtime_data ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->clear_runtime_data( instance );
+	}
 }
 
-static void
-free_irenderable_data( sIRenderable *sdata )
+/*
+ * Used when paginating first, then for actually drawing
+ *
+ * Returns: %TRUE while there is still page(s) to be printed,
+ * %FALSE at the end.
+ *
+ * The returned value is only used while paginating.
+ */
+static gboolean
+draw_page( ofaIRenderable *instance, guint page_num, sIRenderable *sdata )
 {
-	g_clear_object( &sdata->in_layout );
+	static const gchar *thisfn = "ofa_irenderable_draw_page";
+	GList *line, *next;
+	guint count;
+	gboolean is_last;
+	gdouble req_height;
 
-	g_free( sdata->body_font );
+	g_signal_emit_by_name( instance, "ofa-render-page",
+			sdata->paginating, 1+page_num, sdata->pages_count ? sdata->pages_count : 1+page_num );
 
-	if( sdata->temp_context ){
-		cairo_destroy( sdata->temp_context );
+	g_debug( "%s: instance=%p, paginating=%s, page_num=%u, dataset_count=%u",
+			thisfn, ( void * ) instance, sdata->paginating ? "True":"False", page_num, g_list_length( sdata->dataset ));
+
+	sdata->last_y = 0;
+
+	irenderable_draw_page_header_dossier( instance, page_num, sdata );
+	irenderable_draw_page_header_title( instance, page_num, sdata );
+	irenderable_draw_page_header_notes( instance, page_num, sdata );
+	irenderable_draw_page_header_columns( instance, page_num, sdata );
+	irenderable_draw_top_summary( instance, page_num, sdata );
+
+	line = sdata->prev_rendered ? g_list_next( sdata->prev_rendered ) : sdata->dataset;
+
+	if( line ){
+		irenderable_draw_top_report( instance, page_num, line, sdata );
 	}
 
-	g_clear_object( &sdata->temp_layout );
+	for( count=0 ; line ; count+=1 ){
+		next = g_list_next( line );		/* may be %NULL */
+		if( !draw_line( instance, page_num, count, line, next, sdata )){
+			if( 0 ){
+				g_debug( "%s: draw_line returned False, line_num=%u, line=%p, next=%p",
+						thisfn, count, ( void * ) line, ( void * ) next );
+			}
+			break;
+		}
+		line = next;
+	}
+	g_debug( "%s: rendered_count=%u, line=%p", thisfn, sdata->count_rendered, line );
 
-	g_free( sdata );
+	/* end of the last page ? */
+	is_last = FALSE;
+
+	if( !line ){
+		req_height = ofa_irenderable_get_last_summary_height( instance );
+		if( sdata->last_y + req_height <= sdata->max_y ){
+			is_last = TRUE;
+			irenderable_draw_last_summary( instance, page_num, sdata );
+		}
+	}
+
+	irenderable_draw_page_footer( instance, page_num, sdata );
+
+	if( 0 ){
+		g_debug( "%s: is_last=%s", thisfn, is_last ? "True":"False" );
+	}
+
+	return( !is_last );
+}
+
+/*
+ * @page_num: counted from 0
+ * @line_num: line number in the page, counted from 0
+ * @line: the line candidate to be printed
+ *  called from draw_page(), which makes sure @line is non null
+ * @next: the next line after this one, may be %NULL if we are at the
+ *  end of the list
+ *
+ * Returns: %TRUE if this line has been printed, %FALSE else.
+ *
+ * Rationale: ofaIRenderable interface cannot and must not be stucked
+ * to only one or two group breaks, and it would be very complex to try
+ * to handle a variable count of group breaks here.
+ *
+ * So we just ask the implementation how much height the line will take,
+ * given the next line which may lead to a group break, knowing that we
+ * do not want any orphan line on the bottom of the page.
+ *
+ * When about to draw the @line:
+ *
+ * - must have enough place to draw it + the bottom report (if no footer)
+ *
+ * - must have enough place to draw the prev group footer if any
+ *   + the line group header
+ *   + the @line itself
+ */
+static gboolean
+draw_line( ofaIRenderable *instance,
+					guint page_num, guint line_num, GList *line, GList *next, sIRenderable *sdata )
+{
+	static const gchar *thisfn = "ofa_irenderable_draw_line";
+	gdouble y, req_height, line_height, font_height, bottom_report_height;
+	gdouble r, g, b;
+	gboolean new_group, draw_group_header, draw_group_footer;
+	ofeIRenderableBreak group_sep, next_sep;
+
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_body_font( instance ));
+	line_height = ofa_irenderable_get_line_height( instance );
+	req_height = line_height;
+	bottom_report_height = get_bottom_report_height( instance, page_num, sdata );
+
+	/* First take a glance at which may must come before the line
+	 * do we need a group header before @line ?
+	 */
+	new_group = FALSE;
+	draw_group_header = FALSE;
+	if( sdata->have_groups ){
+		new_group = irenderable_is_new_group( instance, sdata->prev_rendered, line, &group_sep, sdata );
+		if( new_group ){
+			switch( group_sep ){
+				case IRENDERABLE_BREAK_NEW_PAGE:
+					if( line_num > 0 ){
+						/* new page on group break: no bottom report */
+						return( FALSE );
+					}
+					break;
+				case IRENDERABLE_BREAK_BLANK_LINE:
+					if( line_num > 0 ){
+						req_height += line_height;
+					}
+					break;
+				case IRENDERABLE_BREAK_SEP_LINE:
+					if( line_num > 0 ){
+						req_height += sdata->group_sep_line_height;
+					}
+					break;
+				default:
+					break;
+			}
+			req_height += get_group_header_height( instance, page_num, line, sdata );
+			draw_group_header = TRUE;
+		}
+	}
+
+	/* Next take a glance at which will come after the line
+	 * will we need a group footer or a bottom report ?
+	 */
+	new_group = FALSE;
+	draw_group_footer = FALSE;
+	if( sdata->have_groups ){
+		new_group = irenderable_is_new_group( instance, line, next, &next_sep, sdata );
+		if( new_group ){
+			req_height += get_group_footer_height( instance, page_num, sdata );
+			draw_group_footer = TRUE;
+		}
+	}
+	if( !new_group ){
+		req_height += bottom_report_height;
+	}
+
+	/* not enough space to draw at least our unbreakable lines
+	 * so have a new page (maybe with a bottom report)
+	 */
+	if( sdata->last_y + req_height > sdata->max_y ){
+		if( !draw_group_header ){
+			irenderable_draw_bottom_report( instance, page_num, sdata );
+		}
+		return( FALSE );
+	}
+
+	/* so, we are OK to draw the line(s) !
+	 */
+	if( draw_group_header ){
+		if( line_num > 0 ){
+			if( group_sep == IRENDERABLE_BREAK_BLANK_LINE ){
+				sdata->last_y += line_height;
+
+			} else if( group_sep == IRENDERABLE_BREAK_SEP_LINE ){
+				draw_group_separation( instance, sdata );
+			}
+		}
+		irenderable_draw_group_header( instance, page_num, line, sdata );
+	}
+
+	/* we are using a unique font to draw the lines */
+	y = sdata->last_y;
+
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_body_font( instance ));
+
+	/* have a rubber every other line */
+	if( line_num % 2 ){
+		font_height = ofa_irenderable_get_text_height( instance );
+		ofa_irenderable_draw_rubber( instance, y-(line_height-font_height)*0.5, line_height );
+	}
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_line ){
+		ofa_irenderable_get_body_color( instance, &r, &g, &b );
+		ofa_irenderable_set_color( instance, r, g, b );
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_line( instance, page_num, line_num, line);
+	}
+
+	y += line_height;
+	sdata->last_y = y;
+	sdata->prev_rendered = line;
+	sdata->count_rendered += 1;
+
+	if( draw_group_footer ){
+		if( 0 ){
+			g_debug( "%s: draw group footer for page_num=%u, line_num=%u", thisfn, page_num, line_num );
+		}
+		irenderable_draw_group_footer( instance, page_num, line_num, sdata );
+
+	} else if( sdata->last_y + bottom_report_height + line_height > sdata->max_y ){
+		irenderable_draw_bottom_report( instance, page_num, sdata );
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static void
+irenderable_draw_page_header_dossier( ofaIRenderable *instance, guint page_num, sIRenderable *sdata )
+{
+	gchar *label;
+	gdouble y, height, r, g, b;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_dossier ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_dossier( instance, page_num );
+
+	} else if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_label ){
+
+		ofa_irenderable_get_dossier_color( instance, &r, &g, &b );
+		ofa_irenderable_set_color( instance, r, g, b );
+		ofa_irenderable_set_font( instance, ofa_irenderable_get_dossier_font( instance, page_num ));
+
+		y = sdata->last_y;
+		label = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_label( instance );
+		height = ofa_irenderable_set_text( instance, 0, y, label, PANGO_ALIGN_LEFT );
+		g_free( label );
+
+		y += height;
+		sdata->last_y = y;
+	}
+}
+
+static void
+irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num, sIRenderable *sdata )
+{
+	gchar *label;
+	gdouble y, height, r, g, b;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_title ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_title( instance, page_num );
+
+	} else if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_label ){
+
+		ofa_irenderable_get_title_color( instance, &r, &g, &b );
+		ofa_irenderable_set_color( instance, r, g, b );
+		ofa_irenderable_set_font( instance, ofa_irenderable_get_title_font( instance, page_num ));
+
+		y = sdata->last_y;
+		label = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_label( instance );
+		height = ofa_irenderable_set_text( instance, sdata->render_width/2, y, label, PANGO_ALIGN_CENTER );
+		g_free( label );
+
+		y += height;
+		sdata->last_y = y;
+	}
+}
+
+/*
+ * insert notes between the page title and the columns headers
+ */
+static void
+irenderable_draw_page_header_notes( ofaIRenderable *instance, guint page_num, sIRenderable *sdata )
+{
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_notes ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_notes( instance, page_num );
+	}
+}
+
+static void
+irenderable_draw_page_header_columns( ofaIRenderable *instance, guint page_num, sIRenderable *sdata )
+{
+	static const gdouble st_vspace_rate_before = 0.5;
+	static const gdouble st_vspace_rate_after = 0.5;
+	gdouble cy_before, cy_after, prev_y;
+	gdouble r, g, b;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_columns ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_columns( instance, page_num );
+
+	} else if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_header_column_names ){
+
+		ofa_irenderable_set_font( instance, ofa_irenderable_get_columns_font( instance, page_num ));
+		cy_before = ofa_irenderable_get_text_height( instance ) * st_vspace_rate_before;
+		cy_after = ofa_irenderable_get_text_height( instance ) * st_vspace_rate_after;
+		sdata->last_y += cy_before;
+
+		/* draw and paint a rectangle
+		 * this must be done before writing the columns headers */
+		if( sdata->header_columns_height > 0 ){
+			ofa_irenderable_set_color( instance, COLOR_HEADER_COLUMNS_BG );
+			cairo_rectangle( sdata->current_context,
+					0, sdata->last_y, sdata->render_width, sdata->header_columns_height );
+			cairo_fill( sdata->current_context );
+		}
+
+		ofa_irenderable_get_columns_color( instance, &r, &g, &b );
+		ofa_irenderable_set_color( instance, r, g, b );
+		prev_y = sdata->last_y;
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_header_column_names( instance, page_num );
+		sdata->header_columns_height = sdata->last_y - prev_y;
+		sdata->last_y += cy_after;
+	}
+}
+
+/*
+ * on top on each page, after the column headers
+ */
+static void
+irenderable_draw_top_summary( ofaIRenderable *instance, guint page_num, sIRenderable *sdata )
+{
+	gdouble r, g, b;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_top_summary ){
+
+		ofa_irenderable_get_summary_color( instance, &r, &g, &b );
+		ofa_irenderable_set_color( instance, r, g, b );
+		ofa_irenderable_set_font( instance, ofa_irenderable_get_summary_font( instance, page_num ));
+
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_top_summary( instance, page_num );
+	}
+}
+
+/*
+ * draw a top report for the current page
+ */
+static void
+irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *line, sIRenderable *sdata )
+{
+	gdouble r, g, b;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_top_report ){
+
+		ofa_irenderable_get_report_color( instance, &r, &g, &b );
+		ofa_irenderable_set_color( instance, r, g, b );
+		ofa_irenderable_set_font( instance, ofa_irenderable_get_report_font( instance, page_num ));
+
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_top_report( instance, page_num, sdata->prev_rendered, line );
+	}
+}
+
+/*
+ * Does @line begins a new group for the implementation ?
+ *
+ * If %TRUE, then we will take care of drawing the group header and
+ * footer.
+ */
+static gboolean
+irenderable_is_new_group( ofaIRenderable *instance, GList *line, GList *next, ofeIRenderableBreak *sep, sIRenderable *sdata )
+{
+	gboolean new_group;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->is_new_group ){
+		new_group = OFA_IRENDERABLE_GET_INTERFACE( instance )->is_new_group( instance, line, next, sep );
+
+	} else {
+		new_group = FALSE;
+	}
+
+	return( new_group );
+}
+
+/*
+ * only called when there is actually a group header in this report
+ * ( is_new_group() has returned %TRUE)
+ *
+ * we take care of not having just the group header on the bottom of
+ * the page, but at least:
+ * - the group header
+ * - a line
+ * - a bottom page report or the group footer if the group only
+ *   contains one single line
+ */
+static void
+irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line, sIRenderable *sdata )
+{
+	gdouble r, g, b;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_header ){
+
+		ofa_irenderable_get_group_color( instance, &r, &g, &b );
+		ofa_irenderable_set_color( instance, r, g, b );
+		ofa_irenderable_set_font( instance, ofa_irenderable_get_group_font( instance, page_num ));
+
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_header( instance, page_num, line );
+	}
+}
+
+/*
+ * draws a separation line between two groups on the same page
+ */
+static gdouble
+draw_group_separation( ofaIRenderable *instance, sIRenderable *sdata )
+{
+	gdouble y, text_height, rate, r, g, b, height;
+
+	ofa_irenderable_get_group_color( instance, &r, &g, &b );
+	ofa_irenderable_set_color( instance, r, g, b );
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_group_font( instance, 0 ));
+	text_height = ofa_irenderable_get_text_height( instance );
+	rate = ofa_irenderable_get_body_vspace_rate( instance );
+
+	/* separation line */
+	y = sdata->last_y;
+	y += rate * text_height;
+	cairo_set_line_width( sdata->current_context, 0.5 );
+	cairo_move_to( sdata->current_context, 0, y );
+	cairo_line_to( sdata->current_context, sdata->render_width, y );
+	cairo_stroke( sdata->current_context );
+	y += 1.5;
+	cairo_move_to( sdata->current_context, 0, y );
+	cairo_line_to( sdata->current_context, sdata->render_width, y );
+	cairo_stroke( sdata->current_context );
+	y += rate * text_height;
+
+	height = y - sdata->last_y;
+	sdata->last_y = y;
+
+	return( height );
+}
+
+/*
+ * the value cannot be cached as the height may depend of the
+ * position of the group header in the sheet, and of the content of
+ * the data
+ */
+static gdouble
+get_group_header_height( ofaIRenderable *instance, guint page_num, GList *line, sIRenderable *sdata )
+{
+	gdouble height, prev_y;
+	gboolean prev_paginating;
+	cairo_t *prev_context;
+	PangoLayout *prev_layout;
+
+	prev_y = sdata->last_y;
+	sdata->last_y = 0;
+	prev_context = sdata->current_context;
+	sdata->current_context = sdata->temp_context;
+	prev_layout = sdata->current_layout;
+	sdata->current_layout = sdata->temp_layout;
+	prev_paginating = sdata->paginating;
+	sdata->paginating = TRUE;
+
+	irenderable_draw_group_header( instance, page_num, line, sdata );
+
+	height = sdata->last_y;
+	sdata->last_y = prev_y;
+	sdata->current_context = prev_context;
+	sdata->current_layout = prev_layout;
+	sdata->paginating = prev_paginating;
+
+	return( height );
+}
+
+/*
+ * draw a bottom report for the current page
+ */
+static void
+irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num, sIRenderable *sdata )
+{
+	gdouble r, g, b;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_bottom_report ){
+
+		ofa_irenderable_get_report_color( instance, &r, &g, &b );
+		ofa_irenderable_set_color( instance, r, g, b );
+		ofa_irenderable_set_font( instance, ofa_irenderable_get_report_font( instance, page_num ));
+
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_bottom_report( instance, page_num );
+	}
+}
+
+/*
+ * the value cannot be cached as the height may depend of the
+ * position of the group header in the sheet, and of the content of
+ * the data
+ */
+static gdouble
+get_bottom_report_height( ofaIRenderable *instance, guint page_num, sIRenderable *sdata )
+{
+	gdouble height, prev_y;
+	cairo_t *prev_context;
+	PangoLayout *prev_layout;
+	gboolean prev_paginating;
+
+	prev_y = sdata->last_y;
+	sdata->last_y = 0;
+	prev_context = sdata->current_context;
+	sdata->current_context = sdata->temp_context;
+	prev_layout = sdata->current_layout;
+	sdata->current_layout = sdata->temp_layout;
+	prev_paginating = sdata->paginating;
+	sdata->paginating = TRUE;
+
+	irenderable_draw_bottom_report( instance, page_num, sdata );
+
+	height = sdata->last_y;
+	sdata->last_y = prev_y;
+	sdata->current_context = prev_context;
+	sdata->current_layout = prev_layout;
+	sdata->paginating = prev_paginating;
+
+	return( height );
+}
+
+static void
+irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, guint line_num, sIRenderable *sdata )
+{
+	gdouble r, g, b;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_footer ){
+
+		ofa_irenderable_get_group_color( instance, &r, &g, &b );
+		ofa_irenderable_set_color( instance, r, g, b );
+		ofa_irenderable_set_font( instance, ofa_irenderable_get_group_font( instance, page_num ));
+
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_group_footer( instance );
+	}
+}
+
+/*
+ * the value cannot be cached as the height may depend of the
+ * position of the group header in the sheet, and of the content of
+ * the data
+ */
+static gdouble
+get_group_footer_height( ofaIRenderable *instance, guint page_num, sIRenderable *sdata )
+{
+	gboolean prev_paginating;
+	gdouble height, prev_y;
+	cairo_t *prev_context;
+	PangoLayout *prev_layout;
+
+	prev_y = sdata->last_y;
+	prev_context = sdata->current_context;
+	sdata->current_context = sdata->temp_context;
+	prev_layout = sdata->current_layout;
+	sdata->current_layout = sdata->temp_layout;
+	prev_paginating = sdata->paginating;
+	sdata->paginating = TRUE;
+
+	irenderable_draw_group_footer( instance, page_num, 0, sdata );
+
+	height = sdata->last_y - prev_y;
+	sdata->last_y = prev_y;
+	sdata->current_context = prev_context;
+	sdata->current_layout = prev_layout;
+	sdata->paginating = prev_paginating;
+
+	return( height );
+}
+
+/*
+ * Let the implementation have a final summary on the last page
+ */
+static void
+irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num, sIRenderable *sdata )
+{
+	gdouble r, g, b;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_last_summary ){
+
+		ofa_irenderable_get_summary_color( instance, &r, &g, &b );
+		ofa_irenderable_set_color( instance, r, g, b );
+		ofa_irenderable_set_font( instance, ofa_irenderable_get_summary_font( instance, page_num ));
+
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_last_summary( instance, page_num );
+	}
+}
+
+/**
+ * ofa_irenderable_get_last_summary_height:
+ * the value cannot be cached as the height may depend of the
+ * position of the group header in the sheet, and of the content of
+ * the data
+ */
+gdouble
+ofa_irenderable_get_last_summary_height( ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+	gdouble height, prev_y;
+	cairo_t *prev_context;
+	PangoLayout *prev_layout;
+	gboolean prev_paginating;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
+
+	sdata = get_instance_data( instance );
+
+	prev_y = sdata->last_y;
+	sdata->last_y = 0;
+	prev_context = sdata->current_context;
+	sdata->current_context = sdata->temp_context;
+	prev_layout = sdata->current_layout;
+	sdata->current_layout = sdata->temp_layout;
+	prev_paginating = sdata->paginating;
+	sdata->paginating = TRUE;
+
+	irenderable_draw_last_summary( instance, sdata->pages_count-1, sdata );
+
+	height = sdata->last_y;
+	sdata->last_y = prev_y;
+	sdata->current_context = prev_context;
+	sdata->current_layout = prev_layout;
+	sdata->paginating = prev_paginating;
+
+	return( height );
+}
+
+static void
+irenderable_draw_page_footer( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
+{
+	static gdouble vspace_before_footer = 2.0;	/* points */
+	static gdouble vspace_after_line = 1.0; 	/* points */
+	gchar *str, *stamp_str;
+	GTimeVal stamp;
+	gdouble y, height, r, g, b;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer( instance, page_num );
+
+	} else {
+		/* page footer color */
+		irenderable_get_footer_color( instance, &r, &g, &b, sdata );
+		ofa_irenderable_set_color( instance, r, g, b );
+
+		/* draw the separation line */
+		y = sdata->max_y;
+		y += vspace_before_footer;
+		cairo_set_line_width( sdata->current_context, 0.5 );
+		cairo_move_to( sdata->current_context, 0, y );
+		cairo_line_to( sdata->current_context, sdata->render_width, y );
+		cairo_stroke( sdata->current_context );
+		y += vspace_after_line;
+
+		/* draw the footer line */
+		ofa_irenderable_set_font( instance, irenderable_get_footer_font( instance, sdata ));
+
+		str = g_strdup_printf( "%s v %s", PACKAGE_NAME, PACKAGE_VERSION );
+		height = ofa_irenderable_set_text( instance, st_page_margin, y, str, PANGO_ALIGN_LEFT );
+		g_free( str );
+
+		my_stamp_set_now( &stamp );
+		stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+		str = g_strdup_printf(
+				_( "Printed on %s - Page %d/%d" ), stamp_str, 1+page_num, sdata->pages_count );
+		g_free( stamp_str );
+		ofa_irenderable_set_text( instance, sdata->render_width-st_page_margin, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
+
+		y += height;
+		sdata->last_y = y;
+	}
+}
+
+/*
+ * The height of the default page footer is computed by just drawing it
+ * at y=0, and then requiring Pango the layout height
+ *
+ * Page footer is expected to have a fixed height
+ * so it is worth to caching it
+ * so it is called once from begin_render() on start of the pagination phase.
+ *
+ * Note that pre-computing the page footer height is needed in order to
+ * be able to compute the max_y.
+ */
+static gdouble
+get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
+{
+	gdouble prev_y, height;
+
+	if(( height = sdata->footer_height ) == 0 ){
+
+		prev_y = sdata->last_y;
+
+		irenderable_draw_page_footer( instance, 0, sdata );
+
+		height = sdata->last_y - prev_y;
+		sdata->last_y = prev_y;
+	}
+
+	return( height );
+}
+
+static const gchar *
+irenderable_get_footer_font( const ofaIRenderable *instance, sIRenderable *sdata )
+{
+	const gchar *font;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_font ){
+		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_font( instance );
+
+	} else {
+		font = st_default_footer_font;
+	}
+
+	return( font );
+}
+
+static void
+irenderable_get_footer_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b, sIRenderable *sdata )
+{
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+	g_return_if_fail( r && g && b );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_color ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_color( instance, r, g, b );
+
+	} else {
+		set_rgb( r, g, b, COLOR_FOOTER );
+	}
+}
+
+/*
+ * a convenience function to convert a COLOR_XXX macro to three gdouble
+ * pointers
+ */
+static void
+set_rgb( gdouble *r, gdouble *g, gdouble *b, gdouble sr, gdouble sg, gdouble sb )
+{
+	*r = sr;
+	*g = sg;
+	*b = sb;
 }
 
 /**
@@ -1346,52 +1222,152 @@ ofa_irenderable_is_paginating( ofaIRenderable *instance )
 {
 	sIRenderable *sdata;
 
-	sdata = get_irenderable_data( instance );
+	sdata = get_instance_data( instance );
 
 	return( sdata->paginating );
 }
 
 /**
- * ofa_irenderable_get_paper_size:
- * @instance: this #ofaIRenderable instance.
- * @width: [out]:
- * @height: [out]:
- */
-void
-ofa_irenderable_get_paper_size( ofaIRenderable *instance, gdouble *width, gdouble *height )
-{
-	sIRenderable *sdata;
-
-	sdata = get_irenderable_data( instance );
-
-	*width = sdata->render_width;
-	*height = sdata->render_height;
-}
-
-/**
- * ofa_irenderable_get_page_margin:
- * @instance: this #ofaIRenderable instance.
- */
-gdouble
-ofa_irenderable_get_page_margin( ofaIRenderable *instance )
-{
-	return( st_page_margin );
-}
-
-/**
- * ofa_irenderable_get_context:
+ * ofa_irenderable_get_last_y:
  * @instance: this #ofaIRenderable instance.
  *
- * Returns: the current cairo_t context.
+ * Returns: the last ordonate position.
  */
-cairo_t *
-ofa_irenderable_get_context( ofaIRenderable *instance )
+gdouble
+ofa_irenderable_get_last_y( ofaIRenderable *instance )
 {
 	sIRenderable *sdata;
 
-	sdata = get_irenderable_data( instance );
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
 
-	return( sdata->current_context );
+	sdata = get_instance_data( instance );
+
+	return( sdata->last_y );
+}
+
+/**
+ * ofa_irenderable_set_last_y:
+ * @instance: this #ofaIRenderable instance.
+ * @y: the new ordinate to be set
+ *
+ * Set the new ordinate position.
+ */
+void
+ofa_irenderable_set_last_y( ofaIRenderable *instance, gdouble y )
+{
+	sIRenderable *sdata;
+
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+
+	sdata = get_instance_data( instance );
+
+	sdata->last_y = y;
+}
+
+/**
+ * ofa_irenderable_get_max_y:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the maximum ordinate position, which is where is drawn the
+ * footer separation line (after a small vertical space).
+ */
+gdouble
+ofa_irenderable_get_max_y( ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
+
+	sdata = get_instance_data( instance );
+
+	return( sdata->max_y );
+}
+
+/**
+ * ofa_irenderable_get_text_height:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the height in cairo units used by a text drawn in the
+ * current font.
+ */
+gdouble
+ofa_irenderable_get_text_height( ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+	gdouble height;
+	cairo_t *prev_context;
+	PangoLayout *prev_layout;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
+
+	sdata = get_instance_data( instance );
+
+	prev_context = sdata->current_context;
+	prev_layout = sdata->current_layout;
+	sdata->current_context = sdata->temp_context;
+	sdata->current_layout = sdata->temp_layout;
+
+	height = ofa_irenderable_set_text( instance, 0, 0, "My testing Text", PANGO_ALIGN_LEFT );
+
+	sdata->current_context = prev_context;
+	sdata->current_layout = prev_layout;
+
+	return( height );
+}
+
+/**
+ * ofa_irenderable_get_text_width:
+ * @instance: this #ofaIRenderable instance.
+ * @text: the text to be measured.
+ *
+ * Returns: the width in cairo units used by a text drawn in the current font.
+ */
+gdouble
+ofa_irenderable_get_text_width( ofaIRenderable *instance, const gchar *text )
+{
+	sIRenderable *sdata;
+	gdouble cairo_width;
+	cairo_t *prev_context;
+	PangoLayout *prev_layout;
+	gint pango_width, pango_height;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
+
+	sdata = get_instance_data( instance );
+
+	prev_context = sdata->current_context;
+	prev_layout = sdata->current_layout;
+	sdata->current_context = sdata->temp_context;
+	sdata->current_layout = sdata->temp_layout;
+
+	ofa_irenderable_set_text( instance, 0, 0, text, PANGO_ALIGN_LEFT );
+	pango_layout_get_size( sdata->current_layout, &pango_width, &pango_height );
+	cairo_width = ( gdouble ) pango_width / PANGO_SCALE;
+
+	sdata->current_context = prev_context;
+	sdata->current_layout = prev_layout;
+
+	return( cairo_width );
+}
+
+/**
+ * ofa_irenderable_get_line_height:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the height in cairo units used by a line, which corresponds
+ * to the text height to which is added the body vertical space rate.
+ */
+gdouble
+ofa_irenderable_get_line_height( ofaIRenderable *instance )
+{
+	gdouble line_height;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
+
+	line_height = ofa_irenderable_get_text_height( instance );
+	line_height *= ( 1 + ofa_irenderable_get_body_vspace_rate( instance ));
+
+	return( line_height );
 }
 
 /**
@@ -1404,23 +1380,9 @@ ofa_irenderable_set_font( ofaIRenderable *instance, const gchar *font_str )
 
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 
-	sdata = get_irenderable_data( instance );
+	sdata = get_instance_data( instance );
 	set_font( sdata->in_layout, font_str, NULL );
 	set_font( sdata->temp_layout, font_str, NULL );
-}
-
-/**
- * ofa_irenderable_set_summary_font:
- *
- * Set summary font and color.
- */
-void
-ofa_irenderable_set_summary_font( ofaIRenderable *instance )
-{
-	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
-
-	ofa_irenderable_set_color( instance, COLOR_SUMMARY );
-	ofa_irenderable_set_font( instance, st_default_summary_font );
 }
 
 /*
@@ -1445,142 +1407,6 @@ set_font( PangoLayout *layout, const gchar *font_str, gdouble *size )
 }
 
 /**
- * ofa_irenderable_get_text_height:
- * @instance: this #ofaIRenderable instance.
- *
- * Returns: the height in cairo units used by a text drawn in the current font.
- */
-gdouble
-ofa_irenderable_get_text_height( ofaIRenderable *instance )
-{
-	sIRenderable *sdata;
-	gdouble height;
-	cairo_t *prev_context;
-	PangoLayout *prev_layout;
-
-	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
-
-	sdata = get_irenderable_data( instance );
-
-	prev_context = sdata->current_context;
-	prev_layout = sdata->current_layout;
-	sdata->current_context = sdata->temp_context;
-	sdata->current_layout = sdata->temp_layout;
-
-	height = ofa_irenderable_set_text( instance, 0, 0, "My testing Text", PANGO_ALIGN_LEFT );
-
-	sdata->current_context = prev_context;
-	sdata->current_layout = prev_layout;
-
-	return( height );
-}
-
-/**
- * ofa_irenderable_get_text_width:
- * @instance: this #ofaIRenderable instance.
- * @text:
- *
- * Returns: the width in cairo units used by a text drawn in the current font.
- */
-gdouble
-ofa_irenderable_get_text_width( ofaIRenderable *instance, const gchar *text )
-{
-	sIRenderable *sdata;
-	gdouble cairo_width;
-	cairo_t *prev_context;
-	PangoLayout *prev_layout;
-	gint pango_width, pango_height;
-
-	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
-
-	sdata = get_irenderable_data( instance );
-
-	prev_context = sdata->current_context;
-	prev_layout = sdata->current_layout;
-	sdata->current_context = sdata->temp_context;
-	sdata->current_layout = sdata->temp_layout;
-
-	ofa_irenderable_set_text( instance, 0, 0, text, PANGO_ALIGN_LEFT );
-	pango_layout_get_size( sdata->current_layout, &pango_width, &pango_height );
-	cairo_width = ( gdouble ) pango_width / PANGO_SCALE;
-
-	sdata->current_context = prev_context;
-	sdata->current_layout = prev_layout;
-
-	return( cairo_width );
-}
-
-/**
- * ofa_irenderable_get_line_height:
- * @instance: this #ofaIRenderable instance.
- *
- * Returns: the height in cairo units used by a line.
- */
-gdouble
-ofa_irenderable_get_line_height( ofaIRenderable *instance )
-{
-	sIRenderable *sdata;
-	gdouble text_height, line_height;
-
-	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
-
-	sdata = get_irenderable_data( instance );
-	text_height = ofa_irenderable_get_text_height( instance );
-	line_height = text_height * ( 1+sdata->body_vspace_rate );
-
-	return( line_height );
-}
-
-/**
- * ofa_irenderable_get_max_y:
- * @instance: this #ofaIRenderable instance.
- */
-gdouble
-ofa_irenderable_get_max_y( ofaIRenderable *instance )
-{
-	sIRenderable *sdata;
-
-	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
-
-	sdata = get_irenderable_data( instance );
-
-	return( sdata->max_y );
-}
-
-/**
- * ofa_irenderable_get_last_y:
- * @instance: this #ofaIRenderable instance.
- */
-gdouble
-ofa_irenderable_get_last_y( ofaIRenderable *instance )
-{
-	sIRenderable *sdata;
-
-	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
-
-	sdata = get_irenderable_data( instance );
-
-	return( sdata->last_y );
-}
-
-/**
- * ofa_irenderable_set_last_y:
- * @instance: this #ofaIRenderable instance.
- * @y: the new ordinate to be set
- */
-void
-ofa_irenderable_set_last_y( ofaIRenderable *instance, gdouble y )
-{
-	sIRenderable *sdata;
-
-	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
-
-	sdata = get_irenderable_data( instance );
-
-	sdata->last_y = y;
-}
-
-/**
  * ofa_irenderable_set_color:
  */
 void
@@ -1590,80 +1416,8 @@ ofa_irenderable_set_color( ofaIRenderable *instance, double r, double g, double 
 
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 
-	sdata = get_irenderable_data( instance );
+	sdata = get_instance_data( instance );
 	cairo_set_source_rgb( sdata->current_context, r, g, b );
-}
-
-/**
- * ofa_irenderable_draw_rubber:
- */
-void
-ofa_irenderable_draw_rubber( ofaIRenderable *instance, gdouble top, gdouble height )
-{
-	sIRenderable *sdata;
-
-	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
-
-	sdata = get_irenderable_data( instance );
-	cairo_set_source_rgb( sdata->current_context, COLOR_LIGHT_GRAY );
-	cairo_rectangle( sdata->current_context, 0, top, sdata->render_width, height );
-	cairo_fill( sdata->current_context );
-}
-
-/**
- * ofa_irenderable_draw_rect:
- */
-void
-ofa_irenderable_draw_rect( ofaIRenderable *instance, gdouble x, gdouble y, gdouble width, gdouble height )
-{
-	sIRenderable *sdata;
-	gdouble cx;
-
-	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
-
-	sdata = get_irenderable_data( instance );
-	cx = width < 0 ? sdata->render_width : width;
-	cairo_set_line_width( sdata->current_context, 0.5 );
-
-	cairo_move_to( sdata->current_context, x, y );				/* ---- */
-	cairo_line_to( sdata->current_context, x+cx, y );
-	cairo_stroke( sdata->current_context );
-
-	cairo_move_to( sdata->current_context, x, y );				/* +---- */
-	cairo_line_to( sdata->current_context, x, y+height );		/* |     */
-	cairo_stroke( sdata->current_context );
-
-	cairo_move_to( sdata->current_context, x+cx, y );			/* +---+ */
-	cairo_line_to( sdata->current_context, x+cx, y+height );	/* |   | */
-	cairo_stroke( sdata->current_context );
-
-	cairo_move_to( sdata->current_context, x, y+height );		/* +---+ */
-	cairo_line_to( sdata->current_context, x+cx, y+height );	/* +---+ */
-	cairo_stroke( sdata->current_context );
-}
-
-/**
- * ofa_irenderable_draw_no_data:
- */
-void
-ofa_irenderable_draw_no_data( ofaIRenderable *instance )
-{
-	sIRenderable *sdata;
-	gdouble y, width, height;
-
-	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
-
-	sdata = get_irenderable_data( instance );
-
-	ofa_irenderable_set_color( instance, COLOR_NO_DATA );
-	ofa_irenderable_set_font( instance, st_default_no_data_font );
-	height = ofa_irenderable_get_text_height( instance );
-
-	/* vertically centered */
-	y = sdata->last_y + (sdata->max_y-sdata->last_y-height)/2;
-	width = sdata->render_width;
-	ofa_irenderable_set_text( instance, width/2, y, _( "Empty dataset" ), PANGO_ALIGN_CENTER );
-	sdata->last_y = y+height;
 }
 
 /**
@@ -1684,9 +1438,9 @@ ofa_irenderable_set_text( ofaIRenderable *instance,
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
 
-	sdata = get_irenderable_data( instance );
+	sdata = get_instance_data( instance );
 
-	return( set_text( sdata->current_layout, sdata->current_context, x, y, text, align ));
+	return( text ? set_text( sdata->current_layout, sdata->current_context, x, y, text, align ) : 0 );
 }
 
 static gdouble
@@ -1738,7 +1492,7 @@ ofa_irenderable_ellipsize_text( ofaIRenderable *instance,
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
 
-	sdata = get_irenderable_data( instance );
+	sdata = get_instance_data( instance );
 
 	pango_layout_set_text( sdata->current_layout, text, -1 );
 	my_utils_pango_layout_ellipsize( sdata->current_layout, max_size );
@@ -1773,11 +1527,556 @@ ofa_irenderable_set_wrapped_text( ofaIRenderable *instance,
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
 
-	sdata = get_irenderable_data( instance );
+	sdata = get_instance_data( instance );
 
 	pango_layout_set_width( sdata->current_layout, width );
 	pango_layout_set_wrap( sdata->current_layout, PANGO_WRAP_WORD );
 	height = ofa_irenderable_set_text( instance, x, y, text, align );
 
 	return( height );
+}
+
+/**
+ * ofa_irenderable_draw_rubber:
+ */
+void
+ofa_irenderable_draw_rubber( ofaIRenderable *instance, gdouble top, gdouble height )
+{
+	sIRenderable *sdata;
+
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+
+	sdata = get_instance_data( instance );
+	cairo_set_source_rgb( sdata->current_context, COLOR_LIGHT_GRAY );
+	cairo_rectangle( sdata->current_context, 0, top, sdata->render_width, height );
+	cairo_fill( sdata->current_context );
+}
+
+/**
+ * ofa_irenderable_draw_rect:
+ */
+void
+ofa_irenderable_draw_rect( ofaIRenderable *instance, gdouble x, gdouble y, gdouble width, gdouble height )
+{
+	sIRenderable *sdata;
+	gdouble cx;
+
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+
+	sdata = get_instance_data( instance );
+	cx = width < 0 ? sdata->render_width : width;
+	cairo_set_line_width( sdata->current_context, 0.5 );
+
+	cairo_move_to( sdata->current_context, x, y );				/* ---- */
+	cairo_line_to( sdata->current_context, x+cx, y );
+	cairo_stroke( sdata->current_context );
+
+	cairo_move_to( sdata->current_context, x, y );				/* +---- */
+	cairo_line_to( sdata->current_context, x, y+height );		/* |     */
+	cairo_stroke( sdata->current_context );
+
+	cairo_move_to( sdata->current_context, x+cx, y );			/* +---+ */
+	cairo_line_to( sdata->current_context, x+cx, y+height );	/* |   | */
+	cairo_stroke( sdata->current_context );
+
+	cairo_move_to( sdata->current_context, x, y+height );		/* +---+ */
+	cairo_line_to( sdata->current_context, x+cx, y+height );	/* +---+ */
+	cairo_stroke( sdata->current_context );
+}
+
+/**
+ * ofa_irenderable_draw_no_data:
+ */
+void
+ofa_irenderable_draw_no_data( ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+	gdouble y, width, height;
+
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+
+	sdata = get_instance_data( instance );
+
+	ofa_irenderable_set_color( instance, COLOR_NO_DATA );
+	ofa_irenderable_set_font( instance, st_default_no_data_font );
+	height = ofa_irenderable_get_text_height( instance );
+
+	/* vertically centered */
+	y = sdata->last_y + (sdata->max_y-sdata->last_y-height)/2;
+	width = sdata->render_width;
+	ofa_irenderable_set_text( instance, width/2, y, _( "Empty dataset" ), PANGO_ALIGN_CENTER );
+	sdata->last_y = y+height;
+}
+
+/**
+ * ofa_irenderable_get_header_columns_height
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the height of the surrounding rectangle of the columns
+ * headers.
+ */
+gdouble
+ofa_irenderable_get_header_columns_height( ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+
+	sdata = get_instance_data( instance );
+
+	return( sdata->header_columns_height );
+}
+
+/**
+ * ofa_irenderable_get_context:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the current cairo_t context.
+ */
+cairo_t *
+ofa_irenderable_get_context( ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+
+	sdata = get_instance_data( instance );
+
+	return( sdata->current_context );
+}
+
+/**
+ * ofa_irenderable_set_temp_context:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Save the current rendering context, and setup a new temp context to
+ * let the user draw onto.
+ *
+ * This doesn't have any effect during the pagination, as we already use
+ * a temporary context.
+ */
+void
+ofa_irenderable_set_temp_context( ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+
+	sdata = get_instance_data( instance );
+
+	if( !sdata->paginating && sdata->current_context == sdata->in_context && sdata->current_layout == sdata->in_layout ){
+		sdata->current_context = sdata->temp_context;
+		sdata->current_layout = sdata->temp_layout;
+	}
+}
+
+/**
+ * ofa_irenderable_restore_context:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Restore the previously saved (pagination or rendering) context.
+ *
+ * This doesn't have any effect during the pagination, as we already use
+ * a temporary context.
+ */
+void
+ofa_irenderable_restore_context( ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+
+	sdata = get_instance_data( instance );
+
+	if( !sdata->paginating && sdata->current_context == sdata->temp_context && sdata->current_layout == sdata->temp_layout ){
+		sdata->current_context = sdata->in_context;
+		sdata->current_layout = sdata->in_layout;
+	}
+}
+
+/**
+ * ofa_irenderable_get_page_margin:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the page margin in points.
+ */
+gdouble
+ofa_irenderable_get_page_margin( const ofaIRenderable *instance )
+{
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
+
+	return( st_page_margin );
+}
+
+/**
+ * ofa_irenderable_get_columns_spacing:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the minimal space between columns in points.
+ */
+gdouble
+ofa_irenderable_get_columns_spacing( const ofaIRenderable *instance )
+{
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
+
+	return( st_column_hspacing );
+}
+
+/**
+ * ofa_irenderable_get_dossier_font:
+ * @instance: this #ofaIRenderable instance.
+ * @page_num: the page number, counted from zero.
+ *
+ * Returns: the font of the dossier name.
+ */
+const gchar *
+ofa_irenderable_get_dossier_font( const ofaIRenderable *instance, guint page_num )
+{
+	const gchar *font;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_font ){
+		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_font( instance, page_num );
+
+	} else {
+		font = st_default_header_dossier_font;
+	}
+
+	return( font );
+}
+
+/**
+ * ofa_irenderable_get_dossier_color:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the color used for the dossier name.
+ */
+void
+ofa_irenderable_get_dossier_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
+{
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+	g_return_if_fail( r && g && b );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_color ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_color( instance, r, g, b );
+
+	} else {
+		set_rgb( r, g, b, COLOR_HEADER_DOSSIER );
+	}
+}
+
+/**
+ * ofa_irenderable_get_title_font:
+ * @instance: this #ofaIRenderable instance.
+ * @page_num: the page number, counted from zero.
+ *
+ * Returns: the font of the page title.
+ */
+const gchar *
+ofa_irenderable_get_title_font( const ofaIRenderable *instance, guint page_num )
+{
+	const gchar *font;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_font ){
+		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_font( instance, page_num );
+
+	} else {
+		font = st_default_header_title_font;
+	}
+
+	return( font );
+}
+
+/**
+ * ofa_irenderable_get_title_color:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the color used for the page title.
+ */
+void
+ofa_irenderable_get_title_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
+{
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+	g_return_if_fail( r && g && b );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_color ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_color( instance, r, g, b );
+
+	} else {
+		set_rgb( r, g, b, COLOR_HEADER_TITLE );
+	}
+}
+
+/**
+ * ofa_irenderable_get_columns_font:
+ * @instance: this #ofaIRenderable instance.
+ * @page_num: the page number, counted from zero.
+ *
+ * Returns: the font of the columns headers.
+ */
+const gchar *
+ofa_irenderable_get_columns_font( const ofaIRenderable *instance, guint page_num )
+{
+	const gchar *font;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_font ){
+		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_font( instance, page_num );
+
+	} else {
+		font = st_default_header_columns_font;
+	}
+
+	return( font );
+}
+
+/**
+ * ofa_irenderable_get_columns_color:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the color used for the columns headers.
+ */
+void
+ofa_irenderable_get_columns_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
+{
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+	g_return_if_fail( r && g && b );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_color ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_color( instance, r, g, b );
+
+	} else {
+		set_rgb( r, g, b, COLOR_HEADER_COLUMNS_FG );
+	}
+}
+
+/**
+ * ofa_irenderable_get_summary_font:
+ * @instance: this #ofaIRenderable instance.
+ * @page_num: the page number, counted from zero.
+ *
+ * Returns: the font of the summaries.
+ */
+const gchar *
+ofa_irenderable_get_summary_font( const ofaIRenderable *instance, guint page_num )
+{
+	const gchar *font;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_font ){
+		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_font( instance, page_num );
+
+	} else {
+		font = st_default_summary_font;
+	}
+
+	return( font );
+}
+
+/**
+ * ofa_irenderable_get_summary_color:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the color used for the summaries.
+ */
+void
+ofa_irenderable_get_summary_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
+{
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+	g_return_if_fail( r && g && b );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_color ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_color( instance, r, g, b );
+
+	} else {
+		ofa_irenderable_get_title_color( instance, r, g, b );
+	}
+}
+
+/**
+ * ofa_irenderable_get_group_font:
+ * @instance: this #ofaIRenderable instance.
+ * @page_num: the page number, counted from zero.
+ *
+ * Returns: the font of the summaries.
+ */
+const gchar *
+ofa_irenderable_get_group_font( const ofaIRenderable *instance, guint page_num )
+{
+	const gchar *font;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_font ){
+		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_font( instance, page_num );
+
+	} else {
+		font = st_default_group_font;
+	}
+
+	return( font );
+}
+
+/**
+ * ofa_irenderable_get_group_color:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the color used for the group header and footer.
+ */
+void
+ofa_irenderable_get_group_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
+{
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+	g_return_if_fail( r && g && b );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_color ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_color( instance, r, g, b );
+
+	} else {
+		ofa_irenderable_get_summary_color( instance, r, g, b );
+	}
+}
+
+/**
+ * ofa_irenderable_get_report_font:
+ * @instance: this #ofaIRenderable instance.
+ * @page_num: the page number, counted from zero.
+ *
+ * Returns: the font of the summaries.
+ */
+const gchar *
+ofa_irenderable_get_report_font( const ofaIRenderable *instance, guint page_num )
+{
+	const gchar *font;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_font ){
+		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_font( instance, page_num );
+
+	} else {
+		font = st_default_report_font;
+	}
+
+	return( font );
+}
+
+/**
+ * ofa_irenderable_get_report_color:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the color used for the top and bottom reports.
+ */
+void
+ofa_irenderable_get_report_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
+{
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+	g_return_if_fail( r && g && b );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_color ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_color( instance, r, g, b );
+
+	} else {
+		ofa_irenderable_get_summary_color( instance, r, g, b );
+	}
+}
+
+/**
+ * ofa_irenderable_get_body_font:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the body font.
+ */
+const gchar *
+ofa_irenderable_get_body_font( const ofaIRenderable *instance )
+{
+	const gchar *font;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font ){
+		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font( instance );
+
+	} else {
+		font = st_default_body_font;
+	}
+
+	return( font );
+}
+
+/**
+ * ofa_irenderable_get_body_color:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the color used for the body.
+ */
+void
+ofa_irenderable_get_body_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
+{
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+	g_return_if_fail( r && g && b );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_color ){
+		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_color( instance, r, g, b );
+
+	} else {
+		set_rgb( r, g, b, COLOR_BODY );
+	}
+}
+
+/**
+ * ofa_irenderable_get_body_vspace_rate:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the color used for the body.
+ *
+ * vspace_rate: the vertical space to add to the text line height to
+ * have an interline - default to 25%
+ */
+gdouble
+ofa_irenderable_get_body_vspace_rate( const ofaIRenderable *instance )
+{
+	gdouble rate;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_vspace_rate ){
+		rate = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_vspace_rate( instance );
+
+	} else {
+		rate = st_body_vspace_rate;
+	}
+
+	return( rate );
+}
+
+static sIRenderable *
+get_instance_data( const ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+
+	sdata = ( sIRenderable * ) g_object_get_data( G_OBJECT( instance ), IRENDERABLE_DATA );
+
+	if( !sdata ){
+		sdata = g_new0( sIRenderable, 1 );
+		g_object_set_data( G_OBJECT( instance ), IRENDERABLE_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
+	}
+
+	return( sdata );
+}
+
+static void
+on_instance_finalized( sIRenderable *sdata, void *instance )
+{
+	static const gchar *thisfn = "ofa_irenderable_on_instance_finalized";
+
+	g_debug( "%s: sdata=%p, instance=%p", thisfn, ( void * ) sdata, ( void * ) instance );
+
+	g_clear_object( &sdata->in_layout );
+
+	if( sdata->temp_context ){
+		cairo_destroy( sdata->temp_context );
+	}
+
+	g_clear_object( &sdata->temp_layout );
+
+	g_free( sdata );
 }

@@ -117,6 +117,7 @@ typedef struct {
 #define THIS_PAGE_ORIENTATION            GTK_PAGE_ORIENTATION_LANDSCAPE
 #define THIS_PAPER_NAME                  GTK_PAPER_NAME_A4
 
+#if 0
 static const gchar *st_page_header_title = N_( "General Ledgers Book" );
 
 /* these are parms which describe the page layout
@@ -164,6 +165,8 @@ static void               irenderable_draw_bottom_summary( ofaIRenderable *insta
 static void               draw_ledger_totals( ofaIRenderable *instance );
 static void               read_settings( ofaLedgerBookRender *self );
 static void               write_settings( ofaLedgerBookRender *self );
+#endif
+static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerBookRender, ofa_ledger_book_render, OFA_TYPE_RENDER_PAGE, 0,
 		G_ADD_PRIVATE( ofaLedgerBookRender )
@@ -199,7 +202,7 @@ ledger_book_render_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		write_settings( OFA_LEDGER_BOOK_RENDER( instance ));
+		//write_settings( OFA_LEDGER_BOOK_RENDER( instance ));
 
 		/* unref object members here */
 	}
@@ -234,6 +237,7 @@ ofa_ledger_book_render_class_init( ofaLedgerBookRenderClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ledger_book_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_book_render_finalize;
 
+	/*
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
 	OFA_PANED_PAGE_CLASS( klass )->init_view = paned_page_v_init_view;
@@ -244,8 +248,18 @@ ofa_ledger_book_render_class_init( ofaLedgerBookRenderClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_v_get_print_settings;
 	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_v_get_dataset;
 	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_v_free_dataset;
+	*/
 }
 
+static void
+irenderable_iface_init( ofaIRenderableInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ledger_book_render_irenderable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
+#if 0
 static GtkWidget *
 page_v_get_top_focusable_widget( const ofaPage *page )
 {
@@ -991,3 +1005,4 @@ write_settings( ofaLedgerBookRender *self )
 	g_free( str );
 	g_free( key );
 }
+#endif
