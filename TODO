@@ -365,8 +365,6 @@
                 + replace the GtkEntry with a GtkComboBox+GtkEntry
                 (this is for new profiles)
 
-1413 2017- 3-24 review reconciliation summary at date
-
 1415 2017- 3-24 rendering should use dossier label instead of dossier name
 
 1416 2017- 3-24 dossier administrative credentials: does not remember the account
@@ -922,6 +920,9 @@
 
 1408 2017- 3-22 accentry store: update external ids from signaler handler
      2017- 3-22 done
+
+1413 2017- 3-24 review reconciliation summary at date
+     2017- 3-28 done
 
 1414 2017- 3-24 dbms entry status should come back as a char indicator
      2017- 3-25 done

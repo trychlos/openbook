@@ -58,15 +58,22 @@ typedef struct {
 
 	ofaReconcilArgs *args_bin;
 
-	/* internals
+	/* initialization
 	 */
 	gchar          *settings_prefix;
 	ofaIGetter     *getter;
+
+	/* from ofaReconcilArgs
+	 */
 	gchar          *account_number;
 	ofoAccount     *account;
 	ofoCurrency    *currency;
-	GDate           date;
-	gint            count;					/* count of entries in the dataset */
+	GDate           arg_date;
+
+	/* computed account solde at the closest date
+	 */
+	ofxAmount       account_solde;
+	GDate           account_deffect;
 
 	/* print datas
 	 */
@@ -79,6 +86,7 @@ typedef struct {
 	gdouble         body_count_rtab;
 	gdouble         body_effect_ltab;
 	gdouble         body_ledger_ltab;
+	gint            body_ledger_max_size;		/* Pango units */
 	gdouble         body_ref_ltab;
 	gint            body_ref_max_size;			/* Pango units */
 	gdouble         body_label_ltab;
@@ -89,12 +97,13 @@ typedef struct {
 
 	/* runtime
 	 */
-	gint            line_num;				/* entry line number of the full report counted from 1 */
-	gint            batline_num;			/* bat line number of the full report counted from 1 */
-	GDate           global_deffect;
-	gdouble         solde_debit;
-	gdouble         solde_credit;
-	gdouble         account_solde;
+	gboolean        body_entry;
+	guint           line_num;				/* entry line number of the full report counted from 1 */
+	guint           batline_num;			/* bat line number of the full report counted from 1 */
+	ofxAmount       current_solde;
+	GDate           current_date;
+	ofxAmount       solde_debit;
+	ofxAmount       solde_credit;
 }
 	ofaReconcilRenderPrivate;
 
@@ -111,24 +120,19 @@ static const gchar *st_page_header_title = N_( "Account Reconciliation Summary" 
  */
 
 /* the columns of the body */
-static const gchar  *st_body_font           = "Sans 7";
+static const gchar  *st_title2_font         = "Sans Bold 8";
+static const gchar  *st_summary0_font       = "Sans Bold 7";
+static const gchar  *st_summary1_font       = "Sans 7";
 static const gchar  *st_bat_header_font     = "Sans Italic 7";
-static const gchar  *st_bat_line_font       = "Sans Italic 7";
-static const gchar  *st_bottom_summary_font = "Sans Italic 6";
+static const gchar  *st_body_entry_font     = "Sans 6";
+static const gchar  *st_body_batline_font   = "Sans Italic 6";
+static const gchar  *st_last_summary_font   = "Sans Italic 6";
 static const gchar  *st_line_number_font    = "Sans 5";
-static const gdouble st_body_vspace_rate    = 0.3;
 
-#define st_effect_width                  (gdouble) 54
-#define st_ledger_width                  (gdouble) 36
-#define st_ref_width                     (gdouble) 64
-#define st_amount_width                  (gdouble) 90
-#define st_column_hspacing               (gdouble) 4
-
-#define COLOR_BLACK                      0,      0,      0
-#define COLOR_DARK_CYAN                  0,      0.5156, 0.5156
-#define COLOR_DARK_GRAY                  0.251,  0.251,  0.251
-#define COLOR_GRAY                       0.6,    0.6,    0.6
-#define COLOR_MAROON                     0.4,    0.2,    0
+#define COLOR_BLACK                      0,      0,      0			/* last summary text */
+#define COLOR_DARK_GRAY                  0.251,  0.251,  0.251		/* bat lines (special font, special color) */
+#define COLOR_GRAY                       0.6,    0.6,    0.6		/* line number */
+#define COLOR_MAROON                     0.4,    0.2,    0			/* comparison of soldes */
 
 static GtkWidget         *page_v_get_top_focusable_widget( const ofaPage *page );
 static void               paned_page_v_init_view( ofaPanedPage *page );
@@ -141,26 +145,23 @@ static void               render_page_v_free_dataset( ofaRenderPage *page, GList
 static void               on_args_changed( ofaReconcilArgs *bin, ofaReconcilRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
-static gchar             *irenderable_get_body_font( ofaIRenderable *instance );
-static gdouble            irenderable_get_body_vspace_rate( ofaIRenderable *instance );
-static void               irenderable_reset_runtime( ofaIRenderable *instance );
-static gboolean           irenderable_want_groups( const ofaIRenderable *instance );
-static gboolean           irenderable_want_line_separation( const ofaIRenderable *instance );
-static void               irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdouble render_height );
-static gchar             *irenderable_get_dossier_name( const ofaIRenderable *instance );
-static gchar             *irenderable_get_page_header_title( const ofaIRenderable *instance );
-static gchar             *irenderable_get_page_header_subtitle( const ofaIRenderable *instance );
-static gchar             *irenderable_get_page_header_subtitle2( const ofaIRenderable *instance );
-static void               irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num );
-static void               irenderable_draw_top_summary( ofaIRenderable *instance );
-static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev );
-static void               irenderable_draw_group_header( ofaIRenderable *instance, GList *current );
-static void               irenderable_draw_line( ofaIRenderable *instance, GList *current );
+static void               irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height, GList *dataset );
+static gchar             *irenderable_get_dossier_label( const ofaIRenderable *instance );
+static void               irenderable_draw_header_title( ofaIRenderable *instance, guint page_num );
+static void               irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num );
+static void               irenderable_draw_top_summary( ofaIRenderable *instance, guint page_num );
+static gdouble            irenderable_get_group_break_height( ofaIRenderable *instance, guint page_num, GList *prev, GList *current, GList *next );
+static void               irenderable_draw_group_break( ofaIRenderable *instance, guint page_num, GList *prev, GList *current );
+static void               irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *current );
 static void               draw_line_entry( ofaIRenderable *instance, ofoEntry *entry );
 static void               draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline );
-static void               irenderable_draw_bottom_summary( ofaIRenderable *instance );
+static void               irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num );
+static const gchar       *irenderable_get_summary_font( const ofaIRenderable *instance, guint page_num );
+static const gchar       *irenderable_get_body_font( const ofaIRenderable *instance );
+static void               irenderable_clear_runtime_data( ofaIRenderable *instance );
+static void               draw_line_num( ofaIRenderable *instance, guint line_num );
+static void               draw_bat_title( ofaIRenderable *instance );
 static gchar             *account_solde_to_str( ofaReconcilRender *self, gdouble amount );
-static gchar             *get_render_date( ofaReconcilRender *self );
 static void               read_settings( ofaReconcilRender *self );
 static void               write_settings( ofaReconcilRender *self );
 
@@ -309,15 +310,16 @@ render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar
 static GList *
 render_page_v_get_dataset( ofaRenderPage *page )
 {
+	static const gchar *thisfn = "ofa_reconcil_render_render_page_v_get_dataset";
 	ofaReconcilRenderPrivate *priv;
 	GList *dataset, *batlist;
 	const gchar *cur_code;
+	gchar *str;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( page ));
 
 	g_free( priv->account_number );
 	priv->account_number = g_strdup( ofa_reconcil_args_get_account( priv->args_bin ));
-	/*g_debug( "irenderable_get_dataset: account_number=%s", priv->account_number );*/
 	g_return_val_if_fail( my_strlen( priv->account_number ), NULL );
 
 	priv->account = ofo_account_get_by_number( priv->getter, priv->account_number );
@@ -329,12 +331,12 @@ render_page_v_get_dataset( ofaRenderPage *page )
 	priv->currency = ofo_currency_get_by_code( priv->getter, cur_code );
 	g_return_val_if_fail( priv->currency && OFO_IS_CURRENCY( priv->currency ), NULL );
 
-	my_date_set_from_date( &priv->date, ofa_reconcil_args_get_date( priv->args_bin ));
+	my_date_set_from_date( &priv->arg_date, ofa_reconcil_args_get_date( priv->args_bin ));
 
 	dataset = ofo_entry_get_dataset_for_print_reconcil(
 					priv->getter,
 					priv->account_number,
-					&priv->date );
+					&priv->arg_date );
 
 	batlist = ofo_bat_line_get_dataset_for_print_reconcil(
 					priv->getter,
@@ -344,7 +346,13 @@ render_page_v_get_dataset( ofaRenderPage *page )
 		dataset = g_list_concat( dataset, batlist );
 	}
 
-	priv->count = g_list_length( dataset );
+	/* compute the solde of the account from the last archived balance
+	 * up to the requested date - return the actual greated effect date
+	 */
+	priv->account_solde = ofo_account_get_solde_at_date( priv->account, &priv->arg_date, &priv->account_deffect );
+	str = my_date_to_str( &priv->account_deffect, MY_DATE_SQL );
+	g_debug( "%s: account_solde=%lf, deffect=%s", thisfn, priv->account_solde, str );
+	g_free( str );
 
 	return( dataset );
 }
@@ -352,6 +360,16 @@ render_page_v_get_dataset( ofaRenderPage *page )
 static void
 render_page_v_free_dataset( ofaRenderPage *page, GList *dataset )
 {
+	ofaReconcilRenderPrivate *priv;
+
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( page ));
+
+	g_free( priv->account_number );
+	priv->account_number = NULL;
+	priv->account = NULL;
+	priv->currency = NULL;
+	my_date_clear( &priv->arg_date );
+
 	g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
 }
 
@@ -401,22 +419,18 @@ irenderable_iface_init( ofaIRenderableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = irenderable_get_interface_version;
-	iface->get_body_font = irenderable_get_body_font;
-	iface->get_body_vspace_rate = irenderable_get_body_vspace_rate;
 	iface->begin_render = irenderable_begin_render;
-	iface->reset_runtime = irenderable_reset_runtime;
-	iface->want_groups = irenderable_want_groups;
-	iface->want_line_separation = irenderable_want_line_separation;
-	iface->get_dossier_name = irenderable_get_dossier_name;
-	iface->get_page_header_title = irenderable_get_page_header_title;
-	iface->get_page_header_subtitle = irenderable_get_page_header_subtitle;
-	iface->get_page_header_subtitle2 = irenderable_get_page_header_subtitle2;
-	iface->draw_page_header_columns = irenderable_draw_page_header_columns;
+	iface->get_dossier_label = irenderable_get_dossier_label;
+	iface->draw_header_title = irenderable_draw_header_title;
+	iface->draw_header_column_names = irenderable_draw_header_column_names;
 	iface->draw_top_summary = irenderable_draw_top_summary;
-	iface->is_new_group = irenderable_is_new_group;
-	iface->draw_group_header = irenderable_draw_group_header;
+	iface->get_group_break_height = irenderable_get_group_break_height;
+	iface->draw_group_break = irenderable_draw_group_break;
 	iface->draw_line = irenderable_draw_line;
-	iface->draw_bottom_summary = irenderable_draw_bottom_summary;
+	iface->draw_last_summary = irenderable_draw_last_summary;
+	iface->get_summary_font = irenderable_get_summary_font;
+	iface->get_body_font = irenderable_get_body_font;
+	iface->clear_runtime_data = irenderable_clear_runtime_data;
 }
 
 static guint
@@ -425,55 +439,17 @@ irenderable_get_interface_version( const ofaIRenderable *instance )
 	return( 1 );
 }
 
-static gchar *
-irenderable_get_body_font( ofaIRenderable *instance )
-{
-	return( g_strdup( st_body_font ));
-}
-
-static gdouble
-irenderable_get_body_vspace_rate( ofaIRenderable *instance )
-{
-	return( st_body_vspace_rate );
-}
-
-static void
-irenderable_reset_runtime( ofaIRenderable *instance )
-{
-	ofaReconcilRenderPrivate *priv;
-
-	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
-
-	priv->line_num = 0;
-	priv->batline_num = 0;
-	priv->account_solde = 0;
-	priv->solde_debit = 0;
-	priv->solde_credit = 0;
-}
-
-static gboolean
-irenderable_want_groups( const ofaIRenderable *instance )
-{
-	return( TRUE );
-}
-
-static gboolean
-irenderable_want_line_separation( const ofaIRenderable *instance )
-{
-	return( FALSE );
-}
-
 /*
  * mainly here: compute the tab positions
  * this is called after having loaded the dataset
  */
 static void
-irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdouble render_height )
+irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height, GList *dataset )
 {
 	static const gchar *thisfn = "ofa_reconcil_render_irenderable_begin_render";
 	ofaReconcilRenderPrivate *priv;
 	gchar *str;
-	gdouble number_width;
+	gdouble number_width, date_width, ledger_width, piece_width, amount_width, spacing;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
@@ -484,89 +460,97 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 	priv->render_height = render_height;
 	priv->page_margin = ofa_irenderable_get_page_margin( instance );
 
-	/* keep the leftest column to display a line number */
-	str = g_strdup_printf( "%d", priv->count );
+	/* compute the width of some columns */
 	ofa_irenderable_set_font( instance, st_line_number_font );
+	str = g_strdup_printf( "%d", g_list_length( dataset ));
 	number_width = ofa_irenderable_get_text_width( instance, str );
-	priv->body_count_rtab = priv->page_margin + number_width + st_column_hspacing;
 	g_free( str );
 
-	/* starting from the left : body_effect_ltab on the left margin */
-	priv->body_effect_ltab = priv->body_count_rtab + st_column_hspacing;
-	priv->body_ledger_ltab = priv->body_effect_ltab+ st_effect_width + st_column_hspacing;
-	priv->body_ref_ltab = priv->body_ledger_ltab + st_ledger_width + st_column_hspacing;
-	priv->body_label_ltab = priv->body_ref_ltab + st_ref_width + st_column_hspacing;
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_body_font( instance ));
+	date_width = ofa_irenderable_get_text_width( instance, "9999-99-99" );
+	ledger_width = ofa_irenderable_get_text_width( instance, "XXXXXXX" );
+	piece_width = ofa_irenderable_get_text_width( instance, "XXX 99999999" );
+	amount_width = ofa_irenderable_get_text_width( instance, "9,999,999,999.99" );
+
+	spacing = ofa_irenderable_get_columns_spacing( instance );
+
+	/* keep the leftest column to display a line number */
+	priv->body_count_rtab = priv->page_margin + number_width;
+	priv->body_effect_ltab = priv->body_count_rtab + spacing;
+	priv->body_ledger_ltab = priv->body_effect_ltab+ date_width + spacing;
+	priv->body_ref_ltab = priv->body_ledger_ltab + ledger_width + spacing;
+	priv->body_label_ltab = priv->body_ref_ltab + piece_width + spacing;
 
 	/* starting from the right */
 	priv->body_solde_rtab = priv->render_width - priv->page_margin;
-	priv->body_credit_rtab = priv->body_solde_rtab - st_amount_width - st_column_hspacing;
-	priv->body_debit_rtab = priv->body_credit_rtab - st_amount_width - st_column_hspacing;
+	priv->body_credit_rtab = priv->body_solde_rtab - amount_width - spacing;
+	priv->body_debit_rtab = priv->body_credit_rtab - amount_width - spacing;
 
 	/* max size in Pango units */
-	priv->body_ref_max_size = st_ref_width*PANGO_SCALE;
-	priv->body_label_max_size = ( priv->body_debit_rtab - st_amount_width - st_column_hspacing - priv->body_label_ltab )*PANGO_SCALE;
+	priv->body_ledger_max_size = ledger_width*PANGO_SCALE;
+	priv->body_ref_max_size = piece_width*PANGO_SCALE;
+	priv->body_label_max_size = ( priv->body_debit_rtab - amount_width - spacing - priv->body_label_ltab )*PANGO_SCALE;
 }
 
 static gchar *
-irenderable_get_dossier_name( const ofaIRenderable *instance )
+irenderable_get_dossier_label( const ofaIRenderable *instance )
 {
 	ofaReconcilRenderPrivate *priv;
 	ofaHub *hub;
-	const ofaIDBConnect *connect;
-	ofaIDBDossierMeta *dossier_meta;
-	const gchar *dossier_name;
+	ofoDossier *dossier;
+	const gchar *label;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	connect = ofa_hub_get_connect( hub );
-	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
-	dossier_name = ofa_idbdossier_meta_get_dossier_name( dossier_meta );
+	dossier = ofa_hub_get_dossier( hub );
+	label = ofo_dossier_get_label( dossier );
 
-	return( g_strdup( dossier_name ));
-}
-
-static gchar *
-irenderable_get_page_header_title( const ofaIRenderable *instance )
-{
-	return( g_strdup( st_page_header_title ));
+	return( g_strdup( label ));
 }
 
 /*
- * Account xxxx
+ * Title is three lines
  */
-static gchar *
-irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
+static void
+irenderable_draw_header_title( ofaIRenderable *instance, guint page_num )
 {
 	ofaReconcilRenderPrivate *priv;
+	gdouble r, g, b, y, height;
 	gchar *str;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
-	/* account number and label in line 4 */
+	ofa_irenderable_get_title_color( instance, &r, &g, &b );
+	ofa_irenderable_set_color( instance, r, g, b );
+	y = ofa_irenderable_get_last_y( instance );
+
+	/* line 1 - Reconciliation summary */
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_title_font( instance, page_num ));
+	height = ofa_irenderable_set_text( instance, priv->render_width/2, y, st_page_header_title, PANGO_ALIGN_CENTER );
+	y += height;
+
+	/* line 2 - account */
+	ofa_irenderable_set_font( instance, st_title2_font );
 	str = g_strdup_printf(
 				_( "Account %s - %s" ),
 				ofo_account_get_number( priv->account ),
 				ofo_account_get_label( priv->account ));
+	height = ofa_irenderable_set_text( instance, priv->render_width/2, y, str, PANGO_ALIGN_CENTER );
+	g_free( str );
+	y += height;
 
-	return( str );
-}
+	/* line 3 - reconciliation date */
+	str = my_date_to_str( &priv->arg_date, ofa_prefs_date_display( priv->getter ));
+	height = ofa_irenderable_set_text( instance, priv->render_width/2, y, str, PANGO_ALIGN_CENTER );
+	g_free( str );
+	y += height;
 
-/*
- * Rendering date
- */
-static gchar *
-irenderable_get_page_header_subtitle2( const ofaIRenderable *instance )
-{
-	gchar *sdate;
-
-	sdate = get_render_date( OFA_RECONCIL_RENDER( instance ));
-
-	return( sdate );
+	ofa_irenderable_set_last_y( instance, y );
 }
 
 static void
-irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num )
+irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num )
 {
 	ofaReconcilRenderPrivate *priv;
 	static gdouble st_vspace_rate = 0.5;
@@ -606,89 +590,83 @@ irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num )
 	ofa_irenderable_set_last_y( instance, y );
 }
 
+/*
+ * top summary: display the account of the solde at the found date
+ * if no entry has been found (thus zero), use the arg date
+ */
 static void
-irenderable_draw_top_summary( ofaIRenderable *instance )
+irenderable_draw_top_summary( ofaIRenderable *instance, guint page_num )
 {
 	ofaReconcilRenderPrivate *priv;
-	static const gdouble st_vspace_rate = 0.4;
+	static const gdouble st_vspace_after = 0.25;
+	const GDate *date;
 	gchar *str, *str_solde, *sdate;
 	gdouble y, height;
-	GDate date;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
-	y = ofa_irenderable_get_last_y( instance );
+	if( page_num == 0 ){
+		date = priv->account_solde ? &priv->account_deffect : &priv->arg_date;
+		ofa_irenderable_set_font( instance, st_summary0_font );
 
-	ofo_account_get_global_deffect( priv->account, &priv->global_deffect );
-	my_date_set_from_date( &date, &priv->global_deffect );
-	if( !my_date_is_valid( &date )){
-		my_date_set_from_date( &date, &priv->date );
+	} else {
+		date = &priv->current_date;
+		ofa_irenderable_set_font( instance, st_summary1_font );
 	}
-	sdate = my_date_to_str( &date, ofa_prefs_date_display( priv->getter ));
 
-	priv->account_solde = ofo_account_get_global_solde( priv->account );
-	str_solde = account_solde_to_str( OFA_RECONCIL_RENDER( instance ), priv->account_solde );
-
+	sdate = my_date_to_str( date, ofa_prefs_date_display( priv->getter ));
+	str_solde = account_solde_to_str( OFA_RECONCIL_RENDER( instance ), priv->current_solde );
 	str = g_strdup_printf( _( "Account solde on %s is %s" ), sdate, str_solde );
+
+	y = ofa_irenderable_get_last_y( instance );
+	height = ofa_irenderable_set_text( instance, priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+	y += height * ( 1+st_vspace_after );
+	ofa_irenderable_set_last_y( instance, y );
 
 	g_free( sdate );
 	g_free( str_solde );
-
-	height = ofa_irenderable_set_text( instance,
-			priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-
 	g_free( str );
 
-	y += height * ( 1+st_vspace_rate );
-	ofa_irenderable_set_last_y( instance, y );
 }
 
 /*
- * We are drawing bat lines as a new group: just test if this is the
- * first bat line
+ * about to render the 'current' line
+ * must compute the height of unsecable bloc
+ *
+ * - if current is set and next is null
+ *   + solde line
+ *   + last summary
+ *
+ * - if prev was entry and current is batline
+ *   + group line + vspace
  */
-static gboolean
-irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev )
+static gdouble
+irenderable_get_group_break_height( ofaIRenderable *instance, guint page_num, GList *prev, GList *current, GList *next )
 {
-	ofoBase *current_obj, *prev_obj;
+	gdouble height;
 
-	g_return_val_if_fail( current, FALSE );
+	height = ofa_irenderable_get_text_height( instance );
 
-	if( !prev ){
-		return( FALSE );
+	if( !next ){
+		height += ofa_irenderable_get_text_height( instance );
+		height += ofa_irenderable_get_last_summary_height( instance );
 	}
 
-	current_obj = OFO_BASE( current->data );
-	prev_obj = OFO_BASE( prev->data );
-
-	return( OFO_IS_BAT_LINE( current_obj ) && OFO_IS_ENTRY( prev_obj ));
+	return( height );
 }
 
-/*
- * draw a header before first bat line
- */
 static void
-irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
+irenderable_draw_group_break( ofaIRenderable *instance, guint page_num, GList *prev, GList *current )
 {
-	ofaReconcilRenderPrivate *priv;
-	gdouble y;
-
-	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
-
-	ofa_irenderable_set_color( instance, COLOR_DARK_CYAN );
-	ofa_irenderable_set_font( instance, st_bat_header_font );
-
-	y = ofa_irenderable_get_last_y( instance );
-
-	ofa_irenderable_set_text(
-			instance, priv->body_effect_ltab, y, _( "Unconciliated bank transactions "), PANGO_ALIGN_LEFT );
-
-	y += ofa_irenderable_get_line_height( instance );;
-	ofa_irenderable_set_last_y( instance, y );
+	/* have a group line if current is a batline
+	 * and prev was an entry or null */
+	if(( !prev || OFO_IS_ENTRY( prev->data )) && OFO_IS_BAT_LINE( current->data )){
+		draw_bat_title( instance );
+	}
 }
 
 static void
-irenderable_draw_line( ofaIRenderable *instance, GList *current )
+irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *current )
 {
 	if( OFO_IS_ENTRY( current->data )){
 		draw_line_entry( instance, OFO_ENTRY( current->data ));
@@ -705,7 +683,8 @@ draw_line_entry( ofaIRenderable *instance, ofoEntry *entry )
 	gdouble y;
 	gchar *str;
 	const gchar *cstr;
-	gdouble amount;
+	ofxAmount amount;
+	gdouble r, g, b;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
@@ -716,8 +695,8 @@ draw_line_entry( ofaIRenderable *instance, ofoEntry *entry )
 			priv->body_effect_ltab, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
 
-	ofa_irenderable_set_text( instance,
-			priv->body_ledger_ltab, y, ofo_entry_get_ledger( entry ), PANGO_ALIGN_LEFT );
+	ofa_irenderable_ellipsize_text( instance,
+			priv->body_ledger_ltab, y, ofo_entry_get_ledger( entry ), priv->body_ledger_max_size );
 
 	cstr = ofo_entry_get_ref( entry );
 	if( my_strlen( cstr )){
@@ -734,7 +713,7 @@ draw_line_entry( ofaIRenderable *instance, ofoEntry *entry )
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
-		priv->account_solde += amount;
+		priv->current_solde += amount;
 		priv->solde_debit += amount;
 	}
 
@@ -744,23 +723,20 @@ draw_line_entry( ofaIRenderable *instance, ofoEntry *entry )
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
-		priv->account_solde -= amount;
+		priv->current_solde -= amount;
 		priv->solde_credit += amount;
 	}
 
 	/* current solde */
-	ofa_irenderable_set_color( instance, COLOR_DARK_CYAN );
-	str = ofa_amount_to_str( priv->account_solde, priv->currency, priv->getter );
+	ofa_irenderable_get_summary_color( instance, &r, &g, &b );
+	ofa_irenderable_set_color( instance, r, g, b );
+	str = ofa_amount_to_str( priv->current_solde, priv->currency, priv->getter );
 	ofa_irenderable_set_text( instance,
 			priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 	g_free( str );
 
 	/* display the line number starting from 1 */
-	ofa_irenderable_set_color( instance, COLOR_GRAY );
-	ofa_irenderable_set_font( instance, st_line_number_font );
-	str = g_strdup_printf( "%d", ++priv->line_num );
-	ofa_irenderable_set_text( instance, priv->body_count_rtab, y+1.5, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+	draw_line_num( instance, ++priv->line_num );
 }
 
 static void
@@ -770,14 +746,16 @@ draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline )
 	gdouble y;
 	gchar *str;
 	const gchar *cstr;
-	gdouble amount;
+	ofxAmount amount;
+	gdouble r, g, b;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 
+	priv->body_entry = FALSE;
 	ofa_irenderable_set_color( instance, COLOR_DARK_GRAY );
-	ofa_irenderable_set_font( instance, st_bat_line_font );
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_body_font( instance ));
 
 	str = my_date_to_str( ofo_bat_line_get_deffect( batline ), ofa_prefs_date_display( priv->getter ));
 	ofa_irenderable_set_text( instance, priv->body_effect_ltab, y, str, PANGO_ALIGN_LEFT );
@@ -797,38 +775,35 @@ draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline )
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
-		priv->account_solde += amount;
+		priv->current_solde += amount;
 		priv->solde_debit += amount;
 	} else {
 		str = ofa_amount_to_str( -amount, priv->currency, priv->getter );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
-		priv->account_solde += amount;
+		priv->current_solde += amount;
 		priv->solde_credit += amount;
 	}
 
 	/* current solde */
-	ofa_irenderable_set_color( instance, COLOR_DARK_CYAN );
-	str = ofa_amount_to_str( priv->account_solde, priv->currency, priv->getter );
+	ofa_irenderable_get_summary_color( instance, &r, &g, &b );
+	ofa_irenderable_set_color( instance, r, g, b );
+	str = ofa_amount_to_str( priv->current_solde, priv->currency, priv->getter );
 	ofa_irenderable_set_text( instance,
 			priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 	g_free( str );
 
 	/* display the line number starting from 1 */
-	ofa_irenderable_set_color( instance, COLOR_GRAY );
-	ofa_irenderable_set_font( instance, st_line_number_font );
-	str = g_strdup_printf( "%d", ++priv->batline_num );
-	ofa_irenderable_set_text( instance, priv->body_count_rtab, y+1.5, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+	draw_line_num( instance, ++priv->batline_num );
 }
 
 static void
-irenderable_draw_bottom_summary( ofaIRenderable *instance )
+irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num )
 {
 	ofaReconcilRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.25;
-	gdouble y, line_height, height;
+	gdouble y, line_height, height, r, g, b;
 	gchar *str, *sdate, *str_amount;
 	ofoBat *bat;
 	ofxAmount bat_solde, solde;
@@ -838,15 +813,17 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
-	g_return_if_fail( my_date_is_valid( &priv->date ));
+	g_return_if_fail( my_date_is_valid( &priv->arg_date ));
+	priv->body_entry = TRUE;
 
 	/* debit and credit totals
 	 */
 	y = ofa_irenderable_get_last_y( instance );
 	line_height = ofa_irenderable_get_line_height( instance );
 
-	ofa_irenderable_set_color( instance, COLOR_DARK_CYAN );
-	ofa_irenderable_set_font( instance, st_body_font );
+	ofa_irenderable_get_summary_color( instance, &r, &g, &b );
+	ofa_irenderable_set_color( instance, r, g, b );
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_body_font( instance ));
 
 	str = ofa_amount_to_str( priv->solde_debit, priv->currency, priv->getter );
 	ofa_irenderable_set_text( instance,
@@ -862,11 +839,10 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	 */
 	y += line_height * ( 1+st_vspace_rate );
 
-	ofa_irenderable_set_color( instance, COLOR_DARK_CYAN );
-	ofa_irenderable_set_summary_font( instance );
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_summary_font( instance, 0 ));
 
-	sdate = get_render_date( OFA_RECONCIL_RENDER( instance ));
-	str_amount = account_solde_to_str( OFA_RECONCIL_RENDER( instance ), priv->account_solde );
+	sdate = my_date_to_str( &priv->account_deffect, ofa_prefs_date_display( priv->getter ));
+	str_amount = account_solde_to_str( OFA_RECONCIL_RENDER( instance ), priv->current_solde );
 
 	str = g_strdup_printf( _( "Reconciliated account solde on %s is %s" ), sdate, str_amount );
 
@@ -883,7 +859,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	y += line_height * ( 1+st_vspace_rate );
 
 	ofa_irenderable_set_color( instance, COLOR_BLACK );
-	ofa_irenderable_set_font( instance, st_bottom_summary_font );
+	ofa_irenderable_set_font( instance, st_last_summary_font );
 
 	height = ofa_irenderable_set_wrapped_text( instance,
 				priv->page_margin, y,
@@ -901,7 +877,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	 */
 	bat = ofo_bat_get_most_recent_for_account( priv->getter, priv->account_number );
 	if( bat ){
-		ofa_irenderable_set_summary_font( instance );
+		ofa_irenderable_set_font( instance, ofa_irenderable_get_summary_font( instance, 0 ));
 
 		bat_solde = ofo_bat_get_end_solde( bat );
 		bat_end = ofo_bat_get_end_date( bat );
@@ -921,7 +897,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 		bat_str = g_string_append( bat_str, ": " );
 
-		solde = priv->account_solde + bat_solde;
+		solde = priv->current_solde + bat_solde;
 
 		if( ofa_amount_is_zero( solde, priv->currency )){
 			bat_str = g_string_append( bat_str, "OK" );
@@ -943,6 +919,91 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	ofa_irenderable_set_last_y( instance, y );
 }
 
+static const gchar *
+irenderable_get_summary_font( const ofaIRenderable *instance, guint page_num )
+{
+	return( page_num == 0 ? st_summary0_font : st_summary1_font );
+}
+
+/*
+ * here, we manage two body fonts, for the entries and for the batlines.
+ */
+static const gchar *
+irenderable_get_body_font( const ofaIRenderable *instance )
+{
+	ofaReconcilRenderPrivate *priv;
+
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
+
+	return( priv->body_entry ? st_body_entry_font : st_body_batline_font );
+}
+
+static void
+irenderable_clear_runtime_data( ofaIRenderable *instance )
+{
+	ofaReconcilRenderPrivate *priv;
+
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
+
+	priv->body_entry = TRUE;
+	priv->line_num = 0;
+	priv->batline_num = 0;
+	priv->current_solde = priv->account_solde;
+	priv->solde_debit = 0;
+	priv->solde_credit = 0;
+}
+
+/*
+ * draw the line number of the leftest column
+ */
+static void
+draw_line_num( ofaIRenderable *instance, guint line_num )
+{
+	ofaReconcilRenderPrivate *priv;
+	gchar *str;
+	gdouble y;
+
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
+
+	ofa_irenderable_set_color( instance, COLOR_GRAY );
+	ofa_irenderable_set_font( instance, st_line_number_font );
+
+	str = g_strdup_printf( "%d", line_num );
+
+	y = ofa_irenderable_get_last_y( instance );
+	ofa_irenderable_set_text( instance, priv->body_count_rtab, y+1, str, PANGO_ALIGN_RIGHT );
+
+	g_free( str );
+
+	y += ofa_irenderable_get_line_height( instance );
+	ofa_irenderable_set_last_y( instance, y );
+}
+
+/*
+ * draw a header before first bat line
+ */
+static void
+draw_bat_title( ofaIRenderable *instance )
+{
+	ofaReconcilRenderPrivate *priv;
+	gdouble y, r, g, b;
+
+	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
+
+	ofa_irenderable_get_summary_color( instance, &r, &g, &b );
+	ofa_irenderable_set_color( instance, r, g, b );
+	ofa_irenderable_set_font( instance, st_bat_header_font );
+
+	y = ofa_irenderable_get_last_y( instance );
+
+	ofa_irenderable_set_text(
+			instance, priv->body_effect_ltab, y, _( "Unconciliated bank transactions "), PANGO_ALIGN_LEFT );
+
+	y += ofa_irenderable_get_line_height( instance );
+
+	ofa_irenderable_set_last_y( instance, y );
+}
+
 static gchar *
 account_solde_to_str( ofaReconcilRender *self, gdouble amount )
 {
@@ -960,24 +1021,6 @@ account_solde_to_str( ofaReconcilRender *self, gdouble amount )
 	g_free( str_amount );
 
 	return( str );
-}
-
-static gchar *
-get_render_date( ofaReconcilRender *self )
-{
-	ofaReconcilRenderPrivate *priv;
-	GDate date;
-	gchar *sdate;
-
-	priv = ofa_reconcil_render_get_instance_private( self );
-
-	my_date_set_from_date( &date, &priv->global_deffect );
-	if( !my_date_is_valid( &date ) || my_date_compare( &date, &priv->date ) < 0 ){
-		my_date_set_from_date( &date, &priv->date );
-	}
-	sdate = my_date_to_str( &date, ofa_prefs_date_display( priv->getter ));
-
-	return( sdate );
 }
 
 /*

@@ -31,6 +31,10 @@
  * @include: ui/ofa-reconcil-render.h
  *
  * The class which manages the rendering (preview/print) of reconciliations.
+ *
+ * We are trying to:
+ * - get the solde of the account at the requested effect date
+ * - get the most closest BAT file.
  */
 
 #include "api/ofa-render-page.h"

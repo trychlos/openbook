@@ -177,10 +177,6 @@ gint            ofo_entry_get_exe_changed_count      ( ofaIGetter *getter,
 															const GDate *prev_begin, const GDate *prev_end,
 															const GDate *new_begin, const GDate *new_end );
 
-GDate          *ofo_entry_get_max_val_deffect        ( ofaIGetter *getter, const gchar *account, GDate *date );
-GDate          *ofo_entry_get_max_rough_deffect      ( ofaIGetter *getter, const gchar *account, GDate *date );
-GDate          *ofo_entry_get_max_futur_deffect      ( ofaIGetter *getter, const gchar *account, GDate *date );
-
 GSList         *ofo_entry_get_currencies             ( ofaIGetter *getter );
 #define         ofo_entry_free_currencies( L )       g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 

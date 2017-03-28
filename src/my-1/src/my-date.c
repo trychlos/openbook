@@ -67,9 +67,9 @@ my_date_clear( GDate *date )
 
 /**
  * my_date_is_valid:
- * @date: the #GDate to be evaluated
+ * @date: [allow-none]: the #GDate to be evaluated
  *
- * Returns: %TRUE if the date is valid.
+ * Returns: %TRUE if the date is set and valid.
  */
 gboolean
 my_date_is_valid( const GDate *date )

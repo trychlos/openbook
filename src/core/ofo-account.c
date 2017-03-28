@@ -701,6 +701,96 @@ ofo_account_get_futur_credit( const ofoAccount *account )
 }
 
 /**
+ * ofo_account_get_solde_at_date:
+ * @account: the #ofoAccount account.
+ * @date: [allow-none]: the requested effect date;
+ *  if unset, then all entries are taken into account (including future).
+ * @deffect: [out][allow-none]: the actual greatest effect date found.
+ *
+ * Compute the actual solde of the @account at the requested @date.
+ *
+ * DB is -
+ * CR is +
+ */
+ofxAmount
+ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *deffect )
+{
+	static const gchar *thisfn = "ofo_account_get_solde_at_date";
+	ofxAmount solde;
+	gint idx;
+	const GDate *arc_date, *ent_deffect;
+	const gchar *acc_number;
+	GDate max_deffect;
+	GList *dataset, *it;
+	ofoEntry *entry;
+	ofeEntryStatus status;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
+
+	solde = 0;
+	idx = archive_get_last_index( account, date );
+	if( idx == -1 ){
+		solde = 0;
+		arc_date = NULL;
+		g_debug( "%s: no archive found", thisfn );
+	} else {
+		arc_date = ofo_account_archive_get_date( account, idx );
+		solde = ofo_account_archive_get_credit( account, idx ) - ofo_account_archive_get_debit( account, idx );
+		gchar *str = my_date_to_str( arc_date, MY_DATE_SQL );
+		g_debug( "%s: found archive date=%s, solde=%lf", thisfn, str, solde );
+		g_free( str );
+	}
+
+	my_date_clear( &max_deffect );
+	acc_number = ofo_account_get_number( account );
+	dataset = ofo_entry_get_dataset( ofo_base_get_getter( OFO_BASE( account )));
+
+	for( it=dataset ; it ; it=it->next ){
+		entry = OFO_ENTRY( it->data );
+		if( my_collate( ofo_entry_get_account( entry ), acc_number ) != 0 ){
+			continue;
+		}
+		status = ofo_entry_get_status( entry );
+		if( status == ENT_STATUS_PAST || status == ENT_STATUS_DELETED ){
+			//g_debug( "%s: %lu is past or deleted", thisfn, ofo_entry_get_number( entry ));
+			continue;
+		}
+		ent_deffect = ofo_entry_get_deffect( entry );
+		/* must have ent_deffect > arc_date if set
+		 * if arc_date is not set, then the entry is candidate */
+		if( arc_date && my_date_compare( ent_deffect, arc_date ) <= 0 ){
+			//g_debug( "%s: %lu is before or equal to arc_date", thisfn, ofo_entry_get_number( entry ));
+			continue;
+		}
+		/* only consider entries before or equal to the requested date (if set) */
+		if( my_date_is_valid( date ) && my_date_compare( ent_deffect, date ) > 0 ){
+			//g_debug( "%s: %lu is after requested date", thisfn, ofo_entry_get_number( entry ));
+			continue;
+		}
+
+		solde += ofo_entry_get_credit( entry ) - ofo_entry_get_debit( entry );
+		//g_debug( "%s: adding %lu entry, solde=%lf", thisfn, ofo_entry_get_number( entry ), solde );
+
+		/* compute the max deffect */
+		if( deffect &&
+				( !my_date_is_valid( &max_deffect ) || my_date_compare( &max_deffect, ent_deffect ) < 0 )){
+
+			my_date_set_from_date( &max_deffect, ent_deffect );
+		}
+	}
+
+	if( deffect ){
+		my_date_clear( deffect );
+		if( my_date_is_valid( &max_deffect )){
+			my_date_set_from_date( deffect, &max_deffect );
+		}
+	}
+
+	return( solde );
+}
+
+/**
  * ofo_account_is_deletable:
  * @account: the #ofoAccount account
  *
@@ -961,85 +1051,6 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 	}
 
 	return( TRUE );
-}
-
-/**
- * ofo_account_get_global_deffect:
- * @account: the #ofoAccount account.
- * @date: [out]: where to store the returned date.
- *
- * Returns the most recent effect date of the account, taking into
- * account both validated, rough and future entries.
- *
- * This is used when printing reconciliation summary to qualify the
- * starting date of the print.
- *
- * The returned value may be %NULL or not valid if no entry has ever
- * been recorded on this @account.
- */
-GDate *
-ofo_account_get_global_deffect( const ofoAccount *account, GDate *date )
-{
-	ofaIGetter *getter;
-	GDate max_val, max_rough, max_futur;
-
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
-
-	getter = ofo_base_get_getter( OFO_BASE( account ));
-
-	ofo_entry_get_max_val_deffect( getter, ofo_account_get_number( account ), &max_val );
-	ofo_entry_get_max_rough_deffect( getter, ofo_account_get_number( account ), &max_rough );
-	ofo_entry_get_max_futur_deffect( getter, ofo_account_get_number( account ), &max_futur );
-
-	my_date_clear( date );
-
-	if( my_date_is_valid( &max_val )){
-		my_date_set_from_date( date, &max_val );
-	}
-
-	if( my_date_is_valid( &max_rough ) &&
-			( !my_date_is_valid( date ) || my_date_compare( date, &max_rough ) < 0 )){
-		my_date_set_from_date( date, &max_rough );
-	}
-
-	if( my_date_is_valid( &max_futur ) &&
-			( !my_date_is_valid( date ) || my_date_compare( date, &max_futur ) < 0 )){
-		my_date_set_from_date( date, &max_futur );
-	}
-
-	return( date );
-}
-
-/**
- * ofo_account_get_global_solde:
- * @account: the #ofoAccount account
- *
- * Returns: the current global balance of the @account, taking into
- * account both validated, rough and future balances.
- *
- * This is used when printing reconciliation summary to qualify the
- * starting solde of the print.
- *
- * The returned value is lesser than zero for a debit, or greater than
- * zero for a credit.
- */
-ofxAmount
-ofo_account_get_global_solde( const ofoAccount *account )
-{
-	ofxAmount amount;
-
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
-	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
-
-	amount = 0;
-	amount -= ofo_account_get_val_debit( account );
-	amount += ofo_account_get_val_credit( account );
-	amount -= ofo_account_get_rough_debit( account );
-	amount += ofo_account_get_rough_credit( account );
-	amount -= ofo_account_get_futur_debit( account );
-	amount += ofo_account_get_futur_credit( account );
-
-	return( amount );
 }
 
 /**

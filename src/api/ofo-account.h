@@ -126,6 +126,7 @@ ofxAmount       ofo_account_get_rough_debit         ( const ofoAccount *account 
 ofxAmount       ofo_account_get_rough_credit        ( const ofoAccount *account );
 ofxAmount       ofo_account_get_futur_debit         ( const ofoAccount *account );
 ofxAmount       ofo_account_get_futur_credit        ( const ofoAccount *account );
+ofxAmount       ofo_account_get_solde_at_date       ( ofoAccount *account, const GDate *date, GDate *deffect );
 
 gboolean        ofo_account_is_deletable            ( const ofoAccount *account );
 gboolean        ofo_account_is_root                 ( const ofoAccount *account );
@@ -138,8 +139,6 @@ gboolean        ofo_account_is_forwardable          ( const ofoAccount *account 
 gboolean        ofo_account_is_valid_data           ( const gchar *number, const gchar *label, const gchar *devise, gboolean root, gchar **msgerr );
 gint            ofo_account_get_class_from_number   ( const gchar *number );
 gint            ofo_account_get_level_from_number   ( const gchar *number );
-GDate          *ofo_account_get_global_deffect      ( const ofoAccount *account, GDate *date );
-gdouble         ofo_account_get_global_solde        ( const ofoAccount *account );
 gboolean        ofo_account_has_children            ( const ofoAccount *account );
 GList          *ofo_account_get_children            ( const ofoAccount *account );
 gboolean        ofo_account_is_child_of             ( const ofoAccount *account, const gchar *candidate );
