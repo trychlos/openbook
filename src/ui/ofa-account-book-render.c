@@ -153,7 +153,7 @@ static gint               entry_cmp( ofoEntry *a, ofoEntry *b, ofaAccountBookRen
 static void               render_page_v_free_dataset( ofaRenderPage *page, GList *dataset );
 static void               on_args_changed( ofaAccountBookArgs *bin, ofaAccountBookRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
-static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
+static guint              irenderable_get_interface_version( void );
 static void               irenderable_begin_render( ofaIRenderable *instance );
 static gchar             *irenderable_get_dossier_label( const ofaIRenderable *instance );
 static void               irenderable_draw_page_header_title( ofaIRenderable *instance );
@@ -454,7 +454,7 @@ irenderable_iface_init( ofaIRenderableInterface *iface )
 }
 
 static guint
-irenderable_get_interface_version( const ofaIRenderable *instance )
+irenderable_get_interface_version( void )
 {
 	return( 1 );
 }

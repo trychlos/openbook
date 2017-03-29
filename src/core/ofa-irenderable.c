@@ -33,11 +33,18 @@
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-igetter.h"
 #include "api/ofa-irenderable.h"
+#include "api/ofa-irenderer.h"
 
 /* data associated to each implementor object
  */
 typedef struct {
+
+	/* interface initialization
+	 */
+	ofaIGetter        *getter;
+	GList             *renderer_plugins;
 
 	/* begin_render() initialization
 	 */
@@ -135,6 +142,7 @@ static guint st_initializations         =   0;	/* interface initialization count
 static GType         register_type( void );
 static void          interface_base_init( ofaIRenderableInterface *klass );
 static void          interface_base_finalize( ofaIRenderableInterface *klass );
+static void          setup_renderer_plugins( ofaIRenderable *instance, sIRenderable *sdata );
 static void          create_temp_context( ofaIRenderable *instance, cairo_t *context, sIRenderable *sdata );
 static void          clear_runtime_data( ofaIRenderable *instance, sIRenderable *sdata );
 static gboolean      draw_page( ofaIRenderable *instance, sIRenderable *sdata );
@@ -222,15 +230,6 @@ interface_base_init( ofaIRenderableInterface *klass )
 
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
-		//klass->get_body_font = ofa_irenderable_get_body_font;
-		//klass->get_body_vspace_rate = irenderable_get_body_vspace_rate;
-		//klass->want_groups = irenderable_want_groups;
-		//klass->want_new_page = irenderable_want_new_page;
-		//klass->want_line_separation = irenderable_want_line_separation;
-		//klass->draw_page_header = irenderable_draw_page_header;
-		//klass->is_new_group = irenderable_is_new_group;
-		//klass->draw_page_footer = irenderable_draw_page_footer;
-
 		/**
 		 * ofaIRenderable::ofa-render-page:
 		 * @page_num: page number, counted from 1.
@@ -288,6 +287,78 @@ guint
 ofa_irenderable_get_interface_last_version( const ofaIRenderable *instance )
 {
 	return( IRENDERABLE_LAST_VERSION );
+}
+
+/**
+ * ofa_irenderable_get_interface_version:
+ * @type: the implementation's GType.
+ *
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
+ *
+ * Defaults to 1.
+ *
+ * Since: version 1.
+ */
+guint
+ofa_irenderable_get_interface_version( GType type )
+{
+	gpointer klass, iface;
+	guint version;
+
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
+
+	iface = g_type_interface_peek( klass, OFA_TYPE_IRENDERABLE );
+	g_return_val_if_fail( iface, 1 );
+
+	version = 1;
+
+	if((( ofaIRenderableInterface * ) iface )->get_interface_version ){
+		version = (( ofaIRenderableInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaIRenderable::get_interface_version()' method",
+				g_type_name( type ));
+	}
+
+	g_type_class_unref( klass );
+
+	return( version );
+}
+
+/**
+ * ofa_irenderable_set_getter:
+ * @instance: this #ofaIRenderable instance.
+ * @getter: the #ofaIGetter of the application.
+ *
+ * Set the @getter.
+ *
+ * This function is called at the very beginning of the #ofaRenderPage
+ * initialization. This is a good time to do once time initializations.
+ */
+void
+ofa_irenderable_set_getter( ofaIRenderable *instance, ofaIGetter *getter )
+{
+	static const gchar *thisfn = "ofa_irenderable_set_getter";
+	sIRenderable *sdata;
+
+	g_debug( "%s: instance=%p, getter=%p", thisfn, ( void * ) instance, ( void * ) getter );
+
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+
+	sdata = get_instance_data( instance );
+
+	sdata->getter = getter;
+
+	setup_renderer_plugins( instance, sdata );
+}
+
+static void
+setup_renderer_plugins( ofaIRenderable *instance, sIRenderable *sdata )
+{
+	sdata->renderer_plugins = ofa_igetter_get_for_type( sdata->getter, OFA_TYPE_IRENDERER );
 }
 
 /**
@@ -353,7 +424,6 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 	clear_runtime_data( instance, sdata );
 
 	return( sdata->pages_count );
-
 }
 
 /**
@@ -709,23 +779,38 @@ irenderable_draw_page_header_dossier( ofaIRenderable *instance, sIRenderable *sd
 {
 	gchar *label;
 	gdouble y, height, r, g, b;
+	GList *it;
+	IRenderableDraw0Fn fn;
+	gboolean done;
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_dossier ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_dossier( instance );
+	done = FALSE;
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		fn = ofa_irenderer_get_fn( OFA_IRENDERER( it->data ), "draw_page_header_dossier" );
+		if( fn ){
+			fn( instance );
+			done = TRUE;
+			break;
+		}
+	}
 
-	} else if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_label ){
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_dossier ){
+			OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_dossier( instance );
 
-		ofa_irenderable_get_dossier_color( instance, &r, &g, &b );
-		ofa_irenderable_set_color( instance, r, g, b );
-		ofa_irenderable_set_font( instance, ofa_irenderable_get_dossier_font( instance, sdata->page_num ));
+		} else if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_label ){
 
-		y = sdata->last_y;
-		label = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_label( instance );
-		height = ofa_irenderable_set_text( instance, 0, y, label, PANGO_ALIGN_LEFT );
-		g_free( label );
+			ofa_irenderable_get_dossier_color( instance, &r, &g, &b );
+			ofa_irenderable_set_color( instance, r, g, b );
+			ofa_irenderable_set_font( instance, ofa_irenderable_get_dossier_font( instance, sdata->page_num ));
 
-		y += height;
-		sdata->last_y = y;
+			y = sdata->last_y;
+			label = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_label( instance );
+			height = ofa_irenderable_set_text( instance, 0, y, label, PANGO_ALIGN_LEFT );
+			g_free( label );
+
+			y += height;
+			sdata->last_y = y;
+		}
 	}
 }
 
@@ -2210,6 +2295,8 @@ on_instance_finalized( sIRenderable *sdata, void *instance )
 	static const gchar *thisfn = "ofa_irenderable_on_instance_finalized";
 
 	g_debug( "%s: sdata=%p, instance=%p", thisfn, ( void * ) sdata, ( void * ) instance );
+
+	g_list_free( sdata->renderer_plugins );
 
 	g_clear_object( &sdata->in_layout );
 

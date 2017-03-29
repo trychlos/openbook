@@ -139,16 +139,6 @@
                 it would be easier that row-activate on templates page
                 opens the guided input rather that the properties)
 
- 796 2015- 4-13 FEAT IRenderable: have a second level of grouping
-                     (subgroup) use case: when printing accounts book,
-                     have a subtotal per class
-
- 799 2015- 4-13 DISP AccountsBook account top and bottom reports:
-                     - add a label [bottom report] or [top report] ?
-                     - in italic ?
-                     - added to the account label or rigt-aligned before the
-                       debit ?
-
  808 2015- 4-17 DISP when rendering, automatically computes the width of 
                      standard field as date or amount
      2015- 4-20      depending of the different headers and footers of
@@ -311,8 +301,6 @@
 
 1344 2017- 2- 3 re-authorize dossier open from command-line
 
-1350 2017- 2- 8 CheckBalances: check account and ledger archives
-
 1351 2017- 2- 9 Review export and import formats, especially the tables
                 with children and companions (e.g. entries+concil)
                 + have a version number
@@ -422,6 +410,18 @@
 
  792 2015- 4- 6 FEAT have a comment in the backup
      2017- 1-13 done
+
+ 796 2015- 4-13 FEAT IRenderable: have a second level of grouping
+                     (subgroup) use case: when printing accounts book,
+                     have a subtotal per class
+     2017- 3-29 done in new IRenderable interface
+
+ 799 2015- 4-13 DISP AccountsBook account top and bottom reports:
+                     - add a label [bottom report] or [top report] ?
+                     - in italic ?
+                     - added to the account label or rigt-aligned before the
+                       debit ?
+     2017- 3-29 cancelled as useless
 
  909 2015-11-26 ARCH SIGNAL_DOSSIER_EXE_DATE_CHANGED: change to same
                      signal (exe_dates_changed) sent on main window so
@@ -734,6 +734,12 @@
 
 1349 2017- 2- 8 AccountSelect: does not allow delete
      2017- 2- 9 done
+
+1350 2017- 2- 8 CheckBalances: check account and ledger archives
+     2017- 3-29 archived is only done after a full check (balance+integrity)
+                + orphan archive account is check in integrity
+                + orphan archive ledgers is check in integrity
+                => this is ok
 
 1352 2017- 2- 9 when upgrading the dbmodel, recurrent progress bars do
                 not display the OK

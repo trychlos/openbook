@@ -193,6 +193,8 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 
 	priv->paned = GTK_WIDGET( paned );
 
+	ofa_irenderable_set_getter( OFA_IRENDERABLE( page ), ofa_page_get_getter( OFA_PAGE( page )));
+
 	view = setup_view1( OFA_RENDER_PAGE( page ));
 	gtk_paned_pack1( paned, view, TRUE, FALSE );
 

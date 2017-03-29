@@ -59,7 +59,11 @@
  *   emitted 10 times.
  */
 
-#include <glib.h>
+#include <glib-object.h>
+#include <pango/pango-layout.h>
+#include <cairo/cairo.h>
+
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -103,21 +107,15 @@ typedef struct {
 	/*< public >*/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIRenderable instance.
 	 *
-	 * The interface code calls this method each time it needs to know
-	 * which version of this interface the application implements.
-	 *
-	 * If this method is not implemented by the application, then the
-	 * interface code considers that the application only implements
-	 * the version 1 of the ofaIRenderable interface.
-	 *
-	 * Return value: if implemented, this method must return the version
-	 * number of this interface the application is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
+	 *
+	 * Since: version 1.
 	 */
-	guint         ( *get_interface_version )    ( const ofaIRenderable *instance );
+	guint         ( *get_interface_version )    ( void );
 
 	/**
 	 * begin_render:
@@ -712,6 +710,13 @@ typedef struct {
 	ofaIRenderableInterface;
 
 /**
+ * IRenderableDraw0Fn:
+ *
+ * Prototypes for the plugins
+ */
+typedef void ( *IRenderableDraw0Fn )( ofaIRenderable * );
+
+/**
  * ofeIRenderableBreak:
  *
  * The type of separation between two groups.
@@ -734,11 +739,27 @@ typedef enum {
 }
 	ofeIRenderableMode;
 
+/*
+ * Interface-wide
+ */
 GType              ofa_irenderable_get_type                  ( void );
 
 guint              ofa_irenderable_get_interface_last_version( const ofaIRenderable *instance );
 
-/* three main entry points for this interface
+/*
+ * Implementation-wide
+ */
+guint              ofa_irenderable_get_interface_version     ( GType type );
+
+/*
+ * Instance-wide
+ *
+ * -- initialization
+ */
+void               ofa_irenderable_set_getter                ( ofaIRenderable *instance,
+																	ofaIGetter *getter );
+
+/* -- three main entry points for this interface
  */
 gint               ofa_irenderable_begin_render              ( ofaIRenderable *instance,
 																	cairo_t *cr,
@@ -753,7 +774,7 @@ void               ofa_irenderable_render_page               ( ofaIRenderable *i
 void               ofa_irenderable_end_render                ( ofaIRenderable *instance,
 																	cairo_t *cr );
 
-/* runtime
+/* -- runtime
  */
 gboolean           ofa_irenderable_is_paginating             ( const ofaIRenderable *instance );
 
@@ -835,7 +856,7 @@ void               ofa_irenderable_set_temp_context          ( ofaIRenderable *i
 
 void               ofa_irenderable_restore_context           ( ofaIRenderable *instance );
 
-/* helpers and default values
+/* -- helpers and default values
  */
 gdouble            ofa_irenderable_get_page_margin           ( const ofaIRenderable *instance );
 

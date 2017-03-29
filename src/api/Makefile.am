@@ -82,6 +82,7 @@ api_include_HEADERS = \
 	ofa-iproperties.h									\
 	ofa-irecover.h										\
 	ofa-irenderable.h									\
+	ofa-irenderer.h										\
 	ofa-isignalable.h									\
 	ofa-isignaler.h										\
 	ofa-istore.h										\

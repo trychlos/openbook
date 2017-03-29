@@ -55,6 +55,7 @@
    - Clarify the reference management of the collection (todo #1359).
    - ofaAccentryStore: new class.
    - ofaAccentryTreeview: new class.
+   - ofaIRenderer: new interface.
    - ofaUnreconcilPage: new class.
    - ofaUnsettledPage: new class.
    - ofoEntry: status is stored in DBMS as a char indicator (todo #1414).
