@@ -38,6 +38,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idoc.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-ope-template.h"
 
 #include "ofa-recurrent-dbmodel.h"
@@ -1553,8 +1554,10 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	ofoRecPeriod *period_obj;
 	ofxCounter detail_id, docid;
 	gint detail_idx;
+	gboolean all_messages;
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_MODEL );
+	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
 
 	if( progress ){
 		label = gtk_label_new( _( " Check for recurrent models integrity " ));
@@ -1674,7 +1677,7 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 			my_iprogress_pulse( progress, worker, ++i, count );
 		}
 
-		if( moderrs == 0 && progress ){
+		if( moderrs == 0 && progress && all_messages ){
 			str = g_strdup_printf( _( "Recurrent model %s does not exhibit any error: OK" ), mnemo );
 			my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -1692,7 +1695,7 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 			}
 			errs += 1;
 		}
-	} else {
+	} else if( all_messages ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan recurrent model document found: OK" ));
 	}
 	ofo_recurrent_model_free_doc_orphans( orphans );
@@ -1702,7 +1705,9 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 
 	/* progress end */
 	if( progress ){
-		my_iprogress_set_text( progress, worker, MY_PROGRESS_NONE, "" );
+		if( all_messages ){
+			my_iprogress_set_text( progress, worker, MY_PROGRESS_NONE, "" );
+		}
 		my_iprogress_set_ok( progress, worker, NULL, errs );
 	}
 
@@ -1722,8 +1727,10 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 	const gchar *mnemo;
 	ofoRecurrentModel *model_object;
 	ofxCounter numseq, docid;
+	gboolean all_messages;
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_RUN );
+	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
 
 	if( progress ){
 		label = gtk_label_new( _( " Check for recurrent runs integrity " ));
@@ -1793,7 +1800,7 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 			my_iprogress_pulse( progress, worker, ++i, count );
 		}
 
-		if( runerrs == 0 && progress ){
+		if( runerrs == 0 && progress && all_messages ){
 			str = g_strdup_printf( _( "Recurrent run %lu does not exhibit any error: OK" ), numseq );
 			my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -1811,7 +1818,7 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 			}
 			errs += 1;
 		}
-	} else {
+	} else if( all_messages ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan recurrent run document found: OK" ));
 	}
 	ofo_recurrent_run_free_doc_orphans( orphans );
@@ -1821,7 +1828,9 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 
 	/* progress end */
 	if( progress ){
-		my_iprogress_set_text( progress, worker, MY_PROGRESS_NONE, "" );
+		if( all_messages ){
+			my_iprogress_set_text( progress, worker, MY_PROGRESS_NONE, "" );
+		}
 		my_iprogress_set_ok( progress, worker, NULL, errs );
 	}
 
@@ -1840,8 +1849,10 @@ check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *prog
 	const gchar *perid;
 	ofxCounter docid;
 	ofoRecPeriod *period_obj;
+	gboolean all_messages;
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_REC_PERIOD );
+	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
 
 	if( progress ){
 		label = gtk_label_new( _( " Check for periodicities integrity " ));
@@ -1884,7 +1895,7 @@ check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *prog
 			my_iprogress_pulse( progress, worker, ++i, count );
 		}
 
-		if( objerrs == 0 && progress ){
+		if( objerrs == 0 && progress && all_messages ){
 			str = g_strdup_printf( _( "Periodicity %s does not exhibit any error: OK" ), perid );
 			my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -1902,7 +1913,7 @@ check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *prog
 			}
 			errs += 1;
 		}
-	} else {
+	} else if( all_messages ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan periodicity detail found: OK" ));
 	}
 	ofo_rec_period_free_det_orphans( orphans );
@@ -1921,7 +1932,7 @@ check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *prog
 			}
 			errs += 1;
 		}
-	} else {
+	} else if( all_messages ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan periodicity document found: OK" ));
 	}
 	ofo_rec_period_free_doc_orphans( orphans );
@@ -1931,7 +1942,9 @@ check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *prog
 
 	/* progress end */
 	if( progress ){
-		my_iprogress_set_text( progress, worker, MY_PROGRESS_NONE, "" );
+		if( all_messages ){
+			my_iprogress_set_text( progress, worker, MY_PROGRESS_NONE, "" );
+		}
 		my_iprogress_set_ok( progress, worker, NULL, errs );
 	}
 

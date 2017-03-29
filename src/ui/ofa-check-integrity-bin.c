@@ -39,6 +39,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -68,6 +69,7 @@ typedef struct {
 	/* runtime
 	 */
 	gboolean       display;
+	gboolean       all_messages;
 
 	gulong         dossier_errs;
 	gulong         class_errs;
@@ -224,6 +226,7 @@ ofa_check_integrity_bin_init( ofaCheckIntegrityBin *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->display = TRUE;
+	priv->all_messages = FALSE;
 	priv->others_errs = 0;
 }
 
@@ -286,6 +289,8 @@ ofa_check_integrity_bin_new( ofaIGetter *getter, const gchar *settings_prefix )
 
 	setup_bin( bin );
 	read_settings( bin );
+
+	priv->all_messages = ofa_prefs_check_integrity_get_display_all( getter );
 
 	return( bin );
 }
@@ -526,7 +531,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 			g_free( str );
 			priv->dossier_errs += 1;
-		} else {
+		} else if( priv->all_messages ){
 			str = g_strdup_printf( _( "Default currency is '%s': OK" ), cur_code );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -546,7 +551,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 			g_free( str );
 			priv->dossier_errs += 1;
-		} else {
+		} else if( priv->all_messages ){
 			str = g_strdup_printf( _( "Forward operation template is '%s': OK" ), for_ope );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -565,7 +570,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 			g_free( str );
 			priv->dossier_errs += 1;
-		} else {
+		} else if( priv->all_messages ){
 			str = g_strdup_printf( _( "Solde operation template is '%s': OK" ), sld_ope );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -585,7 +590,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 			g_free( str );
 			priv->dossier_errs += 1;
-		} else {
+		} else if( priv->all_messages ){
 			str = g_strdup_printf( _( "Import ledger is '%s': OK" ), ledger_code );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -624,7 +629,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 					my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 					g_free( str );
 					priv->dossier_errs += 1;
-				} else {
+				} else if( priv->all_messages ){
 					str = g_strdup_printf( _( "Solde account for '%s' currency is '%s': OK" ), cur_code, acc_number );
 					my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 					g_free( str );
@@ -646,7 +651,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->dossier_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan dossier doc found: OK" ));
 	}
 	ofa_idoc_free_orphans( orphans );
@@ -661,7 +666,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->dossier_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan dossier currency found: OK" ));
 	}
 	ofo_dossier_free_cur_orphans( orphans );
@@ -676,7 +681,7 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->dossier_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan dossier document found: OK" ));
 	}
 	ofo_dossier_free_doc_orphans( orphans );
@@ -691,14 +696,16 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->dossier_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan dossier prefs found: OK" ));
 	}
 	ofo_dossier_free_prefs_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* progress end */
-	my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	}
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->dossier_errs );
 }
 
@@ -757,7 +764,7 @@ check_class_run( ofaCheckIntegrityBin *self )
 		ofa_idoc_free_orphans( orphans );
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
-		if( claerrs == 0 ){
+		if( claerrs == 0 && priv->all_messages ){
 			str = g_strdup_printf( _( "Class %u does not exhibit any error: OK" ), cla_number );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -773,14 +780,16 @@ check_class_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->class_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan class document found: OK" ));
 	}
 	ofo_class_free_doc_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* progress end */
-	my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	}
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->class_errs );
 }
 
@@ -839,7 +848,7 @@ check_currency_run( ofaCheckIntegrityBin *self )
 		ofa_idoc_free_orphans( orphans );
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
-		if( curerrs == 0 ){
+		if( curerrs == 0 && priv->all_messages ){
 			str = g_strdup_printf( _( "Currency %s does not exhibit any error: OK" ), cur_code );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -855,14 +864,16 @@ check_currency_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->currency_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan currency document found: OK" ));
 	}
 	ofo_currency_free_doc_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* progress end */
-	my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	}
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->currency_errs );
 }
 
@@ -969,7 +980,7 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 		ofa_idoc_free_orphans( orphans );
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
-		if( accerrs == 0 ){
+		if( accerrs == 0 && priv->all_messages ){
 			str = g_strdup_printf( _( "Account %s does not exhibit any error: OK" ), acc_num );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -985,7 +996,7 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->accounts_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan account archive found: OK" ));
 	}
 	ofo_account_free_arc_orphans( orphans );
@@ -1000,14 +1011,16 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->accounts_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan account document found: OK" ));
 	}
 	ofo_account_free_doc_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* progress end */
-	my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	}
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->accounts_errs );
 }
 
@@ -1118,7 +1131,7 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 		ofa_idoc_free_orphans( orphans );
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
-		if( lederrs == 0 ){
+		if( lederrs == 0 && priv->all_messages ){
 			str = g_strdup_printf( _( "Ledger %s does not exhibit any error: OK" ), mnemo );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -1134,7 +1147,7 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->ledgers_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan ledger archive found: OK" ));
 	}
 	ofo_ledger_free_arc_orphans( orphans );
@@ -1149,7 +1162,7 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->ledgers_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan ledger currency found: OK" ));
 	}
 	ofo_ledger_free_cur_orphans( orphans );
@@ -1164,14 +1177,16 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->ledgers_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan ledger document found: OK" ));
 	}
 	ofo_ledger_free_doc_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* progress end */
-	my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	}
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->ledgers_errs );
 }
 
@@ -1252,7 +1267,7 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 		ofa_idoc_free_orphans( orphans );
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
-		if( opeerrs == 0 ){
+		if( opeerrs == 0 && priv->all_messages ){
 			str = g_strdup_printf( _( "Operation template %s does not exhibit any error: OK" ), mnemo );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -1282,7 +1297,9 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* progress end */
-	my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	}
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->ope_templates_errs );
 }
 
@@ -1341,7 +1358,7 @@ check_paimean_run( ofaCheckIntegrityBin *self )
 		ofa_idoc_free_orphans( orphans );
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
-		if( pmaerrs == 0 ){
+		if( pmaerrs == 0 && priv->all_messages ){
 			str = g_strdup_printf( _( "Mean of paiement %s does not exhibit any error: OK" ), pma_code );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -1357,14 +1374,16 @@ check_paimean_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->paimean_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan mean of paiement document found: OK" ));
 	}
 	ofo_paimean_free_doc_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* progress end */
-	my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	}
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->paimean_errs );
 }
 
@@ -1506,7 +1525,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 		ofa_idoc_free_orphans( orphans );
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
-		if( enterrs == 0 ){
+		if( enterrs == 0 && priv->all_messages ){
 			str = g_strdup_printf( _( "Entry %lu does not exhibit any error: OK" ), number );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -1522,14 +1541,16 @@ check_entries_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->entries_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan entry document found: OK" ));
 	}
 	ofo_entry_free_doc_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* progress end */
-	my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	}
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->entries_errs );
 }
 
@@ -1642,7 +1663,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 		ofa_idoc_free_orphans( orphans );
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
-		if( baterrs == 0 ){
+		if( baterrs == 0 && priv->all_messages ){
 			str = g_strdup_printf( _( "BAT file %lu does not exhibit any error: OK" ), id );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
 			g_free( str );
@@ -1658,7 +1679,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->bat_lines_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan BAT line found: OK" ));
 	}
 	ofo_bat_line_free_orphans( orphans );
@@ -1675,14 +1696,16 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->bat_lines_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan BAT document found: OK" ));
 	}
 	ofo_bat_free_doc_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* progress end */
-	my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	}
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->bat_lines_errs );
 }
 
@@ -1723,7 +1746,7 @@ check_concil_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->concil_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan conciliation member found: OK" ));
 	}
 	ofo_concil_free_concil_orphans( orphans );
@@ -1738,7 +1761,7 @@ check_concil_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->concil_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan conciliation BAT line found: OK" ));
 	}
 	ofo_concil_free_bat_orphans( orphans );
@@ -1753,7 +1776,7 @@ check_concil_run( ofaCheckIntegrityBin *self )
 			g_free( str );
 			priv->concil_errs += 1;
 		}
-	} else {
+	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan conciliation entry found: OK" ));
 	}
 	ofo_concil_free_entry_orphans( orphans );
@@ -1761,7 +1784,9 @@ check_concil_run( ofaCheckIntegrityBin *self )
 	}
 
 	/* progress end */
-	my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	}
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->concil_errs );
 }
 

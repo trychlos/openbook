@@ -321,9 +321,6 @@
 1402 2017- 3-17 when generating the ODs for non-deductible CSG, should
                 also generate an OD for deductible CSG to 629 account 
 
-1409 2017- 3-22 dbms integrity: whether to display all messages or only
-                errors should be a user preference
-
 1410 2017- 3-24 export fec should be a plugin (new ofaIExporter interface)
 
 1411 2017- 3-24 when a specific format is provided, should also provide
@@ -935,6 +932,10 @@
 
 1408 2017- 3-22 accentry store: update external ids from signaler handler
      2017- 3-22 done
+
+1409 2017- 3-22 dbms integrity: whether to display all messages or only
+                errors should be a user preference
+     2017- 3-29 done
 
 1413 2017- 3-24 review reconciliation summary at date
      2017- 3-28 done

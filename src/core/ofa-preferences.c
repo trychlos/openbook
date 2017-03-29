@@ -69,11 +69,13 @@ typedef struct {
 	ofaExtenderModule        *plugin;
 	GtkWidget                *object_page;
 
-	/* UI - Quitting
+	/* UI - User interface
 	 */
 	GtkWidget                *p1_dnd_reorder_btn;
 	GtkWidget                *p1_pin_detach_btn;
 	GtkWidget                *p1_dnd_detach_btn;
+	GtkWidget                *p1_display_all_btn;
+	GtkWidget                *p1_display_errs_btn;
 	GtkCheckButton           *confirm_on_escape_btn;
 
 	/* UI - Dossier page
@@ -131,6 +133,7 @@ static gboolean     st_amount_accept_dot              = FALSE;
 static gboolean     st_amount_accept_comma            = FALSE;
 
 static const gchar *st_dnd_main_tabs                  = "ofaPreferences-DndMainTabs";
+static const gchar *st_check_integrity_display        = "ofaPreferences-CheckIntegrityDisplay";
 static const gchar *st_assistant_quit_on_escape       = "AssistantQuitOnEscape";
 static const gchar *st_assistant_confirm_on_escape    = "AssistantConfirmOnEscape";
 static const gchar *st_assistant_confirm_on_cancel    = "AssistantConfirmOnCancel";
@@ -159,6 +162,7 @@ static gboolean enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, p
 static gboolean init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *plugin );
 //static void     activate_first_page( ofaPreferences *self );
 static void     on_dnd_main_tabs_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void     on_display_all_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void     on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void     on_settle_warns_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void     on_reconciliate_warns_toggled( GtkToggleButton *button, ofaPreferences *self );
@@ -173,6 +177,8 @@ static void     on_ok_clicked( ofaPreferences *self );
 static gboolean do_update_user_interface_page( ofaPreferences *self, gchar **msgerr );
 static gchar   *dnd_main_tabs_read_settings( ofaIGetter *getter, gboolean *have_pin );
 static void     dnd_main_tabs_write_settings( ofaPreferences *self );
+static void     check_integrity_display_read_settings( ofaIGetter *getter, gboolean *display_all );
+static void     check_integrity_display_write_settings( ofaPreferences *self );
 static gboolean is_willing_to_quit( void );
 static gboolean do_update_dossier_page( ofaPreferences *self, gchar **msgerr );
 static gboolean do_update_account_page( ofaPreferences *self, gchar **msgerr );
@@ -403,6 +409,21 @@ init_user_interface_page( ofaPreferences *self )
 	priv->p1_dnd_detach_btn = button;
 	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
 	on_dnd_main_tabs_toggled( GTK_TOGGLE_BUTTON( button ), self );
+
+	/* check integrity display messages */
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-disp-all" );
+	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
+	bvalue = ofa_prefs_check_integrity_get_display_all( priv->getter );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	priv->p1_display_all_btn = button;
+	g_signal_connect( button, "toggled", G_CALLBACK( on_display_all_toggled ), self );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-disp-errs" );
+	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
+	priv->p1_display_errs_btn = button;
+	g_signal_connect( button, "toggled", G_CALLBACK( on_display_all_toggled ), self );
+	on_display_all_toggled( GTK_TOGGLE_BUTTON( button ), self );
 
 	/* priv->confirm_on_escape_btn is set before acting on
 	 *  quit-on-escape button as triggered signal use the variable */
@@ -806,6 +827,11 @@ on_dnd_main_tabs_toggled( GtkToggleButton *button, ofaPreferences *self )
 }
 
 static void
+on_display_all_toggled( GtkToggleButton *button, ofaPreferences *self )
+{
+}
+
+static void
 on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
@@ -978,6 +1004,7 @@ do_update_user_interface_page( ofaPreferences *self, gchar **msgerr )
 	settings = ofa_igetter_get_user_settings( priv->getter );
 
 	dnd_main_tabs_write_settings( self );
+	check_integrity_display_write_settings( self );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-quit-on-escape" );
 	g_return_val_if_fail( button && GTK_IS_CHECK_BUTTON( button ), FALSE );
@@ -1110,6 +1137,8 @@ dnd_main_tabs_read_settings( ofaIGetter *getter, gboolean *have_pin )
 		*have_pin = my_utils_boolean_from_str( cstr );
 	}
 
+	my_isettings_free_string_list( settings, strlist );
+
 	return( str );
 }
 
@@ -1128,6 +1157,69 @@ dnd_main_tabs_write_settings( ofaPreferences *self )
 
 	settings = ofa_igetter_get_user_settings( priv->getter );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_dnd_main_tabs, str );
+
+	g_free( str );
+}
+
+/**
+ * ofa_prefs_check_integrity_get_display_all:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: %TRUE if we have to display all messages, %FALSE to display
+ * only errors.
+ */
+gboolean
+ofa_prefs_check_integrity_get_display_all( ofaIGetter *getter )
+{
+	gboolean display;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	display = FALSE;
+
+	check_integrity_display_read_settings( getter, &display );
+
+	return( display );
+}
+
+/*
+ * CheckIntegrityDisplay settings: display_all;
+ * Defaults is Reorder
+ */
+static void
+check_integrity_display_read_settings( ofaIGetter *getter, gboolean *display_all )
+{
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+
+	settings = ofa_igetter_get_user_settings( getter );
+
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_check_integrity_display );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		*display_all = my_utils_boolean_from_str( cstr );
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+}
+
+static void
+check_integrity_display_write_settings( ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+	myISettings *settings;
+	gchar *str;
+
+	priv = ofa_preferences_get_instance_private( self );
+
+	str = g_strdup_printf( "%s;",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_display_all_btn )) ? "True":"False" );
+
+	settings = ofa_igetter_get_user_settings( priv->getter );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_check_integrity_display, str );
 
 	g_free( str );
 }

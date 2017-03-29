@@ -30,6 +30,7 @@
    - Display unsettled entries on settleable accounts (todo #1381).
    - Display unreconciliated entries on reconciliable accounts (todo #783).
    - Export the FEC file (LPF - Article A47 A-1).
+   - Integrity check: have a user preference to only display errors (todo #1409).
    - LedgerBookSummary: is now merged with LedgerBookRender (todo #1386).
    - Printings: allow the user to re-render as often as he wishes (todo #1384).
    - Printings: have a progress bar when printing (todo #1404).
