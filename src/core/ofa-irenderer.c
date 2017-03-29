@@ -171,22 +171,30 @@ ofa_irenderer_get_interface_version( GType type )
 }
 
 /**
- * ofa_irenderer_get_fn:
+ * ofa_irenderer_draw_page_header_dossier:
  * @instance: this #ofaIRenderer instance.
- * @fname: the name of the searched method.
+ * @renderable: the #ofaIRenderable target.
  *
- * Returns: the found function, or %NULL.
+ * Returns: %TRUE if the interface implements the method and has executed it.
  */
-IRenderableDraw0Fn
-ofa_irenderer_get_fn( ofaIRenderer *instance, const gchar *fname )
+gboolean
+ofa_irenderer_draw_page_header_dossier( ofaIRenderer *instance, ofaIRenderable *renderable )
 {
 	sIRenderer *sdata;
 
-	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), 0 );
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), FALSE );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), FALSE );
 
 	sdata = get_instance_data( instance );
 
-	return( sdata->empty );
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_header_dossier ){
+		OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_header_dossier( instance, renderable );
+		return( TRUE );
+	}
+
+	sdata->empty = NULL;
+
+	return( FALSE );
 }
 
 static sIRenderer *

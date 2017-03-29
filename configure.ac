@@ -141,6 +141,7 @@ AC_CONFIG_FILES([
 	src/my-1/src/Makefile
 	src/mysql/Makefile
 	src/postgre/Makefile
+	src/pwirender/Makefile
 	src/recurrent/Makefile
 	src/tva/Makefile
 	src/ui/Makefile

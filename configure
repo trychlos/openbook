@@ -15336,7 +15336,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-ac_config_files="$ac_config_files Makefile data/Makefile data/desktop/Makefile data/icons/Makefile data/init_utf8_comma_pipe_fr/Makefile docs/Makefile m4/Makefile maintainer/Makefile misc/Makefile po/Makefile.in src/Makefile src/api/Makefile src/cmdline/Makefile src/core/Makefile src/ebp-recovery/Makefile src/importers/Makefile src/my-1/Makefile src/my-1/my/Makefile src/my-1/src/Makefile src/mysql/Makefile src/postgre/Makefile src/recurrent/Makefile src/tva/Makefile src/ui/Makefile"
+ac_config_files="$ac_config_files Makefile data/Makefile data/desktop/Makefile data/icons/Makefile data/init_utf8_comma_pipe_fr/Makefile docs/Makefile m4/Makefile maintainer/Makefile misc/Makefile po/Makefile.in src/Makefile src/api/Makefile src/cmdline/Makefile src/core/Makefile src/ebp-recovery/Makefile src/importers/Makefile src/my-1/Makefile src/my-1/my/Makefile src/my-1/src/Makefile src/mysql/Makefile src/postgre/Makefile src/pwirender/Makefile src/recurrent/Makefile src/tva/Makefile src/ui/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -16430,6 +16430,7 @@ do
     "src/my-1/src/Makefile") CONFIG_FILES="$CONFIG_FILES src/my-1/src/Makefile" ;;
     "src/mysql/Makefile") CONFIG_FILES="$CONFIG_FILES src/mysql/Makefile" ;;
     "src/postgre/Makefile") CONFIG_FILES="$CONFIG_FILES src/postgre/Makefile" ;;
+    "src/pwirender/Makefile") CONFIG_FILES="$CONFIG_FILES src/pwirender/Makefile" ;;
     "src/recurrent/Makefile") CONFIG_FILES="$CONFIG_FILES src/recurrent/Makefile" ;;
     "src/tva/Makefile") CONFIG_FILES="$CONFIG_FILES src/tva/Makefile" ;;
     "src/ui/Makefile") CONFIG_FILES="$CONFIG_FILES src/ui/Makefile" ;;

@@ -68,27 +68,37 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint ( *get_interface_version )( void );
+	guint ( *get_interface_version )   ( void );
+
+	/**
+	 * draw_page_header_dossier:
+	 *
+	 * Draw the dossier data in the page.
+	 *
+	 * Since: version 1.
+	 */
+	void  ( *draw_page_header_dossier )( ofaIRenderer *instance,
+											ofaIRenderable *renderable );
 }
 	ofaIRendererInterface;
 
 /*
  * Interface-wide
  */
-GType              ofa_irenderer_get_type                  ( void );
+GType    ofa_irenderer_get_type                  ( void );
 
-guint              ofa_irenderer_get_interface_last_version( const ofaIRenderer *instance );
+guint    ofa_irenderer_get_interface_last_version( const ofaIRenderer *instance );
 
 /*
  * Implementation-wide
  */
-guint              ofa_irenderer_get_interface_version     ( GType type );
+guint    ofa_irenderer_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-IRenderableDraw0Fn ofa_irenderer_get_fn                    ( ofaIRenderer *instance,
-																	const gchar *fname );
+gboolean ofa_irenderer_draw_page_header_dossier  ( ofaIRenderer *instance,
+														ofaIRenderable *renderable );
 
 G_END_DECLS
 

@@ -780,14 +780,11 @@ irenderable_draw_page_header_dossier( ofaIRenderable *instance, sIRenderable *sd
 	gchar *label;
 	gdouble y, height, r, g, b;
 	GList *it;
-	IRenderableDraw0Fn fn;
 	gboolean done;
 
 	done = FALSE;
 	for( it=sdata->renderer_plugins ; it ; it=it->next ){
-		fn = ofa_irenderer_get_fn( OFA_IRENDERER( it->data ), "draw_page_header_dossier" );
-		if( fn ){
-			fn( instance );
+		if( ofa_irenderer_draw_page_header_dossier( OFA_IRENDERER( it->data ), instance )){
 			done = TRUE;
 			break;
 		}

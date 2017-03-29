@@ -30,6 +30,7 @@ SUBDIRS = \
 	importers											\
 	mysql												\
 	postgre												\
+	pwirender											\
 	recurrent											\
 	tva													\
 	cmdline												\

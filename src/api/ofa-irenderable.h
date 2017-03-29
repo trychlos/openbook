@@ -710,13 +710,6 @@ typedef struct {
 	ofaIRenderableInterface;
 
 /**
- * IRenderableDraw0Fn:
- *
- * Prototypes for the plugins
- */
-typedef void ( *IRenderableDraw0Fn )( ofaIRenderable * );
-
-/**
  * ofeIRenderableBreak:
  *
  * The type of separation between two groups.

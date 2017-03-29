@@ -239,9 +239,6 @@
                 vertically (+ review left and right margins)
      2016-10- 6 margins reviewed.
 
-1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
-                background
-
 1231 2016-10-11 Feature question: should we reset the last closed date
                 of the ledgers when closing an exercice ?
                 For now, they are not reset. On the new exercice, ledgers
@@ -464,6 +461,10 @@
                 + review all prints for identifiers which have been
                 expanded
      2017- 3-29 fixed
+
+1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
+                background
+     2017- 3-29 done
 
 1228 2016-10-10 DBMS: Entry: have a role: exercice_open / exercice_close / normal
                 (may be useful when computing solde of an account)
