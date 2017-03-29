@@ -397,10 +397,7 @@ render_page_clear_drawing_area( ofaRenderPage *page )
 	draw_widget_background( cr, priv->drawing_area );
 	cairo_destroy( cr );
 
-	/* let Gtk update the display */
-	while( gtk_events_pending()){
-		gtk_main_iteration();
-	}
+	gtk_widget_queue_draw( priv->drawing_area );
 }
 
 static GList *

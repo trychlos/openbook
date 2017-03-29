@@ -322,12 +322,6 @@
 
 1379 2017- 3- 9 VatForm: set template column to fixed width, rather expand label
 
-1384 2017- 3-15 all printings: erase a previous render when an argument
-                changes (as in entries balance) or when reclicking on render
-                (because the content may have changed)
-     2017- 3-26 done
-     2017- 3-29 nope
-
 1385 2017- 3-15 have a printing with solde at the beginning + solde of
                 entries = solde at the end of the period
 
@@ -855,6 +849,12 @@
 
 1383 2017- 3-15 have a list of settleable accounts
      2017- 3-22 cancelled as duplicate of #1381
+
+1384 2017- 3-15 all printings: erase a previous render when an argument
+                changes (as in entries balance) or when reclicking on render
+                (because the content may have changed)
+     2017- 3-26 done
+     2017- 3-29 re-done
 
 1386 2017- 3-15 merge ledgers book and ledger summary renders
      2017- 3-29 done
