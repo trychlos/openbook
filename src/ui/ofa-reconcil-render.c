@@ -34,8 +34,6 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-idbconnect.h"
-#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-irenderable.h"
 #include "api/ofa-page.h"

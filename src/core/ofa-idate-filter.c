@@ -47,7 +47,8 @@ typedef struct {
 
 	/* runtime
 	 */
-	gboolean      mandatory;
+	gboolean      from_mandatory;
+	gboolean      to_mandatory;
 	gchar        *settings_key;
 	GtkSizeGroup *group0;
 
@@ -290,7 +291,8 @@ ofa_idate_filter_setup_bin( ofaIDateFilter *filter, ofaIGetter *getter, const gc
 
 	sdata->getter = getter;
 	sdata->ui_resource = g_strdup( ui_resource );
-	sdata->mandatory = DEFAULT_MANDATORY;
+	sdata->from_mandatory = DEFAULT_MANDATORY;
+	sdata->to_mandatory = DEFAULT_MANDATORY;
 
 	setup_bin( filter, sdata );
 }
@@ -373,7 +375,7 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->getter ));
 	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( sdata->getter ));
-	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->from_mandatory );
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( sdata->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_from_changed ), filter );
@@ -394,7 +396,7 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->getter ));
 	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( sdata->getter ));
-	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->to_mandatory );
 	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( sdata->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), filter );
@@ -593,6 +595,36 @@ ofa_idate_filter_set_date( ofaIDateFilter *filter, gint who, const GDate *date )
 }
 
 /**
+ * ofa_idate_filter_set_mandatory:
+ * @filter: this #ofaIDateFilter instance.
+ * @who: whether we are addressing the "From" date or the "To" one.
+ * @mandatory: whether the @who date is mandatory.
+ *
+ * Set the mandatory indicator for this date.
+ */
+void
+ofa_idate_filter_set_mandatory( ofaIDateFilter *filter, gint who, gboolean mandatory )
+{
+	static const gchar *thisfn = "ofa_idate_filter_set_mandatory";
+	sIDateFilter *sdata;
+
+	g_return_if_fail( filter && OFA_IS_IDATE_FILTER( filter ));
+
+	sdata = get_idate_filter_data( filter );
+
+	switch( who ){
+		case IDATE_FILTER_FROM:
+			sdata->from_mandatory = mandatory;
+			break;
+		case IDATE_FILTER_TO:
+			sdata->to_mandatory = mandatory;
+			break;
+		default:
+			g_warning( "%s: invalid date identifier: %d", thisfn, who );
+	}
+}
+
+/**
  * ofa_idate_filter_is_valid:
  * @filter:
  * @who: whether we are addressing the "From" date or the "To" one.
@@ -606,7 +638,7 @@ ofa_idate_filter_is_valid( ofaIDateFilter *filter, gint who, gchar **message )
 {
 	static const gchar *thisfn = "ofa_idate_filter_is_valid";
 	sIDateFilter *sdata;
-	gboolean valid;
+	gboolean valid, mandatory;
 	GtkWidget *entry;
 	GDate *date;
 	gchar *str;
@@ -624,10 +656,12 @@ ofa_idate_filter_is_valid( ofaIDateFilter *filter, gint who, gchar **message )
 		case IDATE_FILTER_FROM:
 			date = &sdata->from_date;
 			entry = sdata->from_entry;
+			mandatory = sdata->from_mandatory;
 			break;
 		case IDATE_FILTER_TO:
 			date = &sdata->to_date;
 			entry = sdata->to_entry;
+			mandatory = sdata->to_mandatory;
 			break;
 		default:
 			str = g_strdup_printf( "%s: invalid date identifier: %d", thisfn, who );
@@ -640,7 +674,7 @@ ofa_idate_filter_is_valid( ofaIDateFilter *filter, gint who, gchar **message )
 
 	if( date ){
 		valid = my_date_is_valid( date ) ||
-				( !sdata->mandatory && my_date_editable_is_empty( GTK_EDITABLE( entry )));
+				( !mandatory && my_date_editable_is_empty( GTK_EDITABLE( entry )));
 	}
 
 	if( !valid && message ){

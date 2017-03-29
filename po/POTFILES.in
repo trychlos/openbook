@@ -31,6 +31,7 @@ src/recurrent/ofa-recurrent-run-page.ui
 src/tva/ofa-tva-form-properties.ui
 src/tva/ofa-tva-record-new.ui
 src/tva/ofa-tva-record-properties.ui
+src/ui/ofa-account-balance-args.ui
 src/ui/ofa-account-book-args.ui
 src/ui/ofa-account-filter-vv-bin.ui
 src/ui/ofa-admin-credentials-bin.ui

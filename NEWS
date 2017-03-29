@@ -23,6 +23,7 @@
 
    Core DB Model v37
 
+   - AccountsBalance: new with beginning and ending soldes (todo #1385).
    - AccountsBookSummary: have balance and page break by class (todo #1390). 
    - AccountsBookSummary: sort by operation date or effect date (todo #1419). 
    - Balance check: distinguish between rough, validated and future balances (todo #1392).

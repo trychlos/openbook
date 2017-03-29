@@ -167,6 +167,11 @@
 					<attribute name="action">win.render-balances</attribute>
 				</item>
 				<item>
+					<attribute name="id">print-10-accbal</attribute>
+					<attribute name="label" translatable="yes">_Accounts balance...</attribute>
+					<attribute name="action">win.render-accbal</attribute>
+				</item>
+				<item>
 					<attribute name="id">print-10-books</attribute>
 					<attribute name="label" translatable="yes">_Accounts book...</attribute>
 					<attribute name="action">win.render-books</attribute>

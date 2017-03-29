@@ -136,6 +136,10 @@ void         ofa_idate_filter_set_date                  ( ofaIDateFilter *filter
 																gint who,
 																const GDate *date );
 
+void         ofa_idate_filter_set_mandatory             ( ofaIDateFilter *filter,
+																gint who,
+																gboolean mandatory );
+
 gboolean     ofa_idate_filter_is_valid                  ( ofaIDateFilter *filter,
 																gint who,
 																gchar **message );

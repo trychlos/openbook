@@ -55,6 +55,7 @@
 #include "core/ofa-guided-input.h"
 #include "core/ofa-open-prefs.h"
 
+#include "ui/ofa-account-balance-render.h"
 #include "ui/ofa-account-book-render.h"
 #include "ui/ofa-account-page.h"
 #include "ui/ofa-application.h"
@@ -149,6 +150,7 @@ static void on_ope_exercice_close    ( GSimpleAction *action, GVariant *paramete
 static void on_ope_import            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_render_balances       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_render_account_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_render_accounts_book  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_render_ledgers_book   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_render_reconcil       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -180,6 +182,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "import",                 on_ope_import,             NULL, NULL, NULL },
 		{ "export",                 on_ope_export,             NULL, NULL, NULL },
 		{ "render-balances",        on_render_balances,        NULL, NULL, NULL },
+		{ "render-accbal",          on_render_account_balance, NULL, NULL, NULL },
 		{ "render-books",           on_render_accounts_book,   NULL, NULL, NULL },
 		{ "render-ledgers-book",    on_render_ledgers_book,    NULL, NULL, NULL },
 		{ "render-reconcil",        on_render_reconcil,        NULL, NULL, NULL },
@@ -236,24 +239,25 @@ typedef struct {
 	sThemeInit;
 
 static sThemeInit st_theme_defs[] = {
-		{ N_( "Accounts book" ),           ofa_account_book_render_get_type,   FALSE },
-		{ N_( "Chart of accounts" ),       ofa_account_page_get_type,          FALSE },
-		{ N_( "Entries balance" ),         ofa_balance_render_get_type,        FALSE },
-		{ N_( "Imported BAT files" ),      ofa_bat_page_get_type,              FALSE },
-		{ N_( "Account classes" ),         ofa_class_page_get_type,            FALSE },
-		{ N_( "Currencies" ),              ofa_currency_page_get_type,         FALSE },
-		{ N_( "View entries" ),            ofa_entry_page_get_type,            TRUE },
-		{ N_( "Guided input" ),            ofa_guided_ex_get_type,             FALSE },
-		{ N_( "Ledgers book" ),            ofa_ledger_book_render_get_type,    FALSE },
-		{ N_( "Ledgers" ),                 ofa_ledger_page_get_type,           FALSE },
-		{ N_( "Means of paiement" ),       ofa_paimean_page_get_type,          FALSE },
-		{ N_( "Operation templates" ),     ofa_ope_template_page_get_type,     FALSE },
-		{ N_( "Rates" ),                   ofa_rate_page_get_type,             FALSE },
-		{ N_( "Reconciliation" ),          ofa_reconcil_page_get_type,         FALSE },
-		{ N_( "Reconciliation Sumary" ),   ofa_reconcil_render_get_type,       FALSE },
-		{ N_( "Settlement" ),              ofa_settlement_page_get_type,       FALSE },
-		{ N_( "Unreconciliated entries" ), ofa_unreconcil_page_get_type,       FALSE },
-		{ N_( "Unsettled entries" ),       ofa_unsettled_page_get_type,        FALSE },
+		{ N_( "Accounts balance" ),        ofa_account_balance_render_get_type, FALSE },
+		{ N_( "Accounts book" ),           ofa_account_book_render_get_type,    FALSE },
+		{ N_( "Chart of accounts" ),       ofa_account_page_get_type,           FALSE },
+		{ N_( "Entries balance" ),         ofa_balance_render_get_type,         FALSE },
+		{ N_( "Imported BAT files" ),      ofa_bat_page_get_type,               FALSE },
+		{ N_( "Account classes" ),         ofa_class_page_get_type,             FALSE },
+		{ N_( "Currencies" ),              ofa_currency_page_get_type,          FALSE },
+		{ N_( "View entries" ),            ofa_entry_page_get_type,             TRUE },
+		{ N_( "Guided input" ),            ofa_guided_ex_get_type,              FALSE },
+		{ N_( "Ledgers book" ),            ofa_ledger_book_render_get_type,     FALSE },
+		{ N_( "Ledgers" ),                 ofa_ledger_page_get_type,            FALSE },
+		{ N_( "Means of paiement" ),       ofa_paimean_page_get_type,           FALSE },
+		{ N_( "Operation templates" ),     ofa_ope_template_page_get_type,      FALSE },
+		{ N_( "Rates" ),                   ofa_rate_page_get_type,              FALSE },
+		{ N_( "Reconciliation" ),          ofa_reconcil_page_get_type,          FALSE },
+		{ N_( "Reconciliation Sumary" ),   ofa_reconcil_render_get_type,        FALSE },
+		{ N_( "Settlement" ),              ofa_settlement_page_get_type,        FALSE },
+		{ N_( "Unreconciliated entries" ), ofa_unreconcil_page_get_type,        FALSE },
+		{ N_( "Unsettled entries" ),       ofa_unsettled_page_get_type,         FALSE },
 		{ 0 }
 };
 
@@ -1502,6 +1506,19 @@ on_render_balances( GSimpleAction *action, GVariant *parameter, gpointer user_da
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_BALANCE_RENDER );
+}
+
+static void
+on_render_account_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_render_account_balance";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_ACCOUNT_BALANCE_RENDER );
 }
 
 static void

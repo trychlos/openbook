@@ -75,6 +75,10 @@ openbook_SOURCES = \
 	ofa-accentry-store.h								\
 	ofa-accentry-treeview.c								\
 	ofa-accentry-treeview.h								\
+	ofa-account-balance-args.c							\
+	ofa-account-balance-args.h							\
+	ofa-account-balance-render.c						\
+	ofa-account-balance-render.h						\
 	ofa-account-book-args.c								\
 	ofa-account-book-args.h								\
 	ofa-account-book-render.c							\

@@ -34,8 +34,6 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-idbconnect.h"
-#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-irenderable.h"
 #include "api/ofa-page.h"
@@ -421,7 +419,7 @@ irenderable_begin_render( ofaIRenderable *instance )
 
 	/* starting from the left : body_number_ltab on the left margin */
 	priv->body_number_ltab = priv->page_margin;
-	priv->body_label_ltab = priv->body_number_ltab+ account_width + spacing;
+	priv->body_label_ltab = priv->body_number_ltab + account_width + spacing;
 
 	/* starting from the right */
 	priv->body_currency_ltab = priv->render_width - priv->page_margin - cur_width;

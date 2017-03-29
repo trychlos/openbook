@@ -137,6 +137,8 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(applicationsdir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-accentry-store.$(OBJEXT) ofa-accentry-treeview.$(OBJEXT) \
+	ofa-account-balance-args.$(OBJEXT) \
+	ofa-account-balance-render.$(OBJEXT) \
 	ofa-account-book-args.$(OBJEXT) \
 	ofa-account-book-render.$(OBJEXT) \
 	ofa-account-filter-vv-bin.$(OBJEXT) ofa-account-page.$(OBJEXT) \
@@ -508,6 +510,10 @@ openbook_SOURCES = \
 	ofa-accentry-store.h								\
 	ofa-accentry-treeview.c								\
 	ofa-accentry-treeview.h								\
+	ofa-account-balance-args.c							\
+	ofa-account-balance-args.h							\
+	ofa-account-balance-render.c						\
+	ofa-account-balance-render.h						\
 	ofa-account-book-args.c								\
 	ofa-account-book-args.h								\
 	ofa-account-book-render.c							\
@@ -818,6 +824,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-about.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accentry-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-accentry-treeview.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-balance-args.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-balance-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-filter-vv-bin.Po@am__quote@
