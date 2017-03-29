@@ -160,10 +160,10 @@ static void               irenderable_begin_render( ofaIRenderable *instance, ca
 static gchar             *irenderable_get_dossier_label( const ofaIRenderable *instance );
 static void               irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num );
 static void               irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num );
-static void               irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line );
 static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *line, ofeIRenderableBreak *sep );
 static gboolean           is_new_class( const ofaIRenderable *instance, GList *prev, GList *line );
-static void               irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *current );
+static void               irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line );
+static void               irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line );
 static void               irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line );
 static void               irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num );
 static void               irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *line );
@@ -445,9 +445,9 @@ irenderable_iface_init( ofaIRenderableInterface *iface )
 	iface->get_dossier_label = irenderable_get_dossier_label;
 	iface->draw_page_header_title = irenderable_draw_page_header_title;
 	iface->draw_header_column_names = irenderable_draw_header_column_names;
-	iface->draw_top_report = irenderable_draw_top_report;
 	iface->is_new_group = irenderable_is_new_group;
 	iface->draw_group_header = irenderable_draw_group_header;
+	iface->draw_top_report = irenderable_draw_top_report;
 	iface->draw_line = irenderable_draw_line;
 	iface->draw_bottom_report = irenderable_draw_bottom_report;
 	iface->draw_group_footer = irenderable_draw_group_footer;
@@ -484,8 +484,8 @@ irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_
 	/* compute the width of the columns with the body font */
 	ofa_irenderable_set_font( instance, ofa_irenderable_get_body_font( instance ));
 	date_width = ofa_irenderable_get_text_width( instance, "9999-99-99-" );
-	ledger_width = ofa_irenderable_get_text_width( instance, "XXXXXXX" );
-	piece_width = ofa_irenderable_get_text_width( instance, "XXX 99999999" );
+	ledger_width = ofa_irenderable_get_text_width( instance, "XXXXXXXX" );
+	piece_width = ofa_irenderable_get_text_width( instance, "XX 99999999" );
 	char_width = ofa_irenderable_get_text_width( instance, "X" );
 
 	/* the width of the currency code should use the group font */
@@ -674,19 +674,6 @@ irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num )
 }
 
 /*
- * only draw a top report if no break between @prev and @line
- */
-static void
-irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line )
-{
-	ofeIRenderableBreak sep;
-
-	if( !irenderable_is_new_group( instance, prev, line, &sep )){
-		draw_account_report( OFA_ACCOUNT_BOOK_RENDER( instance ), TRUE );
-	}
-}
-
-/*
  * just test if the current entry is on the same account than the
  * previous one, or in the same class
  */
@@ -800,6 +787,19 @@ irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *
 
 	y += height * ( 1+st_vspace_rate );
 	ofa_irenderable_set_last_y( instance, y );
+}
+
+/*
+ * only draw a top report if no break between @prev and @line
+ */
+static void
+irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line )
+{
+	ofeIRenderableBreak sep;
+
+	if( !irenderable_is_new_group( instance, prev, line, &sep )){
+		draw_account_report( OFA_ACCOUNT_BOOK_RENDER( instance ), TRUE );
+	}
 }
 
 /*

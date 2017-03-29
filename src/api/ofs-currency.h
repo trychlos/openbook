@@ -82,6 +82,8 @@ gint         ofs_currency_cmp          ( const ofsCurrency *a, const ofsCurrency
 
 void         ofs_currency_list_dump    ( GList *list );
 
+GList       *ofs_currency_list_copy    ( GList *list );
+
 void         ofs_currency_list_free    ( GList **list );
 
 G_END_DECLS

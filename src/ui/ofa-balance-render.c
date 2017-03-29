@@ -141,9 +141,9 @@ static gchar             *irenderable_get_dossier_label( const ofaIRenderable *i
 static void               irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num );
 static void               irenderable_draw_page_header_notes( ofaIRenderable *instance, guint page_num );
 static void               irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num );
-static void               irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line );
 static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *line, ofeIRenderableBreak *sep );
 static void               irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line );
+static void               irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line );
 static void               irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line );
 static void               irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num );
 static void               irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *line );
@@ -642,18 +642,6 @@ irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num )
 	ofa_irenderable_set_last_y( instance, y );
 }
 
-static void
-irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line )
-{
-	ofaBalanceRenderPrivate *priv;
-
-	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
-
-	if( priv->class_subtotal ){
-		draw_subtotals_balance( instance, _( "Top class report : " ));
-	}
-}
-
 /*
  * Have group break on account class number
  */
@@ -727,6 +715,18 @@ irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *
 
 		y += height * ( 1+st_vspace_rate );
 		ofa_irenderable_set_last_y( instance, y );
+	}
+}
+
+static void
+irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line )
+{
+	ofaBalanceRenderPrivate *priv;
+
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
+
+	if( priv->class_subtotal ){
+		draw_subtotals_balance( instance, _( "Top class report : " ));
 	}
 }
 

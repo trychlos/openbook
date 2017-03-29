@@ -200,10 +200,6 @@ openbook_SOURCES = \
 	ofa-ledger-page.h									\
 	ofa-ledger-properties.c								\
 	ofa-ledger-properties.h								\
-	ofa-ledger-summary-args.c							\
-	ofa-ledger-summary-args.h							\
-	ofa-ledger-summary-render.c							\
-	ofa-ledger-summary-render.h							\
 	ofa-ledger-treeview.c								\
 	ofa-ledger-treeview.h								\
 	ofa-main-window.c									\

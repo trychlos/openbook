@@ -78,9 +78,13 @@ ofaLedgerTreeview *ofa_ledger_book_args_get_treeview           ( ofaLedgerBookAr
 
 gboolean           ofa_ledger_book_args_get_all_ledgers        ( ofaLedgerBookArgs *bin );
 
+ofaIDateFilter    *ofa_ledger_book_args_get_date_filter        ( ofaLedgerBookArgs *bin );
+
 gboolean           ofa_ledger_book_args_get_new_page_per_ledger( ofaLedgerBookArgs *bin );
 
-ofaIDateFilter    *ofa_ledger_book_args_get_date_filter        ( ofaLedgerBookArgs *bin );
+gboolean           ofa_ledger_book_args_get_with_summary       ( ofaLedgerBookArgs *bin );
+
+gboolean           ofa_ledger_book_args_get_only_summary       ( ofaLedgerBookArgs *bin );
 
 G_END_DECLS
 

@@ -27,6 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "my/my-date.h"
 #include "my/my-utils.h"
@@ -56,14 +57,19 @@ typedef struct {
 	myISettings         *settings;
 	gboolean             all_ledgers;
 	gboolean             new_page;
+	gboolean             with_summary;
+	gboolean             only_summary;
 
 	/* UI
 	 */
+	GtkWidget           *vpane;
 	GtkWidget           *ledgers_parent;
 	ofaLedgerTreeview   *tview;
 	GtkWidget           *all_ledgers_btn;
-	GtkWidget           *new_page_btn;
 	ofaDateFilterHVBin  *date_filter;
+	GtkWidget           *new_page_btn;
+	GtkWidget           *with_summary_btn;
+	GtkWidget           *only_summary_btn;
 }
 	ofaLedgerBookArgsPrivate;
 
@@ -86,8 +92,10 @@ static void setup_others( ofaLedgerBookArgs *self );
 static void setup_actions( ofaLedgerBookArgs *self );
 static void on_tview_selection_changed( ofaLedgerTreeview *tview, void *unused, ofaLedgerBookArgs *self );
 static void on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerBookArgs *self );
-static void on_new_page_toggled( GtkToggleButton *button, ofaLedgerBookArgs *self );
 static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgerBookArgs *self );
+static void on_new_page_toggled( GtkToggleButton *button, ofaLedgerBookArgs *self );
+static void on_with_summary_toggled( GtkToggleButton *button, ofaLedgerBookArgs *self );
+static void on_only_summary_toggled( GtkToggleButton *button, ofaLedgerBookArgs *self );
 static void read_settings( ofaLedgerBookArgs *bin );
 static void write_settings( ofaLedgerBookArgs *bin );
 
@@ -233,9 +241,12 @@ setup_runtime( ofaLedgerBookArgs *self )
 static void
 setup_bin( ofaLedgerBookArgs *self )
 {
+	ofaLedgerBookArgsPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
-	GtkWidget *toplevel;
+	GtkWidget *toplevel, *pane;
+
+	priv = ofa_ledger_book_args_get_instance_private( self );
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
@@ -244,6 +255,10 @@ setup_bin( ofaLedgerBookArgs *self )
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
+
+	pane = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "top" );
+	g_return_if_fail( pane && GTK_IS_PANED( pane ));
+	priv->vpane = pane;
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -314,6 +329,16 @@ setup_others( ofaLedgerBookArgs *self )
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
 	g_signal_connect( toggle, "toggled", G_CALLBACK( on_new_page_toggled ), self );
 	priv->new_page_btn = toggle;
+
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-with-summary" );
+	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_with_summary_toggled ), self );
+	priv->with_summary_btn = toggle;
+
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-only-summary" );
+	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_only_summary_toggled ), self );
+	priv->only_summary_btn = toggle;
 }
 
 static void
@@ -351,6 +376,12 @@ on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerBookArgs *self )
 }
 
 static void
+on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgerBookArgs *self )
+{
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+static void
 on_new_page_toggled( GtkToggleButton *button, ofaLedgerBookArgs *self )
 {
 	ofaLedgerBookArgsPrivate *priv;
@@ -363,8 +394,28 @@ on_new_page_toggled( GtkToggleButton *button, ofaLedgerBookArgs *self )
 }
 
 static void
-on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgerBookArgs *self )
+on_with_summary_toggled( GtkToggleButton *button, ofaLedgerBookArgs *self )
 {
+	ofaLedgerBookArgsPrivate *priv;
+
+	priv = ofa_ledger_book_args_get_instance_private( self );
+
+	priv->with_summary = gtk_toggle_button_get_active( button );
+
+	gtk_widget_set_sensitive( priv->only_summary_btn, priv->with_summary );
+
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+static void
+on_only_summary_toggled( GtkToggleButton *button, ofaLedgerBookArgs *self )
+{
+	ofaLedgerBookArgsPrivate *priv;
+
+	priv = ofa_ledger_book_args_get_instance_private( self );
+
+	priv->only_summary = gtk_toggle_button_get_active( button );
+
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
@@ -420,7 +471,9 @@ ofa_ledger_book_args_is_valid( ofaLedgerBookArgs *bin, gchar **message )
 
 /**
  * ofa_ledger_book_args_get_treeview:
- * @bin:
+ * @bin: this #ofaLedgerBookBin widget.
+ *
+ * Returns: the #ofaLedgerTreeview widget.
  */
 ofaLedgerTreeview *
 ofa_ledger_book_args_get_treeview( ofaLedgerBookArgs *bin )
@@ -441,7 +494,9 @@ ofa_ledger_book_args_get_treeview( ofaLedgerBookArgs *bin )
 
 /**
  * ofa_ledger_book_args_get_all_ledgers:
- * @bin:
+ * @bin: this #ofaLedgerBookBin widget.
+ *
+ * Returns: whether the user wants all ledgers.
  */
 gboolean
 ofa_ledger_book_args_get_all_ledgers( ofaLedgerBookArgs *bin )
@@ -461,28 +516,10 @@ ofa_ledger_book_args_get_all_ledgers( ofaLedgerBookArgs *bin )
 }
 
 /**
- * ofa_ledger_book_args_get_new_page_per_ledger:
- * @bin:
- */
-gboolean
-ofa_ledger_book_args_get_new_page_per_ledger( ofaLedgerBookArgs *bin )
-{
-	ofaLedgerBookArgsPrivate *priv;
-	gboolean new_page;
-
-	g_return_val_if_fail( bin && OFA_IS_LEDGER_BOOK_ARGS( bin ), FALSE );
-
-	priv = ofa_ledger_book_args_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	new_page = priv->new_page;
-
-	return( new_page );
-}
-
-/**
  * ofa_ledger_book_args_get_date_filter:
+ * @bin: this #ofaLedgerBookBin widget.
+ *
+ * Returns: the #ofaIDateFilter widget.
  */
 ofaIDateFilter *
 ofa_ledger_book_args_get_date_filter( ofaLedgerBookArgs *bin )
@@ -501,9 +538,72 @@ ofa_ledger_book_args_get_date_filter( ofaLedgerBookArgs *bin )
 	return( date_filter );
 }
 
+/**
+ * ofa_ledger_book_args_get_new_page_per_ledger:
+ * @bin: this #ofaLedgerBookBin widget.
+ *
+ * Returns: whether the user wants a new page per ledger.
+ */
+gboolean
+ofa_ledger_book_args_get_new_page_per_ledger( ofaLedgerBookArgs *bin )
+{
+	ofaLedgerBookArgsPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_LEDGER_BOOK_ARGS( bin ), FALSE );
+
+	priv = ofa_ledger_book_args_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->new_page );
+}
+
+/**
+ * ofa_ledger_book_args_get_with_summary:
+ * @bin: this #ofaLedgerBookBin widget.
+ *
+ * Returns: whether the user wants a summary.
+ */
+gboolean
+ofa_ledger_book_args_get_with_summary( ofaLedgerBookArgs *bin )
+{
+	ofaLedgerBookArgsPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_LEDGER_BOOK_ARGS( bin ), FALSE );
+
+	priv = ofa_ledger_book_args_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->with_summary );
+}
+
+/**
+ * ofa_ledger_book_args_get_only_summary:
+ * @bin: this #ofaLedgerBookBin widget.
+ *
+ * Returns: whether the user wants only the summary.
+ *
+ * Note: we only return the value if the user has also requested the
+ * summary. Else, we return %FALSE.
+ */
+gboolean
+ofa_ledger_book_args_get_only_summary( ofaLedgerBookArgs *bin )
+{
+	ofaLedgerBookArgsPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_LEDGER_BOOK_ARGS( bin ), FALSE );
+
+	priv = ofa_ledger_book_args_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->with_summary ? priv->only_summary : FALSE );
+}
+
 /*
  * setttings:
- * all_ledgers;from_date;to_date;new_page;
+ * all_ledgers;from_date;to_date;new_page;paned_pos;with_summary;only_summary;
  */
 static void
 read_settings( ofaLedgerBookArgs *bin )
@@ -551,6 +651,28 @@ read_settings( ofaLedgerBookArgs *bin )
 		on_new_page_toggled( GTK_TOGGLE_BUTTON( priv->new_page_btn ), bin );
 	}
 
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_paned_set_position( GTK_PANED( priv->vpane ), atoi( cstr ));
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active(
+				GTK_TOGGLE_BUTTON( priv->with_summary_btn ), my_utils_boolean_from_str( cstr ));
+		on_with_summary_toggled( GTK_TOGGLE_BUTTON( priv->with_summary_btn ), bin );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active(
+				GTK_TOGGLE_BUTTON( priv->only_summary_btn ), my_utils_boolean_from_str( cstr ));
+	}
+	on_only_summary_toggled( GTK_TOGGLE_BUTTON( priv->only_summary_btn ), bin );
+
 	my_isettings_free_string_list( priv->settings, strlist );
 	g_free( key );
 }
@@ -570,11 +692,14 @@ write_settings( ofaLedgerBookArgs *bin )
 			ofa_idate_filter_get_date(
 					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO ), MY_DATE_SQL );
 
-	str = g_strdup_printf( "%s;%s;%s;%s;",
+	str = g_strdup_printf( "%s;%s;%s;%s;%d;%s;%s;",
 			priv->all_ledgers ? "True":"False",
 			my_strlen( sdfrom ) ? sdfrom : "",
 			my_strlen( sdto ) ? sdto : "",
-			priv->new_page ? "True":"False" );
+			priv->new_page ? "True":"False",
+			gtk_paned_get_position( GTK_PANED( priv->vpane )),
+			priv->with_summary ? "True":"False",
+			priv->only_summary ? "True":"False" );
 
 	key = g_strdup_printf( "%s-args", priv->settings_prefix );
 	my_isettings_set_string( priv->settings, HUB_USER_SETTINGS_GROUP, key, str );

@@ -462,63 +462,6 @@ typedef struct {
 														gdouble *b );
 
 	/**
-	 * draw_top_report:
-	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the current page number, counted from zero.
-	 * @prev: [allow-none]: the last rendered element;
-	 *  may be %NULL when dealing with the first element.
-	 * @line: the next element to be rendered.
-	 *
-	 * If implemented, this method must draw the top report for the
-	 * new page.
-	 *
-	 * The top report is drawn on the top of the page, after the top
-	 * summary above, as a recall of the previous page.
-	 * It may be associated with a bottom report on the end of the page.
-	 *
-	 * On call, the report font and color are set.
-	 *
-	 * Note that from #ofaIRenderable point of view, this method has
-	 * nothing to do with the groups management.
-	 *
-	 * The application must take care itself of updating the 'last_y'
-	 * ordonate according to the vertical space it has used.
-	 */
-	void          ( *draw_top_report )          ( ofaIRenderable *instance,
-														guint page_num,
-														GList *prev,
-														GList *line );
-
-	/**
-	 * get_report_font:
-	 * @instance: the #ofaIRenderable instance.
-	 *
-	 * Returns: the font family description to be used for the top and
-	 * bottom page reports.
-	 *
-	 * Default is "Sans 6".
-	 */
-	const gchar * ( *get_report_font )          ( const ofaIRenderable *instance,
-														guint page_num );
-
-	/**
-	 * get_report_color:
-	 * @instance: the #ofaIRenderable instance.
-	 * @r: [out]: a placeholder for the red composante.
-	 * @g: [out]: a placeholder for the green composante.
-	 * @b: [out]: a placeholder for the blue composante.
-	 *
-	 * Set the @r, @g, @b color of the top and bottom reports of the
-	 * page.
-	 *
-	 * Default is summary color.
-	 */
-	void          ( *get_report_color )         ( const ofaIRenderable *instance,
-														gdouble *r,
-														gdouble *g,
-														gdouble *b );
-
-	/**
 	 * is_new_group:
 	 * @instance: the #ofaIRenderable instance.
 	 * @prev: [allow-none]: the last rendered element;
@@ -585,6 +528,63 @@ typedef struct {
 	 * Default is summary color
 	 */
 	void          ( *get_group_color )          ( const ofaIRenderable *instance,
+														gdouble *r,
+														gdouble *g,
+														gdouble *b );
+
+	/**
+	 * draw_top_report:
+	 * @instance: the #ofaIRenderable instance.
+	 * @page_num: the current page number, counted from zero.
+	 * @prev: [allow-none]: the last rendered element;
+	 *  may be %NULL when dealing with the first element.
+	 * @line: the next element to be rendered.
+	 *
+	 * If implemented, this method must draw the top report for the
+	 * new page.
+	 *
+	 * The top report is drawn on the top of the page, after the top
+	 * summary above, as a recall of the previous page.
+	 * It may be associated with a bottom report on the end of the page.
+	 *
+	 * On call, the report font and color are set.
+	 *
+	 * Note that from #ofaIRenderable point of view, this method has
+	 * nothing to do with the groups management.
+	 *
+	 * The application must take care itself of updating the 'last_y'
+	 * ordonate according to the vertical space it has used.
+	 */
+	void          ( *draw_top_report )          ( ofaIRenderable *instance,
+														guint page_num,
+														GList *prev,
+														GList *line );
+
+	/**
+	 * get_report_font:
+	 * @instance: the #ofaIRenderable instance.
+	 *
+	 * Returns: the font family description to be used for the top and
+	 * bottom page reports.
+	 *
+	 * Default is "Sans 6".
+	 */
+	const gchar * ( *get_report_font )          ( const ofaIRenderable *instance,
+														guint page_num );
+
+	/**
+	 * get_report_color:
+	 * @instance: the #ofaIRenderable instance.
+	 * @r: [out]: a placeholder for the red composante.
+	 * @g: [out]: a placeholder for the green composante.
+	 * @b: [out]: a placeholder for the blue composante.
+	 *
+	 * Set the @r, @g, @b color of the top and bottom reports of the
+	 * page.
+	 *
+	 * Default is summary color.
+	 */
+	void          ( *get_report_color )         ( const ofaIRenderable *instance,
 														gdouble *r,
 														gdouble *g,
 														gdouble *b );
@@ -776,154 +776,173 @@ enum _ofeIRenderableBreak {
 	IRENDERABLE_BREAK_SEP_LINE
 };
 
-GType        ofa_irenderable_get_type                  ( void );
+/**
+ * ofeIRenderableMode:
+ *
+ * What to do with the provided lines ?
+ */
+typedef enum {
+	IRENDERABLE_MODE_NORMAL = 1,
+	IRENDERABLE_MODE_NOPRINT
+}
+	ofeIRenderableMode;
 
-guint        ofa_irenderable_get_interface_last_version( const ofaIRenderable *instance );
+GType              ofa_irenderable_get_type                  ( void );
+
+guint              ofa_irenderable_get_interface_last_version( const ofaIRenderable *instance );
 
 /* three main entry points for this interface
  */
-gint         ofa_irenderable_begin_render              ( ofaIRenderable *instance,
-															cairo_t *cr,
-															gdouble render_width,
-															gdouble render_height,
-															GList *dataset );
+gint               ofa_irenderable_begin_render              ( ofaIRenderable *instance,
+																	cairo_t *cr,
+																	gdouble render_width,
+																	gdouble render_height,
+																	GList *dataset );
 
-void         ofa_irenderable_render_page               ( ofaIRenderable *instance,
-															cairo_t *cr,
-															guint page_number );
+void               ofa_irenderable_render_page               ( ofaIRenderable *instance,
+																	cairo_t *cr,
+																	guint page_number );
 
-void         ofa_irenderable_end_render                ( ofaIRenderable *instance,
-															cairo_t *cr );
+void               ofa_irenderable_end_render                ( ofaIRenderable *instance,
+																	cairo_t *cr );
 
 /* runtime
  */
-gboolean     ofa_irenderable_is_paginating             ( ofaIRenderable *instance );
+gboolean           ofa_irenderable_is_paginating             ( ofaIRenderable *instance );
 
-gdouble      ofa_irenderable_get_last_y                ( ofaIRenderable *instance );
+ofeIRenderableMode ofa_irenderable_get_line_mode             ( const ofaIRenderable *instance );
 
-void         ofa_irenderable_set_last_y                ( ofaIRenderable *instance,
-															gdouble y );
+void               ofa_irenderable_set_line_mode             ( ofaIRenderable *instance,
+																	ofeIRenderableMode mode );
 
-gdouble      ofa_irenderable_get_max_y                 ( ofaIRenderable *instance );
+void               ofa_irenderable_set_last_y                ( ofaIRenderable *instance,
+																	gdouble y );
 
-gdouble      ofa_irenderable_get_text_height           ( ofaIRenderable *instance );
+gdouble            ofa_irenderable_get_last_y                ( ofaIRenderable *instance );
 
-gdouble      ofa_irenderable_get_text_width            ( ofaIRenderable *instance,
-															const gchar *text );
+void               ofa_irenderable_set_last_y                ( ofaIRenderable *instance,
+																	gdouble y );
 
-gdouble      ofa_irenderable_get_line_height           ( ofaIRenderable *instance );
+gdouble            ofa_irenderable_get_max_y                 ( ofaIRenderable *instance );
 
-void         ofa_irenderable_set_font                  ( ofaIRenderable *instance,
-															const gchar *font_str );
+gdouble            ofa_irenderable_get_text_height           ( ofaIRenderable *instance );
 
-void         ofa_irenderable_set_color                 ( ofaIRenderable *instance,
-															gdouble r,
-															gdouble g,
-															gdouble b );
+gdouble            ofa_irenderable_get_text_width            ( ofaIRenderable *instance,
+																	const gchar *text );
 
-gdouble      ofa_irenderable_set_text                  ( ofaIRenderable *instance,
-															gdouble x,
-															gdouble y,
-															const gchar *text,
-															PangoAlignment align );
+gdouble            ofa_irenderable_get_line_height           ( ofaIRenderable *instance );
 
-gdouble      ofa_irenderable_ellipsize_text            ( ofaIRenderable *instance,
-															gdouble x,
-															gdouble y,
-															const gchar *text,
-															gdouble max_size );
+void               ofa_irenderable_set_font                  ( ofaIRenderable *instance,
+																	const gchar *font_str );
 
-gdouble      ofa_irenderable_set_wrapped_text          ( ofaIRenderable *instance,
-															gdouble x,
-															gdouble y,
-															gdouble width,
-															const gchar *text,
-															PangoAlignment align );
+void               ofa_irenderable_set_color                 ( ofaIRenderable *instance,
+																	gdouble r,
+																	gdouble g,
+																	gdouble b );
 
-void         ofa_irenderable_draw_rubber               ( ofaIRenderable *instance,
-															gdouble top,
-															gdouble height );
+gdouble            ofa_irenderable_set_text                  ( ofaIRenderable *instance,
+																	gdouble x,
+																	gdouble y,
+																	const gchar *text,
+																	PangoAlignment align );
 
-void         ofa_irenderable_draw_rect                 ( ofaIRenderable *instance,
-															gdouble x,
-															gdouble y,
-															gdouble width,
-															gdouble height );
+gdouble            ofa_irenderable_ellipsize_text            ( ofaIRenderable *instance,
+																	gdouble x,
+																	gdouble y,
+																	const gchar *text,
+																	gdouble max_size );
 
-void         ofa_irenderable_draw_no_data              ( ofaIRenderable *instance );
+gdouble            ofa_irenderable_set_wrapped_text          ( ofaIRenderable *instance,
+																	gdouble x,
+																	gdouble y,
+																	gdouble width,
+																	const gchar *text,
+																	PangoAlignment align );
 
-gdouble      ofa_irenderable_get_header_columns_height ( ofaIRenderable *instance );
+void               ofa_irenderable_draw_rubber               ( ofaIRenderable *instance,
+																	gdouble top,
+																	gdouble height );
 
-gdouble      ofa_irenderable_get_last_summary_height   ( ofaIRenderable *instance );
+void               ofa_irenderable_draw_rect                 ( ofaIRenderable *instance,
+																	gdouble x,
+																	gdouble y,
+																	gdouble width,
+																	gdouble height );
 
-cairo_t     *ofa_irenderable_get_context               ( ofaIRenderable *instance );
+void               ofa_irenderable_draw_no_data              ( ofaIRenderable *instance );
 
-void         ofa_irenderable_set_temp_context          ( ofaIRenderable *instance );
+gdouble            ofa_irenderable_get_header_columns_height ( ofaIRenderable *instance );
 
-void         ofa_irenderable_restore_context           ( ofaIRenderable *instance );
+gdouble            ofa_irenderable_get_last_summary_height   ( ofaIRenderable *instance );
+
+cairo_t           *ofa_irenderable_get_context               ( ofaIRenderable *instance );
+
+void               ofa_irenderable_set_temp_context          ( ofaIRenderable *instance );
+
+void               ofa_irenderable_restore_context           ( ofaIRenderable *instance );
 
 /* helpers and default values
  */
-gdouble      ofa_irenderable_get_page_margin           ( const ofaIRenderable *instance );
+gdouble            ofa_irenderable_get_page_margin           ( const ofaIRenderable *instance );
 
-gdouble      ofa_irenderable_get_columns_spacing       ( const ofaIRenderable *instance );
+gdouble            ofa_irenderable_get_columns_spacing       ( const ofaIRenderable *instance );
 
-const gchar *ofa_irenderable_get_dossier_font          ( const ofaIRenderable *instance,
-															guint page_num );
+const gchar       *ofa_irenderable_get_dossier_font          ( const ofaIRenderable *instance,
+																	guint page_num );
 
-void         ofa_irenderable_get_dossier_color         ( const ofaIRenderable *instance,
-															gdouble *r,
-															gdouble *g,
-															gdouble *b );
+void               ofa_irenderable_get_dossier_color         ( const ofaIRenderable *instance,
+																	gdouble *r,
+																	gdouble *g,
+																	gdouble *b );
 
-const gchar *ofa_irenderable_get_title_font            ( const ofaIRenderable *instance,
-															guint page_num );
+const gchar       *ofa_irenderable_get_title_font            ( const ofaIRenderable *instance,
+																	guint page_num );
 
-void         ofa_irenderable_get_title_color           ( const ofaIRenderable *instance,
-															gdouble *r,
-															gdouble *g,
-															gdouble *b );
+void               ofa_irenderable_get_title_color           ( const ofaIRenderable *instance,
+																	gdouble *r,
+																	gdouble *g,
+																	gdouble *b );
 
-const gchar *ofa_irenderable_get_columns_font          ( const ofaIRenderable *instance,
-															guint page_num );
+const gchar       *ofa_irenderable_get_columns_font          ( const ofaIRenderable *instance,
+																	guint page_num );
 
-void         ofa_irenderable_get_columns_color         ( const ofaIRenderable *instance,
-															gdouble *r,
-															gdouble *g,
-															gdouble *b );
+void               ofa_irenderable_get_columns_color         ( const ofaIRenderable *instance,
+																	gdouble *r,
+																	gdouble *g,
+																	gdouble *b );
 
-const gchar *ofa_irenderable_get_summary_font          ( const ofaIRenderable *instance,
-															guint page_num );
+const gchar       *ofa_irenderable_get_summary_font          ( const ofaIRenderable *instance,
+																	guint page_num );
 
-void         ofa_irenderable_get_summary_color         ( const ofaIRenderable *instance,
-															gdouble *r,
-															gdouble *g,
-															gdouble *b );
+void               ofa_irenderable_get_summary_color         ( const ofaIRenderable *instance,
+																	gdouble *r,
+																	gdouble *g,
+																	gdouble *b );
 
-const gchar *ofa_irenderable_get_group_font            ( const ofaIRenderable *instance,
-															guint page_num );
+const gchar       *ofa_irenderable_get_group_font            ( const ofaIRenderable *instance,
+																	guint page_num );
 
-void         ofa_irenderable_get_group_color           ( const ofaIRenderable *instance,
-															gdouble *r,
-															gdouble *g,
-															gdouble *b );
+void               ofa_irenderable_get_group_color           ( const ofaIRenderable *instance,
+																	gdouble *r,
+																	gdouble *g,
+																	gdouble *b );
 
-const gchar *ofa_irenderable_get_report_font           ( const ofaIRenderable *instance,
-															guint page_num );
+const gchar       *ofa_irenderable_get_report_font           ( const ofaIRenderable *instance,
+																	guint page_num );
 
-void         ofa_irenderable_get_report_color          ( const ofaIRenderable *instance,
-															gdouble *r,
-															gdouble *g,
-															gdouble *b );
+void               ofa_irenderable_get_report_color          ( const ofaIRenderable *instance,
+																	gdouble *r,
+																	gdouble *g,
+																	gdouble *b );
 
-const gchar *ofa_irenderable_get_body_font             ( const ofaIRenderable *instance );
+const gchar       *ofa_irenderable_get_body_font             ( const ofaIRenderable *instance );
 
-void         ofa_irenderable_get_body_color            ( const ofaIRenderable *instance,
-															gdouble *r,
-															gdouble *g,
-															gdouble *b );
+void               ofa_irenderable_get_body_color            ( const ofaIRenderable *instance,
+																	gdouble *r,
+																	gdouble *g,
+																	gdouble *b );
 
-gdouble      ofa_irenderable_get_body_vspace_rate      ( const ofaIRenderable *instance );
+gdouble            ofa_irenderable_get_body_vspace_rate      ( const ofaIRenderable *instance );
 
 G_END_DECLS
 

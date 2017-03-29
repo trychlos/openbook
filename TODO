@@ -330,8 +330,6 @@
 1385 2017- 3-15 have a printing with solde at the beginning + solde of
                 entries = solde at the end of the period
 
-1386 2017- 3-15 merge ledgers book and ledger summary renders
-
 1396 2017- 3-16 check conciliation groups integrity is wrong
                 - display erroneous orphan conciliation member with BatLineId xxx
                 - count is wrong
@@ -852,6 +850,9 @@
                 changes (as in entries balance) or when reclicking on render
                 (because the content may have changed)
      2017- 3-26 done
+
+1386 2017- 3-15 merge ledgers book and ledger summary renders
+     2017- 3-29 done
 
 1387 2017- 3-15 when archiving reconciliated/settled entries on exercice
                 closing, only archive which were reconciliated/settled

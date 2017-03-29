@@ -58,58 +58,73 @@
  */
 typedef struct {
 
-	ofaLedgerBookArgs   *args_bin;
+	ofaLedgerBookArgs *args_bin;
 
 	/* runtime
 	 */
-	ofaIGetter          *getter;
-	gchar               *settings_prefix;
-	GList               *selected;				/* list of selected #ofoLedger */
-	gboolean             all_ledgers;
-	gboolean             new_page;
-	GDate                from_date;
-	GDate                to_date;
-	gint                 count;					/* count of returned entries */
+	ofaIGetter        *getter;
+	gchar             *settings_prefix;
+	GList             *selected;				/* list of selected #ofoLedger */
+	gboolean           all_ledgers;
+	gboolean           new_page;
+	gboolean           with_summary;
+	gboolean           only_summary;
+	GDate              from_date;
+	GDate              to_date;
+	gint               count;					/* count of returned entries */
 
 	/* print datas
 	 */
-	gdouble              render_width;
-	gdouble              render_height;
-	gdouble              page_margin;
+	gdouble            render_width;
+	gdouble            render_height;
+	gdouble            page_margin;
 
 	/* layout for ledger header line
 	 */
-	gdouble              group_h_ledcode_ltab;
-	gdouble              group_h_ledlabel_ltab;
-	gdouble              group_h_ledlabel_max_size;
+	gdouble            group_h_ledcode_ltab;
+	gdouble            group_h_ledlabel_ltab;
+	gdouble            group_h_ledlabel_max_size;
 
 	/* layout for entry line
 	 */
-	gdouble              body_dope_ltab;
-	gdouble              body_deffect_ltab;
-	gdouble              body_account_ltab;
-	gdouble              body_piece_ltab;
-	gdouble              body_piece_max_size;
-	gdouble              body_label_ltab;
-	gint                 body_label_max_size;		/* Pango units */
-	gdouble              body_template_ltab;
-	gdouble              body_settlement_ctab;
-	gdouble              body_reconcil_ctab;
-	gdouble              body_debit_rtab;
-	gdouble              body_credit_rtab;
-	gdouble              body_currency_rtab;
+	gdouble            body_dope_ltab;
+	gdouble            body_deffect_ltab;
+	gdouble            body_account_ltab;
+	gdouble            body_account_max_size;
+	gdouble            body_piece_ltab;
+	gdouble            body_piece_max_size;
+	gdouble            body_label_ltab;
+	gint               body_label_max_size;		/* Pango units */
+	gdouble            body_template_ltab;
+	gdouble            body_template_max_size;
+	gdouble            body_settlement_ctab;
+	gdouble            body_reconcil_ctab;
+	gdouble            body_debit_rtab;
+	gdouble            body_credit_rtab;
+	gdouble            body_currency_rtab;
+	gdouble            amount_width;
 
 	/* for each ledger
 	 */
-	gchar               *ledger_mnemo;
-	ofoLedger           *ledger_object;
-	GList               *ledger_totals;		/* totals per currency for the ledger */
+	gchar             *ledger_mnemo;
+	ofoLedger         *ledger_object;
+	GList             *ledger_totals;		/* totals per currency for the ledger */
 
 	/* total general
 	 */
-	GList               *report_totals;		/* all totals per currency */
+	GList             *report_totals;		/* all totals per currency */
+	GList             *ledgers_summary;
 }
 	ofaLedgerBookRenderPrivate;
+
+/* a structure to hold the totals per ledger
+ * used to build the global summary
+ */
+typedef struct {
+	ofoLedger *ledger;
+	GList     *totals;
+}
+	sLedger;
 
 /*
  * Accounts balances print uses a portrait orientation
@@ -117,24 +132,11 @@ typedef struct {
 #define THIS_PAGE_ORIENTATION            GTK_PAGE_ORIENTATION_LANDSCAPE
 #define THIS_PAPER_NAME                  GTK_PAPER_NAME_A4
 
-#if 0
 static const gchar *st_page_header_title = N_( "General Ledgers Book" );
 
 /* these are parms which describe the page layout
  */
-
-/* the columns of the body */
-static const gint st_body_font_size      = 9;
-
-#define st_date_width                    (gdouble) 54/9*st_body_font_size
-#define st_account_width                 (gdouble) 48/9*st_body_font_size
-#define st_piece_width                   (gdouble) 64/9*st_body_font_size
-#define st_template_width                (gdouble) 44/9*st_body_font_size
-#define st_settlement_width              (gdouble) 8/9*st_body_font_size
-#define st_reconcil_width                (gdouble) 8/9*st_body_font_size
-#define st_amount_width                  (gdouble) 90/9*st_body_font_size
-#define st_currency_width                (gdouble) 23/10*st_body_font_size
-#define st_column_hspacing               (gdouble) 4
+static const gchar *st_title2_font       = "Sans Bold 8";
 
 static GtkWidget         *page_v_get_top_focusable_widget( const ofaPage *page );
 static void               paned_page_v_init_view( ofaPanedPage *page );
@@ -147,26 +149,26 @@ static void               render_page_v_free_dataset( ofaRenderPage *page, GList
 static void               on_args_changed( ofaLedgerBookArgs *bin, ofaLedgerBookRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
-static void               irenderable_reset_runtime( ofaIRenderable *instance );
-static gboolean           irenderable_want_groups( const ofaIRenderable *instance );
-static gboolean           irenderable_want_new_page( const ofaIRenderable *instance );
-static void               irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdouble render_height );
-static gchar             *irenderable_get_dossier_name( const ofaIRenderable *instance );
-static gchar             *irenderable_get_page_header_title( const ofaIRenderable *instance );
-static gchar             *irenderable_get_page_header_subtitle( const ofaIRenderable *instance );
-static void               irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num );
-static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev );
-static void               irenderable_draw_group_header( ofaIRenderable *instance, GList *current );
-static void               irenderable_draw_group_top_report( ofaIRenderable *instance );
-static void               irenderable_draw_line( ofaIRenderable *instance, GList *current );
-static void               irenderable_draw_group_bottom_report( ofaIRenderable *instance );
-static void               irenderable_draw_group_footer( ofaIRenderable *instance );
-static void               irenderable_draw_bottom_summary( ofaIRenderable *instance );
+static void               irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height, GList *dataset );
+static gchar             *irenderable_get_dossier_label( const ofaIRenderable *instance );
+static void               irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num );
+static void               irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num );
+static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *line, ofeIRenderableBreak *sep );
+static void               irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line );
+static void               irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line );
+static void               irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line );
+static void               irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num );
+static void               irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *line );
+static void               append_ledger_to_summary( ofaLedgerBookRender *self );
+static void               irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num );
+static void               draw_ledgers_summary( ofaIRenderable *instance );
+static void               irenderable_clear_runtime_data( ofaIRenderable *instance );
+static void               clear_ledger_data( ofaLedgerBookRender *self );
 static void               draw_ledger_totals( ofaIRenderable *instance );
+static void               free_ledgers( GList **ledgers );
+static void               free_ledger( sLedger *ledger );
 static void               read_settings( ofaLedgerBookRender *self );
 static void               write_settings( ofaLedgerBookRender *self );
-#endif
-static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerBookRender, ofa_ledger_book_render, OFA_TYPE_RENDER_PAGE, 0,
 		G_ADD_PRIVATE( ofaLedgerBookRender )
@@ -190,6 +192,7 @@ ledger_book_render_finalize( GObject *instance )
 
 	ofs_currency_list_free( &priv->ledger_totals );
 	ofs_currency_list_free( &priv->report_totals );
+	free_ledgers( &priv->ledgers_summary );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ledger_book_render_parent_class )->finalize( instance );
@@ -202,7 +205,7 @@ ledger_book_render_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		//write_settings( OFA_LEDGER_BOOK_RENDER( instance ));
+		write_settings( OFA_LEDGER_BOOK_RENDER( instance ));
 
 		/* unref object members here */
 	}
@@ -237,7 +240,6 @@ ofa_ledger_book_render_class_init( ofaLedgerBookRenderClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ledger_book_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_book_render_finalize;
 
-	/*
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
 	OFA_PANED_PAGE_CLASS( klass )->init_view = paned_page_v_init_view;
@@ -248,18 +250,8 @@ ofa_ledger_book_render_class_init( ofaLedgerBookRenderClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_v_get_print_settings;
 	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_v_get_dataset;
 	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_v_free_dataset;
-	*/
 }
 
-static void
-irenderable_iface_init( ofaIRenderableInterface *iface )
-{
-	static const gchar *thisfn = "ofa_ledger_book_render_irenderable_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-}
-
-#if 0
 static GtkWidget *
 page_v_get_top_focusable_widget( const ofaPage *page )
 {
@@ -367,6 +359,10 @@ render_page_v_get_dataset( ofaRenderPage *page )
 	priv->count = g_list_length( dataset );
 	g_slist_free_full( mnemos, ( GDestroyNotify ) g_free );
 
+	priv->new_page = ofa_ledger_book_args_get_new_page_per_ledger( priv->args_bin );
+	priv->with_summary = ofa_ledger_book_args_get_with_summary( priv->args_bin );
+	priv->only_summary = ofa_ledger_book_args_get_only_summary( priv->args_bin );
+
 	return( dataset );
 }
 
@@ -399,20 +395,17 @@ irenderable_iface_init( ofaIRenderableInterface *iface )
 
 	iface->get_interface_version = irenderable_get_interface_version;
 	iface->begin_render = irenderable_begin_render;
-	iface->reset_runtime = irenderable_reset_runtime;
-	iface->want_groups = irenderable_want_groups;
-	iface->want_new_page = irenderable_want_new_page;
-	iface->get_dossier_name = irenderable_get_dossier_name;
-	iface->get_page_header_title = irenderable_get_page_header_title;
-	iface->get_page_header_subtitle = irenderable_get_page_header_subtitle;
-	iface->draw_page_header_columns = irenderable_draw_page_header_columns;
+	iface->get_dossier_label = irenderable_get_dossier_label;
+	iface->draw_page_header_title = irenderable_draw_page_header_title;
+	iface->draw_header_column_names = irenderable_draw_header_column_names;
 	iface->is_new_group = irenderable_is_new_group;
 	iface->draw_group_header = irenderable_draw_group_header;
-	iface->draw_group_top_report = irenderable_draw_group_top_report;
+	iface->draw_top_report = irenderable_draw_top_report;
 	iface->draw_line = irenderable_draw_line;
-	iface->draw_group_bottom_report = irenderable_draw_group_bottom_report;
+	iface->draw_bottom_report = irenderable_draw_bottom_report;
 	iface->draw_group_footer = irenderable_draw_group_footer;
-	iface->draw_bottom_summary = irenderable_draw_bottom_summary;
+	iface->draw_last_summary = irenderable_draw_last_summary;
+	iface->clear_runtime_data = irenderable_clear_runtime_data;
 }
 
 static guint
@@ -421,45 +414,15 @@ irenderable_get_interface_version( const ofaIRenderable *instance )
 	return( 1 );
 }
 
-static void
-irenderable_reset_runtime( ofaIRenderable *instance )
-{
-	ofaLedgerBookRenderPrivate *priv;
-
-	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
-
-	ofs_currency_list_free( &priv->report_totals );
-
-	g_free( priv->ledger_mnemo );
-	priv->ledger_mnemo = NULL;
-}
-
-static gboolean
-irenderable_want_groups( const ofaIRenderable *instance )
-{
-	return( TRUE );
-}
-
-static gboolean
-irenderable_want_new_page( const ofaIRenderable *instance )
-{
-	ofaLedgerBookRenderPrivate *priv;
-
-	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
-
-	priv->new_page = ofa_ledger_book_args_get_new_page_per_ledger( priv->args_bin );
-
-	return( priv->new_page );
-}
-
 /*
  * mainly here: compute the tab positions
  */
 static void
-irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdouble render_height )
+irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height, GList *dataset )
 {
 	static const gchar *thisfn = "ofa_ledger_book_render_irenderable_begin_render";
 	ofaLedgerBookRenderPrivate *priv;
+	gdouble spacing, date_width, account_width, piece_width, template_width, char_width, cur_width, amount_width;
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
@@ -470,20 +433,36 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 	priv->render_height = render_height;
 	priv->page_margin = ofa_irenderable_get_page_margin( instance );
 
+	spacing = ofa_irenderable_get_columns_spacing( instance );
+
+	/* compute the width of the columns with the body font */
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_body_font( instance ));
+	date_width = ofa_irenderable_get_text_width( instance, "9999-99-99-" );
+	account_width = ofa_irenderable_get_text_width( instance, "XXXXXXXX" );
+	piece_width = ofa_irenderable_get_text_width( instance, "XX 99999999" );
+	char_width = ofa_irenderable_get_text_width( instance, "X" );
+	template_width = ofa_irenderable_get_text_width( instance, "XXXXXXXXXXXX" );
+
+	/* the width of the amounts should use the last summary font */
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_summary_font( instance, 0 ));
+	cur_width = ofa_irenderable_get_text_width( instance, "XXX" );
+	amount_width = ofa_irenderable_get_text_width( instance, "9,999,999,999.99" );
+	priv->amount_width = amount_width;
+
 	/* entry line, starting from the left */
 	priv->body_dope_ltab = priv->page_margin;
-	priv->body_deffect_ltab = priv->body_dope_ltab + st_date_width + st_column_hspacing;
-	priv->body_account_ltab = priv->body_deffect_ltab + st_date_width + st_column_hspacing;
-	priv->body_piece_ltab = priv->body_account_ltab + st_account_width + st_column_hspacing;
-	priv->body_label_ltab = priv->body_piece_ltab + st_piece_width + st_column_hspacing;
+	priv->body_deffect_ltab = priv->body_dope_ltab + date_width + spacing;
+	priv->body_account_ltab = priv->body_deffect_ltab + date_width + spacing;
+	priv->body_piece_ltab = priv->body_account_ltab + account_width + spacing;
+	priv->body_label_ltab = priv->body_piece_ltab + piece_width + spacing;
 
 	/* entry line, starting from the right */
 	priv->body_currency_rtab = priv->render_width - priv->page_margin;
-	priv->body_credit_rtab = priv->body_currency_rtab - st_currency_width - st_column_hspacing;
-	priv->body_debit_rtab = priv->body_credit_rtab - st_amount_width - st_column_hspacing;
-	priv->body_reconcil_ctab = priv->body_debit_rtab - st_amount_width - st_column_hspacing - st_reconcil_width/2;
-	priv->body_settlement_ctab = priv->body_reconcil_ctab - st_reconcil_width/2 - st_column_hspacing - st_settlement_width/2;
-	priv->body_template_ltab = priv->body_settlement_ctab + st_settlement_width/2 - st_column_hspacing - st_template_width;
+	priv->body_credit_rtab = priv->body_currency_rtab - cur_width - spacing;
+	priv->body_debit_rtab = priv->body_credit_rtab - amount_width - spacing;
+	priv->body_reconcil_ctab = priv->body_debit_rtab - amount_width - spacing - char_width/2.0;
+	priv->body_settlement_ctab = priv->body_reconcil_ctab - char_width/2.0 - spacing - char_width/2.0;
+	priv->body_template_ltab = priv->body_settlement_ctab + char_width/2.0 - spacing - template_width;
 
 	/* account header, starting from the left
 	 * computed here because aligned on (and so relying on) body effect date */
@@ -492,42 +471,37 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 
 	/* max size in Pango units */
 	priv->group_h_ledlabel_max_size = ( priv->render_width - priv->page_margin - priv->group_h_ledlabel_ltab )*PANGO_SCALE;
-	priv->body_piece_max_size = st_piece_width*PANGO_SCALE;
-	priv->body_label_max_size = ( priv->body_template_ltab - st_column_hspacing - priv->body_label_ltab )*PANGO_SCALE;
+	priv->body_account_max_size = account_width*PANGO_SCALE;
+	priv->body_piece_max_size = piece_width*PANGO_SCALE;
+	priv->body_label_max_size = ( priv->body_template_ltab - spacing - priv->body_label_ltab )*PANGO_SCALE;
+	priv->body_template_max_size = template_width*PANGO_SCALE;
+
+	/* only summary ? */
+	ofa_irenderable_set_line_mode( instance, priv->only_summary ? IRENDERABLE_MODE_NOPRINT : IRENDERABLE_MODE_NORMAL );
 }
 
 static gchar *
-irenderable_get_dossier_name( const ofaIRenderable *instance )
+irenderable_get_dossier_label( const ofaIRenderable *instance )
 {
 	ofaLedgerBookRenderPrivate *priv;
 	ofaHub *hub;
-	const ofaIDBConnect *connect;
-	ofaIDBDossierMeta *dossier_meta;
-	const gchar *dossier_name;
+	ofoDossier *dossier;
+	const gchar *label;
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	connect = ofa_hub_get_connect( hub );
-	dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
-	dossier_name = ofa_idbdossier_meta_get_dossier_name( dossier_meta );
+	dossier = ofa_hub_get_dossier( hub );
+	label = ofo_dossier_get_label( dossier );
 
-	return( g_strdup( dossier_name ));
+	return( g_strdup( label ));
 }
 
-static gchar *
-irenderable_get_page_header_title( const ofaIRenderable *instance )
-{
-	return( g_strdup( st_page_header_title ));
-}
-
-/*
- * Account from xxx to xxx - Date from xxx to xxx
- */
-static gchar *
-irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
+static void
+irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num )
 {
 	ofaLedgerBookRenderPrivate *priv;
+	gdouble r, g, b, y, height;
 	gchar *sfrom_date, *sto_date;
 	GString *stitle;
 	GList *it;
@@ -535,7 +509,17 @@ irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
-	/* recall of ledgers and date selections in line 4 */
+	ofa_irenderable_get_title_color( instance, &r, &g, &b );
+	ofa_irenderable_set_color( instance, r, g, b );
+	y = ofa_irenderable_get_last_y( instance );
+
+	/* line 1 - ledgers book summary */
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_title_font( instance, page_num ));
+	height = ofa_irenderable_set_text( instance, priv->render_width/2, y, st_page_header_title, PANGO_ALIGN_CENTER );
+	y += height;
+
+	/* line 2 - Account from xxx to xxx - Date from xxx to xxx *
+	 * recall of ledgers and date selections in line 4 */
 	stitle = g_string_new( "" );
 	if( priv->all_ledgers ){
 		g_string_printf( stitle, _( "All ledgers" ));
@@ -569,11 +553,16 @@ irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
 		g_free( sfrom_date );
 	}
 
-	return( g_string_free( stitle, FALSE ));
+	ofa_irenderable_set_font( instance, st_title2_font );
+	height = ofa_irenderable_set_text( instance, priv->render_width/2, y, stitle->str, PANGO_ALIGN_CENTER );
+	g_string_free( stitle, TRUE );
+	y += height;
+
+	ofa_irenderable_set_last_y( instance, y );
 }
 
 static void
-irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num )
+irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num )
 {
 	ofaLedgerBookRenderPrivate *priv;
 	static gdouble st_vspace_rate = 0.5;
@@ -635,41 +624,53 @@ irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num )
  * previous one
  */
 static gboolean
-irenderable_is_new_group( const ofaIRenderable *instance, GList *current, GList *prev )
+irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *line, ofeIRenderableBreak *sep )
 {
+	ofaLedgerBookRenderPrivate *priv;
 	ofoEntry *current_entry, *prev_entry;
+	gint cmp;
 
-	g_return_val_if_fail( current, FALSE );
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
-	if( !prev ){
+	*sep = IRENDERABLE_BREAK_NONE;
+
+	if( !prev || !line ){
 		return( TRUE );
 	}
 
-	current_entry = OFO_ENTRY( current->data );
+	current_entry = OFO_ENTRY( line->data );
 	prev_entry = OFO_ENTRY( prev->data );
 
-	return( g_utf8_collate(
-				ofo_entry_get_ledger( current_entry ),
-				ofo_entry_get_ledger( prev_entry )) != 0 );
+	cmp = my_collate( ofo_entry_get_ledger( current_entry ), ofo_entry_get_ledger( prev_entry ));
+
+	if( cmp != 0 ){
+		if( !priv->only_summary ){
+			if( priv->new_page ){
+				*sep = IRENDERABLE_BREAK_NEW_PAGE;
+
+			} else {
+				*sep = IRENDERABLE_BREAK_SEP_LINE;
+			}
+		}
+	}
+
+	return( cmp != 0 );
 }
 
 /*
  * draw account header
  */
 static void
-irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
+irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line )
 {
 	ofaLedgerBookRenderPrivate *priv;
-	static const gdouble st_vspace_rate = 0.4;
 	gdouble y, height;
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
-	y = ofa_irenderable_get_last_y( instance );
-
 	/* setup the ledger properties */
 	g_free( priv->ledger_mnemo );
-	priv->ledger_mnemo = g_strdup( ofo_entry_get_ledger( OFO_ENTRY( current->data )));
+	priv->ledger_mnemo = g_strdup( ofo_entry_get_ledger( OFO_ENTRY( line->data )));
 
 	priv->ledger_object = ofo_ledger_get_by_mnemo( priv->getter, priv->ledger_mnemo );
 	g_return_if_fail( priv->ledger_object && OFO_IS_LEDGER( priv->ledger_object ));
@@ -677,29 +678,40 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	ofs_currency_list_free( &priv->ledger_totals );
 	priv->ledger_totals = NULL;
 
-	/* display the ledger header */
-	/* ledger mnemo */
-	height = ofa_irenderable_set_text( instance,
-			priv->group_h_ledcode_ltab, y,
-			priv->ledger_mnemo, PANGO_ALIGN_LEFT );
+	if( !priv->only_summary ){
+		y = ofa_irenderable_get_last_y( instance );
+		height = ofa_irenderable_get_line_height( instance );
 
-	/* ledger label */
-	ofa_irenderable_ellipsize_text( instance,
-			priv->group_h_ledlabel_ltab, y,
-			ofo_ledger_get_label( priv->ledger_object ), priv->group_h_ledlabel_max_size );
+		/* display the ledger header */
+		/* ledger mnemo */
+		ofa_irenderable_set_text( instance,
+				priv->group_h_ledcode_ltab, y,
+				priv->ledger_mnemo, PANGO_ALIGN_LEFT );
 
-	y += height * ( 1+st_vspace_rate );
-	ofa_irenderable_set_last_y( instance, y );
+		/* ledger label */
+		ofa_irenderable_ellipsize_text( instance,
+				priv->group_h_ledlabel_ltab, y,
+				ofo_ledger_get_label( priv->ledger_object ), priv->group_h_ledlabel_max_size );
+
+		y += height;
+		ofa_irenderable_set_last_y( instance, y );
+	}
 }
 
 static void
-irenderable_draw_group_top_report( ofaIRenderable *instance )
+irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line )
 {
-	draw_ledger_totals( instance );
+	ofaLedgerBookRenderPrivate *priv;
+
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
+
+	if( my_strlen( priv->ledger_mnemo ) && !priv->only_summary ){
+		draw_ledger_totals( instance );
+	}
 }
 
 static void
-irenderable_draw_line( ofaIRenderable *instance, GList *current )
+irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line )
 {
 	ofaLedgerBookRenderPrivate *priv;
 	ofoEntry *entry;
@@ -709,99 +721,106 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	ofxAmount debit, credit;
 	ofoCurrency *currency;
 	ofoConcil *concil;
-	gboolean is_paginating;
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
-	y = ofa_irenderable_get_last_y( instance );
-	entry = OFO_ENTRY( current->data );
+	entry = OFO_ENTRY( line->data );
+	debit = ofo_entry_get_debit( entry );
+	credit = ofo_entry_get_credit( entry );
 
 	/* get currency properties */
 	code = ofo_entry_get_currency( entry );
 	currency = ofo_currency_get_by_code( priv->getter, code );
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
-	/* operation date */
-	str = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->getter ));
-	ofa_irenderable_set_text( instance,
-			priv->body_dope_ltab, y, str, PANGO_ALIGN_LEFT );
-	g_free( str );
+	if( !priv->only_summary ){
+		y = ofa_irenderable_get_last_y( instance );
 
-	/* effect date */
-	str = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->getter ));
-	ofa_irenderable_set_text( instance,
-			priv->body_deffect_ltab, y, str, PANGO_ALIGN_LEFT );
-	g_free( str );
+		/* operation date */
+		str = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->getter ));
+		ofa_irenderable_set_text( instance,
+				priv->body_dope_ltab, y, str, PANGO_ALIGN_LEFT );
+		g_free( str );
 
-	/* account */
-	ofa_irenderable_set_text( instance,
-			priv->body_account_ltab, y, ofo_entry_get_account( entry ), PANGO_ALIGN_LEFT );
+		/* effect date */
+		str = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->getter ));
+		ofa_irenderable_set_text( instance,
+				priv->body_deffect_ltab, y, str, PANGO_ALIGN_LEFT );
+		g_free( str );
 
-	/* piece */
-	cstr = ofo_entry_get_ref( entry );
-	if( my_strlen( cstr )){
+		/* account */
 		ofa_irenderable_ellipsize_text( instance,
-				priv->body_piece_ltab, y,
-				cstr, priv->body_piece_max_size );
-	}
+				priv->body_account_ltab, y,
+				ofo_entry_get_account( entry ), priv->body_account_max_size );
 
-	/* label */
-	ofa_irenderable_ellipsize_text( instance,
-			priv->body_label_ltab, y,
-			ofo_entry_get_label( entry ), priv->body_label_max_size );
+		/* piece */
+		cstr = ofo_entry_get_ref( entry );
+		if( my_strlen( cstr )){
+			ofa_irenderable_ellipsize_text( instance,
+					priv->body_piece_ltab, y,
+					cstr, priv->body_piece_max_size );
+		}
 
-	/* template */
-	cstr = ofo_entry_get_ope_template( entry );
-	if( my_strlen( cstr )){
+		/* label */
+		ofa_irenderable_ellipsize_text( instance,
+				priv->body_label_ltab, y,
+				ofo_entry_get_label( entry ), priv->body_label_max_size );
+
+		/* template */
+		cstr = ofo_entry_get_ope_template( entry );
+		if( my_strlen( cstr )){
+			ofa_irenderable_ellipsize_text( instance,
+					priv->body_template_ltab, y, cstr, priv->body_template_max_size );
+		}
+
+		/* settlement ? */
+		if( ofo_entry_get_settlement_number( entry ) > 0 ){
+			ofa_irenderable_set_text( instance,
+					priv->body_settlement_ctab, y, _( "S" ), PANGO_ALIGN_CENTER );
+		}
+
+		/* reconciliation ? */
+		concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
+		if( concil ){
+			ofa_irenderable_set_text( instance,
+					priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );
+		}
+
+		/* debit */
+		if( debit ){
+			str = ofa_amount_to_str( debit, currency, priv->getter );
+			ofa_irenderable_set_text( instance,
+					priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
+		}
+
+		/* credit */
+		if( credit ){
+			str = ofa_amount_to_str( credit, currency, priv->getter );
+			ofa_irenderable_set_text( instance,
+					priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
+		}
+
+		/* currency */
 		ofa_irenderable_set_text( instance,
-				priv->body_template_ltab, y, cstr, PANGO_ALIGN_LEFT );
+				priv->body_currency_rtab, y, code, PANGO_ALIGN_RIGHT );
 	}
 
-	/* settlement ? */
-	if( ofo_entry_get_settlement_number( entry ) > 0 ){
-		ofa_irenderable_set_text( instance,
-				priv->body_settlement_ctab, y, _( "S" ), PANGO_ALIGN_CENTER );
-	}
-
-	/* reconciliation ? */
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
-	if( concil ){
-		ofa_irenderable_set_text( instance,
-				priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );
-	}
-
-	/* debit */
-	debit = ofo_entry_get_debit( entry );
-	if( debit ){
-		str = ofa_amount_to_str( debit, currency, priv->getter );
-		ofa_irenderable_set_text( instance,
-				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
-	}
-
-	/* credit */
-	credit = ofo_entry_get_credit( entry );
-	if( credit ){
-		str = ofa_amount_to_str( credit, currency, priv->getter );
-		ofa_irenderable_set_text( instance,
-				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
-	}
-
-	/* currency */
-	ofa_irenderable_set_text( instance,
-			priv->body_currency_rtab, y, code, PANGO_ALIGN_RIGHT );
-
-	is_paginating = ofa_irenderable_is_paginating( instance );
 	ofs_currency_add_by_code(
-			&priv->ledger_totals, priv->getter, code,
-			is_paginating ? 0 : debit, is_paginating ? 0 : credit );
+			&priv->ledger_totals, priv->getter, code, debit, credit );
 }
 
 static void
-irenderable_draw_group_bottom_report( ofaIRenderable *instance )
+irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num )
 {
-	draw_ledger_totals( instance );
+	ofaLedgerBookRenderPrivate *priv;
+
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
+
+	if( my_strlen( priv->ledger_mnemo ) && !priv->only_summary ){
+		draw_ledger_totals( instance );
+	}
 }
 
 /*
@@ -814,7 +833,7 @@ irenderable_draw_group_bottom_report( ofaIRenderable *instance )
  *   in order to be able to detect the heigtht of the summary
  */
 static void
-irenderable_draw_group_footer( ofaIRenderable *instance )
+irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *line )
 {
 	ofaLedgerBookRenderPrivate *priv;
 	GList *it;
@@ -823,14 +842,64 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
-	draw_ledger_totals( instance );
+	if( !priv->only_summary ){
+		draw_ledger_totals( instance );
+	}
 
 	is_paginating = ofa_irenderable_is_paginating( instance );
+
 	for( it=priv->ledger_totals ; it ; it=it->next ){
 		cur = ( ofsCurrency * ) it->data;
 		ofs_currency_add_by_object(
 				&priv->report_totals, cur->currency,
 				is_paginating ? 0 : cur->debit, is_paginating ? 0 : cur->credit );
+	}
+
+	append_ledger_to_summary( OFA_LEDGER_BOOK_RENDER( instance ));
+
+	if( !is_paginating ){
+		clear_ledger_data( OFA_LEDGER_BOOK_RENDER( instance ));
+	}
+}
+
+/*
+ * From draw_group_footer():
+ * Add the current ledger totals by currency to the summary list
+ * removing the previously added if exist
+ *
+ * Rationale:
+ * We need to add the ledgers and their currencies to the summary
+ * during pagination in order to get the right height; but we do not
+ * control the number of times the draw_group_footer() is called.
+ * We are just only sure that the last one is the good one.
+ */
+static void
+append_ledger_to_summary( ofaLedgerBookRender *self )
+{
+	ofaLedgerBookRenderPrivate *priv;
+	sLedger *sledg;
+	GList *it;
+
+	priv = ofa_ledger_book_render_get_instance_private( self );
+
+	if( priv->ledger_object ){
+		g_return_if_fail( OFO_IS_LEDGER( priv->ledger_object ));
+
+		/* removing the previously added */
+		for( it=priv->ledgers_summary ; it ; it=it->next ){
+			sledg = ( sLedger * ) it->data;
+			if( sledg->ledger == priv->ledger_object ){
+				priv->ledgers_summary = g_list_remove( priv->ledgers_summary, sledg );
+				free_ledger( sledg );
+				break;
+			}
+		}
+
+		/* then add this new one */
+		sledg = g_new0( sLedger, 1 );
+		sledg->ledger = priv->ledger_object;
+		sledg->totals = ofs_currency_list_copy( priv->ledger_totals );
+		priv->ledgers_summary = g_list_append( priv->ledgers_summary, sledg );
 	}
 }
 
@@ -838,7 +907,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
  * print a line per found currency at the end of the printing
  */
 static void
-irenderable_draw_bottom_summary( ofaIRenderable *instance )
+irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num )
 {
 	ofaLedgerBookRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.25;
@@ -854,6 +923,10 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	if( !priv->count ){
 		ofa_irenderable_draw_no_data( instance );
 		return;
+	}
+
+	if( priv->with_summary ){
+		draw_ledgers_summary( instance );
 	}
 
 	/* bottom of the rectangle */
@@ -875,7 +948,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 		if( first ){
 			ofa_irenderable_set_text( instance,
-					priv->body_debit_rtab-st_amount_width-shift, top,
+					priv->body_debit_rtab-priv->amount_width-shift, top,
 					_( "Ledgers general balance : " ), PANGO_ALIGN_RIGHT );
 			first = FALSE;
 		}
@@ -897,6 +970,93 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	}
 
 	ofa_irenderable_set_last_y( instance, ofa_irenderable_get_last_y( instance ) + req_height );
+}
+
+static void
+draw_ledgers_summary( ofaIRenderable *instance )
+{
+	ofaLedgerBookRenderPrivate *priv;
+	gdouble y, r, g, b, height;
+	GList *itl, *itc;
+	sLedger *sled;
+	gboolean first;
+	ofsCurrency *scur;
+	gchar *str;
+
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
+
+	ofa_irenderable_get_group_color( instance, &r, &g, &b );
+	ofa_irenderable_set_color( instance, r, g, b );
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_group_font( instance, 0 ));
+	height = ofa_irenderable_get_line_height( instance );
+
+	y = ofa_irenderable_get_last_y( instance );
+	y += height;
+
+	ofa_irenderable_set_text( instance, priv->page_margin, y, _( "Ledgers summary" ), PANGO_ALIGN_LEFT );
+	y += height;
+
+	for( itl=priv->ledgers_summary ; itl ; itl=itl->next ){
+		sled = ( sLedger * ) itl->data;
+		first = TRUE;
+
+		for( itc=sled->totals ; itc ; itc=itc->next ){
+			scur = ( ofsCurrency * ) itc->data;
+
+			if( first ){
+				ofa_irenderable_set_text( instance,
+								priv->group_h_ledcode_ltab, y,
+								ofo_ledger_get_mnemo( sled->ledger ), PANGO_ALIGN_LEFT );
+				ofa_irenderable_ellipsize_text( instance,
+								priv->group_h_ledlabel_ltab, y,
+								ofo_ledger_get_label( sled->ledger ), priv->group_h_ledlabel_max_size );
+				ofa_irenderable_set_text( instance,
+								priv->body_currency_rtab, y,
+								ofo_currency_get_code( scur->currency ), PANGO_ALIGN_RIGHT );
+				first = FALSE;
+			}
+
+			str = ofa_amount_to_str( scur->debit, scur->currency, priv->getter );
+			ofa_irenderable_set_text( instance,
+					priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
+
+			str = ofa_amount_to_str( scur->credit, scur->currency, priv->getter );
+			ofa_irenderable_set_text( instance,
+					priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
+
+			y += height;
+		}
+	}
+
+	ofa_irenderable_set_last_y( instance, y );
+}
+
+static void
+irenderable_clear_runtime_data( ofaIRenderable *instance )
+{
+	ofaLedgerBookRenderPrivate *priv;
+
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
+
+	ofs_currency_list_free( &priv->report_totals );
+	free_ledgers( &priv->ledgers_summary );
+
+	clear_ledger_data( OFA_LEDGER_BOOK_RENDER( instance ));
+}
+
+static void
+clear_ledger_data( ofaLedgerBookRender *self )
+{
+	ofaLedgerBookRenderPrivate *priv;
+
+	priv = ofa_ledger_book_render_get_instance_private( self );
+
+	g_free( priv->ledger_mnemo );
+	priv->ledger_mnemo = NULL;
+
+	ofs_currency_list_free( &priv->ledger_totals );
 }
 
 /*
@@ -925,7 +1085,7 @@ draw_ledger_totals( ofaIRenderable *instance )
 		if( first ){
 			str = g_strdup_printf( _( "%s ledger balance : " ), priv->ledger_mnemo );
 			height = ofa_irenderable_set_text( instance,
-					priv->body_debit_rtab-st_amount_width, y,
+					priv->body_debit_rtab-priv->amount_width, y,
 					str, PANGO_ALIGN_RIGHT );
 			g_free( str );
 			first = FALSE;
@@ -948,6 +1108,20 @@ draw_ledger_totals( ofaIRenderable *instance )
 	}
 
 	ofa_irenderable_set_last_y( instance, y );
+}
+
+static void
+free_ledgers( GList **ledgers )
+{
+	g_list_free_full( *ledgers, ( GDestroyNotify ) free_ledger );
+	*ledgers = NULL;
+}
+
+static void
+free_ledger( sLedger *ledger )
+{
+	ofs_currency_list_free( &ledger->totals );
+	g_free( ledger );
 }
 
 /*
@@ -1005,4 +1179,3 @@ write_settings( ofaLedgerBookRender *self )
 	g_free( str );
 	g_free( key );
 }
-#endif

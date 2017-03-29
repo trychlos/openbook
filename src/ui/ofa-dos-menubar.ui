@@ -177,11 +177,6 @@
 					<attribute name="action">win.render-ledgers-book</attribute>
 				</item>
 				<item>
-					<attribute name="id">print-10-ledsummary</attribute>
-					<attribute name="label" translatable="yes">Le_dgers summary...</attribute>
-					<attribute name="action">win.render-ledgers-summary</attribute>
-				</item>
-				<item>
 					<attribute name="id">print-10-reconcil</attribute>
 					<attribute name="label" translatable="yes">_Reconciliation...</attribute>
 					<attribute name="action">win.render-reconcil</attribute>

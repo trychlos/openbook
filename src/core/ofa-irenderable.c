@@ -41,40 +41,37 @@ typedef struct {
 
 	/* begin_render() initialization
 	 */
-	gdouble      render_width;
-	gdouble      render_height;
-	GList       *dataset;
+	gdouble            render_width;
+	gdouble            render_height;
+	GList             *dataset;
 
 	/* begin_render() computings
 	 */
-	gdouble      header_columns_height;
-	gdouble      footer_height;
-	gdouble      group_sep_line_height;
-	gdouble      max_y;
-	guint        pages_count;
+	gdouble            header_columns_height;
+	gdouble            footer_height;
+	gdouble            group_sep_line_height;
+	gdouble            max_y;
+	guint              pages_count;
 
 	/* data reset from each api entry point:
 	 * begin_render(), render_page() and end_render()
 	 * cf. create_temp_context()
 	 */
-	cairo_t     *in_context;			/* the provided cairo context with its associated pango layout */
-	PangoLayout *in_layout;
-	cairo_t     *temp_context;			/* a temp context and its layout to be used for pagination */
-	PangoLayout *temp_layout;
-
-	gboolean     want_groups;			/* whether the implementation manages groups */
-	gboolean     want_new_page;			/* whether if wants new page on new group */
-	gboolean     want_line_separation;	/* whether if wants groups to be line-separated */
+	cairo_t           *in_context;			/* the provided cairo context with its associated pango layout */
+	PangoLayout       *in_layout;
+	cairo_t           *temp_context;		/* a temp context and its layout to be used for pagination */
+	PangoLayout       *temp_layout;
 
 	/* runtime data
 	 */
-	gboolean     paginating;
-	cairo_t     *current_context;
-	PangoLayout *current_layout;
-	gdouble      last_y;
-	GList       *prev_rendered;
-	guint        count_rendered;
-	gboolean     have_groups;
+	gboolean           paginating;
+	cairo_t           *current_context;
+	PangoLayout       *current_layout;
+	gdouble            last_y;
+	GList             *prev_rendered;
+	guint              count_rendered;
+	gboolean           have_groups;
+	ofeIRenderableMode line_mode;
 }
 	sIRenderable;
 
@@ -660,13 +657,14 @@ draw_line( ofaIRenderable *instance,
 
 	/* we are using a unique font to draw the lines */
 	y = sdata->last_y;
-
 	ofa_irenderable_set_font( instance, ofa_irenderable_get_body_font( instance ));
 
 	/* have a rubber every other line */
-	if( line_num % 2 ){
-		font_height = ofa_irenderable_get_text_height( instance );
-		ofa_irenderable_draw_rubber( instance, y-(line_height-font_height)*0.5, line_height );
+	if( sdata->line_mode != IRENDERABLE_MODE_NOPRINT ){
+		if( line_num % 2 ){
+			font_height = ofa_irenderable_get_text_height( instance );
+			ofa_irenderable_draw_rubber( instance, y-(line_height-font_height)*0.5, line_height );
+		}
 	}
 
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_line ){
@@ -675,8 +673,11 @@ draw_line( ofaIRenderable *instance,
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_line( instance, page_num, line_num, line);
 	}
 
-	y += line_height;
-	sdata->last_y = y;
+	if( sdata->line_mode != IRENDERABLE_MODE_NOPRINT ){
+		y += line_height;
+		sdata->last_y = y;
+	}
+
 	sdata->prev_rendered = line;
 	sdata->count_rendered += 1;
 
@@ -1225,6 +1226,45 @@ ofa_irenderable_is_paginating( ofaIRenderable *instance )
 	sdata = get_instance_data( instance );
 
 	return( sdata->paginating );
+}
+
+/**
+ * ofa_irenderable_get_line_mode:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the line rendering mode.
+ */
+ofeIRenderableMode
+ofa_irenderable_get_line_mode( const ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
+
+	sdata = get_instance_data( instance );
+
+	return( sdata->line_mode );
+}
+
+/**
+ * ofa_irenderable_set_line_mode:
+ * @instance: this #ofaIRenderable instance.
+ * @mode: the requested line mode.
+ *
+ * Set the requested line rendering mode.
+ *
+ * Must be set once, before rendering the pages.
+ */
+void
+ofa_irenderable_set_line_mode( ofaIRenderable *instance, ofeIRenderableMode mode )
+{
+	sIRenderable *sdata;
+
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+
+	sdata = get_instance_data( instance );
+
+	sdata->line_mode = mode;
 }
 
 /**
@@ -2058,6 +2098,8 @@ get_instance_data( const ofaIRenderable *instance )
 		sdata = g_new0( sIRenderable, 1 );
 		g_object_set_data( G_OBJECT( instance ), IRENDERABLE_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
+
+		sdata->line_mode = IRENDERABLE_MODE_NORMAL;
 	}
 
 	return( sdata );

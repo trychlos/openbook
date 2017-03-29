@@ -75,7 +75,6 @@
 #include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledger-book-render.h"
 #include "ui/ofa-ledger-page.h"
-#include "ui/ofa-ledger-summary-render.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-misc-audit-ui.h"
 #include "ui/ofa-nomodal-page.h"
@@ -152,7 +151,6 @@ static void on_ope_export            ( GSimpleAction *action, GVariant *paramete
 static void on_render_balances       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_render_accounts_book  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_render_ledgers_book   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_render_ledgers_summary( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_render_reconcil       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_ledgers           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -184,7 +182,6 @@ static const GActionEntry st_dos_entries[] = {
 		{ "render-balances",        on_render_balances,        NULL, NULL, NULL },
 		{ "render-books",           on_render_accounts_book,   NULL, NULL, NULL },
 		{ "render-ledgers-book",    on_render_ledgers_book,    NULL, NULL, NULL },
-		{ "render-ledgers-summary", on_render_ledgers_summary, NULL, NULL, NULL },
 		{ "render-reconcil",        on_render_reconcil,        NULL, NULL, NULL },
 		{ "accounts",               on_ref_accounts,           NULL, NULL, NULL },
 		{ "ledgers",                on_ref_ledgers,            NULL, NULL, NULL },
@@ -249,7 +246,6 @@ static sThemeInit st_theme_defs[] = {
 		{ N_( "Guided input" ),            ofa_guided_ex_get_type,             FALSE },
 		{ N_( "Ledgers book" ),            ofa_ledger_book_render_get_type,    FALSE },
 		{ N_( "Ledgers" ),                 ofa_ledger_page_get_type,           FALSE },
-		{ N_( "Ledgers summary" ),         ofa_ledger_summary_render_get_type, FALSE },
 		{ N_( "Means of paiement" ),       ofa_paimean_page_get_type,          FALSE },
 		{ N_( "Operation templates" ),     ofa_ope_template_page_get_type,     FALSE },
 		{ N_( "Rates" ),                   ofa_rate_page_get_type,             FALSE },
@@ -1532,19 +1528,6 @@ on_render_ledgers_book( GSimpleAction *action, GVariant *parameter, gpointer use
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_LEDGER_BOOK_RENDER );
-}
-
-static void
-on_render_ledgers_summary( GSimpleAction *action, GVariant *parameter, gpointer user_data )
-{
-	static const gchar *thisfn = "ofa_main_window_on_render_ledgers_summary";
-
-	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
-			thisfn, action, parameter, ( void * ) user_data );
-
-	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
-
-	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_LEDGER_SUMMARY_RENDER );
 }
 
 static void

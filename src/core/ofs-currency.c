@@ -35,6 +35,7 @@
 
 static gint cmp_currency( const ofsCurrency *a, const ofsCurrency *b );
 static void currency_dump( ofsCurrency *cur, void *empty );
+static void currency_copy( ofsCurrency *scur, GList **target );
 static void currency_free( ofsCurrency *cur );
 
 /**
@@ -217,6 +218,37 @@ currency_dump( ofsCurrency *cur, void *empty )
 {
 	g_debug( "  [%p] %s: debit=%.5lf, credit=%.5lf",
 			( void * ) cur, ofo_currency_get_code( cur->currency ), cur->debit, cur->credit );
+}
+
+/**
+ * ofs_currency_list_copy:
+ * @list: a #GList of #ofsCurrency structures.
+ *
+ * Returns: a deep copy of @list.
+ */
+GList *
+ofs_currency_list_copy( GList *list )
+{
+	GList *new_list;
+
+	new_list = NULL;
+
+	g_list_foreach( list, ( GFunc ) currency_copy, &new_list );
+
+	return( new_list );
+}
+
+static void
+currency_copy( ofsCurrency *scur, GList **target )
+{
+	ofsCurrency *new_cur;
+
+	new_cur = g_new0( ofsCurrency, 1 );
+	new_cur->currency = g_object_ref( scur->currency );
+	new_cur->debit = scur->debit;
+	new_cur->credit = scur->credit;
+
+	*target = g_list_insert_sorted( *target, new_cur, ( GCompareFunc ) cmp_currency );
 }
 
 /**

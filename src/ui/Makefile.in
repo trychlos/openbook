@@ -173,8 +173,6 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-ledger-book-args.$(OBJEXT) \
 	ofa-ledger-book-render.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
 	ofa-ledger-page.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
-	ofa-ledger-summary-args.$(OBJEXT) \
-	ofa-ledger-summary-render.$(OBJEXT) \
 	ofa-ledger-treeview.$(OBJEXT) ofa-main-window.$(OBJEXT) \
 	ofa-maintainer.$(OBJEXT) ofa-misc-audit-store.$(OBJEXT) \
 	ofa-misc-audit-treeview.$(OBJEXT) ofa-misc-audit-ui.$(OBJEXT) \
@@ -635,10 +633,6 @@ openbook_SOURCES = \
 	ofa-ledger-page.h									\
 	ofa-ledger-properties.c								\
 	ofa-ledger-properties.h								\
-	ofa-ledger-summary-args.c							\
-	ofa-ledger-summary-args.h							\
-	ofa-ledger-summary-render.c							\
-	ofa-ledger-summary-render.h							\
 	ofa-ledger-treeview.c								\
 	ofa-ledger-treeview.h								\
 	ofa-main-window.c									\
@@ -886,8 +880,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-close.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-properties.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-summary-args.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-summary-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-main-window.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-maintainer.Po@am__quote@
