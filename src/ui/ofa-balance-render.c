@@ -68,9 +68,8 @@ typedef struct {
 	GDate          from_date;
 	GDate          to_date;
 	gboolean       accounts_balance;
-	gboolean       per_class;
-	gboolean       new_page;
-	GList         *totals;
+	gboolean       class_subtotal;
+	gboolean       class_break;
 	gint           count;				/* count of returned entries */
 
 	/* print datas
@@ -93,7 +92,8 @@ typedef struct {
 	 */
 	gint           class_num;
 	ofoClass      *class_object;
-	GList         *subtotals;			/* subtotals per currency for this class */
+	GList         *class_totals;			/* class_totals per currency for this class */
+	GList         *gen_totals;
 }
 	ofaBalanceRenderPrivate;
 
@@ -119,6 +119,7 @@ static const gchar *st_page_header_title_accounts = N_( "Accounts Balance Summar
  */
 
 static const gchar *st_title2_font       = "Sans Bold 8";
+static const gchar *st_summary_font      = "Sans Bold 6";
 static const gchar *st_notes_font        = "Sans Italic 5";
 
 #define COLOR_BLACK                      0,      0,      0
@@ -147,12 +148,14 @@ static void               irenderable_draw_line( ofaIRenderable *instance, guint
 static void               irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num );
 static void               irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *line );
 static void               irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num );
+static const gchar       *irenderable_get_summary_font( const ofaIRenderable *instance, guint page_num );
 static void               irenderable_clear_runtime_data( ofaIRenderable *instance );
 static void               draw_subtotals_balance( ofaIRenderable *instance, const gchar *title );
 static void               draw_account_balance( ofaIRenderable *instance, GList *list, gdouble top, const gchar *title );
 static GList             *add_account_balance( ofaBalanceRender *self, GList *list, const gchar *currency, gdouble solde, ofsAccountBalance *sbal );
 static gint               cmp_currencies( const sCurrency *a, const sCurrency *b );
-static void               free_currency( sCurrency *total_per_currency );
+static void               free_currencies( GList **list );
+static void               free_currency( sCurrency *scur );
 static void               read_settings( ofaBalanceRender *self );
 static void               write_settings( ofaBalanceRender *self );
 
@@ -177,6 +180,9 @@ balance_render_finalize( GObject *instance )
 	g_free( priv->settings_prefix );
 	g_free( priv->from_account );
 	g_free( priv->to_account );
+
+	free_currencies( &priv->class_totals );
+	free_currencies( &priv->gen_totals );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_balance_render_parent_class )->finalize( instance );
@@ -331,8 +337,8 @@ render_page_v_get_dataset( ofaRenderPage *page )
 
 	priv->count = g_list_length( dataset );
 
-	priv->per_class = ofa_balance_args_get_subtotal_per_class( priv->args_bin );
-	priv->new_page = ofa_balance_args_get_new_page_per_class( priv->args_bin );
+	priv->class_subtotal = ofa_balance_args_get_subtotal_per_class( priv->args_bin );
+	priv->class_break = ofa_balance_args_get_new_page_per_class( priv->args_bin );
 
 	return( dataset );
 }
@@ -377,6 +383,7 @@ irenderable_iface_init( ofaIRenderableInterface *iface )
 	iface->draw_bottom_report = irenderable_draw_bottom_report;
 	iface->draw_group_footer = irenderable_draw_group_footer;
 	iface->draw_last_summary = irenderable_draw_last_summary;
+	iface->get_summary_font = irenderable_get_summary_font;
 	iface->clear_runtime_data = irenderable_clear_runtime_data;
 }
 
@@ -638,7 +645,13 @@ irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num )
 static void
 irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line )
 {
-	draw_subtotals_balance( instance, _( "Top class report : " ));
+	ofaBalanceRenderPrivate *priv;
+
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
+
+	if( priv->class_subtotal ){
+		draw_subtotals_balance( instance, _( "Top class report : " ));
+	}
 }
 
 /*
@@ -659,7 +672,7 @@ irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *li
 		return( TRUE );
 	}
 
-	if( priv->per_class ){
+	if( priv->class_subtotal || priv->class_break ){
 
 		current_sbal = ( ofsAccountBalance * ) line->data;
 		current_class = ofo_account_get_class_from_number( current_sbal->account );
@@ -667,8 +680,10 @@ irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *li
 		prev_sbal = ( ofsAccountBalance * ) prev->data;
 		prev_class = ofo_account_get_class_from_number( prev_sbal->account );
 
-		if( priv->new_page ){
+		if( priv->class_break ){
 			*sep = IRENDERABLE_BREAK_NEW_PAGE;
+		} else {
+			*sep = IRENDERABLE_BREAK_SEP_LINE;
 		}
 
 		return( current_class != prev_class );
@@ -692,27 +707,27 @@ irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
-	y = ofa_irenderable_get_last_y( instance );
+	if( priv->class_break || priv->class_subtotal ){
 
-	/* setup the class properties */
-	sbal = ( ofsAccountBalance * ) line->data;
-	priv->class_num = ofo_account_get_class_from_number( sbal->account );
+		y = ofa_irenderable_get_last_y( instance );
 
-	priv->class_object = ofo_class_get_by_number( priv->getter, priv->class_num );
+		/* setup the class properties */
+		sbal = ( ofsAccountBalance * ) line->data;
+		priv->class_num = ofo_account_get_class_from_number( sbal->account );
 
-	g_list_free_full( priv->subtotals, ( GDestroyNotify ) free_currency );
-	priv->subtotals = NULL;
+		priv->class_object = ofo_class_get_by_number( priv->getter, priv->class_num );
 
-	/* display the class header */
-	/* label */
-	str = g_strdup_printf(
-				_( "Class %u - %s" ),
-				priv->class_num, ofo_class_get_label( priv->class_object ));
-	height = ofa_irenderable_set_text( instance, priv->page_margin, y, str, PANGO_ALIGN_LEFT );
-	g_free( str );
+		/* display the class header */
+		/* label */
+		str = g_strdup_printf(
+					_( "Class %u - %s" ),
+					priv->class_num, ofo_class_get_label( priv->class_object ));
+		height = ofa_irenderable_set_text( instance, priv->page_margin, y, str, PANGO_ALIGN_LEFT );
+		g_free( str );
 
-	y += height * ( 1+st_vspace_rate );
-	ofa_irenderable_set_last_y( instance, y );
+		y += height * ( 1+st_vspace_rate );
+		ofa_irenderable_set_last_y( instance, y );
+	}
 }
 
 /*
@@ -790,20 +805,25 @@ irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num,
 	ofa_irenderable_set_text( instance,
 			priv->body_currency_ltab, y, sbal->currency, PANGO_ALIGN_LEFT );
 
-	if( !ofa_irenderable_is_paginating( instance )){
-		priv->subtotals = add_account_balance(
-							OFA_BALANCE_RENDER( instance ),
-							priv->subtotals, sbal->currency, solde, sbal );
-		priv->totals = add_account_balance(
-							OFA_BALANCE_RENDER( instance ),
-							priv->totals, sbal->currency, solde, sbal );
-	}
+	priv->class_totals = add_account_balance(
+						OFA_BALANCE_RENDER( instance ),
+						priv->class_totals, sbal->currency, solde, sbal );
+
+	priv->gen_totals = add_account_balance(
+						OFA_BALANCE_RENDER( instance ),
+						priv->gen_totals, sbal->currency, solde, sbal );
 }
 
 static void
 irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num )
 {
-	draw_subtotals_balance( instance, _( "Bottom class report : " ));
+	ofaBalanceRenderPrivate *priv;
+
+	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
+
+	if( priv->class_subtotal ){
+		draw_subtotals_balance( instance, _( "Bottom class report : " ));
+	}
 }
 
 /*
@@ -821,9 +841,15 @@ irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
-	str = g_strdup_printf( _( "Class %d entries balance : "), priv->class_num );
-	draw_subtotals_balance( instance, str );
-	g_free( str );
+	if( priv->class_subtotal ){
+		str = g_strdup_printf( _( "Class %d entries balance : "), priv->class_num );
+		draw_subtotals_balance( instance, str );
+		g_free( str );
+	}
+
+	if( !ofa_irenderable_is_paginating( instance )){
+		free_currencies( &priv->class_totals );
+	}
 }
 
 /*
@@ -850,16 +876,22 @@ irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num )
 	/* top of the rectangle */
 	height = ofa_irenderable_get_text_height( instance );
 	vspace = height * st_vspace_rate;
-	req_height = g_list_length( priv->totals ) * height
-			+ ( 1+g_list_length( priv->totals )) * vspace;
+	req_height = g_list_length( priv->gen_totals ) * height
+			+ ( 1+g_list_length( priv->gen_totals )) * vspace;
 	top = bottom - req_height;
 
 	ofa_irenderable_draw_rect( instance, 0, top, -1, req_height );
 	top += vspace;
 
-	draw_account_balance( instance, priv->totals, top, _( "General balance : " ));
+	draw_account_balance( instance, priv->gen_totals, top, _( "General balance : " ));
 
 	ofa_irenderable_set_last_y( instance, ofa_irenderable_get_last_y( instance ) + req_height );
+}
+
+static const gchar *
+irenderable_get_summary_font( const ofaIRenderable *instance, guint page_num )
+{
+	return( st_summary_font );
 }
 
 static void
@@ -869,26 +901,24 @@ irenderable_clear_runtime_data( ofaIRenderable *instance )
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
-	g_list_free_full( priv->totals, ( GDestroyNotify ) free_currency );
-	priv->totals = NULL;
+	free_currencies( &priv->class_totals );
+	free_currencies( &priv->gen_totals );
 }
 
 static void
 draw_subtotals_balance( ofaIRenderable *instance, const gchar *title )
 {
 	ofaBalanceRenderPrivate *priv;
-	static const gdouble st_vspace_rate = 0.5;
-	gdouble vspace, req_height, last_y, height;
+	gdouble req_height, last_y, height;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
 	/* top of the rectangle */
-	height = ofa_irenderable_get_text_height( instance );
-	vspace = height * ( 1+st_vspace_rate );
-	req_height = g_list_length( priv->subtotals ) * vspace;
+	height = ofa_irenderable_get_line_height( instance );
+	req_height = g_list_length( priv->class_totals ) * height;
 	last_y = ofa_irenderable_get_last_y( instance );
 
-	draw_account_balance( instance, priv->subtotals, last_y, title );
+	draw_account_balance( instance, priv->class_totals, last_y, title );
 
 	ofa_irenderable_set_last_y( instance, last_y+req_height );
 }
@@ -898,7 +928,6 @@ draw_account_balance( ofaIRenderable *instance,
 							GList *list, gdouble top, const gchar *title )
 {
 	ofaBalanceRenderPrivate *priv;
-	static const gdouble st_vspace_rate = 0.5;
 	GList *it;
 	gboolean first;
 	sCurrency *scur;
@@ -908,11 +937,11 @@ draw_account_balance( ofaIRenderable *instance,
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
-	height = 0;
+	height = ofa_irenderable_get_line_height( instance );
 
 	for( it=list, first=TRUE ; it ; it=it->next ){
 		if( first ){
-			height = ofa_irenderable_set_text( instance,
+			ofa_irenderable_set_text( instance,
 						priv->body_debit_period_rtab-priv->amount_width, top,
 						title, PANGO_ALIGN_RIGHT );
 			first = FALSE;
@@ -947,7 +976,7 @@ draw_account_balance( ofaIRenderable *instance,
 		ofa_irenderable_set_text( instance,
 				priv->body_currency_ltab, top, scur->currency, PANGO_ALIGN_LEFT );
 
-		top += height * ( 1+st_vspace_rate );
+		top += height;
 	}
 }
 
@@ -956,19 +985,22 @@ add_account_balance( ofaBalanceRender *self, GList *list,
 							const gchar *currency, gdouble solde, ofsAccountBalance *sbal )
 {
 	static const gchar *thisfn = "ofa_balance_render_add_account_balance";
-	GList *it;
+	GList *it, *found;
 	sCurrency *scur;
-	gboolean found;
 
-	for( it=list, found=FALSE ; it ; it=it->next ){
+	found = NULL;
+	for( it=list ; it ; it=it->next ){
 		scur = ( sCurrency * ) it->data;
-		if( !g_utf8_collate( scur->currency, currency )){
-			found = TRUE;
+		if( !my_collate( scur->currency, currency )){
+			found = it;
 			break;
 		}
 	}
 
-	if( !found ){
+	if( found ){
+		scur = ( sCurrency * ) found->data;
+
+	} else {
 		scur = g_new0( sCurrency, 1 );
 		scur->currency = g_strdup( currency );
 		g_debug( "%s: inserting new %s currency", thisfn, scur->currency );
@@ -981,8 +1013,10 @@ add_account_balance( ofaBalanceRender *self, GList *list,
 
 	scur->period_d += sbal->debit;
 	scur->period_c += sbal->credit;
+
 	if( solde < 0 ){
 		scur->solde_d += -1*solde;
+
 	} else if( solde > 0 ){
 		scur->solde_c += solde;
 	}
@@ -993,14 +1027,21 @@ add_account_balance( ofaBalanceRender *self, GList *list,
 static gint
 cmp_currencies( const sCurrency *a, const sCurrency *b )
 {
-	return( g_utf8_collate( a->currency, b->currency ));
+	return( my_collate( a->currency, b->currency ));
 }
 
 static void
-free_currency( sCurrency *total_per_currency )
+free_currencies( GList **list )
 {
-	g_free( total_per_currency->currency );
-	g_free( total_per_currency );
+	g_list_free_full( *list, ( GDestroyNotify ) free_currency );
+	*list = NULL;
+}
+
+static void
+free_currency( sCurrency *scur )
+{
+	g_free( scur->currency );
+	g_free( scur );
 }
 
 /*

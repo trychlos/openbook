@@ -330,14 +330,10 @@ static void
 on_per_class_toggled( GtkToggleButton *button, ofaBalanceArgs *self )
 {
 	ofaBalanceArgsPrivate *priv;
-	gboolean bvalue;
 
 	priv = ofa_balance_args_get_instance_private( self );
 
-	bvalue = gtk_toggle_button_get_active( button );
-	gtk_widget_set_sensitive( priv->new_page_btn, bvalue );
-
-	priv->per_class = bvalue;
+	priv->per_class = gtk_toggle_button_get_active( button );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }

@@ -910,6 +910,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *
 	static const gchar *thisfn = "ofa_account_book_render_irenderable_draw_group_footer";
 	ofaAccountBookRenderPrivate *priv;
 	gboolean is_paginating;
+	gchar *str;
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
@@ -937,7 +938,10 @@ irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *
 		 */
 		if( priv->class_subtotal && is_new_class( instance, line, line->next )){
 			ofa_irenderable_set_font( instance, st_subtotal_font );
-			draw_currencies_balance( instance, _( "Class balance : " ), priv->class_totals, FALSE );
+			str = g_strdup_printf( _( "Class %d balance : " ), ofo_account_get_class( priv->account_object ));
+			draw_currencies_balance( instance, str, priv->class_totals, FALSE );
+			g_free( str );
+
 			if( !is_paginating ){
 				ofs_currency_list_free( &priv->class_totals );
 			}
