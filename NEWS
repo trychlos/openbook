@@ -35,6 +35,7 @@
    - Printings: have a progress bar when printing (todo #1404).
    - Reconciliation page auto-updates when an external identifier changes (todo #1407).
    - Reconciliation render take into account the last available BAT at date (todo #1420).
+   - Restore assistant: allow admin credentials to be saved (todo #1416).
 
  Bug fixes:
 

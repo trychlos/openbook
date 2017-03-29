@@ -275,7 +275,7 @@
                 - OpeTemplateBookOrder
      2016-12-18 note that updating dossier settings triggers a reload
                 of dossier_collection (due to file monitoring)
-     2017- 2- 6 we also need an ofaIDBConnect opened connection on the dosier
+     2017- 2- 6 we also need an ofaIDBConnect opened connection on the dossier
 
 1239 2016-10-19 export from EntryPage
 
@@ -304,7 +304,7 @@
                 - entries: idem operation,
                 - accounts: all documents for this account
      2017- 2- 6 dbms is prepared
-     2017- 3-16 do not omit to check for deletabilityo of all objects
+     2017- 3-16 do not omit to check for deletability of all objects
                 which might have a document
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
@@ -349,6 +349,8 @@
                 (this is for new profiles)
 
 1416 2017- 3-24 dossier administrative credentials: does not remember the account
+     2017- 3-29 restore assistant:  fixed
+                recovery assistant:
 
 1417 2017- 3-24 ope_template: have a tiers id field depending of the template
      2017- 3-25 dbms is updated
@@ -356,7 +358,9 @@
 1418 2017- 3-24 ope template has a prof. share (quote-part pro)
      2017- 3-25 dbms is updated
 
-1421
+1421 2017- 3-29 PACK: have a script which checks po file vs. resources.xml
+
+1422
 
 -----------------------------------------------------------------------
  DONE

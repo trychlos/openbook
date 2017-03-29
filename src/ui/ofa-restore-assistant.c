@@ -1699,6 +1699,9 @@ p6_do_open( ofaRestoreAssistant *self )
 	g_debug( "%s: self=%p, meta=%p, period=%p, account=%s",
 			thisfn, ( void * ) self, ( void * ) priv->p6_dossier_meta, ( void * ) priv->p6_exercice_meta, priv->p4_account );
 
+	/* set the dossier meta to allow the settings to be saved */
+	ofa_admin_credentials_bin_set_dossier_meta( priv->p4_admin_credentials, priv->p6_dossier_meta );
+
 	if( priv->p5_open ){
 		if( !ofa_dossier_open_run(
 				priv->getter, GTK_WINDOW( self ),
