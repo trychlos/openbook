@@ -310,10 +310,11 @@ ofo_bat_line_get_dataset_for_print_reconcil( ofaIGetter *getter,
 	*batid = -1;
 	dataset = NULL;
 	sdate = my_date_to_str( date, MY_DATE_SQL );
+	bats = NULL;
+	lines = NULL;
 
 	/* get the list of candidates BAT files,
 	 * stopping at the first after the requested date */
-	bats = NULL;
 	query = g_strdup_printf(
 				"SELECT BAT_ID,BAT_END FROM OFA_T_BAT WHERE BAT_ACCOUNT='%s' ORDER BY BAT_END",
 				account_id );
@@ -341,52 +342,55 @@ ofo_bat_line_get_dataset_for_print_reconcil( ofaIGetter *getter,
 	 * or which have been conciliated after the requested date
 	 * NOTE: SELECT ... WHERE ... AND (... OR ( ... AND ...))  is very expensive (~ 2mn)
 	 * Just have two requests */
-	lines = NULL;
-	slist = intlist_to_str( bats );
-	/* first not yet conciliated */
-	query = g_strdup_printf(
-				"SELECT BAT_LINE_ID FROM OFA_T_BAT_LINES,OFA_T_CONCIL_IDS "
-				"	WHERE BAT_ID IN (%s)"
-				"	AND BAT_LINE_ID NOT IN (SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS WHERE REC_IDS_TYPE='B') ",
-				slist );
-	ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
-	if( ok ){
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			row_id = atol(( const gchar * ) icol->data );
-			lines = g_list_append( lines, GUINT_TO_POINTER( row_id ));
+	if( g_list_length( bats )){
+		slist = intlist_to_str( bats );
+		/* first not yet conciliated */
+		query = g_strdup_printf(
+					"SELECT BAT_LINE_ID FROM OFA_T_BAT_LINES,OFA_T_CONCIL_IDS "
+					"	WHERE BAT_ID IN (%s)"
+					"	AND BAT_LINE_ID NOT IN (SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS WHERE REC_IDS_TYPE='B') ",
+					slist );
+		ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
+		if( ok ){
+			for( irow=result ; irow ; irow=irow->next ){
+				icol = ( GSList * ) irow->data;
+				row_id = atol(( const gchar * ) icol->data );
+				lines = g_list_append( lines, GUINT_TO_POINTER( row_id ));
+			}
+			ofa_idbconnect_free_results( result );
 		}
-		ofa_idbconnect_free_results( result );
-	}
-	g_free( query );
+		g_free( query );
 
-	/* second conciliated after the requested date */
-	query = g_strdup_printf(
-				"SELECT BAT_LINE_ID FROM OFA_T_BAT_LINES a,OFA_T_CONCIL_IDS b,OFA_T_CONCIL c "
-				"	WHERE BAT_ID IN (%s)"
-				"	AND BAT_LINE_ID=REC_IDS_OTHER "
-				"	AND REC_IDS_TYPE='B' "
-				"	AND b.REC_ID=c.REC_ID "
-				"	AND REC_DVAL>'%s'",
-				slist, sdate );
-	ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
-	if( ok ){
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			row_id = atol(( const gchar * ) icol->data );
-			lines = g_list_append( lines, GUINT_TO_POINTER( row_id ));
+		/* second conciliated after the requested date */
+		query = g_strdup_printf(
+					"SELECT BAT_LINE_ID FROM OFA_T_BAT_LINES a,OFA_T_CONCIL_IDS b,OFA_T_CONCIL c "
+					"	WHERE BAT_ID IN (%s)"
+					"	AND BAT_LINE_ID=REC_IDS_OTHER "
+					"	AND REC_IDS_TYPE='B' "
+					"	AND b.REC_ID=c.REC_ID "
+					"	AND REC_DVAL>'%s'",
+					slist, sdate );
+		ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
+		if( ok ){
+			for( irow=result ; irow ; irow=irow->next ){
+				icol = ( GSList * ) irow->data;
+				row_id = atol(( const gchar * ) icol->data );
+				lines = g_list_append( lines, GUINT_TO_POINTER( row_id ));
+			}
+			ofa_idbconnect_free_results( result );
 		}
-		ofa_idbconnect_free_results( result );
+		g_free( query );
+		g_free( slist );
 	}
-	g_free( query );
-	g_free( slist );
 
 	/* last get the corresponding bat lines */
-	slist = intlist_to_str( lines );
-	where = g_strdup_printf(" WHERE BAT_LINE_ID IN (%s) ", slist );
-	dataset = bat_line_load_dataset( getter, where );
-	g_free( where );
-	g_free( slist );
+	if( g_list_length( lines )){
+		slist = intlist_to_str( lines );
+		where = g_strdup_printf(" WHERE BAT_LINE_ID IN (%s) ", slist );
+		dataset = bat_line_load_dataset( getter, where );
+		g_free( where );
+		g_free( slist );
+	}
 
 	g_list_free( lines );
 	g_list_free( bats );
