@@ -136,18 +136,18 @@ static void               render_page_v_free_dataset( ofaRenderPage *page, GList
 static void               on_args_changed( ofaBalanceArgs *bin, ofaBalanceRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
-static void               irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height, GList *dataset );
+static void               irenderable_begin_render( ofaIRenderable *instance );
 static gchar             *irenderable_get_dossier_label( const ofaIRenderable *instance );
-static void               irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num );
-static void               irenderable_draw_page_header_notes( ofaIRenderable *instance, guint page_num );
-static void               irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num );
+static void               irenderable_draw_page_header_title( ofaIRenderable *instance );
+static void               irenderable_draw_page_header_notes( ofaIRenderable *instance );
+static void               irenderable_draw_header_column_names( ofaIRenderable *instance );
 static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *line, ofeIRenderableBreak *sep );
-static void               irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line );
-static void               irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line );
-static void               irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line );
-static void               irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num );
-static void               irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *line );
-static void               irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num );
+static void               irenderable_draw_group_header( ofaIRenderable *instance );
+static void               irenderable_draw_top_report( ofaIRenderable *instance );
+static void               irenderable_draw_line( ofaIRenderable *instance );
+static void               irenderable_draw_bottom_report( ofaIRenderable *instance );
+static void               irenderable_draw_group_footer( ofaIRenderable *instance );
+static void               irenderable_draw_last_summary( ofaIRenderable *instance );
 static const gchar       *irenderable_get_summary_font( const ofaIRenderable *instance, guint page_num );
 static void               irenderable_clear_runtime_data( ofaIRenderable *instance );
 static void               draw_subtotals_balance( ofaIRenderable *instance, const gchar *title );
@@ -394,19 +394,18 @@ irenderable_get_interface_version( const ofaIRenderable *instance )
 }
 
 static void
-irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height, GList *dataset )
+irenderable_begin_render( ofaIRenderable *instance )
 {
 	static const gchar *thisfn = "ofa_balance_render_irenderable_begin_render";
 	ofaBalanceRenderPrivate *priv;
 	gdouble spacing, account_width, amount_width, cur_width;
 
-	g_debug( "%s: instance=%p, render_width=%lf, render_height=%lf",
-			thisfn, ( void * ) instance, render_width, render_height );
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
-	priv->render_width = render_width;
-	priv->render_height = render_height;
+	priv->render_width = ofa_irenderable_get_render_width( instance );
+	priv->render_height = ofa_irenderable_get_render_height( instance );
 	priv->page_margin = ofa_irenderable_get_page_margin( instance );
 	spacing = ofa_irenderable_get_columns_spacing( instance );
 
@@ -461,7 +460,7 @@ irenderable_get_dossier_label( const ofaIRenderable *instance )
  * Depending whether we have chosen accounts balances or entries balances
  */
 static void
-irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num )
+irenderable_draw_page_header_title( ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 	gdouble y, r, g, b, height;
@@ -476,8 +475,9 @@ irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num )
 	y = ofa_irenderable_get_last_y( instance );
 
 	/* line 1 general books summary */
+	ofa_irenderable_set_font( instance,
+			ofa_irenderable_get_title_font( instance, ofa_irenderable_get_current_page_num( instance )));
 	cstr = priv->accounts_balance ? st_page_header_title_accounts : st_page_header_title_entries;
-	ofa_irenderable_set_font( instance, ofa_irenderable_get_title_font( instance, page_num ));
 	height = ofa_irenderable_set_text( instance, priv->render_width/2, y, cstr, PANGO_ALIGN_CENTER );
 	y += height;
 
@@ -537,14 +537,14 @@ irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num )
 }
 
 static void
-irenderable_draw_page_header_notes( ofaIRenderable *instance, guint page_num )
+irenderable_draw_page_header_notes( ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 	gdouble y, text_height;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
-	if( page_num == 0 ){
+	if( ofa_irenderable_get_current_page_num( instance ) == 0 ){
 		if( !priv->accounts_balance ){
 
 			y = ofa_irenderable_get_last_y( instance );
@@ -570,7 +570,7 @@ irenderable_draw_page_header_notes( ofaIRenderable *instance, guint page_num )
 }
 
 static void
-irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num )
+irenderable_draw_header_column_names( ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 	static gdouble st_vspace_rate_before = 0.25;
@@ -685,10 +685,10 @@ irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *li
  * Class x - xxx
  */
 static void
-irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line )
+irenderable_draw_group_header( ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
-	static const gdouble st_vspace_rate = 0.4;
+	GList *line;
 	ofsAccountBalance *sbal;
 	gdouble height, y;
 	gchar *str;
@@ -697,29 +697,33 @@ irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *
 
 	if( priv->class_break || priv->class_subtotal ){
 
-		y = ofa_irenderable_get_last_y( instance );
+		line = ofa_irenderable_get_current_line( instance );
+		if( line ){
 
-		/* setup the class properties */
-		sbal = ( ofsAccountBalance * ) line->data;
-		priv->class_num = ofo_account_get_class_from_number( sbal->account );
+			/* setup the class properties */
+			sbal = ( ofsAccountBalance * ) line->data;
+			priv->class_num = ofo_account_get_class_from_number( sbal->account );
+			priv->class_object = ofo_class_get_by_number( priv->getter, priv->class_num );
 
-		priv->class_object = ofo_class_get_by_number( priv->getter, priv->class_num );
+			y = ofa_irenderable_get_last_y( instance );
+			height = ofa_irenderable_get_line_height( instance );
 
-		/* display the class header */
-		/* label */
-		str = g_strdup_printf(
-					_( "Class %u - %s" ),
-					priv->class_num, ofo_class_get_label( priv->class_object ));
-		height = ofa_irenderable_set_text( instance, priv->page_margin, y, str, PANGO_ALIGN_LEFT );
-		g_free( str );
+			/* display the class header */
+			/* label */
+			str = g_strdup_printf(
+						_( "Class %u - %s" ),
+						priv->class_num, ofo_class_get_label( priv->class_object ));
+			ofa_irenderable_set_text( instance, priv->page_margin, y, str, PANGO_ALIGN_LEFT );
+			g_free( str );
 
-		y += height * ( 1+st_vspace_rate );
-		ofa_irenderable_set_last_y( instance, y );
+			y += height;
+			ofa_irenderable_set_last_y( instance, y );
+		}
 	}
 }
 
 static void
-irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line )
+irenderable_draw_top_report( ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 
@@ -738,9 +742,10 @@ irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *pr
  * 10    6        max(10)  max(80)      15d      15d     15d
  */
 static void
-irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line )
+irenderable_draw_line( ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
+	GList *line;
 	gdouble y;
 	ofsAccountBalance *sbal;
 	ofoAccount *account;
@@ -751,71 +756,76 @@ irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num,
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
-	y = ofa_irenderable_get_last_y( instance );
-	/*g_debug( "irenderable_draw_line: y=%lf, current=%p", y, ( void * ) current );*/
+	line = ofa_irenderable_get_current_line( instance );
+	if( line ){
 
-	sbal = ( ofsAccountBalance * ) line->data;
-	g_return_if_fail( my_strlen( sbal->account ));
+		/* get the data properties */
+		sbal = ( ofsAccountBalance * ) line->data;
+		g_return_if_fail( my_strlen( sbal->account ));
 
-	account = ofo_account_get_by_number( priv->getter, sbal->account );
-	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
-	/*g_debug( "irenderable_draw_line: account=%s %s", sbal->account, ofo_account_get_label( account ));*/
+		account = ofo_account_get_by_number( priv->getter, sbal->account );
+		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+		/*g_debug( "irenderable_draw_line: account=%s %s", sbal->account, ofo_account_get_label( account ));*/
 
-	cur_code = ofo_account_get_currency( account );
-	g_return_if_fail( my_strlen( cur_code ));
+		cur_code = ofo_account_get_currency( account );
+		g_return_if_fail( my_strlen( cur_code ));
 
-	cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
-	g_return_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ));
+		cur_obj = ofo_currency_get_by_code( priv->getter, cur_code );
+		g_return_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ));
 
-	solde = 0;
+		solde = 0;
 
-	ofa_irenderable_ellipsize_text( instance,
-			priv->body_number_ltab, y, sbal->account, priv->body_number_max_size );
+		y = ofa_irenderable_get_last_y( instance );
+		/*g_debug( "irenderable_draw_line: y=%lf, current=%p", y, ( void * ) current );*/
 
-	ofa_irenderable_ellipsize_text( instance,
-			priv->body_label_ltab, y,
-			ofo_account_get_label( account ), priv->body_label_max_size );
+		ofa_irenderable_ellipsize_text( instance,
+				priv->body_number_ltab, y, sbal->account, priv->body_number_max_size );
 
-	if( sbal->debit ){
-		str = ofa_amount_to_str( sbal->debit, cur_obj, priv->getter );
+		ofa_irenderable_ellipsize_text( instance,
+				priv->body_label_ltab, y,
+				ofo_account_get_label( account ), priv->body_label_max_size );
+
+		if( sbal->debit ){
+			str = ofa_amount_to_str( sbal->debit, cur_obj, priv->getter );
+			ofa_irenderable_set_text( instance,
+					priv->body_debit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
+			solde -= sbal->debit;
+		}
+
+		if( sbal->credit ){
+			str = ofa_amount_to_str( sbal->credit, cur_obj, priv->getter );
+			ofa_irenderable_set_text( instance,
+					priv->body_credit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
+			solde += sbal->credit;
+		}
+
+		if( solde < 0 ){
+			str = ofa_amount_to_str( -1*solde, cur_obj, priv->getter );
+			ofa_irenderable_set_text( instance,
+					priv->body_debit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+
+		} else {
+			str = ofa_amount_to_str( solde, cur_obj, priv->getter );
+			ofa_irenderable_set_text( instance,
+					priv->body_credit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+		}
+
 		ofa_irenderable_set_text( instance,
-				priv->body_debit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
-		solde -= sbal->debit;
+				priv->body_currency_ltab, y, sbal->currency, PANGO_ALIGN_LEFT );
+
+		priv->class_totals = add_account_balance(
+							OFA_BALANCE_RENDER( instance ),
+							priv->class_totals, sbal->currency, solde, sbal );
+
+		priv->gen_totals = add_account_balance(
+							OFA_BALANCE_RENDER( instance ),
+							priv->gen_totals, sbal->currency, solde, sbal );
 	}
-
-	if( sbal->credit ){
-		str = ofa_amount_to_str( sbal->credit, cur_obj, priv->getter );
-		ofa_irenderable_set_text( instance,
-				priv->body_credit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
-		solde += sbal->credit;
-	}
-
-	if( solde < 0 ){
-		str = ofa_amount_to_str( -1*solde, cur_obj, priv->getter );
-		ofa_irenderable_set_text( instance,
-				priv->body_debit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-
-	} else {
-		str = ofa_amount_to_str( solde, cur_obj, priv->getter );
-		ofa_irenderable_set_text( instance,
-				priv->body_credit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-	}
-
-	ofa_irenderable_set_text( instance,
-			priv->body_currency_ltab, y, sbal->currency, PANGO_ALIGN_LEFT );
-
-	priv->class_totals = add_account_balance(
-						OFA_BALANCE_RENDER( instance ),
-						priv->class_totals, sbal->currency, solde, sbal );
-
-	priv->gen_totals = add_account_balance(
-						OFA_BALANCE_RENDER( instance ),
-						priv->gen_totals, sbal->currency, solde, sbal );
 }
 
 static void
-irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num )
+irenderable_draw_bottom_report( ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 
@@ -834,7 +844,7 @@ irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num )
  * of not updating the account balance when not drawing...
  */
 static void
-irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *line )
+irenderable_draw_group_footer( ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 	gchar *str;
@@ -857,7 +867,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *
  * currency
  */
 static void
-irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num )
+irenderable_draw_last_summary( ofaIRenderable *instance )
 {
 	ofaBalanceRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.25;

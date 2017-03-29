@@ -416,6 +416,9 @@ on_only_summary_toggled( GtkToggleButton *button, ofaLedgerBookArgs *self )
 
 	priv->only_summary = gtk_toggle_button_get_active( button );
 
+	gtk_widget_set_sensitive( priv->new_page_btn, !priv->only_summary );
+	gtk_widget_set_sensitive( priv->with_summary_btn, !priv->only_summary );
+
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
@@ -543,6 +546,9 @@ ofa_ledger_book_args_get_date_filter( ofaLedgerBookArgs *bin )
  * @bin: this #ofaLedgerBookBin widget.
  *
  * Returns: whether the user wants a new page per ledger.
+ *
+ * Note: we only return the value if the user does not also have
+ * requested only the summary. Else, we return %FALSE.
  */
 gboolean
 ofa_ledger_book_args_get_new_page_per_ledger( ofaLedgerBookArgs *bin )
@@ -555,7 +561,7 @@ ofa_ledger_book_args_get_new_page_per_ledger( ofaLedgerBookArgs *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( priv->new_page );
+	return( priv->only_summary ? FALSE : priv->new_page );
 }
 
 /**

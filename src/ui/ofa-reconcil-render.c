@@ -145,19 +145,19 @@ static void               render_page_v_free_dataset( ofaRenderPage *page, GList
 static void               on_args_changed( ofaReconcilArgs *bin, ofaReconcilRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
-static void               irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height, GList *dataset );
+static void               irenderable_begin_render( ofaIRenderable *instance );
 static gchar             *irenderable_get_dossier_label( const ofaIRenderable *instance );
-static void               irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num );
-static void               irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num );
-static void               irenderable_draw_top_summary( ofaIRenderable *instance, guint page_num );
+static void               irenderable_draw_page_header_title( ofaIRenderable *instance );
+static void               irenderable_draw_header_column_names( ofaIRenderable *instance );
+static void               irenderable_draw_top_summary( ofaIRenderable *instance );
 static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *line, ofeIRenderableBreak *sep );
-static void               irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line );
-static void               irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line );
+static void               irenderable_draw_group_header( ofaIRenderable *instance );
+static void               irenderable_draw_line( ofaIRenderable *instance );
 static void               draw_line_entry( ofaIRenderable *instance, ofoEntry *entry );
 static void               draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline );
-static void               irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num );
+static void               irenderable_draw_bottom_report( ofaIRenderable *instance );
 static void               draw_top_bottom_summary( ofaIRenderable *instance, const GDate *date, const gchar *font );
-static void               irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num );
+static void               irenderable_draw_last_summary( ofaIRenderable *instance );
 static const gchar       *irenderable_get_summary_font( const ofaIRenderable *instance, guint page_num );
 static const gchar       *irenderable_get_body_font( const ofaIRenderable *instance );
 static void               irenderable_clear_runtime_data( ofaIRenderable *instance );
@@ -447,7 +447,7 @@ irenderable_get_interface_version( const ofaIRenderable *instance )
  * this is called after having loaded the dataset
  */
 static void
-irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height, GList *dataset )
+irenderable_begin_render( ofaIRenderable *instance )
 {
 	static const gchar *thisfn = "ofa_reconcil_render_irenderable_begin_render";
 	ofaReconcilRenderPrivate *priv;
@@ -456,16 +456,15 @@ irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
-	g_debug( "%s: instance=%p, render_width=%lf, render_height=%lf",
-			thisfn, ( void * ) instance, render_width, render_height );
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	priv->render_width = render_width;
-	priv->render_height = render_height;
+	priv->render_width = ofa_irenderable_get_render_width( instance );
+	priv->render_height = ofa_irenderable_get_render_height( instance );
 	priv->page_margin = ofa_irenderable_get_page_margin( instance );
 
 	/* compute the width of some columns */
 	ofa_irenderable_set_font( instance, st_line_number_font );
-	str = g_strdup_printf( "%d", g_list_length( dataset ));
+	str = g_strdup_printf( "%d", g_list_length( ofa_irenderable_get_dataset( instance )));
 	number_width = ofa_irenderable_get_text_width( instance, str );
 	g_free( str );
 
@@ -516,7 +515,7 @@ irenderable_get_dossier_label( const ofaIRenderable *instance )
  * Title is three lines
  */
 static void
-irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num )
+irenderable_draw_page_header_title( ofaIRenderable *instance )
 {
 	ofaReconcilRenderPrivate *priv;
 	gdouble r, g, b, y, height;
@@ -529,7 +528,8 @@ irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num )
 	y = ofa_irenderable_get_last_y( instance );
 
 	/* line 1 - Reconciliation summary */
-	ofa_irenderable_set_font( instance, ofa_irenderable_get_title_font( instance, page_num ));
+	ofa_irenderable_set_font( instance,
+			ofa_irenderable_get_title_font( instance, ofa_irenderable_get_current_page_num( instance )));
 	height = ofa_irenderable_set_text( instance, priv->render_width/2, y, st_page_header_title, PANGO_ALIGN_CENTER );
 	y += height;
 
@@ -553,7 +553,7 @@ irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num )
 }
 
 static void
-irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num )
+irenderable_draw_header_column_names( ofaIRenderable *instance )
 {
 	ofaReconcilRenderPrivate *priv;
 	static gdouble st_vspace_rate = 0.5;
@@ -598,7 +598,7 @@ irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num )
  * if no entry has been found (thus zero), use the arg date
  */
 static void
-irenderable_draw_top_summary( ofaIRenderable *instance, guint page_num )
+irenderable_draw_top_summary( ofaIRenderable *instance )
 {
 	ofaReconcilRenderPrivate *priv;
 	const GDate *date;
@@ -606,7 +606,7 @@ irenderable_draw_top_summary( ofaIRenderable *instance, guint page_num )
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
-	if( page_num == 0 ){
+	if( ofa_irenderable_get_current_page_num( instance ) == 0 ){
 		date = priv->account_solde ? &priv->account_deffect : &priv->arg_date;
 		font = st_summary0_font;
 
@@ -636,8 +636,12 @@ irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *li
 }
 
 static void
-irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line )
+irenderable_draw_group_header( ofaIRenderable *instance )
 {
+	GList *line;
+
+	line = ofa_irenderable_get_current_line( instance );
+
 	/* have a group line if current is a batline
 	 * and prev was an entry or null */
 	if( line && OFO_IS_BAT_LINE( line->data )){
@@ -646,13 +650,18 @@ irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *
 }
 
 static void
-irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line )
+irenderable_draw_line( ofaIRenderable *instance )
 {
-	if( OFO_IS_ENTRY( line->data )){
-		draw_line_entry( instance, OFO_ENTRY( line->data ));
+	GList *line;
 
-	} else if( OFO_IS_BAT_LINE( line->data )){
-		draw_line_bat( instance, OFO_BAT_LINE( line->data ));
+	line = ofa_irenderable_get_current_line( instance );
+	if( line ){
+		if( OFO_IS_ENTRY( line->data )){
+			draw_line_entry( instance, OFO_ENTRY( line->data ));
+
+		} else if( OFO_IS_BAT_LINE( line->data )){
+			draw_line_bat( instance, OFO_BAT_LINE( line->data ));
+		}
 	}
 }
 
@@ -782,7 +791,7 @@ draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline )
  * bottom report at the end of a page
  */
 static void
-irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num )
+irenderable_draw_bottom_report( ofaIRenderable *instance )
 {
 	ofaReconcilRenderPrivate *priv;
 
@@ -826,7 +835,7 @@ draw_top_bottom_summary( ofaIRenderable *instance, const GDate *date, const gcha
 }
 
 static void
-irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num )
+irenderable_draw_last_summary( ofaIRenderable *instance )
 {
 	ofaReconcilRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.25;

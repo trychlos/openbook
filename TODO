@@ -237,10 +237,6 @@
 1149 2016- 6- 8 FEAT: print the accounts archived balances for a given date
                 SELECT a.ACC_NUMBER,a.ACC_LABEL,b.ACC_ARC_DEBIT-b.ACC_ARC_CREDIT FROM OFA_T_ACCOUNTS a,OFA_T_ACCOUNTS_ARC b WHERE a.ACC_NUMBER LIKE '5%' AND b.ACC_ARC_DATE='2016-01-31' AND a.ACC_NUMBER=b.ACC_NUMBER;
 
-1150 2016- 6-20 BUG: LedgersBook: template code should be ellipsized
-                + review all prints for identifiers which have been
-                expanded
-
 1153 2016- 6-22 FEAT: besides of the integrity constraint checks, display
                 e.g. operation templates which use such account, and so on
 
@@ -264,6 +260,7 @@
 
 1235 2016-10-12 begining of the exercice cannot be modified anymore after
                 the first exercice operation
+     2017- 3-29 unless entries are rightly remediated
 
 1236 2016-10-13 DBMS: move user and dossier settings to dbms
      2016-11-13 dossier settings are:
@@ -320,12 +317,16 @@
                 with children and companions (e.g. entries+concil)
                 + have a version number
 
-1361 2017- 2-17 add a date filter on vat declarations view
-
 1369 2017- 2-20 recurrent operations validation: cancelled operations
                 should be italic+grayed
 
 1379 2017- 3- 9 VatForm: set template column to fixed width, rather expand label
+
+1384 2017- 3-15 all printings: erase a previous render when an argument
+                changes (as in entries balance) or when reclicking on render
+                (because the content may have changed)
+     2017- 3-26 done
+     2017- 3-29 nope
 
 1385 2017- 3-15 have a printing with solde at the beginning + solde of
                 entries = solde at the end of the period
@@ -356,8 +357,6 @@
                 + replace the GtkEntry with a GtkComboBox+GtkEntry
                 (this is for new profiles)
 
-1415 2017- 3-24 rendering should use dossier label instead of dossier name
-
 1416 2017- 3-24 dossier administrative credentials: does not remember the account
 
 1417 2017- 3-24 ope_template: have a tiers id field depending of the template
@@ -366,7 +365,10 @@
 1418 2017- 3-24 ope template has a prof. share (quote-part pro)
      2017- 3-25 dbms is updated
 
-1420
+1420 2017- 3-29 reconciliation render should take the last BAT solde at
+                the requested date (not the last last)
+
+1421
 
 -----------------------------------------------------------------------
  DONE
@@ -465,6 +467,11 @@
                 or of detachable pages in the main book as the two are
                 mutually exclusive
      2017- 1-27 done
+
+1150 2016- 6-20 BUG: LedgersBook: template code should be ellipsized
+                + review all prints for identifiers which have been
+                expanded
+     2017- 3-29 fixed
 
 1228 2016-10-10 DBMS: Entry: have a role: exercice_open / exercice_close / normal
                 (may be useful when computing solde of an account)
@@ -763,6 +770,9 @@
 1358 2017- 2-17 when importing a batline, debit 0.05 is translated to .-5
      2017- 2-17 fixed
 
+1361 2017- 2-17 add a date filter on vat declarations view
+     2017- 3-29 cancelled
+
 1359 2017- 2-17 clarify the reference management of the collections
                 when inserting of a new object
      2017- 2-22 done
@@ -846,11 +856,6 @@
 1383 2017- 3-15 have a list of settleable accounts
      2017- 3-22 cancelled as duplicate of #1381
 
-1384 2017- 3-15 all printings: erase a previous render when an argument
-                changes (as in entries balance) or when reclicking on render
-                (because the content may have changed)
-     2017- 3-26 done
-
 1386 2017- 3-15 merge ledgers book and ledger summary renders
      2017- 3-29 done
 
@@ -927,6 +932,9 @@
 
 1414 2017- 3-24 dbms entry status should come back as a char indicator
      2017- 3-25 done
+
+1415 2017- 3-24 rendering should use dossier label instead of dossier name
+     2017- 3-29 done
 
 1419 2017- 3-24 account book summary: sort by dope or deffect
      2017- 3-28 done

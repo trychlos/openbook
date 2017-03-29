@@ -122,10 +122,6 @@ typedef struct {
 	/**
 	 * begin_render:
 	 * @instance: the #ofaIRenderable instance.
-	 * @cr: the target #cairo_t context.
-	 * @render_width: the maximum rendering width in points.
-	 * @render_height: the maximum rendering height in points.
-	 * @dataset: the set of records to be rendered.
 	 *
 	 * This method is called by the interface when about to begin the
 	 * pagination.
@@ -137,44 +133,33 @@ typedef struct {
 	 * The implementation may take advantage of this method to compute
 	 * and adjust its page layout accordingly.
 	 */
-	void          ( *begin_render )             ( ofaIRenderable *instance,
-														cairo_t *cr,
-														gdouble render_width,
-														gdouble render_height,
-														GList *dataset );
+	void          ( *begin_render )             ( ofaIRenderable *instance );
 
 	/**
 	 * render_page:
 	 * @instance: the #ofaIRenderable instance.
-	 * @cr: the target #cairo_t context.
-	 * @page_num: the page number to be rendered, counted from zero.
 	 *
 	 * This method is called by the interface for rendering a page.
 	 *
 	 * If not implemented, the interface defaults to draw the page to
 	 * the provided @cr context.
 	 */
-	void          ( *render_page )              ( ofaIRenderable *instance,
-														cairo_t *cr,
-														guint page_num );
+	void          ( *render_page )              ( ofaIRenderable *instance );
 
 	/**
 	 * end_render:
 	 * @instance: the #ofaIRenderable instance.
-	 * @cr: the target #cairo_t context.
 	 *
 	 * This method is called by the interface after having rendered all
 	 * pages.
 	 *
 	 * If not implemented, the interface defaults to do nothing.
 	 */
-	void          ( *end_render )               ( ofaIRenderable *instance,
-														cairo_t *cr );
+	void          ( *end_render )               ( ofaIRenderable *instance );
 
 	/**
 	 * draw_page_header_dossier:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the page number, counted from zero.
 	 *
 	 * Called when beginning to draw each page, this method let the
 	 * implementation render specific informations about the dossier.
@@ -190,8 +175,7 @@ typedef struct {
 	 * aligned at the x=0,y=0 coordinates, and leaves the last_y ordonate
 	 * just at the bottom of the text, without any more margin.
 	 */
-	void          ( *draw_page_header_dossier ) ( ofaIRenderable *instance,
-														guint page_num );
+	void          ( *draw_page_header_dossier ) ( ofaIRenderable *instance );
 
 	/**
 	 * get_dossier_label:
@@ -243,7 +227,6 @@ typedef struct {
 	/**
 	 * draw_page_header_title:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the page number, counted from zero.
 	 *
 	 * Called after having drawn the dossier label, this method let the
 	 * implementation render the title of the printings.
@@ -260,8 +243,7 @@ typedef struct {
 	 * draw_page_header_dossier(), and leaves this last_y ordonates just at
 	 * the bottom of the text, without any more margin.
 	 */
-	void          ( *draw_page_header_title )   ( ofaIRenderable *instance,
-														guint page_num );
+	void          ( *draw_page_header_title )   ( ofaIRenderable *instance );
 
 	/**
 	 * get_title_label:
@@ -313,7 +295,6 @@ typedef struct {
 	/**
 	 * draw_page_header_notes:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the current page number, counted from zero.
 	 *
 	 * Called after having drawn the title(s), this method let the
 	 * implementation insert some text notes between the title(s)
@@ -324,13 +305,11 @@ typedef struct {
 	 *
 	 * The interface does not provide any default.
 	 */
-	void          ( *draw_page_header_notes )   ( ofaIRenderable *instance,
-														guint page_num );
+	void          ( *draw_page_header_notes )   ( ofaIRenderable *instance );
 
 	/**
 	 * draw_page_header_columns:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the current page number, counted from zero.
 	 *
 	 * Called after having drawn the titles and the header notes (if
 	 * any), this method let the implementation render the headers of
@@ -343,13 +322,11 @@ typedef struct {
 	 * then the interface defaults to render the headers in a painted
 	 * background.
 	 */
-	void          ( *draw_page_header_columns ) ( ofaIRenderable *instance,
-														guint page_num );
+	void          ( *draw_page_header_columns ) ( ofaIRenderable *instance );
 
 	/**
 	 * draw_header_column_names:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the current page number, counted from zero.
 	 *
 	 * Called as part of the default implementation of the
 	 * draw_page_header_columns() method.
@@ -369,8 +346,7 @@ typedef struct {
 	 * The interface provides a vertical space before and after the
 	 * painted background.
 	 */
-	void          ( *draw_header_column_names ) ( ofaIRenderable *instance,
-														guint page_num );
+	void          ( *draw_header_column_names ) ( ofaIRenderable *instance );
 
 	/**
 	 * get_columns_font:
@@ -410,7 +386,6 @@ typedef struct {
 	/**
 	 * draw_top_summary:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the current page number, counted from zero.
 	 *
 	 * Called after having drawn the columns headers, this method let
 	 * the implementation have a top summary on each page.
@@ -429,8 +404,7 @@ typedef struct {
 	 *
 	 * The interface does not provide any default.
 	 */
-	void          ( *draw_top_summary )         ( ofaIRenderable *instance,
-														guint page_num );
+	void          ( *draw_top_summary )         ( ofaIRenderable *instance );
 
 	/**
 	 * get_summary_font:
@@ -487,8 +461,6 @@ typedef struct {
 	/**
 	 * draw_group_header:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the current page number, counted from zero.
-	 * @line: the first element of the group.
 	 *
 	 * If implemented, this method must draw the group header.
 	 *
@@ -500,9 +472,7 @@ typedef struct {
 	 * ordonate according to the vertical space it has used in order
 	 * for the interface to auto-detect its height.
 	 */
-	void          ( *draw_group_header )        ( ofaIRenderable *instance,
-														guint page_num,
-														GList *line );
+	void          ( *draw_group_header )        ( ofaIRenderable *instance );
 
 	/**
 	 * get_group_font:
@@ -535,10 +505,6 @@ typedef struct {
 	/**
 	 * draw_top_report:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the current page number, counted from zero.
-	 * @prev: [allow-none]: the last rendered element;
-	 *  may be %NULL when dealing with the first element.
-	 * @line: the next element to be rendered.
 	 *
 	 * If implemented, this method must draw the top report for the
 	 * new page.
@@ -555,10 +521,7 @@ typedef struct {
 	 * The application must take care itself of updating the 'last_y'
 	 * ordonate according to the vertical space it has used.
 	 */
-	void          ( *draw_top_report )          ( ofaIRenderable *instance,
-														guint page_num,
-														GList *prev,
-														GList *line );
+	void          ( *draw_top_report )          ( ofaIRenderable *instance );
 
 	/**
 	 * get_report_font:
@@ -592,9 +555,6 @@ typedef struct {
 	/**
 	 * draw_line:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the page number, counted from zero.
-	 * @line_num: the line number in this @page_num, counted from zero.
-	 * @line: the element to be printed on this line.
 	 *
 	 * If implemented, this method must draw the @current line on the
 	 * current context.
@@ -603,15 +563,11 @@ typedef struct {
 	 *
 	 * The interface takes itself care of upating the 'last_y' ordonate.
 	 */
-	void          ( *draw_line )                ( ofaIRenderable *instance,
-														guint page_num,
-														guint line_num,
-														GList *line );
+	void          ( *draw_line )                ( ofaIRenderable *instance );
 
 	/**
 	 * draw_bottom_report:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the current page number, counted from zero.
 	 *
 	 * If implemented, this method must draw the bottom report for
 	 * the page.
@@ -628,14 +584,11 @@ typedef struct {
 	 * The application must take care itself of updating the 'last_y'
 	 * ordonate according to the vertical space it has used.
 	 */
-	void          ( *draw_bottom_report )       ( ofaIRenderable *instance,
-														guint page_num );
+	void          ( *draw_bottom_report )       ( ofaIRenderable *instance );
 
 	/**
 	 * draw_group_footer:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the current page number, counted from zero.
-	 * @line: the line just rendered.
 	 *
 	 * If implemented, this method must draw the footer summary for
 	 * the current group.
@@ -646,14 +599,11 @@ typedef struct {
 	 * The application must take care itself of updating the 'last_y'
 	 * ordonate according to the vertical space it has used.
 	 */
-	void          ( *draw_group_footer )        ( ofaIRenderable *instance,
-														guint page_num,
-														GList *line );
+	void          ( *draw_group_footer )        ( ofaIRenderable *instance );
 
 	/**
 	 * draw_last_summary:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the current page number, counted from zero.
 	 *
 	 * Called at the end of the last page, after having rendered the
 	 * last record, and maybe the groups subtotals.
@@ -669,13 +619,11 @@ typedef struct {
 	 *
 	 * The interface does not provide any default.
 	 */
-	void          ( *draw_last_summary )        ( ofaIRenderable *instance,
-														guint page_num );
+	void          ( *draw_last_summary )        ( ofaIRenderable *instance );
 
 	/**
 	 * draw_page_footer:
 	 * @instance: the #ofaIRenderable instance.
-	 * @page_num: the current page number, counted from zero.
 	 *
 	 * If implemented, this method must draw the page footer.
 	 *
@@ -686,8 +634,7 @@ typedef struct {
 	 * a footer line which includes the application name and version,
 	 * the rendering timestamp, the page number.
 	 */
-	void          ( *draw_page_footer )         ( ofaIRenderable *instance,
-															gint page_num );
+	void          ( *draw_page_footer )         ( ofaIRenderable *instance );
 
 	/**
 	 * get_body_font:
@@ -808,17 +755,24 @@ void               ofa_irenderable_end_render                ( ofaIRenderable *i
 
 /* runtime
  */
-gboolean           ofa_irenderable_is_paginating             ( ofaIRenderable *instance );
+gboolean           ofa_irenderable_is_paginating             ( const ofaIRenderable *instance );
 
 ofeIRenderableMode ofa_irenderable_get_line_mode             ( const ofaIRenderable *instance );
 
 void               ofa_irenderable_set_line_mode             ( ofaIRenderable *instance,
 																	ofeIRenderableMode mode );
 
-void               ofa_irenderable_set_last_y                ( ofaIRenderable *instance,
-																	gdouble y );
+gdouble            ofa_irenderable_get_render_width          ( const ofaIRenderable *instance );
 
-gdouble            ofa_irenderable_get_last_y                ( ofaIRenderable *instance );
+gdouble            ofa_irenderable_get_render_height         ( const ofaIRenderable *instance );
+
+GList             *ofa_irenderable_get_dataset               ( const ofaIRenderable *instance );
+
+guint              ofa_irenderable_get_current_page_num      ( const ofaIRenderable *instance );
+
+GList             *ofa_irenderable_get_current_line          ( const ofaIRenderable *instance );
+
+gdouble            ofa_irenderable_get_last_y                ( const ofaIRenderable *instance );
 
 void               ofa_irenderable_set_last_y                ( ofaIRenderable *instance,
 																	gdouble y );

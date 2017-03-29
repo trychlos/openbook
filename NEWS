@@ -44,6 +44,8 @@
    - ofaOpeTemplatePage: fix page display when the dataset is empty.
    - ofaOpeTemplateStore: let the treeview be repopulated on collection reload.
    - ofaReconcilRender: compute the account solde depending of the requested date (todo #1413).
+   - Printings: identifiers are ellipsized if too large (todo #1150).
+   - Printings: display the dossier label instead of the meta name (todo #1415).
 
  Other changes:
 

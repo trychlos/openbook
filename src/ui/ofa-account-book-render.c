@@ -156,19 +156,19 @@ static void               render_page_v_free_dataset( ofaRenderPage *page, GList
 static void               on_args_changed( ofaAccountBookArgs *bin, ofaAccountBookRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
-static void               irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height, GList *dataset );
+static void               irenderable_begin_render( ofaIRenderable *instance );
 static gchar             *irenderable_get_dossier_label( const ofaIRenderable *instance );
-static void               irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num );
-static void               irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num );
+static void               irenderable_draw_page_header_title( ofaIRenderable *instance );
+static void               irenderable_draw_header_column_names( ofaIRenderable *instance );
 static gboolean           irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *line, ofeIRenderableBreak *sep );
 static gboolean           is_new_class( const ofaIRenderable *instance, GList *prev, GList *line );
-static void               irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line );
-static void               irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line );
-static void               irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line );
-static void               irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num );
-static void               irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *line );
+static void               irenderable_draw_group_header( ofaIRenderable *instance );
+static void               irenderable_draw_top_report( ofaIRenderable *instance );
+static void               irenderable_draw_line( ofaIRenderable *instance );
+static void               irenderable_draw_bottom_report( ofaIRenderable *instance );
+static void               irenderable_draw_group_footer( ofaIRenderable *instance );
 static void               draw_group_footer( ofaIRenderable *instance );
-static void               irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num );
+static void               irenderable_draw_last_summary( ofaIRenderable *instance );
 static void               irenderable_clear_runtime_data( ofaIRenderable *instance );
 static void               clear_account_data( ofaAccountBookRender *self );
 static void               draw_account_report( ofaAccountBookRender *self, gboolean with_solde );
@@ -465,7 +465,7 @@ irenderable_get_interface_version( const ofaIRenderable *instance )
  * mainly here: compute the tab positions
  */
 static void
-irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_width, gdouble render_height, GList *dataset )
+irenderable_begin_render( ofaIRenderable *instance )
 {
 	static const gchar *thisfn = "ofa_account_book_render_irenderable_begin_render";
 	ofaAccountBookRenderPrivate *priv;
@@ -474,11 +474,10 @@ irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble render_
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
-	g_debug( "%s: instance=%p, render_width=%lf, render_height=%lf",
-			thisfn, ( void * ) instance, render_width, render_height );
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	priv->render_width = render_width;
-	priv->render_height = render_height;
+	priv->render_width = ofa_irenderable_get_render_width( instance );
+	priv->render_height = ofa_irenderable_get_render_height( instance );
 	priv->page_margin = ofa_irenderable_get_page_margin( instance );
 
 	/* compute the width of the columns with the body font */
@@ -554,7 +553,7 @@ irenderable_get_dossier_label( const ofaIRenderable *instance )
  * Title is two lines
  */
 static void
-irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num )
+irenderable_draw_page_header_title( ofaIRenderable *instance )
 {
 	ofaAccountBookRenderPrivate *priv;
 	gchar *sfrom_date, *sto_date;
@@ -568,7 +567,8 @@ irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num )
 	y = ofa_irenderable_get_last_y( instance );
 
 	/* line 1 general books summary */
-	ofa_irenderable_set_font( instance, ofa_irenderable_get_title_font( instance, page_num ));
+	ofa_irenderable_set_font( instance,
+			ofa_irenderable_get_title_font( instance, ofa_irenderable_get_current_page_num( instance )));
 	height = ofa_irenderable_set_text( instance, priv->render_width/2, y, st_page_header_title, PANGO_ALIGN_CENTER );
 	y += height;
 
@@ -618,7 +618,7 @@ irenderable_draw_page_header_title( ofaIRenderable *instance, guint page_num )
 }
 
 static void
-irenderable_draw_header_column_names( ofaIRenderable *instance, guint page_num )
+irenderable_draw_header_column_names( ofaIRenderable *instance )
 {
 	ofaAccountBookRenderPrivate *priv;
 	static gdouble st_vspace_rate = 0.5;
@@ -706,8 +706,12 @@ irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *li
 		if( priv->account_new_page ){
 			*sep = IRENDERABLE_BREAK_NEW_PAGE;
 
-		} else if( is_new_class( instance, prev, line ) && priv->class_new_page ){
-			*sep = IRENDERABLE_BREAK_NEW_PAGE;
+		} else if( is_new_class( instance, prev, line )){
+			if( priv->class_new_page ){
+				*sep = IRENDERABLE_BREAK_NEW_PAGE;
+			} else {
+				*sep = IRENDERABLE_BREAK_BLANK_LINE;
+			}
 
 		} else {
 			*sep = IRENDERABLE_BREAK_SEP_LINE;
@@ -740,64 +744,72 @@ is_new_class( const ofaIRenderable *instance, GList *prev, GList *line )
  * draw account header
  */
 static void
-irenderable_draw_group_header( ofaIRenderable *instance, guint page_num, GList *line )
+irenderable_draw_group_header( ofaIRenderable *instance )
 {
 	ofaAccountBookRenderPrivate *priv;
-	static const gdouble st_vspace_rate = 0.4;
+	GList *line;
 	gdouble y, height;
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
-	ofa_irenderable_set_font( instance, st_group_font );
-	y = ofa_irenderable_get_last_y( instance );
+	line = ofa_irenderable_get_current_line( instance );
+	if( line ){
 
-	/* setup the account properties */
-	g_free( priv->account_number );
-	priv->account_number = g_strdup( ofo_entry_get_account( OFO_ENTRY( line->data )));
+		/* setup the account properties */
+		g_free( priv->account_number );
+		priv->account_number = g_strdup( ofo_entry_get_account( OFO_ENTRY( line->data )));
 
-	priv->account_debit = 0;
-	priv->account_credit = 0;
+		priv->account_debit = 0;
+		priv->account_credit = 0;
 
-	priv->account_object = ofo_account_get_by_number( priv->getter, priv->account_number );
-	g_return_if_fail( priv->account_object && OFO_IS_ACCOUNT( priv->account_object ));
+		priv->account_object = ofo_account_get_by_number( priv->getter, priv->account_number );
+		g_return_if_fail( priv->account_object && OFO_IS_ACCOUNT( priv->account_object ));
 
-	g_free( priv->currency_code );
-	priv->currency_code = g_strdup( ofo_account_get_currency( priv->account_object ));
+		g_free( priv->currency_code );
+		priv->currency_code = g_strdup( ofo_account_get_currency( priv->account_object ));
 
-	priv->currency_object = ofo_currency_get_by_code( priv->getter, priv->currency_code );
-	g_return_if_fail( priv->currency_object && OFO_IS_CURRENCY( priv->currency_object ));
+		priv->currency_object = ofo_currency_get_by_code( priv->getter, priv->currency_code );
+		g_return_if_fail( priv->currency_object && OFO_IS_CURRENCY( priv->currency_object ));
 
-	priv->currency_digits = ofo_currency_get_digits( priv->currency_object );
+		priv->currency_digits = ofo_currency_get_digits( priv->currency_object );
 
-	/* display the account header */
-	/* account number */
-	height = ofa_irenderable_set_text( instance,
-			priv->acc_number_ltab, y,
-			ofo_account_get_number( priv->account_object ), PANGO_ALIGN_LEFT );
+		ofa_irenderable_set_font( instance, st_group_font );
+		y = ofa_irenderable_get_last_y( instance );
+		height = ofa_irenderable_get_line_height( instance );
 
-	/* account label */
-	ofa_irenderable_ellipsize_text( instance,
-			priv->acc_label_ltab, y,
-			ofo_account_get_label( priv->account_object ), priv->acc_label_max_size );
+		/* display the account header */
+		/* account number */
+		ofa_irenderable_set_text( instance,
+				priv->acc_number_ltab, y,
+				ofo_account_get_number( priv->account_object ), PANGO_ALIGN_LEFT );
 
-	/* account currency */
-	ofa_irenderable_set_text( instance,
-			priv->acc_currency_ltab, y,
-			ofo_account_get_currency( priv->account_object ), PANGO_ALIGN_LEFT );
+		/* account label */
+		ofa_irenderable_ellipsize_text( instance,
+				priv->acc_label_ltab, y,
+				ofo_account_get_label( priv->account_object ), priv->acc_label_max_size );
 
-	y += height * ( 1+st_vspace_rate );
-	ofa_irenderable_set_last_y( instance, y );
+		/* account currency */
+		ofa_irenderable_set_text( instance,
+				priv->acc_currency_ltab, y,
+				ofo_account_get_currency( priv->account_object ), PANGO_ALIGN_LEFT );
+
+		y += height;
+		ofa_irenderable_set_last_y( instance, y );
+	}
 }
 
 /*
  * only draw a top report if no break between @prev and @line
  */
 static void
-irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *prev, GList *line )
+irenderable_draw_top_report( ofaIRenderable *instance )
 {
 	ofeIRenderableBreak sep;
+	GList *line;
 
-	if( !irenderable_is_new_group( instance, prev, line, &sep )){
+	line = ofa_irenderable_get_current_line( instance );
+
+	if( line && !irenderable_is_new_group( instance, line->prev, line, &sep )){
 		draw_account_report( OFA_ACCOUNT_BOOK_RENDER( instance ), TRUE );
 	}
 }
@@ -808,9 +820,10 @@ irenderable_draw_top_report( ofaIRenderable *instance, guint page_num, GList *pr
  * group footer
  */
 static void
-irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num, GList *line )
+irenderable_draw_line( ofaIRenderable *instance )
 {
 	ofaAccountBookRenderPrivate *priv;
+	GList *line;
 	ofoEntry *entry;
 	const gchar *cstr;
 	gchar *str;
@@ -820,76 +833,80 @@ irenderable_draw_line( ofaIRenderable *instance, guint page_num, guint line_num,
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
-	y = ofa_irenderable_get_last_y( instance );
-	entry = OFO_ENTRY( line->data );
+	line = ofa_irenderable_get_current_line( instance );
+	if( line ){
 
-	/* operation date */
-	str = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->getter ));
-	ofa_irenderable_set_text( instance,
-			priv->body_dope_ltab, y, str, PANGO_ALIGN_LEFT );
-	g_free( str );
+		y = ofa_irenderable_get_last_y( instance );
+		entry = OFO_ENTRY( line->data );
 
-	/* effect date */
-	str = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->getter ));
-	ofa_irenderable_set_text( instance,
-			priv->body_deffect_ltab, y, str, PANGO_ALIGN_LEFT );
-	g_free( str );
+		/* operation date */
+		str = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->getter ));
+		ofa_irenderable_set_text( instance,
+				priv->body_dope_ltab, y, str, PANGO_ALIGN_LEFT );
+		g_free( str );
 
-	/* ledger */
-	ofa_irenderable_ellipsize_text( instance,
-			priv->body_ledger_ltab, y, ofo_entry_get_ledger( entry ), priv->body_ledger_max_size );
+		/* effect date */
+		str = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->getter ));
+		ofa_irenderable_set_text( instance,
+				priv->body_deffect_ltab, y, str, PANGO_ALIGN_LEFT );
+		g_free( str );
 
-	/* piece */
-	cstr = ofo_entry_get_ref( entry );
-	if( my_strlen( cstr )){
+		/* ledger */
 		ofa_irenderable_ellipsize_text( instance,
-				priv->body_piece_ltab, y, cstr, priv->body_piece_max_size );
+				priv->body_ledger_ltab, y, ofo_entry_get_ledger( entry ), priv->body_ledger_max_size );
+
+		/* piece */
+		cstr = ofo_entry_get_ref( entry );
+		if( my_strlen( cstr )){
+			ofa_irenderable_ellipsize_text( instance,
+					priv->body_piece_ltab, y, cstr, priv->body_piece_max_size );
+		}
+
+		/* label */
+		ofa_irenderable_ellipsize_text( instance,
+				priv->body_label_ltab, y,
+				ofo_entry_get_label( entry ), priv->body_label_max_size );
+
+		/* settlement ? */
+		if( ofo_entry_get_settlement_number( entry ) > 0 ){
+			ofa_irenderable_set_text( instance,
+					priv->body_settlement_ctab, y, _( "S" ), PANGO_ALIGN_CENTER );
+		}
+
+		/* reconciliation */
+		concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
+		if( concil ){
+			ofa_irenderable_set_text( instance,
+					priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );
+		}
+
+		/* debit */
+		amount = ofo_entry_get_debit( entry );
+		if( amount ){
+			str = ofa_amount_to_str( amount, priv->currency_object, priv->getter );
+			ofa_irenderable_set_text( instance,
+					priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
+			priv->account_debit += amount;
+		}
+
+		/* credit */
+		amount = ofo_entry_get_credit( entry );
+		if( amount ){
+			str = ofa_amount_to_str( amount, priv->currency_object, priv->getter );
+			ofa_irenderable_set_text( instance,
+					priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
+			priv->account_credit += amount;
+		}
+
+		/* current account solde */
+		draw_account_solde_debit_credit( OFA_ACCOUNT_BOOK_RENDER( instance ), y );
 	}
-
-	/* label */
-	ofa_irenderable_ellipsize_text( instance,
-			priv->body_label_ltab, y,
-			ofo_entry_get_label( entry ), priv->body_label_max_size );
-
-	/* settlement ? */
-	if( ofo_entry_get_settlement_number( entry ) > 0 ){
-		ofa_irenderable_set_text( instance,
-				priv->body_settlement_ctab, y, _( "S" ), PANGO_ALIGN_CENTER );
-	}
-
-	/* reconciliation */
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
-	if( concil ){
-		ofa_irenderable_set_text( instance,
-				priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );
-	}
-
-	/* debit */
-	amount = ofo_entry_get_debit( entry );
-	if( amount ){
-		str = ofa_amount_to_str( amount, priv->currency_object, priv->getter );
-		ofa_irenderable_set_text( instance,
-				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
-		priv->account_debit += amount;
-	}
-
-	/* credit */
-	amount = ofo_entry_get_credit( entry );
-	if( amount ){
-		str = ofa_amount_to_str( amount, priv->currency_object, priv->getter );
-		ofa_irenderable_set_text( instance,
-				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
-		priv->account_credit += amount;
-	}
-
-	/* current account solde */
-	draw_account_solde_debit_credit( OFA_ACCOUNT_BOOK_RENDER( instance ), y );
 }
 
 static void
-irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num )
+irenderable_draw_bottom_report( ofaIRenderable *instance )
 {
 	draw_account_report( OFA_ACCOUNT_BOOK_RENDER( instance ), FALSE );
 }
@@ -905,12 +922,14 @@ irenderable_draw_bottom_report( ofaIRenderable *instance, guint page_num )
  *   in order to be able to detect the heigtht of the summary
  */
 static void
-irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *line )
+irenderable_draw_group_footer( ofaIRenderable *instance )
 {
 	static const gchar *thisfn = "ofa_account_book_render_irenderable_draw_group_footer";
 	ofaAccountBookRenderPrivate *priv;
+	GList *line;
 	gboolean is_paginating;
 	gchar *str;
+	gdouble r, g, b;
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
@@ -919,7 +938,9 @@ irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *
 				thisfn, priv->account_number, ofa_irenderable_is_paginating( instance ) ? "True":"False" );
 	}
 
-	if( priv->account_number ){
+	line = ofa_irenderable_get_current_line( instance );
+
+	if( line && priv->account_number ){
 
 		draw_group_footer( instance );
 
@@ -937,6 +958,8 @@ irenderable_draw_group_footer( ofaIRenderable *instance, guint page_num, GList *
 		/* print subtotal by class and currency if requested for
 		 */
 		if( priv->class_subtotal && is_new_class( instance, line, line->next )){
+			ofa_irenderable_get_dossier_color( instance, &r, &g, &b );
+			ofa_irenderable_set_color( instance, r, g, b );
 			ofa_irenderable_set_font( instance, st_subtotal_font );
 			str = g_strdup_printf( _( "Class %d balance : " ), ofo_account_get_class( priv->account_object ));
 			draw_currencies_balance( instance, str, priv->class_totals, FALSE );
@@ -1001,7 +1024,7 @@ draw_group_footer( ofaIRenderable *instance )
  * print a line per found currency at the end of the printing
  */
 static void
-irenderable_draw_last_summary( ofaIRenderable *instance, guint page_num )
+irenderable_draw_last_summary( ofaIRenderable *instance )
 {
 	ofaAccountBookRenderPrivate *priv;
 
