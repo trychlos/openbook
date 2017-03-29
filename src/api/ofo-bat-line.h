@@ -70,7 +70,7 @@ GList       *ofo_bat_line_get_dataset                   ( ofaIGetter *getter, of
 GList       *ofo_bat_line_get_orphans                   ( ofaIGetter *getter );
 #define      ofo_bat_line_free_orphans(L)               g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 
-GList       *ofo_bat_line_get_dataset_for_print_reconcil( ofaIGetter *getter, const gchar *account_id );
+GList       *ofo_bat_line_get_dataset_for_print_reconcil( ofaIGetter *getter, const gchar *account_id, const GDate *date, ofxCounter *batid );
 
 ofxCounter   ofo_bat_line_get_bat_id_from_bat_line_id   ( ofaIGetter *getter, ofxCounter line_id );
 

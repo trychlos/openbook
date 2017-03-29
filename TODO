@@ -359,9 +359,6 @@
 1418 2017- 3-24 ope template has a prof. share (quote-part pro)
      2017- 3-25 dbms is updated
 
-1420 2017- 3-29 reconciliation render should take the last BAT solde at
-                the requested date (not the last last)
-
 1421
 
 -----------------------------------------------------------------------
@@ -938,6 +935,10 @@
 
 1419 2017- 3-24 account book summary: sort by dope or deffect
      2017- 3-28 done
+
+1420 2017- 3-29 reconciliation render should take the last BAT solde at
+                the requested date (not the last last)
+     2017- 3-29 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -123,7 +123,6 @@ GType           ofo_bat_get_type                   ( void ) G_GNUC_CONST;
 GList          *ofo_bat_get_dataset                ( ofaIGetter *getter );
 
 ofoBat         *ofo_bat_get_by_id                  ( ofaIGetter *getter, ofxCounter id );
-ofoBat         *ofo_bat_get_most_recent_for_account( ofaIGetter *getter, const gchar *account_id );
 
 ofoBat         *ofo_bat_new                        ( ofaIGetter *getter );
 

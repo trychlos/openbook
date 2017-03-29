@@ -75,6 +75,10 @@ typedef struct {
 	ofxAmount       account_solde;
 	GDate           account_deffect;
 
+	/* found bat id
+	 */
+	ofxCounter      bat_id;
+
 	/* print datas
 	 */
 	gdouble         render_width;
@@ -342,7 +346,9 @@ render_page_v_get_dataset( ofaRenderPage *page )
 
 	batlist = ofo_bat_line_get_dataset_for_print_reconcil(
 					priv->getter,
-					priv->account_number );
+					priv->account_number,
+					&priv->arg_date,
+					&priv->bat_id );
 
 	if( batlist && g_list_length( batlist ) > 0 ){
 		dataset = g_list_concat( dataset, batlist );
@@ -674,12 +680,15 @@ draw_line_entry( ofaIRenderable *instance, ofoEntry *entry )
 	const gchar *cstr;
 	ofxAmount amount;
 	gdouble r, g, b;
+	const GDate *deffect;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	y = ofa_irenderable_get_last_y( instance );
 
-	str = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->getter ));
+	deffect = ofo_entry_get_deffect( entry );
+	my_date_set_from_date( &priv->current_date, deffect );
+	str = my_date_to_str( deffect, ofa_prefs_date_display( priv->getter ));
 	ofa_irenderable_set_text( instance,
 			priv->body_effect_ltab, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
@@ -737,6 +746,7 @@ draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline )
 	const gchar *cstr;
 	ofxAmount amount;
 	gdouble r, g, b;
+	const GDate *deffect;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
@@ -746,7 +756,9 @@ draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline )
 	ofa_irenderable_set_color( instance, COLOR_DARK_GRAY );
 	ofa_irenderable_set_font( instance, ofa_irenderable_get_body_font( instance ));
 
-	str = my_date_to_str( ofo_bat_line_get_deffect( batline ), ofa_prefs_date_display( priv->getter ));
+	deffect = ofo_bat_line_get_deffect( batline );
+	my_date_set_from_date( &priv->current_date, deffect );
+	str = my_date_to_str( deffect, ofa_prefs_date_display( priv->getter ));
 	ofa_irenderable_set_text( instance, priv->body_effect_ltab, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
 
@@ -877,7 +889,7 @@ irenderable_draw_last_summary( ofaIRenderable *instance )
 
 	ofa_irenderable_set_font( instance, ofa_irenderable_get_summary_font( instance, 0 ));
 
-	sdate = my_date_to_str( &priv->account_deffect, ofa_prefs_date_display( priv->getter ));
+	sdate = my_date_to_str( &priv->current_date, ofa_prefs_date_display( priv->getter ));
 	str_amount = account_solde_to_str( OFA_RECONCIL_RENDER( instance ), priv->current_solde );
 
 	str = g_strdup_printf( _( "Reconciliated account solde on %s is %s" ), sdate, str_amount );
@@ -911,7 +923,10 @@ irenderable_draw_last_summary( ofaIRenderable *instance )
 
 	/* BAT solde
 	 */
-	bat = ofo_bat_get_most_recent_for_account( priv->getter, priv->account_number );
+	bat = NULL;
+	if( priv->bat_id > 0 ){
+		bat = ofo_bat_get_by_id( priv->getter, priv->bat_id );
+	}
 	if( bat ){
 		ofa_irenderable_set_font( instance, ofa_irenderable_get_summary_font( instance, 0 ));
 
