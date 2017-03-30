@@ -28,6 +28,8 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-iextender-setter.h"
 #include "api/ofa-igetter.h"
@@ -45,6 +47,12 @@ typedef struct {
 	ofaIGetter *getter;
 }
 	ofaRenderDossierPrivate;
+
+#define COLOR_HEADER_DOSSIER            0.5,    0,      0	/* dark red */
+
+static const gchar  *st_line1_font      = "Sans Bold Italic 10";
+static const gchar  *st_line2_font      = "Sans 6";
+static const gchar  *st_bottom_font     = "Sans Italic 4";
 
 static void        iextender_setter_iface_init( ofaIExtenderSetterInterface *iface );
 static ofaIGetter *iextender_setter_get_getter( ofaIExtenderSetter *instance );
@@ -171,35 +179,67 @@ static void
 irenderer_draw_page_header_dossier( ofaIRenderer *instance, ofaIRenderable *renderable )
 {
 	ofaRenderDossierPrivate *priv;
-	gdouble r, g, b, y, height, lh, x;
+	gdouble y, height, lh, x;
 	ofaHub *hub;
 	ofoDossier *dossier;
-	gchar *str;
+	const gchar *cstr;
+	GString *gstr;
 
 	priv = ofa_render_dossier_get_instance_private( OFA_RENDER_DOSSIER( instance ));
-
-	ofa_irenderable_get_dossier_color( renderable, &r, &g, &b );
-	ofa_irenderable_set_color( renderable, r, g, b );
-	ofa_irenderable_set_font( renderable, ofa_irenderable_get_dossier_font( renderable, 0 ));
-	y = 0;
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	dossier = ofa_hub_get_dossier( hub );
 
-	height = ofa_irenderable_set_text( renderable, 0, y,
-			ofo_dossier_get_label( dossier ), PANGO_ALIGN_LEFT );
+	ofa_irenderable_set_color( renderable, COLOR_HEADER_DOSSIER );
+
+	/* header with lines 1 and 2 of the dossier */
+	y = 0;
+	ofa_irenderable_set_font( renderable, st_line1_font );
+	height = ofa_irenderable_get_text_height( renderable );
+	cstr = ofo_dossier_get_label( dossier );
+	if( cstr ){
+		ofa_irenderable_set_text( renderable, 0, y, cstr , PANGO_ALIGN_LEFT );
+	}
 	y += height;
 
-	ofa_irenderable_set_font( renderable, "Sans Italic 4" );
+	ofa_irenderable_set_font( renderable, st_line2_font );
+	cstr = ofo_dossier_get_label2( dossier );
+	if( cstr ){
+		ofa_irenderable_set_text( renderable, 0, y, cstr , PANGO_ALIGN_LEFT );
+	}
+
+	/* bottom line
+	 * under the bottom separation line: does not take any vertical space */
+	ofa_irenderable_set_font( renderable, st_bottom_font );
 	lh = ofa_irenderable_get_text_height( renderable );
+
+	gstr = g_string_new( "" );
+
+	cstr = ofo_dossier_get_siret( dossier );
+	if( my_strlen( cstr )){
+		g_string_append_printf( gstr, "SIRET %s", cstr );
+	}
+	cstr = ofo_dossier_get_vatic( dossier );
+	if( my_strlen( cstr )){
+		if( gstr->len ){
+			gstr = g_string_append( gstr, " - " );
+		}
+		g_string_append_printf( gstr, "VAT %s", cstr );
+	}
+	cstr = ofo_dossier_get_naf( dossier );
+	if( my_strlen( cstr )){
+		if( gstr->len ){
+			gstr = g_string_append( gstr, " - " );
+		}
+		g_string_append_printf( gstr, "NAF %s", cstr );
+	}
 
 	x = ofa_irenderable_get_render_width( renderable );
 	x /= 2.0;
 	y = ofa_irenderable_get_render_height( renderable );
 	y -= lh;
-	str = g_strdup_printf( _( "SIRET %s" ), ofo_dossier_get_siret( dossier ));
-	ofa_irenderable_set_text( renderable, x, y, str, PANGO_ALIGN_LEFT );
-	g_free( str );
+	ofa_irenderable_set_text( renderable, x, y, gstr->str, PANGO_ALIGN_CENTER );
+	g_string_free( gstr, TRUE );
 
 	ofa_irenderable_set_last_y( renderable, height );
 }
