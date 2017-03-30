@@ -123,6 +123,7 @@ static void       action_on_wait_activated( GSimpleAction *action, GVariant *emp
 static void       action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
 static gboolean   action_user_confirm( ofaRecurrentRunPage *self );
 static gboolean   action_update_status( ofaRecurrentRunPage *self );
+static gboolean   actualize_selection( ofaRecurrentRunPage *self );
 static gboolean   action_on_object_validated( ofaRecurrentRunPage *self );
 static void       read_settings( ofaRecurrentRunPage *self );
 static void       write_settings( ofaRecurrentRunPage *self );
@@ -687,10 +688,35 @@ action_update_status( ofaRecurrentRunPage *self )
 		my_iprogress_set_ok( MY_IPROGRESS( self ), priv->update_worker, NULL, 0 );
 	}
 
+	/* actualize the actions state */
+	g_idle_add(( GSourceFunc ) actualize_selection, self );
+
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
 }
 
+/*
+ * After having updated all status, try to renew the state of the actions
+ */
+static gboolean
+actualize_selection( ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+	GList *selected;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	selected = ofa_recurrent_run_treeview_get_selected( priv->tview );
+	on_row_selected( priv->tview, selected, self );
+	ofa_recurrent_run_treeview_free_selected( selected );
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
+}
+
+/*
+ * Not a GSourceFunc, but just a function sync-called after each validation
+ */
 static gboolean
 action_on_object_validated( ofaRecurrentRunPage *self )
 {
