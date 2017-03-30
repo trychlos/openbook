@@ -251,7 +251,7 @@ iident_get_canon_name( const myIIdent *instance, void *user_data )
  *
  * Note that the version number returned here for this plugin must be
  * the last available version number, rather than one read from an opened
- * database.
+ * database (which are the sames eventually).
  */
 static gchar *
 iident_get_version( const myIIdent *instance, void *user_data )
@@ -259,7 +259,7 @@ iident_get_version( const myIIdent *instance, void *user_data )
 	guint version;
 
 	version = get_last_version();
-	return( g_strdup_printf( "DBMS:%u", version ));
+	return( g_strdup_printf( "%s:%u", DBMODEL_CANON_NAME, version ));
 }
 
 /*
@@ -629,6 +629,8 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* DOS_LAST_OPE added in v29 */
 	/* DOS_PREVEXE_END added in v31 */
 	/* DOS_LAST_DOC added in v35 */
+	/* Last identifiers are splitted to ofa_t_dossier_ids in v37 */
+	/* Add DOS_TVAIC, DOS_NAF, DOS_LABEL2 in v37 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
 			"	DOS_ID               INTEGER   NOT NULL UNIQUE       COMMENT 'Row identifier',"
@@ -686,7 +688,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* Identifiers and labels are resized in v28 */
 	/* ope number is added in v32 */
 	/* rule, notes are added in v35 */
-	/* status changed to x(1), client added in v37 */
+	/* status changed to x(1), ENT_TIERS added in v37 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
 			"	ENT_DEFFECT      DATE NOT NULL                       COMMENT 'Imputation effect date',"
@@ -748,7 +750,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* locked indicators are remediated in v27 */
 	/* Identifiers and labels are resized in v28 */
 	/* add row of mean of paiement in v33 */
-	/* ref_mandatory, have_client, have_qppro, have_rule added in v37 */
+	/* ref_mandatory, have_tiers, have_qppro, have_rule added in v37 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES ("
 			"	OTE_MNEMO      VARCHAR(6) BINARY NOT NULL UNIQUE     COMMENT 'Operation template mnemonic',"
@@ -2367,9 +2369,11 @@ count_v36( ofaMysqlDBModel *self )
  * ofa_ddl_update_dbmodel_v37:
  *
  * - ENT_STATUS: back to x(1) (#1414)
- * - ENT_CLIENT: new
+ * - ENT_TIERS: new
  * - OTE_REF_MANDATORY: new
- * - OTE_HAVE_CLIENT: new
+ * - OTE_HAVE_TIERS: new
+ * - OTE_HAVE_RULE: new
+ * - OTE_HAVE_QPPRO: new
  */
 static gboolean
 dbmodel_v37( ofaMysqlDBModel *self, gint version )
@@ -2381,9 +2385,9 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 	/* 1. change ent_status, add ent_client */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_ENTRIES "
-			"	CHANGE COLUMN ENT_STATUS    ENT_STATUS_I INTEGER,"
-			"	ADD    COLUMN ENT_STATUS    CHAR(1)      NOT NULL                   COMMENT 'Entry status',"
-			"	ADD    COLUMN ENT_TIERS     VARCHAR(64)                             COMMENT 'Tiers identifier'" )){
+			"	CHANGE COLUMN ENT_STATUS            ENT_STATUS_I INTEGER,"
+			"	ADD    COLUMN ENT_STATUS            CHAR(1)       NOT NULL               COMMENT 'Entry status',"
+			"	ADD    COLUMN ENT_TIERS             BIGINT                               COMMENT 'Tiers identifier'" )){
 		return( FALSE );
 	}
 
@@ -2426,16 +2430,121 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 	/* 8. add ref_mandatory, have_client, have_qppro */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES "
-			"	ADD    COLUMN OTE_REF_MANDATORY      CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether piece reference is mandatory',"
-			"	ADD    COLUMN OTE_HAVE_TIERS         CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays a tiers',"
-			"	ADD    COLUMN OTE_TIERS              VARCHAR(256)                   COMMENT 'Tiers',"
-			"	ADD    COLUMN OTE_TIERS_LOCKED       CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the tiers is locked',"
-			"	ADD    COLUMN OTE_HAVE_RULE          CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays entries rule',"
-			"	ADD    COLUMN OTE_RULE               CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Entries rule',"
-			"	ADD    COLUMN OTE_RULE_LOCKED        CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the rule is locked',"
-			"	ADD    COLUMN OTE_HAVE_QPPRO         CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays prof. share',"
-			"	ADD    COLUMN OTE_QPPRO              VARCHAR(256)                   COMMENT 'Professional share',"
-			"	ADD    COLUMN OTE_QPPRO_LOCKED       CHAR(1) NOT NULL DEFAULT 'N'   COMMENT 'Whether the prof. share is locked'" )){
+			"	ADD    COLUMN OTE_REF_MANDATORY      CHAR(1)      NOT NULL DEFAULT 'N'   COMMENT 'Whether piece reference is mandatory',"
+			"	ADD    COLUMN OTE_HAVE_TIERS         CHAR(1)      NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays a tiers',"
+			"	ADD    COLUMN OTE_TIERS              VARCHAR(256)                        COMMENT 'Tiers',"
+			"	ADD    COLUMN OTE_TIERS_LOCKED       CHAR(1)      NOT NULL DEFAULT 'N'   COMMENT 'Whether the tiers is locked',"
+			"	ADD    COLUMN OTE_HAVE_RULE          CHAR(1)      NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays entries rule',"
+			"	ADD    COLUMN OTE_RULE               CHAR(1)      NOT NULL DEFAULT 'N'   COMMENT 'Entries rule',"
+			"	ADD    COLUMN OTE_RULE_LOCKED        CHAR(1)      NOT NULL DEFAULT 'N'   COMMENT 'Whether the rule is locked',"
+			"	ADD    COLUMN OTE_HAVE_QPPRO         CHAR(1)      NOT NULL DEFAULT 'N'   COMMENT 'Whether the template displays prof. share',"
+			"	ADD    COLUMN OTE_QPPRO              VARCHAR(256)                        COMMENT 'Professional share',"
+			"	ADD    COLUMN OTE_QPPRO_LOCKED       CHAR(1)      NOT NULL DEFAULT 'N'   COMMENT 'Whether the prof. share is locked'" )){
+		return( FALSE );
+	}
+
+	/* 9. update ofa_t_dossier */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	ADD    COLUMN DOS_VATIC              VARCHAR(64)                         COMMENT 'VAT Intra Communautary Identifier',"
+			"	ADD    COLUMN DOS_NAF                VARCHAR(64)                         COMMENT 'APE Identifier (NAF rev. 2)',"
+			"	ADD    COLUMN DOS_LABEL2             VARCHAR(256)                        COMMENT 'Label'" )){
+		return( FALSE );
+	}
+
+	/* 10. create ofa_t_dossiers_ids */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_IDS ("
+			"	              DOS_ID                 INTEGER      NOT NULL DEFAULT 1     COMMENT 'Dossiers identifier',"
+			"	              DOS_IDS_KEY            VARCHAR(254) NOT NULL               COMMENT 'Last identifier name',"
+			"	              DOS_IDS_LAST           BIGINT       NOT NULL DEFAULT 0     COMMENT 'Last used identifier',"
+			"UNIQUE (DOS_ID,DOS_IDS_KEY)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 11. transfert the datas */
+	if( !exec_query( self,
+			"INSERT IGNORE INTO OFA_T_DOSSIER_IDS (DOS_ID,DOS_IDS_KEY,DOS_IDS_LAST) "
+			"		SELECT DOS_ID,'last-bat-id',DOS_LAST_BAT FROM OFA_T_DOSSIER" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"INSERT IGNORE INTO OFA_T_DOSSIER_IDS (DOS_ID,DOS_IDS_KEY,DOS_IDS_LAST) "
+			"		SELECT DOS_ID,'last-batline-id',DOS_LAST_BATLINE FROM OFA_T_DOSSIER" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"INSERT IGNORE INTO OFA_T_DOSSIER_IDS (DOS_ID,DOS_IDS_KEY,DOS_IDS_LAST) "
+			"		SELECT DOS_ID,'last-conciliation-id',DOS_LAST_CONCIL FROM OFA_T_DOSSIER" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"INSERT IGNORE INTO OFA_T_DOSSIER_IDS (DOS_ID,DOS_IDS_KEY,DOS_IDS_LAST) "
+			"		SELECT DOS_ID,'last-document-id',DOS_LAST_DOC FROM OFA_T_DOSSIER" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"INSERT IGNORE INTO OFA_T_DOSSIER_IDS (DOS_ID,DOS_IDS_KEY,DOS_IDS_LAST) "
+			"		SELECT DOS_ID,'last-entry-id',DOS_LAST_ENTRY FROM OFA_T_DOSSIER" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"INSERT IGNORE INTO OFA_T_DOSSIER_IDS (DOS_ID,DOS_IDS_KEY,DOS_IDS_LAST) "
+			"		SELECT DOS_ID,'last-operation-id',DOS_LAST_OPE FROM OFA_T_DOSSIER" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"INSERT IGNORE INTO OFA_T_DOSSIER_IDS (DOS_ID,DOS_IDS_KEY,DOS_IDS_LAST) "
+			"		SELECT DOS_ID,'last-settlement-id',DOS_LAST_SETTLEMENT FROM OFA_T_DOSSIER" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"INSERT IGNORE INTO OFA_T_DOSSIER_IDS (DOS_ID,DOS_IDS_KEY,DOS_IDS_LAST) "
+			"		SELECT DOS_ID,'last-tiers-id',0 FROM OFA_T_DOSSIER" )){
+		return( FALSE );
+	}
+
+	/* 19. remove old columns */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	DROP   COLUMN DOS_LAST_BAT,"
+			"	DROP   COLUMN DOS_LAST_BATLINE,"
+			"	DROP   COLUMN DOS_LAST_CONCIL,"
+			"	DROP   COLUMN DOS_LAST_DOC,"
+			"	DROP   COLUMN DOS_LAST_ENTRY,"
+			"	DROP   COLUMN DOS_LAST_OPE,"
+			"	DROP   COLUMN DOS_LAST_SETTLEMENT" )){
+		return( FALSE );
+	}
+
+	/* 20. create ofa_t_tiers */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_TIERS ("
+			"	              TRS_ID                 BIGINT       NOT NULL               COMMENT 'Tiers identifier',"
+			"	              TRS_LABEL              VARCHAR(256)                        COMMENT 'Tiers label',"
+			"	              TRS_NOTES              VARCHAR(4096)                       COMMENT 'Tiers notes',"
+			"	              TRS_UPD_USER           VARCHAR(64)                         COMMENT 'Last update user',"
+			"	              TRS_UPD_STAMP          TIMESTAMP                           COMMENT 'Last update timestamp',"
+			"UNIQUE (TRS_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 21. create ofa_t_tiers_doc */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_TIERS_DOC ("
+			"	              TRS_ID                 BIGINT       NOT NULL               COMMENT 'Tiers identifier',"
+			"	              TRS_DOC_ID             BIGINT       NOT NULL               COMMENT 'Document identifier',"
+			"UNIQUE (TRS_ID,TRS_DOC_ID)"
+			") CHARACTER SET utf8" )){
 		return( FALSE );
 	}
 
@@ -2449,5 +2558,5 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v37( ofaMysqlDBModel *self )
 {
-	return( 8 );
+	return( 21 );
 }

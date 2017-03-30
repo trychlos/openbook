@@ -42,6 +42,7 @@
 #include "api/ofa-paimean-editable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
+#include "api/ofo-counter.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -1753,7 +1754,7 @@ do_validate( ofaGuidedInputBin *self )
 	ofaHub *hub;
 	ofaIDBConnect *connect;
 	gboolean ok;
-	ofoDossier *dossier;
+	ofoCounter *counters;
 	ofoEntry *entry;
 	GList *entries, *it;
 	ofxCounter number;
@@ -1763,7 +1764,7 @@ do_validate( ofaGuidedInputBin *self )
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	connect = ofa_hub_get_connect( hub );
-	dossier = ofa_hub_get_dossier( hub );
+	counters = ofa_igetter_get_counters( priv->getter );
 
 	entries = ofs_ope_generate_entries( priv->ope );
 	count = g_list_length( entries );
@@ -1771,7 +1772,7 @@ do_validate( ofaGuidedInputBin *self )
 	ok = ofa_idbconnect_transaction_start( connect, FALSE, NULL );
 
 	if( ok ){
-		number = ofo_dossier_get_next_ope( dossier );
+		number = ofo_counter_get_next_ope_id( counters );
 		for( it=entries ; it && ok ; it=it->next ){
 			entry = OFO_ENTRY( it->data );
 			ofo_entry_set_ope_number( entry, number );

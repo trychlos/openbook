@@ -193,6 +193,7 @@ libofa_core_la_SOURCES = \
 	ofo-bat-line.c										\
 	ofo-class.c											\
 	ofo-concil.c										\
+	ofo-counter.c										\
 	ofo-currency.c										\
 	ofo-doc.c											\
 	ofo-dossier.c										\

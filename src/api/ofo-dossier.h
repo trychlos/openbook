@@ -91,32 +91,22 @@ const GDate         *ofo_dossier_get_exe_end               ( const ofoDossier *d
 gint                 ofo_dossier_get_exe_length            ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_exe_notes             ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_forward_ope           ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_sld_ope               ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_import_ledger         ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_label                 ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_label2                ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_notes                 ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_siren                 ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_siret                 ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_sld_ope               ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_vatic                 ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_naf                   ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_upd_user              ( const ofoDossier *dossier );
 const GTimeVal      *ofo_dossier_get_upd_stamp             ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_status                ( const ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_last_bat              ( const ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_last_batline          ( const ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_last_entry            ( const ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_last_ope              ( const ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_last_settlement       ( const ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_last_concil           ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_last_closing_date     ( const ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_prevexe_last_entry    ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_prevexe_end           ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_rpid                  ( const ofoDossier *dossier );
-
-ofxCounter           ofo_dossier_get_next_bat              ( ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_next_batline          ( ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_next_entry            ( ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_next_ope              ( ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_next_settlement       ( ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_next_concil           ( ofoDossier *dossier );
 
 GDate               *ofo_dossier_get_min_deffect           ( const ofoDossier *dossier,
 																	const ofoLedger *ledger, GDate *date );
@@ -142,14 +132,17 @@ void                 ofo_dossier_set_exe_end               ( ofoDossier *dossier
 void                 ofo_dossier_set_exe_length            ( ofoDossier *dossier, gint nb_months );
 void                 ofo_dossier_set_exe_notes             ( ofoDossier *dossier, const gchar *notes );
 void                 ofo_dossier_set_forward_ope           ( ofoDossier *dossier, const gchar *ope );
+void                 ofo_dossier_set_sld_ope               ( ofoDossier *dossier, const gchar *ope );
 void                 ofo_dossier_set_import_ledger         ( ofoDossier *dossier, const gchar *mnemo );
 void                 ofo_dossier_set_label                 ( ofoDossier *dossier, const gchar *label );
+void                 ofo_dossier_set_label2                ( ofoDossier *dossier, const gchar *label );
 void                 ofo_dossier_set_notes                 ( ofoDossier *dossier, const gchar *notes );
 void                 ofo_dossier_set_siren                 ( ofoDossier *dossier, const gchar *siren );
 void                 ofo_dossier_set_siret                 ( ofoDossier *dossier, const gchar *siret );
-void                 ofo_dossier_set_sld_ope               ( ofoDossier *dossier, const gchar *ope );
+void                 ofo_dossier_set_vatic                 ( ofoDossier *dossier, const gchar *tvaic );
+void                 ofo_dossier_set_naf                   ( ofoDossier *dossier, const gchar *naf );
 void                 ofo_dossier_set_last_closing_date     ( ofoDossier *dossier, const GDate *last_closing );
-void                 ofo_dossier_set_prevexe_last_entry    ( ofoDossier *dossier );
+void                 ofo_dossier_set_prevexe_last_entry    ( ofoDossier *dossier, ofxCounter number );
 void                 ofo_dossier_set_prevexe_end           ( ofoDossier *dossier, const GDate *date );
 void                 ofo_dossier_set_current               ( ofoDossier *dossier, gboolean current );
 void                 ofo_dossier_set_rpid                  ( ofoDossier *dossier, const gchar *rpid );

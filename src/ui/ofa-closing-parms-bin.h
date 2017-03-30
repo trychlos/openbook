@@ -67,9 +67,6 @@ GType               ofa_closing_parms_bin_get_type( void ) G_GNUC_CONST;
 
 ofaClosingParmsBin *ofa_closing_parms_bin_new     ( ofaIGetter *getter );
 
-gboolean            ofa_closing_parms_bin_is_valid( ofaClosingParmsBin *bin,
-															gchar **msg );
-
 void                ofa_closing_parms_bin_apply   ( ofaClosingParmsBin *bin );
 
 G_END_DECLS

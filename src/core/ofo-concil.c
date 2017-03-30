@@ -40,6 +40,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-concil.h"
+#include "api/ofo-counter.h"
 #include "api/ofo-dossier.h"
 #include "api/ofs-concil-id.h"
 
@@ -657,7 +658,7 @@ ofo_concil_insert( ofoConcil *concil )
 	ofaIGetter *getter;
 	ofaISignaler *signaler;
 	ofaHub *hub;
-	ofoDossier *dossier;
+	ofoCounter *counters;
 	gboolean ok;
 
 	g_debug( "%s: concil=%p", thisfn, ( void * ) concil );
@@ -669,8 +670,8 @@ ofo_concil_insert( ofoConcil *concil )
 	getter = ofo_base_get_getter( OFO_BASE( concil ));
 	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
-	dossier = ofa_hub_get_dossier( hub );
-	concil_set_id( concil, ofo_dossier_get_next_concil( dossier ));
+	counters = ofa_igetter_get_counters( getter );
+	concil_set_id( concil, ofo_counter_get_next_concil_id( counters ));
 
 	/* rationale: see ofo-account.c */
 	ofo_concil_get_dataset( getter );

@@ -32,6 +32,7 @@
 
 #include "my/my-date-editable.h"
 #include "my/my-iassistant.h"
+#include "my/my-ibin.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
 #include "my/my-style.h"
@@ -50,6 +51,7 @@
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-concil.h"
+#include "api/ofo-counter.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -626,7 +628,7 @@ p1_check_for_complete( ofaExerciceCloseAssistant *self )
 	}
 
 	if( priv->p1_closing_parms ){
-		complete &= ofa_closing_parms_bin_is_valid( priv->p1_closing_parms, &msg );
+		complete &= my_ibin_is_valid( MY_IBIN( priv->p1_closing_parms ), &msg );
 		g_free( msg );
 	}
 
@@ -1136,10 +1138,11 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofsOpe *ope;
 	ofsOpeDetail *detail;
 	gint errors;
-	ofxCounter counter, solde_ope, forward_ope;
+	ofxCounter counter, solde_ope;
 	ofoEntry *entry;
 	ofoCurrency *cur_obj;
 	ofsCurrency *scur;
+	ofoCounter *counters;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1157,6 +1160,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	}
 
 	priv->p6_forwards = NULL;
+	counters = ofa_igetter_get_counters( priv->getter );
 
 	end_cur = ofo_dossier_get_exe_end( priv->dossier );
 	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
@@ -1187,7 +1191,6 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			for_entries = NULL;
 			counter = 0;
 			solde_ope = 0;
-			forward_ope = 0;
 
 			/* create solde operation
 			 * and generate corresponding solde entries */
@@ -1210,7 +1213,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 			if( ofs_ope_is_valid( ope, &msg, &currencies )){
 				sld_entries = ofs_ope_generate_entries( ope );
-				solde_ope = ofo_dossier_get_next_ope( priv->dossier );
+				solde_ope = ofo_counter_get_next_ope_id( counters );
 
 			} else {
 				g_warning( "%s: %s", thisfn, msg );
@@ -1245,7 +1248,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 				if( ofs_ope_is_valid( ope, NULL, NULL )){
 					for_entries = ofs_ope_generate_entries( ope );
-					forward_ope = ofo_dossier_get_next_ope( priv->dossier );
+					priv->p6_forwards = g_list_prepend( priv->p6_forwards, for_entries );
 				}
 
 				ofs_ope_free( ope );
@@ -1272,7 +1275,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				if( is_ran &&
 						ofo_account_is_settleable( account ) &&
 						!g_utf8_collate( ofo_entry_get_account( entry ), acc_number )){
-					counter = ofo_dossier_get_next_settlement( priv->dossier );
+					counter = ofo_counter_get_next_settlement_id( counters );
 					ofo_entry_update_settlement( entry, counter );
 					p6_set_forward_settlement_number( for_entries, acc_number, counter );
 				}
@@ -1282,18 +1285,6 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				}
 			}
 			g_list_free( sld_entries );
-
-			/* forward entries:
-			 * -> set forward rule indicator
-			 */
-			for( ite=for_entries ; ite ; ite=ite->next ){
-				entry = OFO_ENTRY( ite->data );
-				ofo_entry_set_ope_number( entry, forward_ope );
-				ofo_entry_set_rule( entry, ENT_RULE_FORWARD );
-				priv->p6_forwards = g_list_prepend( priv->p6_forwards, entry );
-			}
-
-			g_list_free( for_entries );
 		}
 
 		g_free( scur );
@@ -1425,9 +1416,11 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofaIDBConnect *cnx;
 	ofaIDBExerciceMeta *period;
 	gboolean ok;
-	const GDate *begin_old, *end_old;
+	GDate begin_old, end_old;
 	const GDate *begin_next, *end_next;
 	const gchar *account, *password;
+	ofxCounter last_entry;
+	ofoCounter *counters;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1436,6 +1429,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	signaler = ofa_igetter_get_signaler( priv->getter );
 	hub = ofa_igetter_get_hub( priv->getter );
 	main_window = ofa_igetter_get_main_window( priv->getter );
+	counters = ofa_igetter_get_counters( priv->getter );
 
 	account = ofa_idbconnect_get_account( priv->connect );
 	password = ofa_idbconnect_get_password( priv->connect );
@@ -1443,15 +1437,16 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofo_dossier_set_current( priv->dossier, FALSE );
 	ofo_dossier_update( priv->dossier );
 
-	begin_old = ofo_dossier_get_exe_begin( priv->dossier );
-	end_old = ofo_dossier_get_exe_end( priv->dossier );
+	my_date_set_from_date( &begin_old, ofo_dossier_get_exe_begin( priv->dossier ));
+	my_date_set_from_date( &end_old, ofo_dossier_get_exe_end( priv->dossier ));
 
 	period = ofa_idbconnect_get_exercice_meta( priv->connect );
 
 	ofa_idbexercice_meta_set_current( period, FALSE );
-	ofa_idbexercice_meta_set_begin_date( period, begin_old );
-	ofa_idbexercice_meta_set_end_date( period, end_old );
+	ofa_idbexercice_meta_set_begin_date( period, &begin_old );
+	ofa_idbexercice_meta_set_end_date( period, &end_old );
 	ofa_idbexercice_meta_update_settings( period );
+	last_entry = ofo_counter_get_last_entry_id( counters );
 
 	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 	end_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
@@ -1490,7 +1485,8 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				ofo_dossier_set_current( priv->dossier, TRUE );
 				ofo_dossier_set_exe_begin( priv->dossier, begin_next );
 				ofo_dossier_set_exe_end( priv->dossier, end_next );
-				ofo_dossier_set_prevexe_end( priv->dossier, end_old );
+				ofo_dossier_set_prevexe_last_entry( priv->dossier, last_entry );
+				ofo_dossier_set_prevexe_end( priv->dossier, &end_old );
 				ofo_dossier_update( priv->dossier );
 			}
 		}
@@ -1849,44 +1845,58 @@ p6_forward( ofaExerciceCloseAssistant *self )
 	ofaISignaler *signaler;
 	myProgressBar *bar;
 	guint count, i;
-	GList *it;
+	GList *itf, *for_entries, *ite;
 	ofoEntry *entry;
 	ofoAccount *account;
-	ofxCounter counter;
+	ofxCounter number;
 	const GDate *dbegin;
+	ofoCounter *counters;
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
 	signaler = ofa_igetter_get_signaler( priv->getter );
+	counters = ofa_igetter_get_counters( priv->getter );
 	dbegin = ofo_dossier_get_exe_begin( priv->dossier );
 
 	bar = get_new_bar( self, "p6-forward" );
 	gtk_widget_show_all( priv->p6_page );
-	count = g_list_length( priv->p6_forwards );
+	/* each forward operation carried out two entries */
+	count = 2*g_list_length( priv->p6_forwards );
 	i = 0;
 
-	for( it=priv->p6_forwards ; it ; it=it->next ){
-		entry = OFO_ENTRY( it->data );
-		ofo_entry_insert( entry );
+	for( itf=priv->p6_forwards ; itf ; itf=itf->next ){
+		for_entries = ( GList * ) itf->data;
+		for( ite=for_entries ; ite ; ite=ite->next ){
+			entry = OFO_ENTRY( ite->data );
 
-		counter = ofo_entry_get_settlement_number( entry );
-		if( counter ){
-			ofo_entry_update_settlement( entry, counter );
+			/* only update the ope number here so that it will increment in the new exercice */
+			number = ofo_counter_get_next_ope_id( counters );
+			ofo_entry_set_ope_number( entry, number );
+
+			/* set forward rule */
+			ofo_entry_set_rule( entry, ENT_RULE_FORWARD );
+			ofo_entry_insert( entry );
+
+			/* update settlement number if any */
+			number = ofo_entry_get_settlement_number( entry );
+			if( number ){
+				ofo_entry_update_settlement( entry, number );
+			}
+
+			/* set reconciliation on reconciliable account */
+			account = ofo_account_get_by_number( priv->getter, ofo_entry_get_account( entry ));
+			g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+			if( ofo_account_is_reconciliable( account )){
+				ofa_iconcil_new_concil( OFA_ICONCIL( entry ), dbegin );
+			}
+
+			g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
+
+			update_bar( bar, &i, count, thisfn );
 		}
-
-		/* set reconciliation on reconciliable account */
-		account = ofo_account_get_by_number( priv->getter, ofo_entry_get_account( entry ));
-		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-		if( ofo_account_is_reconciliable( account )){
-			ofa_iconcil_new_concil( OFA_ICONCIL( entry ), dbegin );
-		}
-
-		g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
-
-		update_bar( bar, &i, count, thisfn );
 	}
 
-	g_list_free( priv->p6_forwards );
+	g_list_free_full( priv->p6_forwards, ( GDestroyNotify ) g_list_free );
 
 	gtk_widget_show_all( GTK_WIDGET( bar ));
 	g_idle_add(( GSourceFunc ) p6_open, self );

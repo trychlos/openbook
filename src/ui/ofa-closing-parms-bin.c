@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 
 #include "my/my-date.h"
+#include "my/my-ibin.h"
 #include "my/my-igridlist.h"
 #include "my/my-utils.h"
 
@@ -59,6 +60,7 @@ typedef struct {
 
 	/* runtime data
 	 */
+	GtkSizeGroup   *group0;
 	GtkWidget      *forward;
 	ofoDossier     *dossier;
 	gboolean        is_writable;
@@ -97,29 +99,35 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-closing-parms-bin.ui";
 
-static void       setup_bin( ofaClosingParmsBin *self );
-static void       setup_closing_opes( ofaClosingParmsBin *self );
-static void       setup_currencies( ofaClosingParmsBin *self );
-static void       setup_currency_accounts( ofaClosingParmsBin *self );
-static void       igridlist_iface_init( myIGridlistInterface *iface );
-static guint      igridlist_get_interface_version( void );
-static void       igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *currency );
-static void       setup_detail_widgets( ofaClosingParmsBin *self, GtkGrid *grid, guint row, const gchar *currency );
-static void       set_detail_values( ofaClosingParmsBin *self, GtkGrid *grid, guint row, const gchar *currency );
-static void       on_sld_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
-static void       on_for_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
-static void       on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label );
-static void       on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaClosingParmsBin *self );
-static void       on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self );
-static void       on_detail_count_changed( myIGridlist *instance, GtkGrid *grid, void *empty );
-static GtkWidget *get_currency_combo_at( ofaClosingParmsBin *self, gint row );
-static void       check_bin( ofaClosingParmsBin *bin );
-static gboolean   check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg );
-static gchar     *get_detail_account( ofaClosingParmsBin *self );
-static gboolean   check_for_accounts( ofaClosingParmsBin *self, gchar **msg );
+static void          setup_bin( ofaClosingParmsBin *self );
+static void          setup_closing_opes( ofaClosingParmsBin *self );
+static void          setup_currencies( ofaClosingParmsBin *self );
+static void          setup_currency_accounts( ofaClosingParmsBin *self );
+static void          igridlist_iface_init( myIGridlistInterface *iface );
+static guint         igridlist_get_interface_version( void );
+static void          igridlist_setup_row( const myIGridlist *instance, GtkGrid *grid, guint row, void *currency );
+static void          setup_detail_widgets( ofaClosingParmsBin *self, GtkGrid *grid, guint row, const gchar *currency );
+static void          set_detail_values( ofaClosingParmsBin *self, GtkGrid *grid, guint row, const gchar *currency );
+static void          on_sld_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
+static void          on_for_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
+static void          on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label );
+static void          on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaClosingParmsBin *self );
+static void          on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self );
+static void          on_detail_count_changed( myIGridlist *instance, GtkGrid *grid, void *empty );
+static GtkWidget    *get_currency_combo_at( ofaClosingParmsBin *self, gint row );
+static void          check_bin( ofaClosingParmsBin *bin );
+static gboolean      check_for_valid( ofaClosingParmsBin *bin, gchar **msg );
+static gboolean      check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg );
+static gchar        *get_detail_account( ofaClosingParmsBin *self );
+static gboolean      check_for_accounts( ofaClosingParmsBin *self, gchar **msg );
+static void          ibin_iface_init( myIBinInterface *iface );
+static guint         ibin_get_interface_version( void );
+static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
+static gboolean      ibin_is_valid( const myIBin *instance, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaClosingParmsBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ))
 
 static void
@@ -156,6 +164,7 @@ closing_parms_bin_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->group0 );
 	}
 
 	/* chain up to the parent class */
@@ -254,6 +263,10 @@ setup_bin( ofaClosingParmsBin *bin )
 	priv = ofa_closing_parms_bin_get_instance_private( bin );
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
+
+	object = gtk_builder_get_object( builder, "cpb-col0-hsize" );
+	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
+	priv->group0 = GTK_SIZE_GROUP( g_object_ref( object ));
 
 	object = gtk_builder_get_object( builder, "cpb-window" );
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
@@ -544,11 +557,11 @@ check_bin( ofaClosingParmsBin *self )
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
-/**
+/*
  * ofa_closing_parms_bin_is_valid:
  */
-gboolean
-ofa_closing_parms_bin_is_valid( ofaClosingParmsBin *bin, gchar **msg )
+static gboolean
+check_for_valid( ofaClosingParmsBin *bin, gchar **msg )
 {
 	ofaClosingParmsBinPrivate *priv;
 	gboolean ok;
@@ -840,4 +853,52 @@ ofa_closing_parms_bin_apply( ofaClosingParmsBin *bin )
 	}
 
 	ofo_dossier_update_currencies( priv->dossier );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_edit_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+	iface->get_size_group = ibin_get_size_group;
+	iface->is_valid = ibin_is_valid;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkSizeGroup *
+ibin_get_size_group( const myIBin *instance, guint column )
+{
+	static const gchar *thisfn = "ofa_closing_parms_bin_ibin_get_size_group";
+	ofaClosingParmsBinPrivate *priv;
+
+	g_return_val_if_fail( instance && OFA_IS_CLOSING_PARMS_BIN( instance ), NULL );
+
+	priv = ofa_closing_parms_bin_get_instance_private( OFA_CLOSING_PARMS_BIN( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
+	}
+
+	g_warning( "%s: invalid column=%u", thisfn, column );
+
+	return( NULL );
+}
+
+gboolean
+ibin_is_valid( const myIBin *instance, gchar **msgerr )
+{
+	return( check_for_valid( OFA_CLOSING_PARMS_BIN( instance ), msgerr ));
 }

@@ -2,7 +2,6 @@
 <!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkSizeGroup" id="LabelSizeGroup"/>
   <object class="GtkWindow" id="cpb-window">
     <property name="can_focus">False</property>
     <child>
@@ -225,5 +224,11 @@ This account should be neither settleable, reconciliable nor forwardable.</prope
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkSizeGroup" id="cpb-col0-hsize">
+    <widgets>
+      <widget name="p2-bope-prompt"/>
+      <widget name="p2-fope-prompt"/>
+    </widgets>
   </object>
 </interface>

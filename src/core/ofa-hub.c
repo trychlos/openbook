@@ -56,6 +56,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
+#include "../api/ofo-counter.h"
 #include "api/ofo-paimean.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
@@ -90,6 +91,7 @@ typedef struct {
 	ofaIDBConnect         *connect;
 	ofoDossier            *dossier;
 	gboolean               read_only;
+	ofoCounter            *counters;
 }
 	ofaHubPrivate;
 
@@ -103,6 +105,7 @@ static void                   igetter_iface_init( ofaIGetterInterface *iface );
 static GApplication          *igetter_get_application( const ofaIGetter *getter );
 static myISettings           *igetter_get_auth_settings( const ofaIGetter *getter );
 static myICollector          *igetter_get_collector( const ofaIGetter *getter );
+static ofoCounter            *igetter_get_counters( ofaIGetter *getter );
 static ofaDossierCollection  *igetter_get_dossier_collection( const ofaIGetter *getter );
 static myISettings           *igetter_get_dossier_settings( const ofaIGetter *getter );
 static ofaDossierStore       *igetter_get_dossier_store( const ofaIGetter *getter );
@@ -767,6 +770,7 @@ igetter_iface_init( ofaIGetterInterface *iface )
 	iface->get_application = igetter_get_application;
 	iface->get_auth_settings = igetter_get_auth_settings;
 	iface->get_collector = igetter_get_collector;
+	iface->get_counters = igetter_get_counters;
 	iface->get_dossier_collection = igetter_get_dossier_collection;
 	iface->get_dossier_settings = igetter_get_dossier_settings;
 	iface->get_dossier_store = igetter_get_dossier_store;
@@ -808,6 +812,20 @@ static myICollector *
 igetter_get_collector( const ofaIGetter *getter )
 {
 	return( MY_ICOLLECTOR( getter ));
+}
+
+static ofoCounter *
+igetter_get_counters( ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	if( !priv->counters ){
+		priv->counters = ofo_counter_new( getter );
+	}
+
+	return( priv->counters );
 }
 
 static ofaDossierCollection *

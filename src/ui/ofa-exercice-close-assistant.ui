@@ -49,6 +49,7 @@ Press Next to begin.</property>
             <property name="can_focus">False</property>
             <property name="row_spacing">2</property>
             <property name="column_spacing">4</property>
+            <property name="column_homogeneous">True</property>
             <child>
               <object class="GtkFrame" id="frame111">
                 <property name="visible">True</property>
@@ -712,9 +713,6 @@ Or just click on 'Apply' button.</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
-                        <child>
-                          <placeholder/>
-                        </child>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>

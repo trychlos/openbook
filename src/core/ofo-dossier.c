@@ -70,12 +70,6 @@ enum {
 	DOS_SLD_OPE,
 	DOS_UPD_USER,
 	DOS_UPD_STAMP,
-	DOS_LAST_BAT,
-	DOS_LAST_BATLINE,
-	DOS_LAST_ENTRY,
-	DOS_LAST_OPE,
-	DOS_LAST_SETTLEMENT,
-	DOS_LAST_CONCIL,
 	DOS_CURRENT,
 	DOS_LAST_CLOSING,
 	DOS_PREVEXE_ENTRY,
@@ -83,6 +77,9 @@ enum {
 	DOS_CURRENCY,
 	DOS_SLD_ACCOUNT,
 	DOS_RPID,
+	DOS_VATIC,
+	DOS_NAF,
+	DOS_LABEL2
 };
 
 /*
@@ -162,30 +159,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				FALSE },
-		{ OFA_BOX_CSV( DOS_LAST_BAT ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( DOS_LAST_BATLINE ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( DOS_LAST_CONCIL ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( DOS_LAST_ENTRY ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( DOS_LAST_OPE ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( DOS_LAST_SETTLEMENT ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				FALSE },
 		{ OFA_BOX_CSV( DOS_PREVEXE_ENTRY ),
 				OFA_TYPE_COUNTER,
 				FALSE,
@@ -193,6 +166,18 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( DOS_PREVEXE_END ),
 				OFA_TYPE_DATE,
 				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_VATIC ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_NAF ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_LABEL2 ),
+				OFA_TYPE_STRING,
+				TRUE,
 				FALSE },
 		{ 0 }
 };
@@ -214,20 +199,12 @@ typedef struct {
 }
 	ofoDossierPrivate;
 
-static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
 static GList      *dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency );
 static GList      *dossier_find_currency_by_account( ofoDossier *dossier, const gchar *account );
 static GList      *dossier_new_currency_with_code( ofoDossier *dossier, const gchar *currency );
 static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
 static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
-static void        dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter );
-static void        dossier_set_last_batline( ofoDossier *dossier, ofxCounter counter );
-static void        dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter );
-static void        dossier_set_last_ope( ofoDossier *dossier, ofxCounter counter );
-static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter );
-static void        dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_setup_rpid( ofoDossier *self );
-static void        dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter counter );
 static GList      *get_orphans( ofaIGetter *getter, const gchar *table );
 static ofoDossier *dossier_do_read( ofaIGetter *getter );
 static gboolean    dossier_do_update( ofoDossier *dossier );
@@ -411,6 +388,18 @@ ofo_dossier_get_forward_ope( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_get_sld_ope:
+ * @dossier: this #ofoDossier instance.
+ *
+ * Returns: the sld ope of the dossier.
+ */
+const gchar *
+ofo_dossier_get_sld_ope( const ofoDossier *dossier )
+{
+	ofo_base_getter( DOSSIER, dossier, string, NULL, DOS_SLD_OPE );
+}
+
+/**
  * ofo_dossier_get_import_ledger:
  * @dossier: this #ofoDossier instance.
  *
@@ -433,6 +422,19 @@ const gchar *
 ofo_dossier_get_label( const ofoDossier *dossier )
 {
 	ofo_base_getter( DOSSIER, dossier, string, NULL, DOS_LABEL );
+}
+
+/**
+ * ofo_dossier_get_label2:
+ * @dossier: this #ofoDossier instance.
+ *
+ * Returns: the 2nd label of the dossier.
+ * This is expected to be a sub-line of the 'raison sociale'.
+ */
+const gchar *
+ofo_dossier_get_label2( const ofoDossier *dossier )
+{
+	ofo_base_getter( DOSSIER, dossier, string, NULL, DOS_LABEL2 );
 }
 
 /**
@@ -472,15 +474,27 @@ ofo_dossier_get_siret( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_sld_ope:
+ * ofo_dossier_get_vatic:
  * @dossier: this #ofoDossier instance.
  *
- * Returns: the sld ope of the dossier.
+ * Returns: the VAT identifier of the dossier.
  */
 const gchar *
-ofo_dossier_get_sld_ope( const ofoDossier *dossier )
+ofo_dossier_get_vatic( const ofoDossier *dossier )
 {
-	ofo_base_getter( DOSSIER, dossier, string, NULL, DOS_SLD_OPE );
+	ofo_base_getter( DOSSIER, dossier, string, NULL, DOS_VATIC );
+}
+
+/**
+ * ofo_dossier_get_naf:
+ * @dossier: this #ofoDossier instance.
+ *
+ * Returns: the NAF identifier of the dossier.
+ */
+const gchar *
+ofo_dossier_get_naf( const ofoDossier *dossier )
+{
+	ofo_base_getter( DOSSIER, dossier, string, NULL, DOS_NAF );
 }
 
 /**
@@ -527,232 +541,6 @@ ofo_dossier_get_status( const ofoDossier *dossier )
 	is_current = ofo_dossier_is_current( dossier );
 
 	return( is_current ? _( "Opened" ) : _( "Archived" ));
-}
-
-/**
- * ofo_dossier_get_last_bat:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: the last bat number allocated in the exercice.
- */
-ofxCounter
-ofo_dossier_get_last_bat( const ofoDossier *dossier )
-{
-	ofo_base_getter( DOSSIER, dossier, counter, 0, DOS_LAST_BAT );
-}
-
-/**
- * ofo_dossier_get_last_batline:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: the last bat_line number allocated in the exercice.
- */
-ofxCounter
-ofo_dossier_get_last_batline( const ofoDossier *dossier )
-{
-	ofo_base_getter( DOSSIER, dossier, counter, 0, DOS_LAST_BATLINE );
-}
-
-/**
- * ofo_dossier_get_last_entry:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: the last entry number allocated in the exercice.
- */
-ofxCounter
-ofo_dossier_get_last_entry( const ofoDossier *dossier )
-{
-	ofo_base_getter( DOSSIER, dossier, counter, 0, DOS_LAST_ENTRY );
-}
-
-/**
- * ofo_dossier_get_last_ope:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: the last operation number allocated in the exercice.
- */
-ofxCounter
-ofo_dossier_get_last_ope( const ofoDossier *dossier )
-{
-	ofo_base_getter( DOSSIER, dossier, counter, 0, DOS_LAST_OPE );
-}
-
-/**
- * ofo_dossier_get_last_settlement:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: the last settlement number allocated in the exercice.
- */
-ofxCounter
-ofo_dossier_get_last_settlement( const ofoDossier *dossier )
-{
-	ofo_base_getter( DOSSIER, dossier, counter, 0, DOS_LAST_SETTLEMENT );
-}
-
-/**
- * ofo_dossier_get_last_concil:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: the last reconciliation id. allocated.
- */
-ofxCounter
-ofo_dossier_get_last_concil( const ofoDossier *dossier )
-{
-	ofo_base_getter( DOSSIER, dossier, counter, 0, DOS_LAST_CONCIL );
-}
-
-/**
- * ofo_dossier_get_next_bat:
- * @dossier: this #ofoDossier instance.
- */
-ofxCounter
-ofo_dossier_get_next_bat( ofoDossier *dossier )
-{
-	ofxCounter last, next;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
-	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
-
-	last = ofo_dossier_get_last_bat( dossier );
-	next = last+1;
-	dossier_set_last_bat( dossier, next );
-	dossier_update_next( dossier, "DOS_LAST_BAT", next );
-
-	return( next );
-}
-
-/**
- * ofo_dossier_get_next_batline:
- * @dossier: this #ofoDossier instance.
- */
-ofxCounter
-ofo_dossier_get_next_batline( ofoDossier *dossier )
-{
-	ofxCounter last, next;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
-	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
-
-	last = ofo_dossier_get_last_batline( dossier );
-	next = last+1;
-	dossier_set_last_batline( dossier, next );
-	dossier_update_next( dossier, "DOS_LAST_BATLINE", next );
-
-	return( next );
-}
-
-/**
- * ofo_dossier_get_next_entry:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: the next entry number to be allocated in the dossier.
- */
-ofxCounter
-ofo_dossier_get_next_entry( ofoDossier *dossier )
-{
-	ofxCounter last, next;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
-	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
-
-	last = ofo_dossier_get_last_entry( dossier );
-	next = last+1;
-	dossier_set_last_entry( dossier, next );
-	dossier_update_next( dossier, "DOS_LAST_ENTRY", next );
-
-	return( next );
-}
-
-/**
- * ofo_dossier_get_next_ope:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: the next operation number to be allocated in the dossier.
- */
-ofxCounter
-ofo_dossier_get_next_ope( ofoDossier *dossier )
-{
-	ofxCounter last, next;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
-	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
-
-	last = ofo_dossier_get_last_ope( dossier );
-	next = last+1;
-	dossier_set_last_ope( dossier, next );
-	dossier_update_next( dossier, "DOS_LAST_OPE", next );
-
-	return( next );
-}
-
-/**
- * ofo_dossier_get_next_settlement:
- * @dossier: this #ofoDossier instance.
- */
-ofxCounter
-ofo_dossier_get_next_settlement( ofoDossier *dossier )
-{
-	ofxCounter last, next;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
-	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
-
-	last = ofo_dossier_get_last_settlement( dossier );
-	next = last+1;
-	dossier_set_last_settlement( dossier, next );
-	dossier_update_next( dossier, "DOS_LAST_SETTLEMENT", next );
-
-	return( next );
-}
-
-/**
- * ofo_dossier_get_next_concil:
- * @dossier: this #ofoDossier instance.
- */
-ofxCounter
-ofo_dossier_get_next_concil( ofoDossier *dossier )
-{
-	ofxCounter last, next;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
-	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
-
-	last = ofo_dossier_get_last_concil( dossier );
-	next = last+1;
-	dossier_set_last_concil( dossier, next );
-	dossier_update_next( dossier, "DOS_LAST_CONCIL", next );
-
-	return( next );
-}
-
-/*
- * ofo_dossier_update_next_number:
- */
-static void
-dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number )
-{
-	ofaIGetter *getter;
-	ofaHub *hub;
-	gchar *query;
-
-	getter = ofo_base_get_getter( OFO_BASE( dossier ));
-	hub = ofa_igetter_get_hub( getter );
-
-	query = g_strdup_printf(
-			"UPDATE OFA_T_DOSSIER "
-			"	SET %s=%ld "
-			"	WHERE DOS_ID=%d",
-					field, next_number, DOSSIER_ROW_ID );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-
-	g_free( query );
 }
 
 /**
@@ -1162,6 +950,17 @@ ofo_dossier_set_forward_ope( ofoDossier *dossier, const gchar *ope )
 }
 
 /**
+ * ofo_dossier_set_sld_ope:
+ *
+ * Not mandatory until closing the exercice.
+ */
+void
+ofo_dossier_set_sld_ope( ofoDossier *dossier, const gchar *ope )
+{
+	ofo_base_setter( DOSSIER, dossier, string, DOS_SLD_OPE, ope );
+}
+
+/**
  * ofo_dossier_set_import_ledger:
  *
  * Not mandatory until importing entries.
@@ -1179,6 +978,15 @@ void
 ofo_dossier_set_label( ofoDossier *dossier, const gchar *label )
 {
 	ofo_base_setter( DOSSIER, dossier, string, DOS_LABEL, label );
+}
+
+/**
+ * ofo_dossier_set_label2:
+ */
+void
+ofo_dossier_set_label2( ofoDossier *dossier, const gchar *label )
+{
+	ofo_base_setter( DOSSIER, dossier, string, DOS_LABEL2, label );
 }
 
 /**
@@ -1209,14 +1017,21 @@ ofo_dossier_set_siret( ofoDossier *dossier, const gchar *siret )
 }
 
 /**
- * ofo_dossier_set_sld_ope:
- *
- * Not mandatory until closing the exercice.
+ * ofo_dossier_set_vatic:
  */
 void
-ofo_dossier_set_sld_ope( ofoDossier *dossier, const gchar *ope )
+ofo_dossier_set_vatic( ofoDossier *dossier, const gchar *tvaic )
 {
-	ofo_base_setter( DOSSIER, dossier, string, DOS_SLD_OPE, ope );
+	ofo_base_setter( DOSSIER, dossier, string, DOS_VATIC, tvaic );
+}
+
+/**
+ * ofo_dossier_set_naf:
+ */
+void
+ofo_dossier_set_naf( ofoDossier *dossier, const gchar *naf )
+{
+	ofo_base_setter( DOSSIER, dossier, string, DOS_NAF, naf );
 }
 
 /*
@@ -1235,42 +1050,6 @@ static void
 dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp )
 {
 	ofo_base_setter( DOSSIER, dossier, timestamp, DOS_UPD_STAMP, stamp );
-}
-
-static void
-dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter )
-{
-	ofo_base_setter( DOSSIER, dossier, counter, DOS_LAST_BAT, counter );
-}
-
-static void
-dossier_set_last_batline( ofoDossier *dossier, ofxCounter counter )
-{
-	ofo_base_setter( DOSSIER, dossier, counter, DOS_LAST_BATLINE, counter );
-}
-
-static void
-dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter )
-{
-	ofo_base_setter( DOSSIER, dossier, counter, DOS_LAST_ENTRY, counter );
-}
-
-static void
-dossier_set_last_ope( ofoDossier *dossier, ofxCounter counter )
-{
-	ofo_base_setter( DOSSIER, dossier, counter, DOS_LAST_OPE, counter );
-}
-
-static void
-dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter )
-{
-	ofo_base_setter( DOSSIER, dossier, counter, DOS_LAST_SETTLEMENT, counter );
-}
-
-static void
-dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter )
-{
-	ofo_base_setter( DOSSIER, dossier, counter, DOS_LAST_CONCIL, counter );
 }
 
 /**
@@ -1338,26 +1117,13 @@ ofo_dossier_set_last_closing_date( ofoDossier *dossier, const GDate *last_closin
 
 /**
  * ofo_dossier_set_prevexe_last_entry:
- * @dossier:
+ * @dossier: this #ofoDossier object.
+ * @number: the last entry number allocated during the previous exercice.
  */
 void
-ofo_dossier_set_prevexe_last_entry( ofoDossier *dossier )
+ofo_dossier_set_prevexe_last_entry( ofoDossier *dossier, ofxCounter number )
 {
-	ofxCounter last;
-
-	last = ofo_dossier_get_last_entry( dossier );
-	dossier_set_prev_exe_last_entry( dossier, last );
-}
-
-/*
- * dossier_set_prev_exe_last_entry:
- * @dossier:
- * @last_entry:
- */
-static void
-dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter last_entry )
-{
-	ofo_base_setter( DOSSIER, dossier, counter, DOS_PREVEXE_ENTRY, last_entry );
+	ofo_base_setter( DOSSIER, dossier, counter, DOS_PREVEXE_ENTRY, number );
 }
 
 /**
@@ -1622,6 +1388,13 @@ do_update_properties( ofoDossier *dossier )
 		query = g_string_append( query, "DOS_FORW_OPE=NULL," );
 	}
 
+	cstr = ofo_dossier_get_sld_ope( dossier );
+	if( my_strlen( cstr )){
+		g_string_append_printf( query, "DOS_SLD_OPE='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_SLD_OPE=NULL," );
+	}
+
 	cstr = ofo_dossier_get_import_ledger( dossier );
 	if( my_strlen( cstr )){
 		g_string_append_printf( query, "DOS_IMPORT_LEDGER='%s',", cstr );
@@ -1634,6 +1407,14 @@ do_update_properties( ofoDossier *dossier )
 		g_string_append_printf( query, "DOS_LABEL='%s',", label );
 	} else {
 		query = g_string_append( query, "DOS_LABEL=NULL," );
+	}
+	g_free( label );
+
+	label = my_utils_quote_sql( ofo_dossier_get_label2( dossier ));
+	if( my_strlen( label )){
+		g_string_append_printf( query, "DOS_LABEL2='%s',", label );
+	} else {
+		query = g_string_append( query, "DOS_LABEL2=NULL," );
 	}
 	g_free( label );
 
@@ -1659,11 +1440,18 @@ do_update_properties( ofoDossier *dossier )
 		query = g_string_append( query, "DOS_SIRET=NULL," );
 	}
 
-	cstr = ofo_dossier_get_sld_ope( dossier );
+	cstr = ofo_dossier_get_vatic( dossier );
 	if( my_strlen( cstr )){
-		g_string_append_printf( query, "DOS_SLD_OPE='%s',", cstr );
+		g_string_append_printf( query, "DOS_VATIC='%s',", cstr );
 	} else {
-		query = g_string_append( query, "DOS_SLD_OPE=NULL," );
+		query = g_string_append( query, "DOS_VATIC=NULL," );
+	}
+
+	cstr = ofo_dossier_get_naf( dossier );
+	if( my_strlen( cstr )){
+		g_string_append_printf( query, "DOS_NAF='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_NAF=NULL," );
 	}
 
 	date = ofo_dossier_get_last_closing_date( dossier );

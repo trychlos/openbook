@@ -59,6 +59,7 @@
 #include "api/ofa-ipage-manager-def.h"
 #include "api/ofa-isignaler.h"
 #include "api/ofa-openbook-props-def.h"
+#include "api/ofo-counter-def.h"
 
 G_BEGIN_DECLS
 
@@ -77,6 +78,7 @@ typedef struct _ofaIGetter                    ofaIGetter;
  * @get_application: [should]: return the #GApplication instance.
  * @get_auth_settings: [should]: return the authentification settings.
  * @get_collector: [should]: return the #myICollector object.
+ * @get_counters: [should]: return the #ofoCounter singleton.
  * @get_dossier_collection: [should]: return the #ofaDossierCollection object.
  * @get_dossier_settings: [should]: return the dossier settings.
  * @get_dossier_store: [should]: return the dossier store.
@@ -141,6 +143,16 @@ typedef struct {
 	 * Since: version 1
 	 */
 	myICollector *          ( *get_collector )          ( const ofaIGetter *getter );
+
+	/**
+	 * get_counters:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the #ofoCounter singleton.
+	 *
+	 * Since: version 1
+	 */
+	ofoCounter *            ( *get_counters )           ( ofaIGetter *getter );
 
 	/**
 	 * get_dossier_collection:
@@ -309,6 +321,8 @@ GApplication          *ofa_igetter_get_application           ( const ofaIGetter 
 myISettings           *ofa_igetter_get_auth_settings         ( const ofaIGetter *getter );
 
 myICollector          *ofa_igetter_get_collector             ( const ofaIGetter *getter );
+
+ofoCounter            *ofa_igetter_get_counters              ( ofaIGetter *getter );
 
 ofaDossierCollection  *ofa_igetter_get_dossier_collection    ( const ofaIGetter *getter );
 
