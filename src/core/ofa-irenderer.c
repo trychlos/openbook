@@ -197,6 +197,33 @@ ofa_irenderer_draw_page_header_dossier( ofaIRenderer *instance, ofaIRenderable *
 	return( FALSE );
 }
 
+/**
+ * ofa_irenderer_draw_page_footer:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ *
+ * Returns: %TRUE if the interface implements the method and has executed it.
+ */
+gboolean
+ofa_irenderer_draw_page_footer( ofaIRenderer *instance, ofaIRenderable *renderable )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), FALSE );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), FALSE );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_footer ){
+		OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_footer( instance, renderable );
+		return( TRUE );
+	}
+
+	sdata->empty = NULL;
+
+	return( FALSE );
+}
+
 static sIRenderer *
 get_instance_data( const ofaIRenderer *instance )
 {

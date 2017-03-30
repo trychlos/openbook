@@ -837,6 +837,8 @@ void               ofa_irenderable_draw_rect                 ( ofaIRenderable *i
 																	gdouble width,
 																	gdouble height );
 
+void               ofa_irenderable_draw_default_page_footer  ( ofaIRenderable *instance );
+
 void               ofa_irenderable_draw_no_data              ( ofaIRenderable *instance );
 
 gdouble            ofa_irenderable_get_header_columns_height ( ofaIRenderable *instance );

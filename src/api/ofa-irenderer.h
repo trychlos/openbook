@@ -79,6 +79,16 @@ typedef struct {
 	 */
 	void  ( *draw_page_header_dossier )( ofaIRenderer *instance,
 											ofaIRenderable *renderable );
+
+	/**
+	 * draw_page_footer:
+	 *
+	 * Draw the footer of the page.
+	 *
+	 * Since: version 1.
+	 */
+	void  ( *draw_page_footer )        ( ofaIRenderer *instance,
+											ofaIRenderable *renderable );
 }
 	ofaIRendererInterface;
 
@@ -98,6 +108,9 @@ guint    ofa_irenderer_get_interface_version     ( GType type );
  * Instance-wide
  */
 gboolean ofa_irenderer_draw_page_header_dossier  ( ofaIRenderer *instance,
+														ofaIRenderable *renderable );
+
+gboolean ofa_irenderer_draw_page_footer          ( ofaIRenderer *instance,
 														ofaIRenderable *renderable );
 
 G_END_DECLS

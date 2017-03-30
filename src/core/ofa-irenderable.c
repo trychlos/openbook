@@ -1190,46 +1190,24 @@ ofa_irenderable_get_last_summary_height( ofaIRenderable *instance )
 static void
 irenderable_draw_page_footer( ofaIRenderable *instance, sIRenderable *sdata )
 {
-	static gdouble vspace_before_footer = 2.0;	/* points */
-	static gdouble vspace_after_line = 1.0; 	/* points */
-	gchar *str, *stamp_str;
-	GTimeVal stamp;
-	gdouble y, height, r, g, b;
+	GList *it;
+	gboolean done;
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer( instance );
+	done = FALSE;
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		if( ofa_irenderer_draw_page_footer( OFA_IRENDERER( it->data ), instance )){
+			done = TRUE;
+			break;
+		}
+	}
 
-	} else {
-		/* page footer color */
-		irenderable_get_footer_color( instance, &r, &g, &b, sdata );
-		ofa_irenderable_set_color( instance, r, g, b );
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer ){
+			OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer( instance );
 
-		/* draw the separation line */
-		y = sdata->max_y;
-		y += vspace_before_footer;
-		cairo_set_line_width( sdata->current_context, 0.5 );
-		cairo_move_to( sdata->current_context, 0, y );
-		cairo_line_to( sdata->current_context, sdata->render_width, y );
-		cairo_stroke( sdata->current_context );
-		y += vspace_after_line;
-
-		/* draw the footer line */
-		ofa_irenderable_set_font( instance, irenderable_get_footer_font( instance, sdata ));
-
-		str = g_strdup_printf( "%s v %s", PACKAGE_NAME, PACKAGE_VERSION );
-		height = ofa_irenderable_set_text( instance, st_page_margin, y, str, PANGO_ALIGN_LEFT );
-		g_free( str );
-
-		my_stamp_set_now( &stamp );
-		stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
-		str = g_strdup_printf(
-				_( "Printed on %s - Page %d/%d" ), stamp_str, 1+sdata->page_num, sdata->pages_count );
-		g_free( stamp_str );
-		ofa_irenderable_set_text( instance, sdata->render_width-st_page_margin, y, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
-
-		y += height;
-		sdata->last_y = y;
+		} else {
+			ofa_irenderable_draw_default_page_footer( instance );
+		}
 	}
 }
 
@@ -1803,6 +1781,56 @@ ofa_irenderable_draw_rect( ofaIRenderable *instance, gdouble x, gdouble y, gdoub
 	cairo_move_to( sdata->current_context, x, y+height );		/* +---+ */
 	cairo_line_to( sdata->current_context, x+cx, y+height );	/* +---+ */
 	cairo_stroke( sdata->current_context );
+}
+
+/**
+ * ofa_irenderable_draw_default_page_footer:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Draws the default page footer.
+ */
+void
+ofa_irenderable_draw_default_page_footer( ofaIRenderable *instance )
+{
+	static gdouble vspace_before_footer = 2.0;	/* points */
+	static gdouble vspace_after_line = 1.0; 	/* points */
+	sIRenderable *sdata;
+	gchar *str, *stamp_str;
+	GTimeVal stamp;
+	gdouble y, height, r, g, b;
+
+	sdata = get_instance_data( instance );
+
+	/* page footer color */
+	irenderable_get_footer_color( instance, &r, &g, &b, sdata );
+	ofa_irenderable_set_color( instance, r, g, b );
+
+	/* draw the separation line */
+	y = sdata->max_y;
+	y += vspace_before_footer;
+	cairo_set_line_width( sdata->current_context, 0.5 );
+	cairo_move_to( sdata->current_context, 0, y );
+	cairo_line_to( sdata->current_context, sdata->render_width, y );
+	cairo_stroke( sdata->current_context );
+	y += vspace_after_line;
+
+	/* draw the footer line */
+	ofa_irenderable_set_font( instance, irenderable_get_footer_font( instance, sdata ));
+
+	str = g_strdup_printf( "%s v %s", PACKAGE_NAME, PACKAGE_VERSION );
+	height = ofa_irenderable_set_text( instance, st_page_margin, y, str, PANGO_ALIGN_LEFT );
+	g_free( str );
+
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	str = g_strdup_printf(
+			_( "Printed on %s - Page %d/%d" ), stamp_str, 1+sdata->page_num, sdata->pages_count );
+	g_free( stamp_str );
+	ofa_irenderable_set_text( instance, sdata->render_width-st_page_margin, y, str, PANGO_ALIGN_RIGHT );
+	g_free( str );
+
+	y += height;
+	sdata->last_y = y;
 }
 
 /**
