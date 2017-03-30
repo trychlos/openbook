@@ -37,6 +37,7 @@
    - Pruintings: have a plugin which can override ofaIRenderable interface (todo #1196).
    - Reconciliation page auto-updates when an external identifier changes (todo #1407).
    - Reconciliation render take into account the last available BAT at date (todo #1420).
+   - Recurrent operations validation: have a visual display of the status (todo #1369).
    - Restore assistant: allow admin credentials to be saved (todo #1416).
 
  Bug fixes:

@@ -302,9 +302,6 @@
                 with children and companions (e.g. entries+concil)
                 + have a version number
 
-1369 2017- 2-20 recurrent operations validation: cancelled operations
-                should be italic+grayed
-
 1379 2017- 3- 9 VatForm: set template column to fixed width, rather expand label
 
 1396 2017- 3-16 check conciliation groups integrity is wrong
@@ -802,6 +799,10 @@
 
 1368 2017- 2-20 recurrent operations validation: date -> ope. date
      2017- 2-20 done
+
+1369 2017- 2-20 recurrent operations validation: cancelled operations
+                should be italic+grayed
+     2017- 3-30 done
 
 1370 2017- 2-22 ofaClosingParmsBin should implement myIGridlist
      2017- 2-22 done

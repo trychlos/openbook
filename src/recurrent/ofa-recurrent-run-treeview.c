@@ -63,6 +63,9 @@ typedef struct {
 }
 	ofaRecurrentRunTreeviewPrivate;
 
+#define RGBA_VALIDATED                  "#ffe8a8"		/* pale gold background */
+#define RGBA_DELETED                    "#808080"		/* light gray foreground */
+
 /* signals defined here
  */
 enum {
@@ -76,6 +79,9 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void     setup_columns( ofaRecurrentRunTreeview *self );
 static void     on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self );
+static void     cell_data_render_background( ofaRecurrentRunTreeview *self, GtkCellRenderer *renderer, ofeRecurrentStatus status );
+static void     cell_data_render_text( ofaRecurrentRunTreeview *self, GtkCellRendererText *renderer, ofeRecurrentStatus status );
+static void     cell_data_set_editable( ofaRecurrentRunTreeview *self, GtkCellRenderer *renderer, GtkTreeViewColumn *column, ofoRecurrentModel *recmodel, ofoRecurrentRun *recrun, ofeRecurrentStatus status );
 static void     on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaRecurrentRunTreeview *self );
 static void     on_selection_changed( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     on_selection_activated( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty );
@@ -345,22 +351,82 @@ setup_columns( ofaRecurrentRunTreeview *self )
 static void
 on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self )
 {
-	ofaRecurrentRunTreeviewPrivate *priv;
 	ofoRecurrentRun *recrun;
 	ofoRecurrentModel *recmodel;
-	guint column_id;
 	ofeRecurrentStatus status;
+
+	gtk_tree_model_get( tmodel, iter,
+			REC_RUN_COL_OBJECT,   &recrun,
+			REC_RUN_COL_MODEL,    &recmodel,
+			REC_RUN_COL_STATUS_I, &status,
+			-1 );
+	g_return_if_fail( recrun && OFO_IS_RECURRENT_RUN( recrun ));
+	g_object_unref( recrun );
+	g_return_if_fail( recmodel && OFO_IS_RECURRENT_MODEL( recmodel ));
+	g_object_unref( recmodel );
+
+	cell_data_render_background( self, renderer, status );
+
+	if( GTK_IS_CELL_RENDERER_TEXT( renderer )){
+		cell_data_render_text( self, GTK_CELL_RENDERER_TEXT( renderer ), status );
+	}
+
+	cell_data_set_editable( self, renderer, column, recmodel, recrun, status );
+}
+
+static void
+cell_data_render_background( ofaRecurrentRunTreeview *self, GtkCellRenderer *renderer, ofeRecurrentStatus status )
+{
+	GdkRGBA color;
+
+	g_object_set( G_OBJECT( renderer ), "cell-background-set", FALSE, NULL );
+
+	switch( status ){
+		case REC_STATUS_VALIDATED:
+			gdk_rgba_parse( &color, RGBA_VALIDATED );
+			g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
+			break;
+
+		default:
+			break;
+	}
+}
+
+static void
+cell_data_render_text( ofaRecurrentRunTreeview *self, GtkCellRendererText *renderer, ofeRecurrentStatus status )
+{
+	GdkRGBA color;
+
+	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER_TEXT( renderer ));
+
+	g_object_set( G_OBJECT( renderer ),
+						"style-set",      FALSE,
+						"foreground-set", FALSE,
+						NULL );
+
+	switch( status ){
+		case REC_STATUS_CANCELLED:
+			gdk_rgba_parse( &color, RGBA_DELETED );
+			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+			g_object_set( G_OBJECT( renderer ), "style", PANGO_STYLE_ITALIC, NULL );
+			break;
+
+		default:
+			break;
+	}
+}
+
+static void
+cell_data_set_editable( ofaRecurrentRunTreeview *self, GtkCellRenderer *renderer, GtkTreeViewColumn *column,
+								ofoRecurrentModel *recmodel, ofoRecurrentRun *recrun, ofeRecurrentStatus status )
+{
+	ofaRecurrentRunTreeviewPrivate *priv;
+	guint column_id;
 	const gchar *csdef;
 	gboolean editable;
 	ofaHub *hub;
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	gtk_tree_model_get( tmodel, iter, REC_RUN_COL_OBJECT, &recrun, REC_RUN_COL_MODEL, &recmodel, -1 );
-	g_return_if_fail( recrun && OFO_IS_RECURRENT_RUN( recrun ));
-	g_object_unref( recrun );
-	g_return_if_fail( recmodel && OFO_IS_RECURRENT_MODEL( recmodel ));
-	g_object_unref( recmodel );
 
 	column_id = ofa_itvcolumnable_get_column_id( OFA_ITVCOLUMNABLE( self ), column );
 
@@ -384,7 +450,6 @@ on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTree
 		case REC_RUN_COL_AMOUNT1:
 		case REC_RUN_COL_AMOUNT2:
 		case REC_RUN_COL_AMOUNT3:
-			status = ofo_recurrent_run_get_status( recrun );
 			hub = ofa_igetter_get_hub( priv->getter );
 			editable = ofa_hub_is_writable_dossier( hub );
 			editable &= ( my_strlen( csdef ) > 0 );
