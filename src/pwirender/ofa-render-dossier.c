@@ -58,7 +58,8 @@ static void        iextender_setter_iface_init( ofaIExtenderSetterInterface *ifa
 static ofaIGetter *iextender_setter_get_getter( ofaIExtenderSetter *instance );
 static void        iextender_setter_set_getter( ofaIExtenderSetter *instance, ofaIGetter *getter );
 static void        irenderer_iface_init( ofaIRendererInterface *iface );
-static void        irenderer_draw_page_header_dossier( ofaIRenderer *instance, ofaIRenderable *renderable );
+static gboolean    irenderer_draw_page_header_dossier( ofaIRenderer *instance, ofaIRenderable *renderable );
+static gboolean    irenderer_draw_page_footer( ofaIRenderer *instance, ofaIRenderable *renderable );
 
 G_DEFINE_TYPE_EXTENDED( ofaRenderDossier, ofa_render_dossier, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaRenderDossier )
@@ -173,17 +174,20 @@ irenderer_iface_init( ofaIRendererInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->draw_page_header_dossier = irenderer_draw_page_header_dossier;
+	iface->draw_page_footer = irenderer_draw_page_footer;
 }
 
-static void
+/*
+ * Draw the two dossiers lines at the top of the page
+ */
+static gboolean
 irenderer_draw_page_header_dossier( ofaIRenderer *instance, ofaIRenderable *renderable )
 {
 	ofaRenderDossierPrivate *priv;
-	gdouble y, height, lh, x;
+	gdouble y, text_height;
 	ofaHub *hub;
 	ofoDossier *dossier;
 	const gchar *cstr;
-	GString *gstr;
 
 	priv = ofa_render_dossier_get_instance_private( OFA_RENDER_DOSSIER( instance ));
 
@@ -195,12 +199,12 @@ irenderer_draw_page_header_dossier( ofaIRenderer *instance, ofaIRenderable *rend
 	/* header with lines 1 and 2 of the dossier */
 	y = 0;
 	ofa_irenderable_set_font( renderable, st_line1_font );
-	height = ofa_irenderable_get_text_height( renderable );
+	text_height = ofa_irenderable_get_text_height( renderable );
 	cstr = ofo_dossier_get_label( dossier );
 	if( cstr ){
 		ofa_irenderable_set_text( renderable, 0, y, cstr , PANGO_ALIGN_LEFT );
 	}
-	y += height;
+	y += text_height;
 
 	ofa_irenderable_set_font( renderable, st_line2_font );
 	cstr = ofo_dossier_get_label2( dossier );
@@ -208,10 +212,47 @@ irenderer_draw_page_header_dossier( ofaIRenderer *instance, ofaIRenderable *rend
 		ofa_irenderable_set_text( renderable, 0, y, cstr , PANGO_ALIGN_LEFT );
 	}
 
+	ofa_irenderable_set_last_y( renderable, text_height );
+
+	return( TRUE );
+}
+
+/*
+ * Draw administrative properties on the page footer.
+ * The line can be put before or after the separation line.
+ */
+static gboolean
+irenderer_draw_page_footer( ofaIRenderer *instance, ofaIRenderable *renderable )
+{
+	ofaRenderDossierPrivate *priv;
+	gdouble y, text_height, x;
+	ofaHub *hub;
+	ofoDossier *dossier;
+	const gchar *cstr;
+	GString *gstr;
+	gboolean before;
+
+	priv = ofa_render_dossier_get_instance_private( OFA_RENDER_DOSSIER( instance ));
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
+	before = FALSE;
+
+	ofa_irenderable_set_color( renderable, COLOR_HEADER_DOSSIER );
+
 	/* bottom line
 	 * under the bottom separation line: does not take any vertical space */
 	ofa_irenderable_set_font( renderable, st_bottom_font );
-	lh = ofa_irenderable_get_text_height( renderable );
+	text_height = ofa_irenderable_get_text_height( renderable );
+
+	/* if drawn before, have a blank line */
+	if( before ){
+		y = ofa_irenderable_get_last_y( renderable );
+		y += text_height;
+
+	} else {
+		y = ofa_irenderable_get_render_height( renderable ) - text_height;
+	}
 
 	gstr = g_string_new( "" );
 
@@ -236,10 +277,15 @@ irenderer_draw_page_header_dossier( ofaIRenderer *instance, ofaIRenderable *rend
 
 	x = ofa_irenderable_get_render_width( renderable );
 	x /= 2.0;
-	y = ofa_irenderable_get_render_height( renderable );
-	y -= lh;
 	ofa_irenderable_set_text( renderable, x, y, gstr->str, PANGO_ALIGN_CENTER );
 	g_string_free( gstr, TRUE );
 
-	ofa_irenderable_set_last_y( renderable, height );
+	if( before ){
+		y += text_height;
+		ofa_irenderable_set_last_y( renderable, y );
+	}
+
+	ofa_irenderable_draw_default_page_footer( renderable );
+
+	return( TRUE );
 }

@@ -68,27 +68,33 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint ( *get_interface_version )   ( void );
+	guint    ( *get_interface_version )   ( void );
 
 	/**
 	 * draw_page_header_dossier:
 	 *
 	 * Draw the dossier data in the page.
 	 *
+	 * Returns: %TRUE if the drawing has been done, %FALSE to let the
+	 * interface calls other implementations.
+	 *
 	 * Since: version 1.
 	 */
-	void  ( *draw_page_header_dossier )( ofaIRenderer *instance,
-											ofaIRenderable *renderable );
+	gboolean ( *draw_page_header_dossier )( ofaIRenderer *instance,
+												ofaIRenderable *renderable );
 
 	/**
 	 * draw_page_footer:
 	 *
 	 * Draw the footer of the page.
 	 *
+	 * Returns: %TRUE if the drawing has been done, %FALSE to let the
+	 * interface calls other implementations.
+	 *
 	 * Since: version 1.
 	 */
-	void  ( *draw_page_footer )        ( ofaIRenderer *instance,
-											ofaIRenderable *renderable );
+	gboolean ( *draw_page_footer )        ( ofaIRenderer *instance,
+												ofaIRenderable *renderable );
 }
 	ofaIRendererInterface;
 

@@ -791,7 +791,10 @@ gdouble            ofa_irenderable_get_last_y                ( const ofaIRendera
 void               ofa_irenderable_set_last_y                ( ofaIRenderable *instance,
 																	gdouble y );
 
-gdouble            ofa_irenderable_get_max_y                 ( ofaIRenderable *instance );
+gdouble            ofa_irenderable_get_max_y                 ( const ofaIRenderable *instance );
+
+void               ofa_irenderable_set_max_y                 ( ofaIRenderable *instance,
+																	gdouble max_y );
 
 gdouble            ofa_irenderable_get_text_height           ( ofaIRenderable *instance );
 

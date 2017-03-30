@@ -188,7 +188,7 @@ ofa_irenderer_draw_page_header_dossier( ofaIRenderer *instance, ofaIRenderable *
 	sdata = get_instance_data( instance );
 
 	if( OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_header_dossier ){
-		OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_header_dossier( instance, renderable );
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_header_dossier( instance, renderable ));
 		return( TRUE );
 	}
 
@@ -215,8 +215,7 @@ ofa_irenderer_draw_page_footer( ofaIRenderer *instance, ofaIRenderable *renderab
 	sdata = get_instance_data( instance );
 
 	if( OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_footer ){
-		OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_footer( instance, renderable );
-		return( TRUE );
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_footer( instance, renderable ));
 	}
 
 	sdata->empty = NULL;

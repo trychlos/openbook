@@ -384,12 +384,13 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
 
 	sdata = get_instance_data( instance );
+	sdata->paginating = TRUE;
+
 	sdata->render_width = render_width;
 	sdata->render_height = render_height;
 	sdata->dataset = dataset;
 	create_temp_context( instance, cr, sdata );
 
-	sdata->paginating = TRUE;
 	sdata->current_context = sdata->temp_context;
 	sdata->current_layout = sdata->temp_layout;
 
@@ -399,9 +400,9 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 	sdata->max_y = render_height - sdata->footer_height;
 	sdata->group_sep_line_height = draw_group_separation( instance, sdata );
 
-	g_debug( "%s: instance=%p, cr=%p, render_width=%lf, render_height=%lf, max_y=%lf, dataset_count=%d",
+	g_debug( "%s: instance=%p, cr=%p, render_width=%lf, render_height=%lf, max_y=%lf, footer_height=%lf, dataset_count=%d",
 			thisfn, ( void * ) instance, ( void * ) cr, render_width, render_height, sdata->max_y,
-			g_list_length( sdata->dataset ));
+			sdata->footer_height, g_list_length( sdata->dataset ));
 
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->begin_render ){
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->begin_render( instance );
@@ -789,7 +790,6 @@ irenderable_draw_page_header_dossier( ofaIRenderable *instance, sIRenderable *sd
 			break;
 		}
 	}
-
 	if( !done ){
 		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_dossier ){
 			OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_dossier( instance );
@@ -1193,6 +1193,8 @@ irenderable_draw_page_footer( ofaIRenderable *instance, sIRenderable *sdata )
 	GList *it;
 	gboolean done;
 
+	sdata->last_y = sdata->max_y;
+
 	done = FALSE;
 	for( it=sdata->renderer_plugins ; it ; it=it->next ){
 		if( ofa_irenderer_draw_page_footer( OFA_IRENDERER( it->data ), instance )){
@@ -1200,7 +1202,6 @@ irenderable_draw_page_footer( ofaIRenderable *instance, sIRenderable *sdata )
 			break;
 		}
 	}
-
 	if( !done ){
 		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer ){
 			OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_footer( instance );
@@ -1471,7 +1472,7 @@ ofa_irenderable_set_last_y( ofaIRenderable *instance, gdouble y )
  * footer separation line (after a small vertical space).
  */
 gdouble
-ofa_irenderable_get_max_y( ofaIRenderable *instance )
+ofa_irenderable_get_max_y( const ofaIRenderable *instance )
 {
 	sIRenderable *sdata;
 
@@ -1480,6 +1481,25 @@ ofa_irenderable_get_max_y( ofaIRenderable *instance )
 	sdata = get_instance_data( instance );
 
 	return( sdata->max_y );
+}
+
+/**
+ * ofa_irenderable_set_max_y:
+ * @instance: this #ofaIRenderable instance.
+ * @max_y: the new maximum rendering ordonate.
+ *
+ * set @max_y.
+ */
+void
+ofa_irenderable_set_max_y( ofaIRenderable *instance, gdouble max_y )
+{
+	sIRenderable *sdata;
+
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+
+	sdata = get_instance_data( instance );
+
+	sdata->max_y = max_y;
 }
 
 /**
@@ -1797,7 +1817,7 @@ ofa_irenderable_draw_default_page_footer( ofaIRenderable *instance )
 	sIRenderable *sdata;
 	gchar *str, *stamp_str;
 	GTimeVal stamp;
-	gdouble y, height, r, g, b;
+	gdouble y, text_height, r, g, b;
 
 	sdata = get_instance_data( instance );
 
@@ -1805,8 +1825,9 @@ ofa_irenderable_draw_default_page_footer( ofaIRenderable *instance )
 	irenderable_get_footer_color( instance, &r, &g, &b, sdata );
 	ofa_irenderable_set_color( instance, r, g, b );
 
-	/* draw the separation line */
-	y = sdata->max_y;
+	/* draw the separation line
+	 * max_y is zero the first time and then set depending of the result */
+	y = sdata->last_y;
 	y += vspace_before_footer;
 	cairo_set_line_width( sdata->current_context, 0.5 );
 	cairo_move_to( sdata->current_context, 0, y );
@@ -1816,9 +1837,10 @@ ofa_irenderable_draw_default_page_footer( ofaIRenderable *instance )
 
 	/* draw the footer line */
 	ofa_irenderable_set_font( instance, irenderable_get_footer_font( instance, sdata ));
+	text_height = ofa_irenderable_get_text_height( instance );
 
 	str = g_strdup_printf( "%s v %s", PACKAGE_NAME, PACKAGE_VERSION );
-	height = ofa_irenderable_set_text( instance, st_page_margin, y, str, PANGO_ALIGN_LEFT );
+	ofa_irenderable_set_text( instance, st_page_margin, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
 
 	my_stamp_set_now( &stamp );
@@ -1829,7 +1851,7 @@ ofa_irenderable_draw_default_page_footer( ofaIRenderable *instance )
 	ofa_irenderable_set_text( instance, sdata->render_width-st_page_margin, y, str, PANGO_ALIGN_RIGHT );
 	g_free( str );
 
-	y += height;
+	y += text_height;
 	sdata->last_y = y;
 }
 
