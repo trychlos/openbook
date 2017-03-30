@@ -57,6 +57,7 @@ typedef struct {
 static GType st_col_types[REC_RUN_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,		/* mnemo, numseq, numseq_int */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* label, date, status */
+		G_TYPE_INT,										/* status_i */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* amount1, amount2, amount3 */
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* the #ofoRecurrentRun itself, the #ofoRecurrentModel */
 };
@@ -298,10 +299,11 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 {
 	ofaRecurrentRunStorePrivate *priv;
 	ofoRecurrentModel *model;
-	gchar *sdate, *snum, *status, *samount1, *samount2, *samount3;
-	const gchar *cmnemo, *cstatus, *cstr;
+	gchar *sdate, *snum, *samount1, *samount2, *samount3;
+	const gchar *cmnemo, *cstr, *cstatus;
 	ofxAmount amount;
 	ofxCounter numseq;
+	ofeRecurrentStatus status;
 
 	priv = ofa_recurrent_run_store_get_instance_private( self );
 
@@ -312,8 +314,8 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 
 	sdate = my_date_to_str( ofo_recurrent_run_get_date( run ), ofa_prefs_date_display( priv->getter ));
 
-	cstatus = ofo_recurrent_run_get_status( run );
-	status = ofo_recurrent_run_get_status_label( cstatus );
+	status = ofo_recurrent_run_get_status( run );
+	cstatus = ofo_recurrent_run_status_get_label( status );
 
 	numseq = ofo_recurrent_run_get_numseq( run );
 	snum = ofa_counter_to_str( numseq, priv->getter );
@@ -350,7 +352,8 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 			REC_RUN_COL_NUMSEQ_INT, numseq,
 			REC_RUN_COL_LABEL,      ofo_recurrent_model_get_label( model ),
 			REC_RUN_COL_DATE,       sdate,
-			REC_RUN_COL_STATUS,     status,
+			REC_RUN_COL_STATUS,     cstatus,
+			REC_RUN_COL_STATUS_I,   status,
 			REC_RUN_COL_AMOUNT1,    samount1,
 			REC_RUN_COL_AMOUNT2,    samount2,
 			REC_RUN_COL_AMOUNT3,    samount3,
@@ -360,7 +363,6 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 
 	g_free( sdate );
 	g_free( snum );
-	g_free( status );
 	g_free( samount1 );
 	g_free( samount2 );
 	g_free( samount3 );

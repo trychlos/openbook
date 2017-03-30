@@ -87,10 +87,10 @@ typedef struct {
 	guint                    update_ope_count;
 	guint                    update_entry_count;
 	GSourceFunc              update_cb;
-	const gchar             *update_old_status;
-	const gchar             *update_new_status;
+	ofeRecurrentStatus       update_old_status;
+	ofeRecurrentStatus       update_new_status;
 	gboolean                 update_with_progress;
-	const void              *update_worker;
+	void                    *update_worker;
 	const gchar             *update_title;
 
 	/* update status run
@@ -500,7 +500,7 @@ tview_examine_selected( ofaRecurrentRunPage *self, GList *selected, guint *cance
 {
 	GList *it;
 	ofoRecurrentRun *obj;
-	const gchar *status;
+	ofeRecurrentStatus status;
 
 	*cancelled = 0;
 	*waiting = 0;
@@ -510,12 +510,18 @@ tview_examine_selected( ofaRecurrentRunPage *self, GList *selected, guint *cance
 		obj = OFO_RECURRENT_RUN( it->data );
 		status = ofo_recurrent_run_get_status( obj );
 
-		if( !my_collate( status, REC_STATUS_CANCELLED )){
-			*cancelled += 1;
-		} else if( !my_collate( status, REC_STATUS_WAITING )){
-			*waiting += 1;
-		} else if( !my_collate( status, REC_STATUS_VALIDATED )){
-			*validated += 1;
+		switch( status ){
+			case REC_STATUS_CANCELLED:
+				*cancelled += 1;
+				break;
+			case REC_STATUS_WAITING:
+				*waiting += 1;
+				break;
+			case REC_STATUS_VALIDATED:
+				*validated += 1;
+				break;
+			default:
+				break;
 		}
 	}
 }
@@ -577,7 +583,7 @@ action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaRecurre
 		priv->update_cb = ( GSourceFunc ) action_on_object_validated;
 		priv->update_with_progress = TRUE;
 		priv->update_title = _( " Validating operations " );
-		priv->update_worker = priv->update_new_status;
+		priv->update_worker = GUINT_TO_POINTER( priv->update_new_status );
 		my_iprogress_start_work( MY_IPROGRESS( self ), priv->update_worker, NULL );
 
 		g_idle_add(( GSourceFunc ) action_update_status, self );
@@ -648,7 +654,7 @@ action_update_status( ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
 	GList *selected, *it;
-	const gchar *cur_status;
+	ofeRecurrentStatus cur_status;
 	ofoRecurrentRun *run_obj;
 	gint count, i;
 
@@ -663,7 +669,7 @@ action_update_status( ofaRecurrentRunPage *self )
 		g_return_val_if_fail( run_obj && OFO_IS_RECURRENT_RUN( run_obj ), G_SOURCE_REMOVE );
 
 		cur_status = ofo_recurrent_run_get_status( run_obj );
-		if( !my_collate( cur_status, priv->update_old_status )){
+		if( cur_status == priv->update_old_status ){
 			ofo_recurrent_run_set_status( run_obj, priv->update_new_status );
 			if( ofo_recurrent_run_update( run_obj ) && priv->update_cb ){
 				priv->update_recrun = run_obj;

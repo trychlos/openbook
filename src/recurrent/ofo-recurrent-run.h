@@ -61,45 +61,58 @@ typedef struct {
 	ofoRecurrentRunClass;
 
 /**
- * Status:
+ * ofeRecurrentStatus:
+ *
+ * @REC_STATUS_CANCELLED: the operation has been cancelled;
+ *  may only be changed back to waiting.
+ *
+ * @REC_STATUS_WAITING  : the operation is waiting for a status change,
+ * either to be cancelled or to be validated.
+ *
+ * @REC_STATUS_VALIDATED: the operation has been validated.
  */
-#define REC_STATUS_CANCELLED            "C"
-#define REC_STATUS_WAITING              "W"
-#define REC_STATUS_VALIDATED            "V"
+typedef enum {
+	REC_STATUS_CANCELLED = 1,
+	REC_STATUS_WAITING,
+	REC_STATUS_VALIDATED
+}
+	ofeRecurrentStatus;
 
-GType            ofo_recurrent_run_get_type              ( void ) G_GNUC_CONST;
+GType              ofo_recurrent_run_get_type              ( void ) G_GNUC_CONST;
 
-GList           *ofo_recurrent_run_get_dataset           ( ofaIGetter *getter );
+GList             *ofo_recurrent_run_get_dataset           ( ofaIGetter *getter );
 
-ofoRecurrentRun *ofo_recurrent_run_get_by_id             ( ofaIGetter *getter, const gchar *mnemo, const GDate *date );
+ofoRecurrentRun   *ofo_recurrent_run_get_by_id             ( ofaIGetter *getter, const gchar *mnemo, const GDate *date );
 
-ofoRecurrentRun *ofo_recurrent_run_new                   ( ofaIGetter *getter );
+ofoRecurrentRun   *ofo_recurrent_run_new                   ( ofaIGetter *getter );
 
-const gchar     *ofo_recurrent_run_get_mnemo             ( const ofoRecurrentRun *model );
-const GDate     *ofo_recurrent_run_get_date              ( const ofoRecurrentRun *model );
-const gchar     *ofo_recurrent_run_get_status            ( const ofoRecurrentRun *model );
-gchar           *ofo_recurrent_run_get_status_label      ( const gchar *status );
-const gchar     *ofo_recurrent_run_get_upd_user          ( const ofoRecurrentRun *model );
-const GTimeVal  *ofo_recurrent_run_get_upd_stamp         ( const ofoRecurrentRun *model );
-gdouble          ofo_recurrent_run_get_amount1           ( const ofoRecurrentRun *model );
-gdouble          ofo_recurrent_run_get_amount2           ( const ofoRecurrentRun *model );
-gdouble          ofo_recurrent_run_get_amount3           ( const ofoRecurrentRun *model );
-ofxCounter       ofo_recurrent_run_get_numseq            ( const ofoRecurrentRun *model );
+const gchar       *ofo_recurrent_run_get_mnemo             ( const ofoRecurrentRun *model );
+const GDate       *ofo_recurrent_run_get_date              ( const ofoRecurrentRun *model );
+ofeRecurrentStatus ofo_recurrent_run_get_status            ( const ofoRecurrentRun *model );
+const gchar       *ofo_recurrent_run_status_get_dbms       ( ofeRecurrentStatus status );
+const gchar       *ofo_recurrent_run_status_get_abr        ( ofeRecurrentStatus status );
+const gchar       *ofo_recurrent_run_status_get_label      ( ofeRecurrentStatus status );
+const gchar       *ofo_recurrent_run_get_upd_user          ( const ofoRecurrentRun *model );
+const GTimeVal    *ofo_recurrent_run_get_upd_stamp         ( const ofoRecurrentRun *model );
+gdouble            ofo_recurrent_run_get_amount1           ( const ofoRecurrentRun *model );
+gdouble            ofo_recurrent_run_get_amount2           ( const ofoRecurrentRun *model );
+gdouble            ofo_recurrent_run_get_amount3           ( const ofoRecurrentRun *model );
+ofxCounter         ofo_recurrent_run_get_numseq            ( const ofoRecurrentRun *model );
 
-gint             ofo_recurrent_run_compare               ( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
+gint               ofo_recurrent_run_compare               ( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 
-void             ofo_recurrent_run_set_mnemo             ( ofoRecurrentRun *model, const gchar *mnemo );
-void             ofo_recurrent_run_set_date              ( ofoRecurrentRun *model, const GDate *date );
-void             ofo_recurrent_run_set_status            ( ofoRecurrentRun *model, const gchar *status );
-void             ofo_recurrent_run_set_amount1           ( ofoRecurrentRun *model, gdouble amount );
-void             ofo_recurrent_run_set_amount2           ( ofoRecurrentRun *model, gdouble amount );
-void             ofo_recurrent_run_set_amount3           ( ofoRecurrentRun *model, gdouble amount );
+void               ofo_recurrent_run_set_mnemo             ( ofoRecurrentRun *model, const gchar *mnemo );
+void               ofo_recurrent_run_set_date              ( ofoRecurrentRun *model, const GDate *date );
+void               ofo_recurrent_run_set_status            ( ofoRecurrentRun *model, ofeRecurrentStatus status );
+void               ofo_recurrent_run_set_amount1           ( ofoRecurrentRun *model, gdouble amount );
+void               ofo_recurrent_run_set_amount2           ( ofoRecurrentRun *model, gdouble amount );
+void               ofo_recurrent_run_set_amount3           ( ofoRecurrentRun *model, gdouble amount );
 
-GList           *ofo_recurrent_run_get_doc_orphans       ( ofaIGetter *getter );
-#define          ofo_recurrent_run_free_doc_orphans( L ) ( g_list_free( L ))
+GList             *ofo_recurrent_run_get_doc_orphans       ( ofaIGetter *getter );
+#define            ofo_recurrent_run_free_doc_orphans( L ) ( g_list_free( L ))
 
-gboolean         ofo_recurrent_run_insert                ( ofoRecurrentRun *model );
-gboolean         ofo_recurrent_run_update                ( ofoRecurrentRun *model );
+gboolean           ofo_recurrent_run_insert                ( ofoRecurrentRun *model );
+gboolean           ofo_recurrent_run_update                ( ofoRecurrentRun *model );
 
 G_END_DECLS
 

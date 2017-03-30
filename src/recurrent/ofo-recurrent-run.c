@@ -116,19 +116,25 @@ typedef struct {
 }
 	ofoRecurrentRunPrivate;
 
-/* Status labels
+/* manage the status
+ * - the identifier is from a public enum (easier for the code)
+ * - a non-localized char stored in dbms
+ * - a localized char (short string for treeviews)
+ * - a localized label
  */
 typedef struct {
-	const gchar *code;
-	const gchar *label;
+	ofeRecurrentStatus id;
+	const gchar       *dbms;
+	const gchar       *abr;
+	const gchar       *label;
 }
-	sLabels;
+	sStatus;
 
-static const sLabels st_labels[] = {
-		{ REC_STATUS_CANCELLED, N_( "Cancelled" )},
-		{ REC_STATUS_WAITING,   N_( "Waiting" )},
-		{ REC_STATUS_VALIDATED, N_( "Validated" )},
-		{ 0 }
+static sStatus st_status[] = {
+		{ REC_STATUS_CANCELLED, "C", N_( "C" ), N_( "Cancelled" ) },
+		{ REC_STATUS_WAITING,   "W", N_( "W" ), N_( "Waiting" ) },
+		{ REC_STATUS_VALIDATED, "V", N_( "V" ), N_( "Validated" ) },
+		{ 0 },
 };
 
 static void       recurrent_run_set_numseq( ofoRecurrentRun *model, ofxCounter numseq );
@@ -139,7 +145,7 @@ static gboolean   recurrent_run_do_insert( ofoRecurrentRun *model, ofaIGetter *g
 static gboolean   recurrent_run_insert_main( ofoRecurrentRun *model, ofaIGetter *getter );
 static gboolean   recurrent_run_do_update( ofoRecurrentRun *model, ofaIGetter *getter );
 static gboolean   recurrent_run_update_main( ofoRecurrentRun *model, ofaIGetter *getter );
-static gint       recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date, const gchar *status );
+static gint       recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date, ofeRecurrentStatus status );
 static gint       recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 static void       icollectionable_iface_init( myICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( void );
@@ -251,8 +257,9 @@ ofo_recurrent_run_get_by_id( ofaIGetter *getter, const gchar *mnemo, const GDate
 {
 	GList *dataset, *it;
 	ofoRecurrentRun *ope;
-	const gchar *mnemo_ope, *status_ope;
+	const gchar *mnemo_ope;
 	const GDate *date_ope;
+	ofeRecurrentStatus status_ope;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -266,13 +273,11 @@ ofo_recurrent_run_get_by_id( ofaIGetter *getter, const gchar *mnemo, const GDate
 		ope = OFO_RECURRENT_RUN( it->data );
 
 		status_ope = ofo_recurrent_run_get_status( ope );
-		g_return_val_if_fail( my_strlen( status_ope ), NULL );
-		if( !my_collate( status_ope, REC_STATUS_CANCELLED )){
+		if( status_ope == REC_STATUS_CANCELLED ){
 			continue;
 		}
-
 		g_return_val_if_fail(
-				!my_collate( status_ope, REC_STATUS_WAITING ) || !my_collate( status_ope, REC_STATUS_VALIDATED ),
+				status_ope == REC_STATUS_WAITING || status_ope == REC_STATUS_VALIDATED,
 				NULL );
 
 		mnemo_ope = ofo_recurrent_run_get_mnemo( ope );
@@ -329,33 +334,100 @@ ofo_recurrent_run_get_date( const ofoRecurrentRun *model )
 
 /**
  * ofo_recurrent_run_get_status:
- */
-const gchar *
-ofo_recurrent_run_get_status( const ofoRecurrentRun *model )
-{
-	ofo_base_getter( RECURRENT_RUN, model, string, NULL, REC_STATUS );
-}
-
-/**
- * ofo_recurrent_run_get_status_label:
+ * @recrun: this #ofoRecurrentRun object.
  *
- * Returns: the label of the status, as a newly allocated string which
- * should be g_free() by the caller.
+ * Returns: the #ofeRecurrentStatus status.
  */
-gchar *
-ofo_recurrent_run_get_status_label( const gchar *status )
+ofeRecurrentStatus
+ofo_recurrent_run_get_status( const ofoRecurrentRun *recrun )
 {
+	static const gchar *thisfn = "ofo_recurrent_run_get_status";
+	const gchar *cstr;
 	gint i;
-	gchar *str;
 
-	for( i=0 ; st_labels[i].code ; ++i ){
-		if( !my_collate( st_labels[i].code, status )){
-			return( g_strdup( st_labels[i].label ));
+	g_return_val_if_fail( recrun && OFO_IS_RECURRENT_RUN( recrun ), 0 );
+	g_return_val_if_fail( !OFO_BASE( recrun )->prot->dispose_has_run, 0 );
+
+	cstr = ofa_box_get_string( OFO_BASE( recrun )->prot->fields, REC_STATUS );
+
+	for( i=0 ; st_status[i].id ; ++i ){
+		if( !my_collate( st_status[i].dbms, cstr )){
+			return( st_status[i].id );
 		}
 	}
 
-	str = g_strdup_printf( _( "Unknown status: %s" ), status );
-	return( str );
+	g_warning( "%s: unknown or invalid dbms status: %s", thisfn, cstr );
+
+	return( 0 );
+}
+
+/**
+ * ofo_recurrent_run_status_get_dbms:
+ * @status: a #ofeRecurrentStatus status.
+ *
+ * Returns: the dbms string corresponding to the @status.
+ */
+const gchar *
+ofo_recurrent_run_status_get_dbms( ofeRecurrentStatus status )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_status_get_dbms";
+	gint i;
+
+	for( i=0 ; st_status[i].id ; ++i ){
+		if( st_status[i].id == status ){
+			return( st_status[i].dbms );
+		}
+	}
+
+	g_warning( "%s: unknown or invalid status identifier: %u", thisfn, status );
+
+	return( "" );
+}
+
+/**
+ * ofo_recurrent_run_status_get_abr:
+ * @status: a #ofeRecurrentStatus status.
+ *
+ * Returns: an short localized string corresponding to the @status.
+ */
+const gchar *
+ofo_recurrent_run_status_get_abr( ofeRecurrentStatus status )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_status_get_abr";
+	gint i;
+
+	for( i=0 ; st_status[i].id ; ++i ){
+		if( st_status[i].id == status ){
+			return( st_status[i].abr );
+		}
+	}
+
+	g_warning( "%s: unknown or invalid status identifier: %u", thisfn, status );
+
+	return( "" );
+}
+
+/**
+ * ofo_recurrent_run_status_get_label:
+ * @status: a #ofeRecurrentStatus status.
+ *
+ * Returns: a localized label string corresponding to the @status.
+ */
+const gchar *
+ofo_recurrent_run_status_get_label( ofeRecurrentStatus status )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_status_get_label";
+	gint i;
+
+	for( i=0 ; st_status[i].id ; ++i ){
+		if( st_status[i].id == status ){
+			return( st_status[i].label );
+		}
+	}
+
+	g_warning( "%s: unknown or invalid status identifier: %u", thisfn, status );
+
+	return( "" );
 }
 
 /**
@@ -457,11 +529,21 @@ ofo_recurrent_run_set_date( ofoRecurrentRun *model, const GDate *date )
 
 /**
  * ofo_recurrent_run_set_status:
+ * @recrun: this #ofoRecurrentRun object.
+ * @status. a #ofeRecurrentStatus status.
+ *
+ * Set @status.
  */
 void
-ofo_recurrent_run_set_status( ofoRecurrentRun *model, const gchar *status )
+ofo_recurrent_run_set_status( ofoRecurrentRun *recrun, ofeRecurrentStatus status )
 {
-	ofo_base_setter( RECURRENT_RUN, model, string, REC_STATUS, status );
+	const gchar *cstr;
+
+	g_return_if_fail( recrun && OFO_IS_RECURRENT_RUN( recrun ));
+	g_return_if_fail( !OFO_BASE( recrun )->prot->dispose_has_run );
+
+	cstr = ofo_recurrent_run_status_get_dbms( status );
+	ofa_box_set_string( OFO_BASE( recrun )->prot->fields, REC_STATUS, cstr );
 }
 
 /*
@@ -606,11 +688,12 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	const ofaIDBConnect *connect;
 	GString *query;
 	const GDate *date;
-	const gchar *mnemo, *status, *csdef, *userid;
+	const gchar *mnemo, *csdef, *userid, *cdbms;
 	gchar *sdate, *stamp_str, *samount;
 	GTimeVal stamp;
 	ofoRecurrentModel *model;
 	ofxCounter numseq;
+	ofeRecurrentStatus status;
 
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
@@ -640,8 +723,9 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	g_free( sdate );
 
 	status = ofo_recurrent_run_get_status( recrun );
-	if( my_strlen( status )){
-		g_string_append_printf( query, "'%s',", status );
+	cdbms = ofo_recurrent_run_status_get_dbms( status );
+	if( my_strlen( cdbms )){
+		g_string_append_printf( query, "'%s',", cdbms );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
@@ -734,11 +818,12 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	const ofaIDBConnect *connect;
 	GString *query;
 	gchar *samount;
-	const gchar *userid, *status, *mnemo, *csdef;
+	const gchar *userid, *mnemo, *csdef, *cdbms;
 	gchar *stamp_str;
 	GTimeVal stamp;
 	ofoRecurrentModel *model;
 	ofxCounter numseq;
+	ofeRecurrentStatus status;
 
 	mnemo = ofo_recurrent_run_get_mnemo( recrun );
 	model = ofo_recurrent_model_get_by_mnemo( getter, mnemo );
@@ -759,7 +844,12 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	query = g_string_new( "UPDATE REC_T_RUN SET " );
 
 	status = ofo_recurrent_run_get_status( recrun );
-	g_string_append_printf( query, "REC_STATUS='%s',", status );
+	cdbms = ofo_recurrent_run_status_get_dbms( status );
+	if( my_strlen( cdbms )){
+		g_string_append_printf( query, "REC_STATUS='%s',", cdbms );
+	} else {
+		query = g_string_append( query, "REC_STATUS=NULL," );
+	}
 
 	csdef = ofo_recurrent_model_get_def_amount1( model );
 	if( my_strlen( csdef )){
@@ -809,15 +899,17 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 }
 
 static gint
-recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date, const gchar *status )
+recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date, ofeRecurrentStatus status )
 {
 	gint cmp;
+	ofeRecurrentStatus status_a;
 
 	cmp = g_utf8_collate( ofo_recurrent_run_get_mnemo( a ), mnemo );
 	if( cmp == 0 ){
 		cmp = my_date_compare( ofo_recurrent_run_get_date( a ), date );
 		if( cmp == 0 ){
-			cmp = my_collate( ofo_recurrent_run_get_status( a ), status );
+			status_a = ofo_recurrent_run_get_status( a );
+			cmp = status_a < status ? -1 : ( status_a > status ? 1 : 0 );
 		}
 	}
 

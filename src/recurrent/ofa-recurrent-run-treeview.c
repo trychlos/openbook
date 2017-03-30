@@ -349,7 +349,8 @@ on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTree
 	ofoRecurrentRun *recrun;
 	ofoRecurrentModel *recmodel;
 	guint column_id;
-	const gchar *status, *csdef;
+	ofeRecurrentStatus status;
+	const gchar *csdef;
 	gboolean editable;
 	ofaHub *hub;
 
@@ -387,7 +388,7 @@ on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTree
 			hub = ofa_igetter_get_hub( priv->getter );
 			editable = ofa_hub_is_writable_dossier( hub );
 			editable &= ( my_strlen( csdef ) > 0 );
-			editable &= ( my_collate( status, REC_STATUS_WAITING ) == 0 );
+			editable &= ( status == REC_STATUS_WAITING );
 			g_object_set( G_OBJECT( renderer ), "editable-set", TRUE, "editable", editable, NULL );
 			break;
 		default:
@@ -667,7 +668,7 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	ofaRecurrentRunTreeviewPrivate *priv;
 	gboolean visible;
 	ofoRecurrentRun *object;
-	const gchar *status;
+	ofeRecurrentStatus status;
 	const GDate *dope;
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( OFA_RECURRENT_RUN_TREEVIEW( tvbin ));
@@ -682,14 +683,18 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 		status = ofo_recurrent_run_get_status( object );
 		dope = ofo_recurrent_run_get_date( object );
 
-		if( !my_collate( status, REC_STATUS_CANCELLED )){
-			visible = priv->visible & REC_VISIBLE_CANCELLED;
-
-		} else if( !my_collate( status, REC_STATUS_WAITING )){
-			visible = priv->visible & REC_VISIBLE_WAITING;
-
-		} else if( !my_collate( status, REC_STATUS_VALIDATED )){
-			visible = priv->visible & REC_VISIBLE_VALIDATED;
+		switch( status ){
+			case REC_STATUS_CANCELLED:
+				visible = priv->visible & REC_VISIBLE_CANCELLED;
+				break;
+			case REC_STATUS_WAITING:
+				visible = priv->visible & REC_VISIBLE_WAITING;
+				break;
+			case REC_STATUS_VALIDATED:
+				visible = priv->visible & REC_VISIBLE_VALIDATED;
+				break;
+			default:
+				break;
 		}
 
 		if( visible && my_date_is_valid( priv->from )){

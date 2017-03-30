@@ -83,6 +83,7 @@ typedef struct {
  * @REC_RUN_COL_LABEL         : label                        String       Yes
  * @REC_RUN_COL_DATE          : operation date               String       Yes
  * @REC_RUN_COL_STATUS        : operation status             String       Yes
+ * @REC_RUN_COL_STATUS_I      : operation status             Int           No
  * @REC_RUN_COL_AMOUNT1       : amount 1                     String       Yes
  * @REC_RUN_COL_AMOUNT2       : amount 2                     String       Yes
  * @REC_RUN_COL_AMOUNT3       : amount 3                     String       Yes
@@ -96,6 +97,7 @@ enum {
 	REC_RUN_COL_LABEL,
 	REC_RUN_COL_DATE,
 	REC_RUN_COL_STATUS,
+	REC_RUN_COL_STATUS_I,
 	REC_RUN_COL_AMOUNT1,
 	REC_RUN_COL_AMOUNT2,
 	REC_RUN_COL_AMOUNT3,
