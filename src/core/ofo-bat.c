@@ -51,9 +51,9 @@
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
 #include "api/ofo-concil.h"
+#include "api/ofo-counters.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-counter.h"
 
 /* priv instance data
  */
@@ -977,7 +977,6 @@ ofo_bat_insert( ofoBat *bat )
 	static const gchar *thisfn = "ofo_bat_insert";
 	ofaIGetter *getter;
 	ofaISignaler *signaler;
-	ofoCounter *counters;
 	gboolean ok;
 
 	g_debug( "%s: bat=%p", thisfn, ( void * ) bat );
@@ -989,8 +988,7 @@ ofo_bat_insert( ofoBat *bat )
 
 	getter = ofo_base_get_getter( OFO_BASE( bat ));
 	signaler = ofa_igetter_get_signaler( getter );
-	counters = ofa_igetter_get_counters( getter );
-	bat_set_id( bat, ofo_counter_get_next_bat_id( counters ));
+	bat_set_id( bat, ofo_counters_get_next_bat_id( getter ));
 
 	/* rationale: see ofo-account.c */
 	ofo_bat_get_dataset( getter );
@@ -1825,7 +1823,6 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	const gchar *rib, *label;
 	gchar *sdbegin, *sdend;
 	ofxCounter bat_id;
-	ofoCounter *counters;
 
 	bat_id = 0;
 	skipped = FALSE;
@@ -1893,8 +1890,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			}
 
 			if( insert ){
-				counters = ofa_igetter_get_counters( parms->getter );
-				bat_set_id( OFO_BAT( object ), ofo_counter_get_next_bat_id( counters ));
+				bat_set_id( OFO_BAT( object ), ofo_counters_get_next_bat_id( parms->getter ));
 				if( bat_do_insert( OFO_BAT( object ), parms->getter )){
 					parms->inserted_count += 1;
 					bat_id = ofo_bat_get_id( OFO_BAT( object ));

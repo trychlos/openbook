@@ -339,7 +339,11 @@
 
 1421 2017- 3-29 PACK: have a script which checks po file vs. resources.xml
 
-1422
+1422 2017- 3-30 display all entries of an operation
+
+1424 2017- 3-31 ofaPreferences: an object should be managed as ofoCounters
+
+1425
 
 -----------------------------------------------------------------------
  DONE
@@ -953,6 +957,10 @@
 1420 2017- 3-29 reconciliation render should take the last BAT solde at
                 the requested date (not the last last)
      2017- 3-29 done
+
+1423 2017- 3-31 ofoCounters should be managed by the myICollector
+                + let ofoCounter class get itself via getter
+     2017- 3-31 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

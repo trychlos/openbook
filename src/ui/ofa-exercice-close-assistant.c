@@ -51,7 +51,7 @@
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-concil.h"
-#include "api/ofo-counter.h"
+#include "api/ofo-counters.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -1142,7 +1142,6 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofoEntry *entry;
 	ofoCurrency *cur_obj;
 	ofsCurrency *scur;
-	ofoCounter *counters;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1160,7 +1159,6 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	}
 
 	priv->p6_forwards = NULL;
-	counters = ofa_igetter_get_counters( priv->getter );
 
 	end_cur = ofo_dossier_get_exe_end( priv->dossier );
 	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
@@ -1213,7 +1211,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 			if( ofs_ope_is_valid( ope, &msg, &currencies )){
 				sld_entries = ofs_ope_generate_entries( ope );
-				solde_ope = ofo_counter_get_next_ope_id( counters );
+				solde_ope = ofo_counters_get_next_ope_id( priv->getter );
 
 			} else {
 				g_warning( "%s: %s", thisfn, msg );
@@ -1275,7 +1273,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				if( is_ran &&
 						ofo_account_is_settleable( account ) &&
 						!g_utf8_collate( ofo_entry_get_account( entry ), acc_number )){
-					counter = ofo_counter_get_next_settlement_id( counters );
+					counter = ofo_counters_get_next_settlement_id( priv->getter );
 					ofo_entry_update_settlement( entry, counter );
 					p6_set_forward_settlement_number( for_entries, acc_number, counter );
 				}
@@ -1420,7 +1418,6 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	const GDate *begin_next, *end_next;
 	const gchar *account, *password;
 	ofxCounter last_entry;
-	ofoCounter *counters;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1429,7 +1426,6 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	signaler = ofa_igetter_get_signaler( priv->getter );
 	hub = ofa_igetter_get_hub( priv->getter );
 	main_window = ofa_igetter_get_main_window( priv->getter );
-	counters = ofa_igetter_get_counters( priv->getter );
 
 	account = ofa_idbconnect_get_account( priv->connect );
 	password = ofa_idbconnect_get_password( priv->connect );
@@ -1446,7 +1442,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofa_idbexercice_meta_set_begin_date( period, &begin_old );
 	ofa_idbexercice_meta_set_end_date( period, &end_old );
 	ofa_idbexercice_meta_update_settings( period );
-	last_entry = ofo_counter_get_last_entry_id( counters );
+	last_entry = ofo_counters_get_last_entry_id( priv->getter );
 
 	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 	end_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
@@ -1850,12 +1846,10 @@ p6_forward( ofaExerciceCloseAssistant *self )
 	ofoAccount *account;
 	ofxCounter number;
 	const GDate *dbegin;
-	ofoCounter *counters;
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
 	signaler = ofa_igetter_get_signaler( priv->getter );
-	counters = ofa_igetter_get_counters( priv->getter );
 	dbegin = ofo_dossier_get_exe_begin( priv->dossier );
 
 	bar = get_new_bar( self, "p6-forward" );
@@ -1870,7 +1864,7 @@ p6_forward( ofaExerciceCloseAssistant *self )
 			entry = OFO_ENTRY( ite->data );
 
 			/* only update the ope number here so that it will increment in the new exercice */
-			number = ofo_counter_get_next_ope_id( counters );
+			number = ofo_counters_get_next_ope_id( priv->getter );
 			ofo_entry_set_ope_number( entry, number );
 
 			/* set forward rule */

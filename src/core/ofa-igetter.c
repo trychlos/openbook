@@ -236,29 +236,6 @@ ofa_igetter_get_collector( const ofaIGetter *getter )
 }
 
 /**
- * ofa_igetter_get_counters:
- * @instance: this #ofaIGetter instance.
- *
- * Returns: the #ofoCounter singleton.
- *
- * The returned reference is owned by the @getter instance, and should
- * not be released by the caller.
- */
-ofoCounter *
-ofa_igetter_get_counters( ofaIGetter *instance )
-{
-	static const gchar *thisfn = "ofa_igetter_get_counters";
-
-	if( OFA_IGETTER_GET_INTERFACE( instance )->get_counters ){
-		return( OFA_IGETTER_GET_INTERFACE( instance )->get_counters( instance ));
-	}
-
-	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_counters()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( NULL );
-}
-
-/**
  * ofa_igetter_get_dossier_collection:
  * @getter: this #ofaIGetter instance.
  *

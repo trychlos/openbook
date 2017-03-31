@@ -41,7 +41,7 @@
 #include "api/ofo-base-prot.h"
 #include "api/ofo-bat-line.h"
 #include "api/ofo-concil.h"
-#include "api/ofo-counter.h"
+#include "api/ofo-counters.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
@@ -783,7 +783,6 @@ ofo_bat_line_insert( ofoBatLine *bat_line )
 {
 	static const gchar *thisfn = "ofo_bat_line_insert";
 	ofaIGetter *getter;
-	ofoCounter *counters;
 	gboolean ok;
 
 	g_debug( "%s: batline=%p", thisfn, ( void * ) bat_line );
@@ -793,8 +792,7 @@ ofo_bat_line_insert( ofoBatLine *bat_line )
 
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( bat_line ));
-	counters = ofa_igetter_get_counters( getter );
-	bat_line_set_line_id( bat_line, ofo_counter_get_next_batline_id( counters ));
+	bat_line_set_line_id( bat_line, ofo_counters_get_next_batline_id( getter ));
 
 	if( bat_line_do_insert( bat_line, getter )){
 		ok = TRUE;

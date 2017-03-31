@@ -45,7 +45,7 @@
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
-#include "api/ofo-counter.h"
+#include "api/ofo-counters.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -722,7 +722,6 @@ action_on_object_validated( ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
 	const gchar *rec_id, *tmpl_id, *ledger_id;
-	ofoCounter *counters;
 	ofaIDBConnect *connect;
 	gboolean ok;
 	ofoRecurrentModel *model;
@@ -743,9 +742,6 @@ action_on_object_validated( ofaRecurrentRunPage *self )
 	hub = ofa_igetter_get_hub( priv->getter );
 	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), G_SOURCE_REMOVE );
-
-	counters = ofa_igetter_get_counters( priv->getter );
-	g_return_val_if_fail( counters && OFO_IS_COUNTER( counters ), G_SOURCE_REMOVE );
 
 	connect = ofa_hub_get_connect( hub );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), G_SOURCE_REMOVE );
@@ -792,7 +788,7 @@ action_on_object_validated( ofaRecurrentRunPage *self )
 	ok = ofa_idbconnect_transaction_start( connect, FALSE, NULL );
 
 	if( ok ){
-		ope_number = ofo_counter_get_next_ope_id( counters );
+		ope_number = ofo_counters_get_next_ope_id( priv->getter );
 		priv->update_ope_count += 1;
 
 		for( it=entries ; it && ok ; it=it->next ){

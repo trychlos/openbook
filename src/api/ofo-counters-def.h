@@ -22,17 +22,17 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFO_COUNTER_DEF_H__
-#define __OPENBOOK_API_OFO_COUNTER_DEF_H__
+#ifndef __OPENBOOK_API_OFO_COUNTERS_DEF_H__
+#define __OPENBOOK_API_OFO_COUNTERS_DEF_H__
 
 /**
- * SECTION: ofocounter
+ * SECTION: ofocounters
  */
 
 G_BEGIN_DECLS
 
-typedef struct _ofoCounter               ofoCounter;
+typedef struct _ofoCounters               ofoCounters;
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFO_COUNTER_H__ */
+#endif /* __OPENBOOK_API_OFO_COUNTERS_H__ */

@@ -56,7 +56,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
-#include "../api/ofo-counter.h"
+#include "api/ofo-counters.h"
 #include "api/ofo-paimean.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
@@ -91,7 +91,7 @@ typedef struct {
 	ofaIDBConnect         *connect;
 	ofoDossier            *dossier;
 	gboolean               read_only;
-	ofoCounter            *counters;
+	ofoCounters           *counters;
 }
 	ofaHubPrivate;
 
@@ -105,7 +105,6 @@ static void                   igetter_iface_init( ofaIGetterInterface *iface );
 static GApplication          *igetter_get_application( const ofaIGetter *getter );
 static myISettings           *igetter_get_auth_settings( const ofaIGetter *getter );
 static myICollector          *igetter_get_collector( const ofaIGetter *getter );
-static ofoCounter            *igetter_get_counters( ofaIGetter *getter );
 static ofaDossierCollection  *igetter_get_dossier_collection( const ofaIGetter *getter );
 static myISettings           *igetter_get_dossier_settings( const ofaIGetter *getter );
 static ofaDossierStore       *igetter_get_dossier_store( const ofaIGetter *getter );
@@ -461,6 +460,7 @@ ofa_hub_open_dossier( ofaHub *hub, GtkWindow *parent,
 			if( remediate_settings ){
 				g_signal_emit_by_name( OFA_ISIGNALER( hub ), SIGNALER_DOSSIER_CHANGED );
 			}
+			priv->counters = ofo_counters_new( OFA_IGETTER( hub ));
 		}
 	}
 
@@ -578,6 +578,29 @@ ofa_hub_get_connect( ofaHub *hub )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->connect );
+}
+
+/*
+ * ofa_hub_get_counters:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the #ofoCounters object.
+ *
+ * The returned reference is owned by the @hub object, and should
+ * not be released by the caller.
+ */
+ofoCounters *
+ofa_hub_get_counters( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->counters );
 }
 
 /*
@@ -699,6 +722,7 @@ ofa_hub_close_dossier( ofaHub *hub )
 		g_signal_emit_by_name( OFA_ISIGNALER( hub ), SIGNALER_DOSSIER_CLOSED );
 
 		g_clear_object( &priv->connect );
+		g_clear_object( &priv->counters );
 		g_clear_object( &priv->dossier );
 
 		my_icollector_free_all( ofa_igetter_get_collector( OFA_IGETTER( hub )));
@@ -770,7 +794,6 @@ igetter_iface_init( ofaIGetterInterface *iface )
 	iface->get_application = igetter_get_application;
 	iface->get_auth_settings = igetter_get_auth_settings;
 	iface->get_collector = igetter_get_collector;
-	iface->get_counters = igetter_get_counters;
 	iface->get_dossier_collection = igetter_get_dossier_collection;
 	iface->get_dossier_settings = igetter_get_dossier_settings;
 	iface->get_dossier_store = igetter_get_dossier_store;
@@ -812,20 +835,6 @@ static myICollector *
 igetter_get_collector( const ofaIGetter *getter )
 {
 	return( MY_ICOLLECTOR( getter ));
-}
-
-static ofoCounter *
-igetter_get_counters( ofaIGetter *getter )
-{
-	ofaHubPrivate *priv;
-
-	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
-
-	if( !priv->counters ){
-		priv->counters = ofo_counter_new( getter );
-	}
-
-	return( priv->counters );
 }
 
 static ofaDossierCollection *

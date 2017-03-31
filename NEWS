@@ -64,7 +64,7 @@
    - ofaIRenderer: new interface.
    - ofaUnreconcilPage: new class.
    - ofaUnsettledPage: new class.
-   - ofoCounter: new class.
+   - ofoCounters: new class.
    - ofoEntry: status is stored in DBMS as a char indicator (todo #1414).
    - ofoRecurrentRun: review status (numeric in the code, alpha in the dbms).
 

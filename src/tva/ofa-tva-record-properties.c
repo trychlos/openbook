@@ -45,7 +45,7 @@
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
-#include "api/ofo-counter.h"
+#include "api/ofo-counters.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ope-template.h"
@@ -1327,7 +1327,6 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 	gboolean done, ok;
 	GList *entries, *it;
 	ofxCounter ope_number;
-	ofoCounter *counters;
 	ofaIDBConnect *connect;
 	ofoEntry *entry;
 	gchar *period_label;
@@ -1335,7 +1334,6 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	counters = ofa_igetter_get_counters( priv->getter );
 	connect = ofa_hub_get_connect( hub );
 
 	*ope_count = 0;
@@ -1415,7 +1413,7 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 						entries = ofs_ope_generate_entries( ope );
 						ok = ofa_idbconnect_transaction_start( connect, FALSE, NULL );
 						if( ok ){
-							ope_number = ofo_counter_get_next_ope_id( counters );
+							ope_number = ofo_counters_get_next_ope_id( priv->getter );
 							for( it=entries ; it && ok ; it=it->next ){
 								entry = OFO_ENTRY( it->data );
 								ofo_entry_set_ope_number( entry, ope_number );

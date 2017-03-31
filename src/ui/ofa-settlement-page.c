@@ -44,7 +44,7 @@
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
-#include "api/ofo-counter.h"
+#include "api/ofo-counters.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -870,7 +870,6 @@ static void
 update_selection( ofaSettlementPage *self, gboolean settle )
 {
 	ofaSettlementPagePrivate *priv;
-	ofoCounter *counters;
 	GList *selected;
 
 	priv = ofa_settlement_page_get_instance_private( self );
@@ -878,8 +877,7 @@ update_selection( ofaSettlementPage *self, gboolean settle )
 	priv->updating = TRUE;
 
 	if( settle ){
-		counters = ofa_igetter_get_counters( priv->getter );
-		priv->snumber = ofo_counter_get_next_settlement_id( counters );
+		priv->snumber = ofo_counters_get_next_settlement_id( priv->getter );
 
 	} else {
 		priv->snumber = -1;

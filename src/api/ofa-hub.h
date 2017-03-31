@@ -32,9 +32,10 @@
  * @include: openbook/ofa-hub.h
  *
  * The #ofaHub class manages and maintains all objects which are globally
- * used by the application:
- * - the extenders collection (aka dynamically loadable modules, aka plugins),
+ * used by the dossier:
  * - the opened dossier (if any),
+ * - its connection to the DBMS,
+ * - its internal counters,
  * - etc.
  *
  * There is only one globally unique #ofaHub object, and it is
@@ -48,6 +49,7 @@
 #include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-ipage-manager.h"
+#include "api/ofo-counters-def.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
@@ -109,6 +111,8 @@ gboolean       ofa_hub_open_dossier         ( ofaHub *hub,
 													gboolean remediate_settings );
 
 ofaIDBConnect *ofa_hub_get_connect          ( ofaHub *hub );
+
+ofoCounters   *ofa_hub_get_counters         ( ofaHub *hub );
 
 ofoDossier    *ofa_hub_get_dossier          ( ofaHub *hub );
 

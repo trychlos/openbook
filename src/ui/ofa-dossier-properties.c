@@ -45,7 +45,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
-#include "api/ofo-counter.h"
+#include "api/ofo-counters.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -743,58 +743,55 @@ init_internals_page( ofaDossierProperties *self )
 	ofaHub *hub;
 	ofaIDBConnect *connect;
 	ofaIDBModel *model;
-	ofoCounter *counters;
 	gchar *str;
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
-	counters = ofa_igetter_get_counters( priv->getter );
-
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-last-bat" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_counter_get_last_bat_id( counters ), priv->getter );
+	str = ofa_counter_to_str( ofo_counters_get_last_bat_id( priv->getter ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-last-batline" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_counter_get_last_batline_id( counters ), priv->getter );
+	str = ofa_counter_to_str( ofo_counters_get_last_batline_id( priv->getter ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-last-entry" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_counter_get_last_entry_id( counters ), priv->getter );
+	str = ofa_counter_to_str( ofo_counters_get_last_entry_id( priv->getter ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-last-ope" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_counter_get_last_ope_id( counters ), priv->getter );
+	str = ofa_counter_to_str( ofo_counters_get_last_ope_id( priv->getter ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-last-settlement" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_counter_get_last_settlement_id( counters ), priv->getter );
+	str = ofa_counter_to_str( ofo_counters_get_last_settlement_id( priv->getter ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-last-concil" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_counter_get_last_concil_id( counters ), priv->getter );
+	str = ofa_counter_to_str( ofo_counters_get_last_concil_id( priv->getter ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-last-doc" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_counter_get_last_doc_id( counters ), priv->getter );
+	str = ofa_counter_to_str( ofo_counters_get_last_doc_id( priv->getter ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-last-tiers" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_counter_get_last_tiers_id( counters ), priv->getter );
+	str = ofa_counter_to_str( ofo_counters_get_last_tiers_id( priv->getter ), priv->getter );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 

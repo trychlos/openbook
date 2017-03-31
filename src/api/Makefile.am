@@ -120,8 +120,8 @@ api_include_HEADERS = \
 	ofo-class-def.h										\
 	ofo-concil.h										\
 	ofo-concil-def.h									\
-	ofo-counter.h										\
-	ofo-counter-def.h									\
+	ofo-counters.h										\
+	ofo-counters-def.h									\
 	ofo-currency.h										\
 	ofo-currency-def.h									\
 	ofo-doc.h											\

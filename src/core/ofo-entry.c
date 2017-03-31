@@ -51,7 +51,7 @@
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
 #include "api/ofo-concil.h"
-#include "api/ofo-counter.h"
+#include "api/ofo-counters.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -1968,7 +1968,6 @@ ofo_entry_insert( ofoEntry *entry )
 	gboolean ok;
 	ofaIGetter *getter;
 	ofaISignaler *signaler;
-	ofoCounter *counters;
 
 	g_debug( "%s: entry=%p", thisfn, ( void * ) entry );
 
@@ -1978,9 +1977,8 @@ ofo_entry_insert( ofoEntry *entry )
 	ok = FALSE;
 	getter = ofo_base_get_getter( OFO_BASE( entry ));
 	signaler = ofa_igetter_get_signaler( getter );
-	counters = ofa_igetter_get_counters( getter );
 
-	entry_set_number( entry, ofo_counter_get_next_entry_id( counters ));
+	entry_set_number( entry, ofo_counters_get_next_entry_id( getter ));
 	entry_compute_status( entry, FALSE, getter );
 
 	/* rationale: see ofo-account.c */
@@ -3660,7 +3658,6 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	const ofaIDBConnect *connect;
 	guint total;
 	ofoEntry *entry;
-	ofoCounter *counters;
 	ofxCounter counter;
 	ofoConcil *concil;
 	ofaISignaler *signaler;
@@ -3670,7 +3667,6 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 
 	signaler = ofa_igetter_get_signaler( parms->getter );
 	hub = ofa_igetter_get_hub( parms->getter );
-	counters = ofa_igetter_get_counters( parms->getter );
 	connect = ofa_hub_get_connect( hub );
 	ofa_iimporter_progress_start( importer, parms );
 
@@ -3685,12 +3681,12 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 		}
 
 		entry = OFO_ENTRY( it->data );
-		entry_set_number( entry, ofo_counter_get_next_entry_id( counters ));
+		entry_set_number( entry, ofo_counters_get_next_entry_id( parms->getter ));
 
 		if( entry_do_insert( entry, parms->getter )){
 
 			if( entry_get_import_settled( entry )){
-				counter = ofo_counter_get_next_settlement_id( counters );
+				counter = ofo_counters_get_next_settlement_id( parms->getter );
 				ofo_entry_update_settlement( entry, counter );
 			}
 			concil = ( ofoConcil * ) g_object_get_data( G_OBJECT( entry ), "entry-concil" );
