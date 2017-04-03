@@ -100,6 +100,8 @@ openbook_SOURCES = \
 	ofa-balance-grid-bin.h								\
 	ofa-balance-render.c								\
 	ofa-balance-render.h								\
+	ofa-bat-line-properties.c							\
+	ofa-bat-line-properties.h							\
 	ofa-batline-treeview.c								\
 	ofa-batline-treeview.h								\
 	ofa-bat-page.c										\

@@ -42,7 +42,7 @@
 #include "api/ofo-bat-line.h"
 #include "api/ofo-concil.h"
 
-#include "ui/ofa-bat-properties.h"
+#include "ui/ofa-bat-line-properties.h"
 #include "ui/ofa-entry-properties.h"
 #include "ui/ofa-reconcil-group.h"
 #include "ui/ofa-reconcil-store.h"
@@ -72,7 +72,7 @@ typedef struct {
 	/* actions
 	 */
 	GSimpleAction       *view_entry_action;
-	GSimpleAction       *view_bat_action;
+	GSimpleAction       *view_batline_action;
 }
 	ofaReconcilGroupPrivate;
 
@@ -89,7 +89,7 @@ static void     tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection
 static gboolean tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilGroup *self );
 static ofoBase *tview_get_selected( ofaReconcilGroup *self );
 static void     action_on_view_entry_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self );
-static void     action_on_view_bat_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self );
+static void     action_on_view_batline_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self );
 static void     iactionable_iface_init( ofaIActionableInterface *iface );
 static guint    iactionable_get_interface_version( void );
 
@@ -135,7 +135,7 @@ reconcil_group_dispose( GObject *instance )
 		/* unref object members here */
 
 		g_clear_object( &priv->view_entry_action );
-		g_clear_object( &priv->view_bat_action );
+		g_clear_object( &priv->view_batline_action );
 	}
 
 	/* chain up to the parent class */
@@ -326,12 +326,12 @@ setup_actions( ofaReconcilGroup *self )
 			_( "View entry" ));
 
 	/* view batline action */
-	priv->view_bat_action = g_simple_action_new( "viewbat", NULL );
-	g_simple_action_set_enabled( priv->view_bat_action, FALSE );
-	g_signal_connect( priv->view_bat_action, "activate", G_CALLBACK( action_on_view_bat_activated ), self );
+	priv->view_batline_action = g_simple_action_new( "viewbat", NULL );
+	g_simple_action_set_enabled( priv->view_batline_action, FALSE );
+	g_signal_connect( priv->view_batline_action, "activate", G_CALLBACK( action_on_view_batline_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->view_bat_action ),
-			_( "View BAT file" ));
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->view_batline_action ),
+			_( "View BAT line" ));
 
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
 	ofa_icontext_set_menu(
@@ -387,14 +387,14 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 		g_object_unref( base_obj );
 		if( OFO_IS_ENTRY( base_obj )){
 			g_simple_action_set_enabled( priv->view_entry_action, TRUE );
-			g_simple_action_set_enabled( priv->view_bat_action, FALSE );
+			g_simple_action_set_enabled( priv->view_batline_action, FALSE );
 		} else {
 			g_simple_action_set_enabled( priv->view_entry_action, FALSE );
-			g_simple_action_set_enabled( priv->view_bat_action, TRUE );
+			g_simple_action_set_enabled( priv->view_batline_action, TRUE );
 		}
 	} else {
 		g_simple_action_set_enabled( priv->view_entry_action, FALSE );
-		g_simple_action_set_enabled( priv->view_bat_action, FALSE );
+		g_simple_action_set_enabled( priv->view_batline_action, FALSE );
 	}
 }
 
@@ -453,23 +453,17 @@ action_on_view_entry_activated( GSimpleAction *action, GVariant *empty, ofaRecon
 }
 
 static void
-action_on_view_bat_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self )
+action_on_view_batline_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self )
 {
 	ofaReconcilGroupPrivate *priv;
 	ofoBatLine *batline;
-	ofoBat *bat;
-	ofxCounter bat_id;
 
 	priv = ofa_reconcil_group_get_instance_private( self );
 
 	batline = ( ofoBatLine * ) tview_get_selected( self );
 	g_return_if_fail( batline && OFO_IS_BAT_LINE( batline ));
 
-	bat_id = ofo_bat_line_get_bat_id( batline );
-	bat = ofo_bat_get_by_id( priv->getter, bat_id );
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-
-	ofa_bat_properties_run( priv->getter, priv->parent, bat );
+	ofa_bat_line_properties_run( priv->getter, priv->parent, batline );
 }
 
 /*

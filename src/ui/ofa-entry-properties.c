@@ -232,8 +232,8 @@ ofa_entry_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoEntry *entry
 	ofaEntryProperties *self;
 	ofaEntryPropertiesPrivate *priv;
 
-	g_debug( "%s: getter=%p, parent=%p, entry=%p",
-			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) entry );
+	g_debug( "%s: getter=%p, parent=%p, entry=%p, editable=%s",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) entry, editable ? "True":"False" );
 
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
