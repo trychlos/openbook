@@ -188,9 +188,9 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-reconcil-render.$(OBJEXT) ofa-reconcil-store.$(OBJEXT) \
 	ofa-reconcil-treeview.$(OBJEXT) \
 	ofa-recovery-assistant.$(OBJEXT) \
-	ofa-restore-assistant.$(OBJEXT) ofa-settlement-page.$(OBJEXT) \
-	ofa-target-chooser-bin.$(OBJEXT) ofa-unreconcil-page.$(OBJEXT) \
-	ofa-unsettled-page.$(OBJEXT) \
+	ofa-restore-assistant.$(OBJEXT) ofa-settlement-group.$(OBJEXT) \
+	ofa-settlement-page.$(OBJEXT) ofa-target-chooser-bin.$(OBJEXT) \
+	ofa-unreconcil-page.$(OBJEXT) ofa-unsettled-page.$(OBJEXT) \
 	ofa-user-credentials-bin.$(OBJEXT)
 am__objects_1 = resources.$(OBJEXT)
 nodist_openbook_OBJECTS = $(am__objects_1)
@@ -689,6 +689,8 @@ openbook_SOURCES = \
 	ofa-recovery-assistant.h							\
 	ofa-restore-assistant.c								\
 	ofa-restore-assistant.h								\
+	ofa-settlement-group.c								\
+	ofa-settlement-group.h								\
 	ofa-settlement-page.c								\
 	ofa-settlement-page.h								\
 	ofa-target-chooser-bin.c							\
@@ -915,6 +917,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recovery-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-restore-assistant.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement-group.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-target-chooser-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-unreconcil-page.Po@am__quote@

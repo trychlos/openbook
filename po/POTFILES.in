@@ -80,6 +80,7 @@ src/ui/ofa-reconcil-group.ui
 src/ui/ofa-reconcil-page.ui
 src/ui/ofa-recovery-assistant.ui
 src/ui/ofa-restore-assistant.ui
+src/ui/ofa-settlement-group.ui
 src/ui/ofa-settlement-page.ui
 src/ui/ofa-target-chooser-bin.ui
 src/ui/ofa-user-credentials-bin.ui

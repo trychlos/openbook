@@ -71,40 +71,42 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #ofaListStore.
- *                                                             Type     Displayable
- *                                                             -------  -----------
- * @ENTRY_COL_DOPE          : operation date                    String      Yes
- * @ENTRY_COL_DEFFECT       : effect date                       String      Yes
- * @ENTRY_COL_LABEL         : entry label                       String      Yes
- * @ENTRY_COL_REF           : piece reference                   String      Yes
- * @ENTRY_COL_CURRENCY      : currency                          String      Yes
- * @ENTRY_COL_LEDGER        : ledger                            String      Yes
- * @ENTRY_COL_OPE_TEMPLATE  : operation template                String      Yes
- * @ENTRY_COL_ACCOUNT       : account                           String      Yes
- * @ENTRY_COL_DEBIT         : debit                             String      Yes
- * @ENTRY_COL_CREDIT        : credit                            String      Yes
- * @ENTRY_COL_OPE_NUMBER    : operation number                  String      Yes
- * @ENTRY_COL_STLMT_NUMBER  : settlement number                 String      Yes
- * @ENTRY_COL_STLMT_USER    : settlement user                   String      Yes
- * @ENTRY_COL_STLMT_STAMP   : settlement timestamp              String      Yes
- * @ENTRY_COL_ENT_NUMBER    : entry number                      String      Yes
- * @ENTRY_COL_ENT_NUMBER_I  : entry number                      Int          No
- * @ENTRY_COL_UPD_USER      : last update user                  String      Yes
- * @ENTRY_COL_UPD_STAMP     : last update timestamp             String      Yes
- * @ENTRY_COL_CONCIL_NUMBER : reconciliation number             String      Yes
- * @ENTRY_COL_CONCIL_DATE   : reconciliation date               String      Yes
- * @ENTRY_COL_STATUS        : status                            String      Yes
- * @ENTRY_COL_STATUS_I      : status                            Int          No
- * @ENTRY_COL_OBJECT        : #ofoEntry object                  GObject      No
- * @ENTRY_COL_MSGERR        : error message                     String       No
- * @ENTRY_COL_MSGWARN       : warning message                   String       No
- * @ENTRY_COL_DOPE_SET      : whether operation date is set     Bool         No
- * @ENTRY_COL_DEFFECT_SET   : whether effect date is set        Bool         No
- * @ENTRY_COL_CURRENCY_SET  : whether currency is set           Bool         No
- * @ENTRY_COL_RULE_I        : rule indicator                    Int          No
- * @ENTRY_COL_RULE          : rule localized string             String      Yes
- * @ENTRY_COL_NOTES         : notes                             String      Yes
- * @ENTRY_COL_NOTES_PNG     : notes indicator                   Pixbuf      Yes
+ *                                                               Type     Displayable
+ *                                                               -------  -----------
+ * @ENTRY_COL_DOPE           : operation date                    String       Yes
+ * @ENTRY_COL_DEFFECT        : effect date                       String       Yes
+ * @ENTRY_COL_LABEL          : entry label                       String       Yes
+ * @ENTRY_COL_REF            : piece reference                   String       Yes
+ * @ENTRY_COL_CURRENCY       : currency                          String       Yes
+ * @ENTRY_COL_LEDGER         : ledger                            String       Yes
+ * @ENTRY_COL_OPE_TEMPLATE   : operation template                String       Yes
+ * @ENTRY_COL_ACCOUNT        : account                           String       Yes
+ * @ENTRY_COL_DEBIT          : debit                             String       Yes
+ * @ENTRY_COL_CREDIT         : credit                            String       Yes
+ * @ENTRY_COL_OPE_NUMBER     : operation number                  String       Yes
+ * @ENTRY_COL_STLMT_NUMBER   : settlement number                 String       Yes
+ * @ENTRY_COL_STLMT_NUMBER_I : settlement number                 Int           No
+ * @ENTRY_COL_STLMT_USER     : settlement user                   String       Yes
+ * @ENTRY_COL_STLMT_STAMP    : settlement timestamp              String       Yes
+ * @ENTRY_COL_ENT_NUMBER     : entry number                      String       Yes
+ * @ENTRY_COL_ENT_NUMBER_I   : entry number                      Int           No
+ * @ENTRY_COL_TIERS          : tiers identifier                  String       Yes
+ * @ENTRY_COL_UPD_USER       : last update user                  String       Yes
+ * @ENTRY_COL_UPD_STAMP      : last update timestamp             String       Yes
+ * @ENTRY_COL_CONCIL_NUMBER  : reconciliation number             String       Yes
+ * @ENTRY_COL_CONCIL_DATE    : reconciliation date               String       Yes
+ * @ENTRY_COL_STATUS         : status                            String       Yes
+ * @ENTRY_COL_STATUS_I       : status                            Int           No
+ * @ENTRY_COL_OBJECT         : #ofoEntry object                  GObject       No
+ * @ENTRY_COL_MSGERR         : error message                     String        No
+ * @ENTRY_COL_MSGWARN        : warning message                   String        No
+ * @ENTRY_COL_DOPE_SET       : whether operation date is set     Bool          No
+ * @ENTRY_COL_DEFFECT_SET    : whether effect date is set        Bool          No
+ * @ENTRY_COL_CURRENCY_SET   : whether currency is set           Bool          No
+ * @ENTRY_COL_RULE_I         : rule indicator                    Int           No
+ * @ENTRY_COL_RULE           : rule localized string             String       Yes
+ * @ENTRY_COL_NOTES          : notes                             String       Yes
+ * @ENTRY_COL_NOTES_PNG      : notes indicator                   Pixbuf       Yes
  */
 enum {
 	ENTRY_COL_DOPE = 0,
@@ -119,10 +121,12 @@ enum {
 	ENTRY_COL_CREDIT,
 	ENTRY_COL_OPE_NUMBER,
 	ENTRY_COL_STLMT_NUMBER,
+	ENTRY_COL_STLMT_NUMBER_I,
 	ENTRY_COL_STLMT_USER,
 	ENTRY_COL_STLMT_STAMP,
 	ENTRY_COL_ENT_NUMBER,
 	ENTRY_COL_ENT_NUMBER_I,
+	ENTRY_COL_TIERS,
 	ENTRY_COL_UPD_USER,
 	ENTRY_COL_UPD_STAMP,
 	ENTRY_COL_CONCIL_NUMBER,

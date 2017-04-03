@@ -68,8 +68,9 @@ static GType st_col_types[ENTRY_N_COLUMNS] = {
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ref, currency, ledger */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ope_template, account, debit */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* credit, ope_number, stlmt_number */
+	G_TYPE_ULONG,										/* stlmt_number_i */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* stlmt_user, stlmt_stamp, ent_number_str */
-	G_TYPE_ULONG,										/* ent_number_int */
+	G_TYPE_ULONG,  G_TYPE_ULONG,						/* ent_number_int, tiers_id */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* upd_user, upd_stamp, concil_number */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,			/* concil_date, status_str, status_int */
 	G_TYPE_OBJECT,										/* the #ofoEntry itself */
@@ -310,11 +311,11 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_entry_store_set_row_by_iter";
 	ofaEntryStorePrivate *priv;
-	gchar *sdope, *sdeff, *sdeb, *scre, *sopenum, *ssetnum, *ssetstamp, *sentnum, *supdstamp;
+	gchar *sdope, *sdeff, *sdeb, *scre, *sopenum, *ssetnum, *ssetstamp, *sentnum, *supdstamp, *stiers;
 	const gchar *cstr, *cref, *cur_code, *csetuser, *cupduser, *notes;
 	ofoCurrency *cur_obj;
 	ofxAmount amount;
-	ofxCounter counter;
+	ofxCounter counter, setnum;
 	ofoConcil *concil;
 	GdkPixbuf *notes_png;
 	GError *error;
@@ -339,11 +340,14 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	amount = ofo_entry_get_credit( entry );
 	scre = amount ? ofa_amount_to_str( amount, cur_obj, priv->getter ) : g_strdup( "" );
 
+	counter = ofo_entry_get_tiers( entry );
+	stiers = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
+
 	counter = ofo_entry_get_ope_number( entry );
 	sopenum = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
 
-	counter = ofo_entry_get_settlement_number( entry );
-	ssetnum = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
+	setnum = ofo_entry_get_settlement_number( entry );
+	ssetnum = counter ? g_strdup_printf( "%lu", setnum ) : g_strdup( "" );
 
 	cstr = ofo_entry_get_settlement_user( entry );
 	csetuser = cstr ? cstr : "";
@@ -369,37 +373,39 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	gtk_list_store_set(
 				GTK_LIST_STORE( self ),
 				iter,
-				ENTRY_COL_DOPE,          sdope,
-				ENTRY_COL_DEFFECT,       sdeff,
-				ENTRY_COL_LABEL,         ofo_entry_get_label( entry ),
-				ENTRY_COL_REF,           cref,
-				ENTRY_COL_CURRENCY,      cur_code,
-				ENTRY_COL_LEDGER,        ofo_entry_get_ledger( entry ),
-				ENTRY_COL_OPE_TEMPLATE,  ofo_entry_get_ope_template( entry ),
-				ENTRY_COL_ACCOUNT,       ofo_entry_get_account( entry ),
-				ENTRY_COL_DEBIT,         sdeb,
-				ENTRY_COL_CREDIT,        scre,
-				ENTRY_COL_OPE_NUMBER,    sopenum,
-				ENTRY_COL_STLMT_NUMBER,  ssetnum,
-				ENTRY_COL_STLMT_USER,    csetuser,
-				ENTRY_COL_STLMT_STAMP,   ssetstamp,
-				ENTRY_COL_ENT_NUMBER,    sentnum,
-				ENTRY_COL_UPD_USER,      cupduser,
-				ENTRY_COL_UPD_STAMP,     supdstamp,
-				ENTRY_COL_CONCIL_NUMBER, "",
-				ENTRY_COL_CONCIL_DATE,   "",
-				ENTRY_COL_STATUS,        ofo_entry_status_get_abr( status ),
-				ENTRY_COL_STATUS_I,      status,
-				ENTRY_COL_OBJECT,        entry,
-				ENTRY_COL_MSGERR,        "",
-				ENTRY_COL_MSGWARN,       "",
-				ENTRY_COL_DOPE_SET,      FALSE,
-				ENTRY_COL_DEFFECT_SET,   FALSE,
-				ENTRY_COL_CURRENCY_SET,  FALSE,
-				ENTRY_COL_RULE_I,        rule,
-				ENTRY_COL_RULE,          ofo_entry_rule_get_abr( rule ),
-				ENTRY_COL_NOTES,         notes,
-				ENTRY_COL_NOTES_PNG,     notes_png,
+				ENTRY_COL_DOPE,           sdope,
+				ENTRY_COL_DEFFECT,        sdeff,
+				ENTRY_COL_LABEL,          ofo_entry_get_label( entry ),
+				ENTRY_COL_REF,            cref,
+				ENTRY_COL_CURRENCY,       cur_code,
+				ENTRY_COL_LEDGER,         ofo_entry_get_ledger( entry ),
+				ENTRY_COL_OPE_TEMPLATE,   ofo_entry_get_ope_template( entry ),
+				ENTRY_COL_ACCOUNT,        ofo_entry_get_account( entry ),
+				ENTRY_COL_DEBIT,          sdeb,
+				ENTRY_COL_CREDIT,         scre,
+				ENTRY_COL_OPE_NUMBER,     sopenum,
+				ENTRY_COL_STLMT_NUMBER,   ssetnum,
+				ENTRY_COL_STLMT_NUMBER_I, setnum,
+				ENTRY_COL_STLMT_USER,     csetuser,
+				ENTRY_COL_STLMT_STAMP,    ssetstamp,
+				ENTRY_COL_ENT_NUMBER,     sentnum,
+				ENTRY_COL_TIERS,          stiers,
+				ENTRY_COL_UPD_USER,       cupduser,
+				ENTRY_COL_UPD_STAMP,      supdstamp,
+				ENTRY_COL_CONCIL_NUMBER,  "",
+				ENTRY_COL_CONCIL_DATE,    "",
+				ENTRY_COL_STATUS,         ofo_entry_status_get_abr( status ),
+				ENTRY_COL_STATUS_I,       status,
+				ENTRY_COL_OBJECT,         entry,
+				ENTRY_COL_MSGERR,         "",
+				ENTRY_COL_MSGWARN,        "",
+				ENTRY_COL_DOPE_SET,       FALSE,
+				ENTRY_COL_DEFFECT_SET,    FALSE,
+				ENTRY_COL_CURRENCY_SET,   FALSE,
+				ENTRY_COL_RULE_I,         rule,
+				ENTRY_COL_RULE,           ofo_entry_rule_get_abr( rule ),
+				ENTRY_COL_NOTES,          notes,
+				ENTRY_COL_NOTES_PNG,      notes_png,
 				-1 );
 
 	g_free( supdstamp );

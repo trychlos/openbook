@@ -253,6 +253,8 @@ openbook_SOURCES = \
 	ofa-recovery-assistant.h							\
 	ofa-restore-assistant.c								\
 	ofa-restore-assistant.h								\
+	ofa-settlement-group.c								\
+	ofa-settlement-group.h								\
 	ofa-settlement-page.c								\
 	ofa-settlement-page.h								\
 	ofa-target-chooser-bin.c							\

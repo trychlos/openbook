@@ -62,8 +62,8 @@ typedef struct {
 	/* runtime
 	 */
 	gchar               *settings_prefix;
-	gboolean             is_new;
 	ofoConcil           *concil;
+	gboolean             is_new;				/* required by my_utils_container_updstamp_init() */
 
 	/* UI
 	 */
