@@ -117,6 +117,7 @@
                 <child>
                   <object class="GtkLabel">
                     <property name="visible">True</property>
+                    <property name="sensitive">False</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Conciliation made on :</property>
                     <property name="xalign">1</property>
@@ -130,6 +131,7 @@
                 <child>
                   <object class="GtkLabel" id="px-last-update">
                     <property name="visible">True</property>
+                    <property name="sensitive">False</property>
                     <property name="can_focus">False</property>
                     <property name="xalign">0</property>
                   </object>

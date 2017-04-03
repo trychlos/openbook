@@ -51,6 +51,7 @@
    - ofaOpeTemplateFrameBin: fix notebook size when the dataset is empty.
    - ofaOpeTemplatePage: fix page display when the dataset is empty.
    - ofaOpeTemplateStore: let the treeview be repopulated on collection reload.
+   - ofaReconcilGroup: conciliation update label is insensitive (todo #1432).
    - ofaReconcilRender: compute the account solde depending of the requested date (todo #1413).
    - ofaRecurrentRunPage: renew the actions state after an operation.
    - Printings: identifiers are ellipsized if too large (todo #1150).
