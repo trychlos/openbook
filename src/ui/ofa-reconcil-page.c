@@ -1282,6 +1282,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	/* install an empty store before reading the settings */
 	priv->store = ofa_reconcil_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
+	g_object_unref( priv->store );
 
 	/* makes sure to connect to dossier signaling system *after*
 	 * the store itself */
