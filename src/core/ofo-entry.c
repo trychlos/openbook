@@ -183,7 +183,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( ENT_TIERS),
-				OFA_TYPE_STRING,
+				OFA_TYPE_COUNTER,
 				TRUE,
 				FALSE },
 		{ 0 }
@@ -1333,10 +1333,10 @@ ofo_entry_get_settlement_stamp( const ofoEntry *entry )
 /**
  * ofo_entry_get_tiers:
  */
-const gchar *
+ofxCounter
 ofo_entry_get_tiers( const ofoEntry *entry )
 {
-	ofo_base_getter( ENTRY, entry, string, NULL, ENT_TIERS );
+	ofo_base_getter( ENTRY, entry, counter, 0, ENT_TIERS );
 }
 
 /**
@@ -1716,9 +1716,9 @@ ofo_entry_set_rule( ofoEntry *entry, ofeEntryRule rule )
  * ofo_entry_set_tiers:
  */
 void
-ofo_entry_set_tiers( ofoEntry *entry, const gchar *tiers )
+ofo_entry_set_tiers( ofoEntry *entry, ofxCounter tiers )
 {
-	ofo_base_setter( ENTRY, entry, string, ENT_TIERS, tiers );
+	ofo_base_setter( ENTRY, entry, counter, ENT_TIERS, tiers );
 }
 
 /**
@@ -2004,10 +2004,10 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	gchar *sdeff, *sdope, *sdebit, *scredit, *stamp_str, *notes;
 	gboolean ok;
 	GTimeVal stamp;
-	const gchar *model, *cur_code, *userid, *rule, *status, *tiers;
+	const gchar *model, *cur_code, *userid, *rule, *status;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
-	ofxCounter ope_number;
+	ofxCounter ope_number, tiers;
 	ofaHub *hub;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
@@ -2085,8 +2085,8 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	g_string_append_printf( query, "'%s',", rule );
 
 	tiers = ofo_entry_get_tiers( entry );
-	if( my_strlen( tiers )){
-		g_string_append_printf( query, "'%s',", tiers );
+	if( tiers > 0 ){
+		g_string_append_printf( query, "%lu,", tiers );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
@@ -2259,10 +2259,11 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 	gchar *stamp_str, *label, *ref;
 	GTimeVal stamp;
 	gboolean ok;
-	const gchar *model, *cstr, *userid, *rule, *tiers;
+	const gchar *model, *cstr, *userid, *rule;
 	const gchar *cur_code;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
+	ofxCounter tiers;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 
@@ -2316,8 +2317,8 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 	g_string_append_printf( query, "ENT_RULE='%s',", rule );
 
 	tiers = ofo_entry_get_tiers( entry );
-	if( my_strlen( tiers )){
-		g_string_append_printf( query, "ENT_TIERS='%s',", tiers );
+	if( tiers > 0 ){
+		g_string_append_printf( query, "ENT_TIERS=%lu,", tiers );
 	} else {
 		query = g_string_append( query, "ENT_TIERS=NULL," );
 	}
@@ -2841,12 +2842,12 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 	gchar *sdope, *sdeffect, *sdebit, *scredit, *sletid, *sletdate, *sref, *stiers;
 	gchar *sopemne, *sopelib, *sopenum, *sdregl, *smodregl;
 	ofoConcil *concil;
-	const gchar *led_id, *acc_id, *cur_code, *cref, *cope, *tiers;
+	const gchar *led_id, *acc_id, *cur_code, *cref, *cope;
 	ofoAccount *account;
 	ofoLedger *ledger;
 	ofoCurrency *currency;
 	guint date_fmt;
-	ofxCounter counter;
+	ofxCounter counter, tiers;
 	ofoOpeTemplate *template;
 	ofeEntryStatus status;
 	ofeEntryRule rule;
@@ -2967,7 +2968,7 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		smodregl = g_strdup( cref ? cref : "" );
 
 		tiers = ofo_entry_get_tiers( entry );
-		stiers = g_strdup( tiers ? tiers : "" );
+		stiers = tiers ? g_strdup_printf( "%lu", tiers ) : g_strdup( "" );
 
 		status = ofo_entry_get_status( entry );
 		rule = ofo_entry_get_rule( entry );
@@ -3226,7 +3227,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	GList *past, *exe, *fut, *it;
 	ofsCurrency *sdet;
 	ofoCurrency *cur_object;
-	ofxCounter counter;
+	ofxCounter counter, tiers;
 	myDateFormat date_format;
 	ofaHub *hub;
 	ofoDossier *dossier;
@@ -3497,7 +3498,10 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			itf = itf ? itf->next : NULL;
 			cstr = itf ? ( const gchar * ) itf->data : NULL;
 			if( my_strlen( cstr )){
-				ofo_entry_set_tiers( entry, cstr );
+				tiers = atol( cstr );
+				if( tiers > 0 ){
+					ofo_entry_set_tiers( entry, tiers );
+				}
 			}
 		}
 

@@ -319,10 +319,12 @@ setup_columns( ofaReconcilTreeview *self )
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), RECONCIL_COL_STLMT_NUMBER,  _( "Set.num" ),     _( "Settlement number" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RECONCIL_COL_STLMT_USER,    _( "Set.user" ),    _( "Settlement user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), RECONCIL_COL_STLMT_STAMP,   _( "Set.stamp" ),   _( "Settlement timestamp" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), RECONCIL_COL_ENT_NUMBER,    _( "Ent.num" ),     _( "Reconcil number" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), RECONCIL_COL_ENT_NUMBER,    _( "Ent.num" ),     _( "Entry/BatLine number" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RECONCIL_COL_UPD_USER,      _( "Ent.user" ),    _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), RECONCIL_COL_UPD_STAMP,     _( "Ent.stamp" ),   _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RECONCIL_COL_TIERS,         _( "Tiers" ),           NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RECONCIL_COL_STATUS,        _( "Status" ),          NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RECONCIL_COL_RULE,          _( "Rule" ),            NULL );
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), RECONCIL_COL_CONCIL_NUMBER, _( "Concil.num" ),  _( "Conciliation number" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), RECONCIL_COL_CONCIL_DATE,   _( "Concil.date" ), _( "Conciliation date" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), RECONCIL_COL_CONCIL_TYPE,   _( "Concil.type" ), _( "Conciliation type" ));

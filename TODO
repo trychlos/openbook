@@ -363,9 +363,6 @@
 
 1431 2017- 3-31 SettlementPage: idem than #1430
 
-1433 2017- 3-31 ReconciliationGroup: columns should be the union of
-                entry and bat
-
 1435
 
 -----------------------------------------------------------------------
@@ -987,6 +984,10 @@
 
 1432 2017- 3-31 ReconciliationGroup: label update should be insensitive
      2017- 4- 3 fixed
+
+1433 2017- 3-31 ReconciliationGroup: columns should be the union of
+                entry and bat
+     2017- 4- 3 all almost-common columns are displayed
 
 1434 2017- 3-31 ReconciliationGroup: have actions 'view entry' and 'view bat'
      2017- 4- 3 done

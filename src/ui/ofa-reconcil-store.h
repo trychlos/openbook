@@ -101,33 +101,36 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #ofaTreeStore.
- *                                                               Type     Displayable
- *                                                               -------  -----------
- * @RECONCIL_COL_DOPE           : operation date                 String       Yes
- * @RECONCIL_COL_DEFFECT        : effect date                    String       Yes
- * @RECONCIL_COL_LABEL          : entry label                    String       Yes
- * @RECONCIL_COL_REF            : piece reference                String       Yes
- * @RECONCIL_COL_CURRENCY       : currency                       String       Yes
- * @RECONCIL_COL_LEDGER         : ledger                         String       Yes
- * @RECONCIL_COL_OPE_TEMPLATE   : operation template             String       Yes
- * @RECONCIL_COL_ACCOUNT        : account                        String       Yes
- * @RECONCIL_COL_DEBIT          : debit                          String       Yes
- * @RECONCIL_COL_CREDIT         : credit                         String       Yes
- * @RECONCIL_COL_OPE_NUMBER     : operation number               String       Yes
- * @RECONCIL_COL_STLMT_NUMBER   : settlement number              String       Yes
- * @RECONCIL_COL_STLMT_USER     : settlement user                String       Yes
- * @RECONCIL_COL_STLMT_STAMP    : settlement timestamp           String       Yes
- * @RECONCIL_COL_ENT_NUMBER     : entry number                   String       Yes
- * @RECONCIL_COL_ENT_NUMBER_I   : entry number                   Int           No
- * @RECONCIL_COL_UPD_USER       : last update user               String       Yes
- * @RECONCIL_COL_UPD_STAMP      : last update timestamp          String       Yes
- * @RECONCIL_COL_STATUS         : status                         String       Yes
- * @RECONCIL_COL_STATUS_I       : status                         Int           No
- * @RECONCIL_COL_CONCIL_NUMBER  : reconciliation number          String       Yes
- * @RECONCIL_COL_CONCIL_NUMBER_I: reconciliation number          Int           No
- * @RECONCIL_COL_CONCIL_DATE    : reconciliation date            String       Yes
- * @RECONCIL_COL_CONCIL_TYPE    : entry/batline type             String       Yes
- * @RECONCIL_COL_OBJECT         : #ofoEntry/ofoBatLine object    GObject       No
+ *                                ofoEntry               ofoBatLine             Type    Displayable
+ *                                ---------------------  ---------------------  ------  -----------
+ * @RECONCIL_COL_DOPE           : operation date         operation date         String      Yes
+ * @RECONCIL_COL_DEFFECT        : effect date            effect date            String      Yes
+ * @RECONCIL_COL_LABEL          : entry label            line label             String      Yes
+ * @RECONCIL_COL_REF            : piece reference        line reference         String      Yes
+ * @RECONCIL_COL_CURRENCY       : currency               currency               String      Yes
+ * @RECONCIL_COL_LEDGER         : ledger                                        String      Yes
+ * @RECONCIL_COL_OPE_TEMPLATE   : operation template                            String      Yes
+ * @RECONCIL_COL_ACCOUNT        : account                                       String      Yes
+ * @RECONCIL_COL_DEBIT          : debit                  debit                  String      Yes
+ * @RECONCIL_COL_CREDIT         : credit                 credit                 String      Yes
+ * @RECONCIL_COL_OPE_NUMBER     : operation number                              String      Yes
+ * @RECONCIL_COL_STLMT_NUMBER   : settlement number                             String      Yes
+ * @RECONCIL_COL_STLMT_USER     : settlement user                               String      Yes
+ * @RECONCIL_COL_STLMT_STAMP    : settlement timestamp                          String      Yes
+ * @RECONCIL_COL_ENT_NUMBER     : entry number           line number            String      Yes
+ * @RECONCIL_COL_ENT_NUMBER_I   : entry number           line number            Int          No
+ * @RECONCIL_COL_UPD_USER       : last update user       import user            String      Yes
+ * @RECONCIL_COL_UPD_STAMP      : last update timestamp  import timestamp       String      Yes
+ * @RECONCIL_COL_STATUS         : status                                        String      Yes
+ * @RECONCIL_COL_STATUS_I       : status                                        Int          No
+ * @RECONCIL_COL_RULE           : rule                                          String      Yes
+ * @RECONCIL_COL_RULE_I         : rule                                          Int          No
+ * @RECONCIL_COL_TIERS          : tiers                                         String      Yes
+ * @RECONCIL_COL_CONCIL_NUMBER  : reconciliation number  reconciliation number  String      Yes
+ * @RECONCIL_COL_CONCIL_NUMBER_I: reconciliation number  reconciliation number  Int          No
+ * @RECONCIL_COL_CONCIL_DATE    : reconciliation date    reconciliation date    String      Yes
+ * @RECONCIL_COL_CONCIL_TYPE    : reconciliation type    reconciliation type    String      Yes
+ * @RECONCIL_COL_OBJECT         : #ofoEntry object       ofobatLine             GObject      No
  */
 enum {
 	RECONCIL_COL_DOPE = 0,
@@ -150,6 +153,9 @@ enum {
 	RECONCIL_COL_UPD_STAMP,
 	RECONCIL_COL_STATUS,
 	RECONCIL_COL_STATUS_I,
+	RECONCIL_COL_RULE,
+	RECONCIL_COL_RULE_I,
+	RECONCIL_COL_TIERS,
 	RECONCIL_COL_CONCIL_NUMBER,
 	RECONCIL_COL_CONCIL_NUMBER_I,
 	RECONCIL_COL_CONCIL_DATE,

@@ -37,6 +37,7 @@
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
+#include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
 #include "api/ofo-concil.h"
 #include "api/ofo-currency.h"
@@ -85,8 +86,9 @@ static GType st_col_types[RECONCIL_N_COLUMNS] = {
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ope_template, account, debit */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* credit, ope_number, stlmt_number */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* stlmt_user, stlmt_stamp, ent_number_str */
-	G_TYPE_ULONG, G_TYPE_STRING, G_TYPE_STRING,			/* ent_number_int, upd_user, upd_stamp */
-	G_TYPE_STRING, G_TYPE_INT,							/* status_str, status_int */
+	G_TYPE_ULONG,  G_TYPE_STRING, G_TYPE_STRING,		/* ent_number_int, upd_user, upd_stamp */
+	G_TYPE_STRING, G_TYPE_INT,    G_TYPE_STRING,		/* status_str, status_int, rule */
+	G_TYPE_INT,    G_TYPE_ULONG,						/* rule_int, tiers */
 	G_TYPE_STRING, G_TYPE_ULONG, G_TYPE_STRING, 		/* concil_number_str, concil_number_int, concil_date */
 	G_TYPE_STRING,										/* concil_type */
 	G_TYPE_OBJECT										/* the #ofoEntry or #ofoBatLine */
@@ -378,10 +380,13 @@ static void
 entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 {
 	ofaReconcilStorePrivate *priv;
-	gchar *sdope, *sdeff, *sdeb, *scre, *sopenum, *ssetnum, *ssetstamp, *sentnum, *supdstamp;
+	gchar *sdope, *sdeff, *sdeb, *scre, *sopenum, *ssetnum, *ssetstamp, *sentnum, *supdstamp, *stiers, *sconcnum, *sconcdate;
 	const gchar *cstr, *cref, *csetuser, *cupduser;
-	ofxCounter counter, entnum;
+	ofxCounter counter, entnum, concilnum;
 	ofeEntryStatus status;
+	ofeEntryRule rule;
+	ofoConcil *concil;
+	const GDate *dval;
 
 	priv = ofa_reconcil_store_get_instance_private( self );
 
@@ -411,6 +416,17 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 	supdstamp = my_stamp_to_str( ofo_entry_get_upd_stamp( entry ), MY_STAMP_DMYYHM );
 
 	status = ofo_entry_get_status( entry );
+	rule = ofo_entry_get_rule( entry );
+
+	counter = ofo_entry_get_tiers( entry );
+	stiers = g_strdup_printf( "%lu", counter );
+
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
+	concilnum = concil ? ofo_concil_get_id( concil ) : 0;
+	sconcnum = concilnum ? g_strdup_printf( "%lu", concilnum ) : g_strdup( "" );
+
+	dval = concil ? ofo_concil_get_dval( concil ) : NULL;
+	sconcdate = dval ? my_date_to_str( dval, ofa_prefs_date_display( priv->getter )) : g_strdup( "" );
 
 	gtk_tree_store_set(
 				GTK_TREE_STORE( self ),
@@ -435,10 +451,19 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 				RECONCIL_COL_UPD_STAMP,       supdstamp,
 				RECONCIL_COL_STATUS,          ofo_entry_status_get_abr( status ),
 				RECONCIL_COL_STATUS_I,        status,
+				RECONCIL_COL_RULE,            ofo_entry_rule_get_abr( rule ),
+				RECONCIL_COL_RULE_I,          rule,
+				RECONCIL_COL_TIERS,           stiers,
+				RECONCIL_COL_CONCIL_NUMBER,   sconcnum,
+				RECONCIL_COL_CONCIL_NUMBER_I, concilnum,
+				RECONCIL_COL_CONCIL_DATE,     sconcdate,
 				RECONCIL_COL_CONCIL_TYPE,     ofa_iconcil_get_instance_type( OFA_ICONCIL( entry )),
 				RECONCIL_COL_OBJECT,          entry,
 				-1 );
 
+	g_free( sconcdate );
+	g_free( sconcnum );
+	g_free( stiers );
 	g_free( supdstamp );
 	g_free( sentnum );
 	g_free( ssetstamp );
@@ -562,8 +587,12 @@ static void
 bat_set_row_by_iter( ofaReconcilStore *self, ofoBatLine *batline, GtkTreeIter *iter )
 {
 	ofaReconcilStorePrivate *priv;
-	gchar *sdeff, *sdope, *sblnum, *sdeb, *scre;
-	ofxCounter batline_number;
+	gchar *sdeff, *sdope, *sblnum, *sdeb, *scre, *scur, *sconcnum, *sconcdate, *suser, *sstamp;
+	ofxCounter batline_number, concilnum, bat_id;
+	const gchar *cstr;
+	ofoConcil *concil;
+	const GDate *dval;
+	ofoBat *bat;
 
 	priv = ofa_reconcil_store_get_instance_private( self );
 
@@ -575,26 +604,47 @@ bat_set_row_by_iter( ofaReconcilStore *self, ofoBatLine *batline, GtkTreeIter *i
 	batline_number = ofo_bat_line_get_line_id( batline );
 	sblnum = g_strdup_printf( "%lu", batline_number );
 
-	/*
-	g_debug( "sdope=%s, label=%s, sdeb=%s, scre=%s",
-			sdope, ofo_bat_line_get_label( batline ), sdeb, scre );
-			*/
+	cstr = ofo_bat_line_get_currency( batline );
+	scur = g_strdup( cstr ? cstr : "" );
+
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( batline ));
+	concilnum = concil ? ofo_concil_get_id( concil ) : 0;
+	sconcnum = concilnum ? g_strdup_printf( "%lu", concilnum ) : g_strdup( "" );
+
+	dval = concil ? ofo_concil_get_dval( concil ) : NULL;
+	sconcdate = dval ? my_date_to_str( dval, ofa_prefs_date_display( priv->getter )) : g_strdup( "" );
+
+	bat_id = ofo_bat_line_get_bat_id( batline );
+	bat = ofo_bat_get_by_id( priv->getter, bat_id );
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
+	cstr = ofo_bat_get_upd_user( bat );
+	suser = g_strdup( cstr ? cstr : "" );
+	sstamp = my_stamp_to_str( ofo_bat_get_upd_stamp( bat ), MY_STAMP_DMYYHM );
 
 	gtk_tree_store_set(
 				GTK_TREE_STORE( self ),
 				iter,
-				RECONCIL_COL_DOPE,         sdope,
-				RECONCIL_COL_DEFFECT,      sdeff,
-				RECONCIL_COL_LABEL,        ofo_bat_line_get_label( batline ),
-				RECONCIL_COL_REF,          ofo_bat_line_get_ref( batline ),
-				RECONCIL_COL_ENT_NUMBER,   sblnum,
-				RECONCIL_COL_ENT_NUMBER_I, batline_number,
-				RECONCIL_COL_DEBIT,        sdeb,
-				RECONCIL_COL_CREDIT,       scre,
-				RECONCIL_COL_CONCIL_TYPE,  ofa_iconcil_get_instance_type( OFA_ICONCIL( batline )),
-				RECONCIL_COL_OBJECT,       batline,
+				RECONCIL_COL_DOPE,            sdope,
+				RECONCIL_COL_DEFFECT,         sdeff,
+				RECONCIL_COL_LABEL,           ofo_bat_line_get_label( batline ),
+				RECONCIL_COL_REF,             ofo_bat_line_get_ref( batline ),
+				RECONCIL_COL_CURRENCY,        scur,
+				RECONCIL_COL_ENT_NUMBER,      sblnum,
+				RECONCIL_COL_ENT_NUMBER_I,    batline_number,
+				RECONCIL_COL_DEBIT,           sdeb,
+				RECONCIL_COL_CREDIT,          scre,
+				RECONCIL_COL_UPD_USER,        suser,
+				RECONCIL_COL_UPD_STAMP,       sstamp,
+				RECONCIL_COL_CONCIL_NUMBER,   sconcnum,
+				RECONCIL_COL_CONCIL_NUMBER_I, concilnum,
+				RECONCIL_COL_CONCIL_DATE,     sconcdate,
+				RECONCIL_COL_CONCIL_TYPE,     ofa_iconcil_get_instance_type( OFA_ICONCIL( batline )),
+				RECONCIL_COL_OBJECT,          batline,
 				-1 );
 
+	g_free( suser );
+	g_free( sstamp );
+	g_free( scur );
 	g_free( sdope );
 	g_free( sdeff );
 	g_free( sdeb );
