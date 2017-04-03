@@ -37,9 +37,13 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
+#include "api/ofo-base.h"
 #include "api/ofo-bat.h"
+#include "api/ofo-bat-line.h"
 #include "api/ofo-concil.h"
 
+#include "ui/ofa-bat-properties.h"
+#include "ui/ofa-entry-properties.h"
 #include "ui/ofa-reconcil-group.h"
 #include "ui/ofa-reconcil-store.h"
 #include "ui/ofa-reconcil-treeview.h"
@@ -64,6 +68,11 @@ typedef struct {
 	/* UI
 	 */
 	ofaReconcilTreeview *tview;
+
+	/* actions
+	 */
+	GSimpleAction       *view_entry_action;
+	GSimpleAction       *view_bat_action;
 }
 	ofaReconcilGroupPrivate;
 
@@ -73,7 +82,14 @@ static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
+static void     setup_ui( ofaReconcilGroup *self );
+static void     setup_actions( ofaReconcilGroup *self );
+static void     setup_store( ofaReconcilGroup *self );
+static void     tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaReconcilGroup *self );
 static gboolean tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilGroup *self );
+static ofoBase *tview_get_selected( ofaReconcilGroup *self );
+static void     action_on_view_entry_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self );
+static void     action_on_view_bat_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self );
 static void     iactionable_iface_init( ofaIActionableInterface *iface );
 static guint    iactionable_get_interface_version( void );
 
@@ -117,6 +133,9 @@ reconcil_group_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		g_clear_object( &priv->view_entry_action );
+		g_clear_object( &priv->view_bat_action );
 	}
 
 	/* chain up to the parent class */
@@ -235,22 +254,11 @@ idialog_iface_init( myIDialogInterface *iface )
 	iface->init = idialog_init;
 }
 
-/*
- * this dialog is subject to 'is_writable' property
- * so first setup the UI fields, then fills them up with the data
- * when entering, only initialization data are set: main_window and
- * BAT record
- */
 static void
 idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_reconcil_group_idialog_init";
 	ofaReconcilGroupPrivate *priv;
-	GtkWidget *parent, *btn, *label;
-	ofaReconcilStore *store;
-	gchar *str;
-	ofxCounter count;
-	GMenu *menu;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -258,55 +266,136 @@ idialog_init( myIDialog *instance )
 
 	priv->concil = ofo_concil_get_by_id( priv->getter, priv->concil_id );
 
-	/* terminates on Close */
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "close-btn" );
-	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( my_iwindow_close ), instance );
+	setup_ui( OFA_RECONCIL_GROUP( instance ));
+	setup_actions( OFA_RECONCIL_GROUP( instance ));
+	setup_store( OFA_RECONCIL_GROUP( instance ));
+}
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "group-parent" );
+static void
+setup_ui( ofaReconcilGroup *self )
+{
+	ofaReconcilGroupPrivate *priv;
+	GtkWidget *parent, *btn, *label;
+	gchar *str;
+
+	priv = ofa_reconcil_group_get_instance_private( self );
+
+	/* terminates on Close */
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "close-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( my_iwindow_close ), self );
+
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "group-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->tview = ofa_reconcil_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 	ofa_reconcil_treeview_setup_columns( priv->tview );
-	ofa_reconcil_treeview_set_filter_func( priv->tview, ( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row, instance );
+	ofa_reconcil_treeview_set_filter_func( priv->tview, ( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row, self );
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
+	g_signal_connect( priv->tview, "ofa-selchanged", G_CALLBACK( tview_on_selection_changed ), self );
 
-	my_utils_container_updstamp_init( instance, concil );
+	my_utils_container_updstamp_init( self, concil );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "id-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "id-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = g_strdup_printf( "%lu", priv->concil_id );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "value-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "value-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = my_date_to_str( ofo_concil_get_dval( priv->concil ), ofa_prefs_date_display( priv->getter ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
+}
 
-	store = ofa_reconcil_store_new( priv->getter );
-	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( store ));
-	count = ofa_reconcil_store_load_by_concil( store, priv->concil_id );
+static void
+setup_actions( ofaReconcilGroup *self )
+{
+	ofaReconcilGroupPrivate *priv;
+	GMenu *menu;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "count-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = g_strdup_printf( "%lu", count );
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
+	priv = ofa_reconcil_group_get_instance_private( self );
 
-	ofa_reconcil_treeview_expand_all( priv->tview );
+	/* view entry action */
+	priv->view_entry_action = g_simple_action_new( "viewentry", NULL );
+	g_simple_action_set_enabled( priv->view_entry_action, FALSE );
+	g_signal_connect( priv->view_entry_action, "activate", G_CALLBACK( action_on_view_entry_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->view_entry_action ),
+			_( "View entry" ));
 
-	/* setup actions */
-	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( instance ), priv->settings_prefix );
+	/* view batline action */
+	priv->view_bat_action = g_simple_action_new( "viewbat", NULL );
+	g_simple_action_set_enabled( priv->view_bat_action, FALSE );
+	g_signal_connect( priv->view_bat_action, "activate", G_CALLBACK( action_on_view_bat_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->view_bat_action ),
+			_( "View BAT file" ));
+
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
 	ofa_icontext_set_menu(
-			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( instance ),
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( self ),
 			menu );
 
 	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
 	ofa_icontext_append_submenu(
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
+}
+
+static void
+setup_store( ofaReconcilGroup *self )
+{
+	ofaReconcilGroupPrivate *priv;
+	ofaReconcilStore *store;
+	GtkWidget *label;
+	gchar *str;
+	ofxCounter count;
+
+	priv = ofa_reconcil_group_get_instance_private( self );
+
+	store = ofa_reconcil_store_new( priv->getter );
+	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( store ));
+	count = ofa_reconcil_store_load_by_concil( store, priv->concil_id );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "count-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	str = g_strdup_printf( "%lu", count );
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
+	ofa_reconcil_treeview_expand_all( priv->tview );
+}
+
+/*
+ * Selection has been set in browse mode
+ */
+static void
+tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaReconcilGroup *self )
+{
+	ofaReconcilGroupPrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoBase *base_obj;
+
+	priv = ofa_reconcil_group_get_instance_private( self );
+
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+		gtk_tree_model_get( tmodel, &iter, RECONCIL_COL_OBJECT, &base_obj, -1 );
+		g_return_if_fail( base_obj && ( OFO_IS_ENTRY( base_obj ) || OFO_IS_BAT_LINE( base_obj )));
+		g_object_unref( base_obj );
+		if( OFO_IS_ENTRY( base_obj )){
+			g_simple_action_set_enabled( priv->view_entry_action, TRUE );
+			g_simple_action_set_enabled( priv->view_bat_action, FALSE );
+		} else {
+			g_simple_action_set_enabled( priv->view_entry_action, FALSE );
+			g_simple_action_set_enabled( priv->view_bat_action, TRUE );
+		}
+	} else {
+		g_simple_action_set_enabled( priv->view_entry_action, FALSE );
+		g_simple_action_set_enabled( priv->view_bat_action, FALSE );
+	}
 }
 
 /*
@@ -324,6 +413,63 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilGroup 
 	gtk_tree_model_get( tmodel, iter, RECONCIL_COL_CONCIL_NUMBER_I, &id, -1 );
 
 	return( id == priv->concil_id );
+}
+
+/*
+ * Returns the selected object.
+ */
+static ofoBase *
+tview_get_selected( ofaReconcilGroup *self )
+{
+	ofaReconcilGroupPrivate *priv;
+	ofoBase *obj;
+	GList *selected;
+
+	priv = ofa_reconcil_group_get_instance_private( self );
+
+	selected = ofa_reconcil_treeview_get_selected( priv->tview );
+	g_return_val_if_fail(
+			selected && selected->data &&
+			( OFO_IS_ENTRY( selected->data ) || OFO_IS_BAT_LINE( selected->data )), NULL );
+
+	obj = OFO_BASE( selected->data );
+	ofa_reconcil_treeview_free_selected( selected );
+
+	return( obj );
+}
+
+static void
+action_on_view_entry_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self )
+{
+	ofaReconcilGroupPrivate *priv;
+	ofoEntry *entry;
+
+	priv = ofa_reconcil_group_get_instance_private( self );
+
+	entry = ( ofoEntry * ) tview_get_selected( self );
+	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+
+	ofa_entry_properties_run( priv->getter, priv->parent, entry, FALSE );
+}
+
+static void
+action_on_view_bat_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self )
+{
+	ofaReconcilGroupPrivate *priv;
+	ofoBatLine *batline;
+	ofoBat *bat;
+	ofxCounter bat_id;
+
+	priv = ofa_reconcil_group_get_instance_private( self );
+
+	batline = ( ofoBatLine * ) tview_get_selected( self );
+	g_return_if_fail( batline && OFO_IS_BAT_LINE( batline ));
+
+	bat_id = ofo_bat_line_get_bat_id( batline );
+	bat = ofo_bat_get_by_id( priv->getter, bat_id );
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
+
+	ofa_bat_properties_run( priv->getter, priv->parent, bat );
 }
 
 /*

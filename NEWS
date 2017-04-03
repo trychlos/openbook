@@ -35,6 +35,7 @@
    - Printings: allow the user to re-render as often as he wishes (todo #1384).
    - Printings: have a progress bar when printing (todo #1404).
    - Printings: have a plugin which can override ofaIRenderable interface (todo #1196).
+   - Reconciliation group: let display entries and BAT files (todo #1434). 
    - Reconciliation page auto-updates when an external identifier changes (todo #1407).
    - Reconciliation render take into account the last available BAT at date (todo #1420).
    - Recurrent operations validation: have a visual display of the status (todo #1369).

@@ -366,8 +366,6 @@
 1433 2017- 3-31 ReconciliationGroup: columns should be the union of
                 entry and bat
 
-1434 2017- 3-31 ReconciliationGroup: have actions 'view entry' and 'view bat'
-
 1435
 
 -----------------------------------------------------------------------
@@ -989,6 +987,9 @@
 
 1432 2017- 3-31 ReconciliationGroup: label update should be insensitive
      2017- 4- 3 fixed
+
+1434 2017- 3-31 ReconciliationGroup: have actions 'view entry' and 'view bat'
+     2017- 4- 3 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
