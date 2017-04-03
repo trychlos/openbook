@@ -88,6 +88,7 @@ typedef struct {
 	GtkWidget      *account_label;
 	GtkWidget      *account_currency;
 	ofaLedgerCombo *ledger_combo;
+	GtkWidget      *ledger_label;
 	GtkWidget      *label_entry;
 	GtkWidget      *ref_entry;
 	GtkWidget      *template_entry;
@@ -344,7 +345,7 @@ setup_ui_properties( ofaEntryProperties *self )
 {
 	ofaEntryPropertiesPrivate *priv;
 	GtkWidget *prompt, *entry, *label, *parent;
-	static const gint st_ledger_cols[] = { LEDGER_COL_LABEL, -1 };
+	static const gint st_ledger_cols[] = { LEDGER_COL_MNEMO, -1 };
 	gchar *str;
 	const gchar *cstr;
 	ofeEntryStatus status;
@@ -406,6 +407,9 @@ setup_ui_properties( ofaEntryProperties *self )
 	ofa_ledger_combo_set_getter( priv->ledger_combo, priv->getter );
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), GTK_WIDGET( priv->ledger_combo ));
 	g_signal_connect( priv->ledger_combo, "ofa-changed", G_CALLBACK( on_ledger_changed ), self );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ledger-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv->ledger_label = label;
 
 	/* label */
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-prompt" );
@@ -456,18 +460,25 @@ setup_ui_properties( ofaEntryProperties *self )
 			HUB_DEFAULT_DECIMALS_AMOUNT );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_amount_changed ), self );
 
+	/* tiers identifier */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-tiers-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	str = ofa_counter_to_str( ofo_entry_get_tiers( priv->entry ), priv->getter );
+	gtk_entry_set_text( GTK_ENTRY( entry ), str );
+	g_free( str );
+
 	/* operation number */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-openumber" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-openum-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	str = ofa_counter_to_str( ofo_entry_get_ope_number( priv->entry ), priv->getter );
-	gtk_label_set_text( GTK_LABEL( label ), str );
+	gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	g_free( str );
 
 	/* entry number */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-entnumber" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-entnum-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	str = ofa_counter_to_str( ofo_entry_get_number( priv->entry ), priv->getter );
-	gtk_label_set_text( GTK_LABEL( label ), str );
+	gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	g_free( str );
 
 	/* status */
@@ -659,6 +670,8 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryProperties
 	priv->ledger = NULL;
 	if( my_strlen( mnemo )){
 		priv->ledger = ofo_ledger_get_by_mnemo( priv->getter, mnemo );
+		g_return_if_fail( priv->ledger && OFO_IS_LEDGER( priv->ledger ));
+		gtk_label_set_text( GTK_LABEL( priv->ledger_label ), ofo_ledger_get_label( priv->ledger ));
 	}
 
 	check_for_enable_dlg( self );
@@ -682,6 +695,8 @@ on_template_changed( GtkEntry *entry, ofaEntryProperties *self )
 	cstr = gtk_entry_get_text( entry );
 	if( my_strlen( cstr )){
 		priv->template = ofo_ope_template_get_by_mnemo( priv->getter, cstr );
+		g_return_if_fail( priv->template && OFO_IS_OPE_TEMPLATE( priv->template ));
+		gtk_label_set_text( GTK_LABEL( priv->template_label ), ofo_ope_template_get_label( priv->template ));
 	}
 
 	check_for_enable_dlg( self );

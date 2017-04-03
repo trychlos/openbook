@@ -346,8 +346,6 @@
 1425 2017- 3-31 ReconciliationPage: expand hierarchy action should only
                 be enabled when there is one hierarchy
 
-1426 2017- 3-31 EntryProperties: align ope and entry numbers on amount entry
-
 1427 2017- 3-31 SettlementPage: action should be labedl 'View entry properties'
                 instead of 'View/edit...'
 
@@ -981,6 +979,9 @@
 1423 2017- 3-31 ofoCounters should be managed by the myICollector
                 + let ofoCounter class get itself via getter
      2017- 3-31 done
+
+1426 2017- 3-31 EntryProperties: align ope and entry numbers on amount entry
+     2017- 4- 3 done
 
 1432 2017- 3-31 ReconciliationGroup: label update should be insensitive
      2017- 4- 3 fixed
