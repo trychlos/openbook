@@ -44,15 +44,21 @@
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
+#include "api/ofo-concil.h"
 #include "api/ofo-counters.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofs-currency.h"
 
+#include "core/ofa-iconcil.h"
+
 #include "ui/ofa-entry-properties.h"
 #include "ui/ofa-entry-store.h"
 #include "ui/ofa-entry-treeview.h"
+#include "ui/ofa-operation-group.h"
+#include "ui/ofa-reconcil-group.h"
+#include "ui/ofa-settlement-group.h"
 #include "ui/ofa-settlement-page.h"
 
 /* when enumerating the selected rows
@@ -108,6 +114,9 @@ typedef struct {
 	GSimpleAction     *edit_action;
 	GSimpleAction     *settle_action;
 	GSimpleAction     *unsettle_action;
+	GSimpleAction     *vope_action;
+	GSimpleAction     *vconcil_action;
+	GSimpleAction     *vsettle_action;
 
 	/* settlement button:
 	 * when clicked with <Ctrl>, then does not check for selection balance
@@ -120,6 +129,9 @@ typedef struct {
 	sEnumSelected      ses;
 	ofxCounter         snumber;
 	gboolean           updating;
+	ofxCounter         sel_ope_number;
+	ofxCounter         sel_concil_id;
+	ofxCounter         sel_settle_id;
 }
 	ofaSettlementPagePrivate;
 
@@ -193,6 +205,9 @@ static void       update_row_enum( ofoEntry *entry, ofaSettlementPage *self );
 static void       refresh_selection_compute( ofaSettlementPage *self );
 static void       refresh_selection_compute_with_selected( ofaSettlementPage *self, GList *selected );
 static void       refresh_display( ofaSettlementPage *self );
+static void       action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
+static void       action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
+static void       action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
 static void       read_settings( ofaSettlementPage *self );
 static void       write_settings( ofaSettlementPage *self );
 static void       store_on_changed( ofaEntryStore *store, ofaSettlementPage *self );
@@ -491,10 +506,31 @@ static void
 tview_on_row_selected( ofaEntryTreeview *view, GList *selected, ofaSettlementPage *self )
 {
 	ofaSettlementPagePrivate *priv;
+	gboolean ventry_enabled, vope_enabled, vconcil_enabled, vsettle_enabled;
+	ofoConcil *concil;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
-	g_simple_action_set_enabled( priv->edit_action, g_list_length( selected ) > 0 );
+	ventry_enabled = FALSE;
+	vope_enabled = FALSE;
+	vconcil_enabled = FALSE;
+	vsettle_enabled = FALSE;
+
+	ventry_enabled = ( g_list_length( selected ) == 1 );
+	if( ventry_enabled ){
+		priv->sel_ope_number = ofo_entry_get_ope_number( OFO_ENTRY( selected->data ));
+		vope_enabled = ( priv->sel_ope_number > 0 );
+		concil = ofa_iconcil_get_concil( OFA_ICONCIL( OFO_ENTRY( selected->data )));
+		priv->sel_concil_id = ( concil ? ofo_concil_get_id( concil ) : 0 );
+		vconcil_enabled = ( priv->sel_concil_id > 0 );
+		priv->sel_settle_id = ofo_entry_get_settlement_number( OFO_ENTRY( selected->data ));
+		vsettle_enabled = ( priv->sel_settle_id > 0 );
+	}
+
+	g_simple_action_set_enabled( priv->edit_action, ventry_enabled );
+	g_simple_action_set_enabled( priv->vope_action, vope_enabled );
+	g_simple_action_set_enabled( priv->vconcil_action, vconcil_enabled );
+	g_simple_action_set_enabled( priv->vsettle_action, vsettle_enabled );
 
 	priv->updating = FALSE;
 	refresh_selection_compute_with_selected( self, selected );
@@ -650,6 +686,27 @@ setup_actions( ofaSettlementPage *self, GtkContainer *parent )
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	ofa_iactionable_set_button(
 			OFA_IACTIONABLE( self ), button, priv->settings_prefix, G_ACTION( priv->unsettle_action ));
+
+	/* view operation action */
+	priv->vope_action = g_simple_action_new( "vope", NULL );
+	g_signal_connect( priv->vope_action, "activate", G_CALLBACK( action_on_vope_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vope_action ),
+			_( "View the operation..." ));
+
+	/* view conciliation action */
+	priv->vconcil_action = g_simple_action_new( "vconcil", NULL );
+	g_signal_connect( priv->vconcil_action, "activate", G_CALLBACK( action_on_vconcil_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vconcil_action ),
+			_( "View the conciliation group..." ));
+
+	/* view settlement action */
+	priv->vsettle_action = g_simple_action_new( "vsettle", NULL );
+	g_signal_connect( priv->vsettle_action, "activate", G_CALLBACK( action_on_vsettle_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vsettle_action ),
+			_( "View the settlement group..." ));
 }
 
 static void
@@ -745,6 +802,9 @@ on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self )
 	}
 }
 
+/*
+ * View entry
+ */
 static void
 action_on_edit_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self )
 {
@@ -1012,6 +1072,42 @@ refresh_display( ofaSettlementPage *self )
 
 	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 	refresh_selection_compute( self );
+}
+
+static void
+action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self )
+{
+	ofaSettlementPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_operation_group_run( priv->getter, toplevel, priv->sel_ope_number );
+}
+
+static void
+action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self )
+{
+	ofaSettlementPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_reconcil_group_run( priv->getter, toplevel, priv->sel_concil_id );
+}
+
+static void
+action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self )
+{
+	ofaSettlementPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_settlement_group_run( priv->getter, toplevel, priv->sel_settle_id );
 }
 
 /*

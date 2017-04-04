@@ -120,11 +120,11 @@ typedef struct {
 	GSimpleAction       *unreconciliate_action;
 	GSimpleAction       *print_action;
 	GSimpleAction       *expand_action;
-	GSimpleAction       *ventry_action;
-	GSimpleAction       *vbat_action;
-	GSimpleAction       *vope_action;
-	GSimpleAction       *vconcil_action;
-	GSimpleAction       *vsettle_action;					/* always disabled */
+	GSimpleAction       *ventry_action;						/* display entry */
+	GSimpleAction       *vbat_action;						/* display BAT line */
+	GSimpleAction       *vope_action;						/* display operation */
+	GSimpleAction       *vconcil_action;					/* display conciliation group */
+	GSimpleAction       *vsettle_action;					/* display settlement group */
 
 	/* current selection
 	 */

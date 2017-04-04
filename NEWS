@@ -45,6 +45,7 @@
    - Reconciliation render take into account the last available BAT at date (todo #1420).
    - Recurrent operations validation: have a visual display of the status (todo #1369).
    - Restore assistant: allow admin credentials to be saved (todo #1416).
+   - Settlement page: have all entry related actions (todo #1431).
 
  Bug fixes:
 

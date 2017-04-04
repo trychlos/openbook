@@ -348,8 +348,6 @@
                 useful when searching for other lines of the same group that
                 the current line
 
-1431 2017- 3-31 SettlementPage: idem than #1430
-
 1435
 
 -----------------------------------------------------------------------
@@ -987,6 +985,9 @@
 1429 2017- 3-31 EntryPage: have a 'display settlement group' same than
                 'display reconciliation group'
      2017- 4- 3 done
+
+1431 2017- 3-31 SettlementPage: idem than #1430
+     2017- 4- 4 done
 
 1432 2017- 3-31 ReconciliationGroup: label update should be insensitive
      2017- 4- 3 fixed

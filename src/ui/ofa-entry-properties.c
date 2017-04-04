@@ -329,8 +329,10 @@ idialog_init( myIDialog *instance )
 	if( !ofo_entry_get_number( priv->entry )){
 		priv->is_new = TRUE;
 		title = g_strdup( _( "Defining a new entry" ));
-	} else {
+	} else if( priv->is_writable ){
 		title = g_strdup( _( "Updating an entry" ));
+	} else {
+		title = g_strdup( _( "Displaying an entry" ));
 	}
 	gtk_window_set_title( GTK_WINDOW( instance ), title );
 

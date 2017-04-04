@@ -137,9 +137,9 @@ typedef struct {
 	GSimpleAction       *new_action;
 	GSimpleAction       *update_action;
 	GSimpleAction       *delete_action;
-	GSimpleAction       *dispope_action;		/* display operation */
-	GSimpleAction       *disprec_action;		/* display reconciliation group */
-	GSimpleAction       *dispset_action;		/* display settlement group */
+	GSimpleAction       *vope_action;			/* display operation */
+	GSimpleAction       *vconcil_action;		/* display reconciliation group */
+	GSimpleAction       *vsettle_action;		/* display settlement group */
 
 	/* footer
 	 */
@@ -154,9 +154,9 @@ typedef struct {
 	/* the current row
 	 */
 	gboolean             editable_row;
-	ofxCounter           ope_number;
-	ofxCounter           concil_id;
-	ofxCounter           settlement_id;
+	ofxCounter           sel_ope_number;
+	ofxCounter           sel_concil_id;
+	ofxCounter           sel_settle_id;
 }
 	ofaEntryPagePrivate;
 
@@ -379,9 +379,9 @@ static void       do_update( ofaEntryPage *self, ofoEntry *entry );
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static void       delete_row( ofaEntryPage *self, GtkTreeSelection *selection );
 static gboolean   delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry );
-static void       action_on_dispope_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
-static void       action_on_disprec_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
-static void       action_on_dispset_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
+static void       action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
+static void       action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
+static void       action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static gboolean   row_is_editable( ofaEntryPage *self, GtkTreeSelection *selection );
 static ofxCounter row_get_operation_id( ofaEntryPage *self, GtkTreeSelection *selection );
 static ofxCounter row_get_concil_id( ofaEntryPage *self, GtkTreeSelection *selection );
@@ -447,9 +447,9 @@ entry_page_dispose( GObject *instance )
 		g_clear_object( &priv->new_action );
 		g_clear_object( &priv->update_action );
 		g_clear_object( &priv->delete_action );
-		g_clear_object( &priv->dispope_action );
-		g_clear_object( &priv->disprec_action );
-		g_clear_object( &priv->dispset_action );
+		g_clear_object( &priv->vope_action );
+		g_clear_object( &priv->vconcil_action );
+		g_clear_object( &priv->vsettle_action );
 	}
 
 	/* chain up to the parent class */
@@ -1236,16 +1236,16 @@ tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage 
 		edit_set_cells_editable( self, selection, editable );
 
 		id = row_get_operation_id( self, selection );
-		g_simple_action_set_enabled( priv->dispope_action, id > 0 );
-		priv->ope_number = id;
+		g_simple_action_set_enabled( priv->vope_action, id > 0 );
+		priv->sel_ope_number = id;
 
 		id = row_get_concil_id( self, selection );
-		g_simple_action_set_enabled( priv->disprec_action, id > 0 );
-		priv->concil_id = id;
+		g_simple_action_set_enabled( priv->vconcil_action, id > 0 );
+		priv->sel_concil_id = id;
 
 		id = row_get_settlement_id( self, selection );
-		g_simple_action_set_enabled( priv->dispset_action, id > 0 );
-		priv->settlement_id = id;
+		g_simple_action_set_enabled( priv->vsettle_action, id > 0 );
+		priv->sel_settle_id = id;
 
 		row_display_message( self, selection );
 	}
@@ -2001,28 +2001,28 @@ setup_actions( ofaEntryPage *self )
 	g_simple_action_set_enabled( priv->delete_action, FALSE );
 
 	/* display operation action */
-	priv->dispope_action = g_simple_action_new( "dispope", NULL );
-	g_signal_connect( priv->dispope_action, "activate", G_CALLBACK( action_on_dispope_activated ), self );
+	priv->vope_action = g_simple_action_new( "vope", NULL );
+	g_signal_connect( priv->vope_action, "activate", G_CALLBACK( action_on_vope_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->dispope_action ),
-			_( "Display operation..." ));
-	g_simple_action_set_enabled( priv->dispope_action, FALSE );
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vope_action ),
+			_( "View operation..." ));
+	g_simple_action_set_enabled( priv->vope_action, FALSE );
 
 	/* display conciliation group action */
-	priv->disprec_action = g_simple_action_new( "disprec", NULL );
-	g_signal_connect( priv->disprec_action, "activate", G_CALLBACK( action_on_disprec_activated ), self );
+	priv->vconcil_action = g_simple_action_new( "vconcil", NULL );
+	g_signal_connect( priv->vconcil_action, "activate", G_CALLBACK( action_on_vconcil_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->disprec_action ),
-			_( "Display conciliation group..." ));
-	g_simple_action_set_enabled( priv->disprec_action, FALSE );
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vconcil_action ),
+			_( "View conciliation group..." ));
+	g_simple_action_set_enabled( priv->vconcil_action, FALSE );
 
 	/* display settlement group action */
-	priv->dispset_action = g_simple_action_new( "dispset", NULL );
-	g_signal_connect( priv->dispset_action, "activate", G_CALLBACK( action_on_dispset_activated ), self );
+	priv->vsettle_action = g_simple_action_new( "vsettle", NULL );
+	g_signal_connect( priv->vsettle_action, "activate", G_CALLBACK( action_on_vsettle_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->dispset_action ),
-			_( "Display settlement group..." ));
-	g_simple_action_set_enabled( priv->dispset_action, FALSE );
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vsettle_action ),
+			_( "View settlement group..." ));
+	g_simple_action_set_enabled( priv->vsettle_action, FALSE );
 
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
 	ofa_icontext_set_menu(
@@ -3476,7 +3476,7 @@ delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry )
  * display the operation
  */
 static void
-action_on_dispope_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
+action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	GtkWindow *toplevel;
@@ -3484,14 +3484,14 @@ action_on_dispope_activated( GSimpleAction *action, GVariant *empty, ofaEntryPag
 	priv = ofa_entry_page_get_instance_private( self );
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_operation_group_run( priv->getter, toplevel, priv->ope_number );
+	ofa_operation_group_run( priv->getter, toplevel, priv->sel_ope_number );
 }
 
 /*
  * display the reconciliation group
  */
 static void
-action_on_disprec_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
+action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	GtkWindow *toplevel;
@@ -3499,14 +3499,14 @@ action_on_disprec_activated( GSimpleAction *action, GVariant *empty, ofaEntryPag
 	priv = ofa_entry_page_get_instance_private( self );
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_reconcil_group_run( priv->getter, toplevel, priv->concil_id );
+	ofa_reconcil_group_run( priv->getter, toplevel, priv->sel_concil_id );
 }
 
 /*
  * display the settlement group
  */
 static void
-action_on_dispset_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
+action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	GtkWindow *toplevel;
@@ -3514,7 +3514,7 @@ action_on_dispset_activated( GSimpleAction *action, GVariant *empty, ofaEntryPag
 	priv = ofa_entry_page_get_instance_private( self );
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_settlement_group_run( priv->getter, toplevel, priv->settlement_id );
+	ofa_settlement_group_run( priv->getter, toplevel, priv->sel_settle_id );
 }
 
 /*
