@@ -67,8 +67,8 @@ static GType st_col_types[ENTRY_N_COLUMNS] = {
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* dope, deffect, label */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ref, currency, ledger */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ope_template, account, debit */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* credit, ope_number, stlmt_number */
-	G_TYPE_ULONG,										/* stlmt_number_i */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,			/* credit, ope_number, ope_number_i */
+	G_TYPE_STRING, G_TYPE_ULONG,						/* stlmt_number, stlmt_number_i */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* stlmt_user, stlmt_stamp, ent_number_str */
 	G_TYPE_ULONG,  G_TYPE_ULONG,						/* ent_number_int, tiers_id */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* upd_user, upd_stamp, concil_number */
@@ -315,7 +315,7 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	const gchar *cstr, *cref, *cur_code, *csetuser, *cupduser, *notes;
 	ofoCurrency *cur_obj;
 	ofxAmount amount;
-	ofxCounter counter, setnum;
+	ofxCounter counter, setnum, openum;
 	ofoConcil *concil;
 	GdkPixbuf *notes_png;
 	GError *error;
@@ -343,7 +343,7 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	counter = ofo_entry_get_tiers( entry );
 	stiers = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
 
-	counter = ofo_entry_get_ope_number( entry );
+	openum = ofo_entry_get_ope_number( entry );
 	sopenum = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
 
 	setnum = ofo_entry_get_settlement_number( entry );
@@ -384,6 +384,7 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 				ENTRY_COL_DEBIT,          sdeb,
 				ENTRY_COL_CREDIT,         scre,
 				ENTRY_COL_OPE_NUMBER,     sopenum,
+				ENTRY_COL_OPE_NUMBER_I,   openum,
 				ENTRY_COL_STLMT_NUMBER,   ssetnum,
 				ENTRY_COL_STLMT_NUMBER_I, setnum,
 				ENTRY_COL_STLMT_USER,     csetuser,

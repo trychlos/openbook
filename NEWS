@@ -34,6 +34,7 @@
    - Export the FEC file (LPF - Article A47 A-1).
    - Integrity check: have a user preference to only display errors (todo #1409).
    - LedgerBookSummary: is now merged with LedgerBookRender (todo #1386).
+   - Operation group: display entries of an operation (todo #1422).
    - Printings: allow the user to re-render as often as he wishes (todo #1384).
    - Printings: have a progress bar when printing (todo #1404).
    - Printings: have a plugin which can override ofaIRenderable interface (todo #1196).
@@ -68,6 +69,7 @@
    - ofaAccentryTreeview: new class.
    - ofaBatLineProperties: new class.
    - ofaIRenderer: new interface.
+   - ofaOperationGroup: new class.
    - ofaSettlementGroup: new class.
    - ofaUnreconcilPage: new class.
    - ofaUnsettledPage: new class.

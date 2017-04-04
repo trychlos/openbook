@@ -68,6 +68,7 @@
 #include "ui/ofa-entry-properties.h"
 #include "ui/ofa-entry-store.h"
 #include "ui/ofa-entry-treeview.h"
+#include "ui/ofa-operation-group.h"
 #include "ui/ofa-reconcil-group.h"
 #include "ui/ofa-settlement-group.h"
 
@@ -136,8 +137,9 @@ typedef struct {
 	GSimpleAction       *new_action;
 	GSimpleAction       *update_action;
 	GSimpleAction       *delete_action;
-	GSimpleAction       *dispset_action;		/* display settlement group */
+	GSimpleAction       *dispope_action;		/* display operation */
 	GSimpleAction       *disprec_action;		/* display reconciliation group */
+	GSimpleAction       *dispset_action;		/* display settlement group */
 
 	/* footer
 	 */
@@ -152,6 +154,7 @@ typedef struct {
 	/* the current row
 	 */
 	gboolean             editable_row;
+	ofxCounter           ope_number;
 	ofxCounter           concil_id;
 	ofxCounter           settlement_id;
 }
@@ -376,9 +379,11 @@ static void       do_update( ofaEntryPage *self, ofoEntry *entry );
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static void       delete_row( ofaEntryPage *self, GtkTreeSelection *selection );
 static gboolean   delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry );
+static void       action_on_dispope_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static void       action_on_disprec_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static void       action_on_dispset_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static gboolean   row_is_editable( ofaEntryPage *self, GtkTreeSelection *selection );
+static ofxCounter row_get_operation_id( ofaEntryPage *self, GtkTreeSelection *selection );
 static ofxCounter row_get_concil_id( ofaEntryPage *self, GtkTreeSelection *selection );
 static ofxCounter row_get_settlement_id( ofaEntryPage *self, GtkTreeSelection *selection );
 static void       row_display_message( ofaEntryPage *self, GtkTreeSelection *selection );
@@ -442,8 +447,9 @@ entry_page_dispose( GObject *instance )
 		g_clear_object( &priv->new_action );
 		g_clear_object( &priv->update_action );
 		g_clear_object( &priv->delete_action );
-		g_clear_object( &priv->dispset_action );
+		g_clear_object( &priv->dispope_action );
 		g_clear_object( &priv->disprec_action );
+		g_clear_object( &priv->dispset_action );
 	}
 
 	/* chain up to the parent class */
@@ -1229,13 +1235,17 @@ tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage 
 		gtk_widget_set_sensitive( priv->edit_switch, editable );
 		edit_set_cells_editable( self, selection, editable );
 
-		id = row_get_settlement_id( self, selection );
-		g_simple_action_set_enabled( priv->dispset_action, id > 0 );
-		priv->settlement_id = id;
+		id = row_get_operation_id( self, selection );
+		g_simple_action_set_enabled( priv->dispope_action, id > 0 );
+		priv->ope_number = id;
 
 		id = row_get_concil_id( self, selection );
 		g_simple_action_set_enabled( priv->disprec_action, id > 0 );
 		priv->concil_id = id;
+
+		id = row_get_settlement_id( self, selection );
+		g_simple_action_set_enabled( priv->dispset_action, id > 0 );
+		priv->settlement_id = id;
 
 		row_display_message( self, selection );
 	}
@@ -1989,6 +1999,14 @@ setup_actions( ofaEntryPage *self )
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 			_( "Delete..." ));
 	g_simple_action_set_enabled( priv->delete_action, FALSE );
+
+	/* display operation action */
+	priv->dispope_action = g_simple_action_new( "dispope", NULL );
+	g_signal_connect( priv->dispope_action, "activate", G_CALLBACK( action_on_dispope_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->dispope_action ),
+			_( "Display operation..." ));
+	g_simple_action_set_enabled( priv->dispope_action, FALSE );
 
 	/* display conciliation group action */
 	priv->disprec_action = g_simple_action_new( "disprec", NULL );
@@ -3455,6 +3473,21 @@ delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry )
 }
 
 /*
+ * display the operation
+ */
+static void
+action_on_dispope_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_operation_group_run( priv->getter, toplevel, priv->ope_number );
+}
+
+/*
  * display the reconciliation group
  */
 static void
@@ -3512,6 +3545,28 @@ row_is_editable( ofaEntryPage *self, GtkTreeSelection *selection )
 	}
 
 	return( editable );
+}
+
+/*
+ * Returns the operation number of the entry
+ */
+static ofxCounter
+row_get_operation_id( ofaEntryPage *self, GtkTreeSelection *selection )
+{
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoEntry *entry;
+
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+
+		gtk_tree_model_get( tmodel, &iter, ENTRY_COL_OBJECT, &entry, -1 );
+		g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), 0 );
+		g_object_unref( entry );
+
+		return( ofo_entry_get_ope_number( entry ));
+	}
+
+	return( 0 );
 }
 
 /*

@@ -180,13 +180,13 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-maintainer.$(OBJEXT) ofa-misc-audit-store.$(OBJEXT) \
 	ofa-misc-audit-treeview.$(OBJEXT) ofa-misc-audit-ui.$(OBJEXT) \
 	ofa-misc-collector-ui.$(OBJEXT) ofa-nomodal-page.$(OBJEXT) \
-	ofa-ope-template-page.$(OBJEXT) ofa-paimean-page.$(OBJEXT) \
-	ofa-period-close.$(OBJEXT) ofa-plugin-manager.$(OBJEXT) \
-	ofa-rate-page.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
-	ofa-rate-treeview.$(OBJEXT) ofa-reconcil-args.$(OBJEXT) \
-	ofa-reconcil-group.$(OBJEXT) ofa-reconcil-page.$(OBJEXT) \
-	ofa-reconcil-render.$(OBJEXT) ofa-reconcil-store.$(OBJEXT) \
-	ofa-reconcil-treeview.$(OBJEXT) \
+	ofa-ope-template-page.$(OBJEXT) ofa-operation-group.$(OBJEXT) \
+	ofa-paimean-page.$(OBJEXT) ofa-period-close.$(OBJEXT) \
+	ofa-plugin-manager.$(OBJEXT) ofa-rate-page.$(OBJEXT) \
+	ofa-rate-properties.$(OBJEXT) ofa-rate-treeview.$(OBJEXT) \
+	ofa-reconcil-args.$(OBJEXT) ofa-reconcil-group.$(OBJEXT) \
+	ofa-reconcil-page.$(OBJEXT) ofa-reconcil-render.$(OBJEXT) \
+	ofa-reconcil-store.$(OBJEXT) ofa-reconcil-treeview.$(OBJEXT) \
 	ofa-recovery-assistant.$(OBJEXT) \
 	ofa-restore-assistant.$(OBJEXT) ofa-settlement-group.$(OBJEXT) \
 	ofa-settlement-page.$(OBJEXT) ofa-target-chooser-bin.$(OBJEXT) \
@@ -661,6 +661,8 @@ openbook_SOURCES = \
 	ofa-nomodal-page.h									\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
+	ofa-operation-group.c								\
+	ofa-operation-group.h								\
 	ofa-paimean-page.c									\
 	ofa-paimean-page.h									\
 	ofa-period-close.c									\
@@ -903,6 +905,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-collector-ui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-nomodal-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-page.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-operation-group.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paimean-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-period-close.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin-manager.Po@am__quote@

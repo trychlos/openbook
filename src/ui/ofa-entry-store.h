@@ -84,6 +84,7 @@ typedef struct {
  * @ENTRY_COL_DEBIT          : debit                             String       Yes
  * @ENTRY_COL_CREDIT         : credit                            String       Yes
  * @ENTRY_COL_OPE_NUMBER     : operation number                  String       Yes
+ * @ENTRY_COL_OPE_NUMBER_I   : operation number                  Int           No
  * @ENTRY_COL_STLMT_NUMBER   : settlement number                 String       Yes
  * @ENTRY_COL_STLMT_NUMBER_I : settlement number                 Int           No
  * @ENTRY_COL_STLMT_USER     : settlement user                   String       Yes
@@ -120,6 +121,7 @@ enum {
 	ENTRY_COL_DEBIT,
 	ENTRY_COL_CREDIT,
 	ENTRY_COL_OPE_NUMBER,
+	ENTRY_COL_OPE_NUMBER_I,
 	ENTRY_COL_STLMT_NUMBER,
 	ENTRY_COL_STLMT_NUMBER_I,
 	ENTRY_COL_STLMT_USER,

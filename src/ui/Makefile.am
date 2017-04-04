@@ -225,6 +225,8 @@ openbook_SOURCES = \
 	ofa-nomodal-page.h									\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
+	ofa-operation-group.c								\
+	ofa-operation-group.h								\
 	ofa-paimean-page.c									\
 	ofa-paimean-page.h									\
 	ofa-period-close.c									\
