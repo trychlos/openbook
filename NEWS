@@ -47,6 +47,7 @@
    - Restore assistant: allow admin credentials to be saved (todo #1416).
    - Settlement page: have all entry related actions (todo #1431).
    - Unreconciliated page: have all account/entry related actions.
+   - Unsettled page: have all account/entry related actions.
 
  Bug fixes:
 

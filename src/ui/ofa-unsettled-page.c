@@ -28,6 +28,8 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-utils.h"
+
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -38,8 +40,12 @@
 #include "api/ofo-account.h"
 #include "api/ofo-entry.h"
 
+#include "core/ofa-account-properties.h"
+
 #include "ui/ofa-accentry-store.h"
 #include "ui/ofa-accentry-treeview.h"
+#include "ui/ofa-entry-properties.h"
+#include "ui/ofa-operation-group.h"
 #include "ui/ofa-settlement-page.h"
 #include "ui/ofa-unsettled-page.h"
 
@@ -63,6 +69,15 @@ typedef struct {
 	GSimpleAction       *collapse_action;
 	GSimpleAction       *expand_action;
 	GSimpleAction       *settle_action;
+	GSimpleAction       *vaccount_action;
+	GSimpleAction       *ventry_action;
+	GSimpleAction       *vope_action;
+
+	/* selection
+	 */
+	ofoAccount          *sel_account;
+	ofoEntry            *sel_entry;
+	ofxCounter           sel_ope_number;
 }
 	ofaUnsettledPagePrivate;
 
@@ -79,6 +94,9 @@ static void       action_on_collapse_activated( GSimpleAction *action, GVariant 
 static void       action_on_expand_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self );
 static void       action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self );
 static void       action_do_settle( ofaUnsettledPage *self, ofoBase *object );
+static void       action_on_vaccount_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self );
+static void       action_on_ventry_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self );
+static void       action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaUnsettledPage, ofa_unsettled_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaUnsettledPage ))
@@ -125,6 +143,9 @@ unsettled_page_dispose( GObject *instance )
 		g_object_unref( priv->collapse_action );
 		g_object_unref( priv->expand_action );
 		g_object_unref( priv->settle_action );
+		g_object_unref( priv->vaccount_action );
+		g_object_unref( priv->ventry_action );
+		g_object_unref( priv->vope_action );
 	}
 
 	/* chain up to the parent class */
@@ -242,6 +263,27 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->settle_action ),
 					_( "_Settle..." )));
+
+	/* view account action */
+	priv->vaccount_action = g_simple_action_new( "vaccount", NULL );
+	g_signal_connect( priv->vaccount_action, "activate", G_CALLBACK( action_on_vaccount_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->vaccount_action ),
+			_( "View the account..." ));
+
+	/* view entry action */
+	priv->ventry_action = g_simple_action_new( "ventry", NULL );
+	g_signal_connect( priv->ventry_action, "activate", G_CALLBACK( action_on_ventry_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->ventry_action ),
+			_( "View the entry..." ));
+
+	/* view operation action */
+	priv->vope_action = g_simple_action_new( "vope", NULL );
+	g_signal_connect( priv->vope_action, "activate", G_CALLBACK( action_on_vope_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->vope_action ),
+			_( "View the operation..." ));
 }
 
 static void
@@ -348,10 +390,37 @@ static void
 tview_on_accchanged( ofaAccentryTreeview *view, ofoBase *object, ofaUnsettledPage *self )
 {
 	ofaUnsettledPagePrivate *priv;
+	gboolean settle_enabled, vaccount_enabled, ventry_enabled, vope_enabled;
 
 	priv = ofa_unsettled_page_get_instance_private( self );
 
-	g_simple_action_set_enabled( priv->settle_action, object != NULL );
+	/* settle is always enabled
+	 * should be disabled when on an account which does not *show* any child
+	 * but do not know how to do this */
+	settle_enabled = TRUE;
+
+	vaccount_enabled = FALSE;
+	ventry_enabled = FALSE;
+	vope_enabled = FALSE;
+	priv->sel_account = NULL;
+	priv->sel_entry = NULL;
+
+	if( OFO_IS_ACCOUNT( object )){
+		priv->sel_account = OFO_ACCOUNT( object );
+		vaccount_enabled = TRUE;
+
+	} else {
+		g_return_if_fail( OFO_IS_ENTRY( object ));
+		priv->sel_entry = OFO_ENTRY( object );
+		ventry_enabled = TRUE;
+		priv->sel_ope_number = ofo_entry_get_ope_number( priv->sel_entry );
+		vope_enabled = ( priv->sel_ope_number > 0 );
+	}
+
+	g_simple_action_set_enabled( priv->settle_action, settle_enabled );
+	g_simple_action_set_enabled( priv->vaccount_action, vaccount_enabled );
+	g_simple_action_set_enabled( priv->ventry_action, ventry_enabled );
+	g_simple_action_set_enabled( priv->vope_action, vope_enabled );
 }
 
 static void
@@ -424,4 +493,40 @@ action_do_settle( ofaUnsettledPage *self, ofoBase *object )
 
 	page = ofa_ipage_manager_activate( manager, OFA_TYPE_SETTLEMENT_PAGE );
 	ofa_settlement_page_set_account( OFA_SETTLEMENT_PAGE( page ), account );
+}
+
+static void
+action_on_vaccount_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self )
+{
+	ofaUnsettledPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_unsettled_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_account_properties_run( priv->getter, toplevel, priv->sel_account );
+}
+
+static void
+action_on_ventry_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self )
+{
+	ofaUnsettledPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_unsettled_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_entry_properties_run( priv->getter, toplevel, priv->sel_entry, FALSE );
+}
+
+static void
+action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaUnsettledPage *self )
+{
+	ofaUnsettledPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_unsettled_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_operation_group_run( priv->getter, toplevel, priv->sel_ope_number );
 }
