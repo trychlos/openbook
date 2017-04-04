@@ -62,12 +62,17 @@
 
 #include "core/ofa-iconcil.h"
 
+#include "ui/ofa-bat-line-properties.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-bat-utils.h"
+#include "ui/ofa-entry-properties.h"
+#include "ui/ofa-operation-group.h"
+#include "ui/ofa-reconcil-group.h"
 #include "ui/ofa-reconcil-page.h"
 #include "ui/ofa-reconcil-render.h"
 #include "ui/ofa-reconcil-store.h"
 #include "ui/ofa-reconcil-treeview.h"
+#include "ui/ofa-settlement-group.h"
 
 /* private instance data
  */
@@ -115,6 +120,19 @@ typedef struct {
 	GSimpleAction       *unreconciliate_action;
 	GSimpleAction       *print_action;
 	GSimpleAction       *expand_action;
+	GSimpleAction       *ventry_action;
+	GSimpleAction       *vbat_action;
+	GSimpleAction       *vope_action;
+	GSimpleAction       *vconcil_action;
+	GSimpleAction       *vsettle_action;					/* always disabled */
+
+	/* current selection
+	 */
+	ofoEntry            *sel_entry;
+	ofoBatLine          *sel_batline;
+	ofxCounter           sel_ope_number;
+	ofxCounter           sel_concil_id;
+	ofxCounter           sel_settle_id;
 
 	/* expand button:
 	 * default is default expand
@@ -224,7 +242,7 @@ static gboolean             tview_is_visible_entry( ofaReconcilPage *self, GtkTr
 static gboolean             tview_is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline );
 static gboolean             tview_is_session_conciliated( ofaReconcilPage *self, ofoConcil *concil );
 static void                 tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaReconcilPage *self );
-static void                 tview_examine_selection( ofaReconcilPage *self, GList *selected, ofsCurrency *scurrency, guint *concil_rows, guint *unconcil_rows, gboolean *is_child );
+static void                 tview_examine_selection( ofaReconcilPage *self, GList *selected, ofsCurrency *scurrency, guint *concil_rows, guint *unconcil_rows, gboolean *is_child, ofoEntry **entry, ofoBatLine **batline );
 static void                 tview_on_selection_activated( ofaTVBin *treeview, GtkTreeSelection *selection, ofaReconcilPage *self );
 static void                 tview_expand_selection( ofaReconcilPage *self );
 static void                 tview_clear_selection( ofaReconcilPage *self );
@@ -285,6 +303,11 @@ static void                 action_on_print_activated( GSimpleAction *action, GV
 static void                 action_on_expand_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
 static gboolean             expand_on_pressed( GtkWidget *button, GdkEvent *event, ofaReconcilPage *self );
 static gboolean             expand_on_released( GtkWidget *button, GdkEvent *event, ofaReconcilPage *self );
+static void                 action_on_ventry_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
+static void                 action_on_vbat_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
+static void                 action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
+static void                 action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
+static void                 action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
 static void                 set_message( ofaReconcilPage *page, const gchar *msg );
 static void                 read_settings( ofaReconcilPage *self );
 static void                 write_settings( ofaReconcilPage *self );
@@ -345,6 +368,11 @@ reconciliation_dispose( GObject *instance )
 		g_clear_object( &priv->unreconciliate_action );
 		g_clear_object( &priv->print_action );
 		g_clear_object( &priv->expand_action );
+		g_clear_object( &priv->ventry_action );
+		g_clear_object( &priv->vbat_action );
+		g_clear_object( &priv->vope_action );
+		g_clear_object( &priv->vconcil_action );
+		g_clear_object( &priv->vsettle_action );
 	}
 
 	/* chain up to the parent class */
@@ -755,23 +783,33 @@ tview_is_session_conciliated( ofaReconcilPage *self, ofoConcil *concil )
  * - decline is enabled if selection contains *one* unconciliated child
  *
  * - unconciliate is enabled as soon as selection contains a concilition group
+ *
+ * - view entry, bat, ope, concil and settle actions are only enabled
+ *   when there is only one selected row
  */
 static void
 tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	gboolean concil_enabled, decline_enabled, unreconciliate_enabled;
+	gboolean ventry_enabled, vbat_enabled, vope_enabled, vconcil_enabled, vsettle_enabled;
 	ofsCurrency scur;
 	guint concil_rows, unconcil_rows, count;
 	gboolean is_child;
 	gchar *sdeb, *scre;
 	GList *selected;
+	ofoConcil *concil;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	concil_enabled = FALSE;
 	decline_enabled = FALSE;
 	unreconciliate_enabled = FALSE;
+	ventry_enabled = FALSE;
+	vbat_enabled = FALSE;
+	vope_enabled = FALSE;
+	vconcil_enabled = FALSE;
+	vsettle_enabled = FALSE;
 	priv->activate_action = ACTIV_NONE;
 
 	if( priv->acc_currency ){
@@ -780,7 +818,8 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 
 		selected = gtk_tree_selection_get_selected_rows( selection, NULL );
 		count = g_list_length( selected );
-		tview_examine_selection( self, selected, &scur, &concil_rows, &unconcil_rows, &is_child );
+		tview_examine_selection( self, selected,
+				&scur, &concil_rows, &unconcil_rows, &is_child, &priv->sel_entry, &priv->sel_batline );
 		g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
 
 		sdeb = ofa_amount_to_str( scur.debit, priv->acc_currency, priv->getter );
@@ -810,6 +849,24 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 		decline_enabled = ( count == 1 && unconcil_rows == 1 && is_child );
 		unreconciliate_enabled = ( concil_rows > 0 && unconcil_rows == 0 );
 
+		/* view actions are only enabled when only one row is selected */
+		ventry_enabled = ( count == 1 && priv->sel_entry && OFO_IS_ENTRY( priv->sel_entry ));
+		vbat_enabled = ( count == 1 && priv->sel_batline && OFO_IS_BAT_LINE( priv->sel_batline ));
+		if( ventry_enabled ){
+			priv->sel_ope_number = ofo_entry_get_ope_number( priv->sel_entry );
+			vope_enabled = ( priv->sel_ope_number > 0 );
+			concil = ofa_iconcil_get_concil( OFA_ICONCIL( priv->sel_entry ));
+			priv->sel_concil_id = concil ? ofo_concil_get_id( concil ) : 0;
+			vconcil_enabled = ( priv->sel_concil_id > 0 );
+			priv->sel_settle_id = ofo_entry_get_settlement_number( priv->sel_entry );
+			vsettle_enabled = ( priv->sel_settle_id > 0 );
+		}
+		if( vbat_enabled ){
+			concil = ofa_iconcil_get_concil( OFA_ICONCIL( priv->sel_batline ));
+			priv->sel_concil_id = concil ? ofo_concil_get_id( concil ) : 0;
+			vconcil_enabled = ( priv->sel_concil_id > 0 );
+		}
+
 		/* what to do on selection activation ?
 		 * do not manage selection activation when we have both conciliated
 		 * and unconciliated rows */
@@ -824,6 +881,11 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 	g_simple_action_set_enabled( priv->reconciliate_action, concil_enabled );
 	g_simple_action_set_enabled( priv->decline_action, decline_enabled );
 	g_simple_action_set_enabled( priv->unreconciliate_action, unreconciliate_enabled );
+	g_simple_action_set_enabled( priv->ventry_action, ventry_enabled );
+	g_simple_action_set_enabled( priv->vbat_action, vbat_enabled );
+	g_simple_action_set_enabled( priv->vope_action, vope_enabled );
+	g_simple_action_set_enabled( priv->vconcil_action, vconcil_enabled );
+	g_simple_action_set_enabled( priv->vsettle_action, vsettle_enabled );
 }
 
 /*
@@ -840,10 +902,13 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
  * @unconcil_rows: count of unconciliated rows
  * @is_child: whether all rows of the selection are a child
  *  (most useful when selecting only one child to decline it)
+ * @entry: [allow-none]: set with the first found entry
+ * @bat: [allow-none]: set with the first found batline
  */
 static void
 tview_examine_selection( ofaReconcilPage *self, GList *selected,
-		ofsCurrency *scur, guint *concil_rows, guint *unconcil_rows, gboolean *is_child )
+		ofsCurrency *scur, guint *concil_rows, guint *unconcil_rows, gboolean *is_child,
+		ofoEntry **entry, ofoBatLine **batline )
 {
 	ofaReconcilPagePrivate *priv;
 	GtkTreeModel *tmodel;
@@ -865,6 +930,13 @@ tview_examine_selection( ofaReconcilPage *self, GList *selected,
 	tmodel = ofa_tvbin_get_tree_model( OFA_TVBIN( priv->tview ));
 	/* g_debug( "tmodel=%p (%s)", ( void * ) tmodel, G_OBJECT_TYPE_NAME( tmodel )); */
 
+	if( entry ){
+		*entry = NULL;
+	}
+	if( batline ){
+		*batline = NULL;
+	}
+
 	for( it=selected ; it ; it=it->next ){
 		ok = gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data );
 		g_return_if_fail( ok );
@@ -873,11 +945,19 @@ tview_examine_selection( ofaReconcilPage *self, GList *selected,
 		g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
 		g_object_unref( object );
 
-		/* increment debit/credit */
+		/* increment debit/credit
+		 * + keep trace of the first found object */
 		if( OFO_IS_ENTRY( object )){
+			if( entry && !*entry ){
+				*entry = OFO_ENTRY( object );
+			}
 			scur->debit += ofo_entry_get_debit( OFO_ENTRY( object ));
 			scur->credit += ofo_entry_get_credit( OFO_ENTRY( object ));
+
 		} else {
+			if( batline && !*batline ){
+				*batline = OFO_BAT_LINE( object );
+			}
 			amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
 			if( amount < 0 ){
 				scur->debit += -1*amount;
@@ -1253,6 +1333,41 @@ setup_actions( ofaReconcilPage *self, GtkContainer *parent )
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	ofa_iactionable_set_button(
 			OFA_IACTIONABLE( self ), button, priv->settings_prefix, G_ACTION( priv->expand_action ));
+
+	/* view entry action */
+	priv->ventry_action = g_simple_action_new( "ventry", NULL );
+	g_signal_connect( priv->ventry_action, "activate", G_CALLBACK( action_on_ventry_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->ventry_action ),
+			_( "View the entry..." ));
+
+	/* view batline action */
+	priv->vbat_action = g_simple_action_new( "vbat", NULL );
+	g_signal_connect( priv->vbat_action, "activate", G_CALLBACK( action_on_vbat_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vbat_action ),
+			_( "View the BAT line..." ));
+
+	/* view operation action */
+	priv->vope_action = g_simple_action_new( "vope", NULL );
+	g_signal_connect( priv->vope_action, "activate", G_CALLBACK( action_on_vope_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vope_action ),
+			_( "View the operation..." ));
+
+	/* view conciliation action */
+	priv->vconcil_action = g_simple_action_new( "vconcil", NULL );
+	g_signal_connect( priv->vconcil_action, "activate", G_CALLBACK( action_on_vconcil_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vconcil_action ),
+			_( "View the conciliation group..." ));
+
+	/* view settlement action */
+	priv->vsettle_action = g_simple_action_new( "vsettle", NULL );
+	g_signal_connect( priv->vsettle_action, "activate", G_CALLBACK( action_on_vsettle_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vsettle_action ),
+			_( "View the settlement group..." ));
 
 	g_signal_connect( button, "button-press-event", G_CALLBACK( expand_on_pressed ), self );
 	g_signal_connect( button, "button-release-event", G_CALLBACK( expand_on_released ), self );
@@ -2001,7 +2116,7 @@ do_reconciliate( ofaReconcilPage *self )
 	selected = gtk_tree_selection_get_selected_rows( selection, NULL );
 	g_return_if_fail( g_list_length( selected ) >= 1 );
 
-	tview_examine_selection( self, selected, &scur, &concil_rows, &unconcil_rows, &is_child );
+	tview_examine_selection( self, selected, &scur, &concil_rows, &unconcil_rows, &is_child, NULL, NULL );
 
 	/* convert path on sort model to row references on store model */
 	get_tree_models( self, &sort_model, &filter_model );
@@ -2463,7 +2578,7 @@ do_unconciliate( ofaReconcilPage *self )
 
 	memset( &scur, '\0', sizeof( ofsCurrency ));
 	scur.currency = priv->acc_currency;
-	tview_examine_selection( self, selected, &scur, &concil_rows, &unconcil_rows, &is_child );
+	tview_examine_selection( self, selected, &scur, &concil_rows, &unconcil_rows, &is_child, NULL, NULL );
 	if( concil_rows == 0 || unconcil_rows > 0 ){
 		g_warning( "%s: concil_rows=%u, unconcil_rows=%u", thisfn, concil_rows, unconcil_rows );
 		g_return_if_reached();
@@ -2924,6 +3039,66 @@ expand_on_released( GtkWidget *button, GdkEvent *event, ofaReconcilPage *self )
 	/*g_debug( "expand_on_released: ctrl_on_released=%s", priv->ctrl_on_released ? "True":"False" );*/
 
 	return( FALSE );
+}
+
+static void
+action_on_ventry_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self )
+{
+	ofaReconcilPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_reconcil_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_entry_properties_run( priv->getter, toplevel, priv->sel_entry, FALSE );
+}
+
+static void
+action_on_vbat_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self )
+{
+	ofaReconcilPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_reconcil_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_bat_line_properties_run( priv->getter, toplevel, priv->sel_batline );
+}
+
+static void
+action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self )
+{
+	ofaReconcilPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_reconcil_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_operation_group_run( priv->getter, toplevel, priv->sel_ope_number );
+}
+
+static void
+action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self )
+{
+	ofaReconcilPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_reconcil_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_reconcil_group_run( priv->getter, toplevel, priv->sel_concil_id );
+}
+
+static void
+action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self )
+{
+	ofaReconcilPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_reconcil_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_settlement_group_run( priv->getter, toplevel, priv->sel_settle_id );
 }
 
 static void
