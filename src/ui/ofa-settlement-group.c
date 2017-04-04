@@ -41,6 +41,7 @@
 #include "ui/ofa-entry-properties.h"
 #include "ui/ofa-entry-store.h"
 #include "ui/ofa-entry-treeview.h"
+#include "ui/ofa-operation-group.h"
 #include "ui/ofa-settlement-group.h"
 
 /* private instance data
@@ -64,7 +65,13 @@ typedef struct {
 
 	/* actions
 	 */
-	GSimpleAction    *view_entry_action;
+	GSimpleAction    *ventry_action;
+	GSimpleAction    *vope_action;
+
+	/* selection
+	 */
+	ofoEntry         *sel_entry;
+	ofxCounter        sel_ope_number;
 }
 	ofaSettlementGroupPrivate;
 
@@ -79,8 +86,8 @@ static void      setup_actions( ofaSettlementGroup *self );
 static void      setup_store( ofaSettlementGroup *self );
 static void      tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaSettlementGroup *self );
 static gboolean  tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlementGroup *self );
-static ofoEntry *tview_get_selected( ofaSettlementGroup *self );
-static void      action_on_view_entry_activated( GSimpleAction *action, GVariant *empty, ofaSettlementGroup *self );
+static void      action_on_ventry_activated( GSimpleAction *action, GVariant *empty, ofaSettlementGroup *self );
+static void      action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaSettlementGroup *self );
 static void      iactionable_iface_init( ofaIActionableInterface *iface );
 static guint     iactionable_get_interface_version( void );
 
@@ -125,7 +132,8 @@ settlement_group_dispose( GObject *instance )
 
 		/* unref object members here */
 
-		g_clear_object( &priv->view_entry_action );
+		g_clear_object( &priv->ventry_action );
+		g_clear_object( &priv->vope_action );
 	}
 
 	/* chain up to the parent class */
@@ -299,12 +307,19 @@ setup_actions( ofaSettlementGroup *self )
 	priv = ofa_settlement_group_get_instance_private( self );
 
 	/* view entry action */
-	priv->view_entry_action = g_simple_action_new( "viewentry", NULL );
-	g_simple_action_set_enabled( priv->view_entry_action, FALSE );
-	g_signal_connect( priv->view_entry_action, "activate", G_CALLBACK( action_on_view_entry_activated ), self );
+	priv->ventry_action = g_simple_action_new( "viewentry", NULL );
+	g_simple_action_set_enabled( priv->ventry_action, FALSE );
+	g_signal_connect( priv->ventry_action, "activate", G_CALLBACK( action_on_ventry_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->view_entry_action ),
-			_( "View entry" ));
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->ventry_action ),
+			_( "View the entry..." ));
+
+	/* view operation action */
+	priv->vope_action = g_simple_action_new( "vope", NULL );
+	g_signal_connect( priv->vope_action, "activate", G_CALLBACK( action_on_vope_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vope_action ),
+			_( "View the operation..." ));
 
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
 	ofa_icontext_set_menu(
@@ -336,20 +351,29 @@ static void
 tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaSettlementGroup *self )
 {
 	ofaSettlementGroupPrivate *priv;
+	gboolean ventry_enabled, vope_enabled;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoEntry *entry;
 
 	priv = ofa_settlement_group_get_instance_private( self );
 
+	ventry_enabled = FALSE;
+	vope_enabled = FALSE;
+	priv->sel_entry = NULL;
+
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 		gtk_tree_model_get( tmodel, &iter, ENTRY_COL_OBJECT, &entry, -1 );
 		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 		g_object_unref( entry );
-		g_simple_action_set_enabled( priv->view_entry_action, TRUE );
-	} else {
-		g_simple_action_set_enabled( priv->view_entry_action, FALSE );
+		priv->sel_entry = entry;
+		ventry_enabled = TRUE;
+		priv->sel_ope_number = ofo_entry_get_ope_number( entry );
+		vope_enabled = ( priv->sel_ope_number > 0 );
 	}
+
+	g_simple_action_set_enabled( priv->ventry_action, ventry_enabled );
+	g_simple_action_set_enabled( priv->vope_action, vope_enabled );
 }
 
 /*
@@ -369,40 +393,24 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlementGrou
 	return( id == priv->settlement_id );
 }
 
-/*
- * Returns the selected object.
- */
-static ofoEntry *
-tview_get_selected( ofaSettlementGroup *self )
+static void
+action_on_ventry_activated( GSimpleAction *action, GVariant *empty, ofaSettlementGroup *self )
 {
 	ofaSettlementGroupPrivate *priv;
-	ofoEntry *entry;
-	GList *selected;
 
 	priv = ofa_settlement_group_get_instance_private( self );
 
-	selected = ofa_entry_treeview_get_selected( priv->tview );
-	g_return_val_if_fail(
-			selected && selected->data && OFO_IS_ENTRY( selected->data ), NULL );
-
-	entry = OFO_ENTRY( selected->data );
-	ofa_entry_treeview_free_selected( selected );
-
-	return( entry );
+	ofa_entry_properties_run( priv->getter, priv->parent, priv->sel_entry, FALSE );
 }
 
 static void
-action_on_view_entry_activated( GSimpleAction *action, GVariant *empty, ofaSettlementGroup *self )
+action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaSettlementGroup *self )
 {
 	ofaSettlementGroupPrivate *priv;
-	ofoEntry *entry;
 
 	priv = ofa_settlement_group_get_instance_private( self );
 
-	entry = tview_get_selected( self );
-	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
-
-	ofa_entry_properties_run( priv->getter, priv->parent, entry, FALSE );
+	ofa_operation_group_run( priv->getter, priv->parent, priv->sel_ope_number );
 }
 
 /*
