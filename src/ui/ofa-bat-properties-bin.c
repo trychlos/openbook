@@ -39,6 +39,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
+#include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -65,6 +66,7 @@ typedef struct {
 	/* UI
 	 */
 	GtkWidget          *bat_id;
+	GtkWidget          *bat_uri;
 	GtkWidget          *bat_format;
 	GtkWidget          *bat_count;
 	GtkWidget          *bat_unused;
@@ -75,6 +77,7 @@ typedef struct {
 	GtkWidget          *bat_solde_begin;
 	GtkWidget          *bat_solde_end;
 	GtkWidget          *bat_account;
+	GtkWidget          *account_label;
 
 	ofaBatlineTreeview *tview;
 
@@ -225,6 +228,9 @@ setup_bin( ofaBatPropertiesBin *self )
 	priv->bat_format = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-format" );
 	g_return_if_fail( priv->bat_format && GTK_IS_ENTRY( priv->bat_format ));
 
+	priv->bat_uri = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-uri-entry" );
+	g_return_if_fail( priv->bat_uri && GTK_IS_ENTRY( priv->bat_uri ));
+
 	priv->bat_count = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-count" );
 	g_return_if_fail( priv->bat_count && GTK_IS_ENTRY( priv->bat_count ));
 
@@ -251,6 +257,9 @@ setup_bin( ofaBatPropertiesBin *self )
 
 	priv->bat_account = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-account" );
 	g_return_if_fail( priv->bat_account && GTK_IS_ENTRY( priv->bat_account ));
+
+	priv->account_label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-account-label" );
+	g_return_if_fail( priv->account_label && GTK_IS_LABEL( priv->account_label ));
 
 	my_utils_container_set_editable( GTK_CONTAINER( self ), FALSE );
 
@@ -282,6 +291,7 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	gchar *str;
 	gint total, used;
 	ofaHub *hub;
+	ofoAccount *account;
 
 	priv = ofa_bat_properties_bin_get_instance_private( self );
 
@@ -295,6 +305,11 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_format ), cstr );
 	} else {
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_format ), "" );
+	}
+
+	cstr = ofo_bat_get_uri( bat );
+	if( cstr ){
+		gtk_entry_set_text( GTK_ENTRY( priv->bat_uri ), cstr );
 	}
 
 	total = ofo_bat_get_lines_count( bat );
@@ -346,6 +361,10 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	cstr = ofo_bat_get_account( bat );
 	if( my_strlen( cstr )){
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_account ), cstr );
+		account = ofo_account_get_by_number( priv->getter, cstr );
+		if( account ){
+			gtk_label_set_text( GTK_LABEL( priv->account_label ), ofo_account_get_label( account ));
+		}
 	} else {
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_account ), "" );
 	}

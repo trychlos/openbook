@@ -60,7 +60,6 @@
                 <property name="margin_right">2</property>
                 <property name="margin_top">2</property>
                 <property name="margin_bottom">2</property>
-                <property name="hexpand">True</property>
                 <property name="row_spacing">2</property>
                 <property name="column_spacing">4</property>
                 <child>
@@ -72,18 +71,20 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">1</property>
+                    <property name="top_attach">2</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkEntry" id="p1-format">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="max_length">128</property>
                     <property name="invisible_char">●</property>
+                    <property name="max_width_chars">128</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
-                    <property name="top_attach">1</property>
+                    <property name="top_attach">2</property>
                     <property name="width">3</property>
                   </packing>
                 </child>
@@ -93,13 +94,13 @@
                     <property name="can_focus">True</property>
                     <property name="halign">start</property>
                     <property name="invisible_char">●</property>
-                    <property name="width_chars">8</property>
-                    <property name="max_width_chars">8</property>
+                    <property name="width_chars">10</property>
+                    <property name="max_width_chars">10</property>
                     <property name="xalign">1</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
-                    <property name="top_attach">2</property>
+                    <property name="top_attach">3</property>
                   </packing>
                 </child>
                 <child>
@@ -111,7 +112,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">5</property>
+                    <property name="top_attach">6</property>
                   </packing>
                 </child>
                 <child>
@@ -126,7 +127,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
-                    <property name="top_attach">5</property>
+                    <property name="top_attach">6</property>
                   </packing>
                 </child>
                 <child>
@@ -138,7 +139,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">3</property>
+                    <property name="top_attach">4</property>
                   </packing>
                 </child>
                 <child>
@@ -152,7 +153,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
-                    <property name="top_attach">3</property>
+                    <property name="top_attach">4</property>
                   </packing>
                 </child>
                 <child>
@@ -165,22 +166,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">2</property>
-                    <property name="top_attach">5</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkEntry" id="p1-solde-end">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="halign">start</property>
-                    <property name="invisible_char">●</property>
-                    <property name="width_chars">12</property>
-                    <property name="max_width_chars">12</property>
-                    <property name="xalign">1</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">3</property>
-                    <property name="top_attach">5</property>
+                    <property name="top_attach">6</property>
                   </packing>
                 </child>
                 <child>
@@ -193,7 +179,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">2</property>
-                    <property name="top_attach">3</property>
+                    <property name="top_attach">4</property>
                   </packing>
                 </child>
                 <child>
@@ -207,7 +193,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">3</property>
-                    <property name="top_attach">3</property>
+                    <property name="top_attach">4</property>
                   </packing>
                 </child>
                 <child>
@@ -220,7 +206,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">2</property>
-                    <property name="top_attach">2</property>
+                    <property name="top_attach">3</property>
                   </packing>
                 </child>
                 <child>
@@ -229,13 +215,13 @@
                     <property name="can_focus">True</property>
                     <property name="halign">start</property>
                     <property name="invisible_char">●</property>
-                    <property name="width_chars">8</property>
-                    <property name="max_width_chars">8</property>
+                    <property name="width_chars">10</property>
+                    <property name="max_width_chars">10</property>
                     <property name="xalign">1</property>
                   </object>
                   <packing>
                     <property name="left_attach">3</property>
-                    <property name="top_attach">2</property>
+                    <property name="top_attach">3</property>
                   </packing>
                 </child>
                 <child>
@@ -247,18 +233,21 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">6</property>
+                    <property name="top_attach">7</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkEntry" id="p1-account">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="max_length">64</property>
                     <property name="invisible_char">●</property>
+                    <property name="max_width_chars">64</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
-                    <property name="top_attach">6</property>
+                    <property name="top_attach">7</property>
+                    <property name="width">3</property>
                   </packing>
                 </child>
                 <child>
@@ -270,7 +259,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">2</property>
+                    <property name="top_attach">3</property>
                   </packing>
                 </child>
                 <child>
@@ -291,8 +280,8 @@
                     <property name="can_focus">True</property>
                     <property name="halign">start</property>
                     <property name="invisible_char">●</property>
-                    <property name="width_chars">8</property>
-                    <property name="max_width_chars">8</property>
+                    <property name="width_chars">10</property>
+                    <property name="max_width_chars">10</property>
                     <property name="xalign">1</property>
                   </object>
                   <packing>
@@ -309,7 +298,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">4</property>
+                    <property name="top_attach">5</property>
                   </packing>
                 </child>
                 <child>
@@ -321,22 +310,8 @@
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
-                    <property name="top_attach">4</property>
+                    <property name="top_attach">5</property>
                     <property name="width">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkEntry" id="p1-currency">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="halign">start</property>
-                    <property name="invisible_char">●</property>
-                    <property name="width_chars">4</property>
-                    <property name="max_width_chars">4</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">3</property>
-                    <property name="top_attach">4</property>
                   </packing>
                 </child>
                 <child>
@@ -346,10 +321,80 @@
                     <property name="xalign">0</property>
                   </object>
                   <packing>
-                    <property name="left_attach">2</property>
-                    <property name="top_attach">6</property>
-                    <property name="width">2</property>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">8</property>
+                    <property name="width">3</property>
                   </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="label9">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">URI :</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="p1-uri-entry">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">1</property>
+                    <property name="width">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkGrid">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="column_spacing">2</property>
+                    <child>
+                      <object class="GtkEntry" id="p1-solde-end">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="halign">start</property>
+                        <property name="invisible_char">●</property>
+                        <property name="width_chars">12</property>
+                        <property name="max_width_chars">12</property>
+                        <property name="xalign">1</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkEntry" id="p1-currency">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="halign">start</property>
+                        <property name="invisible_char">●</property>
+                        <property name="width_chars">4</property>
+                        <property name="max_width_chars">4</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left_attach">3</property>
+                    <property name="top_attach">6</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
                 </child>
                 <child>
                   <placeholder/>
