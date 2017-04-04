@@ -44,6 +44,7 @@
 
 #include "ui/ofa-bat-line-properties.h"
 #include "ui/ofa-entry-properties.h"
+#include "ui/ofa-operation-group.h"
 #include "ui/ofa-reconcil-group.h"
 #include "ui/ofa-reconcil-store.h"
 #include "ui/ofa-reconcil-treeview.h"
@@ -71,8 +72,15 @@ typedef struct {
 
 	/* actions
 	 */
-	GSimpleAction       *view_entry_action;
-	GSimpleAction       *view_batline_action;
+	GSimpleAction       *ventry_action;
+	GSimpleAction       *vbat_action;
+	GSimpleAction       *vope_action;
+
+	/* selection
+	 */
+	ofoEntry            *sel_entry;
+	ofoBatLine          *sel_batline;
+	ofxCounter           sel_ope_number;
 }
 	ofaReconcilGroupPrivate;
 
@@ -87,9 +95,9 @@ static void     setup_actions( ofaReconcilGroup *self );
 static void     setup_store( ofaReconcilGroup *self );
 static void     tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaReconcilGroup *self );
 static gboolean tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilGroup *self );
-static ofoBase *tview_get_selected( ofaReconcilGroup *self );
-static void     action_on_view_entry_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self );
-static void     action_on_view_batline_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self );
+static void     action_on_ventry_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self );
+static void     action_on_vbat_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self );
+static void     action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self );
 static void     iactionable_iface_init( ofaIActionableInterface *iface );
 static guint    iactionable_get_interface_version( void );
 
@@ -134,8 +142,9 @@ reconcil_group_dispose( GObject *instance )
 
 		/* unref object members here */
 
-		g_clear_object( &priv->view_entry_action );
-		g_clear_object( &priv->view_batline_action );
+		g_clear_object( &priv->ventry_action );
+		g_clear_object( &priv->vbat_action );
+		g_clear_object( &priv->vope_action );
 	}
 
 	/* chain up to the parent class */
@@ -318,20 +327,27 @@ setup_actions( ofaReconcilGroup *self )
 	priv = ofa_reconcil_group_get_instance_private( self );
 
 	/* view entry action */
-	priv->view_entry_action = g_simple_action_new( "viewentry", NULL );
-	g_simple_action_set_enabled( priv->view_entry_action, FALSE );
-	g_signal_connect( priv->view_entry_action, "activate", G_CALLBACK( action_on_view_entry_activated ), self );
+	priv->ventry_action = g_simple_action_new( "viewentry", NULL );
+	g_simple_action_set_enabled( priv->ventry_action, FALSE );
+	g_signal_connect( priv->ventry_action, "activate", G_CALLBACK( action_on_ventry_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->view_entry_action ),
-			_( "View entry" ));
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->ventry_action ),
+			_( "View the entry..." ));
 
 	/* view batline action */
-	priv->view_batline_action = g_simple_action_new( "viewbat", NULL );
-	g_simple_action_set_enabled( priv->view_batline_action, FALSE );
-	g_signal_connect( priv->view_batline_action, "activate", G_CALLBACK( action_on_view_batline_activated ), self );
+	priv->vbat_action = g_simple_action_new( "viewbat", NULL );
+	g_simple_action_set_enabled( priv->vbat_action, FALSE );
+	g_signal_connect( priv->vbat_action, "activate", G_CALLBACK( action_on_vbat_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->view_batline_action ),
-			_( "View BAT line" ));
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vbat_action ),
+			_( "View the BAT line..." ));
+
+	/* view operation action */
+	priv->vope_action = g_simple_action_new( "vope", NULL );
+	g_signal_connect( priv->vope_action, "activate", G_CALLBACK( action_on_vope_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vope_action ),
+			_( "View the operation..." ));
 
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
 	ofa_icontext_set_menu(
@@ -375,27 +391,39 @@ static void
 tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaReconcilGroup *self )
 {
 	ofaReconcilGroupPrivate *priv;
+	gboolean ventry_enabled, vbat_enabled, vope_enabled;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoBase *base_obj;
 
 	priv = ofa_reconcil_group_get_instance_private( self );
 
+	ventry_enabled = FALSE;
+	vbat_enabled = FALSE;
+	vope_enabled = FALSE;
+	priv->sel_entry = NULL;
+	priv->sel_batline = NULL;
+
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 		gtk_tree_model_get( tmodel, &iter, RECONCIL_COL_OBJECT, &base_obj, -1 );
 		g_return_if_fail( base_obj && ( OFO_IS_ENTRY( base_obj ) || OFO_IS_BAT_LINE( base_obj )));
 		g_object_unref( base_obj );
+
 		if( OFO_IS_ENTRY( base_obj )){
-			g_simple_action_set_enabled( priv->view_entry_action, TRUE );
-			g_simple_action_set_enabled( priv->view_batline_action, FALSE );
+			priv->sel_entry = OFO_ENTRY( base_obj );
+			ventry_enabled = TRUE;
+			priv->sel_ope_number = ofo_entry_get_ope_number( priv->sel_entry );
+			vope_enabled = ( priv->sel_ope_number > 0 );
+
 		} else {
-			g_simple_action_set_enabled( priv->view_entry_action, FALSE );
-			g_simple_action_set_enabled( priv->view_batline_action, TRUE );
+			priv->sel_batline = OFO_BAT_LINE( base_obj );
+			vbat_enabled = TRUE;
 		}
-	} else {
-		g_simple_action_set_enabled( priv->view_entry_action, FALSE );
-		g_simple_action_set_enabled( priv->view_batline_action, FALSE );
 	}
+
+	g_simple_action_set_enabled( priv->ventry_action, ventry_enabled );
+	g_simple_action_set_enabled( priv->vbat_action, vbat_enabled );
+	g_simple_action_set_enabled( priv->vope_action, vope_enabled );
 }
 
 /*
@@ -415,55 +443,34 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilGroup 
 	return( id == priv->concil_id );
 }
 
-/*
- * Returns the selected object.
- */
-static ofoBase *
-tview_get_selected( ofaReconcilGroup *self )
+static void
+action_on_ventry_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self )
 {
 	ofaReconcilGroupPrivate *priv;
-	ofoBase *obj;
-	GList *selected;
 
 	priv = ofa_reconcil_group_get_instance_private( self );
 
-	selected = ofa_reconcil_treeview_get_selected( priv->tview );
-	g_return_val_if_fail(
-			selected && selected->data &&
-			( OFO_IS_ENTRY( selected->data ) || OFO_IS_BAT_LINE( selected->data )), NULL );
-
-	obj = OFO_BASE( selected->data );
-	ofa_reconcil_treeview_free_selected( selected );
-
-	return( obj );
+	ofa_entry_properties_run( priv->getter, priv->parent, priv->sel_entry, FALSE );
 }
 
 static void
-action_on_view_entry_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self )
+action_on_vbat_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self )
 {
 	ofaReconcilGroupPrivate *priv;
-	ofoEntry *entry;
 
 	priv = ofa_reconcil_group_get_instance_private( self );
 
-	entry = ( ofoEntry * ) tview_get_selected( self );
-	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
-
-	ofa_entry_properties_run( priv->getter, priv->parent, entry, FALSE );
+	ofa_bat_line_properties_run( priv->getter, priv->parent, priv->sel_batline );
 }
 
 static void
-action_on_view_batline_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self )
+action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaReconcilGroup *self )
 {
 	ofaReconcilGroupPrivate *priv;
-	ofoBatLine *batline;
 
 	priv = ofa_reconcil_group_get_instance_private( self );
 
-	batline = ( ofoBatLine * ) tview_get_selected( self );
-	g_return_if_fail( batline && OFO_IS_BAT_LINE( batline ));
-
-	ofa_bat_line_properties_run( priv->getter, priv->parent, batline );
+	ofa_operation_group_run( priv->getter, priv->parent, priv->sel_ope_number );
 }
 
 /*
