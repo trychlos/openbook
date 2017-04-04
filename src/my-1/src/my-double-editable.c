@@ -101,7 +101,11 @@ my_double_editable_init( GtkEditable *editable )
 /**
  * my_double_editable_init_ex:
  * @editable: the #GtkEditable object
- * @decimals: the decimals count to be set.
+ * @thousand_sep: thousand separator.
+ * @decimal_sep: decimal separator.
+ * @accept_dot: whether we accept a dot as the decimal separator on entry.
+ * @accept_comma: whether we accept a comma as the decimal separator on entry.
+ * @decimals: decimals count.
  *
  * Initialize the GtkEditable to enter an amount. Is supposed to be
  * called each time the edition is started.
