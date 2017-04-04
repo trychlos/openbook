@@ -46,6 +46,7 @@
    - Recurrent operations validation: have a visual display of the status (todo #1369).
    - Restore assistant: allow admin credentials to be saved (todo #1416).
    - Settlement page: have all entry related actions (todo #1431).
+   - Unreconciliated page: have all account/entry related actions.
 
  Bug fixes:
 
