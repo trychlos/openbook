@@ -26,8 +26,6 @@
 #include <config.h>
 #endif
 
-#include <glib/gi18n.h>
-
 #include "my/my-iident.h"
 #include "my/my-utils.h"
 

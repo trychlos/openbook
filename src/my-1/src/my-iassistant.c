@@ -26,8 +26,6 @@
 #include <config.h>
 #endif
 
-#include <glib/gi18n.h>
-
 #include "my/my-iassistant.h"
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"

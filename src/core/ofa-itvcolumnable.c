@@ -26,7 +26,6 @@
 #include <config.h>
 #endif
 
-#include <glib/gi18n.h>
 #include <stdarg.h>
 #include <stdlib.h>
 

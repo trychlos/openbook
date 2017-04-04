@@ -68,6 +68,7 @@
 
  Other changes:
 
+   - maintainer/check-po.sh: check that all files are rightly internationalized (todo #1421). 
    - Clarify the reference management of the collection (todo #1359).
    - ofaAccentryStore: new class.
    - ofaAccentryTreeview: new class.

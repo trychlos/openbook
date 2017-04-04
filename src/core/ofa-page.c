@@ -26,8 +26,6 @@
 #include <config.h>
 #endif
 
-#include <glib/gi18n.h>
-
 #include "my/my-utils.h"
 
 #include "api/ofa-iactionable.h"

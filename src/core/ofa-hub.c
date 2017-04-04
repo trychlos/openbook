@@ -26,8 +26,6 @@
 #include <config.h>
 #endif
 
-#include <glib/gi18n.h>
-
 #include "my/my-date.h"
 #include "my/my-icollector.h"
 #include "my/my-isettings.h"
