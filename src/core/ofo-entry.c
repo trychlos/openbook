@@ -869,6 +869,52 @@ ofo_entry_get_by_number( ofaIGetter *getter, ofxCounter number )
 	return( NULL );
 }
 
+/**
+ * ofo_entry_get_settlement_by_number:
+ * @getter: a #ofaIGetter instance.
+ * @number: the settlement number.
+ * @user: [out][allow-none]: placeholder for the settlement user.
+ * @stamp: [out][allow-none]: placeholder for the settlement timestamp.
+ *
+ * Set the provided @user and @stamp to the properties of the settlement.
+ *
+ * If set, the returned @user should be g_free() by the caller.
+ */
+void
+ofo_entry_get_settlement_by_number( ofaIGetter *getter, ofxCounter number, gchar **user, GTimeVal *stamp )
+{
+	GList *dataset, *it;
+	ofoEntry *entry;
+	const GTimeVal *ent_stamp;
+
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( number > 0 );
+
+	if( user ){
+		*user = NULL;
+	}
+	if( stamp ){
+		stamp->tv_sec = 0;
+		stamp->tv_usec = 0;
+	}
+
+	dataset = ofo_entry_get_dataset( getter );
+	for( it=dataset ; it ; it=it->next ){
+		entry = OFO_ENTRY( it->data );
+		if( ofo_entry_get_settlement_number( entry ) == number ){
+			if( user ){
+				*user = g_strdup( ofo_entry_get_settlement_user( entry ));
+			}
+			if( stamp ){
+				ent_stamp = ofo_entry_get_settlement_stamp( entry );
+				stamp->tv_sec = ent_stamp->tv_sec;
+				stamp->tv_usec = ent_stamp->tv_usec;
+			}
+			break;;
+		}
+	}
+}
+
 /*
  * returns a #GList * of all #ofoEntry's which satisfy the @where clause
  */

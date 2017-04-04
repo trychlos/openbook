@@ -138,6 +138,7 @@ GList          *ofo_entry_get_dataset_for_exercice_by_status
 GList          *ofo_entry_get_dataset                ( ofaIGetter *getter );
 ofxCounter      ofo_entry_get_count                  ( ofaIGetter *getter );
 ofoEntry       *ofo_entry_get_by_number              ( ofaIGetter *getter, ofxCounter number );
+void            ofo_entry_get_settlement_by_number   ( ofaIGetter *getter, ofxCounter number, gchar **user, GTimeVal *stamp );
 
 #define         ofo_entry_free_dataset( L )          g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
