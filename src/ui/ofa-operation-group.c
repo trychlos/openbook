@@ -37,11 +37,17 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
+#include "api/ofo-concil.h"
+#include "api/ofo-entry.h"
+
+#include "core/ofa-iconcil.h"
 
 #include "ui/ofa-entry-properties.h"
 #include "ui/ofa-entry-store.h"
 #include "ui/ofa-entry-treeview.h"
 #include "ui/ofa-operation-group.h"
+#include "ui/ofa-reconcil-group.h"
+#include "ui/ofa-settlement-group.h"
 
 /* private instance data
  */
@@ -64,7 +70,15 @@ typedef struct {
 
 	/* actions
 	 */
-	GSimpleAction    *view_entry_action;
+	GSimpleAction    *ventry_action;
+	GSimpleAction    *vconcil_action;
+	GSimpleAction    *vsettle_action;
+
+	/* selection
+	 */
+	ofoEntry         *sel_entry;
+	ofxCounter        sel_concil_id;
+	ofxCounter        sel_settle_id;
 }
 	ofaOperationGroupPrivate;
 
@@ -79,8 +93,9 @@ static void      setup_actions( ofaOperationGroup *self );
 static void      setup_store( ofaOperationGroup *self );
 static void      tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaOperationGroup *self );
 static gboolean  tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOperationGroup *self );
-static ofoEntry *tview_get_selected( ofaOperationGroup *self );
-static void      action_on_view_entry_activated( GSimpleAction *action, GVariant *empty, ofaOperationGroup *self );
+static void      action_on_ventry_activated( GSimpleAction *action, GVariant *empty, ofaOperationGroup *self );
+static void      action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaOperationGroup *self );
+static void      action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaOperationGroup *self );
 static void      iactionable_iface_init( ofaIActionableInterface *iface );
 static guint     iactionable_get_interface_version( void );
 
@@ -125,7 +140,9 @@ operation_group_dispose( GObject *instance )
 
 		/* unref object members here */
 
-		g_clear_object( &priv->view_entry_action );
+		g_clear_object( &priv->ventry_action );
+		g_clear_object( &priv->vconcil_action );
+		g_clear_object( &priv->vsettle_action );
 	}
 
 	/* chain up to the parent class */
@@ -294,12 +311,26 @@ setup_actions( ofaOperationGroup *self )
 	priv = ofa_operation_group_get_instance_private( self );
 
 	/* view entry action */
-	priv->view_entry_action = g_simple_action_new( "viewentry", NULL );
-	g_simple_action_set_enabled( priv->view_entry_action, FALSE );
-	g_signal_connect( priv->view_entry_action, "activate", G_CALLBACK( action_on_view_entry_activated ), self );
+	priv->ventry_action = g_simple_action_new( "viewentry", NULL );
+	g_simple_action_set_enabled( priv->ventry_action, FALSE );
+	g_signal_connect( priv->ventry_action, "activate", G_CALLBACK( action_on_ventry_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->view_entry_action ),
-			_( "View entry" ));
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->ventry_action ),
+			_( "View the entry..." ));
+
+	/* view conciliation action */
+	priv->vconcil_action = g_simple_action_new( "vconcil", NULL );
+	g_signal_connect( priv->vconcil_action, "activate", G_CALLBACK( action_on_vconcil_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vconcil_action ),
+			_( "View the conciliation group..." ));
+
+	/* view settlement action */
+	priv->vsettle_action = g_simple_action_new( "vsettle", NULL );
+	g_signal_connect( priv->vsettle_action, "activate", G_CALLBACK( action_on_vsettle_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vsettle_action ),
+			_( "View the settlement group..." ));
 
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
 	ofa_icontext_set_menu(
@@ -331,20 +362,35 @@ static void
 tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaOperationGroup *self )
 {
 	ofaOperationGroupPrivate *priv;
+	gboolean ventry_enabled, vconcil_enabled, vsettle_enabled;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoEntry *entry;
+	ofoConcil *concil;
 
 	priv = ofa_operation_group_get_instance_private( self );
+
+	ventry_enabled = FALSE;
+	vconcil_enabled = FALSE;
+	vsettle_enabled = FALSE;
+	priv->sel_entry = NULL;
 
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 		gtk_tree_model_get( tmodel, &iter, ENTRY_COL_OBJECT, &entry, -1 );
 		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 		g_object_unref( entry );
-		g_simple_action_set_enabled( priv->view_entry_action, TRUE );
-	} else {
-		g_simple_action_set_enabled( priv->view_entry_action, FALSE );
+		priv->sel_entry = OFO_ENTRY( entry );
+		ventry_enabled = TRUE;
+		concil = ofa_iconcil_get_concil( OFA_ICONCIL( priv->sel_entry ));
+		priv->sel_concil_id = concil ? ofo_concil_get_id( concil ) : 0;
+		vconcil_enabled = ( priv->sel_concil_id > 0 );
+		priv->sel_settle_id = ofo_entry_get_settlement_number( priv->sel_entry );
+		vsettle_enabled = ( priv->sel_settle_id > 0 );
 	}
+
+	g_simple_action_set_enabled( priv->ventry_action, ventry_enabled );
+	g_simple_action_set_enabled( priv->vconcil_action, vconcil_enabled );
+	g_simple_action_set_enabled( priv->vsettle_action, vsettle_enabled );
 }
 
 /*
@@ -364,40 +410,34 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOperationGroup
 	return( id == priv->ope_number );
 }
 
-/*
- * Returns the selected object.
- */
-static ofoEntry *
-tview_get_selected( ofaOperationGroup *self )
+static void
+action_on_ventry_activated( GSimpleAction *action, GVariant *empty, ofaOperationGroup *self )
 {
 	ofaOperationGroupPrivate *priv;
-	ofoEntry *entry;
-	GList *selected;
 
 	priv = ofa_operation_group_get_instance_private( self );
 
-	selected = ofa_entry_treeview_get_selected( priv->tview );
-	g_return_val_if_fail(
-			selected && selected->data && OFO_IS_ENTRY( selected->data ), NULL );
-
-	entry = OFO_ENTRY( selected->data );
-	ofa_entry_treeview_free_selected( selected );
-
-	return( entry );
+	ofa_entry_properties_run( priv->getter, priv->parent, priv->sel_entry, FALSE );
 }
 
 static void
-action_on_view_entry_activated( GSimpleAction *action, GVariant *empty, ofaOperationGroup *self )
+action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaOperationGroup *self )
 {
-ofaOperationGroupPrivate *priv;
-	ofoEntry *entry;
+	ofaOperationGroupPrivate *priv;
 
 	priv = ofa_operation_group_get_instance_private( self );
 
-	entry = tview_get_selected( self );
-	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+	ofa_reconcil_group_run( priv->getter, priv->parent, priv->sel_concil_id );
+}
 
-	ofa_entry_properties_run( priv->getter, priv->parent, entry, FALSE );
+static void
+action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaOperationGroup *self )
+{
+	ofaOperationGroupPrivate *priv;
+
+	priv = ofa_operation_group_get_instance_private( self );
+
+	ofa_settlement_group_run( priv->getter, priv->parent, priv->sel_settle_id );
 }
 
 /*
