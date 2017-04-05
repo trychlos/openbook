@@ -1678,7 +1678,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	}
 
 	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, NULL );
 		str2 = g_strdup_printf( "1%c%s", field_sep, str );
 		ok = ofa_iexportable_set_line( exportable, str2 );
 		g_free( str2 );
@@ -1691,7 +1691,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 		priv = ofo_ope_template_get_instance_private( model );
 
 		for( det=priv->details ; det ; det=det->next ){
-			str = ofa_box_csv_get_line_ex( det->data, settings, ( CSVExportFunc ) update_decimal_sep, NULL );
+			str = ofa_box_csv_get_line_ex( det->data, settings, NULL, ( CSVExportFunc ) update_decimal_sep, NULL );
 			str2 = g_strdup_printf( "2%c%s", field_sep, str );
 			ok = ofa_iexportable_set_line( exportable, str2 );
 			g_free( str2 );

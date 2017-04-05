@@ -219,14 +219,19 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_batline_properties_iwindow_init";
 	ofaBatlinePropertiesPrivate *priv;
+	gchar *sid;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_batline_properties_get_instance_private( OFA_BATLINE_PROPERTIES( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
+
+	sid = g_strdup_printf( "%s-%ld",
+				G_OBJECT_TYPE_NAME( instance ), ofo_bat_line_get_line_id( priv->batline ));
+	my_iwindow_set_identifier( instance, sid );
+	g_free( sid );
 }
 
 /*

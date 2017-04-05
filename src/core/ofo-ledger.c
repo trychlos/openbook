@@ -228,7 +228,6 @@ static void       iexportable_iface_init( ofaIExportableInterface *iface );
 static guint      iexportable_get_interface_version( void );
 static gchar     *iexportable_get_label( const ofaIExportable *instance );
 static gboolean   iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
-static gchar     *export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
 static void       iimportable_iface_init( ofaIImportableInterface *iface );
 static guint      iimportable_get_interface_version( void );
 static gchar     *iimportable_get_label( const ofaIImportable *instance );
@@ -2074,7 +2073,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	}
 
 	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, NULL );
 		str2 = g_strdup_printf( "1%c%s", field_sep, str );
 		ok = ofa_iexportable_set_line( exportable, str2 );
 		g_free( str2 );
@@ -2092,7 +2091,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 			g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
 			currency = ofo_currency_get_by_code( getter, cur_code );
 			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-			str = ofa_box_csv_get_line_ex( bal, settings, ( CSVExportFunc ) export_cb, currency );
+			str = ofa_box_csv_get_line( bal, settings, currency );
 			str2 = g_strdup_printf( "2%c%s", field_sep, str );
 			ok = ofa_iexportable_set_line( exportable, str2 );
 			g_free( str2 );
@@ -2104,25 +2103,6 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	}
 
 	return( TRUE );
-}
-
-/*
- * a callback to adjust the decimal digits count to the precision of the
- * currency
- */
-static gchar *
-export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency )
-{
-	const ofsBoxDef *box_def;
-	gchar *str;
-
-	box_def = ofa_box_data_get_def( box_data );
-	if( box_def->type == OFA_TYPE_AMOUNT ){
-		str = ofa_amount_to_csv( ofa_box_data_get_amount( box_data ), currency, format );
-	} else {
-		str = g_strdup( text );
-	}
-	return( str );
 }
 
 /*

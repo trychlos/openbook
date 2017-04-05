@@ -1825,7 +1825,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	}
 
 	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, NULL );
 		str2 = g_strdup_printf( "1%c%s", field_sep, str );
 		ok = ofa_iexportable_set_line( exportable, str2 );
 		g_free( str2 );
@@ -1838,7 +1838,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 		priv = ofo_tva_form_get_instance_private( form );
 
 		for( det=priv->bools ; det ; det=det->next ){
-			str = ofa_box_csv_get_line( det->data, settings );
+			str = ofa_box_csv_get_line( det->data, settings, NULL );
 			str2 = g_strdup_printf( "2%c%s", field_sep, str );
 			ok = ofa_iexportable_set_line( exportable, str2 );
 			g_free( str2 );
@@ -1849,7 +1849,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 		}
 
 		for( det=priv->details ; det ; det=det->next ){
-			str = ofa_box_csv_get_line( det->data, settings );
+			str = ofa_box_csv_get_line( det->data, settings, NULL );
 			str2 = g_strdup_printf( "3%c%s", field_sep, str );
 			ok = ofa_iexportable_set_line( exportable, str2 );
 			g_free( str2 );

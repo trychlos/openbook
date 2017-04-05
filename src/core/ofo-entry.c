@@ -290,7 +290,6 @@ static gboolean              iexportable_export_default( ofaIExportable *exporta
 static gboolean              iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
 static GList                *iexportable_export_fec_get_entries( ofaIGetter *getter );
 static gint                  iexportable_export_fec_cmp_entries( ofoEntry *a, ofoEntry *b );
-static gchar                *iexportable_export_default_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
 static void                  iimportable_iface_init( ofaIImportableInterface *iface );
 static guint                 iimportable_get_interface_version( void );
 static gchar                *iimportable_get_label( const ofaIImportable *instance );
@@ -2806,7 +2805,7 @@ iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *setting
 		g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
 		currency = ofo_currency_get_by_code( getter, cur_code );
 		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-		str = ofa_box_csv_get_line_ex( OFO_BASE( it->data )->prot->fields, settings, ( CSVExportFunc ) iexportable_export_default_cb, currency );
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, currency );
 
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ));
 		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
@@ -2829,25 +2828,6 @@ iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *setting
 	}
 
 	return( TRUE );
-}
-
-/*
- * a callback to adjust the decimal digits count to the precision of the
- * currency of the account of the entry
- */
-static gchar *
-iexportable_export_default_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency )
-{
-	const ofsBoxDef *box_def;
-	gchar *str;
-
-	box_def = ofa_box_data_get_def( box_data );
-	if( box_def->type == OFA_TYPE_AMOUNT ){
-		str = ofa_amount_to_csv( ofa_box_data_get_amount( box_data ), currency, format );
-	} else {
-		str = g_strdup( text );
-	}
-	return( str );
 }
 
 /*

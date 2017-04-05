@@ -26,6 +26,7 @@
 #define __OPENBOOK_API_OFA_BOX_H__
 
 #include "api/ofa-stream-format.h"
+#include "api/ofo-currency-def.h"
 
 /**
  * SECTION: ofa_box
@@ -99,7 +100,7 @@ typedef struct {
 /**
  * a callback function which may be called on CSV exporting
  */
-typedef gchar * ( *CSVExportFunc )( const ofsBoxData *data, const ofaStreamFormat *format, const gchar *text, void *user_data );
+typedef gchar * ( *CSVExportFunc )( const ofsBoxData *data, const ofaStreamFormat *format, ofoCurrency *currency, const gchar *text, void *user_data );
 
 /* because DBMS keeps 5 digits after the decimal dot */
 #define PRECISION                       100000
@@ -123,11 +124,14 @@ gchar           *ofa_box_csv_get_header       ( const ofsBoxDef *defs,
 													ofaStreamFormat *format );
 
 gchar           *ofa_box_csv_get_line         ( const GList *fields_list,
-													ofaStreamFormat *format );
+													ofaStreamFormat *format,
+													ofoCurrency *currency );
 
 gchar           *ofa_box_csv_get_line_ex      ( const GList *fields_list,
 													ofaStreamFormat *format,
-													CSVExportFunc cb, void *user_data );
+													ofoCurrency *currency,
+													CSVExportFunc cb,
+													void *user_data );
 
 gboolean         ofa_box_is_set               ( const GList *fields_list, gint id );
 

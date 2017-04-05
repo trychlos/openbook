@@ -49,6 +49,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofs-concil-id.h"
 
+#include "core/ofa-batline-properties.h"
 #include "core/ofa-batline-treeview.h"
 #include "core/ofa-iconcil.h"
 #include "core/ofa-reconcil-group.h"
@@ -73,11 +74,13 @@ typedef struct {
 
 	/* actions
 	 */
-	GSimpleAction *disprec_action;		/* display reconciliation group */
+	GSimpleAction *vconcil_action;			/* display reconciliation group */
+	GSimpleAction *vbatline_action;			/* display bat line */
 
 	/* current selection
 	 */
 	ofxCounter     concil_id;
+	ofoBatLine    *batline;
 }
 	ofaBatlineTreeviewPrivate;
 
@@ -101,7 +104,8 @@ static void        on_selection_activated( ofaBatlineTreeview *self, GtkTreeSele
 static void        on_selection_delete( ofaBatlineTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        get_and_send( ofaBatlineTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoBatLine *get_selected_with_selection( ofaBatlineTreeview *self, GtkTreeSelection *selection );
-static void        action_on_disprec_activated( GSimpleAction *action, GVariant *empty, ofaBatlineTreeview *self );
+static void        action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaBatlineTreeview *self );
+static void        action_on_vbatline_activated( GSimpleAction *action, GVariant *empty, ofaBatlineTreeview *self );
 static gint        tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatlineTreeview, ofa_batline_treeview, OFA_TYPE_TVBIN, 0,
@@ -141,7 +145,8 @@ batline_treeview_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_object_unref( priv->disprec_action );
+		g_object_unref( priv->vconcil_action );
+		g_object_unref( priv->vbatline_action );
 		g_object_unref( priv->store );
 	}
 
@@ -365,13 +370,21 @@ setup_actions( ofaBatlineTreeview *self )
 
 	priv = ofa_batline_treeview_get_instance_private( self );
 
-	/* display conciliation group action */
-	priv->disprec_action = g_simple_action_new( "disprec", NULL );
-	g_signal_connect( priv->disprec_action, "activate", G_CALLBACK( action_on_disprec_activated ), self );
+	/* display bat line action */
+	priv->vbatline_action = g_simple_action_new( "vbatline", NULL );
+	g_signal_connect( priv->vbatline_action, "activate", G_CALLBACK( action_on_vbatline_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->disprec_action ),
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vbatline_action ),
+			_( "View the BAT line..." ));
+	g_simple_action_set_enabled( priv->vbatline_action, FALSE );
+
+	/* display conciliation group action */
+	priv->vconcil_action = g_simple_action_new( "vconcil", NULL );
+	g_signal_connect( priv->vconcil_action, "activate", G_CALLBACK( action_on_vconcil_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->vconcil_action ),
 			_( "Display conciliation group..." ));
-	g_simple_action_set_enabled( priv->disprec_action, FALSE );
+	g_simple_action_set_enabled( priv->vconcil_action, FALSE );
 
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
 	ofa_icontext_set_menu(
@@ -539,22 +552,23 @@ static void
 on_selection_changed( ofaBatlineTreeview *self, GtkTreeSelection *selection, void *empty )
 {
 	ofaBatlineTreeviewPrivate *priv;
-	ofoBatLine *batline;
 	ofoConcil *concil;
 
 	priv = ofa_batline_treeview_get_instance_private( self );
 
 	priv->concil_id = 0;
-	batline = get_selected_with_selection( self, selection );
-	g_return_if_fail( !batline || OFO_IS_BAT_LINE( batline ));
+	priv->batline = get_selected_with_selection( self, selection );
+	g_return_if_fail( !priv->batline || OFO_IS_BAT_LINE( priv->batline ));
 
-	if( batline ){
-		concil = ofa_iconcil_get_concil( OFA_ICONCIL( batline ));
+	if( priv->batline ){
+		concil = ofa_iconcil_get_concil( OFA_ICONCIL( priv->batline ));
 		if( concil ){
 			priv->concil_id = ofo_concil_get_id( concil );
 		}
 	}
-	g_simple_action_set_enabled( priv->disprec_action, priv->concil_id > 0 );
+
+	g_simple_action_set_enabled( priv->vbatline_action, priv->batline != NULL );
+	g_simple_action_set_enabled( priv->vconcil_action, priv->concil_id > 0 );
 
 	get_and_send( self, selection, "ofa-balchanged" );
 }
@@ -614,10 +628,25 @@ get_selected_with_selection( ofaBatlineTreeview *self, GtkTreeSelection *selecti
 }
 
 /*
+ * display the bat line properties
+ */
+static void
+action_on_vbatline_activated( GSimpleAction *action, GVariant *empty, ofaBatlineTreeview *self )
+{
+	ofaBatlineTreeviewPrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_batline_treeview_get_instance_private( self );
+
+	toplevel = GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
+	ofa_batline_properties_run( priv->getter, toplevel, priv->batline );
+}
+
+/*
  * display the reconciliation group
  */
 static void
-action_on_disprec_activated( GSimpleAction *action, GVariant *empty, ofaBatlineTreeview *self )
+action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaBatlineTreeview *self )
 {
 	ofaBatlineTreeviewPrivate *priv;
 	GtkWindow *toplevel;

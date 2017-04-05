@@ -41,7 +41,9 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idoc.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-iimportable.h"
 #include "api/ofa-isignalable.h"
 #include "api/ofa-isignaler.h"
 #include "api/ofa-prefs.h"
@@ -57,25 +59,93 @@
 
 /* priv instance data
  */
-typedef struct {
+enum {
+	BAT_ID = 1,
+	BAT_URI,
+	BAT_FORMAT,
+	BAT_BEGIN,
+	BAT_END,
+	BAT_RIB,
+	BAT_CURRENCY,
+	BAT_SOLDE_BEGIN,
+	BAT_SOLDE_BEGIN_SET,
+	BAT_SOLDE_END,
+	BAT_SOLDE_END_SET,
+	BAT_ACCOUNT,
+	BAT_NOTES,
+	BAT_UPD_USER,
+	BAT_UPD_STAMP,
+	BAT_DOC_ID,
+};
 
-	/* dbms data
-	 */
-	ofxCounter id;						/* bat (imported file) id */
-	gchar     *uri;
-	gchar     *format;
-	GDate      begin;
-	GDate      end;
-	gchar     *rib;
-	gchar     *currency;
-	ofxAmount  begin_solde;
-	gboolean   begin_solde_set;
-	ofxAmount  end_solde;
-	gboolean   end_solde_set;
-	gchar     *notes;
-	gchar     *account;
-	gchar     *upd_user;
-	GTimeVal   upd_stamp;
+static const ofsBoxDef st_boxed_defs[] = {
+		{ OFA_BOX_CSV( BAT_ID ),
+				OFA_TYPE_COUNTER,
+				TRUE,					/* importable */
+				FALSE },				/* amount, counter: export zero as empty */
+		{ OFA_BOX_CSV( BAT_URI ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_FORMAT ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_BEGIN ),
+				OFA_TYPE_DATE,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_END ),
+				OFA_TYPE_DATE,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_RIB ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_CURRENCY ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_SOLDE_BEGIN ),
+				OFA_TYPE_AMOUNT,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_SOLDE_BEGIN_SET ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_SOLDE_END ),
+				OFA_TYPE_AMOUNT,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_SOLDE_END_SET ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_ACCOUNT ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_NOTES ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_UPD_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_UPD_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				FALSE },
+		{ 0 }
+};
+
+/* priv instance data
+ */
+typedef struct {
+	void *empty;							/* so that gcc -pedantic is happy */
 }
 	ofoBatPrivate;
 
@@ -88,14 +158,19 @@ static gboolean    bat_do_insert( ofoBat *bat, ofaIGetter *getter );
 static gboolean    bat_insert_main( ofoBat *bat, ofaIGetter *getter );
 static gboolean    bat_do_update( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_by_where( ofoBat *bat, const ofaIDBConnect *connect );
-static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect );
-static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect );
+static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect, ofxCounter bat_id );
+static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect, ofxCounter bat_id );
+static gboolean    bat_do_delete_doc( ofoBat *bat, const ofaIDBConnect *connect, ofxCounter bat_id );
 static gint        bat_cmp_by_id( ofoBat *a, ofxCounter id );
 static void        icollectionable_iface_init( myICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( void );
 static GList      *icollectionable_load_collection( void *user_data );
 static void        idoc_iface_init( ofaIDocInterface *iface );
 static guint       idoc_get_interface_version( void );
+static void        iexportable_iface_init( ofaIExportableInterface *iface );
+static guint       iexportable_get_interface_version( void );
+static gchar      *iexportable_get_label( const ofaIExportable *instance );
+static gboolean    iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( void );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
@@ -121,6 +196,7 @@ G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoBat )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
@@ -128,23 +204,14 @@ static void
 bat_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_bat_finalize";
-	ofoBatPrivate *priv;
-
-	priv = ofo_bat_get_instance_private( OFO_BAT( instance ));
 
 	g_debug( "%s: instance=%p (%s): %s",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), priv->uri );
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			ofa_box_get_string( OFO_BASE( instance )->prot->fields, BAT_URI ));
 
 	g_return_if_fail( instance && OFO_IS_BAT( instance ));
 
 	/* free data members here */
-	g_free( priv->uri );
-	g_free( priv->format );
-	g_free( priv->rib );
-	g_free( priv->currency );
-	g_free( priv->notes );
-	g_free( priv->account );
-	g_free( priv->upd_user );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_bat_parent_class )->finalize( instance );
@@ -168,16 +235,9 @@ static void
 ofo_bat_init( ofoBat *self )
 {
 	static const gchar *thisfn = "ofo_bat_init";
-	ofoBatPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	priv = ofo_bat_get_instance_private( self );
-
-	priv->id = OFO_BASE_UNSET_ID;
-	my_date_clear( &priv->begin );
-	my_date_clear( &priv->end );
 }
 
 static void
@@ -261,247 +321,203 @@ ofo_bat_new( ofaIGetter *getter )
 
 	bat = g_object_new( OFO_TYPE_BAT, "ofo-base-getter", getter, NULL );
 
+	OFO_BASE( bat )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
+
 	return( bat );
 }
 
 /**
  * ofo_bat_get_id:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the @bat identifier.
  */
 ofxCounter
 ofo_bat_get_id( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), OFO_BASE_UNSET_ID );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, OFO_BASE_UNSET_ID );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return( priv->id );
+	ofo_base_getter( BAT, bat, counter, 0, BAT_ID );
 }
 
 /**
  * ofo_bat_get_uri:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the @bat source URI.
  */
 const gchar *
 ofo_bat_get_uri( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return(( const gchar * ) priv->uri );
+	ofo_base_getter( BAT, bat, string, NULL, BAT_URI );
 }
 
 /**
  * ofo_bat_get_format:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the @bat import format.
  */
 const gchar *
 ofo_bat_get_format( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return(( const gchar * ) priv->format );
+	ofo_base_getter( BAT, bat, string, NULL, BAT_FORMAT );
 }
 
 /**
  * ofo_bat_get_begin_date:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the @bat beginning date.
  */
 const GDate *
 ofo_bat_get_begin_date( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return(( const GDate * ) &priv->begin );
+	ofo_base_getter( BAT, bat, date, NULL, BAT_BEGIN );
 }
 
 /**
  * ofo_bat_get_begin_solde:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the @bat beginning solde.
  */
 ofxAmount
 ofo_bat_get_begin_solde( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, 0 );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return( priv->begin_solde );
+	ofo_base_getter( BAT, bat, amount, 0, BAT_SOLDE_BEGIN );
 }
 
 /**
  * ofo_bat_get_begin_solde_set:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: %TRUE if the beginning solde is set.
  */
 gboolean
 ofo_bat_get_begin_solde_set( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
+	const gchar *cstr;
 
 	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, FALSE );
 
-	priv = ofo_bat_get_instance_private( bat );
+	cstr = ofa_box_get_string( OFO_BASE( bat )->prot->fields, BAT_SOLDE_BEGIN_SET );
 
-	return( priv->begin_solde_set );
+	return( !my_collate( cstr, "Y" ));
 }
 
 /**
  * ofo_bat_get_end_date:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the @bat ending date.
  */
 const GDate *
 ofo_bat_get_end_date( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return(( const GDate * ) &priv->end );
+	ofo_base_getter( BAT, bat, date, NULL, BAT_END );
 }
 
 /**
  * ofo_bat_get_end_solde:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the @bat ending solde.
  */
 ofxAmount
 ofo_bat_get_end_solde( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, 0 );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return( priv->end_solde );
+	ofo_base_getter( BAT, bat, amount, 0, BAT_SOLDE_END );
 }
 
 /**
  * ofo_bat_get_end_solde_set:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: %TRUE if the ending solde is set.
  */
 gboolean
 ofo_bat_get_end_solde_set( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
+	const gchar *cstr;
 
 	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, FALSE );
 
-	priv = ofo_bat_get_instance_private( bat );
+	cstr = ofa_box_get_string( OFO_BASE( bat )->prot->fields, BAT_SOLDE_END_SET );
 
-	return( priv->end_solde_set );
+	return( !my_collate( cstr, "Y" ));
 }
 
 /**
  * ofo_bat_get_rib:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the @bat RIB.
  */
 const gchar *
 ofo_bat_get_rib( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return(( const gchar * ) priv->rib );
+	ofo_base_getter( BAT, bat, string, NULL, BAT_RIB );
 }
 
 /**
  * ofo_bat_get_currency:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the @bat currency.
  */
 const gchar *
 ofo_bat_get_currency( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return(( const gchar * ) priv->currency );
+	ofo_base_getter( BAT, bat, string, NULL, BAT_CURRENCY );
 }
 
 /**
  * ofo_bat_get_notes:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the notes associated to the @bat.
  */
 const gchar *
 ofo_bat_get_notes( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return(( const gchar * ) priv->notes );
+	ofo_base_getter( BAT, bat, string, NULL, BAT_NOTES );
 }
 
 /**
  * ofo_bat_get_account:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the Openbook account associated to the @bat.
  */
 const gchar *
 ofo_bat_get_account( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return(( const gchar * ) priv->account );
+	ofo_base_getter( BAT, bat, string, NULL, BAT_ACCOUNT );
 }
 
 /**
  * ofo_bat_get_upd_user:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the importer user.
  */
 const gchar *
 ofo_bat_get_upd_user( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return(( const gchar * ) priv->upd_user );
+	ofo_base_getter( BAT, bat, string, NULL, BAT_UPD_USER );
 }
 
 /**
  * ofo_bat_get_upd_stamp:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the import timestamp.
  */
 const GTimeVal *
 ofo_bat_get_upd_stamp( ofoBat *bat )
 {
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return(( const GTimeVal * ) &priv->upd_stamp );
+	ofo_base_getter( BAT, bat, timestamp, NULL, BAT_UPD_STAMP );
 }
 
 /**
@@ -666,84 +682,67 @@ ofo_bat_get_used_count( ofoBat *bat )
 
 /*
  * bat_set_id:
+ * @bat: this #ofoBat object.
+ * @id: the @bat identifier.
+ *
+ * Set @id.
  */
 static void
 bat_set_id( ofoBat *bat, ofxCounter id )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	priv->id = id;
+	ofo_base_setter( BAT, bat, counter, BAT_ID, id );
 }
 
 /**
  * ofo_bat_set_uri:
+ * @bat: this #ofoBat object.
+ * @uri: the source URI.
+ *
+ * Set @uri.
  */
 void
 ofo_bat_set_uri( ofoBat *bat, const gchar *uri )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	g_free( priv->uri );
-	priv->uri = g_strdup( uri );
+	ofo_base_setter( BAT, bat, counter, BAT_URI, uri );
 }
 
 /**
  * ofo_bat_set_format:
+ * @bat: this #ofoBat object.
+ * @format: the import format.
+ *
+ * Set @format.
  */
 void
 ofo_bat_set_format( ofoBat *bat, const gchar *format )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	g_free( priv->format );
-	priv->format = g_strdup( format );
+	ofo_base_setter( BAT, bat, counter, BAT_FORMAT, format );
 }
 
 /**
  * ofo_bat_set_begin_date:
+ * @bat: this #ofoBat object.
+ * @date: the beginning date.
+ *
+ * Set @date.
  */
 void
 ofo_bat_set_begin_date( ofoBat *bat, const GDate *date )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	my_date_set_from_date( &priv->begin, date );
+	ofo_base_setter( BAT, bat, date, BAT_BEGIN, date );
 }
 
 /**
  * ofo_bat_set_begin_solde:
+ * @bat: this #ofoBat object.
+ * @solde: the beginning solde.
+ *
+ * Set @solde.
  */
 void
 ofo_bat_set_begin_solde( ofoBat *bat, ofxAmount solde )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	priv->begin_solde = solde;
+	ofo_base_setter( BAT, bat, amount, BAT_SOLDE_BEGIN, solde );
 }
 
 /**
@@ -752,46 +751,33 @@ ofo_bat_set_begin_solde( ofoBat *bat, ofxAmount solde )
 void
 ofo_bat_set_begin_solde_set( ofoBat *bat, gboolean set )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	priv->begin_solde_set = set;
+	ofo_base_setter( BAT, bat, string, BAT_SOLDE_BEGIN_SET, set ? "Y":"N" );
 }
 
 /**
  * ofo_bat_set_end_date:
+ * @bat: this #ofoBat object.
+ * @date: the ending date.
+ *
+ * Set @date.
  */
 void
 ofo_bat_set_end_date( ofoBat *bat, const GDate *date )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	my_date_set_from_date( &priv->end, date );
+	ofo_base_setter( BAT, bat, date, BAT_END, date );
 }
 
 /**
  * ofo_bat_set_end_solde:
+ * @bat: this #ofoBat object.
+ * @solde: the ending solde.
+ *
+ * Set @solde.
  */
 void
 ofo_bat_set_end_solde( ofoBat *bat, ofxAmount solde )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	priv->end_solde = solde;
+	ofo_base_setter( BAT, bat, amount, BAT_SOLDE_END, solde );
 }
 
 /**
@@ -800,115 +786,85 @@ ofo_bat_set_end_solde( ofoBat *bat, ofxAmount solde )
 void
 ofo_bat_set_end_solde_set( ofoBat *bat, gboolean set )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	priv->end_solde_set = set;
+	ofo_base_setter( BAT, bat, string, BAT_SOLDE_END_SET, set ? "Y":"N" );
 }
 
 /**
  * ofo_bat_set_rib:
+ * @bat: this #ofoBat object.
+ * @rib: the provided RIB.
+ *
+ * Set @rib.
  */
 void
 ofo_bat_set_rib( ofoBat *bat, const gchar *rib )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	g_free( priv->rib );
-	priv->rib = g_strdup( rib );
+	ofo_base_setter( BAT, bat, string, BAT_RIB, rib );
 }
 
 /**
  * ofo_bat_set_currency:
+ * @bat: this #ofoBat object.
+ * @currency: the provided currency.
+ *
+ * Set @currency.
  */
 void
 ofo_bat_set_currency( ofoBat *bat, const gchar *currency )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	g_free( priv->currency );
-	priv->currency = g_strdup( currency );
+	ofo_base_setter( BAT, bat, string, BAT_CURRENCY, currency );
 }
 
 /**
  * ofo_bat_set_notes:
+ * @bat: this #ofoBat object.
+ * @notes: the associated notes.
+ *
+ * Set @notes.
  */
 void
 ofo_bat_set_notes( ofoBat *bat, const gchar *notes )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	g_free( priv->notes );
-	priv->notes = g_strdup( notes );
+	ofo_base_setter( BAT, bat, string, BAT_NOTES, notes );
 }
 
 /**
  * ofo_bat_set_account:
+ * @bat: this #ofoBat object.
+ * @account: the account associated to @bat in Openbook.
+ *
+ * Set @account.
  */
 void
 ofo_bat_set_account( ofoBat *bat, const gchar *account )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	g_free( priv->account );
-	priv->account = g_strdup( account );
+	ofo_base_setter( BAT, bat, string, BAT_ACCOUNT, account );
 }
 
 /*
  * ofo_bat_set_upd_user:
+ * @bat: this #ofoBat object.
+ * @upd_user: the importer user.
+ *
+ * Set @upd_user.
  */
 static void
 bat_set_upd_user( ofoBat *bat, const gchar *upd_user )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	g_free( priv->upd_user );
-	priv->upd_user = g_strdup( upd_user );
+	ofo_base_setter( BAT, bat, string, BAT_UPD_USER, upd_user );
 }
 
 /*
  * ofo_bat_set_upd_stamp:
+ * @bat: this #ofoBat object.
+ * @upd_stamp: the import timestamp.
+ *
+ * Set @upd_stamp.
  */
 static void
 bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
 {
-	ofoBatPrivate *priv;
-
-	g_return_if_fail( bat && OFO_IS_BAT( bat ));
-	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	my_stamp_set_from_stamp( &priv->upd_stamp, upd_stamp );
+	ofo_base_setter( BAT, bat, timestamp, BAT_UPD_STAMP, upd_stamp );
 }
 
 /**
@@ -1016,7 +972,7 @@ bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 	ofaHub *hub;
 	gchar *suri, *str, *stamp_str;
 	const GDate *begin, *end;
-	gboolean ok;
+	gboolean ok, is_set;
 	GTimeVal stamp;
 	const gchar *userid, *cur_code;
 	ofoCurrency *cur_obj;
@@ -1039,7 +995,8 @@ bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 
 	g_string_append_printf( query,
 			"	(BAT_ID,BAT_URI,BAT_FORMAT,BAT_BEGIN,BAT_END,"
-			"	 BAT_RIB,BAT_CURRENCY,BAT_SOLDE_BEGIN,BAT_SOLDE_END,"
+			"	 BAT_RIB,BAT_CURRENCY,"
+			"	BAT_SOLDE_BEGIN,BAT_SOLDE_BEGIN_SET,BAT_SOLDE_END,BAT_SOLDE_END_SET,"
 			"	 BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP) VALUES (%ld,'%s',",
 					ofo_bat_get_id( bat ),
 					suri );
@@ -1085,20 +1042,22 @@ bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 		query = g_string_append( query, "NULL," );
 	}
 
-	if( ofo_bat_get_begin_solde_set( bat )){
+	is_set = ofo_bat_get_begin_solde_set( bat );
+	if( is_set ){
 		str = ofa_amount_to_sql( ofo_bat_get_begin_solde( bat ), cur_obj );
-		g_string_append_printf( query, "%s,", str );
+		g_string_append_printf( query, "%s,'Y',", str );
 		g_free( str );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, "NULL,'N'," );
 	}
 
-	if( ofo_bat_get_end_solde_set( bat )){
+	is_set = ofo_bat_get_end_solde_set( bat );
+	if( is_set ){
 		str = ofa_amount_to_sql( ofo_bat_get_end_solde( bat ), cur_obj );
-		g_string_append_printf( query, "%s,", str );
+		g_string_append_printf( query, "%s,'Y',", str );
 		g_free( str );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, "NULL,'N'," );
 	}
 
 	str = my_utils_quote_sql( ofo_bat_get_notes( bat ));
@@ -1215,6 +1174,7 @@ ofo_bat_delete( ofoBat *bat )
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gboolean ok;
+	ofxCounter bat_id;
 
 	g_debug( "%s: bat=%p", thisfn, ( void * ) bat );
 
@@ -1227,8 +1187,12 @@ ofo_bat_delete( ofoBat *bat )
 	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
+	bat_id = ofo_bat_get_id( bat );
 
-	if( bat_do_delete_main( bat, connect ) &&  bat_do_delete_lines( bat, connect )){
+	if( bat_do_delete_main( bat, connect, bat_id ) &&
+			bat_do_delete_lines( bat, connect, bat_id ) &&
+			bat_do_delete_doc( bat, connect, bat_id )){
+
 		g_object_ref( bat );
 		my_icollector_collection_remove_object( ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( bat ));
 		g_signal_emit_by_name( signaler, SIGNALER_BASE_DELETED, bat );
@@ -1246,57 +1210,54 @@ static gboolean
 bat_do_delete_by_where( ofoBat *bat, const ofaIDBConnect *connect )
 {
 	ofxCounter bat_id;
-	gchar *query;
 	gboolean ok;
 
 	ok = TRUE;
-
 	bat_id = bat_get_id_by_where( bat, connect );
 
 	if( bat_id > 0 ){
-		query = g_strdup_printf( "DELETE FROM OFA_T_BAT WHERE BAT_ID=%ld", bat_id );
-		ok &= ofa_idbconnect_query( connect, query, FALSE );
-		g_free( query );
-
-		query = g_strdup_printf( "DELETE FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld", bat_id );
-		ok &= ofa_idbconnect_query( connect, query, FALSE );
-		g_free( query );
+		ok &= bat_do_delete_main( bat, connect, bat_id );
+		ok &= bat_do_delete_lines( bat, connect, bat_id );
+		ok &= bat_do_delete_doc( bat, connect, bat_id );
 	}
 
 	return( ok );
 }
 
 static gboolean
-bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect )
+bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect, ofxCounter bat_id )
 {
 	gchar *query;
 	gboolean ok;
 
-	query = g_strdup_printf(
-			"DELETE FROM OFA_T_BAT"
-			"	WHERE BAT_ID=%ld",
-					ofo_bat_get_id( bat ));
-
+	query = g_strdup_printf( "DELETE FROM OFA_T_BAT WHERE BAT_ID=%ld", bat_id );
 	ok = ofa_idbconnect_query( connect, query, TRUE );
-
 	g_free( query );
 
 	return( ok );
 }
 
 static gboolean
-bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect )
+bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect, ofxCounter bat_id )
 {
 	gchar *query;
 	gboolean ok;
 
-	query = g_strdup_printf(
-			"DELETE FROM OFA_T_BAT_LINES"
-			"	WHERE BAT_ID=%ld",
-					ofo_bat_get_id( bat ));
-
+	query = g_strdup_printf( "DELETE FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld", bat_id );
 	ok = ofa_idbconnect_query( connect, query, TRUE );
+	g_free( query );
 
+	return( ok );
+}
+
+static gboolean
+bat_do_delete_doc( ofoBat *bat, const ofaIDBConnect *connect, ofxCounter bat_id )
+{
+	gchar *query;
+	gboolean ok;
+
+	query = g_strdup_printf( "DELETE FROM OFA_T_BAT_DOC WHERE BAT_ID=%ld", bat_id );
+	ok = ofa_idbconnect_query( connect, query, TRUE );
 	g_free( query );
 
 	return( ok );
@@ -1335,91 +1296,15 @@ icollectionable_get_interface_version( void )
 static GList *
 icollectionable_load_collection( void *user_data )
 {
-	ofaIGetter *getter;
-	ofaHub *hub;
-	const ofaIDBConnect *connect;
-	GSList *result, *irow, *icol;
-	ofoBat *bat;
 	GList *dataset;
-	GTimeVal timeval;
-	GDate date;
 
 	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
-	dataset = NULL;
-	getter = OFA_IGETTER( user_data );
-	hub = ofa_igetter_get_hub( getter );
-	connect = ofa_hub_get_connect( hub );
-
-	if( ofa_idbconnect_query_ex( connect,
-			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_ACCOUNT,"
-			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_CURRENCY,BAT_SOLDE_BEGIN,BAT_SOLDE_END,"
-			"	BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP "
-			"	FROM OFA_T_BAT", &result, TRUE )){
-
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			bat = ofo_bat_new( getter );
-			bat_set_id( bat, atol(( gchar * ) icol->data ));
-			icol = icol->next;
-			ofo_bat_set_uri( bat, ( gchar * ) icol->data );
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_format( bat, ( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_account( bat, ( const gchar * ) icol->data );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				my_date_set_from_sql( &date, ( const gchar * ) icol->data );
-				ofo_bat_set_begin_date( bat, &date );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				my_date_set_from_sql( &date, ( const gchar * ) icol->data );
-				ofo_bat_set_end_date( bat, &date );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_rib( bat, ( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_currency( bat, ( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_begin_solde( bat,
-						my_double_set_from_sql(( const gchar * ) icol->data ));
-				ofo_bat_set_begin_solde_set( bat, TRUE );
-			} else {
-				ofo_bat_set_begin_solde_set( bat, FALSE );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_end_solde( bat,
-						my_double_set_from_sql(( const gchar * ) icol->data ));
-				ofo_bat_set_end_solde_set( bat, TRUE );
-			} else {
-				ofo_bat_set_end_solde_set( bat, FALSE );
-			}
-			icol = icol->next;
-			if( icol->data ){
-				ofo_bat_set_notes( bat, ( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			bat_set_upd_user( bat, ( gchar * ) icol->data );
-			icol = icol->next;
-			bat_set_upd_stamp( bat,
-					my_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
-
-			dataset = g_list_prepend( dataset, bat );
-		}
-
-		ofa_idbconnect_free_results( result );
-	}
+	dataset = ofo_base_load_dataset(
+					st_boxed_defs,
+					"OFA_T_BAT",
+					OFO_TYPE_BAT,
+					OFA_IGETTER( user_data ));
 
 	return( dataset );
 }
@@ -1441,6 +1326,78 @@ static guint
 idoc_get_interface_version( void )
 {
 	return( 1 );
+}
+
+/*
+ * ofaIExportable interface management
+ */
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_class_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->get_label = iexportable_get_label;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static gchar *
+iexportable_get_label( const ofaIExportable *instance )
+{
+	return( g_strdup( _( "_Bank account transaction list" )));
+}
+
+/*
+ * iexportable_export:
+ *
+ * Exports the classes line by line.
+ *
+ * Returns: TRUE at the end if no error has been detected
+ */
+static gboolean
+iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
+{
+	GList *dataset, *it;
+	gchar *str;
+	gboolean with_headers, ok;
+	gulong count;
+
+	dataset = ofo_bat_get_dataset( getter );
+	with_headers = ofa_stream_format_get_with_headers( settings );
+
+	count = ( gulong ) g_list_length( dataset );
+	if( with_headers ){
+		count += 1;
+	}
+	ofa_iexportable_set_count( exportable, count );
+
+	if( with_headers ){
+		str = ofa_box_csv_get_header( st_boxed_defs, settings );
+		ok = ofa_iexportable_set_line( exportable, str );
+		g_free( str );
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	for( it=dataset ; it ; it=it->next ){
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, NULL );
+		ok = ofa_iexportable_set_line( exportable, str );
+		g_free( str );
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	return( TRUE );
 }
 
 /*

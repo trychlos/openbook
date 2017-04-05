@@ -101,6 +101,7 @@
  462 2014-11-26 move ofoBat/ofoBatLine to ofaBoxed
      2015- 1- 5 really only required when ofoBat/ofoBatLine will implement
                 the ofaIExportable interface - so it is not urgent
+     2017- 4- 5 ofoBat uses ofaBox, and is exportable
 
  525 2014-12-13 when importing entries: review the code to be faster
                 import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)

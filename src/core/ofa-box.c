@@ -34,8 +34,9 @@
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-box.h"
-#include "api/ofa-preferences.h"
+#include "api/ofo-currency.h"
 
 /**
  * ofsBoxData:
@@ -774,25 +775,33 @@ compute_csv_name( const gchar *dbms_name )
  * ofa_box_csv_get_line:
  * @fields_list: the list of elementary datas of the record
  * @format: the #ofaStreamFormat configuration settings.
+ * @currency: [allow-none]: the currency of the amounts found in the
+ *  @fields_list.
  *
  * Returns the line of a CSV-type export, with requested configuration,
  * as a newly allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_box_csv_get_line( const GList *fields_list, ofaStreamFormat *format )
+ofa_box_csv_get_line( const GList *fields_list, ofaStreamFormat *format, ofoCurrency *currency )
 {
-	return( ofa_box_csv_get_line_ex( fields_list, format, NULL, NULL ));
+	return( ofa_box_csv_get_line_ex( fields_list, format, currency, NULL, NULL ));
 }
 
 /**
  * ofa_box_csv_get_line_ex:
- * @fields_list:
+ * @fields_list: the list of elementary datas of the record
  * @format: the #ofaStreamFormat configuration settings.
- * @cb:
- * @user_data:
+ * @currency: [allow-none]: the currency of the amounts found in the
+ *  @fields_list.
+ * @cb: a callback user function which will be called for each field.
+ * @user_data: data to be passed to @cb.
+ *
+ * Returns the line of a CSV-type export, with requested configuration,
+ * as a newly allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_box_csv_get_line_ex( const GList *fields_list, ofaStreamFormat *format, CSVExportFunc cb, void *user_data )
+ofa_box_csv_get_line_ex( const GList *fields_list, ofaStreamFormat *format, ofoCurrency *currency,
+							CSVExportFunc cb, void *user_data )
 {
 	GString *line;
 	const GList *it;
@@ -819,11 +828,16 @@ ofa_box_csv_get_line_ex( const GList *fields_list, ofaStreamFormat *format, CSVE
 
 		str = ihelper->to_string_fn( it->data, format );
 		if( ihelper->type == OFA_TYPE_AMOUNT ){
-			set_decimal_point( str, decimal_sep );
+			if( currency ){
+				g_free( str );
+				str = ofa_amount_to_csv( ofa_box_data_get_amount( box_data ), currency, format );
+			} else {
+				set_decimal_point( str, decimal_sep );
+			}
 		}
 
 		if( cb ){
-			str2 = cb( box_data, format, str, user_data );
+			str2 = cb( box_data, format, currency, str, user_data );
 		} else {
 			str2 = g_strdup( str );
 		}

@@ -1689,7 +1689,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 		}
 	}
 
-	str = ofa_box_csv_get_line( OFO_BASE( dossier )->prot->fields, settings );
+	str = ofa_box_csv_get_line( OFO_BASE( dossier )->prot->fields, settings, NULL );
 	str2 = g_strdup_printf( "1%c%s", field_sep, str );
 	ok = ofa_iexportable_set_line( exportable, str2 );
 	g_free( str2 );
@@ -1699,7 +1699,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	}
 
 	for( cur_detail=priv->cur_details ; cur_detail ; cur_detail=cur_detail->next ){
-		str = ofa_box_csv_get_line( cur_detail->data, settings );
+		str = ofa_box_csv_get_line( cur_detail->data, settings, NULL );
 		str2 = g_strdup_printf( "2%c%s", field_sep, str );
 		ok = ofa_iexportable_set_line( exportable, str2 );
 		g_free( str2 );
