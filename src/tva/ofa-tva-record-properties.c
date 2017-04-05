@@ -38,10 +38,12 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
+#include "api/ofa-entry-page.h"
 #include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -88,6 +90,7 @@ typedef struct {
 	GtkWidget    *notes_textview;
 	GtkWidget    *compute_btn;
 	GtkWidget    *generate_btn;
+	GtkWidget    *viewopes_btn;
 	GtkWidget    *validate_btn;
 	GtkWidget    *ok_btn;
 	GtkWidget    *msg_label;
@@ -167,6 +170,7 @@ static gchar           *eval_base( ofsFormulaHelper *helper );
 static gchar           *eval_code( ofsFormulaHelper *helper );
 static void             on_generate_clicked( GtkButton *button, ofaTVARecordProperties *self );
 static gboolean         do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count, guint *ent_count );
+static void             on_viewopes_clicked( GtkButton *button, ofaTVARecordProperties *self );
 static void             on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
 static gboolean         confirm_validate( ofaTVARecordProperties *self );
 static void             set_msgerr( ofaTVARecordProperties *self, const gchar *msg );
@@ -369,6 +373,10 @@ idialog_init( myIDialog *instance )
 	priv->generate_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "generate-btn" );
 	g_return_if_fail( priv->generate_btn && GTK_IS_BUTTON( priv->generate_btn ));
 	g_signal_connect( priv->generate_btn, "clicked", G_CALLBACK( on_generate_clicked ), instance );
+
+	priv->viewopes_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-view-btn" );
+	g_return_if_fail( priv->viewopes_btn && GTK_IS_BUTTON( priv->viewopes_btn ));
+	g_signal_connect( priv->viewopes_btn, "clicked", G_CALLBACK( on_viewopes_clicked ), instance );
 
 	priv->validate_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "validate-btn" );
 	g_return_if_fail( priv->validate_btn && GTK_IS_BUTTON( priv->validate_btn ));
@@ -858,6 +866,8 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 		gtk_widget_set_sensitive( priv->generate_btn, FALSE );
 		gtk_widget_set_sensitive( priv->validate_btn, FALSE );
 	}
+
+	gtk_widget_set_sensitive( priv->viewopes_btn, priv->opes_generated > 0 );
 }
 
 /*
@@ -1441,6 +1451,38 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 	g_free( period_label );
 
 	return( TRUE );
+}
+
+/*
+ * view the generated operations
+ *
+ * This is only possible when operations have been generated
+ */
+static void
+on_viewopes_clicked( GtkButton *button, ofaTVARecordProperties *self )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+	guint count, idx;
+	ofxCounter number;
+	GList *opes;
+	ofaIPageManager *page_manager;
+	ofaPage *page;
+
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	opes = NULL;
+	count = ofo_tva_record_detail_get_count( priv->tva_record );
+	for( idx=0 ; idx<count ; ++idx ){
+		number = ofo_tva_record_detail_get_ope_number( priv->tva_record, idx );
+		if( number > 0 ){
+			opes = g_list_prepend( opes, GUINT_TO_POINTER( number ));
+		}
+	}
+
+	page_manager = ofa_igetter_get_page_manager( priv->getter );
+	page = ofa_ipage_manager_activate( page_manager, OFA_TYPE_ENTRY_PAGE );
+	ofa_entry_page_display_operations( OFA_ENTRY_PAGE( page ), opes );
+	g_list_free( opes );
 }
 
 /*

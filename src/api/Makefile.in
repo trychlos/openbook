@@ -401,6 +401,7 @@ api_include_HEADERS = \
 	ofa-dossier-props.h									\
 	ofa-dossier-store.h									\
 	ofa-dossier-store-def.h								\
+	ofa-entry-page.h									\
 	ofa-extender-collection.h							\
 	ofa-extender-collection-def.h						\
 	ofa-extender-module.h								\

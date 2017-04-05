@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_ENTRY_PAGE_H__
-#define __OFA_ENTRY_PAGE_H__
+#ifndef __OPENBOOK_API_OFA_ENTRY_PAGE_H__
+#define __OPENBOOK_API_OFA_ENTRY_PAGE_H__
 
 /**
  * SECTION: ofa_entry_page
  * @short_description: #ofaEntryPage class definition.
- * @include: ui/ofa-entry-page.h
+ * @include: openbook/ofa-entry-page.h
  *
  * Display the entries with various selection criteria.
  */
@@ -56,10 +56,17 @@ typedef struct {
 }
 	ofaEntryPageClass;
 
-GType ofa_entry_page_get_type       ( void ) G_GNUC_CONST;
+GType ofa_entry_page_get_type          ( void ) G_GNUC_CONST;
 
-void  ofa_entry_page_display_entries( ofaEntryPage *self, GType type, const gchar *id, const GDate *begin, const GDate *end );
+void  ofa_entry_page_display_entries   ( ofaEntryPage *page,
+												GType type,
+												const gchar *type_id,
+												const GDate *begin,
+												const GDate *end );
+
+void  ofa_entry_page_display_operations( ofaEntryPage *page,
+												GList *opes );
 
 G_END_DECLS
 
-#endif /* __OFA_ENTRY_PAGE_H__ */
+#endif /* __OPENBOOK_API_OFA_ENTRY_PAGE_H__ */

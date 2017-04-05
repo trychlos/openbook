@@ -13,6 +13,8 @@ src/core/ofa-core.c
 src/core/ofa-date-filter-hv-bin.ui
 src/core/ofa-dossier-collection.c
 src/core/ofa-dossier-delete-prefs-bin.ui
+src/core/ofa-entry-page.c
+src/core/ofa-entry-page.ui
 src/core/ofa-formula-engine.c
 src/core/ofa-guided-input-bin.c
 src/core/ofa-guided-input-bin.ui
@@ -190,8 +192,6 @@ src/ui/ofa-dossier-open.ui
 src/ui/ofa-dossier-properties.c
 src/ui/ofa-dossier-properties.ui
 src/ui/ofa-dossier-treeview.c
-src/ui/ofa-entry-page.c
-src/ui/ofa-entry-page.ui
 src/ui/ofa-entry-properties.c
 src/ui/ofa-entry-properties.ui
 src/ui/ofa-entry-treeview.c

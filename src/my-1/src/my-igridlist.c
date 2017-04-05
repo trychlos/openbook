@@ -402,7 +402,7 @@ remove_row_widget_remove( sIGridList *sdata, guint column, guint row )
 	widget = gtk_grid_get_child_at( sdata->grid, column, row );
 	if( widget ){
 		g_return_if_fail( GTK_IS_WIDGET( widget ));
-		gtk_widget_destroy( widget );
+		gtk_container_remove( GTK_CONTAINER( sdata->grid ), widget );
 	}
 }
 

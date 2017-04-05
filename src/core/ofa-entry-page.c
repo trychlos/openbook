@@ -40,6 +40,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-counter.h"
 #include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-entry-page.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -64,7 +65,6 @@
 #include "core/ofa-ledger-combo.h"
 #include "core/ofa-ledger-store.h"
 
-#include "ui/ofa-entry-page.h"
 #include "ui/ofa-entry-properties.h"
 #include "ui/ofa-entry-store.h"
 #include "ui/ofa-entry-treeview.h"
@@ -282,9 +282,9 @@ typedef struct {
 }
 	sExtend;
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-entry-page.ui";
-static const gchar *st_green_check_png  = "/org/trychlos/openbook/ui/ofa-entry-page-green-check-68.png";
-static const gchar *st_red_cross_png    = "/org/trychlos/openbook/ui/ofa-entry-page-red-cross-68.png";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-entry-page.ui";
+static const gchar *st_green_check_png  = "/org/trychlos/openbook/core/ofa-entry-page-green-check-68.png";
+static const gchar *st_red_cross_png    = "/org/trychlos/openbook/core/ofa-entry-page-red-cross-68.png";
 static const gchar *st_ui_id            = "EntryPageWindow";
 
 #define SEL_LEDGER                      "Ledger"
@@ -2468,6 +2468,50 @@ ofa_entry_page_display_entries( ofaEntryPage *page, GType type, const gchar *id,
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ), TRUE );
 		ofa_ledger_combo_set_selected( priv->ledger_combo, id );
 	}
+}
+
+/**
+ * ofa_entry_page_display_operations:
+ * @page: this #ofaEntryPage instance.
+ * @opes: a list of operations number.
+ *
+ * Display the entries which are related to the @opes operations.
+ */
+void
+ofa_entry_page_display_operations( ofaEntryPage *page, GList *opes )
+{
+	static const gchar *thisfn = "ofa_entry_page_display_operations";
+	ofaEntryPagePrivate *priv;
+	GList *it;
+	sExtend *extend;
+	ofxCounter number;
+	gboolean first;
+
+	g_return_if_fail( page && OFA_IS_ENTRY_PAGE( page ));
+	g_return_if_fail( !OFA_PAGE( page )->prot->dispose_has_run );
+
+	g_debug( "%s: page=%p, opes=%p",
+			thisfn, ( void * ) page, ( void * ) opes );
+
+	priv = ofa_entry_page_get_instance_private( page );
+
+	/* setup an extended filter on the operation number */
+	first = TRUE;
+	for( it=opes ; it ; it=it->next ){
+		number = ( ofxCounter ) GPOINTER_TO_UINT( it->data );
+		extend = g_new0( sExtend, 1 );
+		extend->operator = first ? OPERATOR_NONE : OPERATOR_OR;
+		extend->field = ENTRY_COL_OPE_NUMBER;
+		extend->condition = COND_EQUAL;
+		extend->value = g_strdup_printf( "%lu", number );
+		my_igridlist_add_row( MY_IGRIDLIST( page ), GTK_GRID( priv->ext_grid ), extend );
+		first = FALSE;
+		g_free( extend->value );
+		g_free( extend );
+	}
+
+	gtk_expander_set_expanded( GTK_EXPANDER( priv->expander ), TRUE );
+	gtk_stack_set_visible_child_name( GTK_STACK( priv->stack ), "extended" );
 }
 
 static void

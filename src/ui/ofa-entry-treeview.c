@@ -357,9 +357,9 @@ setup_columns( ofaEntryTreeview *self )
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ENTRY_COL_CREDIT,        _( "Credit" ),          NULL );
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_TIERS,         _( "Tiers" ),           NULL );
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_OPE_NUMBER,    _( "Ope." ),        _( "Operation number" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_STLMT_NUMBER,  _( "Set.num" ),     _( "Settlement number" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_STLMT_USER,    _( "Set.user" ),    _( "Settlement user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ENTRY_COL_STLMT_STAMP,   _( "Set.stamp" ),   _( "Settlement timestamp" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_STLMT_NUMBER,  _( "Stlmt.num" ),   _( "Settlement number" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_STLMT_USER,    _( "Stlmt.user" ),  _( "Settlement user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ENTRY_COL_STLMT_STAMP,   _( "Stlmt.stamp" ), _( "Settlement timestamp" ));
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_ENT_NUMBER,    _( "Ent.num" ),     _( "Entry number" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_UPD_USER,      _( "Ent.user" ),    _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ENTRY_COL_UPD_STAMP,     _( "Ent.stamp" ),   _( "Last update timestamp" ));

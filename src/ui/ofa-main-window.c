@@ -41,6 +41,7 @@
 #include "my/my-tab.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-entry-page.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
@@ -68,7 +69,6 @@
 #include "ui/ofa-currency-page.h"
 #include "ui/ofa-dossier-display-notes.h"
 #include "ui/ofa-dossier-properties.h"
-#include "ui/ofa-entry-page.h"
 #include "ui/ofa-exercice-close-assistant.h"
 #include "ui/ofa-export-assistant.h"
 #include "ui/ofa-guided-ex.h"

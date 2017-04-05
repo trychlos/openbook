@@ -31,6 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-buttons-box.h"
+#include "api/ofa-entry-page.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-iactioner.h"
@@ -50,7 +51,6 @@
 #include "core/ofa-account-store.h"
 #include "core/ofa-account-treeview.h"
 
-#include "ui/ofa-entry-page.h"
 #include "ui/ofa-reconcil-page.h"
 #include "ui/ofa-settlement-page.h"
 

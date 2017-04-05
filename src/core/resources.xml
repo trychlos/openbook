@@ -5,6 +5,7 @@
     <file>ofa-account-select.ui</file>
     <file>ofa-date-filter-hv-bin.ui</file>
     <file>ofa-dossier-delete-prefs-bin.ui</file>
+    <file>ofa-entry-page.ui</file>
     <file>ofa-guided-input.ui</file>
     <file>ofa-guided-input-bin.ui</file>
     <file>ofa-idbmodel.ui</file>
@@ -22,6 +23,8 @@
     <file>filler.png</file>
     <file>notes.png</file>
     <file>ofa-account-editable-icon-16.png</file>
+    <file>ofa-entry-page-green-check-68.png</file>
+    <file>ofa-entry-page-red-cross-68.png</file>
     <file>ofa-guided-input-bin-green-check-68.png</file>
     <file>ofa-paimean-editable-icon-16.png</file>
     <file>ofa-ope-template-editable-icon-16.png</file>

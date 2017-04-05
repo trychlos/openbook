@@ -313,7 +313,7 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	const gchar *cstr, *cref, *cur_code, *csetuser, *cupduser, *notes;
 	ofoCurrency *cur_obj;
 	ofxAmount amount;
-	ofxCounter counter, setnum, openum;
+	ofxCounter counter, setnum, openum, entnum;
 	ofoConcil *concil;
 	GdkPixbuf *notes_png;
 	GError *error;
@@ -339,19 +339,20 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	scre = amount ? ofa_amount_to_str( amount, cur_obj, priv->getter ) : g_strdup( "" );
 
 	counter = ofo_entry_get_tiers( entry );
-	stiers = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
+	stiers = counter > 0 ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
 
 	openum = ofo_entry_get_ope_number( entry );
-	sopenum = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
+	sopenum = openum > 0 ? g_strdup_printf( "%lu", openum ) : g_strdup( "" );
 
 	setnum = ofo_entry_get_settlement_number( entry );
-	ssetnum = counter ? g_strdup_printf( "%lu", setnum ) : g_strdup( "" );
+	ssetnum = setnum > 0 ? g_strdup_printf( "%lu", setnum ) : g_strdup( "" );
 
 	cstr = ofo_entry_get_settlement_user( entry );
 	csetuser = cstr ? cstr : "";
 	ssetstamp = my_stamp_to_str( ofo_entry_get_settlement_stamp( entry ), MY_STAMP_DMYYHM );
 
-	sentnum = g_strdup_printf( "%lu", ofo_entry_get_number( entry ));
+	entnum = ofo_entry_get_number( entry );
+	sentnum = g_strdup_printf( "%lu", entnum );
 
 	cstr = ofo_entry_get_upd_user( entry );
 	cupduser = cstr ? cstr : "";
@@ -388,6 +389,7 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 				ENTRY_COL_STLMT_USER,     csetuser,
 				ENTRY_COL_STLMT_STAMP,    ssetstamp,
 				ENTRY_COL_ENT_NUMBER,     sentnum,
+				ENTRY_COL_ENT_NUMBER_I,   entnum,
 				ENTRY_COL_TIERS,          stiers,
 				ENTRY_COL_UPD_USER,       cupduser,
 				ENTRY_COL_UPD_STAMP,      supdstamp,

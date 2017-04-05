@@ -30,6 +30,7 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-entry-page.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -41,7 +42,6 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 
-#include "ui/ofa-entry-page.h"
 #include "ui/ofa-ledger-properties.h"
 #include "ui/ofa-ledger-treeview.h"
 #include "ui/ofa-ledger-page.h"

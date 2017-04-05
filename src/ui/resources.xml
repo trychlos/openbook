@@ -27,7 +27,6 @@
     <file>ofa-dossier-new.ui</file>
     <file>ofa-dossier-open.ui</file>
     <file>ofa-dossier-properties.ui</file>
-    <file>ofa-entry-page.ui</file>
     <file>ofa-entry-properties.ui</file>
     <file>ofa-exercice-close-assistant.ui</file>
     <file>ofa-exercice-edit-bin.ui</file>
@@ -63,7 +62,5 @@
     <file>light-empty-14.png</file>
     <file>light-green-14.png</file>
     <file>light-yellow-14.png</file>
-    <file>ofa-entry-page-green-check-68.png</file>
-    <file>ofa-entry-page-red-cross-68.png</file>
   </gresource>
 </gresources>

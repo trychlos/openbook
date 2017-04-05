@@ -94,6 +94,7 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-delete-prefs-bin.h						\
 	ofa-dossier-props.c									\
 	ofa-dossier-store.c									\
+	ofa-entry-page.c									\
 	ofa-extender-collection.c							\
 	ofa-extender-module.c								\
 	ofa-formula-engine.c								\
