@@ -120,6 +120,7 @@ static gchar           *eval_debit( ofsFormulaHelper *helper );
 static gchar           *eval_deffect( ofsFormulaHelper *helper );
 static gchar           *eval_dope( ofsFormulaHelper *helper );
 static gchar           *eval_domy( ofsFormulaHelper *helper );
+static gchar           *eval_domyp( ofsFormulaHelper *helper );
 static gchar           *eval_eval( ofsFormulaHelper *helper );
 static gchar           *eval_idem( ofsFormulaHelper *helper );
 static gchar           *eval_label( ofsFormulaHelper *helper );
@@ -156,6 +157,7 @@ static const sEvalDef st_formula_fns[] = {
 		{ "DEFFECT", 0, 0, eval_deffect },
 		{ "DOPE",    0, 0, eval_dope },
 		{ "DOMY",    0, 0, eval_domy },
+		{ "DOMYP",   1, 1, eval_domyp },
 		{ "EVAL",    1, 1, eval_eval },
 		{ "IDEM",    0, 0, eval_idem },
 		{ "LABEL",   1, 1, eval_label },
@@ -788,6 +790,26 @@ static gchar *
 eval_domy( ofsFormulaHelper *helper )
 {
 	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->dope, MY_DATE_MMYY ));
+}
+
+/*
+ * %DOMYP( n ): n months before those of the operation date as mmm yyyy
+ */
+static gchar *
+eval_domyp( ofsFormulaHelper *helper )
+{
+	GDate dprev;
+	GList *it;
+	const gchar *cstr;
+	guint count;
+
+	my_date_set_from_date( &dprev, &(( sOpeHelper * ) helper->user_data )->ope->dope );
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	count = my_strlen( cstr ) ? atoi( cstr ) : 0;
+	g_date_subtract_months( &dprev, count );
+
+	return( my_date_to_str( &dprev, MY_DATE_MMYY ));
 }
 
 /*

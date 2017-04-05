@@ -208,9 +208,6 @@
 1012 2016- 2-25 FEAT OpeTemplate: when a row is moved up or down, then
                      the indexes should be updated accordingly
 
-1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
-                     BAT page (a restart fixes this)
-
 1075 2016- 4-14 have a message bar
      2016- 4-20 describe a use case
 
@@ -336,7 +333,15 @@
 1418 2017- 3-24 ope template has a prof. share (quote-part pro)
      2017- 3-25 dbms is updated
 
-1435
+1435 2017- 4- 5 vat record should be automatically validated on period close
+
+1436 2017- 4- 5 vat record should not be deletable if generated entries
+                have been validated
+
+1437 2017- 4- 5 deleting a vat record should also imply deleting generated
+                operations
+
+1438
 
 -----------------------------------------------------------------------
  DONE
@@ -430,6 +435,10 @@
 
 1014 2016- 2-26 FEAT ViewEntries: filter per operation template
      2017- 2- 5 cancelled as duplicate of #733 (search for an entry)
+
+1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
+                     BAT page (a restart fixes this)
+     2017- 4- 5 bug has been fixed in filtered views
 
 1053 2016- 3-26 CODE review the menu distribution
      2017- 2- 7 cancelled as useless

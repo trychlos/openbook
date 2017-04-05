@@ -78,6 +78,7 @@
  *    - 'DEFFECT': effect date (format from user preferences)
  *    - 'DOPE':    operation date (format from user preferences)
  *    - 'DOMY':    operation date as Mmm yyyy
+ *    - 'DOMYP':   <n> months before those of the operation date as Mmm yyyy
  *    - 'LELA':    ledger label
  *    - 'LEMN':    ledger mnemo
  *    - 'OPLA':    operation template label

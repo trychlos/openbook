@@ -90,6 +90,7 @@ Tokens may be:
  2/ a reference to a global field of the operation
      - 'DEFFECT'		: effect date (format from user preferences)
      - 'DOMY'		: operation date as mmm yyyy
+     - 'DOMYP'		: &lt;n&gt; months before those of the operation date as mmm yyyy
      - 'DOPE'		: operation date (format from user preferences)
      - 'IDEM'		: the content of the same field from the previous row
      - 'LELA'		: ledger label

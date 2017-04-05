@@ -311,7 +311,7 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_iwindow_init";
 	ofaTVARecordPropertiesPrivate *priv;
-	gchar *id;
+	gchar *id, *sdate;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -320,10 +320,14 @@ iwindow_init( myIWindow *instance )
 	my_iwindow_set_parent( instance, priv->parent );
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
-	id = g_strdup_printf( "%s-%s",
-				G_OBJECT_TYPE_NAME( instance ), ofo_tva_record_get_mnemo( priv->tva_record ));
+	sdate = my_date_to_str( ofo_tva_record_get_end( priv->tva_record ), MY_DATE_SQL );
+	id = g_strdup_printf( "%s-%s-%s",
+				G_OBJECT_TYPE_NAME( instance ),
+				ofo_tva_record_get_mnemo( priv->tva_record ),
+				sdate );
 	my_iwindow_set_identifier( instance, id );
 	g_free( id );
+	g_free( sdate );
 }
 
 /*
@@ -1338,7 +1342,6 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 	ofxCounter ope_number;
 	ofaIDBConnect *connect;
 	ofoEntry *entry;
-	gchar *period_label;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
@@ -1347,7 +1350,6 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 
 	*ope_count = 0;
 	*ent_count = 0;
-	period_label = my_date_to_str( ofo_tva_record_get_end( priv->tva_record ), MY_DATE_MMYY );
 
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
 	for( rec_idx=0 ; rec_idx < count ; ++rec_idx ){
@@ -1373,14 +1375,6 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 					ope->dope_user_set = TRUE;
 					ope->ref = g_strdup( ofo_tva_record_get_mnemo( priv->tva_record ));
 					ope->ref_user_set = TRUE;
-
-					if( !ofo_ope_template_get_detail_label_locked( template, 0 )){
-						detail = ( ofsOpeDetail * ) g_list_nth( ope->detail, 0 )->data;
-						g_free( detail->label );
-						detail->label = g_strdup_printf( "%s - %s",
-												ofo_ope_template_get_detail_label( template, 0 ), period_label );
-						detail->label_user_set = TRUE;
-					}
 
 					tmpl_count = ofo_ope_template_get_detail_count( template );
 					for( tmpl_idx=0 ; tmpl_idx < tmpl_count ; ++tmpl_idx ){
@@ -1446,8 +1440,6 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 			}
 		}
 	}
-
-	g_free( period_label );
 
 	return( TRUE );
 }
