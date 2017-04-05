@@ -355,6 +355,7 @@ setup_columns( ofaEntryTreeview *self )
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_ACCOUNT,       _( "Account" ),         NULL );
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ENTRY_COL_DEBIT,         _( "Debit" ),           NULL );
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ENTRY_COL_CREDIT,        _( "Credit" ),          NULL );
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_TIERS,         _( "Tiers" ),           NULL );
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_OPE_NUMBER,    _( "Ope." ),        _( "Operation number" ));
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_STLMT_NUMBER,  _( "Set.num" ),     _( "Settlement number" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_STLMT_USER,    _( "Set.user" ),    _( "Settlement user" ));
