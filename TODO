@@ -294,8 +294,6 @@
      2017- 3-16 do not omit to check for deletability of all objects
                 which might have a document
 
-1296 2016-12-17 VAT declarations: be able to consult generated operations
-
 1344 2017- 2- 3 re-authorize dossier open from command-line
 
 1351 2017- 2- 9 Review export and import formats, especially the tables
@@ -533,6 +531,9 @@
 1292 2016-12-17 optimize reconciliation loading
      2017- 1-27 more generally, optimize entries loading
      2017- 2- 6 done
+
+1296 2016-12-17 VAT declarations: be able to consult generated operations
+     2017- 4- 5 done
 
 1300 2016-12-19 Review preferences on opening a new/existing dossier:
                 user_preferences + dossier_preferences + settings in

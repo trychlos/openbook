@@ -38,12 +38,11 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-entry-page.h"
 #include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-ipage-manager.h"
+#include "api/ofa-operation-group.h"
 #include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -1465,8 +1464,6 @@ on_viewopes_clicked( GtkButton *button, ofaTVARecordProperties *self )
 	guint count, idx;
 	ofxCounter number;
 	GList *opes;
-	ofaIPageManager *page_manager;
-	ofaPage *page;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
@@ -1479,9 +1476,8 @@ on_viewopes_clicked( GtkButton *button, ofaTVARecordProperties *self )
 		}
 	}
 
-	page_manager = ofa_igetter_get_page_manager( priv->getter );
-	page = ofa_ipage_manager_activate( page_manager, OFA_TYPE_ENTRY_PAGE );
-	ofa_entry_page_display_operations( OFA_ENTRY_PAGE( page ), opes );
+	ofa_operation_group_run_with_list( priv->getter, priv->parent, opes );
+
 	g_list_free( opes );
 }
 

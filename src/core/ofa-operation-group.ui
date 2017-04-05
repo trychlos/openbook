@@ -5,7 +5,7 @@
   <template class="ofaOperationGroup" parent="GtkDialog">
     <property name="can_focus">False</property>
     <property name="border_width">4</property>
-    <property name="title" translatable="yes">Operation</property>
+    <property name="title" translatable="yes">Displaying entries of the operation(s)</property>
     <property name="type_hint">dialog</property>
     <child internal-child="vbox">
       <object class="GtkBox">

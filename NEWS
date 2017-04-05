@@ -48,6 +48,7 @@
    - Settlement page: have all entry related actions (todo #1431).
    - Unreconciliated page: have all account/entry related actions.
    - Unsettled page: have all account/entry related actions.
+   - VAT records: may now display the generated operations (todo #1296).
 
  Bug fixes:
 

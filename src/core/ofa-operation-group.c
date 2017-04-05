@@ -57,7 +57,7 @@ typedef struct {
 	 */
 	ofaIGetter       *getter;
 	GtkWindow        *parent;
-	ofxCounter        ope_number;
+	GList            *opes_list;
 
 	/* runtime
 	 */
@@ -119,6 +119,7 @@ operation_group_finalize( GObject *instance )
 	priv = ofa_operation_group_get_instance_private( OFA_OPERATION_GROUP( instance ));
 
 	g_free( priv->settings_prefix );
+	g_list_free( priv->opes_list );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_operation_group_parent_class )->finalize( instance );
@@ -163,6 +164,7 @@ ofa_operation_group_init( ofaOperationGroup *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
+	priv->opes_list = NULL;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -207,7 +209,40 @@ ofa_operation_group_run( ofaIGetter *getter, GtkWindow *parent , ofxCounter ope_
 
 	priv->getter = getter;
 	priv->parent = parent;
-	priv->ope_number = ope_number;
+	priv->opes_list = g_list_append( NULL, GUINT_TO_POINTER( ope_number ));
+
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
+}
+
+/**
+ * ofa_operation_group_run_with_list:
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
+ * @opes: a #GList of operations number to be displayed.
+ *
+ * Display the lines which belongs to the @opes list.
+ */
+void
+ofa_operation_group_run_with_list( ofaIGetter *getter, GtkWindow *parent , GList *opes )
+{
+	static const gchar *thisfn = "ofa_operation_group_run_with_list";
+	ofaOperationGroup *self;
+	ofaOperationGroupPrivate *priv;
+
+	g_debug( "%s: getter=%p, parent=%p, opes=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, opes );
+
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
+
+	self = g_object_new( OFA_TYPE_OPERATION_GROUP, NULL );
+
+	priv = ofa_operation_group_get_instance_private( self );
+
+	priv->getter = getter;
+	priv->parent = parent;
+	priv->opes_list = g_list_copy( opes );
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -231,7 +266,8 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_operation_group_iwindow_init";
 	ofaOperationGroupPrivate *priv;
-	gchar *id;
+	GString *gstr;
+	GList *it;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -240,10 +276,12 @@ iwindow_init( myIWindow *instance )
 	my_iwindow_set_parent( instance, priv->parent );
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
-	id = g_strdup_printf( "%s-%lu",
-				G_OBJECT_TYPE_NAME( instance ), priv->ope_number );
-	my_iwindow_set_identifier( instance, id );
-	g_free( id );
+	gstr = g_string_new( G_OBJECT_TYPE_NAME( instance ));
+	for( it=priv->opes_list ; it ; it=it->next ){
+		g_string_append_printf( gstr, "-%lu", ( ofxCounter ) GPOINTER_TO_UINT( it->data ));
+	}
+	my_iwindow_set_identifier( instance, gstr->str );
+	g_string_free( gstr, TRUE );
 }
 
 /*
@@ -276,7 +314,8 @@ setup_ui( ofaOperationGroup *self )
 {
 	ofaOperationGroupPrivate *priv;
 	GtkWidget *parent, *btn, *label;
-	gchar *str;
+	GString *gstr;
+	GList *it;
 
 	priv = ofa_operation_group_get_instance_private( self );
 
@@ -296,9 +335,15 @@ setup_ui( ofaOperationGroup *self )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "id-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = g_strdup_printf( "%lu", priv->ope_number );
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
+	gstr = g_string_new( "" );
+	for( it=priv->opes_list ; it ; it=it->next ){
+		if( gstr->len > 0 ){
+			gstr = g_string_append( gstr, ", " );
+		}
+		g_string_append_printf( gstr, "%lu", ( ofxCounter ) GPOINTER_TO_UINT( it->data ));
+	}
+	gtk_label_set_text( GTK_LABEL( label ), gstr->str );
+	g_string_free( gstr, TRUE );
 }
 
 static void
@@ -400,13 +445,25 @@ static gboolean
 tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOperationGroup *self )
 {
 	ofaOperationGroupPrivate *priv;
-	ofxCounter id;
+	ofxCounter id, list_num;
+	GList *it;
+	gboolean visible;
 
 	priv = ofa_operation_group_get_instance_private( self );
 
 	gtk_tree_model_get( tmodel, iter, ENTRY_COL_OPE_NUMBER_I, &id, -1 );
 
-	return( id == priv->ope_number );
+	visible = FALSE;
+
+	for( it=priv->opes_list ; it ; it=it->next ){
+		list_num = ( ofxCounter ) GPOINTER_TO_UINT( it->data );
+		if( id == list_num ){
+			visible = TRUE;
+			break;
+		}
+	}
+
+	return( visible );
 }
 
 static void
