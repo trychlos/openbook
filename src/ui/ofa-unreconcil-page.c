@@ -65,6 +65,8 @@ typedef struct {
 	 */
 	ofaAccentryTreeview *tview;
 	ofaAccentryStore    *store;
+	GtkWidget           *account_label;
+	GtkWidget           *entry_label;
 
 	/* actions
 	 */
@@ -90,8 +92,11 @@ static void       action_page_v_init_view( ofaActionPage *page );
 static gboolean   tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaUnreconcilPage *self );
 static gboolean   tview_is_visible_account( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoAccount *account );
 static gboolean   tview_is_visible_entry( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
+static void       tview_cell_data_render( GtkTreeViewColumn *column, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccentryTreeview *self );
 static void       tview_on_accchanged( ofaAccentryTreeview *view, ofoBase *object, ofaUnreconcilPage *self );
 static void       tview_on_accactivated( ofaAccentryTreeview *view, ofoBase *object, ofaUnreconcilPage *self );
+static void       refresh_status_label( ofaUnreconcilPage *self );
+static void       refresh_status_label_rec( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint *account_count, guint *entry_count );
 static void       action_on_collapse_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
 static void       action_on_expand_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
 static void       action_on_reconcil_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
@@ -204,6 +209,7 @@ action_page_v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_unreconcil_page_v_setup_view";
 	ofaUnreconcilPagePrivate *priv;
+	GtkWidget *grid, *subgrid;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -211,14 +217,30 @@ action_page_v_setup_view( ofaActionPage *page )
 
 	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
+	grid = gtk_grid_new();
+
 	priv->tview = ofa_accentry_treeview_new( priv->getter, priv->settings_prefix );
 	ofa_accentry_treeview_setup_columns( priv->tview );
 	ofa_accentry_treeview_set_filter_func( priv->tview, ( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row, page );
+	ofa_tvbin_set_cell_data_func( OFA_TVBIN( priv->tview ), ( GtkTreeCellDataFunc ) tview_cell_data_render, page );
+	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( priv->tview ), 0, 0, 1, 1 );
 
 	g_signal_connect( priv->tview, "ofa-accchanged", G_CALLBACK( tview_on_accchanged ), page );
 	g_signal_connect( priv->tview, "ofa-accactivated", G_CALLBACK( tview_on_accactivated ), page );
 
-	return( GTK_WIDGET( priv->tview ));
+	subgrid = gtk_grid_new();
+	gtk_grid_attach( GTK_GRID( grid ), subgrid, 0, 1, 1, 1 );
+	gtk_grid_set_column_homogeneous( GTK_GRID( subgrid ), TRUE );
+
+	priv->account_label = gtk_label_new( " " );
+	gtk_label_set_xalign( GTK_LABEL( priv->account_label ), 0 );
+	gtk_grid_attach(  GTK_GRID( subgrid ), priv->account_label, 0, 0, 1, 1 );
+
+	priv->entry_label = gtk_label_new( " " );
+	gtk_label_set_xalign( GTK_LABEL( priv->entry_label ), 0 );
+	gtk_grid_attach(  GTK_GRID( subgrid ), priv->entry_label, 1, 0, 1, 1 );
+
+	return( grid );
 }
 
 static void
@@ -317,6 +339,7 @@ action_page_v_init_view( ofaActionPage *page )
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
 
 	ofa_accentry_treeview_expand_all( priv->tview );
+	refresh_status_label( OFA_UNRECONCIL_PAGE( page ));
 
 	is_empty = ofa_accentry_store_is_empty( priv->store );
 	g_simple_action_set_enabled( priv->collapse_action, !is_empty );
@@ -389,6 +412,22 @@ tview_is_visible_entry( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIt
 }
 
 static void
+tview_cell_data_render( GtkTreeViewColumn *column, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccentryTreeview *self )
+{
+	ofoBase *object;
+
+	gtk_tree_model_get( tmodel, iter, ACCENTRY_COL_OBJECT, &object, -1 );
+	g_return_if_fail( object && ( OFO_IS_ACCOUNT( object ) || OFO_IS_ENTRY( object )));
+	g_object_unref( object );
+
+	g_object_set( G_OBJECT( cell ), "weight-set", FALSE, NULL );
+
+	if( OFO_IS_ACCOUNT( object )){
+		g_object_set( G_OBJECT( cell ), "weight", PANGO_WEIGHT_BOLD, NULL );
+	}
+}
+
+static void
 tview_on_accchanged( ofaAccentryTreeview *view, ofoBase *object, ofaUnreconcilPage *self )
 {
 	ofaUnreconcilPagePrivate *priv;
@@ -429,6 +468,61 @@ static void
 tview_on_accactivated( ofaAccentryTreeview *view, ofoBase *object, ofaUnreconcilPage *self )
 {
 	action_do_reconcil( self, object );
+}
+
+static void
+refresh_status_label( ofaUnreconcilPage *self )
+{
+	ofaUnreconcilPagePrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	guint account_count, entry_count;
+	gchar *str;
+
+	priv = ofa_unreconcil_page_get_instance_private( self );
+
+	account_count = 0;
+	entry_count = 0;
+	tmodel = ofa_tvbin_get_tree_model( OFA_TVBIN( priv->tview ));
+
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		refresh_status_label_rec( self, tmodel, &iter, &account_count, &entry_count );
+	}
+
+	str = g_strdup_printf( _( "Reconciliable accounts count: %u" ), account_count );
+	gtk_label_set_text( GTK_LABEL( priv->account_label ), str );
+	g_free( str );
+
+	str = g_strdup_printf( _( "Unreconciliated entries count: %u" ), entry_count );
+	gtk_label_set_text( GTK_LABEL( priv->entry_label ), str );
+	g_free( str );
+}
+
+static void
+refresh_status_label_rec( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint *account_count, guint *entry_count )
+{
+	GtkTreeIter child_iter;
+	ofoBase *object;
+
+	while( TRUE ){
+		if( gtk_tree_model_iter_children( tmodel, &child_iter, iter )){
+			refresh_status_label_rec( self, tmodel, &child_iter, account_count, entry_count );
+		}
+
+		gtk_tree_model_get( tmodel, iter, ACCENTRY_COL_OBJECT, &object, -1 );
+		g_return_if_fail( object && ( OFO_IS_ACCOUNT( object ) || OFO_IS_ENTRY( object )));
+		g_object_unref( object );
+
+		if( OFO_IS_ACCOUNT( object )){
+			*account_count += 1;
+		} else {
+			*entry_count += 1;
+		}
+
+		if( !gtk_tree_model_iter_next( tmodel, iter )){
+			break;
+		}
+	}
 }
 
 static void
