@@ -715,7 +715,7 @@ p2_display_format_combo( ofaExportAssistant *self )
 	ofaExportAssistantPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	guint i;
+	guint i, count;
 	ofaIExportable *exportable;
 
 	priv = ofa_export_assistant_get_instance_private( self );
@@ -735,10 +735,12 @@ p2_display_format_combo( ofaExportAssistant *self )
 	exportable = ( ofaIExportable * ) g_object_get_data( G_OBJECT( priv->p1_selected_btn ), DATA_TYPE_INDEX );
 	g_return_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ));
 
+	count = 0;
 	ofa_iexportable_free_formats( exportable, priv->p2_fmt_array );
 	priv->p2_fmt_array = ofa_iexportable_get_formats( exportable );
 	if( priv->p2_fmt_array ){
 		for( i=0 ; priv->p2_fmt_array[i].format_id ; ++i ){
+			count += 1;
 			gtk_list_store_insert_with_values( GTK_LIST_STORE( tmodel ), &iter, -1,
 					FORMAT_COL_ID,    priv->p2_fmt_array[i].format_id,
 					FORMAT_COL_LABEL, gettext( priv->p2_fmt_array[i].format_label ),
@@ -747,6 +749,7 @@ p2_display_format_combo( ofaExportAssistant *self )
 	}
 
 	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->p2_format_combo ), OFA_IEXPORTABLE_DEFAULT_FORMAT_ID );
+	gtk_widget_set_sensitive( priv->p2_format_combo, count > 0 );
 }
 
 static void
