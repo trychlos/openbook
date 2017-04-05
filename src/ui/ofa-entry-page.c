@@ -885,27 +885,31 @@ tview_apply_extfilter_by_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeI
 
 	if( valid ){
 		gtk_tree_model_get( tmodel, iter, criterium->field, &entry_value, -1 );
-		column = ofa_itvcolumnable_get_column( OFA_ITVCOLUMNABLE( priv->tview ), criterium->field );
-		type = ofa_itvcolumnable_get_column_type( OFA_ITVCOLUMNABLE( priv->tview ), column );
-		switch( type ){
-			case OFA_TYPE_AMOUNT:
-				crit_ok = tview_apply_extfilter_for_amount( self, criterium, entry_value );
-				break;
-			case OFA_TYPE_COUNTER:
-			case OFA_TYPE_INTEGER:
-				crit_ok = tview_apply_extfilter_for_counter( self, criterium, entry_value );
-				break;
-			case OFA_TYPE_DATE:
-				crit_ok = tview_apply_extfilter_for_date( self, criterium, entry_value );
-				break;
-			case OFA_TYPE_STRING:
-				crit_ok = tview_apply_extfilter_for_string( self, criterium, entry_value );
-				break;
-			case OFA_TYPE_TIMESTAMP:
-				crit_ok = tview_apply_extfilter_for_stamp( self, criterium, entry_value );
-				break;
+		/* entry_value may be null between gtk_tree_store_insert_row() and
+		 * gtk_tree_store_set_row_by_iter() */
+		if( entry_value ){
+			column = ofa_itvcolumnable_get_column( OFA_ITVCOLUMNABLE( priv->tview ), criterium->field );
+			type = ofa_itvcolumnable_get_column_type( OFA_ITVCOLUMNABLE( priv->tview ), column );
+			switch( type ){
+				case OFA_TYPE_AMOUNT:
+					crit_ok = tview_apply_extfilter_for_amount( self, criterium, entry_value );
+					break;
+				case OFA_TYPE_COUNTER:
+				case OFA_TYPE_INTEGER:
+					crit_ok = tview_apply_extfilter_for_counter( self, criterium, entry_value );
+					break;
+				case OFA_TYPE_DATE:
+					crit_ok = tview_apply_extfilter_for_date( self, criterium, entry_value );
+					break;
+				case OFA_TYPE_STRING:
+					crit_ok = tview_apply_extfilter_for_string( self, criterium, entry_value );
+					break;
+				case OFA_TYPE_TIMESTAMP:
+					crit_ok = tview_apply_extfilter_for_stamp( self, criterium, entry_value );
+					break;
+			}
+			g_free( entry_value );
 		}
-		g_free( entry_value );
 	}
 
 	if( valid ){
