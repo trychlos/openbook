@@ -178,6 +178,35 @@ ofa_prefs_init( ofaPrefs *self )
 	priv = ofa_prefs_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+
+	priv->account_delete_with_children = FALSE;
+	priv->account_settle_warns = TRUE;
+	priv->account_settle_ctrl = TRUE;
+	priv->account_reconcil_warns = TRUE;
+	priv->account_reconcil_ctrl = TRUE;
+
+	priv->amount_decimal_sep = g_strdup( "." );
+	priv->amount_thousand_sep = g_strdup( "," );
+	priv->amount_accept_dot = TRUE;
+	priv->amount_accept_comma = FALSE;
+
+	priv->appli_confirm_on_altf4 = TRUE;
+	priv->appli_confirm_on_quit = TRUE;
+
+	priv->assistant_quit_on_escape = TRUE;
+	priv->assistant_confirm_on_escape = TRUE;
+	priv->assistant_confirm_on_cancel = FALSE;
+
+	priv->check_integrity_display_all = FALSE;
+
+	priv->date_display_format = MY_DATE_YYMD;
+	priv->date_check_format = MY_DATE_YYMD;
+	priv->date_overwrite = FALSE;
+
+	priv->export_default_folder = g_strdup( "/tmp" );
+
+	priv->mainbook_dnd_reorder = TRUE;
+	priv->mainbook_with_detach_pin = TRUE;
 }
 
 static void
