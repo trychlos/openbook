@@ -555,6 +555,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* BAT_SOLDE is remediated in v22 */
 	/* Labels are resized in v28 */
 	/* URI is resized in v35 */
+	/* add SOLDE_BEGIN_SET and SOLDE_END_SET in v37 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
 			"	BAT_ID        BIGINT      NOT NULL UNIQUE            COMMENT 'Intern import identifier',"
@@ -2625,6 +2626,36 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 	ofa_mysql_connect_free_tables_list( tables );
 	g_debug( "%s: %u converted columns", thisfn, count );
 
+	/* 26. alter ofa_t_bat */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_BAT "
+			"	ADD    COLUMN BAT_SOLDE_BEGIN_SET    CHAR(1)                             COMMENT 'Whether the beginning solde is set',"
+			"	ADD    COLUMN BAT_SOLDE_END_SET      CHAR(1)                             COMMENT 'Whether the ending solde is set'" )){
+		return( FALSE );
+	}
+
+	/* 27-30. remediate ofa_t_bat */
+	if( !exec_query( self,
+			"UPDATE OFA_T_BAT SET BAT_SOLDE_BEGIN_SET='Y' "
+			"	WHERE BAT_SOLDE_BEGIN IS NOT NULL AND BAT_SOLDE_BEGIN>0" )){
+		return( FALSE );
+	}
+	if( !exec_query( self,
+			"UPDATE OFA_T_BAT SET BAT_SOLDE_BEGIN_SET='N' "
+			"	WHERE BAT_SOLDE_BEGIN IS NULL OR BAT_SOLDE_BEGIN=0" )){
+		return( FALSE );
+	}
+	if( !exec_query( self,
+			"UPDATE OFA_T_BAT SET BAT_SOLDE_END_SET='Y' "
+			"	WHERE BAT_SOLDE_END IS NOT NULL AND BAT_SOLDE_END>0" )){
+		return( FALSE );
+	}
+	if( !exec_query( self,
+			"UPDATE OFA_T_BAT SET BAT_SOLDE_END_SET='N'"
+			"	WHERE BAT_SOLDE_END IS NULL OR BAT_SOLDE_END=0" )){
+		return( FALSE );
+	}
+
 	return( TRUE );
 }
 
@@ -2635,5 +2666,5 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v37( ofaMysqlDBModel *self )
 {
-	return( 25 );
+	return( 30 );
 }
