@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_account_properties
  * @short_description: #ofaAccountProperties class definition.
- * @include: ui/ofa-account-properties.h
+ * @include: core/ofa-account-properties.h
  *
  * Update properties of an account.
  *

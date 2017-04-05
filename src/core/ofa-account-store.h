@@ -29,7 +29,7 @@
  * SECTION: account_store
  * @title: ofaAccountStore
  * @short_description: The AccountStore class description
- * @include: ui/ofa-account-store.h
+ * @include: core/ofa-account-store.h
  *
  * The #ofaAccountStore derived from #ofaTreeStore, which itself
  * derives from #GtkTreeStore. It is populated with all the accounts

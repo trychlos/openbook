@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_account_arc_treeview
  * @short_description: #ofaAccountArcTreeview class definition.
- * @include: ui/ofa-account-arc-treeview.h
+ * @include: core/ofa-account-arc-treeview.h
  *
  * Manage a treeview with a sorted list of archived soldes.
  *

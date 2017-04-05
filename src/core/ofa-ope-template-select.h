@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_ope_template_select
  * @short_description: #ofaOpeTemplateSelect class definition.
- * @include: ui/ofa-ope-template-select.h
+ * @include: core/ofa-ope-template-select.h
  *
  * Display the notebook of the operation templates, letting the user
  * edit or select one.

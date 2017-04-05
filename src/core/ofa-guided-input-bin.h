@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_guided_input_bin
  * @short_description: #ofaGuidedInputBin class definition.
- * @include: ui/ofa-guided-input-bin.h
+ * @include: core/ofa-guided-input-bin.h
  *
  * A convenience class which factorize the code common to both
  * ofaGuidedInput dialog box and ofaGuidedEx main page.

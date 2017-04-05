@@ -29,7 +29,7 @@
  * SECTION: ledger_store
  * @title: ofaLedgerStore
  * @short_description: The LedgerStore class
- * @include: ui/ofa-ledger-store.h
+ * @include: core/ofa-ledger-store.h
  *
  * The #ofaLedgerStore derived from #ofaListStore, which itself
  * derives from #GtkListStore. It is populated with all the ledgers

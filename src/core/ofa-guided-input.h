@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_guided_input
  * @short_description: #ofaGuidedInput class definition.
- * @include: ui/ofa-guided-input.h
+ * @include: core/ofa-guided-input.h
  *
  * #ofaGuidedInput implements a non-modal dialog box to enter an
  * operation based on an operation template.

@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_account_frame_bin
  * @short_description: #ofaAccountFrameBin class definition.
- * @include: ui/ofa-account-frame-bin.h
+ * @include: core/ofa-account-frame-bin.h
  *
  * This is a convenience class which manages both the accounts notebook
  * and the actions box on the right if needed.

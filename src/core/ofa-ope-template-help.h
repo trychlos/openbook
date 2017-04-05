@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_ope_template_help
  * @short_description: #ofaOpeTemplateHelp class definition.
- * @include: ui/ofa-ope-template-help.h
+ * @include: core/ofa-ope-template-help.h
  *
  * A non-modal dialog box which display an help about operation
  * templates.

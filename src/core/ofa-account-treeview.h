@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_account_treeview
  * @short_description: #ofaAccountTreeview class definition.
- * @include: ui/ofa-account-treeview.h
+ * @include: core/ofa-account-treeview.h
  *
  * Manage a treeview with a filtered list of accounts.
  *

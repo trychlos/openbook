@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_paimean_frame_bin
  * @short_description: #ofaPaimeanFrameBin class definition.
- * @include: ui/ofa-paimean-frame-bin.h
+ * @include: core/ofa-paimean-frame-bin.h
  *
  * This is a convenience class which manages both the paimean treeview
  * and the actions box on the right.
