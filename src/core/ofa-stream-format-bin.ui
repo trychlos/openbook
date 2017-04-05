@@ -85,7 +85,7 @@
                   <object class="GtkLabel" id="ffb-string-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">_Strings are enclosed between char :</property>
+                    <property name="label" translatable="yes">_Strings are enclosed by char :</property>
                     <property name="use_underline">True</property>
                     <property name="xalign">1</property>
                   </object>
