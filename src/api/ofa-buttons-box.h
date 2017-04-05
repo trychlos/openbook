@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_BUTTONS_BOX_H__
-#define __OFA_BUTTONS_BOX_H__
+#ifndef __OPENBOOK_API_OFA_BUTTONS_BOX_H__
+#define __OPENBOOK_API_OFA_BUTTONS_BOX_H__
 
 /**
  * SECTION: ofa_buttons_box
  * @short_description: #ofaButtonsBox class definition.
- * @include: ui/ofa-buttons-box.h
+ * @include: openbook/ofa-buttons-box.h
  *
  * This class handles the buttons box that many #ofaPage pages display
  * on the right of their view.
@@ -82,4 +82,4 @@ void           ofa_buttons_box_append_button           ( ofaButtonsBox *box,
 
 G_END_DECLS
 
-#endif /* __OFA_BUTTONS_BOX_H__ */
+#endif /* __OPENBOOK_API_OFA_BUTTONS_BOX_H__ */

@@ -22,14 +22,14 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_OPE_TEMPLATE_STORE_H__
-#define __OFA_OPE_TEMPLATE_STORE_H__
+#ifndef __OPENBOOK_API_OFA_OPE_TEMPLATE_STORE_H__
+#define __OPENBOOK_API_OFA_OPE_TEMPLATE_STORE_H__
 
 /**
  * SECTION: ope_template_store
  * @title: ofaOpeTemplateStore
  * @short_description: The OpeTemplateStore class description
- * @include: ui/ofa-ope-template-store.h
+ * @include: openbook/ofa-ope-template-store.h
  *
  * The #ofaOpeTemplateStore derived from #ofaListStore, which itself
  * derives from #GtkListStore. It is populated with all the operation
@@ -117,4 +117,4 @@ gboolean             ofa_ope_template_store_get_by_mnemo( ofaOpeTemplateStore *s
 
 G_END_DECLS
 
-#endif /* __OFA_OPE_TEMPLATE_STORE_H__ */
+#endif /* __OPENBOOK_API_OFA_OPE_TEMPLATE_STORE_H__ */
