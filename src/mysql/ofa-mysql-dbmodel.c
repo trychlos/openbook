@@ -48,6 +48,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-ope-template.h"
 
+#include "mysql/ofa-mysql-connect.h"
 #include "mysql/ofa-mysql-dbmodel.h"
 
 /* private instance data
@@ -2374,13 +2375,33 @@ count_v36( ofaMysqlDBModel *self )
  * - OTE_HAVE_TIERS: new
  * - OTE_HAVE_RULE: new
  * - OTE_HAVE_QPPRO: new
+ *
+ * + Make sure all database/tables/columns and datas are UTF-8 encoded.
  */
 static gboolean
 dbmodel_v37( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v37";
+	ofaMysqlDBModelPrivate *priv;
+	gchar *query;
+	gboolean ok;
+	const gchar *dbname, *table, *column, *type;
+	GList *tables, *it;
+	GSList *result, *irow, *icol;
+	guint count;
 
 	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	priv = ofa_mysql_dbmodel_get_instance_private( self );
+
+	/* we need this later, but just adjust the total count now */
+	count = ofa_mysql_connect_get_tables_count( OFA_MYSQL_CONNECT( priv->connect ));
+	g_debug( "%s: tables_count=%u", thisfn, count );
+	priv->total += count;
+	count = ofa_mysql_connect_get_columns_count( OFA_MYSQL_CONNECT( priv->connect ), "varchar" );
+	g_debug( "%s: varchar_columns_count=%u", thisfn, count );
+	priv->total += count;
+	priv->total += 9;			/* varchar columns created hereafter */
 
 	/* 1. change ent_status, add ent_client */
 	if( !exec_query( self,
@@ -2548,6 +2569,62 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
+	/* 22. reset database default character set
+	 * was badly set as 'latin1' in 2014 and 2015 */
+	dbname = ofa_mysql_connect_get_database( OFA_MYSQL_CONNECT( priv->connect ));
+	query = g_strdup_printf( "ALTER DATABASE %s DEFAULT CHARACTER SET utf8", dbname );
+	ok = exec_query( self, query );
+	g_free( query );
+	if( !ok ){
+		return( FALSE );
+	}
+
+	/* 23-24-25. reset all tables default collation
+	 * this is still badly set as 'latin1_swedish_ci' in DBMS Core v36
+	 * for OFA_T_BAT and OFA_T_BAT_LINES tables and corresponding BACKUP_
+	 * and ARCHIVE_ tables
+	 * + convert all text fields */
+	count = 0;
+	tables = ofa_mysql_connect_get_tables_list( OFA_MYSQL_CONNECT( priv->connect ));
+	for( it=tables ; it ; it=it->next ){
+		table = ( const gchar * ) it->data;
+		query = g_strdup_printf(
+				"ALTER TABLE %s.%s CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci",
+						dbname, table );
+		ok = exec_query( self, query );
+		g_free( query );
+		if( !ok ){
+			return( FALSE );
+		}
+		query = g_strdup_printf( "DESCRIBE %s", table );
+		ok = ofa_idbconnect_query_ex( priv->connect, query, &result, TRUE );
+		g_free( query );
+		if( ok ){
+			for( irow=result ; irow ; irow=irow->next ){
+				icol = ( GSList * ) irow->data;
+				column = ( const gchar * ) icol->data;
+				icol = icol->next;
+				type = ( const gchar * ) icol->data;
+				if( g_str_has_prefix( type, "varchar" )){
+					count += 1;
+					query = g_strdup_printf(
+							"UPDATE %s.%s SET %s=CONVERT(CAST(CONVERT(%s USING latin1) AS BINARY) USING utf8)",
+							dbname, table, column, column );
+					ok = exec_query( self, query );
+					g_free( query );
+					if( !ok ){
+						return( FALSE );
+					}
+				}
+			}
+			ofa_idbconnect_free_results( result );
+		} else {
+			return( FALSE );
+		}
+	}
+	ofa_mysql_connect_free_tables_list( tables );
+	g_debug( "%s: %u converted columns", thisfn, count );
+
 	return( TRUE );
 }
 
@@ -2558,5 +2635,5 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v37( ofaMysqlDBModel *self )
 {
-	return( 21 );
+	return( 25 );
 }

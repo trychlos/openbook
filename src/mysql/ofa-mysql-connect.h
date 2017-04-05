@@ -60,11 +60,11 @@ typedef struct {
 }
 	ofaMysqlConnectClass;
 
-GType            ofa_mysql_connect_get_type           ( void ) G_GNUC_CONST;
+GType            ofa_mysql_connect_get_type            ( void ) G_GNUC_CONST;
 
-ofaMysqlConnect *ofa_mysql_connect_new                ( void );
+ofaMysqlConnect *ofa_mysql_connect_new                 ( void );
 
-gboolean         ofa_mysql_connect_open_with_details  ( ofaMysqlConnect *connect,
+gboolean         ofa_mysql_connect_open_with_details   ( ofaMysqlConnect *connect,
 															const gchar *host,
 															guint port,
 															const gchar *socket,
@@ -72,28 +72,37 @@ gboolean         ofa_mysql_connect_open_with_details  ( ofaMysqlConnect *connect
 															const gchar *account,
 															const gchar *password );
 
-const gchar     *ofa_mysql_connect_get_host           ( ofaMysqlConnect *connect );
+const gchar     *ofa_mysql_connect_get_host            ( ofaMysqlConnect *connect );
 
-guint            ofa_mysql_connect_get_port           ( ofaMysqlConnect *connect );
+guint            ofa_mysql_connect_get_port            ( ofaMysqlConnect *connect );
 
-const gchar     *ofa_mysql_connect_get_socket         ( ofaMysqlConnect *connect );
+const gchar     *ofa_mysql_connect_get_socket          ( ofaMysqlConnect *connect );
 
-const gchar     *ofa_mysql_connect_get_database       ( ofaMysqlConnect *connect );
+const gchar     *ofa_mysql_connect_get_database        ( ofaMysqlConnect *connect );
 
-gboolean         ofa_mysql_connect_query              ( ofaMysqlConnect *connect,
+gboolean         ofa_mysql_connect_query               ( ofaMysqlConnect *connect,
 															const gchar *query );
 
-gboolean         ofa_mysql_connect_does_database_exist( ofaMysqlConnect *connect,
+gboolean         ofa_mysql_connect_does_database_exist ( ofaMysqlConnect *connect,
 															const gchar *database );
 
-gchar           *ofa_mysql_connect_get_new_database   ( ofaMysqlConnect *connect,
+gchar           *ofa_mysql_connect_get_new_database    ( ofaMysqlConnect *connect,
 															const gchar *prev_database );
 
-gboolean         ofa_mysql_connect_drop_database      ( ofaMysqlConnect *connect,
+gboolean         ofa_mysql_connect_drop_database       ( ofaMysqlConnect *connect,
 															const gchar *database,
 															gchar **msgerr );
 
-void             ofa_mysql_connect_close              ( ofaMysqlConnect *connect );
+guint            ofa_mysql_connect_get_tables_count    ( ofaMysqlConnect *connect );
+
+GList           *ofa_mysql_connect_get_tables_list     ( ofaMysqlConnect *connect );
+
+#define          ofa_mysql_connect_free_tables_list(L) ( g_list_free_full((L), ( GDestroyNotify ) g_free ))
+
+guint            ofa_mysql_connect_get_columns_count   ( ofaMysqlConnect *connect,
+															const gchar *data_type );
+
+void             ofa_mysql_connect_close               ( ofaMysqlConnect *connect );
 
 G_END_DECLS
 

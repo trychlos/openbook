@@ -61,6 +61,7 @@ static gboolean   open_connection( ofaMysqlConnect *self, const gchar *account, 
 static gboolean   does_dbname_exist( ofaMysqlConnect *self, const gchar *dbname );
 static gchar     *find_new_dbname( ofaMysqlConnect *self, const gchar *prev_database );
 static gboolean   drop_database( ofaMysqlConnect *self, const gchar *database, gchar **msgerr );
+static GList     *get_tables_list( ofaMysqlConnect *self );
 static void 	  clear_datas( ofaMysqlConnect *self );
 static void       idbconnect_iface_init( ofaIDBConnectInterface *iface );
 static guint      idbconnect_get_interface_version( void );
@@ -252,11 +253,7 @@ open_connection( ofaMysqlConnect *self,
 	mysql = g_new0( MYSQL, 1 );
 	mysql_init( mysql );
 
-	/* whether the database charset be utf8 or latin1, the display
-	 * is ok if the latin1 option is specified, or if the option is
-	 * not specified at all; display is not ok with utf8 option */
-	//mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "utf8" );
-	//mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "latin1" );
+	mysql_options( mysql, MYSQL_SET_CHARSET_NAME, "utf8" );
 
 	if( msg ){
 		*msg = NULL;
@@ -559,6 +556,108 @@ drop_database( ofaMysqlConnect *self, const gchar *database, gchar **msgerr )
 	}
 
 	return( ok );
+}
+
+/**
+ * ofa_mysql_connect_get_tables_count:
+ * @connect: this #ofaMysqlConnect instance.
+ *
+ * Returns: the count of tables.
+ */
+guint
+ofa_mysql_connect_get_tables_count( ofaMysqlConnect *connect )
+{
+	ofaMysqlConnectPrivate *priv;
+	GList *tables;
+	guint count;
+
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), 0 );
+
+	priv = ofa_mysql_connect_get_instance_private( connect );
+
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+
+	tables = get_tables_list( connect );
+	count = g_list_length( tables );
+	ofa_mysql_connect_free_tables_list( tables );
+
+	return( count );
+}
+
+/**
+ * ofa_mysql_connect_get_tables_list:
+ * @connect: this #ofaMysqlConnect instance.
+ *
+ * Returns: the list of tables.
+ *
+ * The returned list should be ofa_mysql_connect_free_tables_list() by
+ * the caller.
+ */
+GList *
+ofa_mysql_connect_get_tables_list( ofaMysqlConnect *connect )
+{
+	ofaMysqlConnectPrivate *priv;
+
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), NULL );
+
+	priv = ofa_mysql_connect_get_instance_private( connect );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( get_tables_list( connect ));
+}
+
+static GList *
+get_tables_list( ofaMysqlConnect *self )
+{
+	GList *tables;
+	GSList *result, *irow, *icol;
+
+	tables = NULL;
+	if( idbconnect_query_ex( OFA_IDBCONNECT( self ), "SHOW TABLES", &result )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			tables = g_list_prepend( tables, g_strdup(( const gchar * ) icol->data ));
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	return( tables );
+}
+
+/**
+ * ofa_mysql_connect_get_columns_count:
+ * @connect: this #ofaMysqlConnect instance.
+ * @data_type: the searched for data type.
+ *
+ * Returns: the count of columns of the database which have this @data_type.
+ */
+guint
+ofa_mysql_connect_get_columns_count( ofaMysqlConnect *connect, const gchar *data_type )
+{
+	ofaMysqlConnectPrivate *priv;
+	guint count;
+	gchar *query;
+	gint res;
+
+	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), 0 );
+	g_return_val_if_fail( my_strlen( data_type ), 0 );
+
+	priv = ofa_mysql_connect_get_instance_private( connect );
+
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+
+	count = 0;
+	query = g_strdup_printf(
+				"SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='%s' AND DATA_TYPE='%s'",
+					priv->database, data_type );
+
+	if( ofa_idbconnect_query_int( OFA_IDBCONNECT( connect ), query, &res, TRUE )){
+		count = ( guint ) res;
+	}
+	g_free( query );
+
+	return( count );
 }
 
 /**
