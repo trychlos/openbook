@@ -557,7 +557,7 @@ setup_data( ofaEntryProperties *self )
 	ofeEntryStatus status;
 	ofeEntryRule rule;
 	ofoConcil *concil;
-	ofxCounter settle_num;
+	ofxCounter counter, settle_num;
 
 	priv = ofa_entry_properties_get_instance_private( self );
 
@@ -629,14 +629,20 @@ setup_data( ofaEntryProperties *self )
 	g_free( str );
 
 	/* operation number */
-	str = ofa_counter_to_str( ofo_entry_get_ope_number( priv->entry ), priv->getter );
-	gtk_entry_set_text( GTK_ENTRY( priv->openum_entry ), str );
-	g_free( str );
+	counter = ofo_entry_get_ope_number( priv->entry );
+	if( counter > 0 ){
+		str = ofa_counter_to_str( counter, priv->getter );
+		gtk_entry_set_text( GTK_ENTRY( priv->openum_entry ), str );
+		g_free( str );
+	}
 
 	/* tiers identifier */
-	str = ofa_counter_to_str( ofo_entry_get_tiers( priv->entry ), priv->getter );
-	gtk_entry_set_text( GTK_ENTRY( priv->tiers_entry ), str );
-	g_free( str );
+	counter = ofo_entry_get_tiers( priv->entry );
+	if( counter > 0 ){
+		str = ofa_counter_to_str( counter, priv->getter );
+		gtk_entry_set_text( GTK_ENTRY( priv->tiers_entry ), str );
+		g_free( str );
+	}
 
 	/* conciliation number */
 	concil = ofa_iconcil_get_concil( OFA_ICONCIL( priv->entry ));
