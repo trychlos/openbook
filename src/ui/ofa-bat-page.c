@@ -44,11 +44,12 @@
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-bat-properties.h"
+#include "core/ofa-bat-store.h"
+#include "core/ofa-bat-treeview.h"
+#include "core/ofa-bat-utils.h"
+
 #include "ui/ofa-bat-page.h"
-#include "ui/ofa-bat-properties.h"
-#include "ui/ofa-bat-store.h"
-#include "ui/ofa-bat-treeview.h"
-#include "ui/ofa-bat-utils.h"
 
 /* private instance data
  */

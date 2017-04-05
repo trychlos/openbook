@@ -100,24 +100,8 @@ openbook_SOURCES = \
 	ofa-balance-grid-bin.h								\
 	ofa-balance-render.c								\
 	ofa-balance-render.h								\
-	ofa-bat-line-properties.c							\
-	ofa-bat-line-properties.h							\
-	ofa-batline-treeview.c								\
-	ofa-batline-treeview.h								\
 	ofa-bat-page.c										\
 	ofa-bat-page.h										\
-	ofa-bat-properties.c								\
-	ofa-bat-properties.h								\
-	ofa-bat-properties-bin.c							\
-	ofa-bat-properties-bin.h							\
-	ofa-bat-select.c									\
-	ofa-bat-select.h									\
-	ofa-bat-store.c										\
-	ofa-bat-store.h										\
-	ofa-bat-treeview.c									\
-	ofa-bat-treeview.h									\
-	ofa-bat-utils.c										\
-	ofa-bat-utils.h										\
 	ofa-check-balances.c								\
 	ofa-check-balances.h								\
 	ofa-check-balances-bin.c							\
@@ -162,12 +146,6 @@ openbook_SOURCES = \
 	ofa-dossier-properties.h							\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
-	ofa-entry-properties.c								\
-	ofa-entry-properties.h								\
-	ofa-entry-store.c									\
-	ofa-entry-store.h									\
-	ofa-entry-treeview.c								\
-	ofa-entry-treeview.h								\
 	ofa-exercice-close-assistant.c						\
 	ofa-exercice-close-assistant.h						\
 	ofa-exercice-combo.c								\
@@ -223,8 +201,6 @@ openbook_SOURCES = \
 	ofa-nomodal-page.h									\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
-	ofa-operation-group.c								\
-	ofa-operation-group.h								\
 	ofa-paimean-page.c									\
 	ofa-paimean-page.h									\
 	ofa-period-close.c									\
@@ -237,26 +213,10 @@ openbook_SOURCES = \
 	ofa-rate-properties.h								\
 	ofa-rate-treeview.c									\
 	ofa-rate-treeview.h									\
-	ofa-reconcil-args.c									\
-	ofa-reconcil-args.h									\
-	ofa-reconcil-group.c								\
-	ofa-reconcil-group.h								\
-	ofa-reconcil-page.c									\
-	ofa-reconcil-page.h									\
-	ofa-reconcil-render.c								\
-	ofa-reconcil-render.h								\
-	ofa-reconcil-store.c								\
-	ofa-reconcil-store.h								\
-	ofa-reconcil-treeview.c								\
-	ofa-reconcil-treeview.h								\
 	ofa-recovery-assistant.c							\
 	ofa-recovery-assistant.h							\
 	ofa-restore-assistant.c								\
 	ofa-restore-assistant.h								\
-	ofa-settlement-group.c								\
-	ofa-settlement-group.h								\
-	ofa-settlement-page.c								\
-	ofa-settlement-page.h								\
 	ofa-target-chooser-bin.c							\
 	ofa-target-chooser-bin.h							\
 	ofa-unreconcil-page.c								\

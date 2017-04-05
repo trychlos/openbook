@@ -3,9 +3,14 @@
   <gresource prefix="/org/trychlos/openbook/core">
     <file>ofa-account-properties.ui</file>
     <file>ofa-account-select.ui</file>
+    <file>ofa-bat-properties.ui</file>
+    <file>ofa-bat-properties-bin.ui</file>
+    <file>ofa-bat-select.ui</file>
+    <file>ofa-batline-properties.ui</file>
     <file>ofa-date-filter-hv-bin.ui</file>
     <file>ofa-dossier-delete-prefs-bin.ui</file>
     <file>ofa-entry-page.ui</file>
+    <file>ofa-entry-properties.ui</file>
     <file>ofa-guided-input.ui</file>
     <file>ofa-guided-input-bin.ui</file>
     <file>ofa-idbmodel.ui</file>
@@ -13,10 +18,16 @@
     <file>ofa-ope-template-properties.ui</file>
     <file>ofa-ope-template-select.ui</file>
     <file>ofa-open-prefs-bin.ui</file>
+    <file>ofa-operation-group.ui</file>
     <file>ofa-paimean-properties.ui</file>
     <file>ofa-paimean-select.ui</file>
     <file>ofa-preferences.ui</file>
+    <file>ofa-reconcil-args.ui</file>
+    <file>ofa-reconcil-group.ui</file>
+    <file>ofa-reconcil-page.ui</file>
     <file>ofa-render-page.ui</file>
+    <file>ofa-settlement-group.ui</file>
+    <file>ofa-settlement-page.ui</file>
     <file>ofa-stream-format-bin.ui</file>
     <file>ofa-stream-format-disp.ui</file>
 
@@ -28,5 +39,8 @@
     <file>ofa-guided-input-bin-green-check-68.png</file>
     <file>ofa-paimean-editable-icon-16.png</file>
     <file>ofa-ope-template-editable-icon-16.png</file>
+    <file>ofa-reconcil-page-light-empty-14.png</file>
+    <file>ofa-reconcil-page-light-green-14.png</file>
+    <file>ofa-reconcil-page-light-yellow-14.png</file>
   </gresource>
 </gresources>

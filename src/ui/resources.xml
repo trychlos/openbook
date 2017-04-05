@@ -7,10 +7,6 @@
     <file>ofa-admin-credentials-bin.ui</file>
     <file>ofa-backup-assistant.ui</file>
     <file>ofa-balance-args.ui</file>
-    <file>ofa-bat-line-properties.ui</file>
-    <file>ofa-bat-properties.ui</file>
-    <file>ofa-bat-properties-bin.ui</file>
-    <file>ofa-bat-select.ui</file>
     <file>ofa-check-balances.ui</file>
     <file>ofa-check-balances-bin.ui</file>
     <file>ofa-check-integrity.ui</file>
@@ -27,7 +23,6 @@
     <file>ofa-dossier-new.ui</file>
     <file>ofa-dossier-open.ui</file>
     <file>ofa-dossier-properties.ui</file>
-    <file>ofa-entry-properties.ui</file>
     <file>ofa-exercice-close-assistant.ui</file>
     <file>ofa-exercice-edit-bin.ui</file>
     <file>ofa-exercice-meta-bin.ui</file>
@@ -40,17 +35,11 @@
     <file>ofa-ledger-properties.ui</file>
     <file>ofa-misc-audit-ui.ui</file>
     <file>ofa-misc-collector-ui.ui</file>
-    <file>ofa-operation-group.ui</file>
     <file>ofa-period-close.ui</file>
     <file>ofa-plugin-manager.ui</file>
     <file>ofa-rate-properties.ui</file>
-    <file>ofa-reconcil-args.ui</file>
-    <file>ofa-reconcil-group.ui</file>
-    <file>ofa-reconcil-page.ui</file>
     <file>ofa-recovery-assistant.ui</file>
     <file>ofa-restore-assistant.ui</file>
-    <file>ofa-settlement-group.ui</file>
-    <file>ofa-settlement-page.ui</file>
     <file>ofa-target-chooser-bin.ui</file>
     <file>ofa-user-credentials-bin.ui</file>
 
@@ -58,9 +47,5 @@
 
     <file>ofa-app-menubar.ui</file>
     <file>ofa-dos-menubar.ui</file>
-
-    <file>light-empty-14.png</file>
-    <file>light-green-14.png</file>
-    <file>light-yellow-14.png</file>
   </gresource>
 </gresources>

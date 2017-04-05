@@ -55,6 +55,9 @@
 
 #include "core/ofa-guided-input.h"
 #include "core/ofa-open-prefs.h"
+#include "core/ofa-reconcil-render.h"
+#include "core/ofa-reconcil-page.h"
+#include "core/ofa-settlement-page.h"
 
 #include "ui/ofa-account-balance-render.h"
 #include "ui/ofa-account-book-render.h"
@@ -83,9 +86,6 @@
 #include "ui/ofa-paimean-page.h"
 #include "ui/ofa-period-close.h"
 #include "ui/ofa-rate-page.h"
-#include "ui/ofa-reconcil-render.h"
-#include "ui/ofa-reconcil-page.h"
-#include "ui/ofa-settlement-page.h"
 #include "ui/ofa-unreconcil-page.h"
 #include "ui/ofa-unsettled-page.h"
 

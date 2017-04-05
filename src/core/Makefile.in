@@ -167,38 +167,47 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-account-frame-bin.lo ofa-account-properties.lo \
 	ofa-account-select.lo ofa-account-store.lo \
 	ofa-account-treeview.lo ofa-action-page.lo ofa-amount.lo \
-	ofa-backup-header.lo ofa-backup-props.lo ofa-box.lo \
-	ofa-buttons-box.lo ofa-core.lo ofa-counter.lo \
-	ofa-currency-combo.lo ofa-currency-store.lo \
-	ofa-date-filter-hv-bin.lo ofa-dossier-collection.lo \
-	ofa-dossier-delete-prefs-bin.lo ofa-dossier-props.lo \
-	ofa-dossier-store.lo ofa-entry-page.lo \
-	ofa-extender-collection.lo ofa-extender-module.lo \
-	ofa-formula-engine.lo ofa-guided-input.lo \
-	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
-	ofa-iactionable.lo ofa-iactioner.lo ofa-icontext.lo \
-	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
-	ofa-idbdossier-editor.lo ofa-idbdossier-meta.lo \
-	ofa-idbexercice-meta.lo ofa-idbmodel.lo ofa-idbprovider.lo \
-	ofa-idbexercice-editor.lo ofa-idbsuperuser.lo ofa-idoc.lo \
-	ofa-iexe-close.lo ofa-iexportable.lo ofa-iextender-setter.lo \
-	ofa-igetter.lo ofa-iimporter.lo ofa-iimportable.lo \
-	ofa-ijson.lo ofa-import-duplicate.lo ofa-ipage-manager.lo \
-	ofa-iprintable.lo ofa-iproperties.lo ofa-irecover.lo \
-	ofa-irenderable.lo ofa-irenderer.lo ofa-isignalable.lo \
-	ofa-isignaler.lo ofa-istore.lo ofa-itree-adder.lo \
-	ofa-itvcolumnable.lo ofa-itvfilterable.lo ofa-itvsortable.lo \
-	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
+	ofa-backup-header.lo ofa-backup-props.lo ofa-bat-properties.lo \
+	ofa-bat-properties-bin.lo ofa-bat-select.lo ofa-bat-store.lo \
+	ofa-bat-treeview.lo ofa-bat-utils.lo ofa-batline-properties.lo \
+	ofa-batline-treeview.lo ofa-box.lo ofa-buttons-box.lo \
+	ofa-core.lo ofa-counter.lo ofa-currency-combo.lo \
+	ofa-currency-store.lo ofa-date-filter-hv-bin.lo \
+	ofa-dossier-collection.lo ofa-dossier-delete-prefs-bin.lo \
+	ofa-dossier-props.lo ofa-dossier-store.lo ofa-entry-page.lo \
+	ofa-entry-properties.lo ofa-entry-store.lo \
+	ofa-entry-treeview.lo ofa-extender-collection.lo \
+	ofa-extender-module.lo ofa-formula-engine.lo \
+	ofa-guided-input.lo ofa-guided-input-bin.lo ofa-hub.lo \
+	ofa-iabout.lo ofa-iactionable.lo ofa-iactioner.lo \
+	ofa-icontext.lo ofa-iconcil.lo ofa-idate-filter.lo \
+	ofa-idbconnect.lo ofa-idbdossier-editor.lo \
+	ofa-idbdossier-meta.lo ofa-idbexercice-meta.lo ofa-idbmodel.lo \
+	ofa-idbprovider.lo ofa-idbexercice-editor.lo \
+	ofa-idbsuperuser.lo ofa-idoc.lo ofa-iexe-close.lo \
+	ofa-iexportable.lo ofa-iextender-setter.lo ofa-igetter.lo \
+	ofa-iimporter.lo ofa-iimportable.lo ofa-ijson.lo \
+	ofa-import-duplicate.lo ofa-ipage-manager.lo ofa-iprintable.lo \
+	ofa-iproperties.lo ofa-irecover.lo ofa-irenderable.lo \
+	ofa-irenderer.lo ofa-isignalable.lo ofa-isignaler.lo \
+	ofa-istore.lo ofa-itree-adder.lo ofa-itvcolumnable.lo \
+	ofa-itvfilterable.lo ofa-itvsortable.lo ofa-ledger-combo.lo \
+	ofa-ledger-store.lo ofa-list-store.lo \
 	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
 	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
 	ofa-ope-template-select.lo ofa-ope-template-store.lo \
 	ofa-ope-template-treeview.lo ofa-open-prefs.lo \
 	ofa-open-prefs-bin.lo ofa-openbook-props.lo \
-	ofa-paimean-editable.lo ofa-paimean-frame-bin.lo \
-	ofa-paimean-properties.lo ofa-paimean-select.lo \
-	ofa-paimean-store.lo ofa-paimean-treeview.lo ofa-paned-page.lo \
-	ofa-page.lo ofa-preferences.lo ofa-prefs.lo ofa-rate-store.lo \
-	ofa-render-page.lo ofa-stream-format.lo \
+	ofa-operation-group.lo ofa-paimean-editable.lo \
+	ofa-paimean-frame-bin.lo ofa-paimean-properties.lo \
+	ofa-paimean-select.lo ofa-paimean-store.lo \
+	ofa-paimean-treeview.lo ofa-paned-page.lo ofa-page.lo \
+	ofa-preferences.lo ofa-prefs.lo ofa-rate-store.lo \
+	ofa-reconcil-args.lo ofa-reconcil-group.lo \
+	ofa-reconcil-page.lo ofa-reconcil-render.lo \
+	ofa-reconcil-store.lo ofa-reconcil-treeview.lo \
+	ofa-render-page.lo ofa-settlement-group.lo \
+	ofa-settlement-page.lo ofa-stream-format.lo \
 	ofa-stream-format-bin.lo ofa-stream-format-disp.lo \
 	ofa-tree-store.lo ofa-tvbin.lo ofo-account.lo \
 	ofo-account-v34.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
@@ -508,6 +517,22 @@ libofa_core_la_SOURCES = \
 	ofa-amount.c										\
 	ofa-backup-header.c									\
 	ofa-backup-props.c									\
+	ofa-bat-properties.c								\
+	ofa-bat-properties.h								\
+	ofa-bat-properties-bin.c							\
+	ofa-bat-properties-bin.h							\
+	ofa-bat-select.c									\
+	ofa-bat-select.h									\
+	ofa-bat-store.c										\
+	ofa-bat-store.h										\
+	ofa-bat-treeview.c									\
+	ofa-bat-treeview.h									\
+	ofa-bat-utils.c										\
+	ofa-bat-utils.h										\
+	ofa-batline-properties.c							\
+	ofa-batline-properties.h							\
+	ofa-batline-treeview.c								\
+	ofa-batline-treeview.h								\
 	ofa-box.c											\
 	ofa-buttons-box.c									\
 	ofa-core.c											\
@@ -523,6 +548,12 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-props.c									\
 	ofa-dossier-store.c									\
 	ofa-entry-page.c									\
+	ofa-entry-properties.c								\
+	ofa-entry-properties.h								\
+	ofa-entry-store.c									\
+	ofa-entry-store.h									\
+	ofa-entry-treeview.c								\
+	ofa-entry-treeview.h								\
 	ofa-extender-collection.c							\
 	ofa-extender-module.c								\
 	ofa-formula-engine.c								\
@@ -590,6 +621,7 @@ libofa_core_la_SOURCES = \
 	ofa-open-prefs-bin.c								\
 	ofa-open-prefs-bin.h								\
 	ofa-openbook-props.c								\
+	ofa-operation-group.c								\
 	ofa-paimean-editable.c								\
 	ofa-paimean-frame-bin.c								\
 	ofa-paimean-frame-bin.h								\
@@ -607,7 +639,23 @@ libofa_core_la_SOURCES = \
 	ofa-prefs.c											\
 	ofa-rate-store.c									\
 	ofa-rate-store.h									\
+	ofa-reconcil-args.c									\
+	ofa-reconcil-args.h									\
+	ofa-reconcil-group.c								\
+	ofa-reconcil-group.h								\
+	ofa-reconcil-page.c									\
+	ofa-reconcil-page.h									\
+	ofa-reconcil-render.c								\
+	ofa-reconcil-render.h								\
+	ofa-reconcil-store.c								\
+	ofa-reconcil-store.h								\
+	ofa-reconcil-treeview.c								\
+	ofa-reconcil-treeview.h								\
 	ofa-render-page.c									\
+	ofa-settlement-group.c								\
+	ofa-settlement-group.h								\
+	ofa-settlement-page.c								\
+	ofa-settlement-page.h								\
 	ofa-stream-format.c									\
 	ofa-stream-format-bin.c								\
 	ofa-stream-format-bin.h								\
@@ -751,6 +799,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-amount.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-backup-header.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-backup-props.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-properties-bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-properties.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-select.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-store.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-treeview.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-utils.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-batline-properties.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-batline-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-box.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-buttons-box.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-core.Plo@am__quote@
@@ -763,6 +819,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-props.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-page.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-properties.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-store.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extender-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extender-module.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-formula-engine.Plo@am__quote@
@@ -818,6 +877,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-open-prefs-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-open-prefs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-openbook-props.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-operation-group.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paimean-editable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paimean-frame-bin.Plo@am__quote@
@@ -829,7 +889,15 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-preferences.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-prefs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-store.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-args.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-group.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-page.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-render.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-store.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-page.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement-group.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format-disp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format.Plo@am__quote@

@@ -50,9 +50,8 @@
 #include "core/ofa-account-frame-bin.h"
 #include "core/ofa-account-store.h"
 #include "core/ofa-account-treeview.h"
-
-#include "ui/ofa-reconcil-page.h"
-#include "ui/ofa-settlement-page.h"
+#include "core/ofa-reconcil-page.h"
+#include "core/ofa-settlement-page.h"
 
 /* private instance data
  */

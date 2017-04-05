@@ -80,6 +80,22 @@ libofa_core_la_SOURCES = \
 	ofa-amount.c										\
 	ofa-backup-header.c									\
 	ofa-backup-props.c									\
+	ofa-bat-properties.c								\
+	ofa-bat-properties.h								\
+	ofa-bat-properties-bin.c							\
+	ofa-bat-properties-bin.h							\
+	ofa-bat-select.c									\
+	ofa-bat-select.h									\
+	ofa-bat-store.c										\
+	ofa-bat-store.h										\
+	ofa-bat-treeview.c									\
+	ofa-bat-treeview.h									\
+	ofa-bat-utils.c										\
+	ofa-bat-utils.h										\
+	ofa-batline-properties.c							\
+	ofa-batline-properties.h							\
+	ofa-batline-treeview.c								\
+	ofa-batline-treeview.h								\
 	ofa-box.c											\
 	ofa-buttons-box.c									\
 	ofa-core.c											\
@@ -95,6 +111,12 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-props.c									\
 	ofa-dossier-store.c									\
 	ofa-entry-page.c									\
+	ofa-entry-properties.c								\
+	ofa-entry-properties.h								\
+	ofa-entry-store.c									\
+	ofa-entry-store.h									\
+	ofa-entry-treeview.c								\
+	ofa-entry-treeview.h								\
 	ofa-extender-collection.c							\
 	ofa-extender-module.c								\
 	ofa-formula-engine.c								\
@@ -162,6 +184,7 @@ libofa_core_la_SOURCES = \
 	ofa-open-prefs-bin.c								\
 	ofa-open-prefs-bin.h								\
 	ofa-openbook-props.c								\
+	ofa-operation-group.c								\
 	ofa-paimean-editable.c								\
 	ofa-paimean-frame-bin.c								\
 	ofa-paimean-frame-bin.h								\
@@ -179,7 +202,23 @@ libofa_core_la_SOURCES = \
 	ofa-prefs.c											\
 	ofa-rate-store.c									\
 	ofa-rate-store.h									\
+	ofa-reconcil-args.c									\
+	ofa-reconcil-args.h									\
+	ofa-reconcil-group.c								\
+	ofa-reconcil-group.h								\
+	ofa-reconcil-page.c									\
+	ofa-reconcil-page.h									\
+	ofa-reconcil-render.c								\
+	ofa-reconcil-render.h								\
+	ofa-reconcil-store.c								\
+	ofa-reconcil-store.h								\
+	ofa-reconcil-treeview.c								\
+	ofa-reconcil-treeview.h								\
 	ofa-render-page.c									\
+	ofa-settlement-group.c								\
+	ofa-settlement-group.h								\
+	ofa-settlement-page.c								\
+	ofa-settlement-page.h								\
 	ofa-stream-format.c									\
 	ofa-stream-format-bin.c								\
 	ofa-stream-format-bin.h								\

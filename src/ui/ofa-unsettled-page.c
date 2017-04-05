@@ -36,17 +36,17 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-itvcolumnable.h"
+#include "api/ofa-operation-group.h"
 #include "api/ofa-page.h"
 #include "api/ofo-account.h"
 #include "api/ofo-entry.h"
 
 #include "core/ofa-account-properties.h"
+#include "core/ofa-entry-properties.h"
+#include "core/ofa-settlement-page.h"
 
 #include "ui/ofa-accentry-store.h"
 #include "ui/ofa-accentry-treeview.h"
-#include "ui/ofa-entry-properties.h"
-#include "ui/ofa-operation-group.h"
-#include "ui/ofa-settlement-page.h"
 #include "ui/ofa-unsettled-page.h"
 
 /* priv instance data

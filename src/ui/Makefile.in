@@ -145,13 +145,8 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-admin-credentials-bin.$(OBJEXT) ofa-application.$(OBJEXT) \
 	ofa-backup-assistant.$(OBJEXT) ofa-balance-args.$(OBJEXT) \
 	ofa-balance-grid-bin.$(OBJEXT) ofa-balance-render.$(OBJEXT) \
-	ofa-bat-line-properties.$(OBJEXT) \
-	ofa-batline-treeview.$(OBJEXT) ofa-bat-page.$(OBJEXT) \
-	ofa-bat-properties.$(OBJEXT) ofa-bat-properties-bin.$(OBJEXT) \
-	ofa-bat-select.$(OBJEXT) ofa-bat-store.$(OBJEXT) \
-	ofa-bat-treeview.$(OBJEXT) ofa-bat-utils.$(OBJEXT) \
-	ofa-check-balances.$(OBJEXT) ofa-check-balances-bin.$(OBJEXT) \
-	ofa-check-integrity.$(OBJEXT) \
+	ofa-bat-page.$(OBJEXT) ofa-check-balances.$(OBJEXT) \
+	ofa-check-balances-bin.$(OBJEXT) ofa-check-integrity.$(OBJEXT) \
 	ofa-check-integrity-bin.$(OBJEXT) ofa-class-page.$(OBJEXT) \
 	ofa-class-properties.$(OBJEXT) ofa-class-store.$(OBJEXT) \
 	ofa-class-treeview.$(OBJEXT) ofa-closing-parms-bin.$(OBJEXT) \
@@ -162,8 +157,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-dossier-edit-bin.$(OBJEXT) ofa-dossier-manager.$(OBJEXT) \
 	ofa-dossier-meta-bin.$(OBJEXT) ofa-dossier-new.$(OBJEXT) \
 	ofa-dossier-open.$(OBJEXT) ofa-dossier-properties.$(OBJEXT) \
-	ofa-dossier-treeview.$(OBJEXT) ofa-entry-properties.$(OBJEXT) \
-	ofa-entry-store.$(OBJEXT) ofa-entry-treeview.$(OBJEXT) \
+	ofa-dossier-treeview.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-combo.$(OBJEXT) ofa-exercice-edit-bin.$(OBJEXT) \
 	ofa-exercice-meta-bin.$(OBJEXT) ofa-exercice-new.$(OBJEXT) \
@@ -179,17 +173,13 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-maintainer.$(OBJEXT) ofa-misc-audit-store.$(OBJEXT) \
 	ofa-misc-audit-treeview.$(OBJEXT) ofa-misc-audit-ui.$(OBJEXT) \
 	ofa-misc-collector-ui.$(OBJEXT) ofa-nomodal-page.$(OBJEXT) \
-	ofa-ope-template-page.$(OBJEXT) ofa-operation-group.$(OBJEXT) \
-	ofa-paimean-page.$(OBJEXT) ofa-period-close.$(OBJEXT) \
-	ofa-plugin-manager.$(OBJEXT) ofa-rate-page.$(OBJEXT) \
-	ofa-rate-properties.$(OBJEXT) ofa-rate-treeview.$(OBJEXT) \
-	ofa-reconcil-args.$(OBJEXT) ofa-reconcil-group.$(OBJEXT) \
-	ofa-reconcil-page.$(OBJEXT) ofa-reconcil-render.$(OBJEXT) \
-	ofa-reconcil-store.$(OBJEXT) ofa-reconcil-treeview.$(OBJEXT) \
-	ofa-recovery-assistant.$(OBJEXT) \
-	ofa-restore-assistant.$(OBJEXT) ofa-settlement-group.$(OBJEXT) \
-	ofa-settlement-page.$(OBJEXT) ofa-target-chooser-bin.$(OBJEXT) \
-	ofa-unreconcil-page.$(OBJEXT) ofa-unsettled-page.$(OBJEXT) \
+	ofa-ope-template-page.$(OBJEXT) ofa-paimean-page.$(OBJEXT) \
+	ofa-period-close.$(OBJEXT) ofa-plugin-manager.$(OBJEXT) \
+	ofa-rate-page.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
+	ofa-rate-treeview.$(OBJEXT) ofa-recovery-assistant.$(OBJEXT) \
+	ofa-restore-assistant.$(OBJEXT) \
+	ofa-target-chooser-bin.$(OBJEXT) ofa-unreconcil-page.$(OBJEXT) \
+	ofa-unsettled-page.$(OBJEXT) \
 	ofa-user-credentials-bin.$(OBJEXT)
 am__objects_1 = resources.$(OBJEXT)
 nodist_openbook_OBJECTS = $(am__objects_1)
@@ -535,24 +525,8 @@ openbook_SOURCES = \
 	ofa-balance-grid-bin.h								\
 	ofa-balance-render.c								\
 	ofa-balance-render.h								\
-	ofa-bat-line-properties.c							\
-	ofa-bat-line-properties.h							\
-	ofa-batline-treeview.c								\
-	ofa-batline-treeview.h								\
 	ofa-bat-page.c										\
 	ofa-bat-page.h										\
-	ofa-bat-properties.c								\
-	ofa-bat-properties.h								\
-	ofa-bat-properties-bin.c							\
-	ofa-bat-properties-bin.h							\
-	ofa-bat-select.c									\
-	ofa-bat-select.h									\
-	ofa-bat-store.c										\
-	ofa-bat-store.h										\
-	ofa-bat-treeview.c									\
-	ofa-bat-treeview.h									\
-	ofa-bat-utils.c										\
-	ofa-bat-utils.h										\
 	ofa-check-balances.c								\
 	ofa-check-balances.h								\
 	ofa-check-balances-bin.c							\
@@ -597,12 +571,6 @@ openbook_SOURCES = \
 	ofa-dossier-properties.h							\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
-	ofa-entry-properties.c								\
-	ofa-entry-properties.h								\
-	ofa-entry-store.c									\
-	ofa-entry-store.h									\
-	ofa-entry-treeview.c								\
-	ofa-entry-treeview.h								\
 	ofa-exercice-close-assistant.c						\
 	ofa-exercice-close-assistant.h						\
 	ofa-exercice-combo.c								\
@@ -658,8 +626,6 @@ openbook_SOURCES = \
 	ofa-nomodal-page.h									\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
-	ofa-operation-group.c								\
-	ofa-operation-group.h								\
 	ofa-paimean-page.c									\
 	ofa-paimean-page.h									\
 	ofa-period-close.c									\
@@ -672,26 +638,10 @@ openbook_SOURCES = \
 	ofa-rate-properties.h								\
 	ofa-rate-treeview.c									\
 	ofa-rate-treeview.h									\
-	ofa-reconcil-args.c									\
-	ofa-reconcil-args.h									\
-	ofa-reconcil-group.c								\
-	ofa-reconcil-group.h								\
-	ofa-reconcil-page.c									\
-	ofa-reconcil-page.h									\
-	ofa-reconcil-render.c								\
-	ofa-reconcil-render.h								\
-	ofa-reconcil-store.c								\
-	ofa-reconcil-store.h								\
-	ofa-reconcil-treeview.c								\
-	ofa-reconcil-treeview.h								\
 	ofa-recovery-assistant.c							\
 	ofa-recovery-assistant.h							\
 	ofa-restore-assistant.c								\
 	ofa-restore-assistant.h								\
-	ofa-settlement-group.c								\
-	ofa-settlement-group.h								\
-	ofa-settlement-page.c								\
-	ofa-settlement-page.h								\
 	ofa-target-chooser-bin.c							\
 	ofa-target-chooser-bin.h							\
 	ofa-unreconcil-page.c								\
@@ -840,15 +790,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-grid-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-render.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-line-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-page.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-properties-bin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-properties.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-select.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-store.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-treeview.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-utils.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-batline-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-check-balances-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-check-balances.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-check-integrity-bin.Po@am__quote@
@@ -871,9 +813,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-open.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-treeview.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-properties.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-store.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-close-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-combo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-exercice-edit-bin.Po@am__quote@
@@ -901,23 +840,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-collector-ui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-nomodal-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-page.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-operation-group.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paimean-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-period-close.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin-manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-treeview.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-args.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-group.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-page.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-render.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-store.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recovery-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-restore-assistant.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement-group.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-target-chooser-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-unreconcil-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-unsettled-page.Po@am__quote@

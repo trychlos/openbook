@@ -47,6 +47,7 @@
 #include "api/ofa-idate-filter.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
+#include "api/ofa-operation-group.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-prefs.h"
@@ -61,16 +62,14 @@
 #include "api/ofs-currency.h"
 
 #include "core/ofa-account-select.h"
+#include "core/ofa-entry-properties.h"
+#include "core/ofa-entry-store.h"
+#include "core/ofa-entry-treeview.h"
 #include "core/ofa-iconcil.h"
 #include "core/ofa-ledger-combo.h"
 #include "core/ofa-ledger-store.h"
-
-#include "ui/ofa-entry-properties.h"
-#include "ui/ofa-entry-store.h"
-#include "ui/ofa-entry-treeview.h"
-#include "ui/ofa-operation-group.h"
-#include "ui/ofa-reconcil-group.h"
-#include "ui/ofa-settlement-group.h"
+#include "core/ofa-reconcil-group.h"
+#include "core/ofa-settlement-group.h"
 
 /* priv instance data
  */

@@ -457,6 +457,7 @@ api_include_HEADERS = \
 	ofa-ope-template-store.h							\
 	ofa-openbook-props.h								\
 	ofa-openbook-props-def.h							\
+	ofa-operation-group.h								\
 	ofa-paned-page.h									\
 	ofa-page.h											\
 	ofa-page-def.h										\
