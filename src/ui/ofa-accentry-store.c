@@ -35,7 +35,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-currency.h"
@@ -336,8 +336,8 @@ entry_set_row_by_iter( ofaAccentryStore *self, const ofoEntry *entry, GtkTreeIte
 		priv->currency = ofo_currency_get_by_code( priv->getter, ccur );
 	}
 
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->getter ));
-	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->getter ));
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_get_display_format( priv->getter ));
+	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_get_display_format( priv->getter ));
 
 	cstr = ofo_entry_get_ref( entry );
 	cref = cstr ? cstr : "";

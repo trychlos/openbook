@@ -48,7 +48,7 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
 #include "api/ofo-concil.h"
@@ -807,7 +807,7 @@ tview_apply_stdfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *it
 		}
 
 		if( visible ){
-			my_date_set_from_str( &deffect, sdate, ofa_prefs_date_display( priv->getter ));
+			my_date_set_from_str( &deffect, sdate, ofa_prefs_date_get_display_format( priv->getter ));
 			effect_filter = ofa_idate_filter_get_date(
 					OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_FROM );
 			ok = !my_date_is_valid( effect_filter ) ||
@@ -1049,8 +1049,8 @@ tview_apply_extfilter_for_date( ofaEntryPage *self, sExtend *criterium, const gc
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	my_date_set_from_str( &crit_date, criterium->value, ofa_prefs_date_display( priv->getter ));
-	my_date_set_from_str( &entry_date, entry_value, ofa_prefs_date_display( priv->getter ));
+	my_date_set_from_str( &crit_date, criterium->value, ofa_prefs_date_get_display_format( priv->getter ));
+	my_date_set_from_str( &entry_date, entry_value, ofa_prefs_date_get_display_format( priv->getter ));
 
 	switch( criterium->condition ){
 		case COND_EQUAL:
@@ -1764,7 +1764,7 @@ extfilter_on_init_from_clicked( GtkButton *button, ofaEntryPage *self )
 		extend->operator = first ? OPERATOR_NONE : OPERATOR_AND;
 		extend->field = ENTRY_COL_DEFFECT;
 		extend->condition = COND_GE;
-		extend->value = my_date_to_str( date, ofa_prefs_date_display( priv->getter ));
+		extend->value = my_date_to_str( date, ofa_prefs_date_get_display_format( priv->getter ));
 		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), extend );
 		first = FALSE;
 		g_free( extend->value );
@@ -1776,7 +1776,7 @@ extfilter_on_init_from_clicked( GtkButton *button, ofaEntryPage *self )
 		extend->operator = first ? OPERATOR_NONE : OPERATOR_AND;
 		extend->field = ENTRY_COL_DEFFECT;
 		extend->condition = COND_LE;
-		extend->value = my_date_to_str( date, ofa_prefs_date_display( priv->getter ));
+		extend->value = my_date_to_str( date, ofa_prefs_date_get_display_format( priv->getter ));
 		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), extend );
 		first = FALSE;
 		g_free( extend->value );
@@ -2636,7 +2636,7 @@ check_row_for_valid_dope( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_DOPE, &sdope, -1 );
 
 	if( my_strlen( sdope )){
-		my_date_set_from_str( &date, sdope, ofa_prefs_date_display( priv->getter ));
+		my_date_set_from_str( &date, sdope, ofa_prefs_date_get_display_format( priv->getter ));
 		if( my_date_is_valid( &date )){
 			is_valid = TRUE;
 
@@ -2674,7 +2674,7 @@ check_row_for_valid_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_DEFFECT, &sdeffect, -1 );
 
 	if( my_strlen( sdeffect )){
-		my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display( priv->getter ));
+		my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_get_display_format( priv->getter ));
 		if( my_date_is_valid( &deff )){
 			is_valid = TRUE;
 
@@ -2888,10 +2888,10 @@ check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 				ENTRY_COL_LEDGER,  &mnemo,
 				-1 );
 
-	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->getter ));
+	my_date_set_from_str( &dope, sdope, ofa_prefs_date_get_display_format( priv->getter ));
 	g_return_if_fail( my_date_is_valid( &dope ));
 
-	my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display( priv->getter ));
+	my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_get_display_format( priv->getter ));
 	g_return_if_fail( my_date_is_valid( &deff ));
 
 	g_return_if_fail( my_strlen( mnemo ));
@@ -2907,8 +2907,8 @@ check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 	 * the row, then it is valid and will normally apply to account and
 	 * ledger */
 	if( my_date_compare( &deff, &deff_min ) < 0 ){
-		sdmin = my_date_to_str( &deff_min, ofa_prefs_date_display( priv->getter ));
-		sdeff = my_date_to_str( &deff, ofa_prefs_date_display( priv->getter ));
+		sdmin = my_date_to_str( &deff_min, ofa_prefs_date_get_display_format( priv->getter ));
+		sdeff = my_date_to_str( &deff, ofa_prefs_date_get_display_format( priv->getter ));
 		msg = g_strdup_printf(
 				_( "Effect date %s is less than the min effect date %s" ),
 				sdeff, sdmin );
@@ -2952,7 +2952,7 @@ set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 					ENTRY_COL_LEDGER, &mnemo,
 					-1 );
 
-		my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->getter ));
+		my_date_set_from_str( &dope, sdope, ofa_prefs_date_get_display_format( priv->getter ));
 		g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 
 		g_return_val_if_fail( my_strlen( mnemo ), FALSE );
@@ -2964,7 +2964,7 @@ set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 			my_date_set_from_date( &deff_min, &dope );
 		}
 
-		sdeff = my_date_to_str( &deff_min, ofa_prefs_date_display( priv->getter ));
+		sdeff = my_date_to_str( &deff_min, ofa_prefs_date_get_display_format( priv->getter ));
 		gtk_list_store_set( GTK_LIST_STORE( priv->store ), iter, ENTRY_COL_DEFFECT, sdeff, -1 );
 		g_free( sdeff );
 
@@ -3121,11 +3121,11 @@ save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 		prev_credit = ofo_entry_get_credit( entry );
 	}
 
-	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->getter ));
+	my_date_set_from_str( &dope, sdope, ofa_prefs_date_get_display_format( priv->getter ));
 	g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 	ofo_entry_set_dope( entry, &dope );
 
-	my_date_set_from_str( &deff, sdeff, ofa_prefs_date_display( priv->getter ));
+	my_date_set_from_str( &deff, sdeff, ofa_prefs_date_get_display_format( priv->getter ));
 	g_return_val_if_fail( my_date_is_valid( &deff ), FALSE );
 	ofo_entry_set_deffect( entry, &deff );
 

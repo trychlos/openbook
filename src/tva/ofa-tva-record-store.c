@@ -33,7 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 
 #include "tva/ofa-tva-record-store.h"
 #include "tva/ofo-tva-form.h"
@@ -276,10 +276,10 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 	form = ofo_tva_form_get_by_mnemo( priv->getter, ofo_tva_record_get_mnemo( record ));
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
-	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), ofa_prefs_date_display( priv->getter ));
-	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display( priv->getter ));
+	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), ofa_prefs_date_get_display_format( priv->getter ));
+	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_get_display_format( priv->getter ));
 	cvalidated = ofo_tva_record_get_is_validated( record ) ? _( "Yes" ) : _( "No" );
-	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), ofa_prefs_date_display( priv->getter ));
+	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), ofa_prefs_date_get_display_format( priv->getter ));
 
 	notes = ofo_tva_record_get_notes( record );
 	error = NULL;

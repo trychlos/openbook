@@ -22,30 +22,20 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "my/my-double.h"
-
-#include "api/ofa-counter.h"
-#include "api/ofa-igetter.h"
-#include "api/ofa-prefs.h"
+#ifndef __OPENBOOK_API_OFA_PREFS_DEF_H__
+#define __OPENBOOK_API_OFA_PREFS_DEF_H__
 
 /**
- * ofa_counter_to_str:
- * @counter: the counter to be displayed.
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the counter as a displayable, localized, decorated newly
- * allocated string, which should be g_free() by the caller.
+ * SECTION: ofaprefs
+ * @include: openbook/ofa-prefs-def.h
  */
-gchar *
-ofa_counter_to_str( ofxCounter counter, ofaIGetter *getter )
-{
-	gchar *str;
 
-	str = my_bigint_to_str( counter, g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( getter )));
+#include <glib.h>
 
-	return( str );
-}
+G_BEGIN_DECLS
+
+typedef struct _ofaPrefs                  ofaPrefs;
+
+G_END_DECLS
+
+#endif /* __OPENBOOK_API_OFA_PREFS_DEF_H__ */

@@ -43,7 +43,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-class.h"
 #include "api/ofo-account.h"
@@ -1254,7 +1254,7 @@ read_settings( ofaExportAssistant *self )
 	priv->p3_folder_uri = my_isettings_get_string( settings, group, st_export_folder );
 	if( !my_strlen( priv->p3_folder_uri )){
 		g_free( priv->p3_folder_uri );
-		priv->p3_folder_uri = ofa_prefs_export_default_folder( priv->getter );
+		priv->p3_folder_uri = g_strdup( ofa_prefs_export_get_default_folder( priv->getter ));
 	}
 	if( !my_strlen( priv->p3_folder_uri )){
 		g_free( priv->p3_folder_uri );

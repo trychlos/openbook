@@ -31,7 +31,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-base.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-ledger.h"
@@ -181,7 +181,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerAr
 	gtk_tree_model_get( tmodel, a, LEDGER_ARC_COL_DATE, &sdatea, -1 );
 	gtk_tree_model_get( tmodel, b, LEDGER_ARC_COL_DATE, &sdateb, -1 );
 
-	cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->getter ));
+	cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_get_display_format( priv->getter ));
 
 	g_free( sdatea );
 	g_free( sdateb );
@@ -227,7 +227,7 @@ set_row_by_iter( ofaLedgerArcStore *self, ofoLedger *ledger, gint i, GtkTreeIter
 	symbol = ofo_currency_get_symbol( currency );
 
 	date = ofo_ledger_archive_get_date( ledger, i );
-	sdate = my_date_to_str( date, ofa_prefs_date_display( priv->getter ));
+	sdate = my_date_to_str( date, ofa_prefs_date_get_display_format( priv->getter ));
 	sdebit = ofa_amount_to_str( ofo_ledger_archive_get_debit( ledger, iso, date ), currency, priv->getter );
 	scredit = ofa_amount_to_str( ofo_ledger_archive_get_credit( ledger, iso, date ), currency, priv->getter );
 

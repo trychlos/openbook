@@ -40,7 +40,7 @@
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
@@ -1147,7 +1147,7 @@ do_delete_account( ofaAccountFrameBin *self, ofoAccount *account )
 
 	if( delete_confirmed( self, account )){
 
-		if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children( priv->getter )){
+		if( ofo_account_is_root( account ) && ofa_prefs_account_get_delete_with_children( priv->getter )){
 			ofo_account_delete_with_children( account );
 		} else {
 			ofo_account_delete( account );
@@ -1182,7 +1182,7 @@ delete_confirmed( ofaAccountFrameBin *self, ofoAccount *account )
 
 	if( ofo_account_is_root( account )){
 		if( ofo_account_has_children( account ) &&
-				ofa_prefs_account_delete_root_with_children( priv->getter )){
+				ofa_prefs_account_get_delete_with_children( priv->getter )){
 			msg = g_strdup_printf( _(
 					"You are about to delete the %s - %s account.\n"
 					"This is a root account, and all its children will be deleted too.\n"

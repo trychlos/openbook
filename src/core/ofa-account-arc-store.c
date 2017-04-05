@@ -31,7 +31,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-currency.h"
@@ -181,7 +181,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountA
 	gtk_tree_model_get( tmodel, a, ACCOUNT_ARC_COL_DATE, &sdatea, -1 );
 	gtk_tree_model_get( tmodel, b, ACCOUNT_ARC_COL_DATE, &sdateb, -1 );
 
-	cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->getter ));
+	cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_get_display_format( priv->getter ));
 
 	g_free( sdatea );
 	g_free( sdateb );
@@ -225,7 +225,7 @@ set_row_by_iter( ofaAccountArcStore *self, ofoAccount *account, gint i, GtkTreeI
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 	symbol = ofo_currency_get_symbol( currency );
 
-	sdate = my_date_to_str( ofo_account_archive_get_date( account, i ), ofa_prefs_date_display( priv->getter ));
+	sdate = my_date_to_str( ofo_account_archive_get_date( account, i ), ofa_prefs_date_get_display_format( priv->getter ));
 	sdebit = ofa_amount_to_str( ofo_account_archive_get_debit( account, i ), currency, priv->getter );
 	scredit = ofa_amount_to_str( ofo_account_archive_get_credit( account, i ), currency, priv->getter );
 

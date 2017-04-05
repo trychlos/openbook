@@ -36,7 +36,7 @@
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
@@ -320,11 +320,11 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_unused ), str );
 	g_free( str );
 
-	str = my_date_to_str( ofo_bat_get_begin_date( bat ), ofa_prefs_date_display( priv->getter ));
+	str = my_date_to_str( ofo_bat_get_begin_date( bat ), ofa_prefs_date_get_display_format( priv->getter ));
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_begin ), str );
 	g_free( str );
 
-	str = my_date_to_str( ofo_bat_get_end_date( bat ), ofa_prefs_date_display( priv->getter ));
+	str = my_date_to_str( ofo_bat_get_end_date( bat ), ofa_prefs_date_get_display_format( priv->getter ));
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_end ), str );
 	g_free( str );
 

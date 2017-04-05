@@ -40,7 +40,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -478,8 +478,8 @@ store_batline( ofaBatlineTreeview *self, ofoBatLine *line )
 
 	sbatid = g_strdup_printf( "%lu", ofo_bat_line_get_bat_id( line ));
 	slineid = g_strdup_printf( "%lu", ofo_bat_line_get_line_id( line ));
-	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_display( priv->getter ));
-	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_display( priv->getter ));
+	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_get_display_format( priv->getter ));
+	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_get_display_format( priv->getter ));
 
 	if( !priv->currency ){
 		cur_code = ofo_bat_line_get_currency( line );
@@ -680,10 +680,10 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			cmp = ofa_itvsortable_sort_str_int( lineida, lineidb );
 			break;
 		case BAL_COL_DEFFECT:
-			cmp = my_date_compare_by_str( deffecta, deffectb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( deffecta, deffectb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case BAL_COL_DOPE:
-			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case BAL_COL_REF:
 			cmp = my_collate( refa, refb );

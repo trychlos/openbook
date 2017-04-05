@@ -35,7 +35,7 @@
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-dossier.h"
 
 /* private instance data
@@ -322,8 +322,8 @@ set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofa
 	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 	provname = ofa_idbprovider_get_canon_name( provider );
 
-	begin = my_date_to_str( ofa_idbexercice_meta_get_begin_date( period ), ofa_prefs_date_display( priv->getter ));
-	end = my_date_to_str( ofa_idbexercice_meta_get_end_date( period ), ofa_prefs_date_display( priv->getter ));
+	begin = my_date_to_str( ofa_idbexercice_meta_get_begin_date( period ), ofa_prefs_date_get_display_format( priv->getter ));
+	end = my_date_to_str( ofa_idbexercice_meta_get_end_date( period ), ofa_prefs_date_get_display_format( priv->getter ));
 	status = ofa_idbexercice_meta_get_status( period );
 	pername = ofa_idbexercice_meta_get_name( period );
 

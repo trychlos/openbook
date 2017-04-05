@@ -40,7 +40,7 @@
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -388,9 +388,9 @@ setup_date( ofaLedgerClose *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->closing_entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_display( priv->getter ));
-	my_date_editable_set_label_format( GTK_EDITABLE( priv->closing_entry ), label, ofa_prefs_date_check( priv->getter ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_get_display_format( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->closing_entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( priv->closing_entry, "changed", G_CALLBACK( on_date_changed ), self );
 }

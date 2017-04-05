@@ -32,7 +32,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-concil.h"
 #include "api/ofo-currency.h"
@@ -322,8 +322,8 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 
 	priv = ofa_entry_store_get_instance_private( self );
 
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->getter ));
-	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->getter ));
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_get_display_format( priv->getter ));
+	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_get_display_format( priv->getter ));
 
 	cstr = ofo_entry_get_ref( entry );
 	cref = cstr ? cstr : "";
@@ -435,7 +435,7 @@ set_row_concil( ofaEntryStore *self, ofoConcil *concil, GtkTreeIter *iter )
 	priv = ofa_entry_store_get_instance_private( self );
 
 	srappro = concil ?
-				my_date_to_str( ofo_concil_get_dval( concil ), ofa_prefs_date_display( priv->getter )) :
+				my_date_to_str( ofo_concil_get_dval( concil ), ofa_prefs_date_get_display_format( priv->getter )) :
 				g_strdup( "" );
 	snum = concil ?
 				g_strdup_printf( "%lu", ofo_concil_get_id( concil )) :

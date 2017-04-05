@@ -44,7 +44,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignalable.h"
 #include "api/ofa-isignaler.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -1855,8 +1855,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				type = MY_PROGRESS_NORMAL;
 
 				rib = ofo_bat_get_rib( OFO_BAT( object ));
-				sdbegin = my_date_to_str( ofo_bat_get_begin_date( OFO_BAT( object )), ofa_prefs_date_display( parms->getter ));
-				sdend = my_date_to_str( ofo_bat_get_end_date( OFO_BAT( object )), ofa_prefs_date_display( parms->getter ));
+				sdbegin = my_date_to_str( ofo_bat_get_begin_date( OFO_BAT( object )), ofa_prefs_date_get_display_format( parms->getter ));
+				sdend = my_date_to_str( ofo_bat_get_end_date( OFO_BAT( object )), ofa_prefs_date_get_display_format( parms->getter ));
 
 				switch( parms->mode ){
 					case OFA_IDUPLICATE_REPLACE:
@@ -1906,7 +1906,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			g_return_if_fail( OFO_IS_BAT_LINE( it->data ));
 
 			if( bat_id <= 0 ){
-				sdate = my_date_to_str( ofo_bat_line_get_dope( OFO_BAT_LINE( it->data )), ofa_prefs_date_display( parms->getter ));
+				sdate = my_date_to_str( ofo_bat_line_get_dope( OFO_BAT_LINE( it->data )), ofa_prefs_date_get_display_format( parms->getter ));
 				label = ofo_bat_line_get_label( OFO_BAT_LINE( it->data ));
 				if( skipped ){
 					str = g_strdup_printf( _( "%s %s: line ignored due to previous BAT being have been skipped" ), sdate, label );

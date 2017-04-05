@@ -49,7 +49,7 @@
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-isignaler.h"
 #include "api/ofa-page.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-guided-input.h"
@@ -558,7 +558,7 @@ ofa_main_window_new( ofaIGetter *getter )
 	/* get the 'pin detach' user pref
 	 * it will be not re-evaluated unless the application is restarted
 	 */
-	priv->have_detach_pin = ofa_prefs_pin_detach( getter );
+	priv->have_detach_pin = ofa_prefs_mainbook_get_with_detach_pin( getter );
 
 	return( window );
 }
@@ -1147,7 +1147,7 @@ pane_right_add_empty_notebook( ofaMainWindow *self )
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	detacheable = ofa_prefs_dnd_detach( priv->getter );
+	detacheable = !ofa_prefs_mainbook_get_dnd_reorder( priv->getter );
 	if( detacheable ){
 		book = GTK_WIDGET( my_dnd_book_new());
 		g_signal_connect( book, "my-append-page", G_CALLBACK( book_on_append_page ), self );

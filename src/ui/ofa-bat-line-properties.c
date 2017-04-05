@@ -38,7 +38,7 @@
 
 #include "api/ofa-counter.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -309,7 +309,7 @@ setup_ui_properties( ofaBatLineProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	priv->dope_entry = entry;
 
 	/* effect date */
@@ -318,7 +318,7 @@ setup_ui_properties( ofaBatLineProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-deffect-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	priv->deffect_entry = entry;
 
 	/* label */
@@ -335,10 +335,10 @@ setup_ui_properties( ofaBatLineProperties *self )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-amount-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
-			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
-			ofa_prefs_amount_accept_dot( priv->getter ),
-			ofa_prefs_amount_accept_comma( priv->getter ),
+			g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter )),
+			g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter )),
+			ofa_prefs_amount_get_accept_dot( priv->getter ),
+			ofa_prefs_amount_get_accept_comma( priv->getter ),
 			HUB_DEFAULT_DECIMALS_AMOUNT );
 	priv->amount_entry = entry;
 

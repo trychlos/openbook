@@ -33,7 +33,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-currency.h"
 
 /**
@@ -52,8 +52,8 @@ ofa_amount_from_str( const gchar *str, ofaIGetter *getter )
 
 	amount = my_double_set_from_str(
 					str,
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep( getter )),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep( getter )));
+					g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( getter )),
+					g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( getter )));
 
 	return( amount );
 }
@@ -139,8 +139,8 @@ ofa_amount_to_str( ofxAmount amount, ofoCurrency *currency, ofaIGetter *getter )
 					ofo_currency_get_digits( currency ) : HUB_DEFAULT_DECIMALS_AMOUNT;
 
 	str = my_double_to_str( amount,
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep( getter )),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep( getter )), digits );
+					g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( getter )),
+					g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( getter )), digits );
 
 	return( str );
 }

@@ -35,7 +35,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-istore.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 
@@ -898,7 +898,7 @@ signaler_on_deleted_account( ofaAccountStore *self, ofoAccount *account )
 	list = remove_rows_by_number( self, ofo_account_get_number( account ));
 	children = list ? list->next : NULL;
 
-	if( !ofa_prefs_account_delete_root_with_children( priv->getter )){
+	if( !ofa_prefs_account_get_delete_with_children( priv->getter )){
 		for( it=children ; it ; it=it->next ){
 			insert_row( self, OFO_ACCOUNT( it->data ));
 		}

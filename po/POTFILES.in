@@ -43,6 +43,7 @@ src/core/ofa-paimean-select.ui
 src/core/ofa-paimean-treeview.c
 src/core/ofa-preferences.c
 src/core/ofa-preferences.ui
+src/core/ofa-prefs.c
 src/core/ofa-render-page.c
 src/core/ofa-render-page.ui
 src/core/ofa-stream-format-bin.c

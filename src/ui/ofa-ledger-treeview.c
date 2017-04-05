@@ -36,7 +36,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-ledger.h"
 
 #include "core/ofa-ledger-store.h"
@@ -543,7 +543,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = ofa_itvsortable_sort_str_int( entrya, entryb );
 			break;
 		case LEDGER_COL_LAST_CLOSE:
-			cmp = my_date_compare_by_str( closea, closeb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( closea, closeb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case LEDGER_COL_NOTES:
 			cmp = my_collate( notesa, notesb );

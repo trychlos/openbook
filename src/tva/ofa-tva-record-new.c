@@ -36,7 +36,7 @@
 
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-dossier.h"
 
 #include "tva/ofa-tva-main.h"
@@ -320,9 +320,9 @@ init_properties( ofaTVARecordNew *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), NULL );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 }

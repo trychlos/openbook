@@ -37,7 +37,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 
 #include "ofa-tva-record-store.h"
 #include "ofa-tva-record-treeview.h"
@@ -483,16 +483,16 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( correspa, correspb );
 			break;
 		case TVA_RECORD_COL_BEGIN:
-			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case TVA_RECORD_COL_END:
-			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case TVA_RECORD_COL_IS_VALIDATED:
 			cmp = my_collate( valida, validb );
 			break;
 		case TVA_RECORD_COL_DOPE:
-			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case TVA_RECORD_COL_NOTES:
 			cmp = my_collate( notesa, notesb );

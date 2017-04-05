@@ -48,7 +48,7 @@
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignalable.h"
 #include "api/ofa-isignaler.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -819,7 +819,7 @@ ofo_account_is_deletable( const ofoAccount *account )
 	deletable = TRUE;
 	getter = ofo_base_get_getter( OFO_BASE( account ));
 
-	if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children( getter )){
+	if( ofo_account_is_root( account ) && ofa_prefs_account_get_delete_with_children( getter )){
 		children = ofo_account_get_children( account );
 		for( it=children ; it && deletable ; it=it->next ){
 			deletable &= ofo_account_is_deletable( OFO_ACCOUNT( it->data ));

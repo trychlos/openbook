@@ -42,7 +42,7 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-concil.h"
 #include "api/ofo-counters.h"
@@ -876,8 +876,8 @@ action_on_settle_activated( GSimpleAction *action, GVariant *empty, ofaSettlemen
 	/* ask for a user confirmation when selection is not balanced
 	 *  (and Ctrl key is not pressed) */
 	if( !ofs_currency_is_balanced( &priv->ses.scur ) &&
-			( ofa_prefs_settle_warns_if_unbalanced( priv->getter ) &&
-			( !ofa_prefs_settle_warns_unless_ctrl( priv->getter ) || !priv->ctrl_pressed ))){
+			( ofa_prefs_account_settle_warns_if_unbalanced( priv->getter ) &&
+			( !ofa_prefs_account_settle_warns_unless_ctrl( priv->getter ) || !priv->ctrl_pressed ))){
 		if( !do_settle_user_confirm( self )){
 			return;
 		}

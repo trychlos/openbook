@@ -38,7 +38,7 @@
 #include "api/ofa-irenderable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
 #include "api/ofo-currency.h"
@@ -501,7 +501,7 @@ irenderable_draw_page_header_title( ofaIRenderable *instance )
 
 	if( priv->accounts_balance ){
 		if( my_date_is_valid( &priv->to_date )){
-			sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_display( priv->getter ));
+			sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_get_display_format( priv->getter ));
 			g_string_append_printf( stitle, _( "As of %s" ), sto_date );
 			g_free( sto_date );
 		} else {
@@ -512,8 +512,8 @@ irenderable_draw_page_header_title( ofaIRenderable *instance )
 		stitle = g_string_append( stitle, "All effect dates" );
 
 	} else {
-		sfrom_date = my_date_to_str( &priv->from_date, ofa_prefs_date_display( priv->getter ));
-		sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_display( priv->getter ));
+		sfrom_date = my_date_to_str( &priv->from_date, ofa_prefs_date_get_display_format( priv->getter ));
+		sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_get_display_format( priv->getter ));
 		if( my_date_is_valid( &priv->from_date )){
 			g_string_append_printf( stitle, _( "From %s" ), sfrom_date );
 			if( my_date_is_valid( &priv->to_date )){

@@ -38,7 +38,7 @@
 #include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-currency.h"
@@ -800,7 +800,7 @@ eval_dope( ofsFormulaHelper *helper )
 
 	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 
-	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->dope, ofa_prefs_date_display( getter )));
+	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->dope, ofa_prefs_date_get_display_format( getter )));
 }
 
 /*
@@ -813,7 +813,7 @@ eval_deffect( ofsFormulaHelper *helper )
 
 	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 
-	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->deffect, ofa_prefs_date_display( getter )));
+	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->deffect, ofa_prefs_date_get_display_format( getter )));
 }
 
 /*
@@ -1054,8 +1054,8 @@ get_rate_by_name( const gchar *name, ofsFormulaHelper *helper )
 		if( my_date_is_valid( &ope_helper->ope->dope )){
 			amount = ofo_rate_get_rate_at_date( rate, &ope_helper->ope->dope )/( gdouble ) 100;
 			res = my_double_to_str( amount,
-						g_utf8_get_char( ofa_prefs_amount_thousand_sep( getter )),
-						g_utf8_get_char( ofa_prefs_amount_decimal_sep( getter )), HUB_DEFAULT_DECIMALS_RATE );
+						g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( getter )),
+						g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( getter )), HUB_DEFAULT_DECIMALS_RATE );
 
 		} else {
 			str = g_strdup_printf( _( "%s: unable to get a rate value while operation date is invalid" ), thisfn );
@@ -1222,7 +1222,7 @@ check_for_dates( sChecker *checker )
 		if( my_date_is_valid( &dmin )){
 			cmp = my_date_compare( &dmin, &ope->deffect );
 			if( cmp > 0 ){
-				str = my_date_to_str( &dmin, ofa_prefs_date_display( getter ));
+				str = my_date_to_str( &dmin, ofa_prefs_date_get_display_format( getter ));
 				checker->message = g_strdup_printf(
 						_( "Effect date less than the minimum allowed on this ledger: %s" ), str );
 				g_free( str );
@@ -1589,8 +1589,8 @@ ofs_ope_dump( const ofsOpe *ope )
 	gchar *sdope, *sdeffect;
 
 	getter = ofo_base_get_getter( OFO_BASE( ope->ope_template ));
-	sdope = my_date_to_str( &ope->dope, ofa_prefs_date_display( getter ));
-	sdeffect = my_date_to_str( &ope->deffect, ofa_prefs_date_display( getter ));
+	sdope = my_date_to_str( &ope->dope, ofa_prefs_date_get_display_format( getter ));
+	sdeffect = my_date_to_str( &ope->deffect, ofa_prefs_date_get_display_format( getter ));
 
 	g_debug( "%s: ope=%p, template=%s, ledger=%s, ledger_user_set=%s,"
 			" dope=%s, dope_user_set=%s, deffect=%s, deffect_user_set=%s,"

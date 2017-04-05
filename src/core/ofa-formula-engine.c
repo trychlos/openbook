@@ -36,7 +36,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-formula-engine.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-currency.h"
 
 /* private instance data
@@ -411,8 +411,8 @@ setup_engine( ofaFormulaEngine *self )
 
 	priv = ofa_formula_engine_get_instance_private( self );
 
-	priv->thousand_sep = g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter ));
-	priv->decimal_sep = g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter ));
+	priv->thousand_sep = g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter ));
+	priv->decimal_sep = g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter ));
 	priv->digits = HUB_DEFAULT_DECIMALS_AMOUNT;
 
 	priv->auto_eval = TRUE;

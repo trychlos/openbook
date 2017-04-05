@@ -42,6 +42,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-iproperties.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 
 #include "core/ofa-open-prefs.h"
 #include "core/ofa-open-prefs-bin.h"
@@ -73,10 +74,12 @@ typedef struct {
 	 */
 	GtkWidget                *p1_dnd_reorder_btn;
 	GtkWidget                *p1_pin_detach_btn;
-	GtkWidget                *p1_dnd_detach_btn;
 	GtkWidget                *p1_display_all_btn;
-	GtkWidget                *p1_display_errs_btn;
-	GtkCheckButton           *confirm_on_escape_btn;
+	GtkWidget                *p1_quit_on_escape_btn;
+	GtkWidget                *p1_confirm_on_escape_btn;
+	GtkWidget                *p1_confirm_on_cancel_btn;
+	GtkWidget                *p1_confirm_altf4_btn;
+	GtkWidget                *p1_confirm_quit_btn;
 
 	/* UI - Dossier page
 	 */
@@ -113,36 +116,9 @@ typedef struct {
 }
 	ofaPreferencesPrivate;
 
-#define SETTINGS_AMOUNT                               "UserAmount"
-#define SETTINGS_DATE                                 "UserDate"
-#define SETTINGS_REORDER                              "R"
-#define SETTINGS_DETACH                               "D"
+#define IPROPERTIES_PAGE                  "ofaIProperties"
 
-#define IPROPERTIES_PAGE                              "ofaIProperties"
-
-/* a cache for some often used preferences
- */
-static gboolean     st_date_prefs_set                 = FALSE;
-static myDateFormat st_date_display                   = 0;
-static myDateFormat st_date_check                     = 0;
-static myDateFormat st_date_overwrite                 = FALSE;
-static gboolean     st_amount_prefs_set               = FALSE;
-static gchar       *st_amount_decimal                 = NULL;
-static gchar       *st_amount_thousand                = NULL;
-static gboolean     st_amount_accept_dot              = FALSE;
-static gboolean     st_amount_accept_comma            = FALSE;
-
-static const gchar *st_dnd_main_tabs                  = "ofaPreferences-DndMainTabs";
-static const gchar *st_check_integrity_display        = "ofaPreferences-CheckIntegrityDisplay";
-static const gchar *st_assistant_quit_on_escape       = "AssistantQuitOnEscape";
-static const gchar *st_assistant_confirm_on_escape    = "AssistantConfirmOnEscape";
-static const gchar *st_assistant_confirm_on_cancel    = "AssistantConfirmOnCancel";
-static const gchar *st_appli_confirm_on_quit          = "ApplicationConfirmOnQuit";
-static const gchar *st_appli_confirm_on_altf4         = "ApplicationConfirmOnAltF4";
-static const gchar *st_account_prefs                  = "ofaPreferences-accounts";
-static const gchar *st_export_default_folder          = "ExportDefaultFolder";
-
-static const gchar *st_resource_ui                    = "/org/trychlos/openbook/core/ofa-preferences.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-preferences.ui";
 
 typedef gboolean ( *pfnPlugin )( ofaPreferences *, gchar **msgerr, ofaIProperties * );
 
@@ -175,17 +151,10 @@ static void     on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences
 static void     check_for_activable_dlg( ofaPreferences *self );
 static void     on_ok_clicked( ofaPreferences *self );
 static gboolean do_update_user_interface_page( ofaPreferences *self, gchar **msgerr );
-static gchar   *dnd_main_tabs_read_settings( ofaIGetter *getter, gboolean *have_pin );
-static void     dnd_main_tabs_write_settings( ofaPreferences *self );
-static void     check_integrity_display_read_settings( ofaIGetter *getter, gboolean *display_all );
-static void     check_integrity_display_write_settings( ofaPreferences *self );
-static gboolean is_willing_to_quit( void );
 static gboolean do_update_dossier_page( ofaPreferences *self, gchar **msgerr );
 static gboolean do_update_account_page( ofaPreferences *self, gchar **msgerr );
 static gboolean do_update_locales_page( ofaPreferences *self, gchar **msgerr );
 /*static void     error_decimal_sep( ofaPreferences *self );*/
-static void     setup_date_formats( ofaIGetter *getter );
-static void     setup_amount_formats( ofaIGetter *getter );
 static gboolean do_update_export_page( ofaPreferences *self, gchar **msgerr );
 static gboolean do_update_import_page( ofaPreferences *self, gchar **msgerr );
 static gboolean update_prefs_plugin( ofaPreferences *self, gchar **msgerr );
@@ -384,29 +353,27 @@ init_user_interface_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkWidget *button;
-	gboolean bvalue;
+	gboolean reorder, bvalue;
 
 	priv = ofa_preferences_get_instance_private( self );
 
 	/* reorder vs. detach main tabs */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-reorder" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
-	bvalue = ofa_prefs_dnd_reorder( priv->getter );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	reorder = ofa_prefs_mainbook_get_dnd_reorder( priv->getter );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), reorder );
 	priv->p1_dnd_reorder_btn = button;
 	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-pin-detach" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	bvalue = ofa_prefs_pin_detach( priv->getter );
+	bvalue = ofa_prefs_mainbook_get_with_detach_pin( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	priv->p1_pin_detach_btn = button;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-detach" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
-	bvalue = ofa_prefs_dnd_detach( priv->getter );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
-	priv->p1_dnd_detach_btn = button;
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !reorder );
 	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
 	on_dnd_main_tabs_toggled( GTK_TOGGLE_BUTTON( button ), self );
 
@@ -421,17 +388,17 @@ init_user_interface_page( ofaPreferences *self )
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-disp-errs" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
-	priv->p1_display_errs_btn = button;
 	g_signal_connect( button, "toggled", G_CALLBACK( on_display_all_toggled ), self );
 	on_display_all_toggled( GTK_TOGGLE_BUTTON( button ), self );
 
+	/* quitting an assistant */
 	/* priv->confirm_on_escape_btn is set before acting on
 	 *  quit-on-escape button as triggered signal use the variable */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-confirm-on-escape" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_assistant_confirm_on_escape( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
-	priv->confirm_on_escape_btn = GTK_CHECK_BUTTON( button );
+	priv->p1_confirm_on_escape_btn = button;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-quit-on-escape" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
@@ -439,21 +406,26 @@ init_user_interface_page( ofaPreferences *self )
 	bvalue = ofa_prefs_assistant_quit_on_escape( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	on_quit_on_escape_toggled( GTK_TOGGLE_BUTTON( button ), self );
+	priv->p1_quit_on_escape_btn = button;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-confirm-on-cancel" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_assistant_confirm_on_cancel( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	priv->p1_confirm_on_cancel_btn = button;
 
+	/* quitting the application */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-confirm-altf4" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_appli_confirm_on_altf4( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	priv->p1_confirm_altf4_btn = button;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-confirm-quit" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_appli_confirm_on_quit( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+	priv->p1_confirm_quit_btn = button;
 }
 
 static void
@@ -490,34 +462,34 @@ init_account_page( ofaPreferences *self )
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-delete-children" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	bvalue = ofa_prefs_account_delete_root_with_children( priv->getter );
+	bvalue = ofa_prefs_account_get_delete_with_children( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	priv->p3_delete_children_btn = button;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-settle-ctrl" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	bvalue = ofa_prefs_settle_warns_unless_ctrl( priv->getter );
+	bvalue = ofa_prefs_account_settle_warns_unless_ctrl( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	priv->p3_settle_ctrl_btn = button;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-settle-warns" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( button, "toggled", G_CALLBACK( on_settle_warns_toggled ), self );
-	bvalue = ofa_prefs_settle_warns_if_unbalanced( priv->getter );
+	bvalue = ofa_prefs_account_settle_warns_if_unbalanced( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	on_settle_warns_toggled( GTK_TOGGLE_BUTTON( button ), self );
 	priv->p3_settle_warns_btn = button;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-reconciliate-ctrl" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	bvalue = ofa_prefs_reconciliate_warns_unless_ctrl( priv->getter );
+	bvalue = ofa_prefs_account_reconcil_warns_unless_ctrl( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	priv->p3_reconciliate_ctrl_btn = button;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-reconciliate-warns" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( button, "toggled", G_CALLBACK( on_reconciliate_warns_toggled ), self );
-	bvalue = ofa_prefs_reconciliate_warns_if_unbalanced( priv->getter );
+	bvalue = ofa_prefs_account_reconcil_warns_if_unbalanced( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	on_reconciliate_warns_toggled( GTK_TOGGLE_BUTTON( button ), self );
 	priv->p3_reconciliate_warns_btn = button;
@@ -536,14 +508,14 @@ init_locales_page( ofaPreferences *self )
 	init_locale_date( self,
 			&priv->p4_display_combo,
 			"p4-display-label", "p4-display-parent",
-			ofa_prefs_date_display( priv->getter ));
+			ofa_prefs_date_get_display_format( priv->getter ));
 	g_signal_connect( priv->p4_display_combo, "changed", G_CALLBACK( on_display_date_changed ), self );
 	on_display_date_changed( GTK_COMBO_BOX( priv->p4_display_combo ), self );
 
 	init_locale_date( self,
 			&priv->p4_check_combo,
 			"p4-check-label",  "p4-check-parent",
-			ofa_prefs_date_check( priv->getter ));
+			ofa_prefs_date_get_check_format( priv->getter ));
 	g_signal_connect( priv->p4_check_combo, "changed", G_CALLBACK( on_check_date_changed ), self );
 	on_check_date_changed( GTK_COMBO_BOX( priv->p4_check_combo ), self );
 
@@ -551,7 +523,7 @@ init_locales_page( ofaPreferences *self )
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
 	priv->p4_date_over = check;
 	g_signal_connect( check, "toggled", G_CALLBACK( on_date_overwrite_toggled ), self );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_date_overwrite( priv->getter ));
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_date_get_overwrite( priv->getter ));
 	on_date_overwrite_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* decimal display */
@@ -561,7 +533,7 @@ init_locales_page( ofaPreferences *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_decimal_sep ));
-	my_decimal_combo_set_selected( priv->p4_decimal_sep, ofa_prefs_amount_decimal_sep( priv->getter ));
+	my_decimal_combo_set_selected( priv->p4_decimal_sep, ofa_prefs_amount_get_decimal_sep( priv->getter ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-decimal-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -572,7 +544,7 @@ init_locales_page( ofaPreferences *self )
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
 	priv->p4_accept_dot = check;
 	g_signal_connect( check, "toggled", G_CALLBACK( on_accept_dot_toggled ), self );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_accept_dot( priv->getter ));
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_get_accept_dot( priv->getter ));
 	on_accept_dot_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* accept comma decimal separator */
@@ -580,14 +552,14 @@ init_locales_page( ofaPreferences *self )
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
 	priv->p4_accept_comma = check;
 	g_signal_connect( check, "toggled", G_CALLBACK( on_accept_comma_toggled ), self );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_accept_comma( priv->getter ));
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_amount_get_accept_comma( priv->getter ));
 	on_accept_comma_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* thousand separator */
 	init_locale_sep( self,
 			&priv->p4_thousand_sep,
 			"p4-thousand-label", "p4-thousand-sep",
-			ofa_prefs_amount_thousand_sep( priv->getter ));
+			ofa_prefs_amount_get_thousand_sep( priv->getter ));
 }
 
 #if 0
@@ -665,9 +637,9 @@ init_export_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkWidget *target, *label;
-	gchar *str;
 	GtkSizeGroup *group, *group_bin;
 	ofaStreamFormat *format;
+	const gchar *cstr;
 
 	priv = ofa_preferences_get_instance_private( self );
 
@@ -687,11 +659,10 @@ init_export_page( ofaPreferences *self )
 	ofa_stream_format_bin_set_mode_sensitive( priv->export_settings, FALSE );
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p52-folder" ));
-	str = ofa_prefs_export_default_folder( priv->getter );
-	if( my_strlen( str )){
-		gtk_file_chooser_set_current_folder_uri( priv->p5_chooser, str );
+	cstr = ofa_prefs_export_get_default_folder( priv->getter );
+	if( my_strlen( cstr )){
+		gtk_file_chooser_set_current_folder_uri( priv->p5_chooser, cstr );
 	}
-	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p52-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -839,8 +810,7 @@ on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 	priv = ofa_preferences_get_instance_private( self );
 
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( priv->confirm_on_escape_btn ),
-			gtk_toggle_button_get_active( button ));
+			priv->p1_confirm_on_escape_btn, gtk_toggle_button_get_active( button ));
 }
 
 static void
@@ -996,366 +966,28 @@ static gboolean
 do_update_user_interface_page( ofaPreferences *self, gchar **msgerr )
 {
 	ofaPreferencesPrivate *priv;
-	myISettings *settings;
-	GtkWidget *button;
+	gboolean dnd_reorder, detach_pin, display_all, quit_on_escape, confirm_on_escape, confirm_on_cancel;
+	gboolean confirm_altf4, confirm_quit;
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	settings = ofa_igetter_get_user_settings( priv->getter );
+	dnd_reorder = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_dnd_reorder_btn ));
+	detach_pin = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_pin_detach_btn ));
+	ofa_prefs_mainbook_set_user_settings( priv->getter, dnd_reorder, detach_pin );
 
-	dnd_main_tabs_write_settings( self );
-	check_integrity_display_write_settings( self );
+	display_all = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_display_all_btn ));
+	ofa_prefs_check_integrity_set_user_settings( priv->getter, display_all );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-quit-on-escape" );
-	g_return_val_if_fail( button && GTK_IS_CHECK_BUTTON( button ), FALSE );
-	my_isettings_set_boolean(
-			settings, HUB_USER_SETTINGS_GROUP,
-			st_assistant_quit_on_escape,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
+	quit_on_escape = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_quit_on_escape_btn ));
+	confirm_on_escape = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_confirm_on_escape_btn ));
+	confirm_on_cancel = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_confirm_on_cancel_btn ));
+	ofa_prefs_assistant_set_user_settings( priv->getter, quit_on_escape, confirm_on_escape, confirm_on_cancel );
 
-	my_isettings_set_boolean(
-			settings, HUB_USER_SETTINGS_GROUP,
-			st_assistant_confirm_on_escape,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->confirm_on_escape_btn )));
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-confirm-on-cancel" );
-	g_return_val_if_fail( button && GTK_IS_CHECK_BUTTON( button ), FALSE );
-	my_isettings_set_boolean(
-			settings, HUB_USER_SETTINGS_GROUP,
-			st_assistant_confirm_on_cancel,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-confirm-altf4" );
-	g_return_val_if_fail( button && GTK_IS_CHECK_BUTTON( button ), FALSE );
-	my_isettings_set_boolean(
-			settings, HUB_USER_SETTINGS_GROUP,
-			st_appli_confirm_on_altf4,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-confirm-quit" );
-	g_return_val_if_fail( button && GTK_IS_CHECK_BUTTON( button ), FALSE );
-	my_isettings_set_boolean(
-			settings, HUB_USER_SETTINGS_GROUP,
-			st_appli_confirm_on_quit,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
+	confirm_altf4 = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_confirm_altf4_btn ));
+	confirm_quit = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_confirm_quit_btn ));
+	ofa_prefs_appli_set_user_settings( priv->getter, confirm_altf4, confirm_quit );
 
 	return( TRUE );
-}
-
-/**
- * ofa_prefs_dnd_reorder:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if the user can reorder the main tabs.
- */
-gboolean
-ofa_prefs_dnd_reorder( ofaIGetter *getter )
-{
-	gchar *str;
-	gboolean reorder;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	str = dnd_main_tabs_read_settings( getter, NULL );
-	reorder = ( my_collate( str, SETTINGS_REORDER ) == 0 );
-	g_free( str );
-
-	return( reorder );
-}
-
-/**
- * ofa_prefs_pin_detach:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if the user can detach the main tabs via a pin button.
- *
- * This option is only valid when the user has also chosen to be able to
- * reorder the tabs instead of DnD them.
- *
- * Defaults is %FALSE.
- */
-gboolean
-ofa_prefs_pin_detach( ofaIGetter *getter )
-{
-	gboolean have_pin;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	g_free( dnd_main_tabs_read_settings( getter, &have_pin ));
-
-	return( have_pin );
-}
-
-/**
- * ofa_prefs_dnd_detach:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if the user can detach the main tabs.
- */
-gboolean
-ofa_prefs_dnd_detach( ofaIGetter *getter )
-{
-	gchar *str;
-	gboolean detach;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	str = dnd_main_tabs_read_settings( getter, NULL );
-	detach = ( my_collate( str, SETTINGS_DETACH ) == 0 );
-	g_free( str );
-
-	return( detach );
-}
-
-/*
- * DndMainTabs settings: R(reorder) | D(detach); HavePinButton(b);
- * Defaults is Reorder
- */
-static gchar *
-dnd_main_tabs_read_settings( ofaIGetter *getter, gboolean *have_pin )
-{
-	myISettings *settings;
-	GList *strlist, *it;
-	const gchar *cstr;
-	gchar *str;
-
-	settings = ofa_igetter_get_user_settings( getter );
-
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_dnd_main_tabs );
-
-	it = strlist;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_collate( cstr, SETTINGS_REORDER ) != 0 && my_collate( cstr, SETTINGS_DETACH ) != 0 ){
-		str = g_strdup( SETTINGS_REORDER );
-	} else {
-		str = g_strdup( cstr );
-	}
-
-	if( have_pin ){
-		it = it ? it->next : NULL;
-		cstr = it ? ( const gchar * ) it->data : NULL;
-		*have_pin = my_utils_boolean_from_str( cstr );
-	}
-
-	my_isettings_free_string_list( settings, strlist );
-
-	return( str );
-}
-
-static void
-dnd_main_tabs_write_settings( ofaPreferences *self )
-{
-	ofaPreferencesPrivate *priv;
-	myISettings *settings;
-	gchar *str;
-
-	priv = ofa_preferences_get_instance_private( self );
-
-	str = g_strdup_printf( "%s;%s;",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_dnd_reorder_btn )) ? SETTINGS_REORDER : SETTINGS_DETACH,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_pin_detach_btn )) ? "True":"False" );
-
-	settings = ofa_igetter_get_user_settings( priv->getter );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_dnd_main_tabs, str );
-
-	g_free( str );
-}
-
-/**
- * ofa_prefs_check_integrity_get_display_all:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if we have to display all messages, %FALSE to display
- * only errors.
- */
-gboolean
-ofa_prefs_check_integrity_get_display_all( ofaIGetter *getter )
-{
-	gboolean display;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	display = FALSE;
-
-	check_integrity_display_read_settings( getter, &display );
-
-	return( display );
-}
-
-/*
- * CheckIntegrityDisplay settings: display_all;
- * Defaults is Reorder
- */
-static void
-check_integrity_display_read_settings( ofaIGetter *getter, gboolean *display_all )
-{
-	myISettings *settings;
-	GList *strlist, *it;
-	const gchar *cstr;
-
-	settings = ofa_igetter_get_user_settings( getter );
-
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_check_integrity_display );
-
-	it = strlist;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		*display_all = my_utils_boolean_from_str( cstr );
-	}
-
-	my_isettings_free_string_list( settings, strlist );
-}
-
-static void
-check_integrity_display_write_settings( ofaPreferences *self )
-{
-	ofaPreferencesPrivate *priv;
-	myISettings *settings;
-	gchar *str;
-
-	priv = ofa_preferences_get_instance_private( self );
-
-	str = g_strdup_printf( "%s;",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_display_all_btn )) ? "True":"False" );
-
-	settings = ofa_igetter_get_user_settings( priv->getter );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_check_integrity_display, str );
-
-	g_free( str );
-}
-
-/**
- * ofa_prefs_assistant_quit_on_escape:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if assistant can be quit on Escape key.
- */
-gboolean
-ofa_prefs_assistant_quit_on_escape( ofaIGetter *getter )
-{
-	myISettings *settings;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	settings = ofa_igetter_get_user_settings( getter );
-
-	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_assistant_quit_on_escape ));
-}
-
-/**
- * ofa_prefs_assistant_confirm_on_escape:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if confirmation is required when quitting an assistant
- * on Escape key.
- */
-gboolean
-ofa_prefs_assistant_confirm_on_escape( ofaIGetter *getter )
-{
-	myISettings *settings;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	settings = ofa_igetter_get_user_settings( getter );
-
-	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_assistant_confirm_on_escape ));
-}
-
-/**
- * ofa_prefs_assistant_confirm_on_cancel:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if confirmation is required when quitting an assistant
- * on Cancel key.
- */
-gboolean
-ofa_prefs_assistant_confirm_on_cancel( ofaIGetter *getter )
-{
-	myISettings *settings;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	settings = ofa_igetter_get_user_settings( getter );
-
-	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_assistant_confirm_on_cancel ));
-}
-
-/**
- * ofa_prefs_assistant_is_willing_to_quit:
- * @getter: a #ofaIGetter instance.
- * @keyval: the hit key.
- *
- * Returns: %TRUE if the assistant can quit.
- */
-gboolean
-ofa_prefs_assistant_is_willing_to_quit( ofaIGetter *getter, guint keyval )
-{
-	static const gchar *thisfn = "ofa_prefs_assistant_is_willing_to_quit";
-	gboolean ok_escape, ok_cancel;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	ok_escape = ( keyval == GDK_KEY_Escape &&
-					ofa_prefs_assistant_quit_on_escape( getter ) &&
-					(!ofa_prefs_assistant_confirm_on_escape( getter ) || is_willing_to_quit()));
-	g_debug( "%s: ok_escape=%s", thisfn, ok_escape ? "True":"False" );
-
-	ok_cancel = ( keyval == GDK_KEY_Cancel &&
-					(!ofa_prefs_assistant_confirm_on_cancel( getter ) || is_willing_to_quit()));
-	g_debug( "%s: ok_cancel=%s", thisfn, ok_cancel ? "True":"False" );
-
-	return( ok_escape || ok_cancel );
-}
-
-static gboolean
-is_willing_to_quit( void )
-{
-	gboolean ok;
-
-	ok = my_utils_dialog_question(
-			NULL,
-			_( "Are you sure you want to quit this assistant ?" ),
-			_( "_Quit" ));
-
-	return( ok );
-}
-
-/**
- * ofa_prefs_appli_confirm_on_altf4:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if a confirmation is required when quitting the
- * application on Alt+F4 key.
- */
-gboolean
-ofa_prefs_appli_confirm_on_altf4( ofaIGetter *getter )
-{
-	myISettings *settings;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	settings = ofa_igetter_get_user_settings( getter );
-
-	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_appli_confirm_on_altf4 ));
-}
-
-/**
- * ofa_prefs_appli_confirm_on_quit:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if a confirmation is required when quitting the
- * application.
- */
-gboolean
-ofa_prefs_appli_confirm_on_quit( ofaIGetter *getter )
-{
-	myISettings *settings;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	settings = ofa_igetter_get_user_settings( getter );
-
-	return( my_isettings_get_boolean( settings, HUB_USER_SETTINGS_GROUP, st_appli_confirm_on_quit ));
 }
 
 static gboolean
@@ -1380,468 +1012,50 @@ static gboolean
 do_update_account_page( ofaPreferences *self, gchar **msgerrr )
 {
 	ofaPreferencesPrivate *priv;
-	myISettings *settings;
-	gchar *str;
+	gboolean delete_with_children, settle_warns, settle_ctrl, concil_warns, concil_ctrl;
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	str = g_strdup_printf( "%s;%s;%s;%s;%s;",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_delete_children_btn )) ? "True":"False",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_settle_warns_btn )) ? "True":"False",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_settle_ctrl_btn )) ? "True":"False",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_reconciliate_warns_btn )) ? "True":"False",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_reconciliate_ctrl_btn )) ? "True":"False" );
+	delete_with_children = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_delete_children_btn ));
+	settle_warns = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_settle_warns_btn ));
+	settle_ctrl = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_settle_ctrl_btn ));
+	concil_warns = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_reconciliate_warns_btn ));
+	concil_ctrl = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p3_reconciliate_ctrl_btn ));
 
-	settings = ofa_igetter_get_user_settings( priv->getter );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs, str );
-	g_free( str );
+	ofa_prefs_account_set_user_settings( priv->getter,
+			delete_with_children, settle_warns, settle_ctrl, concil_warns, concil_ctrl );
 
 	return( TRUE );
-}
-
-/**
- * ofa_prefs_account_delete_root_with_child:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if deleting a root account also deletes its children.
- */
-gboolean
-ofa_prefs_account_delete_root_with_children( ofaIGetter *getter )
-{
-	myISettings *settings;
-	GList *strlist, *it;
-	const gchar *cstr;
-	gboolean b;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	settings = ofa_igetter_get_user_settings( getter );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs );
-
-	it = strlist;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	b = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
-	my_isettings_free_string_list( settings, strlist );
-
-	return( b );
-}
-
-/**
- * ofa_prefs_settle_warns_if_unbalanced:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if the user should be warned when about to settle
- * unbalanced entries.
- */
-gboolean
-ofa_prefs_settle_warns_if_unbalanced( ofaIGetter *getter )
-{
-	myISettings *settings;
-	GList *strlist, *it;
-	const gchar *cstr;
-	gboolean b;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	settings = ofa_igetter_get_user_settings( getter );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs );
-
-	/* first is delete_children */
-	it = strlist;
-
-	/* second is warns_if_unbalanced */
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	b = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : TRUE;
-	my_isettings_free_string_list( settings, strlist );
-
-	return( b );
-}
-
-/**
- * ofa_prefs_settle_warns_unless_ctrl:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if the user should be warned when about to settle
- * unbalanced entries, unless the <Ctrl> key is simultaneously pressed.
- */
-gboolean
-ofa_prefs_settle_warns_unless_ctrl( ofaIGetter *getter )
-{
-	myISettings *settings;
-	GList *strlist, *it;
-	const gchar *cstr;
-	gboolean b;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	settings = ofa_igetter_get_user_settings( getter );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs );
-
-	/* first is delete_children */
-	it = strlist;
-
-	/* second is warns_if_unbalanced */
-	it = it ? it->next : NULL;
-
-	/* third is warns_unless_ctrl */
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	b = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : TRUE;
-	my_isettings_free_string_list( settings, strlist );
-
-	return( b );
-}
-
-/**
- * ofa_prefs_reconciliate_warns_if_unbalanced:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if the user should be warned when about to reconciliate
- * unbalanced lines.
- */
-gboolean
-ofa_prefs_reconciliate_warns_if_unbalanced( ofaIGetter *getter )
-{
-	myISettings *settings;
-	GList *strlist, *it;
-	const gchar *cstr;
-	gboolean b;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	settings = ofa_igetter_get_user_settings( getter );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs );
-
-	/* first is delete_children */
-	it = strlist;
-
-	/* second is warns_if_unbalanced (settle) */
-	it = it ? it->next : NULL;
-
-	/* third is warns_unless_ctrl (settle) */
-	it = it ? it->next : NULL;
-
-	/* fourth is warns_if_unbalanced (reconciliate) */
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	b = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : TRUE;
-	my_isettings_free_string_list( settings, strlist );
-
-	return( b );
-}
-
-/**
- * ofa_prefs_reconciliate_warns_unless_ctrl:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: %TRUE if the user should be warned when about to reconciliate
- * unbalanced entries, unless the <Ctrl> key is simultaneously pressed.
- */
-gboolean
-ofa_prefs_reconciliate_warns_unless_ctrl( ofaIGetter *getter )
-{
-	myISettings *settings;
-	GList *strlist, *it;
-	const gchar *cstr;
-	gboolean b;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	settings = ofa_igetter_get_user_settings( getter );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_account_prefs );
-
-	/* first is delete_children */
-	it = strlist;
-
-	/* second is warns_if_unbalanced (settle) */
-	it = it ? it->next : NULL;
-
-	/* third is warns_unless_ctrl (settle) */
-	it = it ? it->next : NULL;
-
-	/* fourth is warns_if_unbalanced (reconciliate) */
-	it = it ? it->next : NULL;
-
-	/* fifth is warns_unless_ctrl (reconciliate) */
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	b = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : TRUE;
-	my_isettings_free_string_list( settings, strlist );
-
-	return( b );
 }
 
 static gboolean
 do_update_locales_page( ofaPreferences *self, gchar **msgerr )
 {
 	ofaPreferencesPrivate *priv;
-	myISettings *settings;
-	GList *list;
-	const gchar *cstr;
 	gchar *decimal_sep;
-	gchar *str;
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	settings = ofa_igetter_get_user_settings( priv->getter );
-
-	str = g_strdup_printf( "%d;%d;%s;",
+	ofa_prefs_date_set_user_settings( priv->getter,
 			my_date_combo_get_selected( priv->p4_display_combo ),
 			my_date_combo_get_selected( priv->p4_check_combo ),
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_date_over )) ? "True":"False" );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, SETTINGS_DATE, str );
-	g_free( str );
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_date_over )));
 
 	decimal_sep = my_decimal_combo_get_selected( priv->p4_decimal_sep );
-	list = g_list_append( NULL, decimal_sep );
-
-	cstr = gtk_entry_get_text( GTK_ENTRY( priv->p4_thousand_sep ));
-	list = g_list_append( list, g_strdup( cstr ));
-
-	str = g_strdup_printf( "%s",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_accept_dot )) ? "True" : "False" );
-	list = g_list_append( list, str );
-
-	str = g_strdup_printf( "%s",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_accept_comma )) ? "True" : "False" );
-	list = g_list_append( list, str );
-
-	my_isettings_set_string_list( settings, HUB_USER_SETTINGS_GROUP, SETTINGS_AMOUNT, list );
-	my_isettings_free_string_list( settings, list );
-
-	/* reinitialize the cache */
-	st_date_prefs_set = FALSE;
-	st_amount_prefs_set = FALSE;
+	ofa_prefs_amount_set_user_settings( priv->getter,
+			decimal_sep,
+			gtk_entry_get_text( GTK_ENTRY( priv->p4_thousand_sep )),
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_accept_dot )),
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_accept_comma )));
+	g_free( decimal_sep );
 
 	return( TRUE );
-}
-
-/**
- * ofa_prefs_date_display:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the prefered format for displaying the dates
- */
-myDateFormat
-ofa_prefs_date_display( ofaIGetter *getter )
-{
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), MY_DATE_YYMD );
-
-	if( !st_date_prefs_set ){
-		setup_date_formats( getter );
-	}
-
-	return( st_date_display );
-}
-
-/**
- * ofa_prefs_date_check:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the prefered format for visually checking the dates
- */
-myDateFormat
-ofa_prefs_date_check( ofaIGetter *getter )
-{
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), MY_DATE_YYMD );
-
-	if( !st_date_prefs_set ){
-		setup_date_formats( getter );
-	}
-
-	return( st_date_check );
-}
-
-/**
- * ofa_prefs_date_overwrite:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: whether the edition should start in overwrite mode.
- */
-gboolean
-ofa_prefs_date_overwrite( ofaIGetter *getter )
-{
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	if( !st_date_prefs_set ){
-		setup_date_formats( getter );
-	}
-
-	return( st_date_overwrite );
-}
-
-/*
- * settings = display_format(i); check_format(i); overwrite(b);
- */
-static void
-setup_date_formats( ofaIGetter *getter )
-{
-	myISettings *settings;
-	GList *strlist, *it;
-	const gchar *cstr;
-
-	settings = ofa_igetter_get_user_settings( getter );
-
-	/* have a suitable default value */
-	st_date_display = MY_DATE_DMYY;
-	st_date_check = MY_DATE_DMMM;
-	st_date_overwrite = FALSE;
-
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, SETTINGS_DATE );
-
-	it = strlist;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		st_date_display = atoi( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		st_date_check = atoi( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		st_date_overwrite = my_utils_boolean_from_str( cstr );
-	}
-
-	my_isettings_free_string_list( settings, strlist );
-	st_date_prefs_set = TRUE;
-}
-
-/**
- * ofa_prefs_amount_decimal_sep:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the prefered decimal separator (for display)
- *
- * The returned string should be g_free() by the caller.
- */
-const gchar *
-ofa_prefs_amount_decimal_sep( ofaIGetter *getter )
-{
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
-
-	if( !st_amount_prefs_set ){
-		setup_amount_formats( getter );
-	}
-
-	return( st_amount_decimal );
-}
-
-/**
- * ofa_prefs_amount_thousand_sep:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the prefered thousand separator (for display)
- *
- * The returned string should be g_free() by the caller.
- */
-const gchar *
-ofa_prefs_amount_thousand_sep( ofaIGetter *getter )
-{
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
-
-	if( !st_amount_prefs_set ){
-		setup_amount_formats( getter );
-	}
-
-	return( st_amount_thousand );
-}
-
-/**
- * ofa_prefs_amount_accept_dot:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: whether the user accepts dot as a decimal separator
- */
-gboolean
-ofa_prefs_amount_accept_dot( ofaIGetter *getter )
-{
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	if( !st_amount_prefs_set ){
-		setup_amount_formats( getter );
-	}
-
-	return( st_amount_accept_dot );
-}
-
-/**
- * ofa_prefs_amount_accept_comma:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: whether the user accepts comma as a decimal separator
- */
-gboolean
-ofa_prefs_amount_accept_comma( ofaIGetter *getter )
-{
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	if( !st_amount_prefs_set ){
-		setup_amount_formats( getter );
-	}
-
-	return( st_amount_accept_comma );
-}
-
-/*
- * settings = decimal_char;thousand_char;accept_dot;accept_comma;
- */
-static void
-setup_amount_formats( ofaIGetter *getter )
-{
-	myISettings *settings;
-	GList *strlist, *it;
-	const gchar *cstr;
-
-	/* have a suitable default value (fr locale) */
-	st_amount_decimal = g_strdup( "," );
-	st_amount_thousand = g_strdup( " " );
-	st_amount_accept_dot = TRUE;
-	st_amount_accept_comma = TRUE;
-
-	settings = ofa_igetter_get_user_settings( getter );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, SETTINGS_AMOUNT );
-
-	it = strlist;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		g_free( st_amount_decimal );
-		st_amount_decimal = g_strdup( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		g_free( st_amount_thousand );
-		st_amount_thousand = g_strdup( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		st_amount_accept_dot = my_utils_boolean_from_str( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		st_amount_accept_comma = my_utils_boolean_from_str( cstr );
-	}
-
-	my_isettings_free_string_list( settings, strlist );
-	st_amount_prefs_set = TRUE;
 }
 
 static gboolean
 do_update_export_page( ofaPreferences *self, gchar **msgerr )
 {
 	ofaPreferencesPrivate *priv;
-	myISettings *settings;
 	gchar *text;
 
 	priv = ofa_preferences_get_instance_private( self );
@@ -1850,31 +1064,11 @@ do_update_export_page( ofaPreferences *self, gchar **msgerr )
 
 	text = gtk_file_chooser_get_uri( priv->p5_chooser );
 	if( my_strlen( text )){
-		settings = ofa_igetter_get_user_settings( priv->getter );
-		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_export_default_folder, text );
+		ofa_prefs_export_set_user_settings( priv->getter, text );
 	}
 	g_free( text );
 
 	return( TRUE );
-}
-
-/**
- * ofa_prefs_export_default_folder:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the default export folder as a newly allocated string which
- * should be #g_free() by the caller.
- */
-gchar *
-ofa_prefs_export_default_folder( ofaIGetter *getter )
-{
-	myISettings *settings;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
-
-	settings = ofa_igetter_get_user_settings( getter );
-
-	return( my_isettings_get_string( settings, HUB_USER_SETTINGS_GROUP, st_export_default_folder ));
 }
 
 static gboolean

@@ -34,7 +34,7 @@
 
 #include "api/ofa-igetter.h"
 #include "api/ofa-idate-filter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 
 /* data associated to each implementor object
  */
@@ -373,10 +373,10 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->getter ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( sdata->getter ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_get_display_format( sdata->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( sdata->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->from_mandatory );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( sdata->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( sdata->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_from_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_from_focus_out ), filter );
@@ -394,10 +394,10 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( sdata->getter ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( sdata->getter ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_get_display_format( sdata->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( sdata->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->to_mandatory );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( sdata->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( sdata->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_to_focus_out ), filter );

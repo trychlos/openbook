@@ -40,7 +40,7 @@
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-base.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofs-ope.h"
@@ -382,7 +382,7 @@ init_dates( ofaRecurrentGenerate *self )
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p22-last-date" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-		str = my_date_to_str( last_date, ofa_prefs_date_display( priv->getter ));
+		str = my_date_to_str( last_date, ofa_prefs_date_get_display_format( priv->getter ));
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
@@ -404,10 +404,10 @@ init_dates( ofaRecurrentGenerate *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_get_display_format( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_date_changed ), self );
 
@@ -424,10 +424,10 @@ init_dates( ofaRecurrentGenerate *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_get_display_format( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end_date );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_date_changed ), self );
 }
@@ -670,8 +670,8 @@ confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date )
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
-	sbegin = my_date_to_str( &priv->begin_date, ofa_prefs_date_display( priv->getter ));
-	slast = my_date_to_str( last_date, ofa_prefs_date_display( priv->getter ));
+	sbegin = my_date_to_str( &priv->begin_date, ofa_prefs_date_get_display_format( priv->getter ));
+	slast = my_date_to_str( last_date, ofa_prefs_date_get_display_format( priv->getter ));
 
 	str = g_strdup_printf(
 			_( "Beginning date %s is less or equal to previous generation date %s.\n"

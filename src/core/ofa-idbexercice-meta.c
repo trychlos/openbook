@@ -36,7 +36,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 
 /* some data attached to each IDBExerciceMeta instance
  * we store here the data provided by the application
@@ -560,14 +560,14 @@ ofa_idbexercice_meta_get_label( const ofaIDBExerciceMeta *period )
 
 	begin = ofa_idbexercice_meta_get_begin_date( period );
 	if( my_date_is_valid( begin )){
-		sdate = my_date_to_str( begin, ofa_prefs_date_display( getter ));
+		sdate = my_date_to_str( begin, ofa_prefs_date_get_display_format( getter ));
 		g_string_append_printf( svalue, _( " from %s" ), sdate );
 		g_free( sdate );
 	}
 
 	end = ofa_idbexercice_meta_get_end_date( period );
 	if( my_date_is_valid( end )){
-		sdate = my_date_to_str( end, ofa_prefs_date_display( getter ));
+		sdate = my_date_to_str( end, ofa_prefs_date_get_display_format( getter ));
 		g_string_append_printf( svalue, _( " to %s" ), sdate );
 		g_free( sdate );
 	}

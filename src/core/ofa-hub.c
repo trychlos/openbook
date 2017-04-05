@@ -46,6 +46,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignalable.h"
 #include "api/ofa-openbook-props.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-class.h"
@@ -73,6 +74,7 @@ typedef struct {
 	GList                 *core_objects;
 	mySettings            *auth_settings;
 	mySettings            *dossier_settings;
+	ofaPrefs              *user_prefs;
 	mySettings            *user_settings;
 	ofaOpenbookProps      *openbook_props;
 	gchar                 *runtime_dir;
@@ -112,6 +114,7 @@ static ofaHub                *igetter_get_hub( const ofaIGetter *getter );
 static ofaOpenbookProps      *igetter_get_openbook_props( const ofaIGetter *getter );
 static const gchar           *igetter_get_runtime_dir( const ofaIGetter *getter );
 static ofaISignaler          *igetter_get_signaler( const ofaIGetter *getter );
+static ofaPrefs              *igetter_get_user_prefs( const ofaIGetter *getter );
 static myISettings           *igetter_get_user_settings( const ofaIGetter *getter );
 static GtkApplicationWindow  *igetter_get_main_window( const ofaIGetter *getter );
 static ofaIPageManager       *igetter_get_page_manager( const ofaIGetter *getter );
@@ -166,6 +169,7 @@ hub_dispose( GObject *instance )
 
 		g_clear_object( &priv->auth_settings );
 		g_clear_object( &priv->dossier_settings );
+		g_clear_object( &priv->user_prefs );
 		g_clear_object( &priv->user_settings );
 		g_clear_object( &priv->openbook_props );
 		g_clear_object( &priv->scope_mapper );
@@ -236,6 +240,7 @@ ofa_hub_new( void )
 	ofa_isignaler_init_signaling_system( OFA_ISIGNALER( hub ), OFA_IGETTER( hub ));
 
 	hub_setup_settings( hub );
+	priv->user_prefs = ofa_prefs_new( OFA_IGETTER( hub ));
 	priv->dossiers_collection = ofa_dossier_collection_new( OFA_IGETTER( hub ));
 	priv->openbook_props = ofa_openbook_props_new( OFA_IGETTER( hub ));
 	priv->scope_mapper = my_scope_mapper_new();
@@ -801,6 +806,7 @@ igetter_iface_init( ofaIGetterInterface *iface )
 	iface->get_openbook_props = igetter_get_openbook_props;
 	iface->get_runtime_dir = igetter_get_runtime_dir;
 	iface->get_signaler = igetter_get_signaler;
+	iface->get_user_prefs = igetter_get_user_prefs;
 	iface->get_user_settings = igetter_get_user_settings;
 
 	/* ui-related */
@@ -931,6 +937,16 @@ static ofaISignaler *
 igetter_get_signaler( const ofaIGetter *getter )
 {
 	return( OFA_ISIGNALER( igetter_get_hub( getter )));
+}
+
+static ofaPrefs *
+igetter_get_user_prefs( const ofaIGetter *getter )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( getter ));
+
+	return( priv->user_prefs );
 }
 
 static myISettings *

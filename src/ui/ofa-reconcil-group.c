@@ -36,7 +36,7 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -313,7 +313,7 @@ setup_ui( ofaReconcilGroup *self )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "value-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = my_date_to_str( ofo_concil_get_dval( priv->concil ), ofa_prefs_date_display( priv->getter ));
+	str = my_date_to_str( ofo_concil_get_dval( priv->concil ), ofa_prefs_date_get_display_format( priv->getter ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 }

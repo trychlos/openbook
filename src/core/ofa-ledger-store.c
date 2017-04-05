@@ -31,7 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
@@ -265,9 +265,9 @@ set_row_by_iter( ofaLedgerStore *self, const ofoLedger *ledger, GtkTreeIter *ite
 	priv = ofa_ledger_store_get_instance_private( self );
 
 	ofo_ledger_get_last_entry( ledger, &dentry );
-	sdentry = my_date_to_str( &dentry, ofa_prefs_date_display( priv->getter ));
+	sdentry = my_date_to_str( &dentry, ofa_prefs_date_get_display_format( priv->getter ));
 	dclose = ofo_ledger_get_last_close( ledger );
-	sdclose = my_date_to_str( dclose, ofa_prefs_date_display( priv->getter ));
+	sdclose = my_date_to_str( dclose, ofa_prefs_date_get_display_format( priv->getter ));
 	stamp  = my_stamp_to_str( ofo_ledger_get_upd_stamp( ledger ), MY_STAMP_DMYYHM );
 
 	notes = ofo_ledger_get_notes( ledger );

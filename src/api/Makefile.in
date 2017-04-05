@@ -462,6 +462,7 @@ api_include_HEADERS = \
 	ofa-page-prot.h										\
 	ofa-paimean-editable.h								\
 	ofa-preferences.h									\
+	ofa-prefs.h											\
 	ofa-render-page.h									\
 	ofa-stream-format.h									\
 	ofa-tree-store.h									\

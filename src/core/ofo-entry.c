@@ -45,7 +45,7 @@
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignalable.h"
 #include "api/ofa-isignaler.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -1839,8 +1839,8 @@ entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaIGetter *getter 
 		}
 
 		if( !is_valid ){
-			sdeffect = my_date_to_str( deffect, ofa_prefs_date_display( getter ));
-			sdmin = my_date_to_str( &min_deffect, ofa_prefs_date_display( getter ));
+			sdeffect = my_date_to_str( deffect, ofa_prefs_date_get_display_format( getter ));
+			sdmin = my_date_to_str( &min_deffect, ofa_prefs_date_get_display_format( getter ));
 			g_warning(
 					"%s: entry effect date %s is lesser than minimal allowed %s",
 					thisfn, sdeffect, sdmin );

@@ -39,7 +39,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-rate.h"
@@ -405,7 +405,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
@@ -413,7 +413,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 			entry, 1+COL_BEGIN, row, 1, 1 );
 
 	label = gtk_label_new( "" );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );
@@ -425,7 +425,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
@@ -433,7 +433,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 			entry, 1+COL_END, row, 1, 1 );
 
 	label = gtk_label_new( "" );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );
@@ -445,10 +445,10 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
-			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
-			ofa_prefs_amount_accept_dot( priv->getter ),
-			ofa_prefs_amount_accept_comma( priv->getter ),
+			g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter )),
+			g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter )),
+			ofa_prefs_amount_get_accept_dot( priv->getter ),
+			ofa_prefs_amount_get_accept_comma( priv->getter ),
 			HUB_DEFAULT_DECIMALS_RATE );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_rate_changed ), self );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );

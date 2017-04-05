@@ -39,7 +39,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"

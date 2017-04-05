@@ -43,7 +43,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignalable.h"
 #include "api/ofa-isignaler.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -831,7 +831,7 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 		}
 	}
 
-	str = my_date_to_str( dmax, ofa_prefs_date_display( ofo_base_get_hub( OFO_BASE( dossier ))));
+	str = my_date_to_str( dmax, ofa_prefs_date_get_display_format( ofo_base_get_hub( OFO_BASE( dossier ))));
 	g_debug( "%s: last_closed_exercice=%s", thisfn, str );
 	g_free( str );
 

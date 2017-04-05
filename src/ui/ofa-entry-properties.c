@@ -41,7 +41,7 @@
 #include "api/ofa-counter.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ope-template-editable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-concil.h"
 #include "api/ofo-currency.h"
@@ -367,9 +367,9 @@ setup_ui_properties( ofaEntryProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->dope );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 	priv->dope_entry = entry;
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_dope_changed ), self );
@@ -382,9 +382,9 @@ setup_ui_properties( ofaEntryProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-deffect-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->deffect );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 	priv->deffect_entry = entry;
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_deffect_changed ), self );
@@ -456,10 +456,10 @@ setup_ui_properties( ofaEntryProperties *self )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-amount-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
-			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
-			ofa_prefs_amount_accept_dot( priv->getter ),
-			ofa_prefs_amount_accept_comma( priv->getter ),
+			g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter )),
+			g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter )),
+			ofa_prefs_amount_get_accept_dot( priv->getter ),
+			ofa_prefs_amount_get_accept_comma( priv->getter ),
 			HUB_DEFAULT_DECIMALS_AMOUNT );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_amount_changed ), self );
 	priv->amount_entry = entry;

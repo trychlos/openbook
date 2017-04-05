@@ -38,7 +38,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idoc.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-ope-template.h"
 
 #include "ofa-recurrent-dbmodel.h"

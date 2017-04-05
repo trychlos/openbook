@@ -38,7 +38,7 @@
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-exercice-meta-bin.h"
@@ -254,8 +254,8 @@ setup_bin( ofaExerciceMetaBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-begin-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_get_display_format( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-begin-prompt" );
@@ -268,8 +268,8 @@ setup_bin( ofaExerciceMetaBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_get_display_format( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "emb-end-prompt" );

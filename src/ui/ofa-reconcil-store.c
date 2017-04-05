@@ -32,7 +32,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
@@ -388,8 +388,8 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 
 	priv = ofa_reconcil_store_get_instance_private( self );
 
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->getter ));
-	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->getter ));
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_get_display_format( priv->getter ));
+	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_get_display_format( priv->getter ));
 
 	cstr = ofo_entry_get_ref( entry );
 	cref = cstr ? cstr : "";
@@ -424,7 +424,7 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 	sconcnum = concilnum ? g_strdup_printf( "%lu", concilnum ) : g_strdup( "" );
 
 	dval = concil ? ofo_concil_get_dval( concil ) : NULL;
-	sconcdate = dval ? my_date_to_str( dval, ofa_prefs_date_display( priv->getter )) : g_strdup( "" );
+	sconcdate = dval ? my_date_to_str( dval, ofa_prefs_date_get_display_format( priv->getter )) : g_strdup( "" );
 
 	gtk_tree_store_set(
 				GTK_TREE_STORE( self ),
@@ -594,8 +594,8 @@ bat_set_row_by_iter( ofaReconcilStore *self, ofoBatLine *batline, GtkTreeIter *i
 
 	priv = ofa_reconcil_store_get_instance_private( self );
 
-	sdeff = my_date_to_str( ofo_bat_line_get_deffect( batline ), ofa_prefs_date_display( priv->getter ));
-	sdope = my_date_to_str( ofo_bat_line_get_dope( batline ), ofa_prefs_date_display( priv->getter ));
+	sdeff = my_date_to_str( ofo_bat_line_get_deffect( batline ), ofa_prefs_date_get_display_format( priv->getter ));
+	sdope = my_date_to_str( ofo_bat_line_get_dope( batline ), ofa_prefs_date_get_display_format( priv->getter ));
 
 	bat_get_amount_strs( self, batline, &sdeb, &scre );
 
@@ -610,7 +610,7 @@ bat_set_row_by_iter( ofaReconcilStore *self, ofoBatLine *batline, GtkTreeIter *i
 	sconcnum = concilnum ? g_strdup_printf( "%lu", concilnum ) : g_strdup( "" );
 
 	dval = concil ? ofo_concil_get_dval( concil ) : NULL;
-	sconcdate = dval ? my_date_to_str( dval, ofa_prefs_date_display( priv->getter )) : g_strdup( "" );
+	sconcdate = dval ? my_date_to_str( dval, ofa_prefs_date_get_display_format( priv->getter )) : g_strdup( "" );
 
 	bat_id = ofo_bat_line_get_bat_id( batline );
 	bat = ofo_bat_get_by_id( priv->getter, bat_id );
@@ -777,7 +777,7 @@ concil_set_row_with_data( ofaReconcilStore *self, ofxCounter id, const GDate *da
 
 	priv = ofa_reconcil_store_get_instance_private( self );
 
-	srappro = date ? my_date_to_str( date, ofa_prefs_date_display( priv->getter )) : g_strdup( "" );
+	srappro = date ? my_date_to_str( date, ofa_prefs_date_get_display_format( priv->getter )) : g_strdup( "" );
 	snum = id > 0 ? g_strdup_printf( "%lu", id ) : g_strdup( "" );
 
 	/* g_debug( "concil_number=%s", snum ); */

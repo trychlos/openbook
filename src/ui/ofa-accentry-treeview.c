@@ -38,7 +38,7 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat-line.h"
@@ -566,10 +566,10 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			cmp = my_collate( kunra, kunrb );
 			break;
 		case ACCENTRY_COL_DOPE:
-			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case ACCENTRY_COL_DEFFECT:
-			cmp = my_date_compare_by_str( deffa, deffb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( deffa, deffb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case ACCENTRY_COL_REF:
 			cmp = my_collate( refa, refb );

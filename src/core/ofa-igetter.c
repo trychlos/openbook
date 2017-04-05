@@ -468,6 +468,31 @@ ofa_igetter_get_signaler( const ofaIGetter *getter )
 }
 
 /**
+ * ofa_igetter_get_user_prefs:
+ * @getter: this #ofaIGetter instance.
+ *
+ * Returns: the #ofaPrefs object which maintains the user preferences.
+ *
+ * The returned reference is owned by the @getter instance, and should
+ * not be released by the caller.
+ */
+ofaPrefs *
+ofa_igetter_get_user_prefs( const ofaIGetter *getter )
+{
+	static const gchar *thisfn = "ofa_igetter_get_user_prefs";
+
+	//g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+
+	if( OFA_IGETTER_GET_INTERFACE( getter )->get_user_prefs ){
+		return( OFA_IGETTER_GET_INTERFACE( getter )->get_user_prefs( getter ));
+	}
+
+	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_user_prefs()' method",
+			thisfn, G_OBJECT_TYPE_NAME( getter ));
+	return( NULL );
+}
+
+/**
  * ofa_igetter_get_user_settings:
  * @getter: this #ofaIGetter instance.
  *

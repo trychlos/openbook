@@ -44,6 +44,7 @@
 #include "api/ofa-irecover.h"
 #include "api/ofa-isignaler.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 
 #include "ui/ofa-about.h"
 #include "ui/ofa-application.h"

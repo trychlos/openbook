@@ -337,8 +337,6 @@
 1418 2017- 3-24 ope template has a prof. share (quote-part pro)
      2017- 3-25 dbms is updated
 
-1424 2017- 3-31 ofaPreferences: an object should be managed as ofoCounters
-
 1435
 
 -----------------------------------------------------------------------
@@ -963,6 +961,9 @@
 1423 2017- 3-31 ofoCounters should be managed by the myICollector
                 + let ofoCounter class get itself via getter
      2017- 3-31 done
+
+1424 2017- 3-31 ofaPreferences: an object should be managed as ofoCounters
+     2017- 4- 4 done
 
 1425 2017- 3-31 ReconciliationPage: expand hierarchy action should only
                 be enabled when there is one hierarchy

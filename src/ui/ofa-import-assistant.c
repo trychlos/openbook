@@ -47,7 +47,7 @@
 #include "api/ofa-iimportable.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-import-duplicate.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-account.h"

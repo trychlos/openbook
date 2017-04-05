@@ -38,7 +38,7 @@
 #include "api/ofa-irenderable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -592,8 +592,8 @@ irenderable_draw_page_header_title( ofaIRenderable *instance )
 	/* line 2 - From date xxx to date xxx */
 	stitle = g_string_new( "" );
 
-	sfrom_date = my_date_to_str( &priv->from_date, ofa_prefs_date_display( priv->getter ));
-	sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_display( priv->getter ));
+	sfrom_date = my_date_to_str( &priv->from_date, ofa_prefs_date_get_display_format( priv->getter ));
+	sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_get_display_format( priv->getter ));
 	if( my_date_is_valid( &priv->from_date )){
 		g_string_append_printf( stitle, _( "From %s" ), sfrom_date );
 		if( my_date_is_valid( &priv->to_date )){
@@ -641,7 +641,7 @@ irenderable_draw_header_column_names( ofaIRenderable *instance )
 			priv->body_begin_sens_ltab, y,
 			_( "Solde au" ), PANGO_ALIGN_RIGHT );
 
-	sdate = my_date_to_str( &priv->from_date, ofa_prefs_date_display( priv->getter ));
+	sdate = my_date_to_str( &priv->from_date, ofa_prefs_date_get_display_format( priv->getter ));
 	ofa_irenderable_set_text( instance,
 			priv->body_begin_sens_ltab, y+text_height,
 			sdate, PANGO_ALIGN_RIGHT );
@@ -659,7 +659,7 @@ irenderable_draw_header_column_names( ofaIRenderable *instance )
 			priv->body_end_sens_ltab, y,
 			_( "Solde au" ), PANGO_ALIGN_RIGHT );
 
-	sdate = my_date_to_str( &priv->to_date, ofa_prefs_date_display( priv->getter ));
+	sdate = my_date_to_str( &priv->to_date, ofa_prefs_date_get_display_format( priv->getter ));
 	ofa_irenderable_set_text( instance,
 			priv->body_end_sens_ltab, y+text_height,
 			sdate, PANGO_ALIGN_RIGHT );

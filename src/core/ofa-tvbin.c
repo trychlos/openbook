@@ -38,7 +38,7 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofa-tvbin.h"
 
 /* private instance data
@@ -1082,10 +1082,10 @@ ofa_tvbin_add_column_amount( ofaTVBin *bin, gint column_id, const gchar *header,
 	gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
 
 	my_double_renderer_init( cell,
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
-			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
-			ofa_prefs_amount_accept_dot( priv->getter ),
-			ofa_prefs_amount_accept_comma( priv->getter ),
+			g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter )),
+			g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter )),
+			ofa_prefs_amount_get_accept_dot( priv->getter ),
+			ofa_prefs_amount_get_accept_comma( priv->getter ),
 			HUB_DEFAULT_DECIMALS_AMOUNT );
 
 	column = gtk_tree_view_column_new_with_attributes(

@@ -38,7 +38,7 @@
 #include "api/ofa-irenderable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
@@ -548,7 +548,7 @@ irenderable_draw_page_header_title( ofaIRenderable *instance )
 	y += height;
 
 	/* line 3 - reconciliation date */
-	str = my_date_to_str( &priv->arg_date, ofa_prefs_date_display( priv->getter ));
+	str = my_date_to_str( &priv->arg_date, ofa_prefs_date_get_display_format( priv->getter ));
 	height = ofa_irenderable_set_text( instance, priv->render_width/2, y, str, PANGO_ALIGN_CENTER );
 	g_free( str );
 	y += height;
@@ -686,7 +686,7 @@ draw_line_entry( ofaIRenderable *instance, ofoEntry *entry )
 
 	deffect = ofo_entry_get_deffect( entry );
 	my_date_set_from_date( &priv->current_date, deffect );
-	str = my_date_to_str( deffect, ofa_prefs_date_display( priv->getter ));
+	str = my_date_to_str( deffect, ofa_prefs_date_get_display_format( priv->getter ));
 	ofa_irenderable_set_text( instance,
 			priv->body_effect_ltab, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
@@ -756,7 +756,7 @@ draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline )
 
 	deffect = ofo_bat_line_get_deffect( batline );
 	my_date_set_from_date( &priv->current_date, deffect );
-	str = my_date_to_str( deffect, ofa_prefs_date_display( priv->getter ));
+	str = my_date_to_str( deffect, ofa_prefs_date_get_display_format( priv->getter ));
 	ofa_irenderable_set_text( instance, priv->body_effect_ltab, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
 
@@ -829,7 +829,7 @@ draw_top_bottom_summary( ofaIRenderable *instance, const GDate *date, const gcha
 
 	ofa_irenderable_set_font( instance, font );
 
-	sdate = my_date_to_str( date, ofa_prefs_date_display( priv->getter ));
+	sdate = my_date_to_str( date, ofa_prefs_date_get_display_format( priv->getter ));
 	str_solde = account_solde_to_str( OFA_RECONCIL_RENDER( instance ), priv->current_solde );
 	str = g_strdup_printf( _( "Account solde on %s is %s" ), sdate, str_solde );
 
@@ -887,7 +887,7 @@ irenderable_draw_last_summary( ofaIRenderable *instance )
 
 	ofa_irenderable_set_font( instance, ofa_irenderable_get_summary_font( instance, 0 ));
 
-	sdate = my_date_to_str( &priv->current_date, ofa_prefs_date_display( priv->getter ));
+	sdate = my_date_to_str( &priv->current_date, ofa_prefs_date_get_display_format( priv->getter ));
 	str_amount = account_solde_to_str( OFA_RECONCIL_RENDER( instance ), priv->current_solde );
 
 	str = g_strdup_printf( _( "Reconciliated account solde on %s is %s" ), sdate, str_amount );
@@ -934,7 +934,7 @@ irenderable_draw_last_summary( ofaIRenderable *instance )
 
 		bat_str = g_string_new( "" );
 
-		sdate = my_date_to_str( bat_end, ofa_prefs_date_display( priv->getter ));
+		sdate = my_date_to_str( bat_end, ofa_prefs_date_get_display_format( priv->getter ));
 		str_amount = ofa_amount_to_str( bat_solde, priv->currency, priv->getter );
 		g_string_append_printf( bat_str, _( "Bank solde on %s is %s" ), sdate, str_amount );
 		g_free( str_amount );

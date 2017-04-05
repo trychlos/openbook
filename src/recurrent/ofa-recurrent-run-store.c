@@ -32,7 +32,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-counter.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 
 #include "recurrent/ofa-recurrent-run-store.h"
 #include "recurrent/ofo-recurrent-model.h"
@@ -312,7 +312,7 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 	model = ofo_recurrent_model_get_by_mnemo( priv->getter, cmnemo );
 	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 
-	sdate = my_date_to_str( ofo_recurrent_run_get_date( run ), ofa_prefs_date_display( priv->getter ));
+	sdate = my_date_to_str( ofo_recurrent_run_get_date( run ), ofa_prefs_date_get_display_format( priv->getter ));
 
 	status = ofo_recurrent_run_get_status( run );
 	cstatus = ofo_recurrent_run_status_get_label( status );

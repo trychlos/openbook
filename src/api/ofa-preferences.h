@@ -45,8 +45,6 @@
 
 #include <gtk/gtk.h>
 
-#include "my/my-date.h"
-
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-extender-module.h"
 
@@ -76,42 +74,6 @@ GType        ofa_preferences_get_type                   ( void ) G_GNUC_CONST;
 void         ofa_preferences_run                        ( ofaIGetter *getter,
 																GtkWindow *parent,
 																ofaExtenderModule *plugin );
-
-/* these are helpers globally available
- */
-gboolean     ofa_prefs_dnd_reorder                      ( ofaIGetter *getter );
-gboolean     ofa_prefs_pin_detach                       ( ofaIGetter *getter );
-gboolean     ofa_prefs_dnd_detach                       ( ofaIGetter *getter );
-
-gboolean     ofa_prefs_check_integrity_get_display_all  ( ofaIGetter *getter );
-void         ofa_prefs_check_integrity_set_display_all  ( ofaIGetter *getter, gboolean display );
-
-gboolean     ofa_prefs_assistant_quit_on_escape         ( ofaIGetter *getter );
-gboolean     ofa_prefs_assistant_confirm_on_escape      ( ofaIGetter *getter );
-gboolean     ofa_prefs_assistant_confirm_on_cancel      ( ofaIGetter *getter );
-gboolean     ofa_prefs_assistant_is_willing_to_quit     ( ofaIGetter *getter, guint keyval );
-
-gboolean     ofa_prefs_appli_confirm_on_altf4           ( ofaIGetter *getter );
-gboolean     ofa_prefs_appli_confirm_on_quit            ( ofaIGetter *getter );
-
-gboolean     ofa_prefs_account_delete_root_with_children( ofaIGetter *getter );
-
-gboolean     ofa_prefs_settle_warns_if_unbalanced       ( ofaIGetter *getter );
-gboolean     ofa_prefs_settle_warns_unless_ctrl         ( ofaIGetter *getter );
-
-gboolean     ofa_prefs_reconciliate_warns_if_unbalanced ( ofaIGetter *getter );
-gboolean     ofa_prefs_reconciliate_warns_unless_ctrl   ( ofaIGetter *getter );
-
-myDateFormat ofa_prefs_date_display                     ( ofaIGetter *getter );
-myDateFormat ofa_prefs_date_check                       ( ofaIGetter *getter );
-gboolean     ofa_prefs_date_overwrite                   ( ofaIGetter *getter );
-
-const gchar *ofa_prefs_amount_decimal_sep               ( ofaIGetter *getter );
-const gchar *ofa_prefs_amount_thousand_sep              ( ofaIGetter *getter );
-gboolean     ofa_prefs_amount_accept_dot                ( ofaIGetter *getter );
-gboolean     ofa_prefs_amount_accept_comma              ( ofaIGetter *getter );
-
-gchar       *ofa_prefs_export_default_folder            ( ofaIGetter *getter );
 
 G_END_DECLS
 

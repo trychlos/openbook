@@ -38,7 +38,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 
 #include "ofa-recurrent-run-store.h"
 #include "ofa-recurrent-run-treeview.h"
@@ -820,7 +820,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			cmp = my_collate( labela, labelb );
 			break;
 		case REC_RUN_COL_DATE:
-			cmp = my_date_compare_by_str( datea, dateb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( datea, dateb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case REC_RUN_COL_STATUS:
 			cmp = my_collate( statusa, statusb );

@@ -35,7 +35,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-counter.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -288,13 +288,13 @@ set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat )
 	sid = ofa_counter_to_str( ofo_bat_get_id( bat ), priv->getter );
 	date = ofo_bat_get_begin_date( bat );
 	if( my_date_is_valid( date )){
-		sbegin = my_date_to_str( date, ofa_prefs_date_display( priv->getter ));
+		sbegin = my_date_to_str( date, ofa_prefs_date_get_display_format( priv->getter ));
 	} else {
 		sbegin = g_strdup( "" );
 	}
 	date = ofo_bat_get_end_date( bat );
 	if( my_date_is_valid( date )){
-		send = my_date_to_str( date, ofa_prefs_date_display( priv->getter ));
+		send = my_date_to_str( date, ofa_prefs_date_get_display_format( priv->getter ));
 	} else {
 		send = g_strdup( "" );
 	}

@@ -59,6 +59,7 @@
 #include "api/ofa-ipage-manager-def.h"
 #include "api/ofa-isignaler.h"
 #include "api/ofa-openbook-props-def.h"
+#include "api/ofa-prefs-def.h"
 
 G_BEGIN_DECLS
 
@@ -86,6 +87,7 @@ typedef struct _ofaIGetter                    ofaIGetter;
  * @get_openbook_props: [should]: return the #ofaOpenbookProps instance.
  * @get_runtime_dir: [should]: return the running directory.
  * @get_signaler: [should]: return the #ofaISignaler instance.
+ * @get_user_prefs: [should]: return the user preferences.
  * @get_user_settings: [should]: return the user settings.
  * @get_main_window: [should]: return the #ofaMainWindow instance.
  * @get_page_manager: [should]: return the #ofaIPageManager instance.
@@ -235,6 +237,16 @@ typedef struct {
 	ofaISignaler *          ( *get_signaler )           ( const ofaIGetter *getter );
 
 	/**
+	 * get_user_prefs:
+	 * @getter: this #ofaIGetter getter.
+	 *
+	 * Returns: the #ofaPrefs objects which maintains the user preferences.
+	 *
+	 * Since: version 1
+	 */
+	ofaPrefs *              ( *get_user_prefs )         ( const ofaIGetter *getter );
+
+	/**
 	 * get_user_settings:
 	 * @getter: this #ofaIGetter getter.
 	 *
@@ -328,6 +340,8 @@ ofaOpenbookProps      *ofa_igetter_get_openbook_props        ( const ofaIGetter 
 const gchar           *ofa_igetter_get_runtime_dir           ( const ofaIGetter *getter );
 
 ofaISignaler          *ofa_igetter_get_signaler              ( const ofaIGetter *getter );
+
+ofaPrefs              *ofa_igetter_get_user_prefs            ( const ofaIGetter *getter );
 
 myISettings           *ofa_igetter_get_user_settings         ( const ofaIGetter *getter );
 

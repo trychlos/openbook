@@ -75,6 +75,7 @@
    - ofaBatLineProperties: new class.
    - ofaIRenderer: new interface.
    - ofaOperationGroup: new class.
+   - ofaPrefs: new class (todo #1424).
    - ofaSettlementGroup: new class.
    - ofaUnreconcilPage: new class.
    - ofaUnsettledPage: new class.

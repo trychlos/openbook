@@ -38,7 +38,7 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-currency.h"
@@ -750,10 +750,10 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 
 	switch( column_id ){
 		case ENTRY_COL_DOPE:
-			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case ENTRY_COL_DEFFECT:
-			cmp = my_date_compare_by_str( deffa, deffb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( deffa, deffb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case ENTRY_COL_LABEL:
 			cmp = my_collate( labela, labelb );
@@ -804,7 +804,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			cmp = ofa_itvsortable_sort_str_int( concilnuma, concilnumb );
 			break;
 		case ENTRY_COL_CONCIL_DATE:
-			cmp = my_date_compare_by_str( concildatea, concildateb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( concildatea, concildateb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case ENTRY_COL_STATUS:
 			cmp = ofa_itvsortable_sort_str_int( statusa, statusb );

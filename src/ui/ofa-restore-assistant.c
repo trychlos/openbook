@@ -47,7 +47,7 @@
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbsuperuser.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-exemeta.h"
 

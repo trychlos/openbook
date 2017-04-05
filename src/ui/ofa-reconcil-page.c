@@ -48,7 +48,7 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
@@ -1191,10 +1191,10 @@ setup_manual_rappro( ofaReconcilPage *self, GtkContainer *parent )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->date_concil ));
-	my_date_editable_set_entry_format( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_display( priv->getter ));
-	my_date_editable_set_label_format( GTK_EDITABLE( priv->date_concil ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_get_display_format( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->date_concil ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( priv->date_concil ), &priv->dconcil );
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( priv->date_concil, "changed", G_CALLBACK( concil_date_on_changed ), self );
 }
@@ -2125,8 +2125,8 @@ do_reconciliate( ofaReconcilPage *self )
 	/* ask for a user confirmation when amounts are not balanced
 	 *  (and Ctrl key is not pressed) */
 	if( !ofs_currency_is_balanced( &scur ) &&
-			( ofa_prefs_reconciliate_warns_if_unbalanced( priv->getter ) &&
-			( !ofa_prefs_reconciliate_warns_unless_ctrl( priv->getter ) || !priv->ctrl_pressed ))){
+			( ofa_prefs_account_reconcil_warns_if_unbalanced( priv->getter ) &&
+			( !ofa_prefs_account_reconcil_warns_unless_ctrl( priv->getter ) || !priv->ctrl_pressed ))){
 		if( !do_reconciliate_user_confirm( self, scur.debit, scur.credit )){
 			return;
 		}
@@ -3157,7 +3157,7 @@ read_settings( ofaReconcilPage *self )
 	if( my_strlen( cstr )){
 		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
 		if( my_date_is_valid( &date )){
-			sdate = my_date_to_str( &date, ofa_prefs_date_display( priv->getter ));
+			sdate = my_date_to_str( &date, ofa_prefs_date_get_display_format( priv->getter ));
 			gtk_entry_set_text( priv->date_concil, sdate );
 			g_free( sdate );
 		}
@@ -3187,7 +3187,7 @@ write_settings( ofaReconcilPage *self )
 	account = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
 
 	sdate = gtk_entry_get_text( priv->date_concil );
-	my_date_set_from_str( &date, sdate, ofa_prefs_date_display( priv->getter ));
+	my_date_set_from_str( &date, sdate, ofa_prefs_date_get_display_format( priv->getter ));
 	if( my_date_is_valid( &date )){
 		date_sql = my_date_to_str( &date, MY_DATE_SQL );
 	} else {

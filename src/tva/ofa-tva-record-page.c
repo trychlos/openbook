@@ -38,7 +38,7 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-dossier.h"
 
 #include "tva/ofa-tva-record-page.h"
@@ -429,7 +429,7 @@ delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
-	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display( priv->getter ));
+	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_get_display_format( priv->getter ));
 	msg = g_strdup_printf( _( "Are you sure you want delete the %s at %s TVA declaration ?" ),
 				ofo_tva_record_get_mnemo( record ), send );
 
@@ -471,7 +471,7 @@ validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
-	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display( priv->getter ));
+	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_get_display_format( priv->getter ));
 	msg = g_strdup_printf( _( "Are you sure you want validate the %s at %s TVA declaration ?" ),
 				ofo_tva_record_get_mnemo( record ), send );
 

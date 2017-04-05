@@ -43,7 +43,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-counters.h"
 #include "api/ofo-dossier.h"
@@ -551,10 +551,10 @@ init_properties_page( ofaDossierProperties *self )
 	my_date_set_from_date( &priv->begin, ofo_dossier_get_exe_begin( priv->dossier ));
 	priv->begin_empty = !my_date_is_valid( &priv->begin );
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_get_display_format( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
 
@@ -579,10 +579,10 @@ init_properties_page( ofaDossierProperties *self )
 	my_date_set_from_date( &priv->end, ofo_dossier_get_exe_end( priv->dossier ));
 	priv->end_empty = !my_date_is_valid( &priv->end );
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_display( priv->getter ));
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( entry ), ofa_prefs_date_get_display_format( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end );
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
 
@@ -593,7 +593,7 @@ init_properties_page( ofaDossierProperties *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	last_closed = ofo_dossier_get_last_closing_date( priv->dossier );
-	str = my_date_is_valid( last_closed ) ? my_date_to_str( last_closed, ofa_prefs_date_display( priv->getter )) : NULL;
+	str = my_date_is_valid( last_closed ) ? my_date_to_str( last_closed, ofa_prefs_date_get_display_format( priv->getter )) : NULL;
 	gtk_label_set_text( GTK_LABEL( label ), str ? str : "" );
 	g_free( str );
 
@@ -620,7 +620,7 @@ init_exercice_page( ofaDossierProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-exe-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	last_end = ofo_dossier_get_prevexe_end( priv->dossier );
-	str = my_date_to_str( last_end, ofa_prefs_date_display( priv->getter ));
+	str = my_date_to_str( last_end, ofa_prefs_date_get_display_format( priv->getter ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
@@ -1028,7 +1028,7 @@ is_dialog_valid( ofaDossierProperties *self )
 			return( FALSE );
 
 		} else if( my_date_is_valid( &priv->min_end ) && my_date_compare( &priv->min_end, &priv->end ) >=0 ){
-			sdate = my_date_to_str( &priv->min_end, ofa_prefs_date_display( priv->getter ));
+			sdate = my_date_to_str( &priv->min_end, ofa_prefs_date_get_display_format( priv->getter ));
 			msg = g_strdup_printf( _( "Invalid end of the exercice before or equal to the ledger last closure %s" ), sdate );
 			set_msgerr( self, msg, MSG_ERROR );
 			g_free( msg );

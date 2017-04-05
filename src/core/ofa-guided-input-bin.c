@@ -40,7 +40,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-paimean-editable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-counters.h"
 #include "api/ofo-currency.h"
@@ -464,9 +464,9 @@ setup_dialog( ofaGuidedInputBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->dope_entry ));
-	my_date_editable_set_label_format( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->dope_entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->dope_entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( priv->dope_entry, "changed", G_CALLBACK( on_dope_changed ), self );
 
@@ -483,9 +483,9 @@ setup_dialog( ofaGuidedInputBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->deffect_entry ));
-	my_date_editable_set_label_format( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_check( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
 	my_date_editable_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->deffect_entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->deffect_entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( priv->deffect_entry, "focus-in-event", G_CALLBACK( on_deffect_focus_in ), self );
 	g_signal_connect( priv->deffect_entry, "focus-out-event", G_CALLBACK( on_deffect_focus_out ), self );
@@ -711,10 +711,10 @@ row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 
 		if( col_def->is_double ){
 			my_double_editable_init_ex( GTK_EDITABLE( widget ),
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
-					ofa_prefs_amount_accept_dot( priv->getter ),
-					ofa_prefs_amount_accept_comma( priv->getter ),
+					g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter )),
+					g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter )),
+					ofa_prefs_amount_get_accept_dot( priv->getter ),
+					ofa_prefs_amount_get_accept_comma( priv->getter ),
 					HUB_DEFAULT_DECIMALS_AMOUNT );
 			my_double_editable_set_changed_cb(
 					GTK_EDITABLE( widget ), G_CALLBACK( on_entry_changed ), self );
@@ -1626,10 +1626,10 @@ add_total_diff_lines( ofaGuidedInputBin *self, gint row )
 
 	entry = gtk_entry_new();
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
-			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
-			ofa_prefs_amount_accept_dot( priv->getter ),
-			ofa_prefs_amount_accept_comma( priv->getter ),
+			g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter )),
+			g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter )),
+			ofa_prefs_amount_get_accept_dot( priv->getter ),
+			ofa_prefs_amount_get_accept_comma( priv->getter ),
 			HUB_DEFAULT_DECIMALS_AMOUNT );
 	gtk_widget_set_can_focus( entry, FALSE );
 	gtk_widget_set_margin_top( entry, TOTAUX_TOP_MARGIN );
@@ -1639,10 +1639,10 @@ add_total_diff_lines( ofaGuidedInputBin *self, gint row )
 
 	entry = gtk_entry_new();
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
-			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
-			ofa_prefs_amount_accept_dot( priv->getter ),
-			ofa_prefs_amount_accept_comma( priv->getter ),
+			g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter )),
+			g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter )),
+			ofa_prefs_amount_get_accept_dot( priv->getter ),
+			ofa_prefs_amount_get_accept_comma( priv->getter ),
 			HUB_DEFAULT_DECIMALS_AMOUNT );
 	gtk_widget_set_can_focus( entry, FALSE );
 	gtk_widget_set_margin_top( entry, TOTAUX_TOP_MARGIN );

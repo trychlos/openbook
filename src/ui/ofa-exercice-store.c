@@ -32,7 +32,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 
 #include "ui/ofa-exercice-store.h"
 
@@ -216,10 +216,10 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBDossierMeta *meta
 			status = ofa_idbexercice_meta_get_status( period );
 			begin = my_date_to_str(
 							ofa_idbexercice_meta_get_begin_date( period ),
-							ofa_prefs_date_display( priv->getter ));
+							ofa_prefs_date_get_display_format( priv->getter ));
 			end = my_date_to_str(
 							ofa_idbexercice_meta_get_end_date( period ),
-							ofa_prefs_date_display( priv->getter ));
+							ofa_prefs_date_get_display_format( priv->getter ));
 
 			gtk_list_store_insert_with_values(
 					GTK_LIST_STORE( store ),

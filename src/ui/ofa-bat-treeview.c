@@ -37,7 +37,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 
@@ -559,10 +559,10 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			cmp = my_collate( formata, formatb );
 			break;
 		case BAT_COL_BEGIN:
-			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case BAT_COL_END:
-			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display( priv->getter ));
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case BAT_COL_RIB:
 			cmp = my_collate( riba, ribb );

@@ -42,7 +42,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-counters.h"
@@ -468,8 +468,8 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
 
@@ -495,8 +495,8 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 
@@ -518,8 +518,8 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->getter ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_get_overwrite( priv->getter ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_dope_changed ), self );
 
@@ -625,10 +625,10 @@ init_taxes( ofaTVARecordProperties *self )
 			entry = gtk_entry_new();
 			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 			my_double_editable_init_ex( GTK_EDITABLE( entry ),
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
-					ofa_prefs_amount_accept_dot( priv->getter ),
-					ofa_prefs_amount_accept_comma( priv->getter ),
+					g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter )),
+					g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter )),
+					ofa_prefs_amount_get_accept_dot( priv->getter ),
+					ofa_prefs_amount_get_accept_comma( priv->getter ),
 					0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
 			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 16 );
@@ -648,10 +648,10 @@ init_taxes( ofaTVARecordProperties *self )
 			entry = gtk_entry_new();
 			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 			my_double_editable_init_ex( GTK_EDITABLE( entry ),
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->getter )),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->getter )),
-					ofa_prefs_amount_accept_dot( priv->getter ),
-					ofa_prefs_amount_accept_comma( priv->getter ),
+					g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter )),
+					g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter )),
+					ofa_prefs_amount_get_accept_dot( priv->getter ),
+					ofa_prefs_amount_get_accept_comma( priv->getter ),
 					0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
 			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 16 );
