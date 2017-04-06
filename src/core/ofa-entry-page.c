@@ -1222,6 +1222,9 @@ tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 /*
  * selection mode is GTK_SELECTION_BROWSE
+ *
+ * The 'Edition' toggle switch is enabled when the row is editable
+ * (depending of the entry status and the dossier)
  */
 static void
 tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self )
@@ -1275,6 +1278,9 @@ tview_on_row_insert( ofaTVBin *bin, ofaEntryPage *self )
 	}
 }
 
+/*
+ * The 'Suppr'. key has been hit on the entry treeview
+ */
 static void
 tview_on_row_delete( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self )
 {
@@ -1282,7 +1288,7 @@ tview_on_row_delete( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *s
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	if( priv->is_writable && gtk_switch_get_active( GTK_SWITCH( priv->edit_switch ))){
+	if( priv->editable_row ){
 		delete_row( self, selection );
 	}
 }
@@ -2279,7 +2285,10 @@ edit_on_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaEntryPage *self )
  * - the selection changes
  * - the edit switch is toggled
  *
- * @editable: whether the row (+dossier) is intrinsically editable.
+ * @editable: whether the entry is rough or future, and the dossier is
+ *  a current exercice which has not been opened in read-only mode.
+ *
+ * This is called on each selection change.
  */
 static void
 edit_set_cells_editable( ofaEntryPage *self, GtkTreeSelection *selection, gboolean editable )
@@ -2300,8 +2309,8 @@ edit_set_cells_editable( ofaEntryPage *self, GtkTreeSelection *selection, gboole
 	new_enabled = priv->is_writable && is_active;
 	g_simple_action_set_enabled( priv->new_action, new_enabled );
 
-	/* edit/view: if count > 0 */
-	update_enabled = ( count > 0 );
+	/* edit/view: if one row is selected */
+	update_enabled = ( count == 1 );
 	g_simple_action_set_enabled( priv->update_action, update_enabled );
 
 	/* delete: if dossier is writable and edition is on and row is editable and count > 0 */
@@ -3447,22 +3456,28 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage
 	delete_row( self, selection );
 }
 
-/*
- * editable switch and dossier have been checked before
- * but not sure if selected entry is editable
- */
 static void
 delete_row( ofaEntryPage *self, GtkTreeSelection *selection )
 {
+	ofaEntryPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter sort_iter;
 	ofoEntry *entry;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	/* editable_row is reset on each selection change
+	 * is %TRUE when entry status is rough or future, and edition toggle
+	 * switch is on, and dossier is a current exercice which has not been
+	 * opened in read-only mode
+	 */
+	g_return_if_fail( priv->editable_row );
 
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &sort_iter )){
 		gtk_tree_model_get( tmodel, &sort_iter, ENTRY_COL_OBJECT, &entry, -1 );
 		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 
-		if( ofo_entry_is_editable( entry ) && delete_ask_for_confirm( self, entry )){
+		if( delete_ask_for_confirm( self, entry )){
 			/* cleaning up settlement and conciliation is handled by
 			 *  #ofoEntry class itself  */
 			ofo_entry_delete( entry );
@@ -3473,6 +3488,9 @@ delete_row( ofaEntryPage *self, GtkTreeSelection *selection )
 	}
 }
 
+/*
+ * Default is to delete the whole operation
+ */
 static gboolean
 delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry )
 {
@@ -3567,6 +3585,10 @@ action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaEntryPag
 /*
  * Is the row (+dossier) intrinsically editable (no matter the position
  *  of the 'Edit' switch) ?
+ *
+ * The row is editable if the entry status is Rough or Future, and the
+ * dossier is a current exercice which has not been opened in read-
+ * only mode.
  */
 static gboolean
 row_is_editable( ofaEntryPage *self, GtkTreeSelection *selection )
