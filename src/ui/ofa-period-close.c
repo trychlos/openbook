@@ -37,6 +37,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -472,6 +473,7 @@ do_close( ofaPeriodClose *self )
 	GtkWidget *dialog, *button, *content, *grid, *label;
 	myProgressBar *bar;
 	gdouble progress;
+	ofaISignaler *signaler;
 
 	priv = ofa_period_close_get_instance_private( self );
 
@@ -539,6 +541,9 @@ do_close( ofaPeriodClose *self )
 	dossier = ofa_hub_get_dossier( hub );
 	ofo_dossier_set_last_closing_date( dossier, &priv->closing );
 	ofo_dossier_update( dossier );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
+	g_signal_emit_by_name( signaler, SIGNALER_DOSSIER_PERIOD_CLOSED, &priv->closing );
 
 	return( TRUE );
 }
