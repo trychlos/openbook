@@ -62,6 +62,7 @@
 #include "api/ofs-currency.h"
 
 #include "core/ofa-account-select.h"
+#include "core/ofa-entry-page-delconf.h"
 #include "core/ofa-entry-properties.h"
 #include "core/ofa-entry-store.h"
 #include "core/ofa-entry-treeview.h"
@@ -377,7 +378,6 @@ static void       action_on_update_activated( GSimpleAction *action, GVariant *e
 static void       do_update( ofaEntryPage *self, ofoEntry *entry );
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static void       delete_row( ofaEntryPage *self, GtkTreeSelection *selection );
-static gboolean   delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry );
 static void       action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static void       action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static void       action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
@@ -3462,6 +3462,7 @@ delete_row( ofaEntryPage *self, GtkTreeSelection *selection )
 	GtkTreeModel *tmodel;
 	GtkTreeIter sort_iter;
 	ofoEntry *entry;
+	GList *entries, *it;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
@@ -3476,64 +3477,18 @@ delete_row( ofaEntryPage *self, GtkTreeSelection *selection )
 		gtk_tree_model_get( tmodel, &sort_iter, ENTRY_COL_OBJECT, &entry, -1 );
 		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 
-		if( delete_ask_for_confirm( self, entry )){
+		if( ofa_entry_page_delconf_run( priv->getter, entry, &entries )){
 			/* cleaning up settlement and conciliation is handled by
 			 *  #ofoEntry class itself  */
-			ofo_entry_delete( entry );
+			for( it=entries ; it ; it=it->next ){
+				ofo_entry_delete( OFO_ENTRY( it->data ));
+			}
 			balances_compute( self );
 		}
 
 		g_object_unref( entry );
+		g_list_free( entries );
 	}
-}
-
-/*
- * Default is to delete the whole operation
- */
-static gboolean
-delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry )
-{
-	static const gchar *thisfn = "ofa_entry_page_delete_ask_for_confirm";
-	GString *msg;
-	gboolean ok;
-	GtkWindow *toplevel;
-
-	g_debug( "%s: ent_number=%ld", thisfn, ofo_entry_get_number( entry ));
-
-	msg = g_string_new( "" );;
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( page ));
-
-	/* first ask for the standard confirmation */
-	g_string_printf( msg,
-			_( "Are you sure you want to remove the '%s' entry ?" ),
-			ofo_entry_get_label( entry ));
-	ok = my_utils_dialog_question( toplevel, msg->str, _( "_Delete" ));
-	g_string_free( msg, TRUE );
-
-	/* ask for more confirmation is the entry is settled or conciliated */
-	if( ok ){
-		msg = g_string_new( "" );
-		if( ofo_entry_get_settlement_number( entry ) > 0 ){
-			msg = g_string_append( msg,
-					_( "The entry has been settled. "
-						"Deleting it will also automatically delete all the settlement group."));
-		}
-		if( ofa_iconcil_get_concil( OFA_ICONCIL( entry ))){
-			if( my_strlen( msg->str )){
-				msg = g_string_append( msg, "\n" );
-			}
-			msg = g_string_append( msg,
-					_( "The entry has been reconciliated. "
-						"Deleting it will also automatically delete all the conciliation group."));
-		}
-		if( my_strlen( msg->str )){
-			msg = g_string_append( msg, _( "\nAre you sure ?"));
-			ok = my_utils_dialog_question( toplevel, msg->str, _( "_Yes, delete it" ));
-		}
-		g_string_free( msg, TRUE );
-	}
-
-	return( ok );
 }
 
 /*

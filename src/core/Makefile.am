@@ -111,6 +111,8 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-props.c									\
 	ofa-dossier-store.c									\
 	ofa-entry-page.c									\
+	ofa-entry-page-delconf.c							\
+	ofa-entry-page-delconf.h							\
 	ofa-entry-properties.c								\
 	ofa-entry-properties.h								\
 	ofa-entry-store.c									\

@@ -24,6 +24,8 @@ src/core/ofa-dossier-collection.c
 src/core/ofa-dossier-delete-prefs-bin.ui
 src/core/ofa-entry-page.c
 src/core/ofa-entry-page.ui
+src/core/ofa-entry-page-delconf.c
+src/core/ofa-entry-page-delconf.ui
 src/core/ofa-entry-properties.c
 src/core/ofa-entry-properties.ui
 src/core/ofa-entry-treeview.c
