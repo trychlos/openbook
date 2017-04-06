@@ -55,6 +55,7 @@ enum {
 	DOSSIER_CLOSED,
 	DOSSIER_CHANGED,
 	DOSSIER_PREVIEW,
+	PERIOD_CLOSED,
 	EXE_DATES_CHANGED,
 	STATUS_COUNT,
 	STATUS_CHANGE,
@@ -369,6 +370,29 @@ interface_base_init( ofaISignalerInterface *klass )
 					G_TYPE_NONE,
 					1,
 					G_TYPE_STRING );
+
+		/**
+		 * ofaISignaler::ofa-signaler-dossier-period-closed:
+		 *
+		 * This signal is sent on the signaler when a period has just
+		 * been closed.
+		 *
+		 * Handler is of type:
+		 * 		void user_handler( ofaISignaler *signaler,
+		 * 							const GDate *closed_date,
+		 * 							gpointer     user_data );
+		 */
+		st_signals[ PERIOD_CLOSED ] = g_signal_new_class_handler(
+					SIGNALER_DOSSIER_PERIOD_CLOSED,
+					OFA_TYPE_ISIGNALER,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					1,
+					G_TYPE_POINTER );
 
 		/**
 		 * ofaISignaler::ofa-signaler-exercice-dates-changed:

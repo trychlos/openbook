@@ -537,7 +537,6 @@ do_close( ofaPeriodClose *self )
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	dossier = ofa_hub_get_dossier( hub );
-
 	ofo_dossier_set_last_closing_date( dossier, &priv->closing );
 	ofo_dossier_update( dossier );
 
