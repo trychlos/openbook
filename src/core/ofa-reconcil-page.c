@@ -1740,13 +1740,11 @@ bat_do_select( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	ofxCounter prev_id, bat_id;
-	GtkWindow *toplevel;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	prev_id = priv->bats ? ofo_bat_get_id( OFO_BAT( priv->bats->data )) : -1;
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	bat_id = ofa_bat_select_run( priv->getter, toplevel, prev_id );
+	bat_id = ofa_bat_select_run( priv->getter, NULL, prev_id );
 	if( bat_id > 0 ){
 		bat_display_by_id( self, bat_id );
 	}

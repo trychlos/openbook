@@ -944,9 +944,7 @@ on_recover( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	priv = ofa_application_get_instance_private( OFA_APPLICATION( user_data ));
 
-	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
-
-	ofa_recovery_assistant_run( OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ) );
+	ofa_recovery_assistant_run( OFA_IGETTER( priv->hub ));
 }
 
 static void
@@ -962,9 +960,7 @@ on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	priv = ofa_application_get_instance_private( OFA_APPLICATION( user_data ));
 
-	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
-
-	ofa_restore_assistant_run( OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ) );
+	ofa_restore_assistant_run( OFA_IGETTER( priv->hub ));
 }
 
 static void

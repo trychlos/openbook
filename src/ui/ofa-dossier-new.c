@@ -76,6 +76,7 @@ typedef struct {
 	/* runtime
 	 */
 	gchar                  *settings_prefix;
+	GtkWindow              *actual_parent;
 	gboolean                dossier_created;
 	gboolean                apply_actions;
 
@@ -323,7 +324,9 @@ iwindow_init( myIWindow *instance )
 
 	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
 
-	my_iwindow_set_parent( instance, priv->parent );
+	priv->actual_parent = priv->parent ? priv->parent : GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
+	my_iwindow_set_parent( instance, priv->actual_parent );
+
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 	my_iwindow_set_geometry_key( instance, priv->settings_prefix );
 }

@@ -2194,14 +2194,11 @@ account_do_select( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	gchar *acc_number;
-	GtkWindow *toplevel;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-
 	acc_number = ofa_account_select_run(
-							priv->getter, toplevel,
+							priv->getter, NULL,
 							gtk_entry_get_text( GTK_ENTRY( priv->account_entry )),
 							ACCOUNT_ALLOW_DETAIL );
 

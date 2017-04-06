@@ -61,6 +61,7 @@ typedef struct {
 	/* runtime
 	 */
 	gchar               *settings_prefix;
+	GtkWindow           *actual_parent;
 	gboolean             exercice_created;
 
 	/* UI
@@ -165,7 +166,7 @@ ofa_exercice_new_class_init( ofaExerciceNewClass *klass )
 }
 
 /**
- * ofa_exercice_new_run_modal:
+ * ofa_exercice_new_run:
  * @getter: a #ofaIGetter instance.
  * @parent: the parent window.
  * @settings_prefix: the prefix of the keys in user settings.
@@ -184,10 +185,10 @@ ofa_exercice_new_class_init( ofaExerciceNewClass *klass )
  * on open.
  */
 gboolean
-ofa_exercice_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefix,
+ofa_exercice_new_run( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefix,
 								ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta **exercice_meta )
 {
-	static const gchar *thisfn = "ofa_exercice_new_run_modal";
+	static const gchar *thisfn = "ofa_exercice_new_run";
 	ofaExerciceNew *self;
 	ofaExerciceNewPrivate *priv;
 	gboolean exercice_created;
@@ -250,7 +251,9 @@ iwindow_init( myIWindow *instance )
 
 	priv = ofa_exercice_new_get_instance_private( OFA_EXERCICE_NEW( instance ));
 
-	my_iwindow_set_parent( instance, priv->parent );
+	priv->actual_parent = priv->parent ? priv->parent : GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
+	my_iwindow_set_parent( instance, priv->actual_parent );
+
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 	my_iwindow_set_geometry_key( instance, priv->settings_prefix );
 }

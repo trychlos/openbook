@@ -1275,7 +1275,7 @@ do_backup( ofaMainWindow *self )
 
 	close_all_pages( self );
 
-	ofa_backup_assistant_run( priv->getter, GTK_WINDOW( self ));
+	ofa_backup_assistant_run( priv->getter );
 }
 
 /**
@@ -1460,7 +1460,7 @@ on_ope_exercice_close( GSimpleAction *action, GVariant *parameter, gpointer user
 
 	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
 
-	ofa_exercice_close_assistant_run( priv->getter, GTK_WINDOW( user_data ));
+	ofa_exercice_close_assistant_run( priv->getter );
 }
 
 static void
@@ -1476,7 +1476,7 @@ on_ope_import( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
 
-	ofa_import_assistant_run( priv->getter, GTK_WINDOW( user_data ));
+	ofa_import_assistant_run( priv->getter );
 }
 
 static void
@@ -1492,7 +1492,7 @@ on_ope_export( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
 
-	ofa_export_assistant_run( priv->getter, GTK_WINDOW( user_data ));
+	ofa_export_assistant_run( priv->getter );
 }
 
 static void

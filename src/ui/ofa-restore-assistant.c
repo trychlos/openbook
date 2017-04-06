@@ -1688,6 +1688,7 @@ p6_do_open( ofaRestoreAssistant *self )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_open";
 	ofaRestoreAssistantPrivate *priv;
+	GtkWindow *toplevel;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
@@ -1698,8 +1699,9 @@ p6_do_open( ofaRestoreAssistant *self )
 	ofa_admin_credentials_bin_set_dossier_meta( priv->p4_admin_credentials, priv->p6_dossier_meta );
 
 	if( priv->p5_open ){
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 		if( !ofa_dossier_open_run(
-				priv->getter,
+				priv->getter, toplevel,
 				priv->p6_exercice_meta, priv->p4_account, priv->p4_password, FALSE )){
 
 			priv->p5_apply = FALSE;

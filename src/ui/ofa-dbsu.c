@@ -49,6 +49,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	GtkWindow       *actual_parent;
 
 	/* UI
 	 */
@@ -208,7 +209,8 @@ iwindow_init( myIWindow *instance )
 
 	priv = ofa_dbsu_get_instance_private( OFA_DBSU( instance ));
 
-	my_iwindow_set_parent( instance, priv->parent );
+	priv->actual_parent = priv->parent ? priv->parent : GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
+	my_iwindow_set_parent( instance, priv->actual_parent );
 
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
