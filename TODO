@@ -306,9 +306,6 @@
                 + anyway, this cannot be really done while the exercice has
                 not been rightly archived
 
-1397 2017- 3-16 when deleting an entry, must actually delete the operation
-                force this behavior unless otherwise specified
-
 1401 2017- 3-16 export accounts at least with opening balance
 
 1402 2017- 3-17 when generating the ODs for non-deductible CSG, should
@@ -910,6 +907,10 @@
 
 1395 2017- 3-16 check dbms integrity: errors should be displayed in red
      2017- 3-20 done
+
+1397 2017- 3-16 when deleting an entry, must actually delete the operation
+                force this behavior unless otherwise specified
+     2017- 4- 6 done
 
 1398 2017- 3-16 check balances: fix the error message (see trash/todo_1398)
      2017- 3-20 fixed

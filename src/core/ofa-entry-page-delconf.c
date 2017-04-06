@@ -61,6 +61,7 @@ typedef struct {
 	 */
 	gboolean        all_entries;
 	ofxCounter      ope_number;
+	GList          *sel_opes;
 }
 	ofaEntryPageDelconfPrivate;
 
@@ -87,6 +88,7 @@ static void
 entry_page_delconf_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_entry_page_delconf_finalize";
+	ofaEntryPageDelconfPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -94,6 +96,9 @@ entry_page_delconf_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_ENTRY_PAGE_DELCONF( instance ));
 
 	/* free data members here */
+	priv = ofa_entry_page_delconf_get_instance_private( OFA_ENTRY_PAGE_DELCONF( instance ));
+
+	g_list_free( priv->sel_opes );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_entry_page_delconf_parent_class )->finalize( instance );
@@ -297,10 +302,14 @@ setup_data( ofaEntryPageDelconf *self )
 	priv->ope_number = ofo_entry_get_ope_number( priv->entry );
 	gtk_widget_set_sensitive( priv->vope_btn, priv->ope_number > 0 );
 
+	g_list_free( priv->sel_opes );
+
 	if( priv->ope_number > 0 ){
 		*priv->entries = ofo_entry_get_by_ope_number( priv->getter, priv->ope_number );
+		priv->sel_opes = g_list_append( NULL, GUINT_TO_POINTER( priv->ope_number ));
 	} else {
 		*priv->entries = g_list_append( NULL, priv->entry );
+		priv->sel_opes = NULL;
 	}
 
 	gstr1 = g_string_new( "" );
@@ -313,17 +322,24 @@ setup_data( ofaEntryPageDelconf *self )
 					" and so does not have any related entry." ));
 		g_string_printf( gstr2,
 				_( "Are you sure you want to remove this '%s' entry ?\n"
-					"Note that this will most probably break off the balance of your books." ),
+					"Note that this will may very probably break off the balance of your books." ),
 							ofo_entry_get_label( priv->entry ));
 	} else {
 		g_string_printf( gstr1,
-				_( "%u other entries originate from the same operation %lu,"
-					" and should be deleted as well." ),
+				_( "%u entries originate from the same operation %lu,"
+					" and should be deleted as a whole." ),
 							count, priv->ope_number );
-		g_string_printf( gstr2,
-				_( "Do you confirm you want to remove this '%s' entry "
-					"and all other %u related entries ?" ),
-							ofo_entry_get_label( priv->entry ), count-1 );
+		if( count == 2 ){
+			g_string_printf( gstr2,
+					_( "Do you confirm you want to remove this '%s' entry "
+						"and the other related entry ?" ),
+								ofo_entry_get_label( priv->entry ));
+		} else {
+			g_string_printf( gstr2,
+					_( "Do you confirm you want to remove this '%s' entry "
+						"and all other %u related entries ?" ),
+								ofo_entry_get_label( priv->entry ), count-1 );
+		}
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->entry1_label ), gstr1->str );
@@ -364,10 +380,12 @@ static void
 on_vope_clicked( GtkButton *button, ofaEntryPageDelconf *self )
 {
 	ofaEntryPageDelconfPrivate *priv;
+	GtkWindow *toplevel;
 
 	priv = ofa_entry_page_delconf_get_instance_private( self );
 
-	ofa_operation_group_run_modal( priv->getter, priv->ope_number );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_operation_group_run( priv->getter, toplevel, priv->sel_opes );
 }
 
 static void

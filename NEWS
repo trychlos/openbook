@@ -29,6 +29,7 @@
    - Balance check: distinguish between rough, validated and future balances (todo #1392).
    - Display unsettled entries on settleable accounts (todo #1381).
    - Display unreconciliated entries on reconciliable accounts (todo #783).
+   - Entry page: default to delete all the entries of an operation (todo #1397).
    - Entry page: display the settlement group (todo #1429).
    - Entry properties: align counters, add tiers (todo #1426).
    - Export the FEC file (LPF - Article A47 A-1).
