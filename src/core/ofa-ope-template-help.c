@@ -154,9 +154,13 @@ ofa_ope_template_help_class_init( ofaOpeTemplateHelpClass *klass )
 void
 ofa_ope_template_help_run( ofaIGetter *getter, GtkWindow *parent )
 {
+	static const gchar *thisfn = "ofa_ope_template_help_run";
 	ofaOpeTemplateHelp *self;
 	ofaOpeTemplateHelpPrivate *priv;
 	myIWindow *shown;
+
+	g_debug( "%s: getter=%p, parent=%p",
+			thisfn, ( void * ) getter, ( void * ) parent );
 
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( parent && GTK_IS_WINDOW( parent ));
@@ -196,7 +200,8 @@ iwindow_init( myIWindow *instance )
 
 	priv = ofa_ope_template_help_get_instance_private( OFA_OPE_TEMPLATE_HELP( instance ));
 
-	priv->actual_parent = priv->parent ? priv->parent : GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
+	/* set the dialog to be transient vs the main window */
+	priv->actual_parent = GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
 	my_iwindow_set_parent( instance, priv->actual_parent );
 
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));

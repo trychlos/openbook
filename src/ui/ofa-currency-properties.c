@@ -55,6 +55,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	GtkWindow   *actual_parent;
 	gboolean     is_writable;
 	gboolean     is_new;
 
@@ -196,8 +197,8 @@ ofa_currency_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoCurrency 
 	priv->parent = parent;
 	priv->currency = currency;
 
-	/* after this call, @self may be invalid */
-	my_iwindow_present( MY_IWINDOW( self ));
+	/* run modal or non-modal depending of the parent */
+	my_idialog_run_maybe_modal( MY_IDIALOG( self ));
 }
 
 /*
@@ -224,7 +225,9 @@ iwindow_init( myIWindow *instance )
 
 	priv = ofa_currency_properties_get_instance_private( OFA_CURRENCY_PROPERTIES( instance ));
 
-	my_iwindow_set_parent( instance, priv->parent );
+	priv->actual_parent = priv->parent ? priv->parent : GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
+	my_iwindow_set_parent( instance, priv->actual_parent );
+
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	id = g_strdup_printf( "%s-%s",
