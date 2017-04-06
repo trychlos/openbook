@@ -57,6 +57,7 @@ typedef struct {
 	/* runtime
 	 */
 	gchar            *settings_prefix;
+	GtkWindow        *actual_parent;
 
 	/* UI
 	 */
@@ -70,7 +71,7 @@ typedef struct {
 	/* selection
 	 */
 	ofoEntry         *sel_entry;
-	ofxCounter        sel_ope_number;
+	GList            *sel_opes;
 }
 	ofaSettlementGroupPrivate;
 
@@ -111,6 +112,7 @@ settlement_group_finalize( GObject *instance )
 	priv = ofa_settlement_group_get_instance_private( OFA_SETTLEMENT_GROUP( instance ));
 
 	g_free( priv->settings_prefix );
+	g_list_free( priv->sel_opes );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_settlement_group_parent_class )->finalize( instance );
@@ -200,8 +202,8 @@ ofa_settlement_group_run( ofaIGetter *getter, GtkWindow *parent , ofxCounter set
 	priv->parent = parent;
 	priv->settlement_id = settlement_id;
 
-	/* after this call, @self may be invalid */
-	my_iwindow_present( MY_IWINDOW( self ));
+	/* run modal or non-modal depending of the parent */
+	my_idialog_run_maybe_modal( MY_IDIALOG( self ));
 }
 
 /*
@@ -228,7 +230,9 @@ iwindow_init( myIWindow *instance )
 
 	priv = ofa_settlement_group_get_instance_private( OFA_SETTLEMENT_GROUP( instance ));
 
-	my_iwindow_set_parent( instance, priv->parent );
+	priv->actual_parent = priv->parent ? priv->parent : GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
+	my_iwindow_set_parent( instance, priv->actual_parent );
+
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	id = g_strdup_printf( "%s-%lu",
@@ -354,6 +358,7 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoEntry *entry;
+	ofxCounter openum;
 
 	priv = ofa_settlement_group_get_instance_private( self );
 
@@ -367,8 +372,10 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 		g_object_unref( entry );
 		priv->sel_entry = entry;
 		ventry_enabled = TRUE;
-		priv->sel_ope_number = ofo_entry_get_ope_number( entry );
-		vope_enabled = ( priv->sel_ope_number > 0 );
+		openum = ofo_entry_get_ope_number( entry );
+		vope_enabled = ( openum > 0 );
+		g_list_free( priv->sel_opes );
+		priv->sel_opes = openum > 0 ? g_list_append( NULL, GUINT_TO_POINTER( openum )) : NULL;
 	}
 
 	g_simple_action_set_enabled( priv->ventry_action, ventry_enabled );
@@ -409,7 +416,7 @@ action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaSettlementG
 
 	priv = ofa_settlement_group_get_instance_private( self );
 
-	ofa_operation_group_run( priv->getter, priv->parent, priv->sel_ope_number );
+	ofa_operation_group_run( priv->getter, priv->parent, priv->sel_opes );
 }
 
 /*

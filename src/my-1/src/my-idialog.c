@@ -377,34 +377,40 @@ my_idialog_run( myIDialog *instance )
  * - if parent has not been defined, it is expected to be the main window
  * - if parent is modal, run modal
  * - else (not modal or not defined), run non modal.
+ *
+ * Returns: the actual shown dialog.
  */
-void
+myIWindow *
 my_idialog_run_maybe_modal( myIDialog *instance )
 {
 	static const gchar *thisfn = "my_idialog_run_maybe_modal";
 	GtkWindow *parent;
+	myIWindow *shown;
 
-	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
-	g_return_if_fail( GTK_IS_DIALOG( instance ));
-	g_return_if_fail( MY_IS_IWINDOW( instance ));
+	g_return_val_if_fail( instance && MY_IS_IDIALOG( instance ), NULL );
+	g_return_val_if_fail( GTK_IS_DIALOG( instance ), NULL );
+	g_return_val_if_fail( MY_IS_IWINDOW( instance ), NULL );
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	my_iwindow_init( MY_IWINDOW( instance ));
 
 	parent = my_iwindow_get_parent( MY_IWINDOW( instance ));
-	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
+	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), NULL );
 	g_debug( "%s: parent=%p (%s)", thisfn, ( void * ) parent, G_OBJECT_TYPE_NAME( parent ));
 
 	if( parent && gtk_window_get_modal( GTK_WINDOW( parent ))){
 		g_debug( "%s: parent is modal: running my_idialog_run", thisfn );
 		my_idialog_run( instance );
+		shown = NULL;
 
 	} else {
 		/* after this call, @instance may be invalid */
 		g_debug( "%s: parent is not modal: running my_iwindow_present", thisfn );
-		my_iwindow_present( MY_IWINDOW( instance ));
+		shown = my_iwindow_present( MY_IWINDOW( instance ));
 	}
+
+	return( shown );
 }
 
 /*

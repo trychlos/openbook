@@ -128,7 +128,7 @@ typedef struct {
 	sEnumSelected      ses;
 	ofxCounter         snumber;
 	gboolean           updating;
-	ofxCounter         sel_ope_number;
+	GList             *sel_opes;
 	ofxCounter         sel_concil_id;
 	ofxCounter         sel_settle_id;
 }
@@ -231,6 +231,7 @@ settlement_page_finalize( GObject *instance )
 	g_free( priv->settings_prefix );
 	g_free( priv->account_number );
 	g_free( priv->filter_id );
+	g_list_free( priv->sel_opes );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_settlement_page_parent_class )->finalize( instance );
@@ -507,6 +508,7 @@ tview_on_row_selected( ofaEntryTreeview *view, GList *selected, ofaSettlementPag
 	ofaSettlementPagePrivate *priv;
 	gboolean ventry_enabled, vope_enabled, vconcil_enabled, vsettle_enabled;
 	ofoConcil *concil;
+	ofxCounter openum;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
@@ -517,8 +519,10 @@ tview_on_row_selected( ofaEntryTreeview *view, GList *selected, ofaSettlementPag
 
 	ventry_enabled = ( g_list_length( selected ) == 1 );
 	if( ventry_enabled ){
-		priv->sel_ope_number = ofo_entry_get_ope_number( OFO_ENTRY( selected->data ));
-		vope_enabled = ( priv->sel_ope_number > 0 );
+		openum = ofo_entry_get_ope_number( OFO_ENTRY( selected->data ));
+		vope_enabled = ( openum > 0 );
+		g_list_free( priv->sel_opes );
+		priv->sel_opes = openum > 0 ? g_list_append( NULL, GUINT_TO_POINTER( openum )) : NULL;
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( OFO_ENTRY( selected->data )));
 		priv->sel_concil_id = ( concil ? ofo_concil_get_id( concil ) : 0 );
 		vconcil_enabled = ( priv->sel_concil_id > 0 );
@@ -1077,12 +1081,10 @@ static void
 action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self )
 {
 	ofaSettlementPagePrivate *priv;
-	GtkWindow *toplevel;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_operation_group_run( priv->getter, toplevel, priv->sel_ope_number );
+	ofa_operation_group_run( priv->getter, NULL, priv->sel_opes );
 }
 
 static void

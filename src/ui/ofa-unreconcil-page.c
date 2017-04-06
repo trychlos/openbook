@@ -81,7 +81,7 @@ typedef struct {
 	 */
 	ofoAccount          *sel_account;
 	ofoEntry            *sel_entry;
-	ofxCounter           sel_ope_number;
+	GList               *sel_opes;
 }
 	ofaUnreconcilPagePrivate;
 
@@ -123,6 +123,7 @@ unreconcil_page_finalize( GObject *instance )
 	priv = ofa_unreconcil_page_get_instance_private( OFA_UNRECONCIL_PAGE( instance ));
 
 	g_free( priv->settings_prefix );
+	g_list_free( priv->sel_opes );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_unreconcil_page_parent_class )->finalize( instance );
@@ -432,6 +433,7 @@ tview_on_accchanged( ofaAccentryTreeview *view, ofoBase *object, ofaUnreconcilPa
 {
 	ofaUnreconcilPagePrivate *priv;
 	gboolean reconcil_enabled, vaccount_enabled, ventry_enabled, vope_enabled;
+	ofxCounter openum;
 
 	priv = ofa_unreconcil_page_get_instance_private( self );
 
@@ -454,8 +456,10 @@ tview_on_accchanged( ofaAccentryTreeview *view, ofoBase *object, ofaUnreconcilPa
 		g_return_if_fail( OFO_IS_ENTRY( object ));
 		priv->sel_entry = OFO_ENTRY( object );
 		ventry_enabled = TRUE;
-		priv->sel_ope_number = ofo_entry_get_ope_number( priv->sel_entry );
-		vope_enabled = ( priv->sel_ope_number > 0 );
+		openum = ofo_entry_get_ope_number( priv->sel_entry );
+		vope_enabled = ( openum > 0 );
+		g_list_free( priv->sel_opes );
+		priv->sel_opes = openum > 0 ? g_list_append( NULL, GUINT_TO_POINTER( openum )) : NULL;
 	}
 
 	g_simple_action_set_enabled( priv->reconcil_action, reconcil_enabled );
@@ -619,10 +623,8 @@ static void
 action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self )
 {
 	ofaUnreconcilPagePrivate *priv;
-	GtkWindow *toplevel;
 
 	priv = ofa_unreconcil_page_get_instance_private( self );
 
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_operation_group_run( priv->getter, toplevel, priv->sel_ope_number );
+	ofa_operation_group_run( priv->getter, NULL, priv->sel_opes );
 }

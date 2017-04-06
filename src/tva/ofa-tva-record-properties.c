@@ -104,6 +104,7 @@ typedef struct {
 	gboolean      has_correspondence;
 	gboolean      is_validated;
 	guint         opes_generated;
+	GList        *view_opes;
 }
 	ofaTVARecordPropertiesPrivate;
 
@@ -204,6 +205,7 @@ tva_record_properties_finalize( GObject *instance )
 	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( instance ));
 
 	g_free( priv->mnemo );
+	g_list_free( priv->view_opes );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_tva_record_properties_parent_class )->finalize( instance );
@@ -1455,22 +1457,21 @@ on_viewopes_clicked( GtkButton *button, ofaTVARecordProperties *self )
 	ofaTVARecordPropertiesPrivate *priv;
 	guint count, idx;
 	ofxCounter number;
-	GList *opes;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	opes = NULL;
+	g_list_free( priv->view_opes );
+	priv->view_opes = NULL;
+
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
 	for( idx=0 ; idx<count ; ++idx ){
 		number = ofo_tva_record_detail_get_ope_number( priv->tva_record, idx );
 		if( number > 0 ){
-			opes = g_list_prepend( opes, GUINT_TO_POINTER( number ));
+			priv->view_opes = g_list_prepend( priv->view_opes, GUINT_TO_POINTER( number ));
 		}
 	}
 
-	ofa_operation_group_run_with_list( priv->getter, priv->parent, opes );
-
-	g_list_free( opes );
+	ofa_operation_group_run( priv->getter, priv->parent, priv->view_opes );
 }
 
 /*

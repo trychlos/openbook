@@ -153,7 +153,7 @@ typedef struct {
 	/* the current row
 	 */
 	gboolean             editable_row;
-	ofxCounter           sel_ope_number;
+	GList               *sel_opes;
 	ofxCounter           sel_concil_id;
 	ofxCounter           sel_settle_id;
 }
@@ -416,6 +416,7 @@ entry_page_finalize( GObject *instance )
 	g_free( priv->settings_prefix );
 	g_free( priv->jou_mnemo );
 	g_free( priv->acc_number );
+	g_list_free( priv->sel_opes );
 	ofs_currency_list_free( &priv->balances );
 
 	/* chain up to the parent class */
@@ -1243,7 +1244,8 @@ tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage 
 
 		id = row_get_operation_id( self, selection );
 		g_simple_action_set_enabled( priv->vope_action, id > 0 );
-		priv->sel_ope_number = id;
+		g_list_free( priv->sel_opes );
+		priv->sel_opes = id > 0 ? g_list_append( NULL, GUINT_TO_POINTER( id )) : NULL;
 
 		id = row_get_concil_id( self, selection );
 		g_simple_action_set_enabled( priv->vconcil_action, id > 0 );
@@ -3541,12 +3543,10 @@ static void
 action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
-	GtkWindow *toplevel;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_operation_group_run( priv->getter, toplevel, priv->sel_ope_number );
+	ofa_operation_group_run( priv->getter, NULL, priv->sel_opes );
 }
 
 /*

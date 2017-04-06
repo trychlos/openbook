@@ -62,6 +62,7 @@ typedef struct {
 	/* runtime
 	 */
 	gchar            *settings_prefix;
+	GtkWindow        *actual_parent;
 
 	/* UI
 	 */
@@ -186,47 +187,14 @@ ofa_operation_group_class_init( ofaOperationGroupClass *klass )
  * ofa_operation_group_run:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the #GtkWindow parent.
- * @ope_number: the operation number.
- *
- * Display the lines which belongs to the @ope_number group.
- */
-void
-ofa_operation_group_run( ofaIGetter *getter, GtkWindow *parent , ofxCounter ope_number )
-{
-	static const gchar *thisfn = "ofa_operation_group_run";
-	ofaOperationGroup *self;
-	ofaOperationGroupPrivate *priv;
-
-	g_debug( "%s: getter=%p, parent=%p, ope_number=%lu",
-			thisfn, ( void * ) getter, ( void * ) parent, ope_number );
-
-	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
-	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
-
-	self = g_object_new( OFA_TYPE_OPERATION_GROUP, NULL );
-
-	priv = ofa_operation_group_get_instance_private( self );
-
-	priv->getter = getter;
-	priv->parent = parent;
-	priv->opes_list = g_list_append( NULL, GUINT_TO_POINTER( ope_number ));
-
-	/* after this call, @self may be invalid */
-	my_iwindow_present( MY_IWINDOW( self ));
-}
-
-/**
- * ofa_operation_group_run_with_list:
- * @getter: a #ofaIGetter instance.
- * @parent: [allow-none]: the #GtkWindow parent.
  * @opes: a #GList of operations number to be displayed.
  *
  * Display the lines which belongs to the @opes list.
  */
 void
-ofa_operation_group_run_with_list( ofaIGetter *getter, GtkWindow *parent , GList *opes )
+ofa_operation_group_run( ofaIGetter *getter, GtkWindow *parent , GList *opes )
 {
-	static const gchar *thisfn = "ofa_operation_group_run_with_list";
+	static const gchar *thisfn = "ofa_operation_group_run";
 	ofaOperationGroup *self;
 	ofaOperationGroupPrivate *priv;
 
@@ -244,8 +212,8 @@ ofa_operation_group_run_with_list( ofaIGetter *getter, GtkWindow *parent , GList
 	priv->parent = parent;
 	priv->opes_list = g_list_copy( opes );
 
-	/* after this call, @self may be invalid */
-	my_iwindow_present( MY_IWINDOW( self ));
+	/* run modal or non-modal depending of the parent */
+	my_idialog_run_maybe_modal( MY_IDIALOG( self ));
 }
 
 /*
@@ -273,7 +241,9 @@ iwindow_init( myIWindow *instance )
 
 	priv = ofa_operation_group_get_instance_private( OFA_OPERATION_GROUP( instance ));
 
-	my_iwindow_set_parent( instance, priv->parent );
+	priv->actual_parent = priv->parent ? priv->parent : GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
+	my_iwindow_set_parent( instance, priv->actual_parent );
+
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	gstr = g_string_new( G_OBJECT_TYPE_NAME( instance ));

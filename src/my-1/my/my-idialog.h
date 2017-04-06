@@ -61,6 +61,8 @@
 
 #include <gtk/gtk.h>
 
+#include "my/my-iwindow.h"
+
 G_BEGIN_DECLS
 
 #define MY_TYPE_IDIALOG                      ( my_idialog_get_type())
@@ -164,7 +166,7 @@ GtkWidget *my_idialog_set_close_button          ( myIDialog *instance );
 
 gint       my_idialog_run                       ( myIDialog *instance );
 
-void       my_idialog_run_maybe_modal           ( myIDialog *instance );
+myIWindow *my_idialog_run_maybe_modal           ( myIDialog *instance );
 
 G_END_DECLS
 

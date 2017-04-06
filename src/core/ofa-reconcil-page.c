@@ -129,7 +129,7 @@ typedef struct {
 	 */
 	ofoEntry            *sel_entry;
 	ofoBatLine          *sel_batline;
-	ofxCounter           sel_ope_number;
+	GList               *sel_opes;
 	ofxCounter           sel_concil_id;
 	ofxCounter           sel_settle_id;
 
@@ -333,6 +333,7 @@ reconciliation_finalize( GObject *instance )
 	priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( instance ));
 
 	g_free( priv->settings_prefix );
+	g_list_free( priv->sel_opes );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_reconcil_page_parent_class )->finalize( instance );
@@ -798,6 +799,7 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 	gchar *sdeb, *scre;
 	GList *selected;
 	ofoConcil *concil;
+	ofxCounter openum;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
@@ -852,8 +854,10 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 		ventry_enabled = ( count == 1 && priv->sel_entry && OFO_IS_ENTRY( priv->sel_entry ));
 		vbat_enabled = ( count == 1 && priv->sel_batline && OFO_IS_BAT_LINE( priv->sel_batline ));
 		if( ventry_enabled ){
-			priv->sel_ope_number = ofo_entry_get_ope_number( priv->sel_entry );
-			vope_enabled = ( priv->sel_ope_number > 0 );
+			openum = ofo_entry_get_ope_number( priv->sel_entry );
+			vope_enabled = ( openum > 0 );
+			g_list_free( priv->sel_opes );
+			priv->sel_opes = openum > 0 ? g_list_append( NULL, GUINT_TO_POINTER( openum )) : NULL;
 			concil = ofa_iconcil_get_concil( OFA_ICONCIL( priv->sel_entry ));
 			priv->sel_concil_id = concil ? ofo_concil_get_id( concil ) : 0;
 			vconcil_enabled = ( priv->sel_concil_id > 0 );
@@ -3066,12 +3070,10 @@ static void
 action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
-	GtkWindow *toplevel;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_operation_group_run( priv->getter, toplevel, priv->sel_ope_number );
+	ofa_operation_group_run( priv->getter, NULL, priv->sel_opes );
 }
 
 static void

@@ -77,6 +77,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	GtkWindow      *actual_parent;
 	gboolean        is_writable;
 	gboolean        is_new;
 
@@ -296,18 +297,20 @@ iwindow_init( myIWindow *instance )
 
 	priv = ofa_ope_template_properties_get_instance_private( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
 
-	my_iwindow_set_parent( instance, priv->parent );
-	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
+	priv->actual_parent = priv->parent ? priv->parent : GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
+	my_iwindow_set_parent( instance, priv->actual_parent );
 
-	id = g_strdup_printf( "%s-%s",
-				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_get_mnemo( priv->ope_template ));
-	my_iwindow_set_identifier( instance, id );
-	g_free( id );
+	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	key = g_strdup_printf( "%s-%d",
 				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_get_detail_count( priv->ope_template ));
 	my_iwindow_set_geometry_key( instance, key );
 	g_free( key );
+
+	id = g_strdup_printf( "%s-%s",
+				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_get_mnemo( priv->ope_template ));
+	my_iwindow_set_identifier( instance, id );
+	g_free( id );
 }
 
 /*

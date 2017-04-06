@@ -65,15 +65,11 @@ typedef struct {
 }
 	ofaOperationGroupClass;
 
-GType ofa_operation_group_get_type     ( void ) G_GNUC_CONST;
+GType ofa_operation_group_get_type( void ) G_GNUC_CONST;
 
-void  ofa_operation_group_run          ( ofaIGetter *getter,
-											GtkWindow *parent,
-											ofxCounter ope_number );
-
-void  ofa_operation_group_run_with_list( ofaIGetter *getter,
-											GtkWindow *parent,
-											GList *opes );
+void  ofa_operation_group_run     ( ofaIGetter *getter,
+										GtkWindow *parent,
+										GList *opes );
 
 G_END_DECLS
 
