@@ -70,7 +70,6 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
-	GtkWindow           *parent;
 
 	/* runtime
 	 */
@@ -262,28 +261,25 @@ ofa_backup_assistant_class_init( ofaBackupAssistantClass *klass )
 /**
  * ofa_backup_assistant_run:
  * @getter: a #ofaIGetter instance.
- * @parent: [allow-none]: the #GtkWindow parent.
  *
  * Run the assistant.
  */
 void
-ofa_backup_assistant_run( ofaIGetter *getter, GtkWindow *parent )
+ofa_backup_assistant_run( ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_backup_assistant_run";
 	ofaBackupAssistant *self;
 	ofaBackupAssistantPrivate *priv;
 
-	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
+	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
-	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_BACKUP_ASSISTANT, NULL );
 
 	priv = ofa_backup_assistant_get_instance_private( self );
 
 	priv->getter = getter;
-	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -318,7 +314,7 @@ iwindow_init( myIWindow *instance )
 	connect = ofa_hub_get_connect( hub );
 	priv->dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
 
-	my_iwindow_set_parent( instance, priv->parent );
+	my_iwindow_set_parent( instance, GTK_WINDOW( ofa_igetter_get_main_window( priv->getter )));
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );

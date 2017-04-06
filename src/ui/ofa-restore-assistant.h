@@ -68,8 +68,7 @@ typedef struct {
 
 GType   ofa_restore_assistant_get_type( void ) G_GNUC_CONST;
 
-void    ofa_restore_assistant_run     ( ofaIGetter *getter,
-											GtkWindow *parent );
+void    ofa_restore_assistant_run     ( ofaIGetter *getter );
 
 G_END_DECLS
 
