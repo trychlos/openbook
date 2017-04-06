@@ -869,6 +869,37 @@ ofo_entry_get_by_number( ofaIGetter *getter, ofxCounter number )
 }
 
 /**
+ * ofo_entry_get_by_ope_number:
+ * @getter: a #ofaIGetter instance.
+ * @number: the operation number.
+ *
+ * Returns: a new #GList which contains the entries of this same
+ * operation.
+ *
+ * The returned #GList should be g_list_free() by the caller.
+ */
+GList *
+ofo_entry_get_by_ope_number( ofaIGetter *getter, ofxCounter number )
+{
+	GList *dataset, *it, *result;
+	ofoEntry *entry;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( number > 0, NULL );
+
+	result = NULL;
+	dataset = ofo_entry_get_dataset( getter );
+	for( it=dataset ; it ; it=it->next ){
+		entry = OFO_ENTRY( it->data );
+		if( ofo_entry_get_ope_number( entry ) == number ){
+			result = g_list_prepend( result, entry );
+		}
+	}
+
+	return( result );
+}
+
+/**
  * ofo_entry_get_settlement_by_number:
  * @getter: a #ofaIGetter instance.
  * @number: the settlement number.
