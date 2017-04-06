@@ -421,7 +421,7 @@ ofa_hub_set_page_manager( ofaHub *hub, ofaIPageManager *page_manager )
  * This method is the canonical way of opening a dossier in batch mode.
  * #ofaIDBConnect and #ofoDossier are expected to be %NULL.
  *
- * In user interface mode, see #ofa_dossier_open_run() function.
+ * In user interface mode, see #ofa_dossier_open_run_modal() function.
  *
  * Returns: %TRUE if the dossier has been successully opened, %FALSE
  * else.

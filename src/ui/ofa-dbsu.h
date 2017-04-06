@@ -63,9 +63,9 @@ typedef struct {
 }
 	ofaDbsuClass;
 
-GType    ofa_dbsu_get_type( void ) G_GNUC_CONST;
+GType    ofa_dbsu_get_type ( void ) G_GNUC_CONST;
 
-gboolean ofa_dbsu_run     ( ofaIGetter *getter,
+gboolean ofa_dbsu_run_modal( ofaIGetter *getter,
 								GtkWindow *parent,
 								ofaIDBSuperuser *su_bin );
 

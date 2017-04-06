@@ -1011,7 +1011,7 @@ do_account_selection( ofaGuidedInputBin *self, GtkEntry *entry, gint row )
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( entry ));
 
-	number = ofa_account_select_run( priv->getter, toplevel, gtk_entry_get_text( entry ), ACCOUNT_ALLOW_DETAIL );
+	number = ofa_account_select_run_modal( priv->getter, toplevel, gtk_entry_get_text( entry ), ACCOUNT_ALLOW_DETAIL );
 
 	if( my_strlen( number )){
 		priv->focused_row = row;

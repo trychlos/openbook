@@ -166,7 +166,7 @@ ofa_exercice_new_class_init( ofaExerciceNewClass *klass )
 }
 
 /**
- * ofa_exercice_new_run:
+ * ofa_exercice_new_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: the parent window.
  * @settings_prefix: the prefix of the keys in user settings.
@@ -185,10 +185,10 @@ ofa_exercice_new_class_init( ofaExerciceNewClass *klass )
  * on open.
  */
 gboolean
-ofa_exercice_new_run( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefix,
+ofa_exercice_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefix,
 								ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta **exercice_meta )
 {
-	static const gchar *thisfn = "ofa_exercice_new_run";
+	static const gchar *thisfn = "ofa_exercice_new_run_modal";
 	ofaExerciceNew *self;
 	ofaExerciceNewPrivate *priv;
 	gboolean exercice_created;

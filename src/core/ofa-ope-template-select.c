@@ -189,7 +189,7 @@ ope_template_select_new( ofaIGetter *getter, GtkWindow *parent )
 }
 
 /**
- * ofa_ope_template_select_run:
+ * ofa_ope_template_select_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the parent window.
  * @asked_mnemo: [allow-none]: the initially selected operation template identifier.
@@ -198,9 +198,9 @@ ope_template_select_new( ofaIGetter *getter, GtkWindow *parent )
  * string that must be g_free() by the caller
  */
 gchar *
-ofa_ope_template_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *asked_mnemo )
+ofa_ope_template_select_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *asked_mnemo )
 {
-	static const gchar *thisfn = "ofa_ope_template_select_run";
+	static const gchar *thisfn = "ofa_ope_template_select_run_modal";
 	ofaOpeTemplateSelect *dialog;
 	ofaOpeTemplateSelectPrivate *priv;
 	gchar *selected_mnemo;

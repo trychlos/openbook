@@ -64,9 +64,9 @@ typedef struct {
 }
 	ofaAccountSelectClass;
 
-GType  ofa_account_select_get_type( void ) G_GNUC_CONST;
+GType  ofa_account_select_get_type ( void ) G_GNUC_CONST;
 
-gchar *ofa_account_select_run     ( ofaIGetter *getter,
+gchar *ofa_account_select_run_modal( ofaIGetter *getter,
 											GtkWindow *parent,
 											const gchar *asked_number,
 											ofeAccountAllowed allowed );

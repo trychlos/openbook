@@ -203,43 +203,13 @@ ofa_dossier_new_class_init( ofaDossierNewClass *klass )
 }
 
 /**
- * ofa_dossier_new_run:
- * @getter: a #ofaIGetter instance.
- * @parent: the parent window.
- *
- * Run the DossierNew non-modal dialog.
- */
-void
-ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
-{
-	static const gchar *thisfn = "ofa_dossier_new_run";
-	ofaDossierNew *self;
-	ofaDossierNewPrivate *priv;
-
-	g_debug( "%s: getter=%p, parent=%p",
-			thisfn, ( void * ) getter, ( void * ) parent );
-
-	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
-	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
-
-	self = g_object_new( OFA_TYPE_DOSSIER_NEW, NULL );
-
-	priv = ofa_dossier_new_get_instance_private( self );
-
-	priv->getter = getter;
-	priv->parent = parent;
-
-	/* after this call, @self may be invalid */
-	my_iwindow_present( MY_IWINDOW( self ));
-}
-
-/**
  * ofa_dossier_new_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: the parent window.
  * @settings_prefix: [allow-none]: the prefix of the key in user settings;
  *  if %NULL, then rely on this class name;
  *  when set, then this class automatically adds its name as a suffix.
+ * @rule: the rule of this dialog (see #ofaHub header).
  * @with_su: whether this dialog must display the super-user widget.
  * @with_admin: whether this dialog must display the AdminCredentials widget.
  * @with_confirm: whether we request a user confirmation.
@@ -254,7 +224,8 @@ ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
  */
 gboolean
 ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *settings_prefix, guint rule,
-								gboolean with_su, gboolean with_admin, gboolean with_confirm, gboolean with_actions, ofaIDBDossierMeta **dossier_meta )
+								gboolean with_su, gboolean with_admin, gboolean with_confirm, gboolean with_actions,
+								ofaIDBDossierMeta **dossier_meta )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run_modal";
 	ofaDossierNew *self;
@@ -613,7 +584,7 @@ do_create( ofaDossierNew *self )
 			open = ofa_dossier_actions_bin_get_open( priv->actions_bin );
 			if( open ){
 				priv->apply_actions = ofa_dossier_actions_bin_get_apply( priv->actions_bin );
-				ret = ofa_dossier_open_run(
+				ret = ofa_dossier_open_run_modal(
 							priv->getter, GTK_WINDOW( self ),
 							exercice_meta, adm_account, adm_password, FALSE );
 			}

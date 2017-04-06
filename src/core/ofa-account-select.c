@@ -194,7 +194,7 @@ account_select_new( ofaIGetter *getter, GtkWindow *parent )
 }
 
 /**
- * ofa_account_select_run:
+ * ofa_account_select_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the #GtkWindow parent.
  * @asked_number: [allow-none]: the initially selected account identifier.
@@ -204,9 +204,9 @@ account_select_new( ofaIGetter *getter, GtkWindow *parent )
  * that must be g_free() by the caller.
  */
 gchar *
-ofa_account_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *asked_number, ofeAccountAllowed allowed )
+ofa_account_select_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *asked_number, ofeAccountAllowed allowed )
 {
-	static const gchar *thisfn = "ofa_account_select_run";
+	static const gchar *thisfn = "ofa_account_select_run_modal";
 	ofaAccountSelect *dialog;
 	ofaAccountSelectPrivate *priv;
 	gchar *selected_id;

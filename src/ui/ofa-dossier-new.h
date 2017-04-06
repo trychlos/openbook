@@ -48,7 +48,7 @@
  * - create the data model, updating it to last known version
  *
  * Development rules:
- * - type:               modal or non-modal dialog
+ * - type:               modal dialog
  * - message on success: no
  * - settings:           yes
  * - current:            no
@@ -81,9 +81,6 @@ typedef struct {
 	ofaDossierNewClass;
 
 GType    ofa_dossier_new_get_type ( void ) G_GNUC_CONST;
-
-void     ofa_dossier_new_run      ( ofaIGetter *getter,
-										GtkWindow *parent );
 
 gboolean ofa_dossier_new_run_modal( ofaIGetter *getter,
 										GtkWindow *parent,

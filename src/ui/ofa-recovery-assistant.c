@@ -1855,7 +1855,7 @@ p8_do_open( ofaRecoveryAssistant *self )
 			thisfn, ( void * ) self, ( void * ) priv->p4_dossier_meta, ( void * ) priv->p4_exercice_meta, priv->p6_account );
 
 	if( priv->p7_open ){
-		if( !ofa_dossier_open_run(
+		if( !ofa_dossier_open_run_modal(
 				priv->getter,
 				priv->p8_exercice_meta, priv->p6_account, priv->p6_password, FALSE )){
 

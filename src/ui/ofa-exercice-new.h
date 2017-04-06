@@ -80,9 +80,9 @@ typedef struct {
 }
 	ofaExerciceNewClass;
 
-GType    ofa_exercice_new_get_type( void ) G_GNUC_CONST;
+GType    ofa_exercice_new_get_type ( void ) G_GNUC_CONST;
 
-gboolean ofa_exercice_new_run     ( ofaIGetter *getter,
+gboolean ofa_exercice_new_run_modal( ofaIGetter *getter,
 										GtkWindow *parent,
 										const gchar *settings_prefix,
 										ofaIDBDossierMeta *dossier_meta,

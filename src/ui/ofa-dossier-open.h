@@ -32,7 +32,7 @@
  *
  * Open an existing dossier.
  *
- * #ofa_dossier_open_run() function should be the canonical way of
+ * #ofa_dossier_open_run_modal() function should be the canonical way of
  * opening a dossier from the user interface.
  *
  * It takes care:
@@ -72,9 +72,9 @@ typedef struct {
 }
 	ofaDossierOpenClass;
 
-GType    ofa_dossier_open_get_type( void ) G_GNUC_CONST;
+GType    ofa_dossier_open_get_type ( void ) G_GNUC_CONST;
 
-gboolean ofa_dossier_open_run     ( ofaIGetter *getter,
+gboolean ofa_dossier_open_run_modal( ofaIGetter *getter,
 										GtkWindow *parent,
 										ofaIDBExerciceMeta *exercice_meta,
 										const gchar *account,

@@ -194,7 +194,7 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
 }
 
 /**
- * ofa_dossier_open_run:
+ * ofa_dossier_open_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the parent #GtkWindow.
  * @exercice_meta: [allow-none]: the exercice to be opened.
@@ -218,10 +218,10 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
  * dossier.
  */
 gboolean
-ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent, ofaIDBExerciceMeta *exercice_meta,
+ofa_dossier_open_run_modal( ofaIGetter *getter, GtkWindow *parent, ofaIDBExerciceMeta *exercice_meta,
 							const gchar *account, const gchar *password, gboolean read_only )
 {
-	static const gchar *thisfn = "ofa_dossier_open_run";
+	static const gchar *thisfn = "ofa_dossier_open_run_modal";
 	ofaDossierOpen *self;
 	ofaDossierOpenPrivate *priv;
 	gboolean opened;

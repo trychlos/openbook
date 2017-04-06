@@ -811,7 +811,7 @@ application_activate( GApplication *application )
 			g_free( str );
 		}
 		if( meta && period ){
-			if( ofa_dossier_open_run(
+			if( ofa_dossier_open_run_modal(
 						OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ),
 						period, st_dossier_user_opt, st_dossier_passwd_opt, FALSE )){
 
@@ -903,9 +903,7 @@ on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	priv = ofa_application_get_instance_private( OFA_APPLICATION( user_data ));
 
-	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
-
-	ofa_dossier_new_run( OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ));
+	ofa_dossier_new_run_modal( OFA_IGETTER( priv->hub ), NULL, NULL, HUB_RULE_DOSSIER_NEW, TRUE, TRUE, TRUE, TRUE, NULL );
 }
 
 static void
@@ -923,7 +921,7 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	if( ofa_dossier_open_run(
+	if( ofa_dossier_open_run_modal(
 				OFA_IGETTER( priv->hub ), GTK_WINDOW( priv->main_window ),
 				NULL, NULL, NULL, FALSE )){
 

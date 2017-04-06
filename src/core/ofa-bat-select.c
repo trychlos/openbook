@@ -167,7 +167,7 @@ ofa_bat_select_class_init( ofaBatSelectClass *klass )
 }
 
 /**
- * ofa_bat_select_run:
+ * ofa_bat_select_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the #GtkWindow parent.
  * @id: [allow-none]: the initially selected BAT identifier.
@@ -176,9 +176,9 @@ ofa_bat_select_class_init( ofaBatSelectClass *klass )
  * or -1.
  */
 ofxCounter
-ofa_bat_select_run( ofaIGetter *getter, GtkWindow *parent, ofxCounter id )
+ofa_bat_select_run_modal( ofaIGetter *getter, GtkWindow *parent, ofxCounter id )
 {
-	static const gchar *thisfn = "ofa_bat_select_run";
+	static const gchar *thisfn = "ofa_bat_select_run_modal";
 	ofaBatSelect *self;
 	ofaBatSelectPrivate *priv;
 	ofxCounter bat_id;

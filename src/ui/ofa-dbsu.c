@@ -143,7 +143,7 @@ ofa_dbsu_class_init( ofaDbsuClass *klass )
 }
 
 /**
- * ofa_dbsu_run:
+ * ofa_dbsu_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: the parent window.
  * @su_bin: a #ofaIDBSuperuser object.
@@ -153,9 +153,9 @@ ofa_dbsu_class_init( ofaDbsuClass *klass )
  * Returns: %TRUE if the user has confirmed the dialog, %FALSE else.
  */
 gboolean
-ofa_dbsu_run( ofaIGetter *getter, GtkWindow *parent, ofaIDBSuperuser *su_bin )
+ofa_dbsu_run_modal( ofaIGetter *getter, GtkWindow *parent, ofaIDBSuperuser *su_bin )
 {
-	static const gchar *thisfn = "ofa_dbsu_run";
+	static const gchar *thisfn = "ofa_dbsu_run_modal";
 	ofaDbsu *self;
 	ofaDbsuPrivate *priv;
 	gboolean ok;

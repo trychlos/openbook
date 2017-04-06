@@ -1700,7 +1700,7 @@ p6_do_open( ofaRestoreAssistant *self )
 
 	if( priv->p5_open ){
 		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-		if( !ofa_dossier_open_run(
+		if( !ofa_dossier_open_run_modal(
 				priv->getter, toplevel,
 				priv->p6_exercice_meta, priv->p4_account, priv->p4_password, FALSE )){
 

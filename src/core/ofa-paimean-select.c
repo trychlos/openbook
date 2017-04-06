@@ -188,7 +188,7 @@ paimean_select_new( ofaIGetter *getter, GtkWindow *parent )
 }
 
 /**
- * ofa_paimean_select_run:
+ * ofa_paimean_select_run_modal:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the #GtkWindow parent.
  * @asked_code: [allow-none]: the initially selected identifier.
@@ -197,9 +197,9 @@ paimean_select_new( ofaIGetter *getter, GtkWindow *parent )
  * that must be g_free() by the caller.
  */
 gchar *
-ofa_paimean_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *asked_code )
+ofa_paimean_select_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *asked_code )
 {
-	static const gchar *thisfn = "ofa_paimean_select_run";
+	static const gchar *thisfn = "ofa_paimean_select_run_modal";
 	ofaPaimeanSelect *dialog;
 	ofaPaimeanSelectPrivate *priv;
 	gchar *selected_id;

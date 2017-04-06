@@ -408,7 +408,7 @@ exercice_on_new( GtkButton *button, ofaTargetChooserBin *self )
 	priv->block_dossier = TRUE;
 	priv->block_exercice = TRUE;
 
-	if( ofa_exercice_new_run( priv->getter, toplevel, priv->settings_prefix, priv->dossier_meta, &priv->exercice_meta )){
+	if( ofa_exercice_new_run_modal( priv->getter, toplevel, priv->settings_prefix, priv->dossier_meta, &priv->exercice_meta )){
 
 		set_new_object( self, G_OBJECT( priv->exercice_meta ));
 

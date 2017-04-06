@@ -441,7 +441,7 @@ action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaDossierManag
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
-	ofa_dossier_new_run( priv->getter, toplevel );
+	ofa_dossier_new_run_modal( priv->getter, toplevel, NULL, HUB_RULE_DOSSIER_NEW, TRUE, TRUE, TRUE, TRUE, NULL );
 }
 
 static void
@@ -471,7 +471,7 @@ action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierMana
 
 /*
  * Only close the ofaDossierManager if open is successful
- * (and after the #ofa_dossier_open_run() has returned, else the
+ * (and after the #ofa_dossier_open_run_modal() has returned, else the
  *  ofaMainWindow will close all windows, releasing our connection)
  */
 static void
@@ -484,7 +484,7 @@ do_open( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *p
 
 	my_iwindow_set_allow_close( MY_IWINDOW( self ), FALSE );
 
-	ok = ofa_dossier_open_run( priv->getter, GTK_WINDOW( self ), period, NULL, NULL, FALSE );
+	ok = ofa_dossier_open_run_modal( priv->getter, GTK_WINDOW( self ), period, NULL, NULL, FALSE );
 
 	my_iwindow_set_allow_close( MY_IWINDOW( self ), TRUE );
 
@@ -565,7 +565,7 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 			ofa_idbsuperuser_set_dossier_meta( su_bin, meta );
 			ofa_idbsuperuser_set_with_remember( su_bin, FALSE );
 			g_object_ref( su_bin );
-			ok_to_delete = ofa_dbsu_run( priv->getter, GTK_WINDOW( self ), su_bin );
+			ok_to_delete = ofa_dbsu_run_modal( priv->getter, GTK_WINDOW( self ), su_bin );
 		}
 
 		if( ok_to_delete && confirm_delete( self, meta, period )){

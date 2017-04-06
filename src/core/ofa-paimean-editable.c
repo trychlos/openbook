@@ -111,7 +111,7 @@ on_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event
 	}
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( entry ));
-	paimean_id = ofa_paimean_select_run( sdata->getter, toplevel, initial_selection );
+	paimean_id = ofa_paimean_select_run_modal( sdata->getter, toplevel, initial_selection );
 
 	if( paimean_id ){
 		if( sdata->postselect_cb ){

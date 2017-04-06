@@ -101,7 +101,7 @@ on_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event
 
 	initial_selection = g_strdup( gtk_entry_get_text( entry ));
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( entry ));
-	ope_template_id = ofa_ope_template_select_run( sdata->getter, toplevel, initial_selection );
+	ope_template_id = ofa_ope_template_select_run_modal( sdata->getter, toplevel, initial_selection );
 
 	if( ope_template_id ){
 		gtk_entry_set_text( entry, ope_template_id );

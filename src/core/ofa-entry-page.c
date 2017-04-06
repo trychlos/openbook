@@ -2197,7 +2197,7 @@ account_do_select( ofaEntryPage *self )
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	acc_number = ofa_account_select_run(
+	acc_number = ofa_account_select_run_modal(
 							priv->getter, NULL,
 							gtk_entry_get_text( GTK_ENTRY( priv->account_entry )),
 							ACCOUNT_ALLOW_DETAIL );
