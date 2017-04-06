@@ -68,6 +68,7 @@ typedef struct {
 	/* runtime
 	 */
 	gchar                   *settings_prefix;
+	GtkWindow               *actual_parent;
 	GDate                    begin_date;
 	GDate                    end_date;
 	GList                   *dataset;
@@ -243,10 +244,10 @@ ofa_recurrent_generate_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentM
 	self = ( ofaRecurrentGenerate * ) my_icollector_single_get_object( collector, OFA_TYPE_RECURRENT_GENERATE );
 
 	if( self ){
-		shown = my_iwindow_present( MY_IWINDOW( self ));
-		g_return_if_fail( shown && OFA_IS_RECURRENT_GENERATE( shown ));
+		shown = my_idialog_run_maybe_modal( MY_IDIALOG( self ));
+		g_return_if_fail( !shown || OFA_IS_RECURRENT_GENERATE( shown ));
 
-		if( is_dialog_validable( OFA_RECURRENT_GENERATE( shown ))){
+		if( shown && is_dialog_validable( OFA_RECURRENT_GENERATE( shown ))){
 			priv = ofa_recurrent_generate_get_instance_private( OFA_RECURRENT_GENERATE( shown ));
 			g_action_activate( G_ACTION( priv->reset_action ), NULL );
 			g_action_activate( G_ACTION( priv->generate_action ), NULL );
@@ -262,8 +263,8 @@ ofa_recurrent_generate_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentM
 		priv->parent = parent;
 		priv->model_page = page;
 
-		/* after this call, @self may be invalid */
-		my_iwindow_present( MY_IWINDOW( self ));
+		/* run modal or non-modal depending of the parent */
+		my_idialog_run_maybe_modal( MY_IDIALOG( self ));
 	}
 }
 
@@ -290,7 +291,9 @@ iwindow_init( myIWindow *instance )
 
 	priv = ofa_recurrent_generate_get_instance_private( OFA_RECURRENT_GENERATE( instance ));
 
-	my_iwindow_set_parent( instance, priv->parent );
+	priv->actual_parent = priv->parent ? priv->parent : GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
+	my_iwindow_set_parent( instance, priv->actual_parent );
+
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 }
 
