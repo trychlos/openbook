@@ -336,7 +336,9 @@
 1437 2017- 4- 5 deleting a vat record should also imply deleting generated
                 operations
 
-1438
+1438 2017- 4- 7 ledgers closing: ledgers treeview: have columns
+
+1439
 
 -----------------------------------------------------------------------
  DONE
