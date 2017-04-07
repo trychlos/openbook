@@ -509,25 +509,25 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	priv = ofa_ledger_treeview_get_instance_private( OFA_LEDGER_TREEVIEW( bin ));
 
 	gtk_tree_model_get( tmodel, a,
-			LEDGER_COL_MNEMO,       &mnemoa,
-			LEDGER_COL_LABEL,       &labela,
-			LEDGER_COL_LAST_ENTRY,  &entrya,
-			LEDGER_COL_LAST_CLOSE,  &closea,
-			LEDGER_COL_NOTES,       &notesa,
-			LEDGER_COL_NOTES_PNG,   &pnga,
-			LEDGER_COL_UPD_USER,    &updusera,
-			LEDGER_COL_UPD_STAMP,   &updstampa,
+			LEDGER_COL_MNEMO,      &mnemoa,
+			LEDGER_COL_LABEL,      &labela,
+			LEDGER_COL_LAST_ENTRY, &entrya,
+			LEDGER_COL_LAST_CLOSE, &closea,
+			LEDGER_COL_NOTES,      &notesa,
+			LEDGER_COL_NOTES_PNG,  &pnga,
+			LEDGER_COL_UPD_USER,   &updusera,
+			LEDGER_COL_UPD_STAMP,  &updstampa,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
-			LEDGER_COL_MNEMO,       &mnemob,
-			LEDGER_COL_LABEL,       &labelb,
-			LEDGER_COL_LAST_ENTRY,  &entryb,
-			LEDGER_COL_LAST_CLOSE,  &closeb,
-			LEDGER_COL_NOTES,       &notesb,
-			LEDGER_COL_NOTES_PNG,   &pngb,
-			LEDGER_COL_UPD_USER,    &upduserb,
-			LEDGER_COL_UPD_STAMP,   &updstampb,
+			LEDGER_COL_MNEMO,      &mnemob,
+			LEDGER_COL_LABEL,      &labelb,
+			LEDGER_COL_LAST_ENTRY, &entryb,
+			LEDGER_COL_LAST_CLOSE, &closeb,
+			LEDGER_COL_NOTES,      &notesb,
+			LEDGER_COL_NOTES_PNG,  &pngb,
+			LEDGER_COL_UPD_USER,   &upduserb,
+			LEDGER_COL_UPD_STAMP,  &updstampb,
 			-1 );
 
 	cmp = 0;
