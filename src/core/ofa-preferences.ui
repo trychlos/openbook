@@ -288,6 +288,7 @@
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
                                     <property name="tooltip_text" translatable="yes">Whether the user should be asked for confirmation when quitting the assistant on Escape key</property>
+                                    <property name="margin_left">16</property>
                                     <property name="use_underline">True</property>
                                     <property name="xalign">0</property>
                                     <property name="draw_indicator">True</property>
