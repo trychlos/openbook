@@ -216,7 +216,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerSt
 	gtk_tree_model_get( tmodel, a, LEDGER_COL_MNEMO, &anumber, -1 );
 	gtk_tree_model_get( tmodel, b, LEDGER_COL_MNEMO, &bnumber, -1 );
 
-	cmp = g_utf8_collate( anumber, bnumber );
+	cmp = my_collate( anumber, bnumber );
 
 	g_free( anumber );
 	g_free( bnumber );
@@ -307,7 +307,7 @@ find_ledger_by_mnemo( ofaLedgerStore *self, const gchar *mnemo, GtkTreeIter *ite
 	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
 		while( TRUE ){
 			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, LEDGER_COL_MNEMO, &str, -1 );
-			cmp = g_utf8_collate( str, mnemo );
+			cmp = my_collate( str, mnemo );
 			g_free( str );
 			if( cmp == 0 ){
 				return( TRUE );
@@ -414,7 +414,7 @@ signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *
 
 	} else if( OFO_IS_CURRENCY( object )){
 		new_id = ofo_currency_get_code( OFO_CURRENCY( object ));
-		if( prev_id && g_utf8_collate( prev_id, new_id )){
+		if( prev_id && my_collate( prev_id, new_id )){
 			set_currency_new_id( self, prev_id, new_id );
 		}
 	}
