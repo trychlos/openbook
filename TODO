@@ -330,8 +330,6 @@
 1418 2017- 3-24 ope template has a prof. share (quote-part pro)
      2017- 3-25 dbms is updated
 
-1435 2017- 4- 5 vat record should be automatically validated on period close
-
 1436 2017- 4- 5 vat record should not be deletable if generated entries
                 have been validated
 
@@ -1014,6 +1012,9 @@
 
 1434 2017- 3-31 ReconciliationGroup: have actions 'view entry' and 'view bat'
      2017- 4- 3 done
+
+1435 2017- 4- 5 vat record should be automatically validated on period close
+     2017- 4- 7 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -48,6 +48,7 @@
 #include "api/ofa-idbsuperuser.h"
 #include "api/ofa-iexe-close.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-concil.h"
@@ -189,6 +190,7 @@ static gboolean       p6_solde_accounts( ofaExerciceCloseAssistant *self );
 static gint           p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui );
 static void           p6_set_forward_settlement_number( GList *entries, const gchar *account, ofxCounter counter );
 static gboolean       p6_close_ledgers( ofaExerciceCloseAssistant *self );
+static gboolean       p6_advertise_closing( ofaExerciceCloseAssistant *self );
 static gboolean       p6_archive_exercice( ofaExerciceCloseAssistant *self );
 static gboolean       p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui );
 static gboolean       p6_cleanup( ofaExerciceCloseAssistant *self );
@@ -1319,7 +1321,7 @@ p6_set_forward_settlement_number( GList *entries, const gchar *account, ofxCount
 
 	for( it=entries ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		if( !g_utf8_collate( ofo_entry_get_account( entry ), account )){
+		if( !my_collate( ofo_entry_get_account( entry ), account )){
 			ofo_entry_set_settlement_number( entry, counter );
 			return;
 		}
@@ -1361,7 +1363,38 @@ p6_close_ledgers( ofaExerciceCloseAssistant *self )
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( bar ));
-	g_idle_add(( GSourceFunc ) p6_archive_exercice, self );
+	g_idle_add(( GSourceFunc ) p6_advertise_closing, self );
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
+}
+
+/*
+ * advertise of the period closing
+ */
+static gboolean
+p6_advertise_closing( ofaExerciceCloseAssistant *self )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	gboolean ok;
+	GtkWidget *label;
+	ofaISignaler *signaler;
+	const GDate *end_cur;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( self );
+
+	ok = TRUE;
+	signaler = ofa_igetter_get_signaler( priv->getter );
+	end_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
+	g_signal_emit_by_name( signaler, SIGNALER_DOSSIER_PERIOD_CLOSED, end_cur );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-advertise-label" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
+	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
+
+	if( ok ){
+		g_idle_add(( GSourceFunc ) p6_archive_exercice, self );
+	}
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );

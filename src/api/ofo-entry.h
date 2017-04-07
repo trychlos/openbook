@@ -72,7 +72,8 @@ typedef struct {
  *
  * @ENT_STATUS_FUTURE: status attached to the entries imported or created
  *  for a future exercice; these entries are imputed on the corresponding
- *  solde of accounts and ledgers. They are considered as rough.
+ *  solde of accounts and ledgers. They are considered as rough and cannot
+ *  be validated.
  */
 typedef enum {
 	ENT_STATUS_PAST = 1,

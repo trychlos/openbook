@@ -316,7 +316,7 @@ setup_columns( ofaTVARecordTreeview *self )
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), TVA_RECORD_COL_CORRESPONDENCE, _( "Correspondence" ),     NULL );
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_BEGIN,          _( "Begin" ),          _( "Beginning date" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_END,            _( "End" ),            _( "Ending date" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_IS_VALIDATED,   _( "Validated" ),          NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_STATUS,         _( "Status" ),         _( "Validation status" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_DOPE,           _( "Ope" ),            _( "Operation date" ));
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), TVA_RECORD_COL_NOTES,          _( "Notes" ),              NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), TVA_RECORD_COL_NOTES_PNG,         "",                 _( "Notes indicator" ));
@@ -436,8 +436,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	static const gchar *thisfn = "ofa_tva_record_treeview_v_sort";
 	ofaTVARecordTreeviewPrivate *priv;
 	gint cmp;
-	gchar *mnemoa, *labela, *correspa, *begina, *enda, *valida, *dopea, *notesa, *updusera, *updstampa;
-	gchar *mnemob, *labelb, *correspb, *beginb, *endb, *validb, *dopeb, *notesb, *upduserb, *updstampb;
+	gchar *mnemoa, *labela, *correspa, *begina, *enda, *stata, *dopea, *notesa, *updusera, *updstampa;
+	gchar *mnemob, *labelb, *correspb, *beginb, *endb, *statb, *dopeb, *notesb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
 
 	priv = ofa_tva_record_treeview_get_instance_private( OFA_TVA_RECORD_TREEVIEW( bin ));
@@ -448,7 +448,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			TVA_RECORD_COL_CORRESPONDENCE, &correspa,
 			TVA_RECORD_COL_BEGIN,          &begina,
 			TVA_RECORD_COL_END,            &enda,
-			TVA_RECORD_COL_IS_VALIDATED,   &valida,
+			TVA_RECORD_COL_STATUS,         &stata,
 			TVA_RECORD_COL_DOPE,           &dopea,
 			TVA_RECORD_COL_NOTES,          &notesa,
 			TVA_RECORD_COL_NOTES_PNG,      &pnga,
@@ -462,7 +462,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			TVA_RECORD_COL_CORRESPONDENCE, &correspb,
 			TVA_RECORD_COL_BEGIN,          &beginb,
 			TVA_RECORD_COL_END,            &endb,
-			TVA_RECORD_COL_IS_VALIDATED,   &validb,
+			TVA_RECORD_COL_STATUS,         &statb,
 			TVA_RECORD_COL_DOPE,           &dopeb,
 			TVA_RECORD_COL_NOTES,          &notesb,
 			TVA_RECORD_COL_NOTES_PNG,      &pngb,
@@ -488,8 +488,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 		case TVA_RECORD_COL_END:
 			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
-		case TVA_RECORD_COL_IS_VALIDATED:
-			cmp = my_collate( valida, validb );
+		case TVA_RECORD_COL_STATUS:
+			cmp = my_collate( stata, statb );
 			break;
 		case TVA_RECORD_COL_DOPE:
 			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_get_display_format( priv->getter ));
@@ -516,7 +516,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( correspa );
 	g_free( begina );
 	g_free( enda );
-	g_free( valida );
+	g_free( stata );
 	g_free( dopea );
 	g_free( notesa );
 	g_free( updusera );
@@ -528,7 +528,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( correspb );
 	g_free( beginb );
 	g_free( endb );
-	g_free( validb );
+	g_free( statb );
 	g_free( dopeb );
 	g_free( notesb );
 	g_free( upduserb );

@@ -69,6 +69,23 @@ typedef struct {
 }
 	ofoTVARecordClass;
 
+/**
+ * ofeVatStatus:
+ *
+ * @VAT_STATUS_NO: the VAT declaration has not been yet validated.
+ * @VAT_STATUS_USER: the VAT declaration has been validated by the user.
+ * @VAT_STATUS_PCLOSE: the VAT declaration has been automatically
+ *  validated on period closing.
+ *
+ * Validation status of the VAT declaration.
+ */
+typedef enum {
+	VAT_STATUS_NO = 1,
+	VAT_STATUS_USER,
+	VAT_STATUS_PCLOSE
+}
+	ofeVatStatus;
+
 GType           ofo_tva_record_get_type               ( void ) G_GNUC_CONST;
 
 GList          *ofo_tva_record_get_dataset            ( ofaIGetter *getter );
@@ -86,7 +103,13 @@ const gchar    *ofo_tva_record_get_mnemo              ( const ofoTVARecord *reco
 const gchar    *ofo_tva_record_get_label              ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_get_correspondence     ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_get_notes              ( const ofoTVARecord *record );
-gboolean        ofo_tva_record_get_is_validated       ( const ofoTVARecord *record );
+ofeVatStatus    ofo_tva_record_get_status             ( const ofoTVARecord *record );
+const gchar    *ofo_tva_record_status_get_dbms        ( ofeVatStatus valid );
+const gchar    *ofo_tva_record_status_get_abr         ( ofeVatStatus valid );
+const gchar    *ofo_tva_record_status_get_label       ( ofeVatStatus valid );
+const gchar    *ofo_tva_record_get_status_user        ( const ofoTVARecord *record );
+const GTimeVal *ofo_tva_record_get_status_stamp       ( const ofoTVARecord *record );
+const GDate    *ofo_tva_record_get_status_closing     ( const ofoTVARecord *record );
 const GDate    *ofo_tva_record_get_begin              ( const ofoTVARecord *record );
 const GDate    *ofo_tva_record_get_end                ( const ofoTVARecord *record );
 const GDate    *ofo_tva_record_get_dope               ( const ofoTVARecord *record );
@@ -104,7 +127,6 @@ gint            ofo_tva_record_compare_by_key         ( const ofoTVARecord *reco
 void            ofo_tva_record_set_label              ( ofoTVARecord *record, const gchar *label );
 void            ofo_tva_record_set_correspondence     ( ofoTVARecord *record, const gchar *correspondence );
 void            ofo_tva_record_set_notes              ( ofoTVARecord *record, const gchar *notes );
-void            ofo_tva_record_set_is_validated       ( ofoTVARecord *record, gboolean is_validated );
 void            ofo_tva_record_set_begin              ( ofoTVARecord *record, const GDate *date );
 void            ofo_tva_record_set_end                ( ofoTVARecord *record, const GDate *date );
 void            ofo_tva_record_set_dope               ( ofoTVARecord *record, const GDate *date );
@@ -140,6 +162,10 @@ GList          *ofo_tva_record_get_det_orphans        ( ofaIGetter *getter );
 
 GList          *ofo_tva_record_get_doc_orphans        ( ofaIGetter *getter );
 #define         ofo_tva_record_free_doc_orphans( L )  ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+
+gboolean        ofo_tva_record_validate               ( ofoTVARecord *record,
+															ofeVatStatus status,
+															const GDate *closing );
 
 gboolean        ofo_tva_record_insert                 ( ofoTVARecord *record );
 gboolean        ofo_tva_record_update                 ( ofoTVARecord *record );

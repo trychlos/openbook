@@ -57,7 +57,10 @@ enum {
 	TFO_LABEL,
 	TFO_CORRESPONDENCE,
 	TFO_NOTES,
-	TFO_VALIDATED,
+	TFO_STATUS,
+	TFO_STATUS_USER,
+	TFO_STATUS_STAMP,
+	TFO_STATUS_CLOSING,
 	TFO_BEGIN,
 	TFO_END,
 	TFO_DOPE,
@@ -95,8 +98,20 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( TFO_VALIDATED ),
+		{ OFA_BOX_CSV( TFO_STATUS ),
 				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_STATUS_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_STATUS_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
+		{ OFA_BOX_CSV( TFO_STATUS_CLOSING ),
+				OFA_TYPE_DATE,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( TFO_BEGIN ),
@@ -179,32 +194,58 @@ typedef struct {
 }
 	ofoTVARecordPrivate;
 
-static void          record_set_mnemo( ofoTVARecord *record, const gchar *mnemo );
-static void          tva_record_set_upd_user( ofoTVARecord *record, const gchar *upd_user );
-static void          tva_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *upd_stamp );
-static GList        *get_orphans( ofaIGetter *getter, const gchar *table );
-static gboolean      record_do_insert( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gboolean      record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gboolean      record_delete_details( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gboolean      record_delete_bools( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gboolean      record_insert_details_ex( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gboolean      record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details );
-static gboolean      record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details );
-static gboolean      record_do_update( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gboolean      record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gboolean      record_do_delete( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gint          record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar *mnemo, const GDate *end );
-static void          icollectionable_iface_init( myICollectionableInterface *iface );
-static guint         icollectionable_get_interface_version( void );
-static GList        *icollectionable_load_collection( void *user_data );
-static void          idoc_iface_init( ofaIDocInterface *iface );
-static guint         idoc_get_interface_version( void );
-static void          isignalable_iface_init( ofaISignalableInterface *iface );
-static void          isignalable_connect_to( ofaISignaler *signaler );
-static gboolean      signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
-static gboolean      signaler_is_deletable_tva_form( ofaISignaler *signaler, ofoTVAForm *form );
-static void          signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean      signaler_on_updated_tva_form_mnemo( ofaISignaler *signaler, ofoBase *object, const gchar *mnemo, const gchar *prev_id );
+/* manage the validity status
+ * - the identifier is from a public enum (easier for the code)
+ * - a non-localized char stored in dbms
+ * - a localized char (short string for treeviews)
+ * - a localized label
+ */
+typedef struct {
+	ofeVatStatus    id;
+	const gchar   *dbms;
+	const gchar   *abr;
+	const gchar   *label;
+}
+	sValid;
+
+static sValid st_valid[] = {
+		{ VAT_STATUS_NO,     "N", N_( "No" ),    N_( "Not validated" ) },
+		{ VAT_STATUS_USER,   "U", N_( "User" ),  N_( "Validated by the user" ) },
+		{ VAT_STATUS_PCLOSE, "C", N_( "Clos." ), N_( "Automatically validated on period closing" ) },
+		{ 0 },
+};
+
+static void      record_set_mnemo( ofoTVARecord *record, const gchar *mnemo );
+static void      tva_record_set_status( ofoTVARecord *record, ofeVatStatus status );
+static void      tva_record_set_status_user( ofoTVARecord *record, const gchar *user );
+static void      tva_record_set_status_stamp( ofoTVARecord *record, const GTimeVal *stamp );
+static void      tva_record_set_status_closing( ofoTVARecord *record, const GDate *date );
+static void      tva_record_set_upd_user( ofoTVARecord *record, const gchar *upd_user );
+static void      tva_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *upd_stamp );
+static GList    *get_orphans( ofaIGetter *getter, const gchar *table );
+static gboolean  record_do_insert( ofoTVARecord *record, const ofaIDBConnect *connect );
+static gboolean  record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect );
+static gboolean  record_delete_details( ofoTVARecord *record, const ofaIDBConnect *connect );
+static gboolean  record_delete_bools( ofoTVARecord *record, const ofaIDBConnect *connect );
+static gboolean  record_insert_details_ex( ofoTVARecord *record, const ofaIDBConnect *connect );
+static gboolean  record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details );
+static gboolean  record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details );
+static gboolean  record_do_update( ofoTVARecord *record, const ofaIDBConnect *connect );
+static gboolean  record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect );
+static gboolean  record_do_delete( ofoTVARecord *record, const ofaIDBConnect *connect );
+static gint      record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar *mnemo, const GDate *end );
+static void      icollectionable_iface_init( myICollectionableInterface *iface );
+static guint     icollectionable_get_interface_version( void );
+static GList    *icollectionable_load_collection( void *user_data );
+static void      idoc_iface_init( ofaIDocInterface *iface );
+static guint     idoc_get_interface_version( void );
+static void      isignalable_iface_init( ofaISignalableInterface *iface );
+static void      isignalable_connect_to( ofaISignaler *signaler );
+static gboolean  signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
+static gboolean  signaler_is_deletable_tva_form( ofaISignaler *signaler, ofoTVAForm *form );
+static void      signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
+static gboolean  signaler_on_updated_tva_form_mnemo( ofaISignaler *signaler, ofoBase *object, const gchar *mnemo, const gchar *prev_id );
+static void      signaler_on_period_close( ofaISignaler *signaler, const GDate *closing, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVARecord, ofo_tva_record, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVARecord )
@@ -563,19 +604,137 @@ ofo_tva_record_get_notes( const ofoTVARecord *record )
 }
 
 /**
- * ofo_tva_record_get_is_validated:
+ * ofo_tva_record_get_status:
+ * @record: this #ofoTVARecord object.
+ *
+ * Returns: the validity status of @record.
  */
-gboolean
-ofo_tva_record_get_is_validated( const ofoTVARecord *record )
+ofeVatStatus
+ofo_tva_record_get_status( const ofoTVARecord * record )
 {
+	static const gchar *thisfn = "ofo_tva_record_get_validated";
 	const gchar *cstr;
+	gint i;
 
-	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), VAT_STATUS_NO );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, VAT_STATUS_NO );
 
-	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_VALIDATED );
+	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_STATUS );
 
-	return( my_utils_boolean_from_str( cstr ));
+	for( i=0 ; st_valid[i].id ; ++i ){
+		if( !my_collate( st_valid[i].dbms, cstr )){
+			return( st_valid[i].id );
+		}
+	}
+
+	g_warning( "%s: unknown or invalid dbms status: %s", thisfn, cstr );
+
+	return( VAT_STATUS_NO );
+}
+
+/**
+ * ofo_tva_record_status_get_dbms:
+ *
+ * Returns: the dbms string corresponding to the status.
+ */
+const gchar *
+ofo_tva_record_status_get_dbms( ofeVatStatus status )
+{
+	static const gchar *thisfn = "ofo_tva_record_status_get_dbms";
+	gint i;
+
+	for( i=0 ; st_valid[i].id ; ++i ){
+		if( st_valid[i].id == status ){
+			return( st_valid[i].dbms );
+		}
+	}
+
+	g_warning( "%s: unknown or invalid status identifier: %u", thisfn, status );
+
+	return( "" );
+}
+
+/**
+ * ofo_tva_record_status_get_abr:
+ *
+ * Returns: the abbreviated localized string corresponding to the status.
+ */
+const gchar *
+ofo_tva_record_status_get_abr( ofeVatStatus status )
+{
+	static const gchar *thisfn = "ofo_tva_record_status_get_abr";
+	gint i;
+
+	for( i=0 ; st_valid[i].id ; ++i ){
+		if( st_valid[i].id == status ){
+			return( gettext( st_valid[i].abr ));
+		}
+	}
+
+	g_warning( "%s: unknown or invalid status identifier: %u", thisfn, status );
+
+	return( "" );
+}
+
+/**
+ * ofo_tva_record_status_get_label:
+ *
+ * Returns: the abbreviated localized label corresponding to the status.
+ */
+const gchar *
+ofo_tva_record_status_get_label( ofeVatStatus status )
+{
+	static const gchar *thisfn = "ofo_tva_record_status_get_label";
+	gint i;
+
+	for( i=0 ; st_valid[i].id ; ++i ){
+		if( st_valid[i].id == status ){
+			return( gettext( st_valid[i].label ));
+		}
+	}
+
+	g_warning( "%s: unknown or invalid status identifier: %u", thisfn, status );
+
+	return( "" );
+}
+
+/**
+ * ofo_tva_record_get_status_user:
+ * @record: this #ofoTVARecord object.
+ *
+ * Returns: the user responsible of the validation.
+ */
+const gchar *
+ofo_tva_record_get_status_user( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, string, NULL, TFO_STATUS_USER );
+}
+
+/**
+ * ofo_tva_record_get_status_stamp:
+ * @record: this #ofoTVARecord object.
+ *
+ * Returns: the validation timestamp.
+ */
+const GTimeVal *
+ofo_tva_record_get_status_stamp( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, timestamp, NULL, TFO_STATUS_STAMP );
+}
+
+/**
+ * ofo_tva_record_get_status_closing:
+ * @record: this #ofoTVARecord object.
+ *
+ * Returns: the closing date of the validation if the record has been
+ * automatically validated on period closing.
+ *
+ * Validation status must be VAT_STATUS_PCLOSE.
+ */
+const GDate *
+ofo_tva_record_get_status_closing( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, date, NULL, TFO_STATUS_CLOSING );
 }
 
 /**
@@ -634,14 +793,14 @@ ofo_tva_record_get_upd_stamp( const ofoTVARecord *record )
 gboolean
 ofo_tva_record_is_deletable( const ofoTVARecord *record )
 {
-	gboolean is_validated;
+	ofeVatStatus status;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
 
-	is_validated = ofo_tva_record_get_is_validated( record );
+	status = ofo_tva_record_get_status( record );
 
-	return( !is_validated );
+	return( status == VAT_STATUS_NO );
 }
 
 /**
@@ -735,6 +894,9 @@ ofo_tva_record_is_computable( const gchar *mnemo, const GDate *begin, const GDat
  *
  * This is the case if both dates are set (while only end date is needed
  * to record the data).
+ *
+ * Note that the VAT declaration may anyway be validated on period
+ * closing whatever be its current state at this time.
  */
 gboolean
 ofo_tva_record_is_validable( const gchar *mnemo, const GDate *begin, const GDate *end, const GDate *dope, gchar **msgerr )
@@ -820,13 +982,52 @@ ofo_tva_record_set_notes( ofoTVARecord *record, const gchar *notes )
 	ofo_base_setter( TVA_RECORD, record, string, TFO_NOTES, notes );
 }
 
-/**
- * ofo_tva_record_set_is_validated:
+/*
+ * ofo_tva_record_set_status:
+ * @record: this #ofoTVARecord object.
+ * @status: the validations status of @record.
+ *
+ * Set @status.
  */
-void
-ofo_tva_record_set_is_validated( ofoTVARecord *record, gboolean is_validated )
+static void
+tva_record_set_status( ofoTVARecord *record, ofeVatStatus status )
 {
-	ofo_base_setter( TVA_RECORD, record, string, TFO_VALIDATED, is_validated ? "Y":"N" );
+	const gchar *cstr;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	cstr = ofo_tva_record_status_get_dbms( status );
+	ofa_box_set_string( OFO_BASE( record )->prot->fields, TFO_STATUS, cstr );
+}
+
+/*
+ * ofo_tva_record_set_status_user:
+ */
+static void
+tva_record_set_status_user( ofoTVARecord *record, const gchar *user )
+{
+	ofo_base_setter( TVA_RECORD, record, string, TFO_STATUS_USER, user );
+}
+
+/*
+ * ofo_tva_record_set_status_stamp:
+ */
+static void
+tva_record_set_status_stamp( ofoTVARecord *record, const GTimeVal *stamp )
+{
+	ofo_base_setter( TVA_RECORD, record, string, TFO_STATUS_STAMP, stamp );
+}
+
+/*
+ * ofo_tva_record_set_status_closing:
+ * @record: this #ofoTVARecord object.
+ * @status: the validations status of @record.
+ */
+static void
+tva_record_set_status_closing( ofoTVARecord *record, const GDate *date )
+{
+	ofo_base_setter( TVA_RECORD, record, date, TFO_STATUS_CLOSING, date );
 }
 
 /**
@@ -1207,34 +1408,116 @@ get_orphans( ofaIGetter *getter, const gchar *table )
 }
 
 /**
- * ofo_tva_record_insert:
+ * ofo_tva_record_validate:
+ * @record: this #ofoTVARecord object.
+ * @status: the new validation status,
+ *  either VAT_STATUS_USER or VAT_STATUS_PCLOSE.
+ * @closing: [allow-none]: closing date;
+ *  must be set if @status is VAT_STATUS_PCLOSE.
+ *
+ * Validate the @record.
+ *
+ * Current user and timestamp are recorded in corresponding 'status' columns.
  */
 gboolean
-ofo_tva_record_insert( ofoTVARecord *tva_record )
+ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate *closing )
 {
-	static const gchar *thisfn = "ofo_tva_record_insert";
+	static const gchar *thisfn = "ofo_tva_record_validate";
+	ofaIGetter *getter;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	const gchar *user, *cstr;
+	gchar *stamp_str, *sdate, *send;
+	GTimeVal stamp;
+	GString *gstr;
+	gboolean ok;
+
+	g_debug( "%s: record=%p, status=%u, closing=%p",
+			thisfn, ( void * ) record, status, ( void * ) closing );
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
+
+
+	getter = ofo_base_get_getter( OFO_BASE( record ));
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	gstr = g_string_new( "UPDATE TVA_T_RECORDS SET " );
+
+	tva_record_set_status( record, status );
+	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_STATUS );
+	g_string_append_printf( gstr, "TFO_STATUS='%s',", cstr );
+
+	user = ofa_idbconnect_get_account( connect );
+	tva_record_set_status_user( record, user );
+	g_string_append_printf( gstr, "TFO_STATUS_USER='%s',", user );
+
+	my_stamp_set_now( &stamp );
+	tva_record_set_status_stamp( record, &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	g_string_append_printf( gstr, "TFO_STATUS_STAMP='%s',", user );
+	g_free( stamp_str );
+
+	if( status == VAT_STATUS_PCLOSE ){
+		g_return_val_if_fail( my_date_is_valid( closing ), FALSE );
+		tva_record_set_status_closing( record, closing );
+		sdate = my_date_to_str( closing, MY_DATE_SQL );
+		g_string_append_printf( gstr, "TFO_STATUS_CLOSING='%s'", sdate );
+		g_free( sdate );
+	} else {
+		tva_record_set_status_closing( record, NULL );
+		gstr = g_string_append( gstr, "TFO_STATUS_CLOSING=NULL" );
+	}
+
+	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
+	g_string_append_printf(
+			gstr, "	WHERE TFO_MNEMO='%s' AND TFO_END='%s'",
+					ofo_tva_record_get_mnemo( record ), send );
+	g_free( send );
+
+	ok = ofa_idbconnect_query( connect, gstr->str, TRUE );
+
+	g_string_free( gstr, TRUE );
+
+	return( ok );
+}
+
+/**
+ * ofo_tva_record_insert:
+ * @record: this #ofoTVARecord object.
+ *
+ * Insert the @record new VAT declaration in the DBMS.
+ *
+ * This first insertion does not consider the status data group.
+ * See ofo_tva_record_validate() for this.
+ */
+gboolean
+ofo_tva_record_insert( ofoTVARecord *record )
+{
+	static const gchar *thisfn = "ofo_record_insert";
 	ofaIGetter *getter;
 	ofaISignaler *signaler;
 	ofaHub *hub;
 	gboolean ok;
 
-	g_debug( "%s: record=%p", thisfn, ( void * ) tva_record );
+	g_debug( "%s: record=%p", thisfn, ( void * ) record );
 
-	g_return_val_if_fail( tva_record && OFO_IS_TVA_RECORD( tva_record ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( tva_record )->prot->dispose_has_run, FALSE );
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	getter = ofo_base_get_getter( OFO_BASE( tva_record ));
+	getter = ofo_base_get_getter( OFO_BASE( record ));
 	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
 	/* rationale: see ofo-account.c */
 	ofo_tva_record_get_dataset( getter );
 
-	if( record_do_insert( tva_record, ofa_hub_get_connect( hub ))){
+	if( record_do_insert( record, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_add_object(
-				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( tva_record ), NULL, getter );
-		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, tva_record );
+				ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( record ), NULL, getter );
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, record );
 		ok = TRUE;
 	}
 
@@ -1255,7 +1538,7 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	GString *query;
 	gchar *notes, *label, *corresp, *sbegin, *send, *sdope, *stamp_str;
 	GTimeVal stamp;
-	const gchar *userid;
+	const gchar *userid, *cstr;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_tva_record_get_label( record ));
@@ -1271,7 +1554,8 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 
 	g_string_append_printf( query,
 			"	(TFO_MNEMO,TFO_LABEL,TFO_CORRESPONDENCE,"
-			"	 TFO_NOTES,TFO_VALIDATED,TFO_BEGIN,TFO_END,TFO_DOPE,"
+			"	 TFO_NOTES,TFO_STATUS,"
+			"	 TFO_BEGIN,TFO_END,TFO_DOPE,"
 			"	 TFO_UPD_USER, TFO_UPD_STAMP) VALUES ('%s'",
 			ofo_tva_record_get_mnemo( record ));
 
@@ -1293,7 +1577,8 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 		query = g_string_append( query, ",NULL" );
 	}
 
-	g_string_append_printf( query, ",'%s'", ofo_tva_record_get_is_validated( record ) ? "Y":"N" );
+	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_STATUS );
+	g_string_append_printf( query, ",'%s'", cstr );
 
 	if( my_strlen( sbegin )){
 		g_string_append_printf( query, ",'%s'", sbegin );
@@ -1476,13 +1761,20 @@ record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint r
 
 /**
  * ofo_tva_record_update:
- * @record:
+ * @record: this #ofoTVARecord object.
  *
- * ofaTVARecordProperties dialog refuses to modify mnemonic and end
+ * Update the properties of @record in DBMS.
+ *
+ * #ofaTVARecordProperties dialog refuses to modify mnemonic and end
  * date: they are set once and never modified.
+ *
+ * Notes are still updatable even after the declaration has been validated.
+ *
+ * Validation data group is not updated here.
+ * See ofo_tva_record_validate().
  */
 gboolean
-ofo_tva_record_update( ofoTVARecord *tva_record )
+ofo_tva_record_update( ofoTVARecord *record )
 {
 	static const gchar *thisfn = "ofo_tva_record_update";
 	ofaIGetter *getter;
@@ -1490,18 +1782,18 @@ ofo_tva_record_update( ofoTVARecord *tva_record )
 	ofaHub *hub;
 	gboolean ok;
 
-	g_debug( "%s: record=%p", thisfn, ( void * ) tva_record );
+	g_debug( "%s: record=%p", thisfn, ( void * ) record );
 
-	g_return_val_if_fail( tva_record && OFO_IS_TVA_RECORD( tva_record ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( tva_record )->prot->dispose_has_run, FALSE );
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	getter = ofo_base_get_getter( OFO_BASE( tva_record ));
+	getter = ofo_base_get_getter( OFO_BASE( record ));
 	signaler = ofa_igetter_get_signaler( getter );
 	hub = ofa_igetter_get_hub( getter );
 
-	if( record_do_update( tva_record, ofa_hub_get_connect( hub ))){
-		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, tva_record, NULL );
+	if( record_do_update( record, ofa_hub_get_connect( hub ))){
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, record, NULL );
 		ok = TRUE;
 	}
 
@@ -1521,7 +1813,7 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	gboolean ok;
 	GString *query;
 	gchar *notes, *label, *corresp, *sbegin, *send, *sdope, *stamp_str;
-	const gchar *mnemo, *userid;
+	const gchar *mnemo, *userid, *cstr;
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
@@ -1555,9 +1847,8 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 		query = g_string_append( query, ",TFO_NOTES=NULL" );
 	}
 
-	g_string_append_printf(
-			query, ",TFO_VALIDATED='%s'",
-			ofo_tva_record_get_is_validated( record ) ? "Y":"N" );
+	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_STATUS );
+	g_string_append_printf( query, ",TFO_STATUS='%s'", cstr );
 
 	if( my_strlen( sbegin )){
 		g_string_append_printf( query, ",TFO_BEGIN='%s'", sbegin );
@@ -1791,6 +2082,7 @@ isignalable_connect_to( ofaISignaler *signaler )
 
 	g_signal_connect( signaler, SIGNALER_BASE_IS_DELETABLE, G_CALLBACK( signaler_on_deletable_object ), NULL );
 	g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), NULL );
+	g_signal_connect( signaler, SIGNALER_DOSSIER_PERIOD_CLOSED, G_CALLBACK( signaler_on_period_close ), NULL );
 }
 
 /*
@@ -1911,4 +2203,35 @@ signaler_on_updated_tva_form_mnemo( ofaISignaler *signaler, ofoBase *object, con
 	my_icollector_collection_free( collector, OFO_TYPE_TVA_RECORD );
 
 	return( ok );
+}
+
+/*
+ * period closing:
+ * auto-validate VAT declarations until this date.
+ */
+static void
+signaler_on_period_close( ofaISignaler *signaler, const GDate *closing, void *empty )
+{
+	ofaIGetter *getter;
+	GList *dataset, *it;
+	ofoTVARecord *record;
+	const GDate *end;
+	ofeVatStatus status;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	dataset = ofo_tva_record_get_dataset( getter );
+
+	for( it=dataset ; it ; it=it->next ){
+		record = OFO_TVA_RECORD( it->data );
+		status = ofo_tva_record_get_status( record );
+		/* if already validated, nothing to do */
+		if( status != VAT_STATUS_NO ){
+			continue;
+		}
+		/* only validate the declarations before the closing date */
+		end = ofo_tva_record_get_end( record );
+		if( my_date_compare( end, closing ) <= 0 ){
+			ofo_tva_record_validate( record, VAT_STATUS_PCLOSE, closing );
+		}
+	}
 }

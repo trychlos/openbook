@@ -56,8 +56,8 @@ typedef struct {
 
 static GType st_col_types[TVA_RECORD_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, correspondence */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* begin, end, is_validated */
-		G_TYPE_STRING,									/* dope */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* begin, end, status */
+		G_TYPE_UINT,   G_TYPE_STRING,					/* status_i, dope */
 		G_TYPE_STRING, 0,								/* notes, notes_png */
 		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* the #ofoTVARecord itself, the #ofoTVAForm */
@@ -264,9 +264,9 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 {
 	static const gchar *thisfn = "ofa_tva_record_store_set_row_by_iter";
 	ofaTVARecordStorePrivate *priv;
-	const gchar *cvalidated;
+	ofeVatStatus status;
 	gchar *sbegin, *send, *sdope, *stamp;
-	const gchar *notes;
+	const gchar *notes, *cstatus;
 	ofoTVAForm *form;
 	GError *error;
 	GdkPixbuf *notes_png;
@@ -278,8 +278,10 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), ofa_prefs_date_get_display_format( priv->getter ));
 	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_get_display_format( priv->getter ));
-	cvalidated = ofo_tva_record_get_is_validated( record ) ? _( "Yes" ) : _( "No" );
 	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), ofa_prefs_date_get_display_format( priv->getter ));
+
+	status = ofo_tva_record_get_status( record );
+	cstatus = ofo_tva_record_status_get_abr( status );
 
 	notes = ofo_tva_record_get_notes( record );
 	error = NULL;
@@ -299,7 +301,8 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 			TVA_RECORD_COL_CORRESPONDENCE, ofo_tva_record_get_correspondence( record ),
 			TVA_RECORD_COL_BEGIN,          sbegin,
 			TVA_RECORD_COL_END,            send,
-			TVA_RECORD_COL_IS_VALIDATED,   cvalidated,
+			TVA_RECORD_COL_STATUS,         cstatus,
+			TVA_RECORD_COL_STATUS_I,       status,
 			TVA_RECORD_COL_DOPE,           sdope,
 			TVA_RECORD_COL_NOTES,          notes,
 			TVA_RECORD_COL_NOTES_PNG,      notes_png,

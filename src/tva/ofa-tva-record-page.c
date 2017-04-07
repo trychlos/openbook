@@ -329,14 +329,16 @@ update_on_selection( ofaTVARecordPage *self, ofoTVARecord *record )
 {
 	ofaTVARecordPagePrivate *priv;
 	gboolean is_record;
+	ofeVatStatus status;
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
 	is_record = record && OFO_IS_TVA_RECORD( record );
+	status = is_record ? ofo_tva_record_get_status( record ) : 0;
 
 	g_simple_action_set_enabled( priv->update_action, is_record );
 	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, record ));
-	g_simple_action_set_enabled( priv->validate_action, is_record && !ofo_tva_record_get_is_validated( record ));
+	g_simple_action_set_enabled( priv->validate_action, is_record && status == VAT_STATUS_NO );
 }
 
 /*
@@ -472,7 +474,7 @@ validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 	priv = ofa_tva_record_page_get_instance_private( self );
 
 	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_get_display_format( priv->getter ));
-	msg = g_strdup_printf( _( "Are you sure you want validate the %s at %s TVA declaration ?" ),
+	msg = g_strdup_printf( _( "Are you sure you want validate the %s at %s VAT declaration ?" ),
 				ofo_tva_record_get_mnemo( record ), send );
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
@@ -482,7 +484,6 @@ validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 	g_free( send );
 
 	if( delete_ok ){
-		ofo_tva_record_set_is_validated( record, TRUE );
-		ofo_tva_record_update( record );
+		ofo_tva_record_validate( record, VAT_STATUS_USER, NULL );
 	}
 }

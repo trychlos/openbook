@@ -74,7 +74,8 @@ typedef struct {
 	GtkWindow    *actual_parent;
 	ofoTVAForm   *form;
 	ofaTVAStyle  *style_provider;
-	gboolean      is_writable;
+	gboolean      is_writable;						/* whether the dossier is writable */
+	gboolean      record_is_writable;				/* whether the VAT record is updatable */
 	gboolean      is_new;
 
 	/* UI
@@ -103,7 +104,7 @@ typedef struct {
 	GDate         end_date;
 	GDate         dope_date;
 	gboolean      has_correspondence;
-	gboolean      is_validated;
+	ofeVatStatus  status;
 	guint         opes_generated;
 	GList        *view_opes;
 }
@@ -367,6 +368,7 @@ idialog_init( myIDialog *instance )
 	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( instance ));
 
 	hub = ofa_igetter_get_hub( priv->getter );
+	priv->status = ofo_tva_record_get_status( priv->tva_record );
 
 	/* update properties on OK + always terminates */
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
@@ -390,7 +392,8 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->validate_btn && GTK_IS_BUTTON( priv->validate_btn ));
 	g_signal_connect( priv->validate_btn, "clicked", G_CALLBACK( on_validate_clicked ), instance );
 
-	priv->is_writable = ofa_hub_is_writable_dossier( hub ) && !ofo_tva_record_get_is_validated( priv->tva_record );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
+	priv->record_is_writable = priv->status == VAT_STATUS_NO;
 	priv->style_provider = ofa_tva_style_new( priv->getter );
 
 	priv->form = ofo_tva_form_get_by_mnemo( priv->getter, ofo_tva_record_get_mnemo( priv->tva_record ));
@@ -425,12 +428,10 @@ init_properties( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 	GtkWidget *entry, *label;
-	gboolean is_true;
 	const gchar *cstr;
+	gboolean is_true;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
-
-	priv->is_validated = ofo_tva_record_get_is_validated( priv->tva_record );
 
 	/* mnemonic: invariant */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-mnemo-entry" );
@@ -467,8 +468,8 @@ init_properties( ofaTVARecordProperties *self )
 	/* is validated: invariant */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-validated-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	is_true = ofo_tva_record_get_is_validated( priv->tva_record );
-	gtk_label_set_text( GTK_LABEL( label ), is_true ? _( "Yes" ) : _( "No" ));
+	cstr = ofo_tva_record_status_get_label( priv->status );
+	gtk_label_set_text( GTK_LABEL( label ), cstr );
 
 	/* begin date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin-entry" );
@@ -491,7 +492,6 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_set_from_date( &priv->begin_date, ofo_tva_record_get_begin( priv->tva_record ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
-	my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 
 	/* do not let the user edit the ending date of the declaration
 	 * because this is a key of the record
@@ -541,7 +541,7 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_set_from_date( &priv->dope_date, ofo_tva_record_get_dope( priv->tva_record ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->dope_date );
-	my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
+	my_utils_widget_set_editable( entry, priv->is_writable && priv->record_is_writable );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-generated-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -586,7 +586,7 @@ init_booleans( ofaTVARecordProperties *self )
 		row = idx;
 		cstr = ofo_tva_form_boolean_get_label( priv->form, idx );
 		button = gtk_check_button_new_with_label( cstr );
-		my_utils_widget_set_editable( button, priv->is_writable && !priv->is_validated );
+		my_utils_widget_set_editable( button, priv->is_writable && priv->record_is_writable );
 		gtk_grid_attach( GTK_GRID( grid ), button, BOOL_COL_LABEL, row, 1, 1 );
 		g_signal_connect( button, "toggled", G_CALLBACK( on_boolean_toggled ), self );
 		is_true = ofo_tva_record_boolean_get_is_true( priv->tva_record, idx );
@@ -639,7 +639,7 @@ init_taxes( ofaTVARecordProperties *self )
 		has_base = ofo_tva_form_detail_get_has_base( priv->form, idx );
 		if( has_base ){
 			entry = gtk_entry_new();
-			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
+			my_utils_widget_set_editable( entry, priv->is_writable && priv->record_is_writable );
 			my_double_editable_init_ex( GTK_EDITABLE( entry ),
 					g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter )),
 					g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter )),
@@ -662,7 +662,7 @@ init_taxes( ofaTVARecordProperties *self )
 		has_amount = ofo_tva_form_detail_get_has_amount( priv->form, idx );
 		if( has_amount ){
 			entry = gtk_entry_new();
-			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
+			my_utils_widget_set_editable( entry, priv->is_writable && priv->record_is_writable );
 			my_double_editable_init_ex( GTK_EDITABLE( entry ),
 					g_utf8_get_char( ofa_prefs_amount_get_thousand_sep( priv->getter )),
 					g_utf8_get_char( ofa_prefs_amount_get_decimal_sep( priv->getter )),
@@ -708,7 +708,7 @@ init_correspondence( ofaTVARecordProperties *self )
 
 		cstr = ofo_tva_record_get_correspondence( priv->tva_record );
 		my_utils_container_notes_setup_ex( GTK_TEXT_VIEW( priv->corresp_textview ), cstr, TRUE );
-		gtk_widget_set_sensitive( priv->corresp_textview, priv->is_writable );
+		gtk_widget_set_sensitive( priv->corresp_textview, priv->is_writable && priv->record_is_writable );
 	}
 }
 
@@ -778,11 +778,13 @@ on_generated_opes_changed( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 	gchar *str;
+	ofeVatStatus status;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	if( priv->opes_generated == 0 ){
-		if( ofo_tva_record_get_is_validated( priv->tva_record )){
+		status = ofo_tva_record_get_status( priv->tva_record );
+		if( status != VAT_STATUS_NO ){
 			str = g_strdup( _( "No generated operation, and the declaration is validated." ));
 		} else if( !priv->is_writable ){
 			str = g_strdup( _( "No generated operation, and the dossier is not writable." ));
@@ -982,7 +984,7 @@ on_ok_clicked( ofaTVARecordProperties *self )
 }
 
 /*
- * the TVARecord object is expected to have been previously #setup_tva_record().
+ * the TVARecord object is expected to have been previously setup_tva_record().
  */
 static gboolean
 do_update_dbms( ofaTVARecordProperties *self, gchar **msgerr )
@@ -1491,9 +1493,9 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	if( confirm_validate( self )){
-		setup_tva_record( self );
-		ofo_tva_record_set_is_validated( priv->tva_record, TRUE );
+		ofo_tva_record_validate( priv->tva_record, VAT_STATUS_USER, NULL );
 
+		setup_tva_record( self );
 		if( do_update_dbms( self, &msgerr )){
 
 			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO,

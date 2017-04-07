@@ -82,6 +82,8 @@ static gboolean dbmodel_to_v7( ofaTvaDBModel *self, guint version );
 static gulong   count_v7( ofaTvaDBModel *self );
 static gboolean dbmodel_to_v8( ofaTvaDBModel *self, guint version );
 static gulong   count_v8( ofaTvaDBModel *self );
+static gboolean dbmodel_to_v9( ofaTvaDBModel *self, guint version );
+static gulong   count_v9( ofaTvaDBModel *self );
 
 typedef struct {
 	gint        ver_target;
@@ -99,6 +101,7 @@ static sMigration st_migrates[] = {
 		{ 6, dbmodel_to_v6, count_v6 },
 		{ 7, dbmodel_to_v7, count_v7 },
 		{ 8, dbmodel_to_v8, count_v8 },
+		{ 9, dbmodel_to_v9, count_v9 },
 		{ 0 }
 };
 
@@ -853,6 +856,41 @@ dbmodel_to_v8( ofaTvaDBModel *self, guint version )
 
 static gulong
 count_v8( ofaTvaDBModel *self )
+{
+	return( 2 );
+}
+
+/*
+ * Rename the TFO_VALIDATED column
+ */
+static gboolean
+dbmodel_to_v9( ofaTvaDBModel *self, guint version )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_to_v9";
+
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
+
+	if( !exec_query( self,
+			"ALTER TABLE TVA_T_RECORDS "
+			"	CHANGE COLUMN TFO_VALIDATED        TFO_STATUS CHAR(1)                   COMMENT 'Validation status of the record',"
+			"	ADD    COLUMN TFO_STATUS_USER      VARCHAR(64)                          COMMENT 'Validating user',"
+			"	ADD    COLUMN TFO_STATUS_STAMP     TIMESTAMP                            COMMENT 'Validation timestamp',"
+			"	ADD    COLUMN TFO_STATUS_CLOSING   DATE                                 COMMENT 'Closing date if validation on period close'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE TVA_T_RECORDS "
+			"	SET TFO_STATUS='U',TFO_STATUS_USER=TFO_UPD_USER,TFO_STATUS_STAMP=TFO_UPD_STAMP "
+			"		WHERE TFO_STATUS='Y'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v9( ofaTvaDBModel *self )
 {
 	return( 2 );
 }
