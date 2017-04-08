@@ -526,7 +526,7 @@ do_close( ofaPeriodClose *self )
 			progress = ( gdouble ) total / ( gdouble ) length;
 			g_signal_emit_by_name( bar, "my-double", progress );
 		}
-		text = g_strdup_printf( _( "%u detail accounts successfully archived." ), count );
+		text = g_strdup_printf( _( "%u detail accounts (on %u total count) successfully archived." ), count, length );
 		label = gtk_label_new( text );
 		gtk_grid_attach( GTK_GRID( grid ), label, 0, 1, 1, 1 );
 		g_free( text );
