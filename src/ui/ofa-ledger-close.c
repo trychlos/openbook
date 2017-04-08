@@ -698,7 +698,7 @@ do_close_ledgers( sClose *sclose )
 	signaler = ofa_igetter_get_signaler( sclose->getter );
 
 	handler = g_signal_connect( signaler, SIGNALER_STATUS_COUNT, G_CALLBACK( signaler_on_entry_status_count ), sclose );
-	signaler_handlers = g_list_prepend( signaler_handlers, ( gpointer ) handler );
+	signaler_handlers = g_list_prepend( NULL, ( gpointer ) handler );
 
 	handler = g_signal_connect( signaler, SIGNALER_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_status_change ), sclose );
 	signaler_handlers = g_list_prepend( signaler_handlers, ( gpointer ) handler );
