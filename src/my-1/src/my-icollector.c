@@ -244,9 +244,7 @@ get_collection( myICollector *instance, GType type, sCollector *sdata, void *use
 
 	if( user_data ){
 		typed = load_collection( instance, type, user_data );
-		if( typed ){
-			sdata->typed_list = g_list_prepend( sdata->typed_list, typed );
-		}
+		sdata->typed_list = g_list_prepend( sdata->typed_list, typed );
 	}
 
 	return( typed );
