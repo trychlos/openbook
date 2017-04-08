@@ -45,6 +45,7 @@
 #include <glib-object.h>
 
 #include "api/ofa-igetter-def.h"
+#include "api/ofa-isignaler-def.h"
 
 G_BEGIN_DECLS
 
@@ -53,7 +54,9 @@ G_BEGIN_DECLS
 #define OFA_IS_ISIGNALER( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_ISIGNALER ))
 #define OFA_ISIGNALER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_ISIGNALER, ofaISignalerInterface ))
 
+#if 0
 typedef struct _ofaISignaler                    ofaISignaler;
+#endif
 
 /**
  * ofaISignalerInterface:

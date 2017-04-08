@@ -35,6 +35,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"

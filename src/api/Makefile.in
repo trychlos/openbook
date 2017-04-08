@@ -447,6 +447,7 @@ api_include_HEADERS = \
 	ofa-irenderer.h										\
 	ofa-isignalable.h									\
 	ofa-isignaler.h										\
+	ofa-isignaler-def.h									\
 	ofa-istore.h										\
 	ofa-itree-adder.h									\
 	ofa-itvcolumnable.h									\

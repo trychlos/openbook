@@ -28,6 +28,7 @@
 
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignalable.h"
+#include "api/ofa-isignaler.h"
 
 #define ISIGNALABLE_LAST_VERSION          1
 

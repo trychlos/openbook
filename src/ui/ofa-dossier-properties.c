@@ -43,6 +43,7 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-prefs.h"
 #include "api/ofo-account.h"
 #include "api/ofo-counters.h"

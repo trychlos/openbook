@@ -45,6 +45,7 @@
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignalable.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-openbook-props.h"
 #include "api/ofa-prefs.h"
 #include "api/ofo-account.h"

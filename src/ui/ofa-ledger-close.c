@@ -39,6 +39,7 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-prefs.h"
 #include "api/ofo-dossier.h"

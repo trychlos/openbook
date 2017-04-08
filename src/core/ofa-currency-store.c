@@ -30,6 +30,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofo-currency.h"
 
 #include "core/ofa-currency-store.h"

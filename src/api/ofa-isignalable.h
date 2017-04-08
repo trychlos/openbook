@@ -50,7 +50,7 @@
 #include <glib-object.h>
 
 #include "api/ofa-igetter-def.h"
-#include "api/ofa-isignaler.h"
+#include "api/ofa-isignaler-def.h"
 
 G_BEGIN_DECLS
 

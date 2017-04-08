@@ -32,6 +32,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-dossier.h"

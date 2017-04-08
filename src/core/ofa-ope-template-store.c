@@ -30,6 +30,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-itree-adder.h"
 #include "api/ofa-ope-template-store.h"
 #include "api/ofo-account.h"

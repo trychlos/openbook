@@ -45,6 +45,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-ipage-manager.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"

@@ -33,6 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-prefs.h"
 
 #include "tva/ofa-tva-record-store.h"

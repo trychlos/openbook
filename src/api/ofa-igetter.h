@@ -57,7 +57,7 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-ipage-manager-def.h"
-#include "api/ofa-isignaler.h"
+#include "api/ofa-isignaler-def.h"
 #include "api/ofa-openbook-props-def.h"
 #include "api/ofa-prefs-def.h"
 

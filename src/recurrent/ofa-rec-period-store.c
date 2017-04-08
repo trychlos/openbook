@@ -30,7 +30,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-igetter.h"
-#include "api/ofa-preferences.h"
+#include "api/ofa-isignaler.h"
 
 #include "recurrent/ofa-rec-period-store.h"
 #include "recurrent/ofo-rec-period.h"

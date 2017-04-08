@@ -32,6 +32,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-counter.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-prefs.h"
 
 #include "recurrent/ofa-recurrent-run-store.h"

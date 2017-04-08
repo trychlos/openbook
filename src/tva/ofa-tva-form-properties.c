@@ -40,6 +40,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-ope-template-editable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"

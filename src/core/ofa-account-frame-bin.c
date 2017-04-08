@@ -36,6 +36,7 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-iactioner.h"
 #include "api/ofa-icontext.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-istore.h"
 #include "api/ofa-ipage-manager.h"
