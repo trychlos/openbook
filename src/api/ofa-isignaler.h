@@ -32,7 +32,8 @@
  * @include: openbook/ofa-isignaler.h
  *
  * The #ofaISignaler class defines a signaling system which emits
- * dedicated messages on new, updated or deleted objects or collections.
+ * dedicated messages on new, updated or deleted objects or collections,
+ * as well as on application-wide or dossier-level events.
  *
  * The #ofaISignaler interface is the instance everyone may connect to
  * in order to be advertized of some application-wide events.

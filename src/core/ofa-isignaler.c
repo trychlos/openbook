@@ -63,6 +63,7 @@ enum {
 	/* UI-related */
 	MENU_AVAILABLE,
 	PAGE_MANAGER_AVAILABLE,
+
 	N_SIGNALS
 };
 
@@ -677,34 +678,6 @@ ofa_isignaler_get_getter( ofaISignaler *signaler )
 
 	return( sdata->getter );
 }
-
-#if 0
-/**
- * ofa_isignaler_set_getter:
- * @instance: this #ofaISignaler instance.
- * @getter: a #ofaIGetter of the application.
- *
- * Attach a @getter to the @instance.
- */
-void
-ofa_isignaler_set_getter( ofaISignaler *instance, ofaIGetter *getter )
-{
-	static const gchar *thisfn = "ofa_isignaler_set_getter";
-	ofaIGetter *permanent_getter;
-
-	g_return_if_fail( instance && OFA_IS_ISIGNALER( instance ));
-	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
-
-	if( OFA_ISIGNALER_GET_INTERFACE( instance )->set_getter ){
-		permanent_getter = getter;
-		OFA_ISIGNALER_GET_INTERFACE( instance )->set_getter( instance, permanent_getter );
-		return;
-	}
-
-	g_info( "%s: ofaISignaler's %s implementation does not provide 'set_getter()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-}
-#endif
 
 /**
  * ofa_isignaler_disconnect_handlers:
