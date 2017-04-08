@@ -31,19 +31,19 @@
  * @short_description: The Hub signaling system interface.
  * @include: openbook/ofa-isignalable.h
  *
- * The #ofaISignalable lets a implementing class connect to
+ * The #ofaISignalable lets an implementing class connect to the
  * #ofaISignaler signaling system.
  *
  * Candidate classes are typically of two types:
  * - either a core class, and it must so be registered via the
- *   #ofa_hub_register_types() method at startup time;
+ *   ofa_hub_register_types() method at startup time;
  * - or a class provided by a plugin, and it is so dynamically requested
  *   at startup time.
  *
  * From the maintainer point of view, defining an interface which has to
  * be implemented by client classes let us report the coding charge to
- * the client class only without having to explicitely connect to hub
- * signaling system from the ofaHub code (as long as core type has been
+ * the client class itself without having to explicitely connect to the
+ * signaling system from the #ofaHub code (as long as core type has been
  * registered).
  */
 
