@@ -209,9 +209,9 @@ typedef struct {
 	sValid;
 
 static sValid st_valid[] = {
-		{ VAT_STATUS_NO,     "N", N_( "No" ),    N_( "Not validated" ) },
-		{ VAT_STATUS_USER,   "U", N_( "User" ),  N_( "Validated by the user" ) },
-		{ VAT_STATUS_PCLOSE, "C", N_( "Clos." ), N_( "Automatically validated on period closing" ) },
+		{ VAT_STATUS_NO,     "N", N_( "No" ),      N_( "Not validated" ) },
+		{ VAT_STATUS_USER,   "U", N_( "User" ),    N_( "Validated by the user" ) },
+		{ VAT_STATUS_PCLOSE, "C", N_( "Closing" ), N_( "Automatically validated on period closing" ) },
 		{ 0 },
 };
 
@@ -1016,7 +1016,7 @@ tva_record_set_status_user( ofoTVARecord *record, const gchar *user )
 static void
 tva_record_set_status_stamp( ofoTVARecord *record, const GTimeVal *stamp )
 {
-	ofo_base_setter( TVA_RECORD, record, string, TFO_STATUS_STAMP, stamp );
+	ofo_base_setter( TVA_RECORD, record, timestamp, TFO_STATUS_STAMP, stamp );
 }
 
 /*
@@ -1431,6 +1431,7 @@ ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate 
 	GTimeVal stamp;
 	GString *gstr;
 	gboolean ok;
+	ofaISignaler *signaler;
 
 	g_debug( "%s: record=%p, status=%u, closing=%p",
 			thisfn, ( void * ) record, status, ( void * ) closing );
@@ -1456,7 +1457,7 @@ ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate 
 	my_stamp_set_now( &stamp );
 	tva_record_set_status_stamp( record, &stamp );
 	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
-	g_string_append_printf( gstr, "TFO_STATUS_STAMP='%s',", user );
+	g_string_append_printf( gstr, "TFO_STATUS_STAMP='%s',", stamp_str );
 	g_free( stamp_str );
 
 	if( status == VAT_STATUS_PCLOSE ){
@@ -1479,6 +1480,9 @@ ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate 
 	ok = ofa_idbconnect_query( connect, gstr->str, TRUE );
 
 	g_string_free( gstr, TRUE );
+
+	signaler = ofa_igetter_get_signaler( getter );
+	g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, record, NULL );
 
 	return( ok );
 }
@@ -2212,11 +2216,15 @@ signaler_on_updated_tva_form_mnemo( ofaISignaler *signaler, ofoBase *object, con
 static void
 signaler_on_period_close( ofaISignaler *signaler, const GDate *closing, void *empty )
 {
+	static const gchar *thisfn = "ofo_tva_record_signaler_on_period_close";
 	ofaIGetter *getter;
 	GList *dataset, *it;
 	ofoTVARecord *record;
 	const GDate *end;
 	ofeVatStatus status;
+
+	g_debug( "%s: signaler=%p, closing=%p, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) closing, empty );
 
 	getter = ofa_isignaler_get_getter( signaler );
 	dataset = ofo_tva_record_get_dataset( getter );
