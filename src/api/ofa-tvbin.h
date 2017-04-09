@@ -178,134 +178,136 @@ typedef struct {
 }
 	ofaTVBinClass;
 
-GType             ofa_tvbin_get_type                   ( void ) G_GNUC_CONST;
+GType               ofa_tvbin_get_type                   ( void ) G_GNUC_CONST;
 
-ofaIGetter       *ofa_tvbin_get_getter                 ( ofaTVBin *bin );
+ofaIGetter         *ofa_tvbin_get_getter                 ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_getter                 ( ofaTVBin *bin,
+void                ofa_tvbin_set_getter                 ( ofaTVBin *bin,
 																ofaIGetter *getter );
 
-gboolean          ofa_tvbin_get_headers                ( ofaTVBin *bin );
+gboolean            ofa_tvbin_get_headers                ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_headers                ( ofaTVBin *bin,
+void                ofa_tvbin_set_headers                ( ofaTVBin *bin,
 																gboolean visible );
 
-gboolean          ofa_tvbin_get_hexpand                ( ofaTVBin *bin );
+gboolean            ofa_tvbin_get_hexpand                ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_hexpand                ( ofaTVBin *bin,
+void                ofa_tvbin_set_hexpand                ( ofaTVBin *bin,
 																gboolean expand );
 
-GtkPolicyType     ofa_tvbin_get_hpolicy                ( ofaTVBin *bin );
+GtkPolicyType       ofa_tvbin_get_hpolicy                ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_hpolicy                ( ofaTVBin *bin,
+void                ofa_tvbin_set_hpolicy                ( ofaTVBin *bin,
 																GtkPolicyType policy );
 
-const gchar      *ofa_tvbin_get_name                   ( ofaTVBin *bin );
+const gchar        *ofa_tvbin_get_name                   ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_name                   ( ofaTVBin *bin,
+void                ofa_tvbin_set_name                   ( ofaTVBin *bin,
 																const gchar *name );
 
-GtkSelectionMode  ofa_tvbin_get_selection_mode         ( ofaTVBin *bin );
+GtkSelectionMode    ofa_tvbin_get_selection_mode         ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_selection_mode         ( ofaTVBin *bin,
+void                ofa_tvbin_set_selection_mode         ( ofaTVBin *bin,
 																GtkSelectionMode mode );
 
-GtkShadowType     ofa_tvbin_get_shadow                 ( ofaTVBin *bin );
+GtkShadowType       ofa_tvbin_get_shadow                 ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_shadow                 ( ofaTVBin *bin,
+void                ofa_tvbin_set_shadow                 ( ofaTVBin *bin,
 																GtkShadowType type );
 
-gboolean          ofa_tvbin_get_vexpand                ( ofaTVBin *bin );
+gboolean            ofa_tvbin_get_vexpand                ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_vexpand                ( ofaTVBin *bin,
+void                ofa_tvbin_set_vexpand                ( ofaTVBin *bin,
 																gboolean expand );
 
-gboolean          ofa_tvbin_get_write_settings         ( ofaTVBin *bin );
+gboolean            ofa_tvbin_get_write_settings         ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_write_settings         ( ofaTVBin *bin,
+void                ofa_tvbin_set_write_settings         ( ofaTVBin *bin,
 																gboolean write );
 
-void              ofa_tvbin_add_column_amount          ( ofaTVBin *bin,
+void                ofa_tvbin_add_column_amount          ( ofaTVBin *bin,
 																gint column_id,
 																const gchar *header,
 																const gchar *menu );
 
-void              ofa_tvbin_add_column_date            ( ofaTVBin *bin,
+void                ofa_tvbin_add_column_date            ( ofaTVBin *bin,
 																gint column_id,
 																const gchar *header,
 																const gchar *menu );
 
-void              ofa_tvbin_add_column_int             ( ofaTVBin *bin,
+void                ofa_tvbin_add_column_int             ( ofaTVBin *bin,
 																gint column_id,
 																const gchar *header,
 																const gchar *menu );
 
-void              ofa_tvbin_add_column_pixbuf          ( ofaTVBin *bin,
+void                ofa_tvbin_add_column_pixbuf          ( ofaTVBin *bin,
 																gint column_id,
 																const gchar *header,
 																const gchar *menu );
 
-void              ofa_tvbin_add_column_stamp           ( ofaTVBin *bin,
+void                ofa_tvbin_add_column_stamp           ( ofaTVBin *bin,
 																gint column_id,
 																const gchar *header,
 																const gchar *menu );
 
-void              ofa_tvbin_add_column_text            ( ofaTVBin *bin,
+void                ofa_tvbin_add_column_text            ( ofaTVBin *bin,
 																gint column_id,
 																const gchar *header,
 																const gchar *menu );
 
-void              ofa_tvbin_add_column_text_c          ( ofaTVBin *bin,
+void                ofa_tvbin_add_column_text_c          ( ofaTVBin *bin,
 																gint column_id,
 																const gchar *header,
 																const gchar *menu );
 
-void              ofa_tvbin_add_column_text_lx         ( ofaTVBin *bin,
+void                ofa_tvbin_add_column_text_lx         ( ofaTVBin *bin,
 																gint column_id,
 																const gchar *header,
 																const gchar *menu );
 
-void              ofa_tvbin_add_column_text_rx         ( ofaTVBin *bin,
+void                ofa_tvbin_add_column_text_rx         ( ofaTVBin *bin,
 																gint column_id,
 																const gchar *header,
 																const gchar *menu );
 
-void              ofa_tvbin_add_column_text_x          ( ofaTVBin *bin,
+void                ofa_tvbin_add_column_text_x          ( ofaTVBin *bin,
 																gint column_id,
 																const gchar *header,
 																const gchar *menu );
 
-GtkTreeSelection *ofa_tvbin_get_selection              ( ofaTVBin *bin );
+GtkTreeSelection   *ofa_tvbin_get_selection              ( ofaTVBin *bin );
 
-GtkWidget        *ofa_tvbin_get_tree_view              ( ofaTVBin *bin );
+GtkWidget          *ofa_tvbin_get_tree_view              ( ofaTVBin *bin );
 
-GtkTreeModel     *ofa_tvbin_get_tree_model             ( ofaTVBin *bin );
+GtkTreeModel       *ofa_tvbin_get_tree_model             ( ofaTVBin *bin );
 
-void              ofa_tvbin_select_all                 ( ofaTVBin *bin );
+void                ofa_tvbin_select_all                 ( ofaTVBin *bin );
 
-void              ofa_tvbin_select_first_row           ( ofaTVBin *bin );
+void                ofa_tvbin_select_first_row           ( ofaTVBin *bin );
 
-void              ofa_tvbin_select_row                 ( ofaTVBin *bin,
+void                ofa_tvbin_select_row                 ( ofaTVBin *bin,
 																GtkTreeIter *iter );
 
-void              ofa_tvbin_set_cell_data_func         ( ofaTVBin *bin,
+GtkTreeCellDataFunc ofa_tvbin_get_cell_data_func         ( ofaTVBin *bin );
+
+void                ofa_tvbin_set_cell_data_func         ( ofaTVBin *bin,
 																GtkTreeCellDataFunc fn_cell,
 																void *fn_data );
 
-void              ofa_tvbin_set_cell_edited_func       ( ofaTVBin *bin,
+void                ofa_tvbin_set_cell_edited_func       ( ofaTVBin *bin,
 																GCallback fn_cell,
 																void *fn_data );
 
-GtkTreeModel     *ofa_tvbin_get_store                  ( ofaTVBin *bin );
+GtkTreeModel       *ofa_tvbin_get_store                  ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_store                  ( ofaTVBin *bin,
+void                ofa_tvbin_set_store                  ( ofaTVBin *bin,
 																GtkTreeModel *store );
 
-gboolean          ofa_tvbin_store_iter_to_treeview_iter( ofaTVBin *bin,
+gboolean            ofa_tvbin_store_iter_to_treeview_iter( ofaTVBin *bin,
 																GtkTreeIter *store_iter,
 																GtkTreeIter *treeview_iter );
 
-void              ofa_tvbin_refilter                   ( ofaTVBin *bin );
+void                ofa_tvbin_refilter                   ( ofaTVBin *bin );
 
 G_END_DECLS
 

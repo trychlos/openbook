@@ -44,25 +44,29 @@
 /* private instance data
  */
 typedef struct {
-	gboolean         dispose_has_run;
+	gboolean            dispose_has_run;
 
 	/* properties
 	 */
-	ofaIGetter      *getter;
-	gboolean         headers_visible;
-	gboolean         hexpand;
-	GtkPolicyType    hpolicy;
-	gchar           *name;
-	GtkSelectionMode selection_mode;
-	GtkShadowType    shadow;
-	gboolean         vexpand;
-	gboolean         write_settings;
+	ofaIGetter         *getter;
+	gboolean            headers_visible;
+	gboolean            hexpand;
+	GtkPolicyType       hpolicy;
+	gchar              *name;
+	GtkSelectionMode    selection_mode;
+	GtkShadowType       shadow;
+	gboolean            vexpand;
+	gboolean            write_settings;
 
 	/* UI
 	 */
-	GtkWidget       *frame;
-	GtkWidget       *scrolled;
-	GtkWidget       *treeview;
+	GtkWidget          *frame;
+	GtkWidget          *scrolled;
+	GtkWidget          *treeview;
+
+	/* runtime
+	 */
+	GtkTreeCellDataFunc cell_fn;
 }
 	ofaTVBinPrivate;
 
@@ -365,6 +369,8 @@ ofa_tvbin_init( ofaTVBin *self )
 	priv = ofa_tvbin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->cell_fn = NULL;
+
 }
 
 static void
@@ -1620,6 +1626,27 @@ ofa_tvbin_select_row( ofaTVBin *bin, GtkTreeIter *treeview_iter )
 }
 
 /**
+ * ofa_tvbin_get_cell_data_func:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Returns: a previously set #GtkTreeCellDataFunc callback function,
+ * or %NULL.
+ */
+GtkTreeCellDataFunc
+ofa_tvbin_get_cell_data_func( ofaTVBin *bin )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), NULL );
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->cell_fn );
+}
+
+/**
  * ofa_tvbin_set_cell_data_func:
  * @bin: this #ofaTVBin instance.
  * @fn_cell: the function.
@@ -1658,6 +1685,8 @@ ofa_tvbin_set_cell_data_func( ofaTVBin *bin, GtkTreeCellDataFunc fn_cell, void *
 		g_list_free( cells );
 	}
 	g_list_free( columns );
+
+	priv->cell_fn = fn_cell;
 }
 
 /**
