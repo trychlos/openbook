@@ -1215,7 +1215,7 @@ tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 	ofa_entry_treeview_cell_data_render( priv->tview, tcolumn, cell, tmodel, iter );
 
-		/* is the cell editable ? */
+	/* is the cell editable ? */
 	if( GTK_IS_CELL_RENDERER_TEXT( cell )){
 		g_object_set( G_OBJECT( cell ), "editable-set", TRUE, "editable", priv->editable_row, NULL );
 	}
