@@ -2537,25 +2537,29 @@ ofo_entry_unsettle_by_number( ofaIGetter *getter, ofxCounter number )
 
 /**
  * ofo_entry_validate:
+ * @entry: this #ofoEntry object.
  *
- * entry must be in 'rough' status
+ * Validate the entry, by changing its status to ENT_STATUS_VALIDATED.
+ *
+ * Entry must be in 'rough' or 'future' status.
  */
-gboolean
+void
 ofo_entry_validate( ofoEntry *entry )
 {
 	ofaIGetter *getter;
 	ofaISignaler *signaler;
+	ofeEntryStatus status;
 
-	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
+	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+	g_return_if_fail( !OFO_BASE( entry )->prot->dispose_has_run );
+
+	status = ofo_entry_get_status( entry );
+	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
 
 	getter = ofo_base_get_getter( OFO_BASE( entry ));
 	signaler = ofa_igetter_get_signaler( getter );
 
-	g_signal_emit_by_name( signaler,
-			SIGNALER_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
-
-	return( TRUE );
+	g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, status, ENT_STATUS_VALIDATED );
 }
 
 /**
@@ -2582,8 +2586,12 @@ ofo_entry_validate_by_ledger( ofaIGetter *getter, const gchar *mnemo, const GDat
 
 	sdate = my_date_to_str( deffect, MY_DATE_SQL );
 	query = g_strdup_printf(
-					"OFA_T_ENTRIES WHERE ENT_LEDGER='%s' AND ENT_STATUS='%s' AND ENT_DEFFECT<='%s'",
-					mnemo, ofo_entry_status_get_dbms( ENT_STATUS_ROUGH ), sdate );
+					"OFA_T_ENTRIES WHERE "
+					"	ENT_LEDGER='%s' AND ENT_DEFFECT<='%s' "
+					"	AND (AND ENT_STATUS='%s' OR ENT_STATUS='%s')",
+					mnemo, sdate,
+					ofo_entry_status_get_dbms( ENT_STATUS_ROUGH ),
+					ofo_entry_status_get_dbms( ENT_STATUS_FUTURE ));
 	g_free( sdate );
 
 	dataset = ofo_base_load_dataset(
@@ -2600,7 +2608,7 @@ ofo_entry_validate_by_ledger( ofaIGetter *getter, const gchar *mnemo, const GDat
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
+		ofo_entry_validate( entry );
 	}
 
 	ofo_entry_free_dataset( dataset );
@@ -2610,25 +2618,30 @@ ofo_entry_validate_by_ledger( ofaIGetter *getter, const gchar *mnemo, const GDat
 
 /**
  * ofo_entry_delete:
+ * @entry: this #ofoEntry object.
+ *
+ * Delete the entry, by changing its status to ENT_STATUS_DELETED.
+ *
+ * Entry must be in 'rough' or 'future' status.
  */
-gboolean
+void
 ofo_entry_delete( ofoEntry *entry )
 {
 	ofaIGetter *getter;
 	ofaISignaler *signaler;
+	ofeEntryStatus status;
 
-	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
+	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+	g_return_if_fail( !OFO_BASE( entry )->prot->dispose_has_run );
+
+	status = ofo_entry_get_status( entry );
+	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
 
 	getter = ofo_base_get_getter( OFO_BASE( entry ));
 	signaler = ofa_igetter_get_signaler( getter );
 
-	g_signal_emit_by_name(
-			signaler, SIGNALER_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_DELETED );
-	g_signal_emit_by_name(
-			signaler, SIGNALER_BASE_DELETED, entry );
-
-	return( TRUE );
+	g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, status, ENT_STATUS_DELETED );
+	g_signal_emit_by_name( signaler, SIGNALER_BASE_DELETED, entry );
 }
 
 /*

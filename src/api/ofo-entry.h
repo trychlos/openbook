@@ -72,8 +72,8 @@ typedef struct {
  *
  * @ENT_STATUS_FUTURE: status attached to the entries imported or created
  *  for a future exercice; these entries are imputed on the corresponding
- *  solde of accounts and ledgers. They are considered as rough and cannot
- *  be validated.
+ *  solde of accounts and ledgers. They are considered as rough and can
+ *  be validated as well as deleted.
  */
 typedef enum {
 	ENT_STATUS_PAST = 1,
@@ -222,15 +222,12 @@ GList          *ofo_entry_get_doc_orphans            ( ofaIGetter *getter );
 gboolean        ofo_entry_insert                     ( ofoEntry *entry );
 gboolean        ofo_entry_update                     ( ofoEntry *entry );
 gboolean        ofo_entry_update_settlement          ( ofoEntry *entry, ofxCounter number );
-gboolean        ofo_entry_validate                   ( ofoEntry *entry );
-
+void            ofo_entry_validate                   ( ofoEntry *entry );
 gboolean        ofo_entry_validate_by_ledger         ( ofaIGetter *getter,
 															const gchar *mnemo, const GDate *deffect );
-
 void            ofo_entry_unsettle_by_number         ( ofaIGetter *getter,
 															ofxCounter number );
-
-gboolean        ofo_entry_delete                     ( ofoEntry *entry );
+void            ofo_entry_delete                     ( ofoEntry *entry );
 
 G_END_DECLS
 
