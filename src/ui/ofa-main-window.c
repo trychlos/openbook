@@ -1967,7 +1967,7 @@ on_tab_pin_clicked( myTab *tab, ofaPage *page )
 
 	g_object_ref( G_OBJECT( page ));
 	do_close( page );
-	ofa_nomodal_page_run( priv->getter, toplevel, title2, GTK_WIDGET( page ));
+	ofa_nomodal_page_run( priv->getter, NULL, title2, GTK_WIDGET( page ));
 	g_object_unref( G_OBJECT( page ));
 
 	g_free( title2 );
