@@ -37,7 +37,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-operation-group.h"
-#include "api/ofa-preferences.h"
 #include "api/ofo-concil.h"
 #include "api/ofo-entry.h"
 

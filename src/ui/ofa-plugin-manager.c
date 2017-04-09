@@ -39,7 +39,6 @@
 #include "api/ofa-iabout.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iproperties.h"
-#include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-application.h"

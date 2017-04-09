@@ -42,7 +42,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignaler.h"
 #include "api/ofa-ope-template-editable.h"
-#include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"

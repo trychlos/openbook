@@ -37,7 +37,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
 
 #include "ofa-tva-form-store.h"
 #include "ofa-tva-form-treeview.h"

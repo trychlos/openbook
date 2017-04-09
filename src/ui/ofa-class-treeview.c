@@ -36,7 +36,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
 

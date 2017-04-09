@@ -34,7 +34,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
 
 #include "recurrent/ofa-rec-period-store.h"
 #include "recurrent/ofa-rec-period-treeview.h"

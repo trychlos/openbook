@@ -34,7 +34,6 @@
 
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignaler.h"
-#include "api/ofa-preferences.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
 
