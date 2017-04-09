@@ -468,22 +468,25 @@ validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 {
 	ofaTVARecordPagePrivate *priv;
 	gchar *msg, *send;
-	gboolean delete_ok;
+	gboolean ok;
 	GtkWindow *toplevel;
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
-	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_get_display_format( priv->getter ));
-	msg = g_strdup_printf( _( "Are you sure you want validate the %s at %s VAT declaration ?" ),
-				ofo_tva_record_get_mnemo( record ), send );
-
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	delete_ok = my_utils_dialog_question( toplevel, msg, _( "_Validate" ));
-
+	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_get_display_format( priv->getter ));
+	msg = g_strdup_printf(
+			_( "You are about to validate the %s at %s VAT declaration.\n"
+				"After this validation, the declaration will not be modifiable anymore,"
+				"and you will not be able to generate the VAT accounting operations.\n"
+				"Are you sure ?" ),
+					ofo_tva_record_get_mnemo( record ), send );
+	ok = my_utils_dialog_question( toplevel, msg,
+			_( "_Validate" ));
 	g_free( msg );
 	g_free( send );
 
-	if( delete_ok ){
+	if( ok ){
 		ofo_tva_record_validate( record, VAT_STATUS_USER, NULL );
 	}
 }

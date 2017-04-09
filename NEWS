@@ -37,6 +37,7 @@
    - LedgerBookSummary: is now merged with LedgerBookRender (todo #1386).
    - Operation group: display entries of an operation (todo #1422).
    - Operation template: define new DOMYP macro.
+   - Period closing: improve accounts archive message.
    - Printings: allow the user to re-render as often as he wishes (todo #1384).
    - Printings: have a progress bar when printing (todo #1404).
    - Printings: have a plugin which can override ofaIRenderable interface (todo #1196).
@@ -52,6 +53,7 @@
    - Unsettled page: have all account/entry related actions.
    - VAT records: may now display the generated operations (todo #1296).
    - VAT records: are automatically validated on period/exercice close (todo #1435).
+   - VAT records: cannot anymore be validated from the properties, but only from the page.
 
  Bug fixes:
 
@@ -62,6 +64,7 @@
    - ofaAccountPage: fix page display when the dataset is empty.
    - ofaAccountStore: let the treeview be repopulated on collection reload.
    - ofaLedgerClose: display the columns in ledgers treeview (todo #1438).
+   - ofaLedgerClose: fix signaler handlers GList management.
    - ofaOpeTemplateFrameBin: fix notebook size when the dataset is empty.
    - ofaOpeTemplatePage: fix page display when the dataset is empty.
    - ofaOpeTemplateStore: let the treeview be repopulated on collection reload.
@@ -75,10 +78,12 @@
 
    - maintainer/check-po.sh: check that all files are rightly internationalized (todo #1421). 
    - Clarify the reference management of the collection (todo #1359).
+   - myICollector: load_collection() always returns a new sTyped structure.
    - ofaAccentryStore: new class.
    - ofaAccentryTreeview: new class.
    - ofaBatLineProperties: new class.
    - ofaIRenderer: new interface.
+   - ofaISignaler: have new ofa-isignaler-def.h header file.
    - ofaOperationGroup: new class.
    - ofaPrefs: new class (todo #1424).
    - ofaSettlementGroup: new class.
