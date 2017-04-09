@@ -139,7 +139,6 @@ operation_group_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-
 		g_clear_object( &priv->ventry_action );
 		g_clear_object( &priv->vconcil_action );
 		g_clear_object( &priv->vsettle_action );
