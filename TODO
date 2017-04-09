@@ -336,7 +336,10 @@
 1437 2017- 4- 5 deleting a vat record should also imply deleting generated
                 operations
 
-1439
+1439 2017- 4- 9 make sure a future entry may be validated and is not
+                archived on exercice closing
+
+1440
 
 -----------------------------------------------------------------------
  DONE

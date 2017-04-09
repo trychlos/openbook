@@ -45,6 +45,15 @@
  * - message on success: no
  * - settings:           yes
  * - current:            yes
+ *
+ * Updatability:
+ * If the dossier is read-only, then the declaration is fully read-only.
+ * If the declaration has been validated, then only notes can be edited.
+ * If the declaration has not yet been validated, then:
+ * - the record data may be computed as long as accounting operations
+ *   has not been generated
+ * - the accounting operations may be deleted while none of the
+ *   corresponding entries have been validated.
  */
 
 #include <gtk/gtk.h>
