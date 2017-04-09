@@ -375,14 +375,14 @@ check_for_enable_dlg( ofaTVARecordNew *self )
 	} else {
 		dend = ofo_tva_record_get_end( priv->tva_record );
 		if( !my_date_is_valid( dend )){
-			msgerr = g_strdup( _( "End date is not valid" ));
+			msgerr = g_strdup( _( "Ending date is not set or invalid" ));
 			ok_valid = FALSE;
 
 		} else {
 			mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
 			exists = ( ofo_tva_record_get_by_key( priv->getter, mnemo, dend ) != NULL );
 			if( exists ){
-				msgerr = g_strdup( _( "End date overlaps with an already defined declaration" ));
+				msgerr = g_strdup( _( "This new record overlaps with an already defined VAT declaration" ));
 				ok_valid = FALSE;
 			}
 		}
