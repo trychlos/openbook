@@ -336,8 +336,6 @@
 1437 2017- 4- 5 deleting a vat record should also imply deleting generated
                 operations
 
-1438 2017- 4- 7 ledgers closing: ledgers treeview: have columns
-
 1439
 
 -----------------------------------------------------------------------
@@ -1017,6 +1015,9 @@
 
 1435 2017- 4- 5 vat record should be automatically validated on period close
      2017- 4- 7 done
+
+1438 2017- 4- 7 ledgers closing: ledgers treeview: have columns
+     2017- 4- 9 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
