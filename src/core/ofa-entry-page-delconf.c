@@ -306,7 +306,7 @@ setup_data( ofaEntryPageDelconf *self )
 
 	if( priv->ope_number > 0 ){
 		*priv->entries = ofo_entry_get_by_ope_number( priv->getter, priv->ope_number );
-		priv->sel_opes = g_list_append( NULL, GUINT_TO_POINTER( priv->ope_number ));
+		priv->sel_opes = g_list_append( NULL, ( gpointer ) priv->ope_number );
 	} else {
 		*priv->entries = g_list_append( NULL, priv->entry );
 		priv->sel_opes = NULL;

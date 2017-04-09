@@ -1245,7 +1245,7 @@ tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage 
 		id = row_get_operation_id( self, selection );
 		g_simple_action_set_enabled( priv->vope_action, id > 0 );
 		g_list_free( priv->sel_opes );
-		priv->sel_opes = id > 0 ? g_list_append( NULL, GUINT_TO_POINTER( id )) : NULL;
+		priv->sel_opes = id > 0 ? g_list_append( NULL, ( gpointer ) id ) : NULL;
 
 		id = row_get_concil_id( self, selection );
 		g_simple_action_set_enabled( priv->vconcil_action, id > 0 );

@@ -415,23 +415,14 @@ static gboolean
 tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOperationGroup *self )
 {
 	ofaOperationGroupPrivate *priv;
-	ofxCounter id, list_num;
-	GList *it;
+	ofxCounter id;
 	gboolean visible;
 
 	priv = ofa_operation_group_get_instance_private( self );
 
 	gtk_tree_model_get( tmodel, iter, ENTRY_COL_OPE_NUMBER_I, &id, -1 );
 
-	visible = FALSE;
-
-	for( it=priv->opes_list ; it ; it=it->next ){
-		list_num = ( ofxCounter ) GPOINTER_TO_UINT( it->data );
-		if( id == list_num ){
-			visible = TRUE;
-			break;
-		}
-	}
+	visible = ( g_list_find( priv->opes_list, ( gpointer ) id ) != NULL );
 
 	return( visible );
 }

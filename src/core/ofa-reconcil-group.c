@@ -419,7 +419,7 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 			ventry_enabled = TRUE;
 			openum = ofo_entry_get_ope_number( priv->sel_entry );
 			g_list_free( priv->sel_opes );
-			priv->sel_opes = openum > 0 ? g_list_append( NULL, GUINT_TO_POINTER( openum )) : NULL;
+			priv->sel_opes = openum > 0 ? g_list_append( NULL, ( gpointer ) openum ) : NULL;
 			vope_enabled = ( openum > 0 );
 
 		} else {

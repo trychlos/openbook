@@ -858,7 +858,7 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 			openum = ofo_entry_get_ope_number( priv->sel_entry );
 			vope_enabled = ( openum > 0 );
 			g_list_free( priv->sel_opes );
-			priv->sel_opes = openum > 0 ? g_list_append( NULL, GUINT_TO_POINTER( openum )) : NULL;
+			priv->sel_opes = openum > 0 ? g_list_append( NULL, ( gpointer ) openum ) : NULL;
 			concil = ofa_iconcil_get_concil( OFA_ICONCIL( priv->sel_entry ));
 			priv->sel_concil_id = concil ? ofo_concil_get_id( concil ) : 0;
 			vconcil_enabled = ( priv->sel_concil_id > 0 );
