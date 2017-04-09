@@ -45,6 +45,10 @@ typedef struct {
 	GtkWindow  *parent;
 	gchar      *title;
 	GtkWidget  *top_widget;				/* is also an ofaPage */
+
+	/* runtime
+	 */
+	GtkWindow  *actual_parent;
 }
 	ofaNomodalPagePrivate;
 
@@ -190,11 +194,12 @@ iwindow_init( myIWindow *instance )
 
 	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
 
-	my_iwindow_set_parent( instance, priv->parent );
+	priv->actual_parent = priv->parent ? priv->parent : GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
+	my_iwindow_set_parent( instance, priv->actual_parent );
+
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 	my_iwindow_set_identifier( instance, G_OBJECT_TYPE_NAME( priv->top_widget ));
 	my_iwindow_set_manage_geometry( instance, FALSE );
-	my_iwindow_set_allow_transient( instance, FALSE );
 
 	gtk_window_set_title( GTK_WINDOW( instance ), priv->title );
 	gtk_window_set_resizable( GTK_WINDOW( instance ), TRUE );
