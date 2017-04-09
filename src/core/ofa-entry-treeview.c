@@ -103,6 +103,7 @@ static void      on_selection_activated( ofaEntryTreeview *self, GtkTreeSelectio
 static void      on_selection_delete( ofaEntryTreeview *self, GtkTreeSelection *selection, void *empty );
 static void      get_and_send( ofaEntryTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static GList    *get_selected_with_selection( ofaEntryTreeview *self, GtkTreeSelection *selection );
+static void      on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryTreeview *self );
 static void      cell_data_render_background( GtkCellRenderer *renderer, ofeEntryStatus status, gint err_level );
 static void      cell_data_render_text( GtkCellRendererText *renderer, ofeEntryStatus status, gint err_level );
 static gint      get_row_errlevel( ofaEntryTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -333,6 +334,10 @@ ofa_entry_treeview_setup_columns( ofaEntryTreeview *view )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	setup_columns( view );
+
+	if( !ofa_tvbin_get_cell_data_func( OFA_TVBIN( view ))){
+		ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_func, view );
+	}
 }
 
 /*
@@ -532,6 +537,29 @@ ofa_entry_treeview_set_selected( ofaEntryTreeview *view, ofxCounter entry )
 			}
 		}
 	}
+}
+
+/*
+ * This defaut rendering callback is set at instanciation time.
+ * It may be overriden by the container class.
+ */
+static void
+on_cell_data_func( GtkTreeViewColumn *tcolumn,
+							GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
+							ofaEntryTreeview *self )
+{
+	ofaEntryTreeviewPrivate *priv;
+
+	g_return_if_fail( tcolumn && GTK_IS_TREE_VIEW_COLUMN( tcolumn ));
+	g_return_if_fail( cell && GTK_IS_CELL_RENDERER( cell ));
+	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
+	g_return_if_fail( self && OFA_IS_ENTRY_TREEVIEW( self ));
+
+	priv = ofa_entry_treeview_get_instance_private( self );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	ofa_entry_treeview_cell_data_render( self, tcolumn, cell, tmodel, iter );
 }
 
 /**
