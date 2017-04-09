@@ -514,7 +514,10 @@ ofo_tva_record_new( ofaIGetter *getter )
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	record = g_object_new( OFO_TYPE_TVA_RECORD, "ofo-base-getter", getter, NULL );
+
 	OFO_BASE( record )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
+
+	tva_record_set_status( record, VAT_STATUS_NO );
 
 	return( record );
 }
@@ -612,7 +615,7 @@ ofo_tva_record_get_notes( const ofoTVARecord *record )
 ofeVatStatus
 ofo_tva_record_get_status( const ofoTVARecord * record )
 {
-	static const gchar *thisfn = "ofo_tva_record_get_validated";
+	static const gchar *thisfn = "ofo_tva_record_get_status";
 	const gchar *cstr;
 	gint i;
 
@@ -1774,7 +1777,7 @@ record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint r
  *
  * Notes are still updatable even after the declaration has been validated.
  *
- * Validation data group is not updated here.
+ * Validation status is not updated here.
  * See ofo_tva_record_validate().
  */
 gboolean
@@ -1817,7 +1820,7 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	gboolean ok;
 	GString *query;
 	gchar *notes, *label, *corresp, *sbegin, *send, *sdope, *stamp_str;
-	const gchar *mnemo, *userid, *cstr;
+	const gchar *mnemo, *userid;
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
@@ -1850,9 +1853,6 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	} else {
 		query = g_string_append( query, ",TFO_NOTES=NULL" );
 	}
-
-	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_STATUS );
-	g_string_append_printf( query, ",TFO_STATUS='%s'", cstr );
 
 	if( my_strlen( sbegin )){
 		g_string_append_printf( query, ",TFO_BEGIN='%s'", sbegin );
