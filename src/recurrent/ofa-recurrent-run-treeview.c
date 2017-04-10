@@ -285,6 +285,11 @@ ofa_recurrent_run_treeview_new( ofaIGetter *getter, const gchar *settings_prefix
 
 	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
+	setup_columns( view );
+
+	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_func, view );
+	ofa_tvbin_set_cell_edited_func( OFA_TVBIN( view ), ( GCallback ) on_cell_edited, view );
+
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoRecurrentRun object instead of just the raw GtkTreeSelection
 	 */
@@ -298,28 +303,6 @@ ofa_recurrent_run_treeview_new( ofaIGetter *getter, const gchar *settings_prefix
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
 	return( view );
-}
-
-/**
- * ofa_recurrent_run_treeview_setup_columns:
- * @view: this #ofaRecurrentRunTreeview instance.
- *
- * Setup the treeview columns.
- */
-void
-ofa_recurrent_run_treeview_setup_columns( ofaRecurrentRunTreeview *view )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_RECURRENT_RUN_TREEVIEW( view ));
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	setup_columns( view );
-	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_func, view );
-	ofa_tvbin_set_cell_edited_func( OFA_TVBIN( view ), ( GCallback ) on_cell_edited, view );
 }
 
 /*

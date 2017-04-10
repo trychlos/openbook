@@ -256,7 +256,6 @@ setup_view1( ofaRecurrentRunPage *self )
 	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( self ));
 
 	priv->tview = ofa_recurrent_run_treeview_new( priv->getter, priv->settings_prefix );
-	ofa_recurrent_run_treeview_setup_columns( priv->tview );
 
 	/* ofaRecurrentRunTreeview signals */
 	g_signal_connect( priv->tview, "ofa-recchanged", G_CALLBACK( on_row_selected ), self );

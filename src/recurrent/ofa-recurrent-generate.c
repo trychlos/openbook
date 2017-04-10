@@ -357,7 +357,6 @@ init_treeview( ofaRecurrentGenerate *self )
 
 	priv->tview = ofa_recurrent_run_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
-	ofa_recurrent_run_treeview_setup_columns( priv->tview );
 	ofa_recurrent_run_treeview_set_visible( priv->tview, REC_VISIBLE_WAITING );
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
 }
