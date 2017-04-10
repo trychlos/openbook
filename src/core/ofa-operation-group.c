@@ -90,7 +90,8 @@ static void      idialog_init( myIDialog *instance );
 static void      setup_ui( ofaOperationGroup *self );
 static void      setup_actions( ofaOperationGroup *self );
 static void      setup_store( ofaOperationGroup *self );
-static void      tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaOperationGroup *self );
+static void      tview_on_selection_changed( ofaEntryTreeview *treeview, GList *selection, ofaOperationGroup *self );
+static void      tview_on_selection_activated( ofaEntryTreeview *treeview, GList *selection, ofaOperationGroup *self );
 static gboolean  tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOperationGroup *self );
 static void      action_on_ventry_activated( GSimpleAction *action, GVariant *empty, ofaOperationGroup *self );
 static void      action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaOperationGroup *self );
@@ -299,7 +300,8 @@ setup_ui( ofaOperationGroup *self )
 	ofa_entry_treeview_setup_columns( priv->tview );
 	ofa_entry_treeview_set_filter_func( priv->tview, ( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row, self );
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
-	g_signal_connect( priv->tview, "ofa-selchanged", G_CALLBACK( tview_on_selection_changed ), self );
+	g_signal_connect( priv->tview, "ofa-entchanged", G_CALLBACK( tview_on_selection_changed ), self );
+	g_signal_connect( priv->tview, "ofa-entactivated", G_CALLBACK( tview_on_selection_activated ), self );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "id-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -371,12 +373,10 @@ setup_store( ofaOperationGroup *self )
  * Selection has been set in browse mode
  */
 static void
-tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofaOperationGroup *self )
+tview_on_selection_changed( ofaEntryTreeview *treeview, GList *selection, ofaOperationGroup *self )
 {
 	ofaOperationGroupPrivate *priv;
 	gboolean ventry_enabled, vconcil_enabled, vsettle_enabled;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
 	ofoEntry *entry;
 	ofoConcil *concil;
 
@@ -387,10 +387,11 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 	vsettle_enabled = FALSE;
 	priv->sel_entry = NULL;
 
-	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, ENTRY_COL_OBJECT, &entry, -1 );
+	if( selection && g_list_length( selection ) > 0 ){
+		g_return_if_fail( g_list_length( selection ) == 1 );
+		entry = OFO_ENTRY( selection->data );
 		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
-		g_object_unref( entry );
+
 		priv->sel_entry = OFO_ENTRY( entry );
 		ventry_enabled = TRUE;
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( priv->sel_entry ));
@@ -403,6 +404,21 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 	g_simple_action_set_enabled( priv->ventry_action, ventry_enabled );
 	g_simple_action_set_enabled( priv->vconcil_action, vconcil_enabled );
 	g_simple_action_set_enabled( priv->vsettle_action, vsettle_enabled );
+}
+
+/*
+ * Selection has been set in browse mode
+ */
+static void
+tview_on_selection_activated( ofaEntryTreeview *treeview, GList *selection, ofaOperationGroup *self )
+{
+	ofaOperationGroupPrivate *priv;
+
+	priv = ofa_operation_group_get_instance_private( self );
+
+	g_return_if_fail( priv->sel_entry && OFO_IS_ENTRY( priv->sel_entry ));
+
+	ofa_entry_properties_run( priv->getter, priv->parent, priv->sel_entry, FALSE );
 }
 
 /*
