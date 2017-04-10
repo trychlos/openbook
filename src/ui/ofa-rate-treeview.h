@@ -74,8 +74,6 @@ GType            ofa_rate_treeview_get_type     ( void ) G_GNUC_CONST;
 ofaRateTreeview *ofa_rate_treeview_new          ( ofaIGetter *getter,
 														const gchar *settings_prefix );
 
-void             ofa_rate_treeview_setup_columns( ofaRateTreeview *view );
-
 void             ofa_rate_treeview_setup_store  ( ofaRateTreeview *view );
 
 ofoRate         *ofa_rate_treeview_get_selected ( ofaRateTreeview *view );
