@@ -77,8 +77,6 @@ GType                ofa_accentry_treeview_get_type       ( void ) G_GNUC_CONST;
 ofaAccentryTreeview *ofa_accentry_treeview_new            ( ofaIGetter *getter,
 																	const gchar *settings_prefix );
 
-void                 ofa_accentry_treeview_setup_columns  ( ofaAccentryTreeview *view );
-
 ofoBase             *ofa_accentry_treeview_get_selected   ( ofaAccentryTreeview *view );
 
 void                 ofa_accentry_treeview_set_filter_func( ofaAccentryTreeview *view,

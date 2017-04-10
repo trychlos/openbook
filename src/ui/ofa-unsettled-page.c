@@ -219,7 +219,6 @@ action_page_v_setup_view( ofaActionPage *page )
 	grid = gtk_grid_new();
 
 	priv->tview = ofa_accentry_treeview_new( priv->getter, priv->settings_prefix );
-	ofa_accentry_treeview_setup_columns( priv->tview );
 	ofa_accentry_treeview_set_filter_func( priv->tview, ( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row, page );
 	ofa_tvbin_set_cell_data_func( OFA_TVBIN( priv->tview ), ( GtkTreeCellDataFunc ) tview_cell_data_render, page );
 	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( priv->tview ), 0, 0, 1, 1 );
