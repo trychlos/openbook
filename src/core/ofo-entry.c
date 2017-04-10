@@ -3141,6 +3141,7 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 	ofoOpeTemplate *template;
 	ofeEntryStatus status;
 	ofeEntryRule rule;
+	ofeEntryPeriod period;
 
 	sorted = iexportable_export_fec_get_entries( getter );
 
@@ -3184,6 +3185,7 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		g_string_append_printf( str, "%cStatus", field_sep );
 		g_string_append_printf( str, "%cOpeNum", field_sep );
 		g_string_append_printf( str, "%cRule", field_sep );
+		g_string_append_printf( str, "%cPeriod", field_sep );
 
 		ok = ofa_iexportable_set_line( exportable, str->str );
 
@@ -3262,6 +3264,7 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 
 		status = ofo_entry_get_status( entry );
 		rule = ofo_entry_get_rule( entry );
+		period = ofo_entry_get_period( entry );
 
 		/* 18 mandatory columns */
 		str = g_string_new( led_id );
@@ -3292,6 +3295,7 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_status_get_dbms( status ));
 		g_string_append_printf( str, "%c%s", field_sep, sopenum );
 		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_rule_get_dbms( rule ));
+		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_period_get_dbms( period ));
 
 		ok = ofa_iexportable_set_line( exportable, str->str );
 
