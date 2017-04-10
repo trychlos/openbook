@@ -244,7 +244,7 @@ setup_grid( ofaBalanceGridBin *self )
 
 	label = gtk_label_new( NULL );
 	gtk_grid_attach( priv->grid, label, COL_REF, 3, 1, 1 );
-	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( BALANCEGRID_FUTUR_ROUGH ));
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( BALANCEGRID_FUTUR_VALIDATED ));
 
 	label = gtk_label_new( _( "Total :" ));
 	my_utils_widget_set_xalign( label, 1.0 );
@@ -441,16 +441,19 @@ add_currency_row( ofaBalanceGridBin *self, guint group, const gchar *currency )
 
 	label = gtk_label_new( NULL );
 	my_utils_widget_set_xalign( label, 1.0 );
+	gtk_widget_set_hexpand( label, TRUE );
 	gtk_label_set_width_chars( GTK_LABEL( label ), 15 );
 	gtk_grid_attach( priv->grid, label, COL_DEBIT, i, 1, 1 );
 
 	label = gtk_label_new( NULL );
 	my_utils_widget_set_xalign( label, 1.0 );
+	gtk_widget_set_hexpand( label, TRUE );
 	gtk_label_set_width_chars( GTK_LABEL( label ), 15 );
 	gtk_grid_attach( priv->grid, label, COL_CREDIT, i, 1, 1 );
 
 	label = gtk_label_new( currency );
 	my_utils_widget_set_xalign( label, 0 );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 4 );
 	gtk_grid_attach( priv->grid, label, COL_CURRENCY, i, 1, 1 );
 
 	label = gtk_grid_get_child_at( priv->grid, COL_REF, i );

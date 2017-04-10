@@ -27,6 +27,7 @@
    - AccountsBookSummary: have balance and page break by class (todo #1390). 
    - AccountsBookSummary: sort by operation date or effect date (todo #1419). 
    - Balance check: distinguish between rough, validated and future balances (todo #1392).
+   - Balance check: improve the UI, expanding the widget when appropriate (todo 1449).
    - Display unsettled entries on settleable accounts (todo #1381).
    - Display unreconciliated entries on reconciliable accounts (todo #783).
    - Entry page: default to delete all the entries of an operation (todo #1397).

@@ -750,6 +750,7 @@ get_new_balance_grid_bin( ofaCheckBalancesBin *self, const gchar *w_name )
 		g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
 
 		grid = ofa_balance_grid_bin_new( priv->getter );
+		gtk_widget_set_margin_start( GTK_WIDGET( grid ), 8 );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( grid ));
 	}
 
