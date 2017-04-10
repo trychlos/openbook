@@ -174,7 +174,7 @@ ofa_iexe_close_get_interface_version( GType type )
  * Ask @instance the text to be inserted as the row label if it wants
  * do some tasks at the moment specified by @rowtype.
  *
- * Returns: a string which will be #g_free() by the caller.
+ * Returns: a string which should be g_free() by the caller.
  */
 gchar *
 ofa_iexe_close_add_row( ofaIExeClose *instance, guint rowtype )
