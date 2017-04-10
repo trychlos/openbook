@@ -396,6 +396,7 @@ idialog_init( myIDialog *instance )
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
+	set_dirty( OFA_TVA_RECORD_PROPERTIES( instance ), FALSE );
 	check_for_enable_dlg( OFA_TVA_RECORD_PROPERTIES( instance ));
 }
 
