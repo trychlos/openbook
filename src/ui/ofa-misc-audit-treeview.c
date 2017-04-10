@@ -163,27 +163,9 @@ ofa_misc_audit_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 
 	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
-	return( view );
-}
-
-/**
- * ofa_misc_audit_treeview_setup_columns:
- * @view: this #ofaMiscAuditTreeview instance.
- *
- * Setup the treeview columns.
- */
-void
-ofa_misc_audit_treeview_setup_columns( ofaMiscAuditTreeview *view )
-{
-	ofaMiscAuditTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_MISC_AUDIT_TREEVIEW( view ));
-
-	priv = ofa_misc_audit_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
 	setup_columns( view );
+
+	return( view );
 }
 
 /*

@@ -255,7 +255,6 @@ init_treeview( ofaMiscAuditUI *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->audit_tview = ofa_misc_audit_treeview_new( priv->getter, priv->settings_prefix );
-	ofa_misc_audit_treeview_setup_columns( priv->audit_tview );
 	priv->audit_store = ofa_misc_audit_treeview_setup_store( priv->audit_tview );
 
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->audit_tview ));
