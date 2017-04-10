@@ -79,8 +79,6 @@ GType                      ofa_recurrent_model_treeview_get_type          ( void
 ofaRecurrentModelTreeview *ofa_recurrent_model_treeview_new               ( ofaIGetter *getter,
 																				const gchar *settings_prefix );
 
-void                       ofa_recurrent_model_treeview_setup_columns     ( ofaRecurrentModelTreeview *view );
-
 void                       ofa_recurrent_model_treeview_setup_store       ( ofaRecurrentModelTreeview *view );
 
 GList                     *ofa_recurrent_model_treeview_get_selected      ( ofaRecurrentModelTreeview *view );

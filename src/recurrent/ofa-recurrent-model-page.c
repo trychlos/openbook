@@ -218,7 +218,6 @@ setup_treeview( ofaRecurrentModelPage *self )
 	priv = ofa_recurrent_model_page_get_instance_private( self );
 
 	priv->tview = ofa_recurrent_model_treeview_new( priv->getter, priv->settings_prefix );
-	ofa_recurrent_model_treeview_setup_columns( priv->tview );
 
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), self );
