@@ -272,6 +272,7 @@ static void                  error_acc_currency( const gchar *currency, ofoAccou
 static void                  error_amounts( ofxAmount debit, ofxAmount credit );
 static gboolean              entry_do_update( ofoEntry *entry, ofaIGetter *getter );
 static gboolean              do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter number );
+static gboolean              do_validate_by_ope( ofaIGetter *getter, ofxCounter openum );
 static void                  icollectionable_iface_init( myICollectionableInterface *iface );
 static guint                 icollectionable_get_interface_version( void );
 static GList                *icollectionable_load_collection( void *user_data );
@@ -2508,23 +2509,23 @@ do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter 
 /**
  * ofo_entry_unsettle_by_number:
  * @getter: a #ofaIGetter instance.
- * @number: the identifier of the settlement group to be cancelled.
+ * @stlmt_number: the identifier of the settlement group to be cancelled.
  *
  * Cancel the identified settlement group by updating all member
  * entries. Each entry will receive a 'updated' message through the
  * dossier signaling system
  */
 void
-ofo_entry_unsettle_by_number( ofaIGetter *getter, ofxCounter number )
+ofo_entry_unsettle_by_number( ofaIGetter *getter, ofxCounter stlmt_number )
 {
 	GList *entries, *it;
 	gchar *where;
 
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
-	g_return_if_fail( number > 0 );
+	g_return_if_fail( stlmt_number > 0 );
 
 	/* get the list of entries */
-	where = g_strdup_printf( "ENT_STLMT_NUMBER=%ld", number );
+	where = g_strdup_printf( "ENT_STLMT_NUMBER=%ld", stlmt_number );
 	entries = entry_load_dataset( getter, where, NULL );
 	g_free( where );
 
@@ -2593,6 +2594,67 @@ ofo_entry_validate_by_ledger( ofaIGetter *getter, const gchar *mnemo, const GDat
 					ofo_entry_status_get_dbms( ENT_STATUS_ROUGH ),
 					ofo_entry_status_get_dbms( ENT_STATUS_FUTURE ));
 	g_free( sdate );
+
+	dataset = ofo_base_load_dataset(
+					st_boxed_defs,
+					query,
+					OFO_TYPE_ENTRY,
+					getter );
+
+	g_free( query );
+
+	signaler = ofa_igetter_get_signaler( getter );
+
+	g_signal_emit_by_name( signaler, SIGNALER_STATUS_COUNT, ENT_STATUS_VALIDATED, g_list_length( dataset ));
+
+	for( it=dataset ; it ; it=it->next ){
+		entry = OFO_ENTRY( it->data );
+		ofo_entry_validate( entry );
+	}
+
+	ofo_entry_free_dataset( dataset );
+
+	return( TRUE );
+}
+
+/**
+ * ofo_entry_validate_by_opes:
+ * @getter: a #ofaIGetter instance.
+ * @opes: a #GList of operations number.
+ *
+ * Validate all rough or future entries which are related to @opes.
+ *
+ * Returns: TRUE if success, even if there is no entries at all, while
+ * no error is detected.
+ */
+gboolean
+ofo_entry_validate_by_opes( ofaIGetter *getter, GList *opes )
+{
+	GList *it;
+	gboolean ok;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	ok = TRUE;
+
+	for( it=opes ; it && ok ; it=it->next ){
+		ok = do_validate_by_ope( getter, ( ofxCounter ) it->data );
+	}
+
+	return( ok );
+}
+
+static gboolean
+do_validate_by_ope( ofaIGetter *getter, ofxCounter openum )
+{
+	gchar *query;
+	ofoEntry *entry;
+	GList *dataset, *it;
+	ofaISignaler *signaler;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	query = g_strdup_printf( "OFA_T_ENTRIES WHERE ENT_OPE_NUMBER=%lu", openum );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,

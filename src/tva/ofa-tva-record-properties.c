@@ -94,6 +94,7 @@ typedef struct {
 	GtkWidget    *viewopes_btn;
 	GtkWidget    *delopes_btn;
 	GtkWidget    *ok_btn;
+	GtkWidget    *cancel_btn;
 	GtkWidget    *msg_label;
 
 	/* data
@@ -255,6 +256,7 @@ ofa_tva_record_properties_init( ofaTVARecordProperties *self )
 	priv->dispose_has_run = FALSE;
 	priv->is_writable = FALSE;
 	priv->is_new = FALSE;
+	priv->is_dirty = FALSE;
 	priv->generated_opes = NULL;
 	priv->generated_entries = NULL;
 
@@ -389,6 +391,7 @@ idialog_init( myIDialog *instance )
 	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
+		priv->cancel_btn = NULL;
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
@@ -413,6 +416,10 @@ init_ui( ofaTVARecordProperties *self )
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), self );
 	priv->ok_btn = btn;
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "cancel-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	priv->cancel_btn = btn;
 
 	/* writability of the dossier */
 	hub = ofa_igetter_get_hub( priv->getter );
@@ -770,6 +777,11 @@ on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 	set_dirty( self, TRUE );
 }
 
+/*
+ * Ending date never changes.
+ * This function is only triggered when initially setting up the ending
+ * date.
+ */
 static void
 on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 {
@@ -934,15 +946,15 @@ static void
 set_dirty( ofaTVARecordProperties *self, gboolean dirty )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	gchar *send, *title;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	send = my_date_to_str( &priv->end_date, MY_DATE_SQL );
-	title = g_strdup_printf( _( "Updating « %s - %s » VAT declaration" ), priv->mnemo, send );
-	gtk_window_set_title( GTK_WINDOW( self ), title );
-	g_free( title );
-	g_free( send );
+	priv->is_dirty = dirty;
+
+	if( priv->cancel_btn ){
+		gtk_widget_set_sensitive( priv->cancel_btn, priv->is_dirty );
+		gtk_button_set_label( GTK_BUTTON( priv->ok_btn ), priv->is_dirty ? _( "_OK" ) : _( "Cl_ose" ));
+	}
 }
 
 /*
@@ -961,15 +973,9 @@ setup_tva_record( ofaTVARecordProperties *self )
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	ofo_tva_record_set_label( priv->tva_record, priv->label );
-
-	ofo_tva_record_set_begin( priv->tva_record,
-			my_date_editable_get_date( GTK_EDITABLE( priv->begin_editable ), NULL ));
-
-	ofo_tva_record_set_end( priv->tva_record,
-			my_date_editable_get_date( GTK_EDITABLE( priv->end_editable ), NULL ));
-
-	ofo_tva_record_set_dope( priv->tva_record,
-			my_date_editable_get_date( GTK_EDITABLE( priv->dope_editable ), NULL ));
+	ofo_tva_record_set_begin( priv->tva_record, &priv->begin_date );
+	ofo_tva_record_set_end( priv->tva_record, &priv->end_date );
+	ofo_tva_record_set_dope( priv->tva_record, &priv->dope_date );
 
 	if( priv->has_correspondence ){
 		GtkTextBuffer *buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( priv->corresp_textview ));
@@ -1039,13 +1045,17 @@ do_update_dbms( ofaTVARecordProperties *self, gchar **msgerr )
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	ok = ofo_tva_record_update( priv->tva_record );
+	if( priv->is_dirty ){
+		ok = ofo_tva_record_update( priv->tva_record );
 
-	if( !ok ){
-		*msgerr = g_strdup( _( "Unable to update the VAT declaration" ));
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to update the VAT declaration" ));
 
+		} else {
+			set_dirty( self, FALSE );
+		}
 	} else {
-		set_dirty( self, FALSE );
+		ok = TRUE;
 	}
 
 	return( ok );
@@ -1117,6 +1127,8 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 			}
 		}
 	}
+
+	set_dirty( self, TRUE );
 }
 
 /*
@@ -1343,7 +1355,7 @@ eval_code( ofsFormulaHelper *helper )
 }
 
 /*
- * generate the accounting operations
+ * Generate the accounting operations
  *
  * This is only possible when the VAT declaration is valid, but not yet
  * validated, and no operation has yet been generated.
@@ -1603,6 +1615,9 @@ on_delopes_clicked( GtkButton *button, ofaTVARecordProperties *self )
 
 	if( delopes_user_confirm( self )){
 
+		/* reinit operation date */
+		gtk_entry_set_text( GTK_ENTRY( priv->dope_editable ), "" );
+
 		/* remove operations from detail lines */
 		count = ofo_tva_record_detail_get_count( priv->tva_record );
 		for( rec_idx=0 ; rec_idx < count ; ++rec_idx ){
@@ -1611,6 +1626,8 @@ on_delopes_clicked( GtkButton *button, ofaTVARecordProperties *self )
 				ofo_tva_record_detail_set_ope_number( priv->tva_record, rec_idx, 0 );
 			}
 		}
+
+		setup_tva_record( self );
 		do_update_dbms( self, NULL );
 
 		/* delete entries */

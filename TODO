@@ -339,7 +339,11 @@
 1439 2017- 4- 9 make sure a future entry may be validated and is not
                 archived on exercice closing
 
-1440
+1441 2017- 4- 9 core dbmodel v37: to be installed (ofo_account & ofo_ledger)
+
+1442 2017- 4- 9 validating future entries 
+
+1443
 
 -----------------------------------------------------------------------
  DONE
@@ -1021,6 +1025,10 @@
 
 1438 2017- 4- 7 ledgers closing: ledgers treeview: have columns
      2017- 4- 9 fixed
+
+1440 2017- 4- 9 vat record: shoud reinitialise the ope_date when deleting
+                accounting operations
+     2017- 4-10 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

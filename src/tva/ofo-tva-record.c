@@ -1430,7 +1430,7 @@ get_orphans( ofaIGetter *getter, const gchar *table )
  * @closing: [allow-none]: closing date;
  *  must be set if @status is VAT_STATUS_PCLOSE.
  *
- * Validate the @record.
+ * Validate the @record, along with the generated accounting entries..
  *
  * Current user and timestamp are recorded in corresponding 'status' columns.
  */
@@ -1447,6 +1447,7 @@ ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate 
 	GString *gstr;
 	gboolean ok;
 	ofaISignaler *signaler;
+	GList *opes;
 
 	g_debug( "%s: record=%p, status=%u, closing=%p",
 			thisfn, ( void * ) record, status, ( void * ) closing );
@@ -1498,6 +1499,10 @@ ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate 
 
 	signaler = ofa_igetter_get_signaler( getter );
 	g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, record, NULL );
+
+	opes = ofo_tva_record_get_accounting_opes( record );
+	ofo_entry_validate_by_opes( getter, opes );
+	g_list_free( opes );
 
 	return( ok );
 }

@@ -220,13 +220,15 @@ GList          *ofo_entry_get_doc_orphans            ( ofaIGetter *getter );
 #define         ofo_entry_free_doc_orphans( L )      ( g_list_free( L ))
 
 gboolean        ofo_entry_insert                     ( ofoEntry *entry );
+
 gboolean        ofo_entry_update                     ( ofoEntry *entry );
 gboolean        ofo_entry_update_settlement          ( ofoEntry *entry, ofxCounter number );
+void            ofo_entry_unsettle_by_number         ( ofaIGetter *getter, ofxCounter stlmt_number );
+
 void            ofo_entry_validate                   ( ofoEntry *entry );
-gboolean        ofo_entry_validate_by_ledger         ( ofaIGetter *getter,
-															const gchar *mnemo, const GDate *deffect );
-void            ofo_entry_unsettle_by_number         ( ofaIGetter *getter,
-															ofxCounter number );
+gboolean        ofo_entry_validate_by_ledger         ( ofaIGetter *getter, const gchar *mnemo, const GDate *deffect );
+gboolean        ofo_entry_validate_by_opes           ( ofaIGetter *getter, GList *opes );
+
 void            ofo_entry_delete                     ( ofoEntry *entry );
 
 G_END_DECLS
