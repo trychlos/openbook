@@ -261,6 +261,10 @@ ofa_reconcil_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 
 	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
+	setup_columns( view );
+
+	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_func, view );
+
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * the selected objects instead of just the raw GtkTreeSelection
 	 */
@@ -270,29 +274,9 @@ ofa_reconcil_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 	treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( view ));
 	g_signal_connect( treeview, "key-press-event", G_CALLBACK( on_key_pressed ), view );
 
-	return( view );
-}
-
-/**
- * ofa_reconcil_treeview_setup_columns:
- * @view: this #ofaReconcilTreeview instance.
- *
- * Setup the treeview columns.
- */
-void
-ofa_reconcil_treeview_setup_columns( ofaReconcilTreeview *view )
-{
-	ofaReconcilTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_RECONCIL_TREEVIEW( view ));
-
-	priv = ofa_reconcil_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	setup_columns( view );
-	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_func, view );
 	setup_selection( view );
+
+	return( view );
 }
 
 /*

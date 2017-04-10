@@ -80,8 +80,6 @@ GType                ofa_reconcil_treeview_get_type          ( void ) G_GNUC_CON
 ofaReconcilTreeview *ofa_reconcil_treeview_new               ( ofaIGetter *getter,
 																	const gchar *settings_prefix );
 
-void                 ofa_reconcil_treeview_setup_columns     ( ofaReconcilTreeview *view );
-
 GList               *ofa_reconcil_treeview_get_selected      ( ofaReconcilTreeview *view );
 
 #define              ofa_reconcil_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
