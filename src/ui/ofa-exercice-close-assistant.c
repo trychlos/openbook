@@ -1822,16 +1822,16 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	 */
 	if( ok ){
 		query = g_strdup( "UPDATE OFA_T_ACCOUNTS SET "
-					"ACC_VAL_DEBIT=0, ACC_VAL_CREDIT=0, "
-					"ACC_ROUGH_DEBIT=0, ACC_ROUGH_CREDIT=0" );
+					"ACC_CV_DEBIT=0, ACC_CV_CREDIT=0, "
+					"ACC_CV_DEBIT=0, ACC_CV_CREDIT=0" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 
 	if( ok ){
 		query = g_strdup( "UPDATE OFA_T_LEDGERS_CUR SET "
-					"LED_CUR_VAL_DEBIT=0, LED_CUR_VAL_CREDIT=0, "
-					"LED_CUR_ROUGH_DEBIT=0, LED_CUR_ROUGH_CREDIT=0" );
+					"LED_CUR_CR_DEBIT=0, LED_CUR_CR_CREDIT=0, "
+					"LED_CUR_CV_DEBIT=0, LED_CUR_CV_CREDIT=0" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
