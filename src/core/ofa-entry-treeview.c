@@ -302,6 +302,10 @@ ofa_entry_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 
 	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
+	setup_columns( view );
+
+	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_func, view );
+
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoEntry object instead of just the raw GtkTreeSelection
 	 */
@@ -315,30 +319,6 @@ ofa_entry_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
 	return( view );
-}
-
-/**
- * ofa_entry_treeview_setup_columns:
- * @view: this #ofaEntryTreeview instance.
- *
- * Setup the treeview columns.
- */
-void
-ofa_entry_treeview_setup_columns( ofaEntryTreeview *view )
-{
-	ofaEntryTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_ENTRY_TREEVIEW( view ));
-
-	priv = ofa_entry_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	setup_columns( view );
-
-	if( !ofa_tvbin_get_cell_data_func( OFA_TVBIN( view ))){
-		ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_func, view );
-	}
 }
 
 /*

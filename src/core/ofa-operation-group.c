@@ -297,7 +297,6 @@ setup_ui( ofaOperationGroup *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->tview = ofa_entry_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
-	ofa_entry_treeview_setup_columns( priv->tview );
 	ofa_entry_treeview_set_filter_func( priv->tview, ( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row, self );
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
 	g_signal_connect( priv->tview, "ofa-entchanged", G_CALLBACK( tview_on_selection_changed ), self );

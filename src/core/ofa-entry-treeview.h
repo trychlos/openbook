@@ -88,8 +88,6 @@ GType             ofa_entry_treeview_get_type         ( void ) G_GNUC_CONST;
 ofaEntryTreeview *ofa_entry_treeview_new              ( ofaIGetter *getter,
 																const gchar *settings_prefix );
 
-void              ofa_entry_treeview_setup_columns    ( ofaEntryTreeview *view );
-
 GList            *ofa_entry_treeview_get_selected     ( ofaEntryTreeview *view );
 
 #define           ofa_entry_treeview_free_selected(L) g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )

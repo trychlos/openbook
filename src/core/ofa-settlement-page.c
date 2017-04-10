@@ -378,7 +378,6 @@ setup_treeview( ofaSettlementPage *self, GtkContainer *parent )
 
 	priv->tview = ofa_entry_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
-	ofa_entry_treeview_setup_columns( priv->tview );
 	ofa_entry_treeview_set_filter_func( priv->tview, ( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row, self );
 	ofa_tvbin_set_cell_data_func( OFA_TVBIN( priv->tview ), ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self );
 
