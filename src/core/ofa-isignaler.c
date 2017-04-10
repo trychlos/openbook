@@ -55,6 +55,7 @@ enum {
 	DOSSIER_CLOSED,
 	DOSSIER_CHANGED,
 	DOSSIER_PREVIEW,
+	PERIOD_CLOSING,
 	PERIOD_CLOSED,
 	EXE_DATES_CHANGED,
 	STATUS_COUNT,
@@ -373,10 +374,47 @@ interface_base_init( ofaISignalerInterface *klass )
 					G_TYPE_STRING );
 
 		/**
+		 * ofaISignaler::ofa-signaler-dossier-period-closing:
+		 * @closing_date: the closing date.
+		 *
+		 * This signal is sent on the signaler when a period is about to
+		 * be closed.
+		 *
+		 * For the closing of an intermediate period as well as when
+		 * closing an exercice, the signal is sent in the very beginning,
+		 * before any other work could have take place.
+		 *
+		 * Handler is of type:
+		 * 		void user_handler( ofaISignaler *signaler,
+		 * 							const GDate *closing_date,
+		 * 							gpointer     user_data );
+		 */
+		st_signals[ PERIOD_CLOSING ] = g_signal_new_class_handler(
+					SIGNALER_DOSSIER_PERIOD_CLOSING,
+					OFA_TYPE_ISIGNALER,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					1,
+					G_TYPE_POINTER );
+
+		/**
 		 * ofaISignaler::ofa-signaler-dossier-period-closed:
+		 * @closed_date: the closing date.
 		 *
 		 * This signal is sent on the signaler when a period has just
 		 * been closed.
+		 *
+		 * For the closing of an intermediate period, the signal is sent
+		 * at the end of the work: ledgers have been closed at @closed_date,
+		 * and the accounts balances have been archived if asked for.
+		 *
+		 * When closing an exercice, the signal is sent at the very end
+		 * of the operation, when the new exercice has been opened and
+		 * initialized. The @closed_date is then a past date here.
 		 *
 		 * Handler is of type:
 		 * 		void user_handler( ofaISignaler *signaler,
