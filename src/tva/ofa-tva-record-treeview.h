@@ -75,8 +75,6 @@ GType                 ofa_tva_record_treeview_get_type     ( void ) G_GNUC_CONST
 ofaTVARecordTreeview *ofa_tva_record_treeview_new          ( ofaIGetter *getter,
 																	const gchar *settings_prefix );
 
-void                  ofa_tva_record_treeview_setup_columns( ofaTVARecordTreeview *view );
-
 void                  ofa_tva_record_treeview_setup_store  ( ofaTVARecordTreeview *view );
 
 ofoTVARecord         *ofa_tva_record_treeview_get_selected ( ofaTVARecordTreeview *view );

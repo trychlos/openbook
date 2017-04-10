@@ -217,7 +217,6 @@ setup_treeview( ofaTVARecordPage *self )
 	priv = ofa_tva_record_page_get_instance_private( self );
 
 	priv->tview = ofa_tva_record_treeview_new( priv->getter, priv->settings_prefix );
-	ofa_tva_record_treeview_setup_columns( priv->tview );
 
 	/* Insert key is not handled here
 	 * as creating a new declaration requires first selecting a form */
