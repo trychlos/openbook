@@ -559,11 +559,11 @@ init_balances_page( ofaAccountProperties *self )
 	priv->p2_group3 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	priv->p2_group4 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p21-validated-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p21-rough-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_size_group_add_widget( priv->p2_group0, label );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p21-rough-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p21-validated-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_size_group_add_widget( priv->p2_group0, label );
 
@@ -579,35 +579,45 @@ init_balances_page( ofaAccountProperties *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_size_group_add_widget( priv->p2_group3, label );
 
-	/* current validated balance */
-	set_current_amount( self,
-			ofo_account_get_current_val_debit( priv->account ),
-			"p2-val-debit", "p2-val-debit-cur",
-			priv->p2_group1, priv->p2_group2 );
-	set_current_amount( self,
-			ofo_account_get_current_val_credit( priv->account ),
-			"p2-val-credit", "p2-val-credit-cur",
-			priv->p2_group3, priv->p2_group4 );
-
 	/* current rough balance */
 	set_current_amount( self,
 			ofo_account_get_current_rough_debit( priv->account ),
-			"p2-rough-debit", "p2-rough-debit-cur",
+			"p2-current-rough-debit", "p2-current-rough-debit-cur",
 			priv->p2_group1, priv->p2_group2 );
 	set_current_amount( self,
 			ofo_account_get_current_rough_credit( priv->account ),
-			"p2-rough-credit", "p2-rough-credit-cur",
+			"p2-current-rough-credit", "p2-current-rough-credit-cur",
 			priv->p2_group3, priv->p2_group4 );
 
-	/* current future balance */
+	/* current validated balance */
+	set_current_amount( self,
+			ofo_account_get_current_val_debit( priv->account ),
+			"p2-current-val-debit", "p2-current-val-debit-cur",
+			priv->p2_group1, priv->p2_group2 );
+	set_current_amount( self,
+			ofo_account_get_current_val_credit( priv->account ),
+			"p2-current-val-credit", "p2-current-val-credit-cur",
+			priv->p2_group3, priv->p2_group4 );
+
+	/* future rough balance */
 	set_current_amount( self,
 			ofo_account_get_futur_rough_debit( priv->account ),
-			"p2-futur-debit", "p2-fut-debit-cur",
-
+			"p2-futur-rough-debit", "p2-fut-rough-debit-cur",
 			priv->p2_group1, priv->p2_group2 );
 	set_current_amount( self,
 			ofo_account_get_futur_rough_credit( priv->account ),
-			"p2-futur-credit", "p2-fut-credit-cur", priv->p2_group3, priv->p2_group4 );
+			"p2-futur-rough-credit", "p2-fut-rough-credit-cur",
+			priv->p2_group3, priv->p2_group4 );
+
+	/* future validated balance */
+	set_current_amount( self,
+			ofo_account_get_futur_val_debit( priv->account ),
+			"p2-futur-val-debit", "p2-fut-val-debit-cur",
+			priv->p2_group1, priv->p2_group2 );
+	set_current_amount( self,
+			ofo_account_get_futur_val_credit( priv->account ),
+			"p2-futur-val-credit", "p2-fut-val-credit-cur",
+			priv->p2_group3, priv->p2_group4 );
 
 	tview = ofa_account_arc_treeview_new( priv->getter, priv->account );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-archives" );
