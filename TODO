@@ -353,8 +353,6 @@
 
 1446 2017- 4-10 account properties: add a revealer to current balances page
 
-1447 2017- 4-10 ledger properties: add a revealer to current balances page
-
 1450 2017- 4-10 restore assistant: display meta data found in the zip file
 
 1451 2017- 4-10 assistants are not transient vs. the main window ?
@@ -1048,6 +1046,9 @@
      2017- 4-10 done
 
 1441 2017- 4- 9 core dbmodel v37: to be installed (ofo_account & ofo_ledger)
+     2017- 4-10 done
+
+1447 2017- 4-10 ledger properties: add a revealer to current balances page
      2017- 4-10 done
 
 1448 2017- 4-10 operation group: double click open entry properties

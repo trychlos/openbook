@@ -36,6 +36,7 @@
    - Export the FEC file (LPF - Article A47 A-1).
    - Integrity check: have a user preference to only display errors (todo #1409).
    - LedgerBookSummary: is now merged with LedgerBookRender (todo #1386).
+   - Ledger properties: have a revealer on current and archived balances (todo #1447).
    - Operation group: display entries of an operation (todo #1422).
    - Operation template: define new DOMYP macro.
    - Period closing: improve accounts archive message.

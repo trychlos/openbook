@@ -58,6 +58,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	gchar               *settings_prefix;
 	GtkWindow           *actual_parent;
 	gboolean             is_writable;
 	gboolean             is_new;
@@ -72,6 +73,8 @@ typedef struct {
 
 	/* UI
 	 */
+	GtkWidget           *current_expander;
+	GtkWidget           *archived_expander;
 	GtkWidget           *ok_btn;
 	GtkWidget           *msg_label;
 }
@@ -101,6 +104,8 @@ static gboolean is_dialog_validable( ofaLedgerProperties *self );
 static void     on_ok_clicked( ofaLedgerProperties *self );
 static gboolean do_update( ofaLedgerProperties *self, gchar **msgerr );
 static void     set_msgerr( ofaLedgerProperties *self, const gchar *msg );
+static void     read_settings( ofaLedgerProperties *self );
+static void     write_settings( ofaLedgerProperties *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerProperties, ofa_ledger_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaLedgerProperties )
@@ -121,6 +126,7 @@ ledger_properties_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_ledger_properties_get_instance_private( OFA_LEDGER_PROPERTIES( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->mnemo );
 	g_free( priv->label );
 	g_free( priv->upd_user );
@@ -139,6 +145,8 @@ ledger_properties_dispose( GObject *instance )
 	priv = ofa_ledger_properties_get_instance_private( OFA_LEDGER_PROPERTIES( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		write_settings( OFA_LEDGER_PROPERTIES( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -164,6 +172,7 @@ ofa_ledger_properties_init( ofaLedgerProperties *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->is_new = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	my_date_clear( &priv->closing );
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
@@ -277,7 +286,7 @@ idialog_init( myIDialog *instance )
 	ofaHub *hub;
 	gchar *title, *str;
 	const gchar *jou_mnemo;
-	GtkWidget *entry, *label, *last_close_entry, *btn;
+	GtkWidget *entry, *label, *last_close_entry, *btn, *expander;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -345,11 +354,22 @@ idialog_init( myIDialog *instance )
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
 	my_utils_widget_set_editable( last_close_entry, FALSE );
 
+	/* setup the expanders */
+	expander = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p2-current-expander" );
+	g_return_if_fail( expander && GTK_IS_EXPANDER( expander ));
+	priv->current_expander = expander;
+
+	expander = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p2-archived-expander" );
+	g_return_if_fail( expander && GTK_IS_EXPANDER( expander ));
+	priv->archived_expander = expander;
+
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
+
+	read_settings( OFA_LEDGER_PROPERTIES( instance ));
 
 	check_for_enable_dlg( OFA_LEDGER_PROPERTIES( instance ));
 }
@@ -637,4 +657,57 @@ set_msgerr( ofaLedgerProperties *self, const gchar *msg )
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
+}
+
+/*
+ * settings: current_expander;archived_expander;
+ */
+static void
+read_settings( ofaLedgerProperties *self )
+{
+	ofaLedgerPropertiesPrivate *priv;
+	myISettings *settings;
+	gchar *key;
+	GList *strlist, *it;
+	const gchar *cstr;
+
+	priv = ofa_ledger_properties_get_instance_private( self );
+
+	settings = ofa_igetter_get_user_settings( priv->getter );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	gtk_expander_set_expanded( GTK_EXPANDER( priv->current_expander ), my_utils_boolean_from_str( cstr ));
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	gtk_expander_set_expanded( GTK_EXPANDER( priv->archived_expander ), my_utils_boolean_from_str( cstr ));
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
+}
+
+/*
+ * settings: current_expander;archived_expander;
+ */
+static void
+write_settings( ofaLedgerProperties *self )
+{
+	ofaLedgerPropertiesPrivate *priv;
+	myISettings *settings;
+	gchar *key, *str;
+
+	priv = ofa_ledger_properties_get_instance_private( self );
+
+	str = g_strdup_printf( "%s;%s;",
+			gtk_expander_get_expanded( GTK_EXPANDER( priv->current_expander )) ? "True":"False",
+			gtk_expander_get_expanded( GTK_EXPANDER( priv->archived_expander )) ? "True":"False" );
+
+	settings = ofa_igetter_get_user_settings( priv->getter );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
+
+	g_free( key );
 }
