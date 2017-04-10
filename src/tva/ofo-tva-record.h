@@ -160,9 +160,9 @@ GList          *ofo_tva_record_get_det_orphans          ( ofaIGetter *getter );
 GList          *ofo_tva_record_get_doc_orphans          ( ofaIGetter *getter );
 #define         ofo_tva_record_free_doc_orphans( L )    ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
-gboolean        ofo_tva_record_validate                 ( ofoTVARecord *record,
-															ofeVatStatus status,
-															const GDate *closing );
+gboolean        ofo_tva_record_validate                 ( ofoTVARecord *record, ofeVatStatus status, const GDate *closing );
+
+guint           ofo_tva_record_validate_all             ( ofaIGetter *getter, const GDate *closing );
 
 gboolean        ofo_tva_record_insert                   ( ofoTVARecord *record );
 gboolean        ofo_tva_record_update                   ( ofoTVARecord *record );

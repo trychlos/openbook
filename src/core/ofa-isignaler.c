@@ -375,6 +375,7 @@ interface_base_init( ofaISignalerInterface *klass )
 
 		/**
 		 * ofaISignaler::ofa-signaler-dossier-period-closing:
+		 * @closing_ind: an indicator of the period being closed.
 		 * @closing_date: the closing date.
 		 *
 		 * This signal is sent on the signaler when a period is about to
@@ -385,9 +386,10 @@ interface_base_init( ofaISignalerInterface *klass )
 		 * before any other work could have take place.
 		 *
 		 * Handler is of type:
-		 * 		void user_handler( ofaISignaler *signaler,
-		 * 							const GDate *closing_date,
-		 * 							gpointer     user_data );
+		 * 		void user_handler( ofaISignaler       *signaler,
+		 * 							ofeSignalerClosing closing_ind,
+		 * 							const GDate       *closing_date,
+		 * 							gpointer           user_data );
 		 */
 		st_signals[ PERIOD_CLOSING ] = g_signal_new_class_handler(
 					SIGNALER_DOSSIER_PERIOD_CLOSING,
@@ -398,11 +400,12 @@ interface_base_init( ofaISignalerInterface *klass )
 					NULL,								/* accumulator data */
 					NULL,
 					G_TYPE_NONE,
-					1,
-					G_TYPE_POINTER );
+					2,
+					G_TYPE_UINT, G_TYPE_POINTER );
 
 		/**
 		 * ofaISignaler::ofa-signaler-dossier-period-closed:
+		 * @closing_ind: an indicator of the period being closed.
 		 * @closed_date: the closing date.
 		 *
 		 * This signal is sent on the signaler when a period has just
@@ -417,9 +420,10 @@ interface_base_init( ofaISignalerInterface *klass )
 		 * initialized. The @closed_date is then a past date here.
 		 *
 		 * Handler is of type:
-		 * 		void user_handler( ofaISignaler *signaler,
-		 * 							const GDate *closed_date,
-		 * 							gpointer     user_data );
+		 * 		void user_handler( ofaISignaler       *signaler,
+		 * 							ofeSignalerClosing closing_ind,
+		 * 							const GDate       *closing_date,
+		 * 							gpointer           user_data );
 		 */
 		st_signals[ PERIOD_CLOSED ] = g_signal_new_class_handler(
 					SIGNALER_DOSSIER_PERIOD_CLOSED,
@@ -430,8 +434,8 @@ interface_base_init( ofaISignalerInterface *klass )
 					NULL,								/* accumulator data */
 					NULL,
 					G_TYPE_NONE,
-					1,
-					G_TYPE_POINTER );
+					2,
+					G_TYPE_UINT, G_TYPE_POINTER );
 
 		/**
 		 * ofaISignaler::ofa-signaler-exercice-dates-changed:

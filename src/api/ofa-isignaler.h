@@ -108,6 +108,19 @@ typedef struct {
 #define SIGNALER_MENU_AVAILABLE             "ofa-signaler-menu-available"
 #define SIGNALER_PAGE_MANAGER_AVAILABLE     "ofa-signaler-page-manager-available"
 
+/**
+ * ofeSignalerClosing:
+ *
+ * An indicator sent along with SIGNALER_DOSSIER_PERIOD_CLOSING and
+ * SIGNALER_DOSSIER_PERIOD_CLOSED signals, to indicate the handler
+ * in which situation it should behaves.
+ */
+typedef enum {
+	SIGNALER_CLOSING_INTERMEDIATE = 1,
+	SIGNALER_CLOSING_EXERCICE
+}
+	ofeSignalerClosing;
+
 /*
  * Interface-wide
  */

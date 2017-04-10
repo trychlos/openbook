@@ -489,10 +489,10 @@ Or just click on 'Apply' button.</property>
                     <property name="row_spacing">4</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="p6-close-window">
+                      <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Closing currently opened pages :</property>
+                        <property name="label" translatable="yes">Advertising the application of the closing :</property>
                         <property name="xalign">1</property>
                       </object>
                       <packing>
@@ -501,7 +501,7 @@ Or just click on 'Apply' button.</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p6-pagesclosed">
+                      <object class="GtkLabel" id="p6-advertise-begin-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
@@ -512,7 +512,30 @@ Or just click on 'Apply' button.</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p6-validating-label">
+                      <object class="GtkLabel" id="p6-close-window">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Closing currently opened pages :</property>
+                        <property name="xalign">1</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="p6-pagesclosed">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="p6-validating-prompt">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">Validating remaining lines :</property>
@@ -520,7 +543,21 @@ Or just click on 'Apply' button.</property>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">1</property>
+                        <property name="top_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="p6-validating">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">2</property>
                       </packing>
                     </child>
                     <child>
@@ -532,7 +569,21 @@ Or just click on 'Apply' button.</property>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">2</property>
+                        <property name="top_attach">3</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="p6-balancing">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">3</property>
                       </packing>
                     </child>
                     <child>
@@ -544,26 +595,17 @@ Or just click on 'Apply' button.</property>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">3</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="p6-advertise-prompt">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Advertising the application of the closing :</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">0</property>
                         <property name="top_attach">4</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p6-advertise-label">
+                      <object class="GtkBox" id="p6-ledgers">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -583,6 +625,17 @@ Or just click on 'Apply' button.</property>
                       </packing>
                     </child>
                     <child>
+                      <object class="GtkLabel" id="p6-archived">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">5</property>
+                      </packing>
+                    </child>
+                    <child>
                       <object class="GtkLabel" id="label65">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -591,6 +644,17 @@ Or just click on 'Apply' button.</property>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
+                        <property name="top_attach">6</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="p6-cleanup">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
                         <property name="top_attach">6</property>
                       </packing>
                     </child>
@@ -604,106 +668,6 @@ Or just click on 'Apply' button.</property>
                       <packing>
                         <property name="left_attach">0</property>
                         <property name="top_attach">7</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="label67">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Closing opening ledger, archiving its balances :</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">8</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Archiving opening accounts balances :</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">9</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="label68">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Bringing up ex-future entries :</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">10</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkBox" id="p6-validating">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkBox" id="p6-balancing">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkBox" id="p6-ledgers">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">3</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="p6-archived">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">5</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="p6-cleanup">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">6</property>
                       </packing>
                     </child>
                     <child>
@@ -721,6 +685,18 @@ Or just click on 'Apply' button.</property>
                       </packing>
                     </child>
                     <child>
+                      <object class="GtkLabel" id="label67">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Closing opening ledger, archiving its balances :</property>
+                        <property name="xalign">1</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">8</property>
+                      </packing>
+                    </child>
+                    <child>
                       <object class="GtkLabel" id="p6-open">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -732,6 +708,18 @@ Or just click on 'Apply' button.</property>
                       </packing>
                     </child>
                     <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Archiving opening accounts balances :</property>
+                        <property name="xalign">1</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">9</property>
+                      </packing>
+                    </child>
+                    <child>
                       <object class="GtkLabel" id="p6-accarc">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -740,6 +728,18 @@ Or just click on 'Apply' button.</property>
                       <packing>
                         <property name="left_attach">1</property>
                         <property name="top_attach">9</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label68">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Bringing up ex-future entries :</property>
+                        <property name="xalign">1</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">10</property>
                       </packing>
                     </child>
                     <child>
@@ -757,6 +757,29 @@ Or just click on 'Apply' button.</property>
                       </packing>
                     </child>
                     <child>
+                      <object class="GtkLabel" id="p6-advertise-end-prompt">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Advertising the application of the new opening :</property>
+                        <property name="xalign">1</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">11</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="p6-advertise-end-label">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">11</property>
+                      </packing>
+                    </child>
+                    <child>
                       <object class="GtkLabel" id="p6-summary">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -765,7 +788,7 @@ Or just click on 'Apply' button.</property>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">11</property>
+                        <property name="top_attach">12</property>
                         <property name="width">2</property>
                       </packing>
                     </child>

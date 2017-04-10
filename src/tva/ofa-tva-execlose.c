@@ -93,16 +93,17 @@ iexe_close_add_row( ofaIExeClose *instance, guint rowtype )
 {
 	gchar *text;
 
+	text = NULL;
+
 	switch( rowtype ){
 		case EXECLOSE_CLOSING:
-			//text = g_strdup( _( "VAT task on closing exercice N :" ));
-			text = NULL;
+			text = g_strdup( _( "Validating remaining VAT declarations :" ));
 			break;
 		case EXECLOSE_OPENING:
 			text = g_strdup( _( "VAT tasks on N+1 period opening :" ));
 			break;
 		default:
-			g_return_val_if_reached( NULL );
+			break;
 	}
 
 	return( text );
@@ -128,18 +129,39 @@ iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaIG
 }
 
 /*
- * This task is expected not to be called since we are returning a
- * %NULL label from add_row() method
+ * Before closing a period, have to validate the VAT declarations which
+ * end until the closing date
  */
 static gboolean
 do_task_closing( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 {
+	ofaHub *hub;
+	ofoDossier *dossier;
+	const GDate *end_date;
+	guint count;
+	gchar *str;
 	GtkWidget *label;
 
-	label = gtk_label_new( _( "Nothing to do" ));
+	hub = ofa_igetter_get_hub( getter );
+	dossier = ofa_hub_get_dossier( hub );
+	end_date = ofo_dossier_get_exe_end( dossier );
+
+	count = ofo_tva_record_validate_all( getter, end_date );
+
+	if( count == 0 ){
+		str = g_strdup_printf( _( "Nothing to do" ));
+	} else if( count == 1 ){
+		str = g_strdup_printf( _( "Done: one VAT declaration remained unvalidated" ));
+	} else {
+		str = g_strdup_printf( _( "Done: %u VAT declarations remained unvalidated" ), count );
+	}
+
+	label = gtk_label_new( str );
 	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
 	gtk_container_add( GTK_CONTAINER( box ), label );
 	gtk_widget_show_all( box );
+
+	g_free( str );
 
 	return( TRUE );
 }

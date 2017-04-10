@@ -246,7 +246,7 @@ static gboolean  signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *
 static gboolean  signaler_is_deletable_tva_form( ofaISignaler *signaler, ofoTVAForm *form );
 static void      signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean  signaler_on_updated_tva_form_mnemo( ofaISignaler *signaler, ofoBase *object, const gchar *mnemo, const gchar *prev_id );
-static void      signaler_on_period_close( ofaISignaler *signaler, const GDate *closing, void *empty );
+static void      signaler_on_period_close( ofaISignaler *signaler, ofeSignalerClosing ind, const GDate *closing, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVARecord, ofo_tva_record, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVARecord )
@@ -1508,6 +1508,52 @@ ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate 
 }
 
 /**
+ * ofo_tva_record_validate_all:
+ * @getter: the #ofaIGetter of the application.
+ * @closing: a closing date.
+ *
+ * Validate all remaining VAT declarations until @closing date.
+ *
+ * Returns: the count of declarations validated here.
+ */
+guint
+ofo_tva_record_validate_all( ofaIGetter *getter, const GDate *closing )
+{
+	static const gchar *thisfn = "ofo_tva_record_validate_all";
+	GList *dataset, *it;
+	ofoTVARecord *record;
+	const GDate *end;
+	ofeVatStatus status;
+	guint count;
+
+	g_debug( "%s: getter=%p, closing=%p",
+			thisfn, ( void * ) getter, ( void * ) closing );
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
+
+	count = 0;
+	dataset = ofo_tva_record_get_dataset( getter );
+
+	for( it=dataset ; it ; it=it->next ){
+		record = OFO_TVA_RECORD( it->data );
+		status = ofo_tva_record_get_status( record );
+		/* if already validated, nothing to do */
+		if( status != VAT_STATUS_NO ){
+			continue;
+		}
+		/* only validate the declarations before the closing date */
+		end = ofo_tva_record_get_end( record );
+		if( my_date_compare( end, closing ) <= 0 ){
+			if( ofo_tva_record_validate( record, VAT_STATUS_PCLOSE, closing )){
+				count += 1;
+			}
+		}
+	}
+
+	return( count );
+}
+
+/**
  * ofo_tva_record_insert:
  * @record: this #ofoTVARecord object.
  *
@@ -2227,36 +2273,24 @@ signaler_on_updated_tva_form_mnemo( ofaISignaler *signaler, ofoBase *object, con
 }
 
 /*
- * period closing:
- * auto-validate VAT declarations until this date.
+ * Auto-validate VAT declarations until this date.
+ * Only deal here with intermediate period closing.
+ *
+ * Same action when closing the exercice is managed through the IExeClose
+ * interface.
  */
 static void
-signaler_on_period_close( ofaISignaler *signaler, const GDate *closing, void *empty )
+signaler_on_period_close( ofaISignaler *signaler, ofeSignalerClosing ind, const GDate *closing, void *empty )
 {
 	static const gchar *thisfn = "ofo_tva_record_signaler_on_period_close";
 	ofaIGetter *getter;
-	GList *dataset, *it;
-	ofoTVARecord *record;
-	const GDate *end;
-	ofeVatStatus status;
 
 	g_debug( "%s: signaler=%p, closing=%p, empty=%p",
 			thisfn, ( void * ) signaler, ( void * ) closing, empty );
 
-	getter = ofa_isignaler_get_getter( signaler );
-	dataset = ofo_tva_record_get_dataset( getter );
+	if( ind == SIGNALER_CLOSING_INTERMEDIATE ){
 
-	for( it=dataset ; it ; it=it->next ){
-		record = OFO_TVA_RECORD( it->data );
-		status = ofo_tva_record_get_status( record );
-		/* if already validated, nothing to do */
-		if( status != VAT_STATUS_NO ){
-			continue;
-		}
-		/* only validate the declarations before the closing date */
-		end = ofo_tva_record_get_end( record );
-		if( my_date_compare( end, closing ) <= 0 ){
-			ofo_tva_record_validate( record, VAT_STATUS_PCLOSE, closing );
-		}
+		getter = ofa_isignaler_get_getter( signaler );
+		ofo_tva_record_validate_all( getter, closing );
 	}
 }

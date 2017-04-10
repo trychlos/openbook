@@ -183,14 +183,14 @@ static void           p5_on_backup_clicked( GtkButton *button, ofaExerciceCloseA
 static void           p5_check_for_complete( ofaExerciceCloseAssistant *self );
 static void           p6_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void           p6_plugin_init( ofaExerciceCloseAssistant *self, GtkWidget *grid, ofaIExeClose *instance, guint type, const gchar *data_name, GtkWidget *sibling, GWeakNotify fn );
-static void           p6_do_close( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
-static gboolean       p6_closing_plugin( ofaExerciceCloseAssistant *self );
+static void           p6_do_signaler_begin( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
+static gboolean       p6_close_windows( ofaExerciceCloseAssistant *self );
+static gboolean       p6_plugin_closing( ofaExerciceCloseAssistant *self );
 static gboolean       p6_validate_entries( ofaExerciceCloseAssistant *self );
 static gboolean       p6_solde_accounts( ofaExerciceCloseAssistant *self );
 static gint           p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui );
 static void           p6_set_forward_settlement_number( GList *entries, const gchar *account, ofxCounter counter );
 static gboolean       p6_close_ledgers( ofaExerciceCloseAssistant *self );
-static gboolean       p6_advertise_closing( ofaExerciceCloseAssistant *self );
 static gboolean       p6_archive_exercice( ofaExerciceCloseAssistant *self );
 static gboolean       p6_do_archive_db_open_new( ofaExerciceCloseAssistant *self, gboolean with_ui );
 static gboolean       p6_cleanup( ofaExerciceCloseAssistant *self );
@@ -198,7 +198,9 @@ static gboolean       p6_insert_forward( ofaExerciceCloseAssistant *self );
 static gboolean       p6_close_ran_ledger( ofaExerciceCloseAssistant *self );
 static gboolean       p6_archive_opening_account_soldes( ofaExerciceCloseAssistant *self );
 static gboolean       p6_future_to_current( ofaExerciceCloseAssistant *self );
-static gboolean       p6_plugin_open_exercice( ofaExerciceCloseAssistant *self );
+static gboolean       p6_plugin_opening( ofaExerciceCloseAssistant *self );
+static gboolean       p6_signaler_end( ofaExerciceCloseAssistant *self );
+static gboolean       p6_summary( ofaExerciceCloseAssistant *self );
 static myProgressBar *get_new_bar( ofaExerciceCloseAssistant *self, const gchar *w_name );
 static void           update_bar( myProgressBar *bar, guint *count, guint total, const gchar *emitter_name );
 static void           on_closing_instance_finalized( sClose *close_data, GObject *finalized_instance );
@@ -236,7 +238,7 @@ static const ofsIAssistant st_pages_cb [] = {
 				NULL },
 		{ PAGE_CLOSE,
 				( myIAssistantCb ) p6_do_init,
-				( myIAssistantCb ) p6_do_close,
+				( myIAssistantCb ) p6_do_signaler_begin,
 				NULL },
 		{ -1 }
 };
@@ -257,6 +259,7 @@ exercice_close_assistant_finalize( GObject *instance )
 
 	g_free( priv->settings_prefix );
 	g_free( priv->dos_name );
+	g_list_free( priv->close_list );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_exercice_close_assistant_parent_class )->finalize( instance );
@@ -278,7 +281,6 @@ exercice_close_assistant_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->dossier_meta );
-		g_list_free( priv->close_list );
 
 		if( priv->getter ){
 			main_window = ofa_igetter_get_main_window( priv->getter );
@@ -909,7 +911,7 @@ p6_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_init";
 	ofaExerciceCloseAssistantPrivate *priv;
 	GList *it;
-	GtkWidget *validating_label, *summary_label, *grid;
+	GtkWidget *label, *grid;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
@@ -921,24 +923,30 @@ p6_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p6-grid61" );
 	g_return_if_fail( grid && GTK_IS_GRID( grid ));
 
-	validating_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p6-validating-label" );
-	g_return_if_fail( validating_label && GTK_IS_LABEL( validating_label ));
+	/* plugins beginning operations are inserted between all windows are
+	 *  closed and the validation of the remaining rough entries
+	 */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p6-validating-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	for( it=priv->close_list ; it ; it=it->next ){
 		p6_plugin_init(
 				self, grid,
 				OFA_IEXECLOSE( it->data ), EXECLOSE_CLOSING, EXECLOSE_CLOSING_DATA,
-				validating_label, ( GWeakNotify ) on_closing_instance_finalized );
+				label, ( GWeakNotify ) on_closing_instance_finalized );
 	}
 
-	summary_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p6-summary" );
-	g_return_if_fail( summary_label && GTK_IS_LABEL( summary_label ));
+	/* plugins ending operations are inserted before the ofaISignaler
+	 *  advertising, which is iself the last operation done
+	 */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p6-advertise-end-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	for( it=priv->close_list ; it ; it=it->next ){
 		p6_plugin_init(
 				self, grid,
 				OFA_IEXECLOSE( it->data ), EXECLOSE_OPENING, EXECLOSE_OPENING_DATA,
-				summary_label, ( GWeakNotify ) on_opening_instance_finalized );
+				label, ( GWeakNotify ) on_opening_instance_finalized );
 	}
 }
 
@@ -972,15 +980,24 @@ p6_plugin_init( ofaExerciceCloseAssistant *self, GtkWidget *grid, ofaIExeClose *
 		g_object_set_data( G_OBJECT( instance ), data_name, close_data );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) fn, close_data );
 	}
+	g_free( text );
 }
 
+/*
+ * This is the very first step of the closing operations
+ * (directly triggered by myIAssistant)
+ *
+ * Advertise the ofaISignaler of the beginning of the closing operations
+ */
 static void
-p6_do_close( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
+p6_do_signaler_begin( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
 {
-	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_close";
+	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_signaler_begin";
 	ofaExerciceCloseAssistantPrivate *priv;
-	GtkApplicationWindow *main_window;
+	gboolean ok;
 	GtkWidget *label;
+	ofaISignaler *signaler;
+	const GDate *end_cur;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
@@ -989,8 +1006,31 @@ p6_do_close( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_wid
 
 	priv->p6_page = page_widget;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-pagesclosed" );
+	ok = TRUE;
+	signaler = ofa_igetter_get_signaler( priv->getter );
+	end_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
+	g_signal_emit_by_name( signaler, SIGNALER_DOSSIER_PERIOD_CLOSING, SIGNALER_CLOSING_EXERCICE, end_cur );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-advertise-begin-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
+
+	if( ok ){
+		g_idle_add(( GSourceFunc ) p6_close_windows, self );
+	}
+}
+
+static gboolean
+p6_close_windows( ofaExerciceCloseAssistant *self )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
+	GtkWidget *label;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( self );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-pagesclosed" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
 
 	/* before beginning with all the actions needed to close a financial
 	 * period, close the pages which may be opened at this time: this has
@@ -1005,16 +1045,19 @@ p6_do_close( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_wid
 
 	gtk_label_set_text( GTK_LABEL( label ), _( "Done" ));
 
-	g_idle_add(( GSourceFunc ) p6_closing_plugin, self );
+	g_idle_add(( GSourceFunc ) p6_plugin_closing, self );
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
 }
 
 /*
- * let the plugin do its tasks when closing the exercice
+ * let the plugin do its tasks before closing the exercice
  */
 static gboolean
-p6_closing_plugin( ofaExerciceCloseAssistant *self )
+p6_plugin_closing( ofaExerciceCloseAssistant *self )
 {
-	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_closing_plugin";
+	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_plugin_closing";
 	ofaExerciceCloseAssistantPrivate *priv;
 	GList *it;
 	sClose *close_data;
@@ -1366,38 +1409,8 @@ p6_close_ledgers( ofaExerciceCloseAssistant *self )
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( bar ));
-	g_idle_add(( GSourceFunc ) p6_advertise_closing, self );
 
-	/* do not continue and remove from idle callbacks list */
-	return( G_SOURCE_REMOVE );
-}
-
-/*
- * advertise of the period closing
- */
-static gboolean
-p6_advertise_closing( ofaExerciceCloseAssistant *self )
-{
-	ofaExerciceCloseAssistantPrivate *priv;
-	gboolean ok;
-	GtkWidget *label;
-	ofaISignaler *signaler;
-	const GDate *end_cur;
-
-	priv = ofa_exercice_close_assistant_get_instance_private( self );
-
-	ok = TRUE;
-	signaler = ofa_igetter_get_signaler( priv->getter );
-	end_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
-	g_signal_emit_by_name( signaler, SIGNALER_DOSSIER_PERIOD_CLOSED, end_cur );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-advertise-label" );
-	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
-	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
-
-	if( ok ){
-		g_idle_add(( GSourceFunc ) p6_archive_exercice, self );
-	}
+	g_idle_add(( GSourceFunc ) p6_archive_exercice, self );
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
@@ -2057,23 +2070,22 @@ p6_future_to_current( ofaExerciceCloseAssistant *self )
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( bar ));
-	g_idle_add(( GSourceFunc ) p6_plugin_open_exercice, self );
+	g_idle_add(( GSourceFunc ) p6_plugin_opening, self );
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
 }
 
 /*
- * let the plugins do their stuff
+ * let the plugins do their stuff when opening the new exercice
  */
 static gboolean
-p6_plugin_open_exercice( ofaExerciceCloseAssistant *self )
+p6_plugin_opening( ofaExerciceCloseAssistant *self )
 {
-	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_plugin_open_exercice";
+	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_plugin_opening";
 	ofaExerciceCloseAssistantPrivate *priv;
 	GList *it;
 	sClose *close_data;
-	GtkWidget *summary_label;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -2086,6 +2098,51 @@ p6_plugin_open_exercice( ofaExerciceCloseAssistant *self )
 					OFA_IEXECLOSE( it->data ), EXECLOSE_OPENING, close_data->box, priv->getter );
 		}
 	}
+
+	g_idle_add(( GSourceFunc ) p6_signaler_end, self );
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
+}
+
+/*
+ * advertise of the period closing
+ */
+static gboolean
+p6_signaler_end( ofaExerciceCloseAssistant *self )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	gboolean ok;
+	GtkWidget *label;
+	ofaISignaler *signaler;
+	const GDate *end_cur;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( self );
+
+	ok = TRUE;
+	signaler = ofa_igetter_get_signaler( priv->getter );
+	end_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
+	g_signal_emit_by_name( signaler, SIGNALER_DOSSIER_PERIOD_CLOSED, SIGNALER_CLOSING_EXERCICE, end_cur );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-advertise-end-label" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
+	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
+
+	if( ok ){
+		g_idle_add(( GSourceFunc ) p6_summary, self );
+	}
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
+}
+
+static gboolean
+p6_summary( ofaExerciceCloseAssistant *self )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	GtkWidget *summary_label;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
 	summary_label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-summary" );
 	g_return_val_if_fail( summary_label && GTK_IS_LABEL( summary_label ), FALSE );
