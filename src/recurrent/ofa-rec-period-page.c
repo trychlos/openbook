@@ -206,7 +206,6 @@ setup_treeview( ofaRecPeriodPage *self )
 	priv = ofa_rec_period_page_get_instance_private( self );
 
 	priv->tview = ofa_rec_period_treeview_new( priv->getter, priv->settings_prefix );
-	ofa_rec_period_treeview_setup_columns( priv->tview );
 
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), self );
