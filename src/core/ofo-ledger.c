@@ -517,8 +517,8 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger, GDate *date )
  *
  * Returns: the list of currency codes ISO 3A used by this ledger.
  *
- * The content of returned list is owned by the ledger, and should only
- * be g_list_free() by the caller.
+ * The content of returned list is owned by the ledger.
+ * The returned list itself should be g_list_free() by the caller.
  */
 GList *
 ofo_ledger_get_currencies( ofoLedger *ledger )

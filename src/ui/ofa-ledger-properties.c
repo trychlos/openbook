@@ -92,6 +92,8 @@ static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     init_balances_page( ofaLedgerProperties *self );
+static void     init_currency_balance( ofaLedgerProperties *self, GtkGrid *grid, ofoCurrency *currency, gint *row );
+static void     init_currency_amount( ofaLedgerProperties *self, GtkGrid *grid, ofoCurrency *currency, gint row, const gchar *balance, ofxAmount debit, ofxAmount credit );
 static void     on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self );
 static void     on_label_changed( GtkEntry *entry, ofaLedgerProperties *self );
 static void     check_for_enable_dlg( ofaLedgerProperties *self );
@@ -363,14 +365,139 @@ init_balances_page( ofaLedgerProperties *self )
 {
 	ofaLedgerPropertiesPrivate *priv;
 	ofaLedgerArcTreeview *tview;
-	GtkWidget *parent;
+	GtkWidget *grid, *parent;
+	GList *currencies, *it;
+	const gchar *code;
+	ofoCurrency *currency;
+	gint row;
 
 	priv = ofa_ledger_properties_get_instance_private( self );
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-balances-grid" );
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+
+	row = 1;
+	currencies = ofo_ledger_get_currencies( priv->ledger );
+	for( it=currencies ; it ; it=it->next ){
+		code = ( const gchar * ) it->data;
+		g_return_if_fail( my_strlen( code ));
+		currency = ofo_currency_get_by_code( priv->getter, code );
+		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+		init_currency_balance( self, GTK_GRID( grid ), currency, &row );
+	}
+	g_list_free( currencies );
 
 	tview = ofa_ledger_arc_treeview_new( priv->getter, priv->ledger );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-archives" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( tview ));
+}
+
+static void
+init_currency_balance( ofaLedgerProperties *self, GtkGrid *grid, ofoCurrency *currency, gint *first_row )
+{
+	ofaLedgerPropertiesPrivate *priv;
+	const gchar *code;
+	GtkWidget *label;
+	gchar *str;
+	gint row;
+
+	priv = ofa_ledger_properties_get_instance_private( self );
+
+	code = ofo_currency_get_code( currency );
+
+	row = *first_row;
+	str = g_strdup_printf( _( "Balance for %s currency" ), code );
+	label = gtk_label_new( str );
+	g_free( str );
+	gtk_grid_attach( grid, label, 0, row, 3, 1 );
+
+	row += 1;
+	label = gtk_label_new( "" );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 2 );
+	gtk_grid_attach( grid, label, 0, row, 1, 1 );
+
+	label = gtk_label_new( _( "Current period" ));
+	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+	gtk_grid_attach( grid, label, 1, row, 2, 1 );
+
+	row += 1;
+	init_currency_amount( self, grid, currency, row,
+			_( "Rough balance :" ),
+			ofo_ledger_get_current_rough_debit( priv->ledger, code ),
+			ofo_ledger_get_current_rough_credit( priv->ledger, code ));
+
+	row += 1;
+	init_currency_amount( self, grid, currency, row,
+			_( "Validated balance :" ),
+			ofo_ledger_get_current_val_debit( priv->ledger, code ),
+			ofo_ledger_get_current_val_credit( priv->ledger, code ));
+
+	row += 1;
+	label = gtk_label_new( "" );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 2 );
+	gtk_grid_attach( grid, label, 0, row, 1, 1 );
+
+	label = gtk_label_new( _( "Future period" ));
+	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+	gtk_grid_attach( grid, label, 1, row, 2, 1 );
+
+	row += 1;
+	init_currency_amount( self, grid, currency, row,
+			_( "Rough balance :" ),
+			ofo_ledger_get_futur_rough_debit( priv->ledger, code ),
+			ofo_ledger_get_futur_rough_credit( priv->ledger, code ));
+
+	row += 1;
+	init_currency_amount( self, grid, currency, row,
+			_( "Validated balance :" ),
+			ofo_ledger_get_futur_val_debit( priv->ledger, code ),
+			ofo_ledger_get_futur_val_credit( priv->ledger, code ));
+}
+
+static void
+init_currency_amount( ofaLedgerProperties *self, GtkGrid *grid, ofoCurrency *currency, gint row, const gchar *balance, ofxAmount debit, ofxAmount credit )
+{
+	ofaLedgerPropertiesPrivate *priv;
+	GtkWidget *label;
+	gchar *str;
+	const gchar *symbol;
+
+	priv = ofa_ledger_properties_get_instance_private( self );
+
+	symbol = ofo_currency_get_symbol( currency );
+
+	label = gtk_label_new( "" );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 2 );
+	gtk_grid_attach( grid, label, 0, row, 1, 1 );
+
+	label = gtk_label_new( "" );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 2 );
+	gtk_grid_attach( grid, label, 1, row, 1, 1 );
+
+	label = gtk_label_new( balance );
+	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
+	gtk_grid_attach( grid, label, 2, row, 1, 1 );
+
+	str = ofa_amount_to_str( debit, currency, priv->getter );
+	label = gtk_label_new( str );
+	g_free( str );
+	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
+	gtk_grid_attach( grid, label, 3, row, 1, 1 );
+
+	label = gtk_label_new( symbol );
+	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+	gtk_grid_attach( grid, label, 4, row, 1, 1 );
+
+	str = ofa_amount_to_str( credit, currency, priv->getter );
+	label = gtk_label_new( str );
+	g_free( str );
+	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
+	gtk_grid_attach( grid, label, 5, row, 1, 1 );
+
+	label = gtk_label_new( symbol );
+	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+	gtk_grid_attach( grid, label, 6, row, 1, 1 );
 }
 
 static void
