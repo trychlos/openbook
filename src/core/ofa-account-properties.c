@@ -60,6 +60,7 @@ typedef struct {
 
 	/* runtime data
 	 */
+	gchar        *settings_prefix;
 	GtkWindow    *actual_parent;
 	ofoDossier   *dossier;
 	gboolean      is_writable;
@@ -93,6 +94,8 @@ typedef struct {
 	GtkSizeGroup *p2_group2;
 	GtkSizeGroup *p2_group3;
 	GtkSizeGroup *p2_group4;
+	GtkWidget    *p2_current_expander;
+	GtkWidget    *p2_archived_expander;
 
 	/* account data
 	 */
@@ -135,6 +138,8 @@ static gboolean is_dialog_validable( ofaAccountProperties *self );
 static void     on_ok_clicked( ofaAccountProperties *self );
 static gboolean do_update( ofaAccountProperties *self, gchar **msgerr );
 static void     set_msgerr( ofaAccountProperties *self, const gchar *msg );
+static void     read_settings( ofaAccountProperties *self );
+static void     write_settings( ofaAccountProperties *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountProperties, ofa_account_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaAccountProperties )
@@ -154,6 +159,8 @@ account_properties_finalize( GObject *instance )
 
 	/* free data members here */
 	priv = ofa_account_properties_get_instance_private( OFA_ACCOUNT_PROPERTIES( instance ));
+
+	g_free( priv->settings_prefix );
 	g_free( priv->number );
 	g_free( priv->label );
 	g_free( priv->currency );
@@ -173,6 +180,8 @@ account_properties_dispose( GObject *instance )
 	priv = ofa_account_properties_get_instance_private( OFA_ACCOUNT_PROPERTIES( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		write_settings( OFA_ACCOUNT_PROPERTIES( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -435,6 +444,8 @@ idialog_init( myIDialog *instance )
 		priv->ok_btn = NULL;
 	}
 
+	read_settings( OFA_ACCOUNT_PROPERTIES( instance ));
+
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
 
@@ -446,7 +457,7 @@ init_ui( ofaAccountProperties *dialog )
 {
 	ofaAccountPropertiesPrivate *priv;
 	ofaCurrencyCombo *combo;
-	GtkWidget *label;
+	GtkWidget *label, *expander;
 	static const gint st_currency_cols[] = { CURRENCY_COL_CODE, -1 };
 
 	priv = ofa_account_properties_get_instance_private( dialog );
@@ -520,6 +531,15 @@ init_ui( ofaAccountProperties *dialog )
 	g_return_if_fail( priv->currency_etiq && GTK_IS_LABEL( priv->currency_etiq ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( priv->currency_etiq ), GTK_WIDGET( combo ));
 	priv->currency_combo = GTK_WIDGET( combo );
+
+	/* setup the expanders */
+	expander = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p2-current-expander" );
+	g_return_if_fail( expander && GTK_IS_EXPANDER( expander ));
+	priv->p2_current_expander = expander;
+
+	expander = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p2-archived-expander" );
+	g_return_if_fail( expander && GTK_IS_EXPANDER( expander ));
+	priv->p2_archived_expander = expander;
 }
 
 /*
@@ -902,4 +922,57 @@ set_msgerr( ofaAccountProperties *self, const gchar *msg )
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
+}
+
+/*
+ * settings: current_expander;archived_expander;
+ */
+static void
+read_settings( ofaAccountProperties *self )
+{
+	ofaAccountPropertiesPrivate *priv;
+	myISettings *settings;
+	gchar *key;
+	GList *strlist, *it;
+	const gchar *cstr;
+
+	priv = ofa_account_properties_get_instance_private( self );
+
+	settings = ofa_igetter_get_user_settings( priv->getter );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	gtk_expander_set_expanded( GTK_EXPANDER( priv->p2_current_expander ), my_utils_boolean_from_str( cstr ));
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	gtk_expander_set_expanded( GTK_EXPANDER( priv->p2_archived_expander ), my_utils_boolean_from_str( cstr ));
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
+}
+
+/*
+ * settings: current_expander;archived_expander;
+ */
+static void
+write_settings( ofaAccountProperties *self )
+{
+	ofaAccountPropertiesPrivate *priv;
+	myISettings *settings;
+	gchar *key, *str;
+
+	priv = ofa_account_properties_get_instance_private( self );
+
+	str = g_strdup_printf( "%s;%s;",
+			gtk_expander_get_expanded( GTK_EXPANDER( priv->p2_current_expander )) ? "True":"False",
+			gtk_expander_get_expanded( GTK_EXPANDER( priv->p2_archived_expander )) ? "True":"False" );
+
+	settings = ofa_igetter_get_user_settings( priv->getter );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
+
+	g_free( key );
 }
