@@ -78,8 +78,6 @@ GType              ofa_ledger_treeview_get_type         ( void ) G_GNUC_CONST;
 ofaLedgerTreeview *ofa_ledger_treeview_new              ( ofaIGetter *getter,
 																const gchar *settings_prefix );
 
-void               ofa_ledger_treeview_setup_columns    ( ofaLedgerTreeview *view );
-
 void               ofa_ledger_treeview_setup_store      ( ofaLedgerTreeview *view );
 
 GList             *ofa_ledger_treeview_get_selected     ( ofaLedgerTreeview *view );
