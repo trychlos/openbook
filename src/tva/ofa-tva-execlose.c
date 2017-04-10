@@ -34,8 +34,10 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-igetter.h"
+#include "api/ofo-dossier.h"
 
-#include "ofa-tva-execlose.h"
+#include "tva/ofa-tva-execlose.h"
+#include "tva/ofo-tva-record.h"
 
 /* a dedicated structure to hold needed datas
  */
@@ -143,8 +145,10 @@ do_task_closing( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 }
 
 /*
- * archive the validated VAT declaration records
- * the identifier of the deleted records are stored in
+ * Archive the validated VAT declaration records which end on the
+ * previous exercice.
+ *
+ * The identifier of the deleted records are stored in
  * ARCHTVA_T_DELETED_RECORDS table
  */
 static gboolean
@@ -155,17 +159,21 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 	gchar *query;
 	myProgressBar *bar;
 	guint count, total;
+	ofoDossier *dossier;
 	ofaHub *hub;
+	gchar *sbegin;
 
 	bar = my_progress_bar_new();
 	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( bar ));
 	gtk_widget_show_all( box );
 
-	total = 12;							/* queries count */
+	total = 10;							/* queries count */
 	count = 0;
 	ok = TRUE;
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
+	dossier = ofa_hub_get_dossier( hub );
+	sbegin = my_date_to_str( ofo_dossier_get_exe_begin( dossier ), MY_DATE_SQL );
 
 	/* cleanup obsolete tables
 	 */
@@ -177,6 +185,8 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 	}
 
 	/* archive records
+	 * keep all record of the new exercice
+	 * + records which not have been validated (but there should be none)
 	 */
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_TVA_KEEP_RECORDS" );
@@ -185,9 +195,12 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 		update_bar( bar, &count, total );
 	}
 	if( ok ){
-		query = g_strdup( "CREATE TABLE ARCHIVE_T_TVA_KEEP_RECORDS "
-					"SELECT TFO_MNEMO,TFO_END FROM TVA_T_RECORDS "
-					"	WHERE TFO_VALIDATED!='Y'" );
+		query = g_strdup_printf(
+					"CREATE TABLE ARCHIVE_T_TVA_KEEP_RECORDS "
+					"	SELECT TFO_MNEMO,TFO_END FROM TVA_T_RECORDS "
+					"		WHERE TFO_END>='%s'"
+					"		OR TFO_STATUS='%s'",
+								sbegin, ofo_tva_record_status_get_dbms( VAT_STATUS_NO ));
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
 		update_bar( bar, &count, total );
@@ -200,10 +213,11 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 	}
 	if( ok ){
 		query = g_strdup( "CREATE TABLE ARCHIVE_T_TVA_RECORDS "
-					"SELECT * FROM TVA_T_RECORDS "
-					"	WHERE NOT EXISTS( SELECT 1 FROM ARCHIVE_T_TVA_KEEP_RECORDS "
-				"	WHERE TVA_T_RECORDS.TFO_MNEMO=ARCHIVE_T_TVA_KEEP_RECORDS.TFO_MNEMO "
-				"	AND TVA_T_RECORDS.TFO_END=ARCHIVE_T_TVA_KEEP_RECORDS.TFO_END)" );
+					"SELECT * FROM TVA_T_RECORDS a "
+					"	WHERE NOT EXISTS"
+					"		( SELECT 1 FROM ARCHIVE_T_TVA_KEEP_RECORDS b "
+					"			WHERE a.TFO_MNEMO=b.TFO_MNEMO "
+					"			AND a.TFO_END=b.TFO_END)" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
 		update_bar( bar, &count, total );
@@ -216,10 +230,11 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 	}
 	if( ok ){
 		query = g_strdup( "CREATE TABLE ARCHIVE_T_TVA_RECORDS_BOOL "
-					"SELECT * FROM TVA_T_RECORDS_BOOL "
-					"	WHERE NOT EXISTS( SELECT 1 FROM ARCHIVE_T_TVA_KEEP_RECORDS "
-				"	WHERE TVA_T_RECORDS_BOOL.TFO_MNEMO=ARCHIVE_T_TVA_KEEP_RECORDS.TFO_MNEMO "
-				"	AND TVA_T_RECORDS_BOOL.TFO_END=ARCHIVE_T_TVA_KEEP_RECORDS.TFO_END)" );
+					"SELECT * FROM TVA_T_RECORDS_BOOL a "
+					"	WHERE NOT EXISTS"
+					"		( SELECT 1 FROM ARCHIVE_T_TVA_KEEP_RECORDS b "
+					"			WHERE a.TFO_MNEMO=b.TFO_MNEMO "
+					"			AND a.TFO_END=b.TFO_END)" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
 		update_bar( bar, &count, total );
@@ -232,35 +247,23 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 	}
 	if( ok ){
 		query = g_strdup( "CREATE TABLE ARCHIVE_T_TVA_RECORDS_DET "
-					"SELECT * FROM TVA_T_RECORDS_DET "
-					"	WHERE NOT EXISTS( SELECT 1 FROM ARCHIVE_T_TVA_KEEP_RECORDS "
-				"	WHERE TVA_T_RECORDS_DET.TFO_MNEMO=ARCHIVE_T_TVA_KEEP_RECORDS.TFO_MNEMO "
-				"	AND TVA_T_RECORDS_DET.TFO_END=ARCHIVE_T_TVA_KEEP_RECORDS.TFO_END)" );
+					"SELECT * FROM TVA_T_RECORDS_DET a "
+					"	WHERE NOT EXISTS"
+					"		( SELECT 1 FROM ARCHIVE_T_TVA_KEEP_RECORDS b "
+					"			WHERE a.TFO_MNEMO=b.TFO_MNEMO "
+					"			AND a.TFO_END=b.TFO_END)" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
 		update_bar( bar, &count, total );
 	}
 	if( ok ){
-		query = g_strdup( "DELETE FROM TVA_T_RECORDS "
-					"	WHERE TFO_VALIDATED='Y'" );
-		ok = ofa_idbconnect_query( connect, query, TRUE );
-		g_free( query );
-		update_bar( bar, &count, total );
-	}
-	if( ok ){
-		query = g_strdup( "DELETE FROM TVA_T_RECORDS_BOOL "
-				"WHERE NOT EXISTS( SELECT 1 FROM ARCHIVE_T_TVA_KEEP_RECORDS "
-				"	WHERE TVA_T_RECORDS_BOOL.TFO_MNEMO=ARCHIVE_T_TVA_KEEP_RECORDS.TFO_MNEMO "
-				"	AND TVA_T_RECORDS_BOOL.TFO_END=ARCHIVE_T_TVA_KEEP_RECORDS.TFO_END)" );
-		ok = ofa_idbconnect_query( connect, query, TRUE );
-		g_free( query );
-		update_bar( bar, &count, total );
-	}
-	if( ok ){
-		query = g_strdup( "DELETE FROM TVA_T_RECORDS_DET "
-				"WHERE NOT EXISTS( SELECT 1 FROM ARCHIVE_T_TVA_KEEP_RECORDS "
-				"	WHERE TVA_T_RECORDS_DET.TFO_MNEMO=ARCHIVE_T_TVA_KEEP_RECORDS.TFO_MNEMO "
-				"	AND TVA_T_RECORDS_DET.TFO_END=ARCHIVE_T_TVA_KEEP_RECORDS.TFO_END)" );
+		query = g_strdup( "DELETE a,b,c FROM TVA_T_RECORDS a, TVA_T_RECORDS_BOOL b, TVA_T_RECORDS_DET c "
+					"	WHERE a.TFO_MNEMO=b.TFO_MNEMO AND b.TFO_MNEMO=c.TFO_MNEMO "
+					"		AND a.TFO_END=b.TFO_END AND b.TFO_END=c.TFO_END"
+					"		AND NOT EXISTS"
+					"		( SELECT 1 FROM ARCHIVE_T_TVA_KEEP_RECORDS d "
+					"			WHERE a.TFO_MNEMO=d.TFO_MNEMO "
+					"			AND a.TFO_END=d.TFO_END)" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
 		update_bar( bar, &count, total );
