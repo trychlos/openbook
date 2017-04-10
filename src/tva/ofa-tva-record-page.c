@@ -67,6 +67,10 @@ typedef struct {
 	GSimpleAction        *update_action;
 	GSimpleAction        *delete_action;
 	GSimpleAction        *validate_action;
+
+	/* runtime
+	 */
+	GList                *sel_opes;
 }
 	ofaTVARecordPagePrivate;
 
@@ -105,6 +109,7 @@ tva_record_page_finalize( GObject *instance )
 	priv = ofa_tva_record_page_get_instance_private( OFA_TVA_RECORD_PAGE( instance ));
 
 	g_free( priv->settings_prefix );
+	g_list_free( priv->sel_opes );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_tva_record_page_parent_class )->finalize( instance );
@@ -328,17 +333,21 @@ static void
 update_on_selection( ofaTVARecordPage *self, ofoTVARecord *record )
 {
 	ofaTVARecordPagePrivate *priv;
-	gboolean is_record;
+	gboolean is_record, validate_ok;
 	ofeVatStatus status;
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
 	is_record = record && OFO_IS_TVA_RECORD( record );
 	status = is_record ? ofo_tva_record_get_status( record ) : 0;
+	validate_ok = is_record && status == VAT_STATUS_NO;
+
+	g_list_free( priv->sel_opes );
+	priv->sel_opes = validate_ok ? ofo_tva_record_get_accounting_opes( record ) : NULL;
 
 	g_simple_action_set_enabled( priv->update_action, is_record );
 	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, record ));
-	g_simple_action_set_enabled( priv->validate_action, is_record && status == VAT_STATUS_NO );
+	g_simple_action_set_enabled( priv->validate_action, validate_ok );
 }
 
 /*
@@ -472,14 +481,23 @@ validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_get_display_format( priv->getter ));
-	msg = g_strdup_printf(
-			_( "You are about to validate the %s at %s VAT declaration.\n"
-				"After this validation, the declaration will not be modifiable anymore,"
-				"and you will not be able to generate the VAT accounting operations.\n"
-				"Are you sure ?" ),
-					ofo_tva_record_get_mnemo( record ), send );
-	ok = my_utils_dialog_question( toplevel, msg,
-			_( "_Validate" ));
+
+	if( priv->sel_opes && g_list_length( priv->sel_opes ) > 0 ){
+		msg = g_strdup_printf(
+				_( "You are about to validate the %s at %s VAT declaration.\n"
+					"After this validation, the declaration will not be modifiable anymore, "
+					"and the generated accounting entries will be validated.\n"
+					"Are you sure ?" ),
+						ofo_tva_record_get_mnemo( record ), send );
+	} else {
+		msg = g_strdup_printf(
+				_( "You are about to validate the %s at %s VAT declaration.\n"
+					"After this validation, the declaration will not be modifiable anymore, "
+					"and you will not be able to generate the VAT accounting operations.\n"
+					"Are you sure ?" ),
+						ofo_tva_record_get_mnemo( record ), send );
+	}
+	ok = my_utils_dialog_question( toplevel, msg, _( "_Validate" ));
 	g_free( msg );
 	g_free( send );
 
