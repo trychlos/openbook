@@ -327,7 +327,7 @@ ofa_exercice_close_assistant_class_init( ofaExerciceCloseAssistantClass *klass )
  * ofa_exercice_close_assistant_run:
  * @getter: a #ofaIGetter instance.
  *
- * Run an intermediate closing on selected ledgers
+ * Run an assistant to close the exercice.
  */
 void
 ofa_exercice_close_assistant_run( ofaIGetter *getter )
