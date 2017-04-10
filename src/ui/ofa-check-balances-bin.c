@@ -59,19 +59,22 @@ typedef struct {
 	gboolean    display;
 
 	gboolean    entries_ok;
-	GList      *entries_rough_list;
-	GList      *entries_val_list;
-	GList      *entries_fut_list;
+	GList      *entries_current_rough_list;
+	GList      *entries_current_val_list;
+	GList      *entries_futur_rough_list;
+	GList      *entries_futur_val_list;
 	GList      *entries_list;
 	gboolean    ledgers_ok;
-	GList      *ledgers_rough_list;
-	GList      *ledgers_val_list;
-	GList      *ledgers_fut_list;
+	GList      *ledgers_current_rough_list;
+	GList      *ledgers_current_val_list;
+	GList      *ledgers_futur_rough_list;
+	GList      *ledgers_futur_val_list;
 	GList      *ledgers_list;
 	gboolean    accounts_ok;
-	GList      *accounts_rough_list;
-	GList      *accounts_val_list;
-	GList      *accounts_fut_list;
+	GList      *accounts_current_rough_list;
+	GList      *accounts_current_val_list;
+	GList      *accounts_futur_rough_list;
+	GList      *accounts_futur_val_list;
 	GList      *accounts_list;
 
 	gboolean    result;
@@ -119,17 +122,20 @@ check_balances_bin_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_check_balances_bin_get_instance_private( OFA_CHECK_BALANCES_BIN( instance ));
 
-	ofs_currency_list_free( &priv->entries_rough_list );
-	ofs_currency_list_free( &priv->entries_val_list );
-	ofs_currency_list_free( &priv->entries_fut_list );
+	ofs_currency_list_free( &priv->entries_current_rough_list );
+	ofs_currency_list_free( &priv->entries_current_val_list );
+	ofs_currency_list_free( &priv->entries_futur_rough_list );
+	ofs_currency_list_free( &priv->entries_futur_val_list );
 	ofs_currency_list_free( &priv->entries_list );
-	ofs_currency_list_free( &priv->ledgers_rough_list );
-	ofs_currency_list_free( &priv->ledgers_val_list );
-	ofs_currency_list_free( &priv->ledgers_fut_list );
+	ofs_currency_list_free( &priv->ledgers_current_rough_list );
+	ofs_currency_list_free( &priv->ledgers_current_val_list );
+	ofs_currency_list_free( &priv->ledgers_futur_rough_list );
+	ofs_currency_list_free( &priv->ledgers_futur_val_list );
 	ofs_currency_list_free( &priv->ledgers_list );
-	ofs_currency_list_free( &priv->accounts_rough_list );
-	ofs_currency_list_free( &priv->accounts_val_list );
-	ofs_currency_list_free( &priv->accounts_fut_list );
+	ofs_currency_list_free( &priv->accounts_current_rough_list );
+	ofs_currency_list_free( &priv->accounts_current_val_list );
+	ofs_currency_list_free( &priv->accounts_futur_rough_list );
+	ofs_currency_list_free( &priv->accounts_futur_val_list );
 	ofs_currency_list_free( &priv->accounts_list );
 
 	/* chain up to the parent class */
@@ -327,13 +333,15 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 	ofsCurrency *sbal;
 	ofaHub *hub;
 	ofeEntryStatus status;
+	ofeEntryPeriod period;
 	ofxAmount debit, credit;
 
 	priv = ofa_check_balances_bin_get_instance_private( self );
 
-	priv->entries_rough_list = NULL;
-	priv->entries_val_list = NULL;
-	priv->entries_fut_list = NULL;
+	priv->entries_current_rough_list = NULL;
+	priv->entries_current_val_list = NULL;
+	priv->entries_futur_rough_list = NULL;
+	priv->entries_futur_val_list = NULL;
 	priv->entries_list = NULL;
 
 	bar = get_new_bar( self, "p4-entry-parent" );
@@ -358,31 +366,59 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 			entry = OFO_ENTRY( it->data );
 
 			if( my_date_compare_ex( ofo_entry_get_deffect( entry ), dbegin, TRUE ) >= 0 ){
+				period = ofo_entry_get_period( entry );
 				status = ofo_entry_get_status( entry );
 				currency = ofo_entry_get_currency( entry );
 				debit = ofo_entry_get_debit( entry );
 				credit = ofo_entry_get_credit( entry );
 
-				switch( status ){
-					case ENT_STATUS_ROUGH:
-						sbal = ofs_currency_add_by_code(
-									&priv->entries_rough_list, priv->getter, currency, debit, credit );
-						if( priv->display ){
-							ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_ROUGH, sbal );
+				switch( period ){
+					case ENT_PERIOD_CURRENT:
+						switch( status ){
+							case ENT_STATUS_ROUGH:
+								sbal = ofs_currency_add_by_code(
+											&priv->entries_current_rough_list,
+											priv->getter, currency, debit, credit );
+								if( priv->display ){
+									ofa_balance_grid_bin_set_currency( grid,
+											BALANCEGRID_CURRENT_ROUGH, sbal );
+								}
+								break;
+							case ENT_STATUS_VALIDATED:
+								sbal = ofs_currency_add_by_code(
+											&priv->entries_current_val_list,
+											priv->getter, currency, debit, credit );
+								if( priv->display ){
+									ofa_balance_grid_bin_set_currency( grid,
+											BALANCEGRID_CURRENT_VALIDATED, sbal );
+								}
+								break;
+							default:
+								break;
 						}
 						break;
-					case ENT_STATUS_VALIDATED:
-						sbal = ofs_currency_add_by_code(
-									&priv->entries_val_list, priv->getter, currency, debit, credit );
-						if( priv->display ){
-							ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_VALIDATED, sbal );
-						}
-						break;
-					case ENT_STATUS_FUTURE:
-						sbal = ofs_currency_add_by_code(
-									&priv->entries_fut_list, priv->getter, currency, debit, credit );
-						if( priv->display ){
-							ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_FUTURE, sbal );
+					case ENT_PERIOD_FUTURE:
+						switch( status ){
+							case ENT_STATUS_ROUGH:
+								sbal = ofs_currency_add_by_code(
+											&priv->entries_futur_rough_list,
+											priv->getter, currency, debit, credit );
+								if( priv->display ){
+									ofa_balance_grid_bin_set_currency( grid,
+											BALANCEGRID_FUTUR_ROUGH, sbal );
+								}
+								break;
+							case ENT_STATUS_VALIDATED:
+								sbal = ofs_currency_add_by_code(
+											&priv->entries_futur_val_list,
+											priv->getter, currency, debit, credit );
+								if( priv->display ){
+									ofa_balance_grid_bin_set_currency( grid,
+											BALANCEGRID_FUTUR_VALIDATED, sbal );
+								}
+								break;
+							default:
+								break;
 						}
 						break;
 					default:
@@ -393,7 +429,7 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 					sbal = ofs_currency_add_by_code(
 								&priv->entries_list, priv->getter, currency, debit, credit );
 					if( priv->display ){
-						ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_TOTAL, sbal );
+						ofa_balance_grid_bin_set_currency( grid, BALANCEGRID_TOTAL, sbal );
 					}
 				}
 			}
@@ -403,9 +439,10 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 	}
 
 	priv->entries_ok =
-			check_balances_per_currency( self, priv->entries_rough_list ) &&
-			check_balances_per_currency( self, priv->entries_val_list ) &&
-			check_balances_per_currency( self, priv->entries_fut_list ) &&
+			check_balances_per_currency( self, priv->entries_current_rough_list ) &&
+			check_balances_per_currency( self, priv->entries_current_val_list ) &&
+			check_balances_per_currency( self, priv->entries_futur_rough_list ) &&
+			check_balances_per_currency( self, priv->entries_futur_val_list ) &&
 			check_balances_per_currency( self, priv->entries_list );
 
 	set_balance_status( self, priv->entries_ok, "p4-entry-ok" );
@@ -435,9 +472,10 @@ check_ledgers_balance_run( ofaCheckBalancesBin *self )
 
 	priv = ofa_check_balances_bin_get_instance_private( self );
 
-	priv->ledgers_rough_list = NULL;
-	priv->ledgers_val_list = NULL;
-	priv->ledgers_fut_list = NULL;
+	priv->ledgers_current_rough_list = NULL;
+	priv->ledgers_current_val_list = NULL;
+	priv->ledgers_futur_rough_list = NULL;
+	priv->ledgers_futur_val_list = NULL;
 	priv->ledgers_list = NULL;
 
 	bar = get_new_bar( self, "p4-ledger-parent" );
@@ -463,32 +501,42 @@ check_ledgers_balance_run( ofaCheckBalancesBin *self )
 				tot_debit = 0;
 				tot_credit = 0;
 
-				debit = ofo_ledger_get_rough_debit( ledger, currency );
-				credit = ofo_ledger_get_rough_credit( ledger, currency );
+				debit = ofo_ledger_get_current_rough_debit( ledger, currency );
+				credit = ofo_ledger_get_current_rough_credit( ledger, currency );
 				sbal = ofs_currency_add_by_code(
-							&priv->ledgers_rough_list, priv->getter, currency, debit, credit );
+							&priv->ledgers_current_rough_list, priv->getter, currency, debit, credit );
 				if( priv->display ){
-					ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_ROUGH, sbal );
+					ofa_balance_grid_bin_set_currency( grid, BALANCEGRID_CURRENT_ROUGH, sbal );
 				}
 				tot_debit += debit;
 				tot_credit += credit;
 
-				debit = ofo_ledger_get_val_debit( ledger, currency );
-				credit = ofo_ledger_get_val_credit( ledger, currency );
+				debit = ofo_ledger_get_current_val_debit( ledger, currency );
+				credit = ofo_ledger_get_current_val_credit( ledger, currency );
 				sbal = ofs_currency_add_by_code(
-							&priv->ledgers_val_list, priv->getter, currency, debit, credit );
+							&priv->ledgers_current_val_list, priv->getter, currency, debit, credit );
 				if( priv->display ){
-					ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_VALIDATED, sbal );
+					ofa_balance_grid_bin_set_currency( grid, BALANCEGRID_CURRENT_VALIDATED, sbal );
 				}
 				tot_debit += debit;
 				tot_credit += credit;
 
-				debit = ofo_ledger_get_futur_debit( ledger, currency );
-				credit = ofo_ledger_get_futur_credit( ledger, currency );
+				debit = ofo_ledger_get_futur_rough_debit( ledger, currency );
+				credit = ofo_ledger_get_futur_rough_credit( ledger, currency );
 				sbal = ofs_currency_add_by_code(
-							&priv->ledgers_fut_list, priv->getter, currency, debit, credit );
+							&priv->ledgers_futur_rough_list, priv->getter, currency, debit, credit );
 				if( priv->display ){
-					ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_FUTURE, sbal );
+					ofa_balance_grid_bin_set_currency( grid, BALANCEGRID_FUTUR_ROUGH, sbal );
+				}
+				tot_debit += debit;
+				tot_credit += credit;
+
+				debit = ofo_ledger_get_futur_val_debit( ledger, currency );
+				credit = ofo_ledger_get_futur_val_credit( ledger, currency );
+				sbal = ofs_currency_add_by_code(
+							&priv->ledgers_futur_val_list, priv->getter, currency, debit, credit );
+				if( priv->display ){
+					ofa_balance_grid_bin_set_currency( grid, BALANCEGRID_FUTUR_VALIDATED, sbal );
 				}
 				tot_debit += debit;
 				tot_credit += credit;
@@ -496,7 +544,7 @@ check_ledgers_balance_run( ofaCheckBalancesBin *self )
 				sbal = ofs_currency_add_by_code(
 							&priv->ledgers_list, priv->getter, currency, tot_debit, tot_credit );
 				if( priv->display ){
-					ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_TOTAL, sbal );
+					ofa_balance_grid_bin_set_currency( grid, BALANCEGRID_TOTAL, sbal );
 				}
 			}
 
@@ -506,9 +554,10 @@ check_ledgers_balance_run( ofaCheckBalancesBin *self )
 	}
 
 	priv->ledgers_ok =
-			check_balances_per_currency( self, priv->ledgers_rough_list ) &&
-			check_balances_per_currency( self, priv->ledgers_val_list ) &&
-			check_balances_per_currency( self, priv->ledgers_fut_list ) &&
+			check_balances_per_currency( self, priv->ledgers_current_rough_list ) &&
+			check_balances_per_currency( self, priv->ledgers_current_val_list ) &&
+			check_balances_per_currency( self, priv->ledgers_futur_rough_list ) &&
+			check_balances_per_currency( self, priv->ledgers_futur_val_list ) &&
 			check_balances_per_currency( self, priv->ledgers_list );
 
 	set_balance_status( self, priv->ledgers_ok, "p4-ledger-ok" );
@@ -534,9 +583,10 @@ check_accounts_balance_run( ofaCheckBalancesBin *self )
 
 	priv = ofa_check_balances_bin_get_instance_private( self );
 
-	priv->accounts_rough_list = NULL;
-	priv->accounts_val_list = NULL;
-	priv->accounts_fut_list = NULL;
+	priv->accounts_current_rough_list = NULL;
+	priv->accounts_current_val_list = NULL;
+	priv->accounts_futur_rough_list = NULL;
+	priv->accounts_futur_val_list = NULL;
 	priv->accounts_list = NULL;
 
 	bar = get_new_bar( self, "p4-account-parent" );
@@ -561,32 +611,42 @@ check_accounts_balance_run( ofaCheckBalancesBin *self )
 			if( !ofo_account_is_root( account )){
 				currency = ofo_account_get_currency( account );
 
-				debit = ofo_account_get_rough_debit( account );
-				credit = ofo_account_get_rough_credit( account );
+				debit = ofo_account_get_current_rough_debit( account );
+				credit = ofo_account_get_current_rough_credit( account );
 				sbal = ofs_currency_add_by_code(
-							&priv->accounts_rough_list, priv->getter, currency, debit, credit );
+							&priv->accounts_current_rough_list, priv->getter, currency, debit, credit );
 				if( priv->display ){
-					ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_ROUGH, sbal );
+					ofa_balance_grid_bin_set_currency( grid, BALANCEGRID_CURRENT_ROUGH, sbal );
 				}
 				tot_debit += debit;
 				tot_credit += credit;
 
-				debit = ofo_account_get_val_debit( account );
-				credit = ofo_account_get_val_credit( account );
+				debit = ofo_account_get_current_val_debit( account );
+				credit = ofo_account_get_current_val_credit( account );
 				sbal = ofs_currency_add_by_code(
-							&priv->accounts_val_list, priv->getter, currency, debit, credit );
+							&priv->accounts_current_val_list, priv->getter, currency, debit, credit );
 				if( priv->display ){
-					ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_VALIDATED, sbal );
+					ofa_balance_grid_bin_set_currency( grid, BALANCEGRID_CURRENT_VALIDATED, sbal );
 				}
 				tot_debit += debit;
 				tot_credit += credit;
 
-				debit = ofo_account_get_futur_debit( account );
-				credit = ofo_account_get_futur_credit( account );
+				debit = ofo_account_get_futur_rough_debit( account );
+				credit = ofo_account_get_futur_rough_credit( account );
 				sbal = ofs_currency_add_by_code(
-							&priv->accounts_fut_list, priv->getter, currency, debit, credit );
+							&priv->accounts_futur_rough_list, priv->getter, currency, debit, credit );
 				if( priv->display ){
-					ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_FUTURE, sbal );
+					ofa_balance_grid_bin_set_currency( grid, BALANCEGRID_FUTUR_ROUGH, sbal );
+				}
+				tot_debit += debit;
+				tot_credit += credit;
+
+				debit = ofo_account_get_futur_val_debit( account );
+				credit = ofo_account_get_futur_val_credit( account );
+				sbal = ofs_currency_add_by_code(
+							&priv->accounts_futur_val_list, priv->getter, currency, debit, credit );
+				if( priv->display ){
+					ofa_balance_grid_bin_set_currency( grid, BALANCEGRID_FUTUR_VALIDATED, sbal );
 				}
 				tot_debit += debit;
 				tot_credit += credit;
@@ -594,7 +654,7 @@ check_accounts_balance_run( ofaCheckBalancesBin *self )
 				sbal = ofs_currency_add_by_code(
 							&priv->accounts_list, priv->getter, currency, tot_debit, tot_credit );
 				if( priv->display ){
-					ofa_balance_grid_bin_set_currency( grid, OFA_BALANCE_TOTAL, sbal );
+					ofa_balance_grid_bin_set_currency( grid, BALANCEGRID_TOTAL, sbal );
 				}
 			}
 
@@ -603,9 +663,10 @@ check_accounts_balance_run( ofaCheckBalancesBin *self )
 	}
 
 	priv->accounts_ok =
-			check_balances_per_currency( self, priv->accounts_rough_list ) &&
-			check_balances_per_currency( self, priv->accounts_val_list ) &&
-			check_balances_per_currency( self, priv->accounts_fut_list ) &&
+			check_balances_per_currency( self, priv->accounts_current_rough_list ) &&
+			check_balances_per_currency( self, priv->accounts_current_val_list ) &&
+			check_balances_per_currency( self, priv->accounts_futur_rough_list ) &&
+			check_balances_per_currency( self, priv->accounts_futur_val_list ) &&
 			check_balances_per_currency( self, priv->accounts_list );
 
 	set_balance_status( self, priv->accounts_ok, "p4-account-ok" );

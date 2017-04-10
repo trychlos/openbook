@@ -77,6 +77,7 @@ enum {
 	ENT_DEBIT,
 	ENT_CREDIT,
 	ENT_NUMBER,
+	ENT_IPERIOD,
 	ENT_STATUS,
 	ENT_RULE,
 	ENT_UPD_USER,
@@ -186,6 +187,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_COUNTER,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( ENT_IPERIOD ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ 0 }
 };
 
@@ -195,6 +200,27 @@ typedef struct {
 	ofoEntryPrivate;
 
 #define ENTRY_IE_FORMAT                 1
+
+/* manage the period indicator
+ * - the identifier is from a public enum (easier for the code)
+ * - a non-localized char stored in dbms
+ * - a localized char (short string for treeviews)
+ * - a localized label
+ */
+typedef struct {
+	ofeEntryPeriod id;
+	const gchar   *dbms;
+	const gchar   *abr;
+	const gchar   *label;
+}
+	sPeriod;
+
+static sPeriod st_period[] = {
+		{ ENT_PERIOD_PAST,    "P", N_( "P" ), N_( "Past" ) },
+		{ ENT_PERIOD_CURRENT, "C", N_( "C" ), N_( "Current" ) },
+		{ ENT_PERIOD_FUTURE,  "F", N_( "F" ), N_( "Future" ) },
+		{ 0 },
+};
 
 /* manage the status
  * - the identifier is from a public enum (easier for the code)
@@ -211,11 +237,9 @@ typedef struct {
 	sStatus;
 
 static sStatus st_status[] = {
-		{ ENT_STATUS_PAST,      "P", N_( "P" ), N_( "Past" ) },
 		{ ENT_STATUS_ROUGH,     "R", N_( "R" ), N_( "Rough" ) },
 		{ ENT_STATUS_VALIDATED, "V", N_( "V" ), N_( "Validated" ) },
 		{ ENT_STATUS_DELETED,   "D", N_( "D" ), N_( "Deleted" ) },
-		{ ENT_STATUS_FUTURE,    "F", N_( "F" ), N_( "Future" ) },
 		{ 0 },
 };
 
@@ -254,6 +278,7 @@ static GList                *entry_load_dataset( ofaIGetter *getter, const gchar
 static GDate                *entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaIGetter *getter );
 static gboolean              entry_get_import_settled( ofoEntry *entry );
 static void                  entry_set_number( ofoEntry *entry, ofxCounter number );
+static void                  entry_set_period( ofoEntry *entry, ofeEntryPeriod period );
 static void                  entry_set_status( ofoEntry *entry, ofeEntryStatus status );
 static void                  entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
 static void                  entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
@@ -311,8 +336,8 @@ static void                  signaler_on_deleted_entry( ofaISignaler *signaler, 
 static void                  signaler_on_exe_dates_changed( ofaISignaler *signaler, const GDate *prev_begin, const GDate *prev_end, void *empty );
 static gint                  check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
 static gint                  check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, const GDate *new_end, gboolean remediate );
-static gint                  remediate_status( ofaIGetter *getter, gboolean remediate, const gchar *where, ofeEntryStatus new_status );
-static void                  signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty );
+static gint                  remediate_status( ofaIGetter *getter, const gchar *where, ofeEntryPeriod new_period );
+static void                  signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryPeriod prev_period, ofeEntryStatus prev_status, ofeEntryPeriod new_period, ofeEntryStatus new_status, void *empty );
 static void                  signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static void                  signaler_on_updated_account_number( ofaISignaler *signaler, const gchar *prev_id, const gchar *number );
 static void                  signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
@@ -737,7 +762,7 @@ ofo_entry_get_dataset_for_print_reconcil( ofaIGetter *getter,
 /**
  * ofo_entry_get_dataset_for_exercice_by_status:
  * @hub: the current #ofaHub object.
- * @status: the requested status
+ * @status: the requested status, or -1 for all status.
  *
  * Returns the dataset of entries on the exercice of the specified
  * status.
@@ -754,11 +779,13 @@ ofo_entry_get_dataset_for_exercice_by_status( ofaIGetter *getter, ofeEntryStatus
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	where = g_string_new( "" );
-
 	str = effect_in_exercice( getter);
-	g_string_append_printf( where, "%s AND ENT_STATUS='%s' ", str, ofo_entry_status_get_dbms( status ));
+	where = g_string_new( str );
 	g_free( str );
+
+	if( status != -1 ){
+		g_string_append_printf( where, " AND ENT_STATUS='%s' ", ofo_entry_status_get_dbms( status ));
+	}
 
 	dataset = entry_load_dataset( getter, where->str, NULL );
 
@@ -1061,6 +1088,7 @@ ofo_entry_new( ofaIGetter *getter )
 	OFO_BASE( entry )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	entry_set_number( entry, OFO_BASE_UNSET_ID );
+	entry_set_period( entry, ENT_PERIOD_CURRENT );
 	entry_set_status( entry, ENT_STATUS_ROUGH );
 	ofo_entry_set_rule( entry, ENT_RULE_NORMAL );
 
@@ -1177,6 +1205,98 @@ ofo_entry_get_credit( const ofoEntry *entry )
 }
 
 /**
+ * ofo_entry_get_period:
+ */
+ofeEntryPeriod
+ofo_entry_get_period( const ofoEntry *entry )
+{
+	static const gchar *thisfn = "ofo_entry_get_period";
+	const gchar *cstr;
+	gint i;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), 0 );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, 0 );
+
+	cstr = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD );
+
+	for( i=0 ; st_period[i].id ; ++i ){
+		if( !my_collate( st_period[i].dbms, cstr )){
+			return( st_period[i].id );
+		}
+	}
+
+	g_warning( "%s: unknown or invalid dbms period indicator: %s", thisfn, cstr );
+
+	return( 0 );
+}
+
+/**
+ * ofo_entry_period_get_dbms:
+ *
+ * Returns: the dbms string corresponding to the period.
+ */
+const gchar *
+ofo_entry_period_get_dbms( ofeEntryPeriod period )
+{
+	static const gchar *thisfn = "ofo_entry_period_get_dbms";
+	gint i;
+
+	for( i=0 ; st_period[i].id ; ++i ){
+		if( st_period[i].id == period ){
+			return( st_period[i].dbms );
+		}
+	}
+
+	g_warning( "%s: unknown or invalid period identifier: %u", thisfn, period );
+
+	return( NULL );
+}
+
+/**
+ * ofo_entry_period_get_abr:
+ *
+ * Returns: the abbreviated localized string corresponding to the period.
+ */
+const gchar *
+ofo_entry_period_get_abr( ofeEntryPeriod period )
+{
+	static const gchar *thisfn = "ofo_entry_period_get_abr";
+	gint i;
+
+	for( i=0 ; st_period[i].id ; ++i ){
+		if( st_period[i].id == period ){
+			return( gettext( st_period[i].abr ));
+		}
+	}
+
+	g_warning( "%s: unknown or invalid period identifier: %u", thisfn, period );
+
+	return( "" );
+}
+
+/**
+ * ofo_entry_period_get_label:
+ *
+ * Returns: the abbreviated localized label corresponding to the period.
+ */
+const gchar *
+ofo_entry_period_get_label( ofeEntryPeriod period )
+{
+	static const gchar *thisfn = "ofo_entry_period_get_label";
+	gint i;
+
+	for( i=0 ; st_period[i].id ; ++i ){
+		if( st_period[i].id == period ){
+			return( gettext( st_period[i].label ));
+		}
+	}
+
+	g_warning( "%s: unknown or invalid period identifier: %u", thisfn, period );
+
+	return( "" );
+}
+
+/**
  * ofo_entry_get_status:
  */
 ofeEntryStatus
@@ -1186,8 +1306,8 @@ ofo_entry_get_status( const ofoEntry *entry )
 	const gchar *cstr;
 	gint i;
 
-	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), ENT_STATUS_ROUGH );
-	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, ENT_STATUS_ROUGH );
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), 0 );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, 0 );
 
 	cstr = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_STATUS );
 
@@ -1199,7 +1319,7 @@ ofo_entry_get_status( const ofoEntry *entry )
 
 	g_warning( "%s: unknown or invalid dbms status: %s", thisfn, cstr );
 
-	return( ENT_STATUS_ROUGH );
+	return( 0 );
 }
 
 /**
@@ -1221,7 +1341,7 @@ ofo_entry_status_get_dbms( ofeEntryStatus status )
 
 	g_warning( "%s: unknown or invalid status identifier: %u", thisfn, status );
 
-	return( "" );
+	return( NULL );
 }
 
 /**
@@ -1280,8 +1400,8 @@ ofo_entry_get_rule( const ofoEntry *entry )
 	const gchar *cstr;
 	gint i;
 
-	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), ENT_RULE_NORMAL );
-	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, ENT_RULE_NORMAL );
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), 0 );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, 0 );
 
 	cstr = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_RULE );
 
@@ -1293,7 +1413,7 @@ ofo_entry_get_rule( const ofoEntry *entry )
 
 	g_warning( "%s: unknown or invalid dbms rule: %s", thisfn, cstr );
 
-	return( ENT_RULE_NORMAL );
+	return( 0 );
 }
 
 /**
@@ -1570,8 +1690,8 @@ entry_get_import_settled( ofoEntry *entry )
  *
  * Returns: %TRUE if the @entry may be edited.
  *
- * An entry may be edited if its status is either rough or future.
- * Past, validated or deleted entries cannot be edited.
+ * An entry may be edited if its status is rough.
+ * validated or deleted entries cannot be edited.
  */
 gboolean
 ofo_entry_is_editable( const ofoEntry *entry )
@@ -1583,7 +1703,7 @@ ofo_entry_is_editable( const ofoEntry *entry )
 	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
 	status = ofo_entry_get_status( entry );
-	editable = ( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
+	editable = ( status == ENT_STATUS_ROUGH );
 
 	return( editable );
 }
@@ -1685,6 +1805,21 @@ void
 ofo_entry_set_credit( ofoEntry *entry, ofxAmount credit )
 {
 	ofo_base_setter( ENTRY, entry, amount, ENT_CREDIT, credit );
+}
+
+/*
+ * entry_set_period:
+ */
+static void
+entry_set_period( ofoEntry *entry, ofeEntryPeriod period )
+{
+	const gchar *cstr;
+
+	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+	g_return_if_fail( !OFO_BASE( entry )->prot->dispose_has_run );
+
+	cstr = ofo_entry_period_get_dbms( period );
+	ofa_box_set_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD, cstr );
 }
 
 /*
@@ -1823,7 +1958,7 @@ ofo_entry_set_notes( ofoEntry *entry, const gchar *notes )
  * This never happens when @set_deffect is %TRUE.
  *
  * NOTE: This method may be called for a new entry which has never been
- * yet serialized to the database (and so for which ofo_base_get_hub()
+ * yet serialized to the database (and so for which ofo_base_get_getter()
  * would not work).
  */
 static gboolean
@@ -1852,12 +1987,16 @@ entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaIGetter *getter 
 
 	/* what to do regarding the effect date ? */
 	if( my_date_is_valid( exe_begin ) && my_date_compare( deffect, exe_begin ) < 0 ){
-		/* entry is in the past */
-		entry_set_status( entry, ENT_STATUS_PAST );
+		/* entry is in the past
+		 * it is set to validated */
+		entry_set_period( entry, ENT_PERIOD_PAST );
+		entry_set_status( entry, ENT_STATUS_VALIDATED );
 
 	} else if( my_date_is_valid( exe_end ) && my_date_compare( deffect, exe_end ) > 0 ){
-		/* entry is in the future */
-		entry_set_status( entry, ENT_STATUS_FUTURE );
+		/* entry is in the future
+		 * it is set to rough */
+		entry_set_period( entry, ENT_PERIOD_FUTURE );
+		entry_set_status( entry, ENT_STATUS_ROUGH );
 
 	} else {
 		entry_get_min_deffect( entry, &min_deffect, getter );
@@ -1879,6 +2018,7 @@ entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaIGetter *getter 
 			g_free( sdeffect );
 
 		} else {
+			entry_set_period( entry, ENT_PERIOD_CURRENT );
 			entry_set_status( entry, ENT_STATUS_ROUGH );
 		}
 	}
@@ -2062,7 +2202,7 @@ ofo_entry_insert( ofoEntry *entry )
 	ofo_entry_get_dataset( getter );
 
 	if( entry_do_insert( entry, getter )){
-		if( ofo_entry_get_status( entry ) != ENT_STATUS_PAST ){
+		if( ofo_entry_get_period( entry ) != ENT_PERIOD_PAST ){
 			my_icollector_collection_add_object(
 					ofa_igetter_get_collector( getter ), MY_ICOLLECTIONABLE( entry ), NULL, getter );
 			g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, entry );
@@ -2081,7 +2221,7 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	gchar *sdeff, *sdope, *sdebit, *scredit, *stamp_str, *notes;
 	gboolean ok;
 	GTimeVal stamp;
-	const gchar *model, *cur_code, *userid, *rule, *status;
+	const gchar *model, *cur_code, *userid, *rule, *status, *period;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
 	ofxCounter ope_number, tiers;
@@ -2111,7 +2251,7 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 			"	(ENT_DEFFECT,ENT_NUMBER,ENT_DOPE,ENT_LABEL,ENT_REF,ENT_ACCOUNT,"
 			"	ENT_CURRENCY,ENT_LEDGER,ENT_OPE_TEMPLATE,"
 			"	ENT_DEBIT,ENT_CREDIT,ENT_STATUS,ENT_OPE_NUMBER,ENT_RULE,"
-			"	ENT_TIERS,"
+			"	ENT_TIERS,ENT_IPERIOD,"
 			"	ENT_NOTES,ENT_UPD_USER, ENT_UPD_STAMP) "
 			"	VALUES ('%s',%ld,'%s','%s',",
 			sdeff,
@@ -2167,6 +2307,10 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
+
+	period = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD );
+	g_return_val_if_fail( my_strlen( period ) == 1, FALSE );
+	g_string_append_printf( query, "'%s',", period );
 
 	notes = my_utils_quote_sql( ofo_entry_get_notes( entry ));
 	if( my_strlen( notes )){
@@ -2336,7 +2480,7 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 	gchar *stamp_str, *label, *ref;
 	GTimeVal stamp;
 	gboolean ok;
-	const gchar *model, *cstr, *userid, *rule;
+	const gchar *model, *cstr, *userid, *rule, *period;
 	const gchar *cur_code;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
@@ -2399,6 +2543,10 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 	} else {
 		query = g_string_append( query, "ENT_TIERS=NULL," );
 	}
+
+	period = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD );
+	g_return_val_if_fail( my_strlen( period ) == 1, FALSE );
+	g_string_append_printf( query, "ENT_IPERIOD='%s',", period );
 
 	notes = my_utils_quote_sql( ofo_entry_get_notes( entry ));
 	if( my_strlen( notes )){
@@ -2542,7 +2690,8 @@ ofo_entry_unsettle_by_number( ofaIGetter *getter, ofxCounter stlmt_number )
  *
  * Validate the entry, by changing its status to ENT_STATUS_VALIDATED.
  *
- * Entry must be in 'rough' or 'future' status.
+ * Entry must be in 'rough' status.
+ * Period must be 'current' or 'future'.
  */
 void
 ofo_entry_validate( ofoEntry *entry )
@@ -2550,17 +2699,21 @@ ofo_entry_validate( ofoEntry *entry )
 	ofaIGetter *getter;
 	ofaISignaler *signaler;
 	ofeEntryStatus status;
+	ofeEntryPeriod period;
 
 	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 	g_return_if_fail( !OFO_BASE( entry )->prot->dispose_has_run );
 
 	status = ofo_entry_get_status( entry );
-	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
+	g_return_if_fail( status == ENT_STATUS_ROUGH );
+
+	period = ofo_entry_get_period( entry );
+	g_return_if_fail( period == ENT_PERIOD_CURRENT || period == ENT_PERIOD_FUTURE );
 
 	getter = ofo_base_get_getter( OFO_BASE( entry ));
 	signaler = ofa_igetter_get_signaler( getter );
 
-	g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, status, ENT_STATUS_VALIDATED );
+	g_signal_emit_by_name( signaler, SIGNALER_PERIOD_STATUS_CHANGE, entry, -1, status, -1, ENT_STATUS_VALIDATED );
 }
 
 /**
@@ -2588,11 +2741,11 @@ ofo_entry_validate_by_ledger( ofaIGetter *getter, const gchar *mnemo, const GDat
 	sdate = my_date_to_str( deffect, MY_DATE_SQL );
 	query = g_strdup_printf(
 					"OFA_T_ENTRIES WHERE "
-					"	ENT_LEDGER='%s' AND ENT_DEFFECT<='%s' "
-					"	AND (AND ENT_STATUS='%s' OR ENT_STATUS='%s')",
+					"	ENT_LEDGER='%s' AND "
+					"	ENT_DEFFECT<='%s' AND "
+					"	ENT_STATUS='%s'",
 					mnemo, sdate,
-					ofo_entry_status_get_dbms( ENT_STATUS_ROUGH ),
-					ofo_entry_status_get_dbms( ENT_STATUS_FUTURE ));
+					ofo_entry_status_get_dbms( ENT_STATUS_ROUGH ));
 	g_free( sdate );
 
 	dataset = ofo_base_load_dataset(
@@ -2605,7 +2758,7 @@ ofo_entry_validate_by_ledger( ofaIGetter *getter, const gchar *mnemo, const GDat
 
 	signaler = ofa_igetter_get_signaler( getter );
 
-	g_signal_emit_by_name( signaler, SIGNALER_STATUS_COUNT, ENT_STATUS_VALIDATED, g_list_length( dataset ));
+	g_signal_emit_by_name( signaler, SIGNALER_CHANGE_COUNT, -1, ENT_STATUS_VALIDATED, ( gulong ) g_list_length( dataset ));
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
@@ -2666,7 +2819,7 @@ do_validate_by_ope( ofaIGetter *getter, ofxCounter openum )
 
 	signaler = ofa_igetter_get_signaler( getter );
 
-	g_signal_emit_by_name( signaler, SIGNALER_STATUS_COUNT, ENT_STATUS_VALIDATED, g_list_length( dataset ));
+	g_signal_emit_by_name( signaler, SIGNALER_CHANGE_COUNT, -1, ENT_STATUS_VALIDATED, ( gulong ) g_list_length( dataset ));
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
@@ -2684,7 +2837,8 @@ do_validate_by_ope( ofaIGetter *getter, ofxCounter openum )
  *
  * Delete the entry, by changing its status to ENT_STATUS_DELETED.
  *
- * Entry must be in 'rough' or 'future' status.
+ * Entry must be in 'rough' status.
+ * Period must be 'current' or 'future'.
  */
 void
 ofo_entry_delete( ofoEntry *entry )
@@ -2692,17 +2846,21 @@ ofo_entry_delete( ofoEntry *entry )
 	ofaIGetter *getter;
 	ofaISignaler *signaler;
 	ofeEntryStatus status;
+	ofeEntryPeriod period;
 
 	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 	g_return_if_fail( !OFO_BASE( entry )->prot->dispose_has_run );
 
 	status = ofo_entry_get_status( entry );
-	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
+	g_return_if_fail( status == ENT_STATUS_ROUGH );
+
+	period = ofo_entry_get_period( entry );
+	g_return_if_fail( period == ENT_PERIOD_CURRENT || period == ENT_PERIOD_FUTURE );
 
 	getter = ofo_base_get_getter( OFO_BASE( entry ));
 	signaler = ofa_igetter_get_signaler( getter );
 
-	g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, status, ENT_STATUS_DELETED );
+	g_signal_emit_by_name( signaler, SIGNALER_PERIOD_STATUS_CHANGE, entry, -1, status, -1, ENT_STATUS_DELETED );
 	g_signal_emit_by_name( signaler, SIGNALER_BASE_DELETED, entry );
 }
 
@@ -3355,7 +3513,6 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	ofoAccount *account;
 	ofoLedger *ledger;
 	gdouble debit, credit;
-	ofeEntryStatus status;
 	GList *past, *exe, *fut, *it;
 	ofsCurrency *sdet;
 	ofoCurrency *cur_object;
@@ -3363,6 +3520,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	myDateFormat date_format;
 	ofaHub *hub;
 	ofoDossier *dossier;
+	ofeEntryPeriod period;
 
 	numline = 0;
 	dataset = NULL;
@@ -3635,6 +3793,13 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 					ofo_entry_set_tiers( entry, tiers );
 				}
 			}
+
+			/* period indicator */
+			itf = itf ? itf->next : NULL;
+			cstr = itf ? ( const gchar * ) itf->data : NULL;
+			if( my_strlen( cstr )){
+				ofa_box_set_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD, cstr );
+			}
 		}
 
 		/* what to do regarding the effect date ?
@@ -3642,22 +3807,22 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		 * ledger last closing dates, so that the entry is in ROUGH
 		 * status */
 		entry_compute_status( entry, TRUE, parms->getter );
-		status = ofo_entry_get_status( entry );
-		switch( status ){
-			case ENT_STATUS_PAST:
+		period = ofo_entry_get_period( entry );
+		switch( period ){
+			case ENT_PERIOD_PAST:
 				ofs_currency_add_by_object( &past, cur_object, debit, credit );
 				break;
 
-			case ENT_STATUS_ROUGH:
+			case ENT_PERIOD_CURRENT:
 				ofs_currency_add_by_object( &exe, cur_object, debit, credit );
 				break;
 
-			case ENT_STATUS_FUTURE:
+			case ENT_PERIOD_FUTURE:
 				ofs_currency_add_by_object( &fut, cur_object, debit, credit );
 				break;
 
 			default:
-				str = g_strdup_printf( _( "invalid entry status: %d" ), status );
+				str = g_strdup_printf( _( "invalid entry period: %u" ), period );
 				ofa_iimporter_progress_num_text( importer, parms, numline, str );
 				g_free( str );
 				parms->parse_errs += 1;
@@ -3830,7 +3995,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				/* gives the ownership to the collection */
 				ofa_iconcil_new_concil_ex( OFA_ICONCIL( entry ), concil );
 			}
-			if( ofo_entry_get_status( entry ) != ENT_STATUS_PAST ){
+			if( ofo_entry_get_period( entry ) != ENT_PERIOD_PAST ){
 				g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, entry );
 			}
 			parms->inserted_count += 1;
@@ -3874,7 +4039,7 @@ isignalable_connect_to( ofaISignaler *signaler )
 	g_signal_connect( signaler, SIGNALER_BASE_IS_DELETABLE, G_CALLBACK( signaler_on_deletable_object ), NULL );
 	g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), NULL );
 	g_signal_connect( signaler, SIGNALER_EXERCICE_DATES_CHANGED, G_CALLBACK( signaler_on_exe_dates_changed ), NULL );
-	g_signal_connect( signaler, SIGNALER_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_status_change ), NULL );
+	g_signal_connect( signaler, SIGNALER_PERIOD_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_period_status_changed ), NULL );
 	g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), NULL );
 }
 
@@ -4068,6 +4233,9 @@ signaler_on_exe_dates_changed( ofaISignaler *signaler, const GDate *prev_begin, 
 	check_for_changed_end_exe_dates( getter, prev_end, new_end, TRUE );
 }
 
+/*
+ * Returns: the count of remediated entries
+ */
 static gint
 check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, const GDate *new_begin, gboolean remediate )
 {
@@ -4075,61 +4243,67 @@ check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, 
 	gchar *sprev, *snew, *where;
 
 	count = 0;
-	sprev = my_date_to_str( prev_begin, MY_DATE_SQL );
-	snew = my_date_to_str( new_begin, MY_DATE_SQL );
-	where = NULL;
 
-	if( !my_date_is_valid( prev_begin )){
-		if( !my_date_is_valid( new_begin )){
-			/* nothing to do here */
+	if( remediate ){
+		sprev = my_date_to_str( prev_begin, MY_DATE_SQL );
+		snew = my_date_to_str( new_begin, MY_DATE_SQL );
+		where = NULL;
 
-		} else {
-			/* setting a beginning date for the exercice
-			 * there may be entries which were considered in the
-			 * exercice (either rough or validated) but are now
-			 * considered in the past */
-			/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
+		if( !my_date_is_valid( prev_begin )){
+			if( !my_date_is_valid( new_begin )){
+				/* nothing to do here */
+
+			} else {
+				/* setting a beginning date for the exercice
+				 * there may be entries which were considered in the
+				 * exercice (either rough or validated) but are now
+				 * considered in the past */
+				/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
+				where = g_strdup_printf(
+						"ENT_DEFFECT<'%s' AND ENT_STATUS!='%s'",
+						snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
+				count = remediate_status( getter, where, ENT_PERIOD_PAST );
+			}
+		} else if( !my_date_is_valid( new_begin )){
+			/* removing the beginning date of the exercice
+			 * there may be entries which were considered in the past
+			 * but are now considered in the exercice */
+			/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
 			where = g_strdup_printf(
 					"ENT_DEFFECT<'%s' AND ENT_STATUS!='%s'",
-					snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
-			count = remediate_status( getter, remediate, where, ENT_STATUS_PAST );
+					sprev, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
+			count = remediate_status( getter, where, ENT_PERIOD_CURRENT );
+
+		} else if( my_date_compare( prev_begin, new_begin ) < 0 ){
+			/* there may be entries which were considered in the exercice
+			 * but are now considered in the past */
+			/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
+			where = g_strdup_printf(
+					"ENT_DEFFECT>='%s' AND ENT_DEFFECT<'%s' AND ENT_STATUS!='%s'",
+					sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
+			count = remediate_status( getter, where, ENT_PERIOD_PAST );
+
+		} else if( my_date_compare( prev_begin, new_begin ) > 0 ){
+			/* there may be entries which were considered in the past
+			 * but are now considered in the exercice */
+			/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
+			where = g_strdup_printf(
+					"ENT_DEFFECT<'%s' AND ENT_DEFFECT>='%s' AND ENT_STATUS!='%s'",
+					sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
+			count = remediate_status( getter, where, ENT_PERIOD_CURRENT );
 		}
-	} else if( !my_date_is_valid( new_begin )){
-		/* removing the beginning date of the exercice
-		 * there may be entries which were considered in the past
-		 * but are now considered in the exercice */
-		/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT<'%s' AND ENT_STATUS!='%s'",
-				sprev, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
-		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
 
-	} else if( my_date_compare( prev_begin, new_begin ) < 0 ){
-		/* there may be entries which were considered in the exercice
-		 * but are now considered in the past */
-		/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT>='%s' AND ENT_DEFFECT<'%s' AND ENT_STATUS!='%s'",
-				sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
-		count = remediate_status( getter, remediate, where, ENT_STATUS_PAST );
-
-	} else if( my_date_compare( prev_begin, new_begin ) > 0 ){
-		/* there may be entries which were considered in the past
-		 * but are now considered in the exercice */
-		/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT<'%s' AND ENT_DEFFECT>='%s' AND ENT_STATUS!='%s'",
-				sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
-		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
+		g_free( sprev );
+		g_free( snew );
+		g_free( where );
 	}
-
-	g_free( sprev );
-	g_free( snew );
-	g_free( where );
 
 	return( count );
 }
 
+/*
+ * Returns: the count of remediated entries
+ */
 static gint
 check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, const GDate *new_end, gboolean remediate )
 {
@@ -4137,129 +4311,147 @@ check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, cons
 	gchar *sprev, *snew, *where;
 
 	count = 0;
-	sprev = my_date_to_str( prev_end, MY_DATE_SQL );
-	snew = my_date_to_str( new_end, MY_DATE_SQL );
-	where = NULL;
 
-	if( !my_date_is_valid( prev_end )){
-		if( !my_date_is_valid( new_end )){
-			/* nothing to do here */
+	if( remediate ){
+		sprev = my_date_to_str( prev_end, MY_DATE_SQL );
+		snew = my_date_to_str( new_end, MY_DATE_SQL );
+		where = NULL;
 
-		} else {
-			/* setting an ending date for the exercice
-			 * there may be entries which were considered in the
-			 * exercice (either rough or validated) but are now
-			 * considered in the future */
-			/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
+		if( !my_date_is_valid( prev_end )){
+			if( !my_date_is_valid( new_end )){
+				/* nothing to do here */
+
+			} else {
+				/* setting an ending date for the exercice
+				 * there may be entries which were considered in the
+				 * exercice (either rough or validated) but are now
+				 * considered in the future */
+				/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
+				where = g_strdup_printf(
+						"ENT_DEFFECT>'%s' AND ENT_STATUS!='%s'",
+						snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
+				count = remediate_status( getter, where, ENT_PERIOD_FUTURE );
+			}
+		} else if( !my_date_is_valid( new_end )){
+			/* removing the ending date of the exercice
+			 * there may be entries which were considered in the future
+			 * but are now considered in the exercice */
+			/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
 			where = g_strdup_printf(
 					"ENT_DEFFECT>'%s' AND ENT_STATUS!='%s'",
-					snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
-			count = remediate_status( getter, remediate, where, ENT_STATUS_FUTURE );
+					sprev, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
+			count = remediate_status( getter, where, ENT_PERIOD_CURRENT );
+
+		} else if( my_date_compare( prev_end, new_end ) < 0 ){
+			/* there may be entries which were considered in the future
+			 * but are now considered in the exercice */
+			/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
+			where = g_strdup_printf(
+					"ENT_DEFFECT>'%s' AND ENT_DEFFECT<='%s' AND ENT_STATUS!='%s'",
+					sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
+			count = remediate_status( getter, where, ENT_PERIOD_CURRENT );
+
+		} else if( my_date_compare( prev_end, new_end ) > 0 ){
+			/* there may be entries which were considered in the exercice
+			 * but are now considered in the future */
+			/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
+			where = g_strdup_printf(
+					"ENT_DEFFECT<='%s' AND ENT_DEFFECT>'%s' AND ENT_STATUS!='%s'",
+					sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
+			count = remediate_status( getter, where, ENT_PERIOD_FUTURE );
 		}
-	} else if( !my_date_is_valid( new_end )){
-		/* removing the ending date of the exercice
-		 * there may be entries which were considered in the future
-		 * but are now considered in the exercice */
-		/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT>'%s' AND ENT_STATUS!='%s'",
-				sprev, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
-		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
-
-	} else if( my_date_compare( prev_end, new_end ) < 0 ){
-		/* there may be entries which were considered in the future
-		 * but are now considered in the exercice */
-		/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT>'%s' AND ENT_DEFFECT<='%s' AND ENT_STATUS!='%s'",
-				sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
-		count = remediate_status( getter, remediate, where, ENT_STATUS_ROUGH );
-
-	} else if( my_date_compare( prev_end, new_end ) > 0 ){
-		/* there may be entries which were considered in the exercice
-		 * but are now considered in the future */
-		/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT<='%s' AND ENT_DEFFECT>'%s' AND ENT_STATUS!='%s'",
-				sprev, snew, ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
-		count = remediate_status( getter, remediate, where, ENT_STATUS_FUTURE );
 	}
 
 	return( count );
 }
 
+/*
+ * Due to a change of the beginning or ending exercice date, entries may
+ * have to be remediated:
+ * Past    (validated)          -> current (validated)
+ * Current (rough or validated) -> past    (validated) or future (rough or validated)
+ * Future  (rough or validated) -> current (rough or validated)
+ *
+ * There is so one case where the entry changes simultaneously its period
+ * indicator and its status.
+ */
 static gint
-remediate_status( ofaIGetter *getter, gboolean remediate, const gchar *where, ofeEntryStatus new_status )
+remediate_status( ofaIGetter *getter, const gchar *where, ofeEntryPeriod new_period )
 {
-	static const gchar *thisfn = "ofo_entry_remediate_status";
-	gint count;
+	gulong count;
 	GList *dataset, *it;
 	ofoEntry *entry;
-	ofeEntryStatus prev_status;
-	ofoLedger *ledger;
-	const GDate *last_close, *deffect;
+	ofeEntryPeriod prev_period;
+	ofeEntryStatus prev_status, new_status;
 	ofaISignaler *signaler;
 
 	count = 0;
 	dataset = entry_load_dataset( getter, where, NULL );
 	count = g_list_length( dataset );
 
-	if( remediate ){
-		signaler = ofa_igetter_get_signaler( getter );
-		g_signal_emit_by_name( signaler, SIGNALER_STATUS_COUNT, new_status, count );
+	signaler = ofa_igetter_get_signaler( getter );
+	g_signal_emit_by_name( signaler, SIGNALER_CHANGE_COUNT, new_period, -1, count );
 
-		for( it=dataset ; it ; it=it->next ){
-			entry = OFO_ENTRY( it->data );
+	for( it=dataset ; it ; it=it->next ){
+		entry = OFO_ENTRY( it->data );
+		prev_period = ofo_entry_get_period( entry );
+		prev_status = -1;
+		new_status = -1;
+
+		/* should we also remediate the status ? */
+		if( prev_period == ENT_PERIOD_CURRENT && new_period == ENT_PERIOD_PAST ){
 			prev_status = ofo_entry_get_status( entry );
-
-			/* new status actually depends of the last closing date of
-			 * the ledger of the entry */
-			if( prev_status == ENT_STATUS_PAST && new_status == ENT_STATUS_ROUGH ){
-				ledger = ofo_ledger_get_by_mnemo( getter, ofo_entry_get_ledger( entry ));
-				if( !ledger || !OFO_IS_LEDGER( ledger )){
-					g_warning( "%s: ledger %s no more exists", thisfn, ofo_entry_get_ledger( entry ));
-					return( -1 );
-				}
-				deffect = ofo_entry_get_deffect( entry );
-				last_close = ofo_ledger_get_last_close( ledger );
-				if( my_date_is_valid( last_close ) && my_date_compare( deffect, last_close ) <= 0 ){
-					new_status = ENT_STATUS_VALIDATED;
-				}
+			if( prev_status == ENT_STATUS_ROUGH ){
+				new_status = ENT_STATUS_VALIDATED;
+			} else {
+				g_return_val_if_fail( prev_status == ENT_STATUS_VALIDATED, 0 );
+				prev_status = -1;
 			}
-
-			g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, prev_status, new_status );
 		}
+
+		g_signal_emit_by_name( signaler, SIGNALER_PERIOD_STATUS_CHANGE, entry, prev_period, prev_status, new_period, new_status );
 	}
+
 	ofo_entry_free_dataset( dataset );
 
 	return( count );
 }
 
 /*
- * SIGNALER_STATUS_CHANGE signal handler
+ * SIGNALER_PERIOD_STATUS_CHANGE signal handler
  */
 static void
-signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty )
+signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry,
+											ofeEntryPeriod prev_period, ofeEntryStatus prev_status,
+											ofeEntryPeriod new_period, ofeEntryStatus new_status,
+											void *empty )
 {
-	static const gchar *thisfn = "ofo_entry_signaler_on_entry_status_change";
+	static const gchar *thisfn = "ofo_entry_signaler_on_entry_period_status_changed";
 	gchar *query;
 	ofaIGetter *getter;
 	ofaHub *hub;
+	const gchar *cperiod, *cstatus;
 
-	g_debug( "%s: signaler=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
-			thisfn, ( void * ) signaler, ( void * ) entry, prev_status, new_status, ( void * ) empty );
+	g_debug( "%s: signaler=%p, entry=%p, prev_period=%d, prev_status=%d, new_period=%d, new_status=%d, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) entry,
+			prev_period, prev_status, new_period, new_status, ( void * ) empty );
 
 	getter = ofa_isignaler_get_getter( signaler );
 	hub = ofa_igetter_get_hub( getter );
 
-	entry_set_status( entry, new_status );
+	if( new_period != -1 ){
+		entry_set_period( entry, new_period );
+	}
+	cperiod = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD );
+
+	if( new_status != -1 ){
+		entry_set_status( entry, new_status );
+	}
+	cstatus = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_STATUS );
 
 	query = g_strdup_printf(
-					"UPDATE OFA_T_ENTRIES SET ENT_STATUS='%s' WHERE ENT_NUMBER=%ld",
-					ofo_entry_status_get_dbms( new_status ),
-						ofo_entry_get_number( entry ));
-
-	ofo_ledger_get_dataset( getter );
+					"UPDATE OFA_T_ENTRIES SET ENT_IPERIOD='%s',ENT_STATUS='%s' WHERE ENT_NUMBER=%ld",
+						cperiod, cstatus, ofo_entry_get_number( entry ));
 
 	if( ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE )){
 		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, entry, NULL );

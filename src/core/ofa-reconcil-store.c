@@ -90,7 +90,8 @@ static GType st_col_types[RECONCIL_N_COLUMNS] = {
 	G_TYPE_INT,    G_TYPE_STRING,						/* rule_int, tiers */
 	G_TYPE_STRING, G_TYPE_ULONG, G_TYPE_STRING, 		/* concil_number_str, concil_number_int, concil_date */
 	G_TYPE_STRING,										/* concil_type */
-	G_TYPE_OBJECT										/* the #ofoEntry or #ofoBatLine */
+	G_TYPE_OBJECT,										/* the #ofoEntry or #ofoBatLine */
+	G_TYPE_STRING, G_TYPE_ULONG							/* period, period_i */
 };
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcilStore *self );
@@ -384,6 +385,7 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 	ofxCounter counter, entnum, concilnum;
 	ofeEntryStatus status;
 	ofeEntryRule rule;
+	ofeEntryPeriod period;
 	ofoConcil *concil;
 	const GDate *dval;
 
@@ -419,6 +421,7 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 
 	status = ofo_entry_get_status( entry );
 	rule = ofo_entry_get_rule( entry );
+	period = ofo_entry_get_period( entry );
 
 	counter = ofo_entry_get_tiers( entry );
 	stiers = counter > 0 ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
@@ -461,6 +464,8 @@ entry_set_row_by_iter( ofaReconcilStore *self, const ofoEntry *entry, GtkTreeIte
 				RECONCIL_COL_CONCIL_DATE,     sconcdate,
 				RECONCIL_COL_CONCIL_TYPE,     ofa_iconcil_get_instance_type( OFA_ICONCIL( entry )),
 				RECONCIL_COL_OBJECT,          entry,
+				RECONCIL_COL_IPERIOD,         ofo_entry_period_get_abr( period ),
+				RECONCIL_COL_IPERIOD_I,       period,
 				-1 );
 
 	g_free( sconcdate );

@@ -343,6 +343,7 @@ compute_accounts_balance( ofaAccountBalanceRender *self )
 	GList *entries, *sorted, *it;
 	ofoEntry *entry;
 	ofeEntryStatus status;
+	ofeEntryPeriod period;
 	ofeEntryRule rule;
 	const gchar *acc_number;
 	gchar *prev_number;
@@ -372,7 +373,11 @@ compute_accounts_balance( ofaAccountBalanceRender *self )
 		entry = ( ofoEntry * ) it->data;
 		g_return_if_fail( OFO_IS_ENTRY( entry ));
 		status = ofo_entry_get_status( entry );
-		if( status == ENT_STATUS_PAST || status == ENT_STATUS_DELETED ){
+		if( status == ENT_STATUS_DELETED ){
+			continue;
+		}
+		period = ofo_entry_get_period( entry );
+		if( period == ENT_PERIOD_PAST ){
 			continue;
 		}
 		/* on new account, initialize a new structure */

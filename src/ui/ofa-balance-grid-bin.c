@@ -63,6 +63,7 @@ enum {
 	COL_CREDIT,
 	COL_CURRENCY,
 	COL_STATUS,
+	COL_PERIOD,
 	COL_REF
 };
 
@@ -171,7 +172,7 @@ ofa_balance_grid_bin_class_init( ofaBalanceGridBinClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				4,
-				G_TYPE_INT, G_TYPE_STRING, G_TYPE_DOUBLE, G_TYPE_DOUBLE );
+				G_TYPE_UINT, G_TYPE_STRING, G_TYPE_DOUBLE, G_TYPE_DOUBLE );
 }
 
 /**
@@ -213,37 +214,45 @@ setup_grid( ofaBalanceGridBin *self )
 	priv->grid = GTK_GRID( grid );
 	gtk_grid_set_column_spacing( priv->grid, 4 );
 
-	label = gtk_label_new( _( "Rough :" ));
+	label = gtk_label_new( _( "Current rough :" ));
 	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_grid_attach( priv->grid, label, COL_LABEL, 0, 1, 1 );
 
 	label = gtk_label_new( NULL );
 	gtk_grid_attach( priv->grid, label, COL_REF, 0, 1, 1 );
-	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( OFA_BALANCE_ROUGH ));
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( BALANCEGRID_CURRENT_ROUGH ));
 
-	label = gtk_label_new( _( "Validated :" ));
+	label = gtk_label_new( _( "Current validated :" ));
 	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_grid_attach( priv->grid, label, COL_LABEL, 1, 1, 1 );
 
 	label = gtk_label_new( NULL );
 	gtk_grid_attach( priv->grid, label, COL_REF, 1, 1, 1 );
-	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( OFA_BALANCE_VALIDATED ));
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( BALANCEGRID_CURRENT_VALIDATED ));
 
-	label = gtk_label_new( _( "Future :" ));
+	label = gtk_label_new( _( "Future rough :" ));
 	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_grid_attach( priv->grid, label, COL_LABEL, 2, 1, 1 );
 
 	label = gtk_label_new( NULL );
 	gtk_grid_attach( priv->grid, label, COL_REF, 2, 1, 1 );
-	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( OFA_BALANCE_FUTURE ));
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( BALANCEGRID_FUTUR_ROUGH ));
 
-	label = gtk_label_new( _( "Total :" ));
+	label = gtk_label_new( _( "Future validated :" ));
 	my_utils_widget_set_xalign( label, 1.0 );
 	gtk_grid_attach( priv->grid, label, COL_LABEL, 3, 1, 1 );
 
 	label = gtk_label_new( NULL );
 	gtk_grid_attach( priv->grid, label, COL_REF, 3, 1, 1 );
-	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( OFA_BALANCE_TOTAL ));
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( BALANCEGRID_FUTUR_ROUGH ));
+
+	label = gtk_label_new( _( "Total :" ));
+	my_utils_widget_set_xalign( label, 1.0 );
+	gtk_grid_attach( priv->grid, label, COL_LABEL, 4, 1, 1 );
+
+	label = gtk_label_new( NULL );
+	gtk_grid_attach( priv->grid, label, COL_REF, 4, 1, 1 );
+	g_object_set_data( G_OBJECT( label ), BALANCE_GRID_GROUP, GINT_TO_POINTER( BALANCEGRID_TOTAL ));
 
 	g_signal_connect( self, "ofa-update", G_CALLBACK( on_update ), NULL );
 

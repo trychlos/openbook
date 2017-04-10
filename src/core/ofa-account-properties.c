@@ -581,32 +581,32 @@ init_balances_page( ofaAccountProperties *self )
 
 	/* current validated balance */
 	set_current_amount( self,
-			ofo_account_get_val_debit( priv->account ),
+			ofo_account_get_current_val_debit( priv->account ),
 			"p2-val-debit", "p2-val-debit-cur",
 			priv->p2_group1, priv->p2_group2 );
 	set_current_amount( self,
-			ofo_account_get_val_credit( priv->account ),
+			ofo_account_get_current_val_credit( priv->account ),
 			"p2-val-credit", "p2-val-credit-cur",
 			priv->p2_group3, priv->p2_group4 );
 
 	/* current rough balance */
 	set_current_amount( self,
-			ofo_account_get_rough_debit( priv->account ),
+			ofo_account_get_current_rough_debit( priv->account ),
 			"p2-rough-debit", "p2-rough-debit-cur",
 			priv->p2_group1, priv->p2_group2 );
 	set_current_amount( self,
-			ofo_account_get_rough_credit( priv->account ),
+			ofo_account_get_current_rough_credit( priv->account ),
 			"p2-rough-credit", "p2-rough-credit-cur",
 			priv->p2_group3, priv->p2_group4 );
 
 	/* current future balance */
 	set_current_amount( self,
-			ofo_account_get_futur_debit( priv->account ),
+			ofo_account_get_futur_rough_debit( priv->account ),
 			"p2-futur-debit", "p2-fut-debit-cur",
 
 			priv->p2_group1, priv->p2_group2 );
 	set_current_amount( self,
-			ofo_account_get_futur_credit( priv->account ),
+			ofo_account_get_futur_rough_credit( priv->account ),
 			"p2-futur-credit", "p2-fut-credit-cur", priv->p2_group3, priv->p2_group4 );
 
 	tview = ofa_account_arc_treeview_new( priv->getter, priv->account );

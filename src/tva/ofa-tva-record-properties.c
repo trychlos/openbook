@@ -838,11 +838,11 @@ static void
 check_for_enable_dlg( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	gboolean is_valid, compute_ok, generate_ok;
+	gboolean is_valid, compute_ok, generate_ok, view_ok;
 	gchar *msgerr;
 	ofoEntry *entry;
 	ofeEntryStatus status;
-	guint deletable_entries;
+	guint undeletable_entries;
 	GList *it;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
@@ -851,7 +851,8 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 	is_valid = FALSE;
 	compute_ok = FALSE;
 	generate_ok = FALSE;
-	deletable_entries = 0;
+	view_ok = FALSE;
+	undeletable_entries = 0;
 
 	if( priv->is_writable ){
 
@@ -898,11 +899,12 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 					generate_ok = TRUE;
 
 				} else {
+					view_ok = TRUE;
 					for( it=priv->generated_entries ; it ; it=it->next ){
 						entry = OFO_ENTRY( it->data );
 						status = ofo_entry_get_status( entry );
-						if( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE ){
-							deletable_entries += 1;
+						if( status != ENT_STATUS_ROUGH ){
+							undeletable_entries += 1;
 						}
 					}
 				}
@@ -915,8 +917,8 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 
 	gtk_widget_set_sensitive( priv->compute_btn, compute_ok );
 	gtk_widget_set_sensitive( priv->generate_btn, generate_ok );
-	gtk_widget_set_sensitive( priv->viewopes_btn, priv->generated_opes > 0 );
-	gtk_widget_set_sensitive( priv->delopes_btn, deletable_entries > 0 );
+	gtk_widget_set_sensitive( priv->viewopes_btn, view_ok );
+	gtk_widget_set_sensitive( priv->delopes_btn, view_ok && undeletable_entries == 0 );
 }
 
 /*
@@ -1275,12 +1277,12 @@ eval_balance( ofsFormulaHelper *helper )
 
 		if( cmp_begin <= 0 && cmp_end <= 0 ){
 			/* credit is -, debit is + */
-			amount -= ofo_account_get_rough_credit( account );
-			amount += ofo_account_get_rough_debit( account );
-			amount -= ofo_account_get_val_credit( account );
-			amount += ofo_account_get_val_debit( account );
-			amount -= ofo_account_get_futur_credit( account );
-			amount += ofo_account_get_futur_debit( account );
+			amount -= ofo_account_get_current_rough_credit( account );
+			amount += ofo_account_get_current_rough_debit( account );
+			amount -= ofo_account_get_current_val_credit( account );
+			amount += ofo_account_get_current_val_debit( account );
+			amount -= ofo_account_get_futur_rough_credit( account );
+			amount += ofo_account_get_futur_rough_debit( account );
 		}
 	}
 

@@ -63,19 +63,20 @@ typedef struct {
 /* store data types
  */
 static GType st_col_types[ENTRY_N_COLUMNS] = {
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* dope, deffect, label */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ref, currency, ledger */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ope_template, account, debit */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,			/* credit, ope_number, ope_number_i */
-	G_TYPE_STRING, G_TYPE_ULONG,						/* stlmt_number, stlmt_number_i */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* stlmt_user, stlmt_stamp, ent_number_str */
-	G_TYPE_ULONG,  G_TYPE_ULONG,						/* ent_number_int, tiers_id */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* upd_user, upd_stamp, concil_number */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,			/* concil_date, status_str, status_int */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* dope, deffect, label */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* ref, currency, ledger */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* ope_template, account, debit */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_ULONG,		/* credit, ope_number, ope_number_i */
+	G_TYPE_STRING,  G_TYPE_ULONG,						/* stlmt_number, stlmt_number_i */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* stlmt_user, stlmt_stamp, ent_number_str */
+	G_TYPE_ULONG,   G_TYPE_ULONG,						/* ent_number_int, tiers_id */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* upd_user, upd_stamp, concil_number */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_ULONG,		/* concil_date, status_str, status_int */
 	G_TYPE_OBJECT,										/* the #ofoEntry itself */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, 		/* msgerr, msgwarn, dope_set */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_BOOLEAN, 		/* msgerr, msgwarn, dope_set */
 	G_TYPE_BOOLEAN, G_TYPE_BOOLEAN,						/* deffect_set, currency_set */
-	G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING, 0			/* rule_int, rule, notes, notes_png */
+	G_TYPE_INT,     G_TYPE_STRING, G_TYPE_STRING, 0,	/* rule_int, rule, notes, notes_png */
+	G_TYPE_STRING,  G_TYPE_ULONG						/* period, period_i */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
@@ -320,6 +321,7 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	GError *error;
 	ofeEntryStatus status;
 	ofeEntryRule rule;
+	ofeEntryPeriod period;
 
 	priv = ofa_entry_store_get_instance_private( self );
 
@@ -361,6 +363,7 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 
 	status = ofo_entry_get_status( entry );
 	rule = ofo_entry_get_rule( entry );
+	period = ofo_entry_get_period( entry );
 
 	error = NULL;
 	notes = ofo_entry_get_notes( entry );
@@ -408,6 +411,8 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 				ENTRY_COL_RULE,           ofo_entry_rule_get_abr( rule ),
 				ENTRY_COL_NOTES,          notes,
 				ENTRY_COL_NOTES_PNG,      notes_png,
+				ENTRY_COL_IPERIOD,        ofo_entry_period_get_abr( period ),
+				ENTRY_COL_IPERIOD_I,      period,
 				-1 );
 
 	g_free( supdstamp );

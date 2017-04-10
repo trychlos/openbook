@@ -167,8 +167,8 @@ static gboolean confirm_remediation( ofaDossierProperties *self, gint count );
 static void     display_progress_init( ofaDossierProperties *self );
 static void     display_progress_end( ofaDossierProperties *self );
 static void     signaler_connect_to_signaling_system( ofaDossierProperties *self );
-static void     signaler_on_entry_status_count( ofaISignaler *signaler, ofeEntryStatus new_status, gulong count, ofaDossierProperties *self );
-static void     signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, ofaDossierProperties *self );
+static void     signaler_on_entry_change_count( ofaISignaler *signaler, ofeEntryPeriod new_period, ofeEntryStatus new_status, gulong count, ofaDossierProperties *self );
+static void     signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryPeriod prev_period, ofeEntryStatus prev_status, ofeEntryPeriod new_period, ofeEntryStatus new_status, ofaDossierProperties *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierProperties, ofa_dossier_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDossierProperties )
@@ -1297,18 +1297,18 @@ signaler_connect_to_signaling_system( ofaDossierProperties *self )
 
 	signaler = ofa_igetter_get_signaler( priv->getter );
 
-	handler = g_signal_connect( signaler, SIGNALER_STATUS_COUNT, G_CALLBACK( signaler_on_entry_status_count ), self );
+	handler = g_signal_connect( signaler, SIGNALER_CHANGE_COUNT, G_CALLBACK( signaler_on_entry_change_count ), self );
 	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( signaler, SIGNALER_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_status_change ), self );
+	handler = g_signal_connect( signaler, SIGNALER_PERIOD_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_period_status_changed ), self );
 	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 }
 
 /*
- * SIGNALER_STATUS_COUNT signal handler
+ * SIGNALER_CHANGE_COUNT signal handler
  */
 static void
-signaler_on_entry_status_count( ofaISignaler *signaler, ofeEntryStatus new_status, gulong count, ofaDossierProperties *self )
+signaler_on_entry_change_count( ofaISignaler *signaler, ofeEntryPeriod new_period, ofeEntryStatus new_status, gulong count, ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 
@@ -1319,10 +1319,13 @@ signaler_on_entry_status_count( ofaISignaler *signaler, ofeEntryStatus new_statu
 }
 
 /*
- * SIGNALER_STATUS_CHANGE signal handler
+ * SIGNALER_PERIOD_STATUS_CHANGE signal handler
  */
 static void
-signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, ofaDossierProperties *self )
+signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry,
+											ofeEntryPeriod prev_period, ofeEntryStatus prev_status,
+											ofeEntryPeriod new_period, ofeEntryStatus new_status,
+											ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	gdouble progress;

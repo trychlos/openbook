@@ -856,7 +856,7 @@ ofo_tva_record_delete_accounting_entries( ofoTVARecord *record, GList *opes )
 			openum = ofo_entry_get_ope_number( entry );
 			if( g_list_find( opes, ( gpointer ) openum ) != NULL ){
 				status = ofo_entry_get_status( entry );
-				g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
+				g_return_if_fail( status == ENT_STATUS_ROUGH );
 				ofo_entry_delete( entry );
 			}
 		}

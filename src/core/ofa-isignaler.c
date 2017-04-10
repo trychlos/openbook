@@ -420,55 +420,30 @@ interface_base_init( ofaISignalerInterface *klass )
 					G_TYPE_POINTER, G_TYPE_POINTER );
 
 		/**
-		 * ofaISignaler::ofa-signaler-entry-status-count:
+		 * ofaISignaler::ofa-signaler-entry-change-count:
+		 * @new_period: the targeted period indicator, or -1 if does not change.
+		 * @new_status: the targeted status, or -1 if does not change.
+		 * @count: the count of entries to be changed.
 		 *
 		 * This signal is sent on the signaler before each batch of
-		 * entry status changes.
+		 * entry period or status changes.
 		 *
 		 * A signal handler may so initialize e.g. a progression bar
-		 * about the status change.
+		 * about the period/status change.
 		 *
-		 * The arguments may be read as: I am about to change the status of
-		 * '@count' entries to '@new_status' status.
+		 * The arguments may be read as: I am about to change the period
+		 * or the status of '@count' entries to '@new_period' (-1 if
+		 * unchanged) and @new_status (-1 if unchanged).
 		 *
 		 * Handler is of type:
 		 * 		void user_handler( ofaISignaler *signaler,
+		 *							gint         new_period,
 		 *							gint         new_status,
 		 *							gulong       count,
 		 * 							gpointer     user_data );
 		 */
 		st_signals[ STATUS_COUNT ] = g_signal_new_class_handler(
-					SIGNALER_STATUS_COUNT,
-					OFA_TYPE_ISIGNALER,
-					G_SIGNAL_RUN_LAST,
-					NULL,
-					NULL,								/* accumulator */
-					NULL,								/* accumulator data */
-					NULL,
-					G_TYPE_NONE,
-					2,
-					G_TYPE_UINT, G_TYPE_ULONG );
-
-		/**
-		 * ofaISignaler::ofa-signaler-entry-status-change:
-		 *
-		 * This signal is sent of the @signaler to ask an antry to change its
-		 * status. This is an ACTION signal.
-		 *
-		 * The #ofoEntry class signal handler will update the @entry with
-		 * its new @new_status status, and update the database accordingly.
-		 * Other signal handlers may, e.g. update balances, progression
-		 * bars, and so on.
-		 *
-		 * Handler is of type:
-		 * 		void user_handler( ofaISignaler          *signaler,
-		 * 							const ofoEntry *entry
-		 * 							gint            prev_status,
-		 *							gint            new_status,
-		 * 							gpointer        user_data );
-		 */
-		st_signals[ STATUS_CHANGE ] = g_signal_new_class_handler(
-					SIGNALER_STATUS_CHANGE,
+					SIGNALER_CHANGE_COUNT,
 					OFA_TYPE_ISIGNALER,
 					G_SIGNAL_RUN_LAST,
 					NULL,
@@ -477,7 +452,48 @@ interface_base_init( ofaISignalerInterface *klass )
 					NULL,
 					G_TYPE_NONE,
 					3,
-					G_TYPE_OBJECT, G_TYPE_UINT, G_TYPE_UINT );
+					G_TYPE_INT, G_TYPE_INT, G_TYPE_ULONG );
+
+		/**
+		 * ofaISignaler::ofa-signaler-entry-status-change:
+		 * @entry: the entry to be changed.
+		 * @prev_period: the original period indicator, or -1 if does not change.
+		 * @prev_status: the original status, or -1 of does not change.
+		 * @new_period: the new period indicator, to be ignored if @prev_period is -1.
+		 * @new_status: the new status, to be ignored if @prev_status is -1.
+		 *
+		 * This signal is sent of the @signaler to ask an antry to change its
+		 * period indicator and/or its status.
+		 *
+		 * The #ofoEntry class signal handler will update the @entry with
+		 * its new @new_period period indicator and its new @new_status status,
+		 * and update the database accordingly.
+		 *
+		 * Other signal handlers may, e.g. update balances, progression
+		 * bars, and so on.
+		 *
+		 * This is an ACTION signal.
+		 *
+		 * Handler is of type:
+		 * 		void user_handler( ofaISignaler    *signaler,
+		 * 							const ofoEntry *entry
+		 *							gint            prev_period,
+		 *							gint            prev_status,
+		 *							gint            new_period,
+		 *							gint            new_status,
+		 * 							gpointer        user_data );
+		 */
+		st_signals[ STATUS_CHANGE ] = g_signal_new_class_handler(
+					SIGNALER_PERIOD_STATUS_CHANGE,
+					OFA_TYPE_ISIGNALER,
+					G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					5,
+					G_TYPE_OBJECT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT );
 
 		/**
 		 * ofaISignaler::ofa-signaler-menu-available:

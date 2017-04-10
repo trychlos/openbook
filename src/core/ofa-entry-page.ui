@@ -163,7 +163,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="margin_left">8</property>
-                            <property name="margin_right">2</property>
+                            <property name="margin_right">8</property>
                             <property name="margin_top">2</property>
                             <property name="margin_bottom">2</property>
                             <property name="column_spacing">4</property>
@@ -198,7 +198,52 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="f3-past">
+                              <object class="GtkCheckButton" id="f3-deleted">
+                                <property name="label" translatable="yes">_Deleted</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="use_underline">True</property>
+                                <property name="xalign">0</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">0</property>
+                              </packing>
+                            </child>
+                          </object>
+                        </child>
+                        <child type="label">
+                          <object class="GtkLabel" id="label3">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes"> Status filter </property>
+                            <property name="use_markup">True</property>
+                          </object>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">3</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkFrame">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label_xalign">0</property>
+                        <property name="shadow_type">in</property>
+                        <child>
+                          <object class="GtkGrid">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="margin_left">8</property>
+                            <property name="margin_right">8</property>
+                            <property name="margin_top">2</property>
+                            <property name="margin_bottom">2</property>
+                            <child>
+                              <object class="GtkCheckButton" id="f4-past">
                                 <property name="label" translatable="yes">_Past</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
@@ -213,22 +258,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="f3-deleted">
-                                <property name="label" translatable="yes">_Deleted</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">False</property>
-                                <property name="use_underline">True</property>
-                                <property name="xalign">0</property>
-                                <property name="draw_indicator">True</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkCheckButton" id="f3-future">
+                              <object class="GtkCheckButton" id="f4-future">
                                 <property name="label" translatable="yes">_Future</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
@@ -238,21 +268,32 @@
                                 <property name="draw_indicator">True</property>
                               </object>
                               <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">1</property>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">2</property>
                               </packing>
                             </child>
                             <child>
-                              <placeholder/>
+                              <object class="GtkCheckButton" id="f4-current">
+                                <property name="label" translatable="yes">_Current</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="use_underline">True</property>
+                                <property name="xalign">0</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">1</property>
+                              </packing>
                             </child>
                           </object>
                         </child>
                         <child type="label">
-                          <object class="GtkLabel" id="label3">
+                          <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes"> Status filter </property>
-                            <property name="use_markup">True</property>
+                            <property name="label" translatable="yes"> Period filter </property>
                           </object>
                         </child>
                       </object>

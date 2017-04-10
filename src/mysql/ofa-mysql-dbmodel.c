@@ -488,6 +488,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* Identifiers and labels are resized in v28 */
 	/* ACC_OPEN_DEBIT and ACC_OPEN_CREDIT dropped in v31 */
 	/* keep_unsettled and keep_unreconciliated added in v35 */
+	/* add ACC_FV_DEBIT/CREDIT and rename fields in v37 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS ("
 			"	ACC_NUMBER          VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
@@ -690,7 +691,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* Identifiers and labels are resized in v28 */
 	/* ope number is added in v32 */
 	/* rule, notes are added in v35 */
-	/* status changed to x(1), ENT_TIERS added in v37 */
+	/* status changed to x(1), ENT_IPERIOD, ENT_TIERS added in v37 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
 			"	ENT_DEFFECT      DATE NOT NULL                       COMMENT 'Imputation effect date',"
@@ -733,6 +734,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 
 	/* n° 11 */
 	/* Identifiers and labels are resized in v28 */
+	/* add LED_CUR_FV_DEBIT/CREDIT and rename fields in v37 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_CUR ("
 			"	LED_MNEMO            VARCHAR(6) NOT NULL             COMMENT 'Internal ledger identifier',"
@@ -2408,6 +2410,7 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_ENTRIES "
 			"	CHANGE COLUMN ENT_STATUS            ENT_STATUS_I INTEGER,"
+			"	ADD    COLUMN ENT_IPERIOD           CHAR(1)       NOT NULL               COMMENT 'Entry period indicator',"
 			"	ADD    COLUMN ENT_STATUS            CHAR(1)       NOT NULL               COMMENT 'Entry status',"
 			"	ADD    COLUMN ENT_TIERS             BIGINT                               COMMENT 'Tiers identifier'" )){
 		return( FALSE );
@@ -2415,31 +2418,31 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 
 	/* 2. update status */
 	if( !exec_query( self,
-			"UPDATE OFA_T_ENTRIES SET ENT_STATUS='P' WHERE ENT_STATUS_I=1" )){
+			"UPDATE OFA_T_ENTRIES SET ENT_IPERIOD='P',ENT_STATUS='V' WHERE ENT_STATUS_I=1" )){
 		return( FALSE );
 	}
 
 	/* 3. update status */
 	if( !exec_query( self,
-			"UPDATE OFA_T_ENTRIES SET ENT_STATUS='R' WHERE ENT_STATUS_I=2" )){
+			"UPDATE OFA_T_ENTRIES SET ENT_IPERIOD='C',ENT_STATUS='R' WHERE ENT_STATUS_I=2" )){
 		return( FALSE );
 	}
 
 	/* 4. update status */
 	if( !exec_query( self,
-			"UPDATE OFA_T_ENTRIES SET ENT_STATUS='V' WHERE ENT_STATUS_I=3" )){
+			"UPDATE OFA_T_ENTRIES SET ENT_IPERIOD='C',ENT_STATUS='V' WHERE ENT_STATUS_I=3" )){
 		return( FALSE );
 	}
 
 	/* 5. update status */
 	if( !exec_query( self,
-			"UPDATE OFA_T_ENTRIES SET ENT_STATUS='D' WHERE ENT_STATUS_I=4" )){
+			"UPDATE OFA_T_ENTRIES SET ENT_IPERIOD='C',ENT_STATUS='D' WHERE ENT_STATUS_I=4" )){
 		return( FALSE );
 	}
 
 	/* 6. update status */
 	if( !exec_query( self,
-			"UPDATE OFA_T_ENTRIES SET ENT_STATUS='F' WHERE ENT_STATUS_I=5" )){
+			"UPDATE OFA_T_ENTRIES SET ENT_IPERIOD='F',ENT_STATUS='R' WHERE ENT_STATUS_I=5" )){
 		return( FALSE );
 	}
 
@@ -2656,6 +2659,34 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
+	/* 31. alter ofa_t_accounts */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_ACCOUNTS "
+			"	ADD    COLUMN ACC_FV_DEBIT           DECIMAL(20,5)                       COMMENT 'Sum of future validated debits',"
+			"	ADD    COLUMN ACC_FV_CREDIT          DECIMAL(20,5)                       COMMENT 'Sum of future validated credits',"
+			"	CHANGE COLUMN ACC_ROUGH_DEBIT   ACC_CR_DEBIT  DECIMAL(20,5)              COMMENT 'Sum of current rough debits',"
+			"	CHANGE COLUMN ACC_ROUGH_CREDIT  ACC_CR_CREDIT DECIMAL(20,5)              COMMENT 'Sum of current rough credits',"
+			"	CHANGE COLUMN ACC_VAL_DEBIT     ACC_CV_DEBIT  DECIMAL(20,5)              COMMENT 'Sum of current validated debits',"
+			"	CHANGE COLUMN ACC_VAL_CREDIT    ACC_CV_CREDIT DECIMAL(20,5)              COMMENT 'Sum of current validated credits',"
+			"	CHANGE COLUMN ACC_FUT_DEBIT     ACC_FR_DEBIT  DECIMAL(20,5)              COMMENT 'Sum of future rough debits',"
+			"	CHANGE COLUMN ACC_FUT_CREDIT    ACC_FR_CREDIT DECIMAL(20,5)              COMMENT 'Sum of future rough credits'" )){
+		return( FALSE );
+	}
+
+	/* 32. alter ofa_t_ledgers_cur */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_LEDGERS_CUR "
+			"	ADD    COLUMN LED_CUR_FV_DEBIT           DECIMAL(20,5)                   COMMENT 'Sum of future validated debits',"
+			"	ADD    COLUMN LED_CUR_FV_CREDIT          DECIMAL(20,5)                   COMMENT 'Sum of future validated credits',"
+			"	CHANGE COLUMN LED_CUR_ROUGH_DEBIT   LED_CUR_CR_DEBIT  DECIMAL(20,5)      COMMENT 'Sum of current rough debits',"
+			"	CHANGE COLUMN LED_CUR_ROUGH_CREDIT  LED_CUR_CR_CREDIT DECIMAL(20,5)      COMMENT 'Sum of current rough credits',"
+			"	CHANGE COLUMN LED_CUR_VAL_DEBIT     LED_CUR_CV_DEBIT  DECIMAL(20,5)      COMMENT 'Sum of current validated debits',"
+			"	CHANGE COLUMN LED_CUR_VAL_CREDIT    LED_CUR_CV_CREDIT DECIMAL(20,5)      COMMENT 'Sum of current validated credits',"
+			"	CHANGE COLUMN LED_CUR_FUT_DEBIT     LED_CUR_FR_DEBIT  DECIMAL(20,5)      COMMENT 'Sum of future rough debits',"
+			"	CHANGE COLUMN LED_CUR_FUT_CREDIT    LED_CUR_FR_CREDIT DECIMAL(20,5)      COMMENT 'Sum of future rough credits'" )){
+		return( FALSE );
+	}
+
 	return( TRUE );
 }
 
@@ -2666,5 +2697,5 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v37( ofaMysqlDBModel *self )
 {
-	return( 30 );
+	return( 32 );
 }

@@ -117,10 +117,14 @@ typedef struct {
 
 	/* frame 3: entry status
 	 */
-	GtkWidget           *past_btn;
+	GtkWidget           *deleted_btn;
 	GtkWidget           *rough_btn;
 	GtkWidget           *validated_btn;
-	GtkWidget           *deleted_btn;
+
+	/* frame 4: entry period
+	 */
+	GtkWidget           *past_btn;
+	GtkWidget           *current_btn;
 	GtkWidget           *future_btn;
 
 	/* frame 5: edition switch
@@ -296,6 +300,7 @@ static void       setup_account_selection( ofaEntryPage *self );
 static void       setup_ledger_selection( ofaEntryPage *self );
 static void       setup_dates_filter( ofaEntryPage *self );
 static void       setup_status_filter( ofaEntryPage *self );
+static void       setup_period_filter( ofaEntryPage *self );
 static void       setup_edit_switch( ofaEntryPage *self );
 static void       setup_treeview( ofaEntryPage *self );
 static gboolean   tview_is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaEntryPage *self );
@@ -330,6 +335,7 @@ static void       extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid
 static void       extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row );
 static void       extfilter_on_init_from_clicked( GtkButton *button, ofaEntryPage *self );
 static void       extfilter_on_init_status( ofaEntryPage *self, GtkWidget *btn, ofeEntryStatus status, gboolean *first );
+static void       extfilter_on_init_period( ofaEntryPage *self, GtkWidget *btn, ofeEntryPeriod period, gboolean *first );
 static void       extfilter_on_reset_clicked( GtkButton *button, ofaEntryPage *self );
 static void       extfilter_on_apply_clicked( GtkButton *button, ofaEntryPage *self );
 static sExtend   *extfilter_get_criterium( ofaEntryPage *self, guint row );
@@ -347,6 +353,7 @@ static void       account_do_select( ofaEntryPage *self );
 static gboolean   account_display_from( ofaEntryPage *self );
 static void       effect_filter_on_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaEntryPage *self );
 static void       status_on_toggled( GtkToggleButton *button, ofaEntryPage *self );
+static void       period_on_toggled( GtkToggleButton *button, ofaEntryPage *self );
 static void       edit_on_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaEntryPage *self );
 static void       edit_set_cells_editable( ofaEntryPage *self, GtkTreeSelection *selection, gboolean editable );
 static void       edit_on_cell_edited( GtkCellRendererText *cell, gchar *path, gchar *text, ofaEntryPage *self );
@@ -389,10 +396,10 @@ static void       row_display_message( ofaEntryPage *self, GtkTreeSelection *sel
 static gint       row_get_errlevel( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void       read_settings( ofaEntryPage *self );
 static void       read_settings_selection( ofaEntryPage *self, myISettings *settings );
-static void       read_settings_status( ofaEntryPage *self, myISettings *settings );
+static void       read_settings_period_status( ofaEntryPage *self, myISettings *settings );
 static void       write_settings( ofaEntryPage *self );
 static void       write_settings_selection( ofaEntryPage *self, myISettings *settings );
-static void       write_settings_status( ofaEntryPage *self, myISettings *settings );
+static void       write_settings_period_status( ofaEntryPage *self, myISettings *settings );
 static void       store_on_changed( ofaEntryStore *store, ofaEntryPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryPage, ofa_entry_page, OFA_TYPE_PAGE, 0,
@@ -518,6 +525,7 @@ page_v_setup_page( ofaPage *page )
 	setup_account_selection( OFA_ENTRY_PAGE( page ));
 	setup_dates_filter( OFA_ENTRY_PAGE( page ));
 	setup_status_filter( OFA_ENTRY_PAGE( page ));
+	setup_period_filter( OFA_ENTRY_PAGE( page ));
 	setup_edit_switch( OFA_ENTRY_PAGE( page ));
 	setup_treeview( OFA_ENTRY_PAGE( page ));
 	setup_ext_filter( OFA_ENTRY_PAGE( page ));
@@ -631,11 +639,11 @@ setup_status_filter( ofaEntryPage *self )
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f3-past" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f3-deleted" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( button, "toggled", G_CALLBACK( status_on_toggled), self );
-	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_STATUS_PAST ));
-	priv->past_btn = button;
+	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_STATUS_DELETED ));
+	priv->deleted_btn = button;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f3-rough" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
@@ -648,17 +656,35 @@ setup_status_filter( ofaEntryPage *self )
 	g_signal_connect( button, "toggled", G_CALLBACK( status_on_toggled), self );
 	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_STATUS_VALIDATED ));
 	priv->validated_btn = button;
+}
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f3-deleted" );
-	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( status_on_toggled), self );
-	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_STATUS_DELETED ));
-	priv->deleted_btn = button;
+static void
+setup_period_filter( ofaEntryPage *self )
+{
+	static const gchar *thisfn = "ofa_entry_page_setup_period_filter";
+	ofaEntryPagePrivate *priv;
+	GtkWidget *button;
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f3-future" );
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f4-past" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( status_on_toggled), self );
-	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_STATUS_FUTURE ));
+	g_signal_connect( button, "toggled", G_CALLBACK( period_on_toggled), self );
+	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_PERIOD_PAST ));
+	priv->past_btn = button;
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f4-current" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	g_signal_connect( button, "toggled", G_CALLBACK( period_on_toggled), self );
+	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_PERIOD_CURRENT ));
+	priv->current_btn = button;
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f4-future" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	g_signal_connect( button, "toggled", G_CALLBACK( period_on_toggled), self );
+	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_PERIOD_FUTURE ));
 	priv->future_btn = button;
 }
 
@@ -760,17 +786,19 @@ tview_apply_stdfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *it
 	ofeEntryStatus status;
 	GDate deffect;
 	const GDate *effect_filter;
+	ofeEntryPeriod period;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
 	visible = TRUE;
 
 	gtk_tree_model_get( tmodel, iter,
-			ENTRY_COL_LEDGER,   &ledger,
-			ENTRY_COL_ACCOUNT,  &account,
-			ENTRY_COL_DEFFECT,  &sdate,
-			ENTRY_COL_STATUS_I, &status,
-			ENTRY_COL_OBJECT,   &entry,
+			ENTRY_COL_LEDGER,    &ledger,
+			ENTRY_COL_ACCOUNT,   &account,
+			ENTRY_COL_DEFFECT,   &sdate,
+			ENTRY_COL_STATUS_I,  &status,
+			ENTRY_COL_IPERIOD_I, &period,
+			ENTRY_COL_OBJECT,    &entry,
 			-1 );
 
 	if( entry && OFO_IS_ENTRY( entry )){
@@ -788,8 +816,8 @@ tview_apply_stdfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *it
 
 		if( visible ){
 			switch( status ){
-				case ENT_STATUS_PAST:
-					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->past_btn ));
+				case ENT_STATUS_DELETED:
+					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->deleted_btn ));
 					break;
 				case ENT_STATUS_ROUGH:
 					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->rough_btn ));
@@ -797,10 +825,18 @@ tview_apply_stdfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *it
 				case ENT_STATUS_VALIDATED:
 					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_btn ));
 					break;
-				case ENT_STATUS_DELETED:
-					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->deleted_btn ));
+			}
+		}
+
+		if( visible ){
+			switch( period ){
+				case ENT_PERIOD_PAST:
+					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->past_btn ));
 					break;
-				case ENT_STATUS_FUTURE:
+				case ENT_PERIOD_CURRENT:
+					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->current_btn ));
+					break;
+				case ENT_PERIOD_FUTURE:
 					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->future_btn ));
 					break;
 			}
@@ -1745,11 +1781,14 @@ extfilter_on_init_from_clicked( GtkButton *button, ofaEntryPage *self )
 	/* check for status
 	 * as a side effect, if no status is selected in standard filter,
 	 * all status will be accepted here */
-	extfilter_on_init_status( self, priv->past_btn,      ENT_STATUS_PAST,      &first );
+	extfilter_on_init_status( self, priv->deleted_btn,   ENT_STATUS_DELETED,   &first );
 	extfilter_on_init_status( self, priv->rough_btn,     ENT_STATUS_ROUGH,     &first );
 	extfilter_on_init_status( self, priv->validated_btn, ENT_STATUS_VALIDATED, &first );
-	extfilter_on_init_status( self, priv->deleted_btn,   ENT_STATUS_DELETED,   &first );
-	extfilter_on_init_status( self, priv->future_btn,    ENT_STATUS_FUTURE,    &first );
+
+	/* check for period */
+	extfilter_on_init_period( self, priv->past_btn,      ENT_PERIOD_PAST,      &first );
+	extfilter_on_init_period( self, priv->current_btn,   ENT_PERIOD_CURRENT,   &first );
+	extfilter_on_init_period( self, priv->future_btn,    ENT_PERIOD_FUTURE,    &first );
 
 	/* check for general selection ledger vs. account */
 	extend = g_new0( sExtend, 1 );
@@ -1812,6 +1851,26 @@ extfilter_on_init_status( ofaEntryPage *self, GtkWidget *btn, ofeEntryStatus sta
 		extend->field = ENTRY_COL_STATUS;
 		extend->condition = COND_EQUAL;
 		extend->value = ( gchar * ) ofo_entry_status_get_abr( status );
+		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), extend );
+		*first = FALSE;
+		g_free( extend );
+	}
+}
+
+static void
+extfilter_on_init_period( ofaEntryPage *self, GtkWidget *btn, ofeEntryPeriod period, gboolean *first )
+{
+	ofaEntryPagePrivate *priv;
+	sExtend *extend;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
+		extend = g_new0( sExtend, 1 );
+		extend->operator = *first ? OPERATOR_NONE : OPERATOR_AND;
+		extend->field = ENTRY_COL_IPERIOD;
+		extend->condition = COND_EQUAL;
+		extend->value = ( gchar * ) ofo_entry_period_get_abr( period );
 		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ), extend );
 		*first = FALSE;
 		g_free( extend );
@@ -2239,11 +2298,25 @@ effect_filter_on_changed( ofaIDateFilter *filter, gint who, gboolean empty, cons
 }
 
 /*
- * display entries based on their status (past, rough, validated,
- *  deleted or future)
+ * display entries based on their status (delete, rough, validated)
  */
 static void
 status_on_toggled( GtkToggleButton *button, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( !priv->initializing ){
+		refresh_display( self );
+	}
+}
+
+/*
+ * display entries based on their period (past, current, future)
+ */
+static void
+period_on_toggled( GtkToggleButton *button, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 
@@ -3230,9 +3303,9 @@ remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_
 	const gchar *account;
 	ofxAmount amount, debit, credit;
 	ofeEntryStatus status;
+	ofeEntryPeriod period;
 	ofoAccount *account_new, *account_prev;
 	gint cmp;
-	gboolean remediate;
 
 	g_debug( "%s: self=%p, entry=%p, prev_account=%s, prev_debit=%lf, prev_credit=%lf",
 			thisfn, ( void * ) self, ( void * ) entry, prev_account, prev_debit, prev_credit );
@@ -3241,16 +3314,20 @@ remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_
 
 	g_return_if_fail( ofo_entry_is_editable( entry ));
 
-	remediate = FALSE;
 	account = ofo_entry_get_account( entry );
+	cmp = g_utf8_collate( account, prev_account );
+
 	debit = ofo_entry_get_debit( entry );
 	credit = ofo_entry_get_credit( entry );
+
 	status = ofo_entry_get_status( entry );
-	cmp = g_utf8_collate( account, prev_account );
+	g_return_if_fail( status == ENT_STATUS_ROUGH );
+
+	period = ofo_entry_get_period( entry );
+	g_return_if_fail( period == ENT_PERIOD_CURRENT || period == ENT_PERIOD_FUTURE );
 
 	if( cmp != 0 || debit != prev_debit || credit != prev_credit ){
 
-		remediate = TRUE;
 		account_new = ofo_account_get_by_number( priv->getter, account );
 		g_return_if_fail( account_new && OFO_IS_ACCOUNT( account_new ));
 		if( cmp != 0 ){
@@ -3260,38 +3337,35 @@ remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_
 			account_prev = account_new;
 		}
 
-		switch( status ){
-			case ENT_STATUS_ROUGH:
-				amount = ofo_account_get_rough_debit( account_prev );
-				ofo_account_set_rough_debit( account_prev, amount-prev_debit );
-				amount = ofo_account_get_rough_credit( account_prev );
-				ofo_account_set_rough_credit( account_prev, amount-prev_credit );
-				amount = ofo_account_get_rough_debit( account_new );
-				ofo_account_set_rough_debit( account_new, amount+debit );
-				amount = ofo_account_get_rough_credit( account_new );
-				ofo_account_set_rough_credit( account_new, amount+credit );
+		switch( period ){
+			case ENT_PERIOD_CURRENT:
+				amount = ofo_account_get_current_rough_debit( account_prev );
+				ofo_account_set_current_rough_debit( account_prev, amount-prev_debit );
+				amount = ofo_account_get_current_rough_credit( account_prev );
+				ofo_account_set_current_rough_credit( account_prev, amount-prev_credit );
+				amount = ofo_account_get_current_rough_debit( account_new );
+				ofo_account_set_current_rough_debit( account_new, amount+debit );
+				amount = ofo_account_get_current_rough_credit( account_new );
+				ofo_account_set_current_rough_credit( account_new, amount+credit );
 				break;
-			case ENT_STATUS_FUTURE:
-				amount = ofo_account_get_futur_debit( account_prev );
-				ofo_account_set_futur_debit( account_prev, amount-prev_debit );
-				amount = ofo_account_get_futur_credit( account_prev );
-				ofo_account_set_futur_credit( account_prev, amount-prev_credit );
-				amount = ofo_account_get_futur_debit( account_new );
-				ofo_account_set_futur_debit( account_new, amount+debit );
-				amount = ofo_account_get_futur_credit( account_new );
-				ofo_account_set_futur_credit( account_new, amount+credit );
+			case ENT_PERIOD_FUTURE:
+				amount = ofo_account_get_futur_rough_debit( account_prev );
+				ofo_account_set_futur_rough_debit( account_prev, amount-prev_debit );
+				amount = ofo_account_get_futur_rough_credit( account_prev );
+				ofo_account_set_futur_rough_credit( account_prev, amount-prev_credit );
+				amount = ofo_account_get_futur_rough_debit( account_new );
+				ofo_account_set_futur_rough_debit( account_new, amount+debit );
+				amount = ofo_account_get_futur_rough_credit( account_new );
+				ofo_account_set_futur_rough_credit( account_new, amount+credit );
 				break;
 			default:
-				g_return_if_reached();
 				break;
 		}
 
-		if( remediate ){
-			if( cmp != 0 ){
-				ofo_account_update_amounts( account_prev );
-			}
-			ofo_account_update_amounts( account_new );
+		if( cmp != 0 ){
+			ofo_account_update_amounts( account_prev );
 		}
+		ofo_account_update_amounts( account_new );
 	}
 }
 
@@ -3303,6 +3377,7 @@ remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_l
 	const gchar *ledger, *currency;
 	ofxAmount amount, debit, credit;
 	ofeEntryStatus status;
+	ofeEntryPeriod period;
 	ofoLedger *ledger_new, *ledger_prev;
 	gboolean ledger_has_changed;
 
@@ -3313,12 +3388,17 @@ remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_l
 
 	g_return_if_fail( ofo_entry_is_editable( entry ));
 
-	status = ofo_entry_get_status( entry );
 	ledger = ofo_entry_get_ledger( entry );
 	currency = ofo_entry_get_currency( entry );
 	debit = ofo_entry_get_debit( entry );
 	credit = ofo_entry_get_credit( entry );
 	ledger_has_changed = ( g_utf8_collate( ledger, prev_ledger ) != 0 );
+
+	status = ofo_entry_get_status( entry );
+	g_return_if_fail( status == ENT_STATUS_ROUGH );
+
+	period = ofo_entry_get_period( entry );
+	g_return_if_fail( period == ENT_PERIOD_CURRENT || period == ENT_PERIOD_FUTURE );
 
 	/* if ledger has changed or debit has changed or credit has changed */
 	if( ledger_has_changed || debit != prev_debit || credit != prev_credit ){
@@ -3332,29 +3412,28 @@ remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_l
 			ledger_prev = ledger_new;
 		}
 
-		switch( status ){
-			case ENT_STATUS_ROUGH:
-				amount = ofo_ledger_get_rough_debit( ledger_prev, currency );
-				ofo_ledger_set_rough_debit( ledger_prev, amount-prev_debit, currency );
-				amount = ofo_ledger_get_rough_credit( ledger_prev, currency );
-				ofo_ledger_set_rough_credit( ledger_prev, amount-prev_credit, currency );
-				amount = ofo_ledger_get_rough_debit( ledger_new, currency );
-				ofo_ledger_set_rough_debit( ledger_new, amount+debit, currency );
-				amount = ofo_ledger_get_rough_credit( ledger_new, currency );
-				ofo_ledger_set_rough_credit( ledger_new, amount+credit, currency );
+		switch( period ){
+			case ENT_PERIOD_CURRENT:
+				amount = ofo_ledger_get_current_rough_debit( ledger_prev, currency );
+				ofo_ledger_set_current_rough_debit( ledger_prev, amount-prev_debit, currency );
+				amount = ofo_ledger_get_current_rough_credit( ledger_prev, currency );
+				ofo_ledger_set_current_rough_credit( ledger_prev, amount-prev_credit, currency );
+				amount = ofo_ledger_get_current_rough_debit( ledger_new, currency );
+				ofo_ledger_set_current_rough_debit( ledger_new, amount+debit, currency );
+				amount = ofo_ledger_get_current_rough_credit( ledger_new, currency );
+				ofo_ledger_set_current_rough_credit( ledger_new, amount+credit, currency );
 				break;
-			case ENT_STATUS_FUTURE:
-				amount = ofo_ledger_get_futur_debit( ledger_prev, currency );
-				ofo_ledger_set_futur_debit( ledger_prev, amount-prev_debit, currency );
-				amount = ofo_ledger_get_futur_credit( ledger_prev, currency );
-				ofo_ledger_set_futur_credit( ledger_prev, amount-prev_credit, currency );
-				amount = ofo_ledger_get_futur_debit( ledger_new, currency );
-				ofo_ledger_set_futur_debit( ledger_new, amount+debit, currency );
-				amount = ofo_ledger_get_futur_credit( ledger_new, currency );
-				ofo_ledger_set_futur_credit( ledger_new, amount+credit, currency );
+			case ENT_PERIOD_FUTURE:
+				amount = ofo_ledger_get_futur_rough_debit( ledger_prev, currency );
+				ofo_ledger_set_futur_rough_debit( ledger_prev, amount-prev_debit, currency );
+				amount = ofo_ledger_get_futur_rough_credit( ledger_prev, currency );
+				ofo_ledger_set_futur_rough_credit( ledger_prev, amount-prev_credit, currency );
+				amount = ofo_ledger_get_futur_rough_debit( ledger_new, currency );
+				ofo_ledger_set_futur_rough_debit( ledger_new, amount+debit, currency );
+				amount = ofo_ledger_get_futur_rough_credit( ledger_new, currency );
+				ofo_ledger_set_futur_rough_credit( ledger_new, amount+credit, currency );
 				break;
 			default:
-				g_return_if_reached();
 				break;
 		}
 
@@ -3713,7 +3792,7 @@ read_settings( ofaEntryPage *self )
 	settings = ofa_igetter_get_user_settings( priv->getter );
 
 	read_settings_selection( self, settings );
-	read_settings_status( self, settings );
+	read_settings_period_status( self, settings );
 }
 
 /*
@@ -3768,10 +3847,10 @@ read_settings_selection( ofaEntryPage *self, myISettings *settings )
 }
 
 /*
- * <key>-status = past; rough; valid; deleted; future;
+ * <key>-status = past; current; future; deleted; rough; validated;
  */
 static void
-read_settings_status( ofaEntryPage *self, myISettings *settings )
+read_settings_period_status( ofaEntryPage *self, myISettings *settings )
 {
 	ofaEntryPagePrivate *priv;
 	gchar *key;
@@ -3795,13 +3874,13 @@ read_settings_status( ofaEntryPage *self, myISettings *settings )
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	bval = my_utils_boolean_from_str( cstr );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->rough_btn ), bval );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->current_btn ), bval );
 	count_bvalues += bval ? 1 : 0;
 
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	bval = my_utils_boolean_from_str( cstr );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->validated_btn ), bval );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->future_btn ), bval );
 	count_bvalues += bval ? 1 : 0;
 
 	it = it ? it->next : NULL;
@@ -3813,10 +3892,17 @@ read_settings_status( ofaEntryPage *self, myISettings *settings )
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	bval = my_utils_boolean_from_str( cstr );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->future_btn ), bval );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->rough_btn ), bval );
+	count_bvalues += bval ? 1 : 0;
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	bval = my_utils_boolean_from_str( cstr );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->validated_btn ), bval );
 	count_bvalues += bval ? 1 : 0;
 
 	if( count_bvalues == 0 ){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->current_btn ), TRUE );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->rough_btn ), TRUE );
 	}
 
@@ -3835,7 +3921,7 @@ write_settings( ofaEntryPage *self )
 	settings = ofa_igetter_get_user_settings( priv->getter );
 
 	write_settings_selection( self, settings );
-	write_settings_status( self, settings );
+	write_settings_period_status( self, settings );
 }
 
 static void
@@ -3860,19 +3946,20 @@ write_settings_selection( ofaEntryPage *self, myISettings *settings )
 }
 
 static void
-write_settings_status( ofaEntryPage *self, myISettings *settings )
+write_settings_period_status( ofaEntryPage *self, myISettings *settings )
 {
 	ofaEntryPagePrivate *priv;
 	gchar *key, *str;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	str = g_strdup_printf( "%s;%s;%s;%s;%s;",
+	str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;",
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->past_btn )) ? "True":"False",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->rough_btn )) ? "True":"False",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->current_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->future_btn )) ? "True":"False",
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->deleted_btn )) ? "True":"False",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->future_btn )) ? "True":"False" );
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->rough_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_btn )) ? "True":"False" );
 
 	key = g_strdup_printf( "%s-status", priv->settings_prefix );
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );

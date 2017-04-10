@@ -101,8 +101,8 @@ typedef struct {
 #define SIGNALER_DOSSIER_PREVIEW            "ofa-signaler-dossier-preview"
 #define SIGNALER_DOSSIER_PERIOD_CLOSED      "ofa-signaler-dossier-period-closed"
 #define SIGNALER_EXERCICE_DATES_CHANGED     "ofa-signaler-exercice-dates-changed"
-#define SIGNALER_STATUS_COUNT               "ofa-signaler-entry-status-count"
-#define SIGNALER_STATUS_CHANGE              "ofa-signaler-entry-status-change"
+#define SIGNALER_CHANGE_COUNT               "ofa-signaler-entry-change-count"
+#define SIGNALER_PERIOD_STATUS_CHANGE       "ofa-signaler-entry-period-status-change"
 
 #define SIGNALER_MENU_AVAILABLE             "ofa-signaler-menu-available"
 #define SIGNALER_PAGE_MANAGER_AVAILABLE     "ofa-signaler-page-manager-available"

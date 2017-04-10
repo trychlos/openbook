@@ -1043,7 +1043,7 @@ p6_closing_plugin( ofaExerciceCloseAssistant *self )
 }
 
 /*
- * validate rough entries remaining in the exercice
+ * validate rough entries remaining in the current exercice
  */
 static gboolean
 p6_validate_entries( ofaExerciceCloseAssistant *self )
@@ -1051,6 +1051,7 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_validate_entries";
 	ofaExerciceCloseAssistantPrivate *priv;
 	GList *entries, *it;
+	ofoEntry *entry;
 	myProgressBar *bar;
 	guint count, i;
 	gchar *sstart, *send;
@@ -1069,7 +1070,9 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 	gtk_widget_show_all( priv->p6_page );
 
 	for( it=entries ; it ; it=it->next ){
-		ofo_entry_validate( OFO_ENTRY( it->data ));
+		entry = OFO_ENTRY( it->data );
+		g_return_val_if_fail( ofo_entry_get_period( entry ) == ENT_PERIOD_CURRENT, G_SOURCE_REMOVE );
+		ofo_entry_validate( entry );
 		update_bar( bar, &i, count, thisfn );
 	}
 	if( count == 0 ){
@@ -1176,8 +1179,8 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		cur_obj = ofo_currency_get_by_code( priv->getter, acc_cur );
 		scur = g_new0( ofsCurrency, 1 );
 		scur->currency = cur_obj;
-		scur->debit = ofo_account_get_val_debit( account );
-		scur->credit = ofo_account_get_val_credit( account );
+		scur->debit = ofo_account_get_current_val_debit( account );
+		scur->credit = ofo_account_get_current_val_credit( account );
 
 		if( !ofs_currency_is_balanced( scur )){
 
@@ -1647,9 +1650,9 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	/* archive deleted (non-reported) entries
 	 * or
 	 * keep and report:
-	 *  - unsettled entries on settleable accounts
-	 *  - unreconciliated entries on reconciliable accounts
-	 *  - future entries (even if settled or reconciliated)
+	 *  - unsettled entries on settleable accounts (all periods, but deleted)
+	 *  - unreconciliated entries on reconciliable accounts (all periods, but deleted)
+	 *  - future entries (all status)
 	 */
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_KEEP_ENTRIES" );
@@ -1670,8 +1673,8 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	}
 	if( ok ){
 		query = g_strdup_printf( "INSERT IGNORE INTO ARCHIVE_T_KEEP_ENTRIES "
-					"SELECT ENT_NUMBER FROM OFA_T_ENTRIES WHERE ENT_STATUS='%s'",
-					ofo_entry_status_get_dbms( ENT_STATUS_FUTURE ));
+					"SELECT ENT_NUMBER FROM OFA_T_ENTRIES WHERE ENT_IPERIOD='%s'",
+					ofo_entry_period_get_dbms( ENT_PERIOD_FUTURE ));
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
@@ -1695,12 +1698,12 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 
-	/* set previous exercice entries status to 'past' */
+	/* set previous exercice entries period indicator to 'past' */
 	if( ok ){
 		query = g_strdup_printf( "UPDATE OFA_T_ENTRIES SET "
-					"ENT_STATUS='%s' WHERE ENT_STATUS='%s'",
-					ofo_entry_status_get_dbms( ENT_STATUS_PAST),
-					ofo_entry_status_get_dbms( ENT_STATUS_VALIDATED ));
+					"ENT_IPERIOD='%s' WHERE ENT_IPERIOD='%s'",
+					ofo_entry_period_get_dbms( ENT_PERIOD_PAST),
+					ofo_entry_period_get_dbms( ENT_PERIOD_CURRENT ));
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
@@ -1912,7 +1915,7 @@ p6_forward( ofaExerciceCloseAssistant *self )
 				ofa_iconcil_new_concil( OFA_ICONCIL( entry ), dbegin );
 			}
 
-			g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
+			g_signal_emit_by_name( signaler, SIGNALER_PERIOD_STATUS_CHANGE, entry, -1, ENT_STATUS_ROUGH, -1, ENT_STATUS_VALIDATED );
 
 			update_bar( bar, &i, count, thisfn );
 		}
@@ -2035,10 +2038,8 @@ p6_future( ofaExerciceCloseAssistant *self )
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
 	signaler = ofa_igetter_get_signaler( priv->getter );
-
 	dos_dend = ofo_dossier_get_exe_end( priv->dossier );
-
-	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->getter, ENT_STATUS_FUTURE );
+	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->getter, -1 );
 	count = g_list_length( entries );
 	i = 0;
 	bar = get_new_bar( self, "p6-future" );
@@ -2047,9 +2048,8 @@ p6_future( ofaExerciceCloseAssistant *self )
 	for( it=entries ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
 		ent_deffect = ofo_entry_get_deffect( entry );
-		if( my_date_compare( ent_deffect, dos_dend ) <= 0 ){
-			g_signal_emit_by_name( signaler, SIGNALER_STATUS_CHANGE, entry, ENT_STATUS_FUTURE, ENT_STATUS_ROUGH );
-		}
+		g_return_val_if_fail( my_date_compare( ent_deffect, dos_dend ) <= 0, G_SOURCE_REMOVE );
+		g_signal_emit_by_name( signaler, SIGNALER_PERIOD_STATUS_CHANGE, entry, ENT_PERIOD_FUTURE, -1, ENT_PERIOD_CURRENT, -1 );
 		update_bar( bar, &i, count, thisfn );
 	}
 	if( count == 0 ){

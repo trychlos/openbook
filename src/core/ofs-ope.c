@@ -677,8 +677,8 @@ eval_balcr( ofsFormulaHelper *helper )
 	account = my_strlen( cstr ) ? ofo_account_get_by_number( getter, cstr ) : NULL;
 	solde = 0;
 	if( account ){
-		solde = ofo_account_get_val_credit( account ) + ofo_account_get_rough_credit( account )
-				- ofo_account_get_val_debit( account ) - ofo_account_get_rough_debit( account );
+		solde = ofo_account_get_current_val_credit( account ) + ofo_account_get_current_rough_credit( account )
+				- ofo_account_get_current_val_debit( account ) - ofo_account_get_current_rough_debit( account );
 		if( solde < 0 ){
 			solde = 0;
 		}
@@ -711,8 +711,8 @@ eval_baldb( ofsFormulaHelper *helper )
 	account = my_strlen( cstr ) ? ofo_account_get_by_number( getter, cstr ) : NULL;
 	solde = 0;
 	if( account ){
-		solde = ofo_account_get_val_credit( account ) + ofo_account_get_rough_credit( account )
-				- ofo_account_get_val_debit( account ) - ofo_account_get_rough_debit( account );
+		solde = ofo_account_get_current_val_credit( account ) + ofo_account_get_current_rough_credit( account )
+				- ofo_account_get_current_val_debit( account ) - ofo_account_get_current_rough_debit( account );
 		if( solde < 0 ){
 			solde = 0;
 		}

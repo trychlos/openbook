@@ -323,8 +323,9 @@ setup_columns( ofaReconcilTreeview *self )
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RECONCIL_COL_UPD_USER,      _( "Ent.user" ),    _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), RECONCIL_COL_UPD_STAMP,     _( "Ent.stamp" ),   _( "Last update timestamp" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RECONCIL_COL_TIERS,         _( "Tiers" ),           NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RECONCIL_COL_STATUS,        _( "Status" ),          NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RECONCIL_COL_RULE,          _( "Rule" ),            NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), RECONCIL_COL_STATUS,        _( "Status" ),          NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), RECONCIL_COL_RULE,          _( "Rule" ),            NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), RECONCIL_COL_IPERIOD,       _( "Period" ),      _( "Period indicator" ));
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), RECONCIL_COL_CONCIL_NUMBER, _( "Concil.num" ),  _( "Conciliation number" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), RECONCIL_COL_CONCIL_DATE,   _( "Concil.date" ), _( "Conciliation date" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), RECONCIL_COL_CONCIL_TYPE,   _( "Concil.type" ), _( "Conciliation type" ));
@@ -863,8 +864,12 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	static const gchar *thisfn = "ofa_reconcil_treeview_v_sort";
 	ofaReconcilTreeviewPrivate *priv;
 	gint cmp;
-	gchar *dopea, *deffa, *labela, *refa, *cura, *ledgera, *templatea, *accounta, *debita, *credita, *openuma, *stlmtnuma, *stlmtusera, *stlmtstampa, *entnuma, *updusera, *updstampa, *concilnuma, *concildatea, *statusa, *typea;
-	gchar *dopeb, *deffb, *labelb, *refb, *curb, *ledgerb, *templateb, *accountb, *debitb, *creditb, *openumb, *stlmtnumb, *stlmtuserb, *stlmtstampb, *entnumb, *upduserb, *updstampb, *concilnumb, *concildateb, *statusb, *typeb;
+	gchar *dopea, *deffa, *labela, *refa, *cura, *ledgera, *templatea, *accounta, *debita, *credita,
+			*openuma, *stlmtnuma, *stlmtusera, *stlmtstampa, *entnuma, *updusera, *updstampa, *concilnuma,
+			*concildatea, *statusa, *typea, *perioda;
+	gchar *dopeb, *deffb, *labelb, *refb, *curb, *ledgerb, *templateb, *accountb, *debitb, *creditb,
+			*openumb, *stlmtnumb, *stlmtuserb, *stlmtstampb, *entnumb, *upduserb, *updstampb, *concilnumb,
+			*concildateb, *statusb, *typeb, *periodb;
 
 	priv = ofa_reconcil_treeview_get_instance_private( OFA_RECONCIL_TREEVIEW( tvbin ));
 
@@ -890,6 +895,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			RECONCIL_COL_CONCIL_NUMBER, &concilnuma,
 			RECONCIL_COL_CONCIL_DATE,   &concildatea,
 			RECONCIL_COL_CONCIL_TYPE,   &typea,
+			RECONCIL_COL_IPERIOD,       &perioda,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
@@ -914,6 +920,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			RECONCIL_COL_CONCIL_NUMBER, &concilnumb,
 			RECONCIL_COL_CONCIL_DATE,   &concildateb,
 			RECONCIL_COL_CONCIL_TYPE,   &typeb,
+			RECONCIL_COL_IPERIOD,       &periodb,
 			-1 );
 
 	cmp = 0;
@@ -982,6 +989,9 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 		case RECONCIL_COL_CONCIL_TYPE:
 			cmp = my_collate( typea, typeb );
 			break;
+		case RECONCIL_COL_IPERIOD:
+			cmp = my_collate( perioda, periodb );
+			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, column_id );
 			break;
@@ -1008,6 +1018,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( concilnuma );
 	g_free( concildatea );
 	g_free( typea );
+	g_free( perioda );
 
 	g_free( dopeb );
 	g_free( deffb );
@@ -1030,6 +1041,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( concilnumb );
 	g_free( concildateb );
 	g_free( typeb );
+	g_free( periodb );
 
 	return( cmp );
 }

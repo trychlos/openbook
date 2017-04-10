@@ -91,11 +91,12 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 #define RGBA_ERROR                      "#ff0000"		/* full red */
 #define RGBA_WARNING                    "#ff8000"		/* orange */
 
-/* status colors */
+/* period and status colors */
 #define RGBA_PAST                       "#d8ffa0"		/* green background */
-#define RGBA_VALIDATED                  "#ffe8a8"		/* pale gold background */
 #define RGBA_DELETED                    "#808080"		/* gray foreground */
-#define RGBA_FUTURE                     "#c0ffff"		/* pale blue background */
+#define RGBA_CURRENT_VALIDATED          "#ffe8a8"		/* pale gold background */
+#define RGBA_FUTURE_ROUGH               "#e0ffff"		/* very pale blue background */
+#define RGBA_FUTURE_VALIDATED           "#80ffff"		/* less pale blue background */
 
 static void      setup_columns( ofaEntryTreeview *self );
 static void      on_selection_changed( ofaEntryTreeview *self, GtkTreeSelection *selection, void *empty );
@@ -104,8 +105,8 @@ static void      on_selection_delete( ofaEntryTreeview *self, GtkTreeSelection *
 static void      get_and_send( ofaEntryTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static GList    *get_selected_with_selection( ofaEntryTreeview *self, GtkTreeSelection *selection );
 static void      on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryTreeview *self );
-static void      cell_data_render_background( GtkCellRenderer *renderer, ofeEntryStatus status, gint err_level );
-static void      cell_data_render_text( GtkCellRendererText *renderer, ofeEntryStatus status, gint err_level );
+static void      cell_data_render_background( GtkCellRenderer *renderer, ofeEntryPeriod period, ofeEntryStatus status, gint err_level );
+static void      cell_data_render_text( GtkCellRendererText *renderer, ofeEntryPeriod period, ofeEntryStatus status, gint err_level );
 static gint      get_row_errlevel( ofaEntryTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean  tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gint      tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
@@ -370,8 +371,9 @@ setup_columns( ofaEntryTreeview *self )
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ENTRY_COL_UPD_STAMP,     _( "Ent.stamp" ),   _( "Last update timestamp" ));
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_CONCIL_NUMBER, _( "Concil.num" ),  _( "Conciliation number" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), ENTRY_COL_CONCIL_DATE,   _( "Concil.date" ), _( "Conciliation date" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_STATUS,        _( "Status" ),      _( "Status" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_RULE,          _( "Rule" ),            NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ENTRY_COL_STATUS,        _( "Status" ),      _( "Status" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ENTRY_COL_RULE,          _( "Rule" ),            NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ENTRY_COL_IPERIOD,       _( "Period" ),      _( "Period indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_NOTES,         _( "Notes" ),           NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), ENTRY_COL_NOTES_PNG,        "",              _( "Notes indicator" ));
 
@@ -581,6 +583,7 @@ ofa_entry_treeview_cell_data_render( ofaEntryTreeview *view,
 {
 	ofaEntryTreeviewPrivate *priv;
 	ofeEntryStatus status;
+	ofeEntryPeriod period;
 	gint err_level;
 
 	g_return_if_fail( view && OFA_IS_ENTRY_TREEVIEW( view ));
@@ -593,37 +596,57 @@ ofa_entry_treeview_cell_data_render( ofaEntryTreeview *view,
 	g_return_if_fail( !priv->dispose_has_run );
 
 	err_level = get_row_errlevel( view, model, iter );
-	gtk_tree_model_get( model, iter, ENTRY_COL_STATUS_I, &status, -1 );
 
-	cell_data_render_background( renderer, status, err_level );
+	gtk_tree_model_get( model, iter,
+			ENTRY_COL_STATUS_I,  &status,
+			ENTRY_COL_IPERIOD_I, &period,
+			-1 );
+
+	cell_data_render_background( renderer, period, status, err_level );
 
 	if( GTK_IS_CELL_RENDERER_TEXT( renderer )){
-		cell_data_render_text( GTK_CELL_RENDERER_TEXT( renderer ), status, err_level );
+		cell_data_render_text( GTK_CELL_RENDERER_TEXT( renderer ), period, status, err_level );
 	}
 }
 
 static void
-cell_data_render_background( GtkCellRenderer *renderer, ofeEntryStatus status, gint err_level )
+cell_data_render_background( GtkCellRenderer *renderer, ofeEntryPeriod period, ofeEntryStatus status, gint err_level )
 {
 	GdkRGBA color;
 
 	g_object_set( G_OBJECT( renderer ), "cell-background-set", FALSE, NULL );
 
-	switch( status ){
+	switch( period ){
 
-		case ENT_STATUS_PAST:
+		case ENT_PERIOD_PAST:
 			gdk_rgba_parse( &color, RGBA_PAST );
 			g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
 			break;
 
-		case ENT_STATUS_VALIDATED:
-			gdk_rgba_parse( &color, RGBA_VALIDATED );
-			g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
+		case ENT_PERIOD_CURRENT:
+			switch( status ){
+				case ENT_STATUS_VALIDATED:
+					gdk_rgba_parse( &color, RGBA_CURRENT_VALIDATED );
+					g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
+					break;
+				default:
+					break;
+			}
 			break;
 
-		case ENT_STATUS_FUTURE:
-			gdk_rgba_parse( &color, RGBA_FUTURE );
-			g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
+		case ENT_PERIOD_FUTURE:
+			switch( status ){
+				case ENT_STATUS_ROUGH:
+					gdk_rgba_parse( &color, RGBA_FUTURE_ROUGH );
+					g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
+					break;
+				case ENT_STATUS_VALIDATED:
+					gdk_rgba_parse( &color, RGBA_FUTURE_VALIDATED );
+					g_object_set( G_OBJECT( renderer ), "cell-background-rgba", &color, NULL );
+					break;
+				default:
+					break;
+			}
 			break;
 
 		default:
@@ -632,7 +655,7 @@ cell_data_render_background( GtkCellRenderer *renderer, ofeEntryStatus status, g
 }
 
 static void
-cell_data_render_text( GtkCellRendererText *renderer, ofeEntryStatus status, gint err_level )
+cell_data_render_text( GtkCellRendererText *renderer, ofeEntryPeriod period, ofeEntryStatus status, gint err_level )
 {
 	GdkRGBA color;
 	const gchar *color_str;
@@ -715,10 +738,10 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	gint cmp;
 	gchar *dopea, *deffa, *labela, *refa, *cura, *ledgera, *templatea, *accounta, *debita, *credita, *openuma,
 			*stlmtnuma, *stlmtusera, *stlmtstampa, *entnuma, *updusera, *updstampa, *concilnuma, *concildatea,
-			*statusa, *rulea, *notesa;
+			*statusa, *rulea, *notesa, *perioda;
 	gchar *dopeb, *deffb, *labelb, *refb, *curb, *ledgerb, *templateb, *accountb, *debitb, *creditb, *openumb,
 			*stlmtnumb, *stlmtuserb, *stlmtstampb, *entnumb, *upduserb, *updstampb, *concilnumb, *concildateb,
-			*statusb, *ruleb, *notesb;
+			*statusb, *ruleb, *notesb, *periodb;
 	GdkPixbuf *pnga, *pngb;
 
 	priv = ofa_entry_treeview_get_instance_private( OFA_ENTRY_TREEVIEW( tvbin ));
@@ -747,6 +770,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			ENTRY_COL_RULE,          &rulea,
 			ENTRY_COL_NOTES,         &notesa,
 			ENTRY_COL_NOTES_PNG,     &pnga,
+			ENTRY_COL_IPERIOD,       &perioda,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
@@ -773,6 +797,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			ENTRY_COL_RULE,          &ruleb,
 			ENTRY_COL_NOTES,         &notesb,
 			ENTRY_COL_NOTES_PNG,     &pngb,
+			ENTRY_COL_IPERIOD,       &periodb,
 			-1 );
 
 	cmp = 0;
@@ -847,6 +872,9 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 		case ENTRY_COL_NOTES_PNG:
 			cmp = ofa_itvsortable_sort_png( pnga, pngb );
 			break;
+		case ENTRY_COL_IPERIOD:
+			cmp = my_collate( perioda, periodb );
+			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, column_id );
 			break;
@@ -874,6 +902,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( statusa );
 	g_free( rulea );
 	g_free( notesa );
+	g_free( perioda );
 	g_clear_object( &pnga );
 
 	g_free( dopeb );
@@ -898,6 +927,7 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( statusb );
 	g_free( ruleb );
 	g_free( notesb );
+	g_free( periodb );
 	g_clear_object( &pngb );
 
 	return( cmp );

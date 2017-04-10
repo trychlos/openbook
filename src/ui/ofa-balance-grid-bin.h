@@ -71,10 +71,11 @@ typedef struct {
  * The target row group in the grid.
  */
 enum {
-	OFA_BALANCE_ROUGH = 1,
-	OFA_BALANCE_VALIDATED,
-	OFA_BALANCE_FUTURE,
-	OFA_BALANCE_TOTAL
+	BALANCEGRID_CURRENT_ROUGH = 1,
+	BALANCEGRID_CURRENT_VALIDATED,
+	BALANCEGRID_FUTUR_ROUGH,
+	BALANCEGRID_FUTUR_VALIDATED,
+	BALANCEGRID_TOTAL
 };
 
 GType              ofa_balance_grid_bin_get_type    ( void ) G_GNUC_CONST;

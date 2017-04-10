@@ -60,27 +60,43 @@ typedef struct {
 	ofoEntryClass;
 
 /**
- * ofeEntryStatus:
+ * ofeEntryPeriod:
  *
- * @ENT_STATUS_PAST: status attached to the entries forwarded from a past
- *  exercice; these entries are not imputed on accounts nor ledgers;
+ * @ENT_PERIOD_PAST: indicator attached to the entries forwarded from a
+ *  past exercice; these entries are not imputed on accounts nor ledgers;
  *  these entries have been validated during their exercice.
  *
- * @ENT_STATUS_ROUGH:
- * @ENT_STATUS_VALIDATED:
- * @ENT_STATUS_DELETED:
+ * @ENT_PERIOD_CURRENT: indicator attached to entries on the current
+ *  exercice.
  *
- * @ENT_STATUS_FUTURE: status attached to the entries imported or created
- *  for a future exercice; these entries are imputed on the corresponding
- *  solde of accounts and ledgers. They are considered as rough and can
- *  be validated as well as deleted.
+ * @ENT_PERIOD_FUTURE: indicator attached to the entries imported or
+ *  created for a future exercice; these entries are imputed on the
+ *  corresponding solde of accounts and ledgers. They are managed as
+ *  current entries.
  */
 typedef enum {
-	ENT_STATUS_PAST = 1,
-	ENT_STATUS_ROUGH,
+	ENT_PERIOD_PAST = 1,
+	ENT_PERIOD_CURRENT,
+	ENT_PERIOD_FUTURE
+}
+	ofeEntryPeriod;
+
+/**
+ * ofeEntryStatus:
+ *
+ * @ENT_STATUS_ROUGH: rough entries;
+ *  they can be modified, deleted or validated.
+ *
+ * @ENT_STATUS_VALIDATED: validated entries;
+ *  they are no more deletable nor updatable.
+ *
+ * @ENT_STATUS_DELETED: deleted entries;
+ *  they are no more updatable nor validable.
+ */
+typedef enum {
+	ENT_STATUS_ROUGH = 1,
 	ENT_STATUS_VALIDATED,
-	ENT_STATUS_DELETED,
-	ENT_STATUS_FUTURE
+	ENT_STATUS_DELETED
 }
 	ofeEntryStatus;
 
@@ -158,15 +174,23 @@ const gchar    *ofo_entry_get_ledger                 ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_ope_template           ( const ofoEntry *entry );
 ofxAmount       ofo_entry_get_debit                  ( const ofoEntry *entry );
 ofxAmount       ofo_entry_get_credit                 ( const ofoEntry *entry );
+
+ofeEntryPeriod  ofo_entry_get_period                 ( const ofoEntry *entry );
+const gchar    *ofo_entry_period_get_dbms            ( ofeEntryPeriod period );
+const gchar    *ofo_entry_period_get_abr             ( ofeEntryPeriod period );
+const gchar    *ofo_entry_period_get_label           ( ofeEntryPeriod period );
+
 ofeEntryStatus  ofo_entry_get_status                 ( const ofoEntry *entry );
 const gchar    *ofo_entry_status_get_dbms            ( ofeEntryStatus status );
 const gchar    *ofo_entry_status_get_abr             ( ofeEntryStatus status );
 const gchar    *ofo_entry_status_get_label           ( ofeEntryStatus status );
+
 ofeEntryRule    ofo_entry_get_rule                   ( const ofoEntry *entry );
 const gchar    *ofo_entry_rule_get_dbms              ( ofeEntryRule rule );
 const gchar    *ofo_entry_rule_get_abr               ( ofeEntryRule rule );
 const gchar    *ofo_entry_rule_get_label             ( ofeEntryRule rule );
 const gchar    *ofo_entry_get_rule_label             ( const ofoEntry *entry );
+
 ofxCounter      ofo_entry_get_ope_number             ( const ofoEntry *entry );
 ofxCounter      ofo_entry_get_settlement_number      ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_settlement_user        ( const ofoEntry *entry );

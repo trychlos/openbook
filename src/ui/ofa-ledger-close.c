@@ -130,8 +130,8 @@ static gboolean close_foreach_ledger( sClose *sclose, ofoLedger *ledger );
 static void     close_end( sClose *sclose );
 static void     read_settings( ofaLedgerClose *self );
 static void     write_settings( ofaLedgerClose *self );
-static void     signaler_on_entry_status_count( ofaISignaler *signaler, ofeEntryStatus new_status, guint count, sClose *sclose );
-static void     signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, sClose *sclose );
+static void     signaler_on_entry_change_count( ofaISignaler *signaler, ofeEntryPeriod new_period, ofeEntryStatus new_status, guint count, sClose *sclose );
+static void     signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryPeriod prev_period, ofeEntryStatus prev_status, ofeEntryPeriod new_period, ofeEntryStatus new_status, sClose *sclose );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerClose, ofa_ledger_close, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaLedgerClose )
@@ -699,10 +699,10 @@ do_close_ledgers( sClose *sclose )
 
 	signaler = ofa_igetter_get_signaler( sclose->getter );
 
-	handler = g_signal_connect( signaler, SIGNALER_STATUS_COUNT, G_CALLBACK( signaler_on_entry_status_count ), sclose );
+	handler = g_signal_connect( signaler, SIGNALER_CHANGE_COUNT, G_CALLBACK( signaler_on_entry_change_count ), sclose );
 	signaler_handlers = g_list_prepend( NULL, ( gpointer ) handler );
 
-	handler = g_signal_connect( signaler, SIGNALER_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_status_change ), sclose );
+	handler = g_signal_connect( signaler, SIGNALER_PERIOD_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_period_status_changed ), sclose );
 	signaler_handlers = g_list_prepend( signaler_handlers, ( gpointer ) handler );
 
 	/* the dialog which hosts the progress bars */
@@ -874,10 +874,10 @@ write_settings( ofaLedgerClose *self )
 }
 
 /*
- * SIGNALER_STATUS_COUNT signal handler
+ * SIGNALER_CHANGE_COUNT signal handler
  */
 static void
-signaler_on_entry_status_count( ofaISignaler *signaler, ofeEntryStatus new_status, guint count, sClose *sclose )
+signaler_on_entry_change_count( ofaISignaler *signaler, ofeEntryPeriod new_period, ofeEntryStatus new_status, guint count, sClose *sclose )
 {
 	sclose->entries_count = count;
 
@@ -889,10 +889,13 @@ signaler_on_entry_status_count( ofaISignaler *signaler, ofeEntryStatus new_statu
 }
 
 /*
- * SIGNALER_STATUS_CHANGE signal handler
+ * SIGNALER_PERIOD_STATUS_CHANGE signal handler
  */
 static void
-signaler_on_entry_status_change( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, sClose *sclose )
+signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry,
+											ofeEntryPeriod prev_period, ofeEntryStatus prev_status,
+											ofeEntryPeriod new_period, ofeEntryStatus new_status,
+											sClose *sclose )
 {
 	gdouble progress;
 	gchar *text;

@@ -131,6 +131,8 @@ typedef struct {
  * @RECONCIL_COL_CONCIL_DATE    : reconciliation date    reconciliation date    String      Yes
  * @RECONCIL_COL_CONCIL_TYPE    : reconciliation type    reconciliation type    String      Yes
  * @RECONCIL_COL_OBJECT         : #ofoEntry object       ofobatLine             GObject      No
+ * @RECONCIL_COL_IPERIOD        : period                                        String      Yes
+ * @RECONCIL_COL_IPERIOD_I      : period                                        Int          No
  */
 enum {
 	RECONCIL_COL_DOPE = 0,
@@ -161,6 +163,8 @@ enum {
 	RECONCIL_COL_CONCIL_DATE,
 	RECONCIL_COL_CONCIL_TYPE,
 	RECONCIL_COL_OBJECT,
+	RECONCIL_COL_IPERIOD,
+	RECONCIL_COL_IPERIOD_I,
 	RECONCIL_N_COLUMNS
 };
 

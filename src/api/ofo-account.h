@@ -87,7 +87,7 @@ typedef enum {
 /**
  * ofeAccountType:
  *
- * This is a type attached to the archvied of account balance.
+ * This is a type attached to the archived account balance.
  *
  * @ACC_TYPE_OPEN: the balance of the account when opening the exercice.
  * @ACC_TYPE_NORMAL: a balance archived dduring the exercice.
@@ -120,12 +120,14 @@ const gchar    *ofo_account_get_currency            ( const ofoAccount *account 
 const gchar    *ofo_account_get_notes               ( const ofoAccount *account );
 const gchar    *ofo_account_get_upd_user            ( const ofoAccount *account );
 const GTimeVal *ofo_account_get_upd_stamp           ( const ofoAccount *account );
-ofxAmount       ofo_account_get_val_debit           ( const ofoAccount *account );
-ofxAmount       ofo_account_get_val_credit          ( const ofoAccount *account );
-ofxAmount       ofo_account_get_rough_debit         ( const ofoAccount *account );
-ofxAmount       ofo_account_get_rough_credit        ( const ofoAccount *account );
-ofxAmount       ofo_account_get_futur_debit         ( const ofoAccount *account );
-ofxAmount       ofo_account_get_futur_credit        ( const ofoAccount *account );
+ofxAmount       ofo_account_get_current_rough_debit ( const ofoAccount *account );
+ofxAmount       ofo_account_get_current_rough_credit( const ofoAccount *account );
+ofxAmount       ofo_account_get_current_val_debit   ( const ofoAccount *account );
+ofxAmount       ofo_account_get_current_val_credit  ( const ofoAccount *account );
+ofxAmount       ofo_account_get_futur_rough_debit   ( const ofoAccount *account );
+ofxAmount       ofo_account_get_futur_rough_credit  ( const ofoAccount *account );
+ofxAmount       ofo_account_get_futur_val_debit     ( const ofoAccount *account );
+ofxAmount       ofo_account_get_futur_val_credit    ( const ofoAccount *account );
 ofxAmount       ofo_account_get_solde_at_date       ( ofoAccount *account, const GDate *date, GDate *deffect );
 
 gboolean        ofo_account_is_deletable            ( const ofoAccount *account );
@@ -167,12 +169,14 @@ void            ofo_account_set_reconciliable       ( ofoAccount *account, gbool
 void            ofo_account_set_keep_unreconciliated( ofoAccount *account, gboolean keep );
 void            ofo_account_set_forwardable         ( ofoAccount *account, gboolean forwardable );
 void            ofo_account_set_closed              ( ofoAccount *account, gboolean closed );
-void            ofo_account_set_val_debit           ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_val_credit          ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_rough_debit         ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_rough_credit        ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_futur_debit         ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_futur_credit        ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_current_rough_debit ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_current_rough_credit( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_current_val_debit   ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_current_val_credit  ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_futur_rough_debit   ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_futur_rough_credit  ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_futur_val_debit     ( ofoAccount *account, ofxAmount amount );
+void            ofo_account_set_futur_val_credit    ( ofoAccount *account, ofxAmount amount );
 
 GList          *ofo_account_get_arc_orphans         ( ofaIGetter *getter );
 #define         ofo_account_free_arc_orphans( L )   ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))

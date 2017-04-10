@@ -77,12 +77,14 @@ enum {
 	ACC_NOTES,
 	ACC_UPD_USER,
 	ACC_UPD_STAMP,
-	ACC_VAL_DEBIT,
-	ACC_VAL_CREDIT,
-	ACC_ROUGH_DEBIT,
-	ACC_ROUGH_CREDIT,
-	ACC_FUT_DEBIT,
-	ACC_FUT_CREDIT,
+	ACC_CR_DEBIT,
+	ACC_CR_CREDIT,
+	ACC_CV_DEBIT,
+	ACC_CV_CREDIT,
+	ACC_FR_DEBIT,
+	ACC_FR_CREDIT,
+	ACC_FV_DEBIT,
+	ACC_FV_CREDIT,
 	ACC_ARC_DATE,
 	ACC_ARC_TYPE,
 	ACC_ARC_DEBIT,
@@ -139,27 +141,35 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				FALSE },
-		{ OFA_BOX_CSV( ACC_VAL_DEBIT ),
+		{ OFA_BOX_CSV( ACC_CR_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOX_CSV( ACC_VAL_CREDIT ),
+		{ OFA_BOX_CSV( ACC_CR_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOX_CSV( ACC_ROUGH_DEBIT ),
+		{ OFA_BOX_CSV( ACC_CV_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOX_CSV( ACC_ROUGH_CREDIT ),
+		{ OFA_BOX_CSV( ACC_CV_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOX_CSV( ACC_FUT_DEBIT ),
+		{ OFA_BOX_CSV( ACC_FR_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOX_CSV( ACC_FUT_CREDIT ),
+		{ OFA_BOX_CSV( ACC_FR_CREDIT ),
+				OFA_TYPE_AMOUNT,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_FV_DEBIT ),
+				OFA_TYPE_AMOUNT,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_FV_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
@@ -297,7 +307,7 @@ static void         signaler_on_new_base( ofaISignaler *signaler, ofoBase *objec
 static void         signaler_on_new_base_entry( ofaISignaler *signaler, ofoEntry *entry );
 static void         signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static void         signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
-static void         signaler_on_entry_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty );
+static void         signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryPeriod prev_period, ofeEntryStatus prev_status, ofeEntryPeriod new_period, ofeEntryStatus new_status, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_ACCOUNT_V34, 0,
 		G_ADD_PRIVATE( ofoAccount )
@@ -636,67 +646,99 @@ ofo_account_get_upd_stamp( const ofoAccount *account )
 }
 
 /**
- * ofo_account_get_val_debit:
- * @account: the #ofoAccount account
+ * ofo_account_get_current_rough_debit:
+ * @account: the #ofoAccount account.
  *
- * Returns: the validated debit balance of the @account.
+ * Returns: the sum of debits of rough entries for the current exercice.
  */
 ofxAmount
-ofo_account_get_val_debit( const ofoAccount *account )
+ofo_account_get_current_rough_debit( const ofoAccount *account )
 {
-	account_get_amount( ACC_VAL_DEBIT );
+	account_get_amount( ACC_CR_DEBIT );
 }
 
 /**
- * ofo_account_get_val_credit:
- * @account: the #ofoAccount account
+ * ofo_account_get_current_rough_credit:
+ * @account: the #ofoAccount account.
  *
- * Returns: the validated credit balance of the @account.
+ * Returns: the sum of credits of rough entries for the current exercice.
  */
 ofxAmount
-ofo_account_get_val_credit( const ofoAccount *account )
+ofo_account_get_current_rough_credit( const ofoAccount *account )
 {
-	account_get_amount( ACC_VAL_CREDIT );
+	account_get_amount( ACC_CR_CREDIT );
 }
 
 /**
- * ofo_account_get_rough_debit:
- * @account: the #ofoAccount account
+ * ofo_account_get_current_val_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Returns: the sum of debits of validated entries for the current exercice.
  */
 ofxAmount
-ofo_account_get_rough_debit( const ofoAccount *account )
+ofo_account_get_current_val_debit( const ofoAccount *account )
 {
-	account_get_amount( ACC_ROUGH_DEBIT );
+	account_get_amount( ACC_CV_DEBIT );
 }
 
 /**
- * ofo_account_get_rough_credit:
- * @account: the #ofoAccount account
+ * ofo_account_get_current_val_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Returns: the sum of credits of validated entries for the current exercice.
  */
 ofxAmount
-ofo_account_get_rough_credit( const ofoAccount *account )
+ofo_account_get_current_val_credit( const ofoAccount *account )
 {
-	account_get_amount( ACC_ROUGH_CREDIT );
+	account_get_amount( ACC_CV_CREDIT );
 }
 
 /**
- * ofo_account_get_futur_debit:
- * @account: the #ofoAccount account
+ * ofo_account_get_futur_rough_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Returns: the sum of debits of rought entries for a future exercice.
  */
 ofxAmount
-ofo_account_get_futur_debit( const ofoAccount *account )
+ofo_account_get_futur_rough_debit( const ofoAccount *account )
 {
-	account_get_amount( ACC_FUT_DEBIT );
+	account_get_amount( ACC_FR_DEBIT );
 }
 
 /**
- * ofo_account_get_futur_credit:
- * @account: the #ofoAccount account
+ * ofo_account_get_futur_rough_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Returns: the sum of debits of rought entries for a future exercice.
  */
 ofxAmount
-ofo_account_get_futur_credit( const ofoAccount *account )
+ofo_account_get_futur_rough_credit( const ofoAccount *account )
 {
-	account_get_amount( ACC_FUT_CREDIT );
+	account_get_amount( ACC_FR_CREDIT );
+}
+
+/**
+ * ofo_account_get_futur_val_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Returns: the sum of debits of validated entries for a future exercice.
+ */
+ofxAmount
+ofo_account_get_futur_val_debit( const ofoAccount *account )
+{
+	account_get_amount( ACC_FV_DEBIT );
+}
+
+/**
+ * ofo_account_get_futur_val_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Returns: the sum of debits of validated entries for a future exercice.
+ */
+ofxAmount
+ofo_account_get_futur_val_credit( const ofoAccount *account )
+{
+	account_get_amount( ACC_FV_CREDIT );
 }
 
 /**
@@ -707,6 +749,9 @@ ofo_account_get_futur_credit( const ofoAccount *account )
  * @deffect: [out][allow-none]: the actual greatest effect date found.
  *
  * Compute the actual solde of the @account at the requested @date.
+ *
+ * This take into account all rough+validated entries from current and
+ * future effect dates, until the given @date.
  *
  * DB is -
  * CR is +
@@ -723,6 +768,7 @@ ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *de
 	GList *dataset, *it;
 	ofoEntry *entry;
 	ofeEntryStatus status;
+	ofeEntryPeriod period;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
@@ -751,8 +797,11 @@ ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *de
 			continue;
 		}
 		status = ofo_entry_get_status( entry );
-		if( status == ENT_STATUS_PAST || status == ENT_STATUS_DELETED ){
-			//g_debug( "%s: %lu is past or deleted", thisfn, ofo_entry_get_number( entry ));
+		if( status == ENT_STATUS_DELETED ){
+			continue;
+		}
+		period = ofo_entry_get_period( entry );
+		if( period == ENT_PERIOD_PAST ){
 			continue;
 		}
 		ent_deffect = ofo_entry_get_deffect( entry );
@@ -1747,63 +1796,99 @@ account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp )
 }
 
 /**
- * ofo_ofo_account_set_val_debit:
- * @account: the #ofoAccount account
+ * ofo_ofo_account_set_current_rough_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of debits for rought entries in the current exercice.
  */
 void
-ofo_account_set_val_debit( ofoAccount *account, ofxAmount amount )
+ofo_account_set_current_rough_debit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_amount( ACC_VAL_DEBIT, amount );
+	account_set_amount( ACC_CR_DEBIT, amount );
 }
 
 /**
- * ofo_ofo_account_set_val_credit:
- * @account: the #ofoAccount account
+ * ofo_ofo_account_set_current_rough_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of credits for rought entries in the current exercice.
  */
 void
-ofo_account_set_val_credit( ofoAccount *account, ofxAmount amount )
+ofo_account_set_current_rough_credit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_amount( ACC_VAL_CREDIT, amount );
+	account_set_amount( ACC_CR_CREDIT, amount );
 }
 
 /**
- * ofo_ofo_account_set_rough_debit:
- * @account: the #ofoAccount account
+ * ofo_ofo_account_set_current_val_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of debits for validated entries in the current exercice.
  */
 void
-ofo_account_set_rough_debit( ofoAccount *account, ofxAmount amount )
+ofo_account_set_current_val_debit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_amount( ACC_ROUGH_DEBIT, amount );
+	account_set_amount( ACC_CV_DEBIT, amount );
 }
 
 /**
- * ofo_ofo_account_set_rough_credit:
- * @account: the #ofoAccount account
+ * ofo_ofo_account_set_current_val_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of credits for validated entries in the current exercice.
  */
 void
-ofo_account_set_rough_credit( ofoAccount *account, ofxAmount amount )
+ofo_account_set_current_val_credit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_amount( ACC_ROUGH_CREDIT, amount );
+	account_set_amount( ACC_CV_CREDIT, amount );
 }
 
 /**
- * ofo_ofo_account_set_futur_debit:
- * @account: the #ofoAccount account
+ * ofo_ofo_account_set_futur_rough_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of debits for rought entries in a future exercice.
  */
 void
-ofo_account_set_futur_debit( ofoAccount *account, ofxAmount amount )
+ofo_account_set_futur_rough_debit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_amount( ACC_FUT_DEBIT, amount );
+	account_set_amount( ACC_FR_DEBIT, amount );
 }
 
 /**
- * ofo_ofo_account_set_futur_credit:
- * @account: the #ofoAccount account
+ * ofo_ofo_account_set_futur_rough_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of credits for rought entries in a future exercice.
  */
 void
-ofo_account_set_futur_credit( ofoAccount *account, ofxAmount amount )
+ofo_account_set_futur_rough_credit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_amount( ACC_FUT_CREDIT, amount );
+	account_set_amount( ACC_FR_CREDIT, amount );
+}
+
+/**
+ * ofo_ofo_account_set_futur_val_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of debits for validated entries in a future exercice.
+ */
+void
+ofo_account_set_futur_val_debit( ofoAccount *account, ofxAmount amount )
+{
+	account_set_amount( ACC_FV_DEBIT, amount );
+}
+
+/**
+ * ofo_ofo_account_set_futur_val_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of credits for validated entries in a future exercice.
+ */
+void
+ofo_account_set_futur_val_credit( ofoAccount *account, ofxAmount amount )
+{
+	account_set_amount( ACC_FV_CREDIT, amount );
 }
 
 /**
@@ -2180,64 +2265,84 @@ account_do_update_amounts( ofoAccount *account, ofaIGetter *getter )
 
 	query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
 
-	/* validated debit */
-	amount = ofo_account_get_val_debit( account );
+	/* current rough debit */
+	amount = ofo_account_get_current_rough_debit( account );
 	if( amount ){
 		samount = ofa_amount_to_sql( amount, cur_obj );
-		g_string_append_printf( query, "ACC_VAL_DEBIT=%s,", samount );
+		g_string_append_printf( query, "ACC_CR_DEBIT=%s,", samount );
 		g_free( samount );
 	} else {
-		query = g_string_append( query, "ACC_VAL_DEBIT=NULL," );
+		query = g_string_append( query, "ACC_CR_DEBIT=NULL," );
 	}
 
-	/* validated credit */
-	amount = ofo_account_get_val_credit( account );
+	/* current rough credit */
+	amount = ofo_account_get_current_rough_credit( account );
 	if( amount ){
 		samount = ofa_amount_to_sql( amount, cur_obj );
-		g_string_append_printf( query, "ACC_VAL_CREDIT=%s,", samount );
+		g_string_append_printf( query, "ACC_CR_CREDIT=%s,", samount );
 		g_free( samount );
 	} else {
-		query = g_string_append( query, "ACC_VAL_CREDIT=NULL," );
+		query = g_string_append( query, "ACC_CR_CREDIT=NULL," );
 	}
 
-	/* rough debit */
-	amount = ofo_account_get_rough_debit( account );
+	/* current validated debit */
+	amount = ofo_account_get_current_val_debit( account );
 	if( amount ){
 		samount = ofa_amount_to_sql( amount, cur_obj );
-		g_string_append_printf( query, "ACC_ROUGH_DEBIT=%s,", samount );
+		g_string_append_printf( query, "ACC_CV_DEBIT=%s,", samount );
 		g_free( samount );
 	} else {
-		query = g_string_append( query, "ACC_ROUGH_DEBIT=NULL," );
+		query = g_string_append( query, "ACC_CV_DEBIT=NULL," );
 	}
 
-	/* rough credit */
-	amount = ofo_account_get_rough_credit( account );
+	/* current validated credit */
+	amount = ofo_account_get_current_val_credit( account );
 	if( amount ){
 		samount = ofa_amount_to_sql( amount, cur_obj );
-		g_string_append_printf( query, "ACC_ROUGH_CREDIT=%s,", samount );
+		g_string_append_printf( query, "ACC_CV_CREDIT=%s,", samount );
 		g_free( samount );
 	} else {
-		query = g_string_append( query, "ACC_ROUGH_CREDIT=NULL," );
+		query = g_string_append( query, "ACC_CV_CREDIT=NULL," );
 	}
 
-	/* future debit */
-	amount = ofo_account_get_futur_debit( account );
+	/* future rough debit */
+	amount = ofo_account_get_futur_rough_debit( account );
 	if( amount ){
 		samount = ofa_amount_to_sql( amount, cur_obj );
-		g_string_append_printf( query, "ACC_FUT_DEBIT=%s,", samount );
+		g_string_append_printf( query, "ACC_FR_DEBIT=%s,", samount );
 		g_free( samount );
 	} else {
-		query = g_string_append( query, "ACC_FUT_DEBIT=NULL," );
+		query = g_string_append( query, "ACC_FR_DEBIT=NULL," );
 	}
 
-	/* future credit */
-	amount = ofo_account_get_futur_credit( account );
+	/* future rough credit */
+	amount = ofo_account_get_futur_rough_credit( account );
 	if( amount ){
 		samount = ofa_amount_to_sql( amount, cur_obj );
-		g_string_append_printf( query, "ACC_FUT_CREDIT=%s ", samount );
+		g_string_append_printf( query, "ACC_FR_CREDIT=%s,", samount );
 		g_free( samount );
 	} else {
-		query = g_string_append( query, "ACC_FUT_CREDIT=NULL " );
+		query = g_string_append( query, "ACC_FR_CREDIT=NULL," );
+	}
+
+	/* future validated debit */
+	amount = ofo_account_get_futur_val_debit( account );
+	if( amount ){
+		samount = ofa_amount_to_sql( amount, cur_obj );
+		g_string_append_printf( query, "ACC_FV_DEBIT=%s,", samount );
+		g_free( samount );
+	} else {
+		query = g_string_append( query, "ACC_FV_DEBIT=NULL," );
+	}
+
+	/* future validated credit */
+	amount = ofo_account_get_futur_val_credit( account );
+	if( amount ){
+		samount = ofa_amount_to_sql( amount, cur_obj );
+		g_string_append_printf( query, "ACC_FV_CREDIT=%s ", samount );
+		g_free( samount );
+	} else {
+		query = g_string_append( query, "ACC_FV_CREDIT=NULL " );
 	}
 
 	g_string_append_printf( query,
@@ -2972,7 +3077,7 @@ isignalable_connect_to( ofaISignaler *signaler )
 
 	g_signal_connect( signaler, SIGNALER_BASE_IS_DELETABLE, G_CALLBACK( signaler_on_deletable_object ), NULL );
 	g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), NULL );
-	g_signal_connect( signaler, SIGNALER_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_status_changed ), NULL );
+	g_signal_connect( signaler, SIGNALER_PERIOD_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_period_status_changed ), NULL );
 	g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), NULL );
 }
 
@@ -3074,6 +3179,7 @@ signaler_on_new_base_entry( ofaISignaler *signaler, ofoEntry *entry )
 {
 	ofaIGetter *getter;
 	ofeEntryStatus status;
+	ofeEntryPeriod period;
 	ofoAccount *account;
 	gdouble debit, credit, prev;
 
@@ -3083,10 +3189,14 @@ signaler_on_new_base_entry( ofaISignaler *signaler, ofoEntry *entry )
 	 *  is an imported entry in the past (before the beginning of the
 	 *  exercice) - in this case, the 'new_object' message should not be
 	 *  sent
-	 * if not in the past, only allowed status are 'rough' or 'future' */
+	 * if not in the past, only allowed periods are 'current' or 'future'
+	 * in these two cases, status must be 'rough' */
+	period = ofo_entry_get_period( entry );
+	g_return_if_fail( period != ENT_PERIOD_PAST );
+	g_return_if_fail( period == ENT_PERIOD_CURRENT || period == ENT_PERIOD_FUTURE );
+
 	status = ofo_entry_get_status( entry );
-	g_return_if_fail( status != ENT_STATUS_PAST );
-	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
+	g_return_if_fail( status == ENT_STATUS_ROUGH );
 
 	account = ofo_account_get_by_number( getter, ofo_entry_get_account( entry ));
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
@@ -3098,26 +3208,26 @@ signaler_on_new_base_entry( ofaISignaler *signaler, ofoEntry *entry )
 	 * or futur balances depending of the position of the effect date
 	 * vs. ending date of the exercice
 	 */
-	switch( status ){
-		case ENT_STATUS_ROUGH:
+	switch( period ){
+		case ENT_PERIOD_CURRENT:
 			if( debit ){
-				prev = ofo_account_get_rough_debit( account );
-				ofo_account_set_rough_debit( account, prev+debit );
+				prev = ofo_account_get_current_rough_debit( account );
+				ofo_account_set_current_rough_debit( account, prev+debit );
 
 			} else {
-				prev = ofo_account_get_rough_credit( account );
-				ofo_account_set_rough_credit( account, prev+credit );
+				prev = ofo_account_get_current_rough_credit( account );
+				ofo_account_set_current_rough_credit( account, prev+credit );
 			}
 			break;
 
-		case ENT_STATUS_FUTURE:
+		case ENT_PERIOD_FUTURE:
 			if( debit ){
-				prev = ofo_account_get_futur_debit( account );
-				ofo_account_set_futur_debit( account, prev+debit );
+				prev = ofo_account_get_futur_rough_debit( account );
+				ofo_account_set_futur_rough_debit( account, prev+debit );
 
 			} else {
-				prev = ofo_account_get_futur_credit( account );
-				ofo_account_set_futur_credit( account, prev+credit );
+				prev = ofo_account_get_futur_rough_credit( account );
+				ofo_account_set_futur_rough_credit( account, prev+credit );
 			}
 			break;
 
@@ -3130,18 +3240,27 @@ signaler_on_new_base_entry( ofaISignaler *signaler, ofoEntry *entry )
 }
 
 /*
- * SIGNALER_STATUS_CHANGE signal handler
+ * SIGNALER_PERIOD_STATUS_CHANGE signal handler
+ *
+ * There is only one case where the entry changes both its period and
+ * its status: when a current+rough entry becomes past(+validated).
  */
 static void
-signaler_on_entry_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryStatus prev_status, ofeEntryStatus new_status, void *empty )
+signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry,
+											ofeEntryPeriod prev_period, ofeEntryStatus prev_status,
+											ofeEntryPeriod new_period, ofeEntryStatus new_status,
+											void *empty )
 {
-	static const gchar *thisfn = "ofo_account_signaler_on_entry_status_changed";
+	static const gchar *thisfn = "ofo_account_signaler_on_entry_period_status_changed";
 	ofaIGetter *getter;
 	ofoAccount *account;
 	ofxAmount debit, credit, amount;
+	ofeEntryStatus status;
+	ofeEntryPeriod period;
 
-	g_debug( "%s: signaler=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
-			thisfn, ( void * ) signaler, ( void * ) entry, prev_status, new_status, ( void * ) empty );
+	g_debug( "%s: signaler=%p, entry=%p, prev_period=%d, prev_status=%d, new_period=%d, new_status=%d, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) entry,
+			prev_period, prev_status, new_period, new_status, ( void * ) empty );
 
 	getter = ofa_isignaler_get_getter( signaler );
 	account = ofo_account_get_by_number( getter, ofo_entry_get_account( entry ));
@@ -3150,53 +3269,94 @@ signaler_on_entry_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEn
 	debit = ofo_entry_get_debit( entry );
 	credit = ofo_entry_get_credit( entry );
 
-	switch( prev_status ){
-		case ENT_STATUS_ROUGH:
-			amount = ofo_account_get_rough_debit( account );
-			ofo_account_set_rough_debit( account, amount-debit );
-			amount = ofo_account_get_rough_credit( account );
-			ofo_account_set_rough_credit( account, amount-credit );
+	period = ( prev_period == -1 ? ofo_entry_get_period( entry ) : prev_period );
+	status = ( prev_status == -1 ? ofo_entry_get_status( entry ) : prev_status );
+
+	switch( period ){
+		case ENT_PERIOD_CURRENT:
+			switch( status ){
+				case ENT_STATUS_ROUGH:
+					amount = ofo_account_get_current_rough_debit( account );
+					ofo_account_set_current_rough_debit( account, amount-debit );
+					amount = ofo_account_get_current_rough_credit( account );
+					ofo_account_set_current_rough_credit( account, amount-credit );
+					break;
+				case ENT_STATUS_VALIDATED:
+					amount = ofo_account_get_current_val_debit( account );
+					ofo_account_set_current_val_debit( account, amount-debit );
+					amount = ofo_account_get_current_val_credit( account );
+					ofo_account_set_current_val_credit( account, amount-credit );
+					break;
+				default:
+					break;
+			}
 			break;
-		case ENT_STATUS_VALIDATED:
-			amount = ofo_account_get_val_debit( account );
-			ofo_account_set_val_debit( account, amount-debit );
-			amount = ofo_account_get_val_credit( account );
-			ofo_account_set_val_credit( account, amount-credit );
-			break;
-		case ENT_STATUS_FUTURE:
-			amount = ofo_account_get_futur_debit( account );
-			ofo_account_set_futur_debit( account, amount-debit );
-			amount = ofo_account_get_futur_credit( account );
-			ofo_account_set_futur_credit( account, amount-credit );
+		case ENT_PERIOD_FUTURE:
+			switch( status ){
+				case ENT_STATUS_ROUGH:
+					amount = ofo_account_get_futur_rough_debit( account );
+					ofo_account_set_futur_rough_debit( account, amount-debit );
+					amount = ofo_account_get_futur_rough_credit( account );
+					ofo_account_set_futur_rough_credit( account, amount-credit );
+					break;
+				case ENT_STATUS_VALIDATED:
+					amount = ofo_account_get_futur_val_debit( account );
+					ofo_account_set_futur_val_debit( account, amount-debit );
+					amount = ofo_account_get_futur_val_credit( account );
+					ofo_account_set_futur_val_credit( account, amount-credit );
+					break;
+				default:
+					break;
+			}
 			break;
 		default:
 			break;
 	}
 
-	switch( new_status ){
-		case ENT_STATUS_ROUGH:
-			amount = ofo_account_get_rough_debit( account );
-			ofo_account_set_rough_debit( account, amount+debit );
-			amount = ofo_account_get_rough_credit( account );
-			ofo_account_set_rough_credit( account, amount+credit );
+	period = ( prev_period == -1 ? ofo_entry_get_period( entry ) : new_period );
+	status = ( prev_status == -1 ? ofo_entry_get_status( entry ) : new_status );
+
+	switch( period ){
+		case ENT_PERIOD_CURRENT:
+			switch( status ){
+				case ENT_STATUS_ROUGH:
+					amount = ofo_account_get_current_rough_debit( account );
+					ofo_account_set_current_rough_debit( account, amount+debit );
+					amount = ofo_account_get_current_rough_credit( account );
+					ofo_account_set_current_rough_credit( account, amount+credit );
+					break;
+				case ENT_STATUS_VALIDATED:
+					amount = ofo_account_get_current_val_debit( account );
+					ofo_account_set_current_val_debit( account, amount+debit );
+					amount = ofo_account_get_current_val_credit( account );
+					ofo_account_set_current_val_credit( account, amount+credit );
+					break;
+				default:
+					break;
+			}
 			break;
-		case ENT_STATUS_VALIDATED:
-			amount = ofo_account_get_val_debit( account );
-			ofo_account_set_val_debit( account, amount+debit );
-			amount = ofo_account_get_val_credit( account );
-			ofo_account_set_val_credit( account, amount+credit );
-			break;
-		case ENT_STATUS_FUTURE:
-			amount = ofo_account_get_futur_debit( account );
-			ofo_account_set_futur_debit( account, amount+debit );
-			amount = ofo_account_get_futur_credit( account );
-			ofo_account_set_futur_credit( account, amount+credit );
+		case ENT_PERIOD_FUTURE:
+			switch( status ){
+				case ENT_STATUS_ROUGH:
+					amount = ofo_account_get_futur_rough_debit( account );
+					ofo_account_set_futur_rough_debit( account, amount+debit );
+					amount = ofo_account_get_futur_rough_credit( account );
+					ofo_account_set_futur_rough_credit( account, amount+credit );
+					break;
+				case ENT_STATUS_VALIDATED:
+					amount = ofo_account_get_futur_val_debit( account );
+					ofo_account_set_futur_val_debit( account, amount+debit );
+					amount = ofo_account_get_futur_val_credit( account );
+					ofo_account_set_futur_val_credit( account, amount+credit );
+					break;
+				default:
+					break;
+			}
 			break;
 		default:
 			break;
 	}
 
-	ofo_ledger_get_dataset( ofo_base_get_getter( OFO_BASE( account )));
 	ofo_account_update_amounts( account );
 }
 

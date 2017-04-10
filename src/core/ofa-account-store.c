@@ -333,12 +333,12 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 		currency_obj = ofo_currency_get_by_code( priv->getter, currency_code );
 		g_return_if_fail( currency_obj && OFO_IS_CURRENCY( currency_obj ));
 
-		val_debit = ofo_account_get_val_debit( account );
-		val_credit = ofo_account_get_val_credit( account );
-		rough_debit = ofo_account_get_rough_debit( account );
-		rough_credit = ofo_account_get_rough_credit( account );
-		fut_debit = ofo_account_get_futur_debit( account );
-		fut_credit = ofo_account_get_futur_credit( account );
+		val_debit = ofo_account_get_current_val_debit( account );
+		val_credit = ofo_account_get_current_val_credit( account );
+		rough_debit = ofo_account_get_current_rough_debit( account );
+		rough_credit = ofo_account_get_current_rough_credit( account );
+		fut_debit = ofo_account_get_futur_rough_debit( account );
+		fut_credit = ofo_account_get_futur_rough_credit( account );
 
 		svdeb = ofa_amount_to_str( val_debit, currency_obj, priv->getter );
 		svcre = ofa_amount_to_str( val_credit, currency_obj, priv->getter );

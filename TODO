@@ -341,9 +341,19 @@
 
 1441 2017- 4- 9 core dbmodel v37: to be installed (ofo_account & ofo_ledger)
 
-1442 2017- 4- 9 validating future entries 
+1442 2017- 4-10 review entry remediation
+                if there has been a ledger/period closing, the begin date
+                should not be modifiable anymore - why ? 
 
-1443
+1443 2017- 4-10 review export fec with new entry period indicator
+
+1444 2017- 4-10 ofa_xxx_treeview: remove setup_columns api which should
+                be called as soon as we have the settings prefix, which
+                should itself being specified at instanciation time
+
+1445 2017- 4-10 check integrity: check char(1) columns
+
+1446
 
 -----------------------------------------------------------------------
  DONE
