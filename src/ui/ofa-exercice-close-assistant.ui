@@ -739,7 +739,7 @@ Or just click on 'Apply' button.</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
-                        <property name="top_attach">8</property>
+                        <property name="top_attach">9</property>
                       </packing>
                     </child>
                     <child>

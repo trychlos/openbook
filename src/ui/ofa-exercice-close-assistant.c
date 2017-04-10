@@ -182,7 +182,7 @@ static void           p5_do_display( ofaExerciceCloseAssistant *self, gint page_
 static void           p5_on_backup_clicked( GtkButton *button, ofaExerciceCloseAssistant *self );
 static void           p5_check_for_complete( ofaExerciceCloseAssistant *self );
 static void           p6_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
-static void           p6_init_plugin( ofaExerciceCloseAssistant *self, GtkWidget *grid, ofaIExeClose *instance, guint type, const gchar *data_name, GtkWidget *sibling, GWeakNotify fn );
+static void           p6_plugin_init( ofaExerciceCloseAssistant *self, GtkWidget *grid, ofaIExeClose *instance, guint type, const gchar *data_name, GtkWidget *sibling, GWeakNotify fn );
 static void           p6_do_close( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static gboolean       p6_closing_plugin( ofaExerciceCloseAssistant *self );
 static gboolean       p6_validate_entries( ofaExerciceCloseAssistant *self );
@@ -192,13 +192,13 @@ static void           p6_set_forward_settlement_number( GList *entries, const gc
 static gboolean       p6_close_ledgers( ofaExerciceCloseAssistant *self );
 static gboolean       p6_advertise_closing( ofaExerciceCloseAssistant *self );
 static gboolean       p6_archive_exercice( ofaExerciceCloseAssistant *self );
-static gboolean       p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui );
+static gboolean       p6_do_archive_db_open_new( ofaExerciceCloseAssistant *self, gboolean with_ui );
 static gboolean       p6_cleanup( ofaExerciceCloseAssistant *self );
-static gboolean       p6_forward( ofaExerciceCloseAssistant *self );
-static gboolean       p6_open( ofaExerciceCloseAssistant *self );
-static gboolean       p6_accarc( ofaExerciceCloseAssistant *self );
-static gboolean       p6_future( ofaExerciceCloseAssistant *self );
-static gboolean       p6_opening_plugin( ofaExerciceCloseAssistant *self );
+static gboolean       p6_insert_forward( ofaExerciceCloseAssistant *self );
+static gboolean       p6_close_ran_ledger( ofaExerciceCloseAssistant *self );
+static gboolean       p6_archive_opening_account_soldes( ofaExerciceCloseAssistant *self );
+static gboolean       p6_future_to_current( ofaExerciceCloseAssistant *self );
+static gboolean       p6_plugin_open_exercice( ofaExerciceCloseAssistant *self );
 static myProgressBar *get_new_bar( ofaExerciceCloseAssistant *self, const gchar *w_name );
 static void           update_bar( myProgressBar *bar, guint *count, guint total, const gchar *emitter_name );
 static void           on_closing_instance_finalized( sClose *close_data, GObject *finalized_instance );
@@ -925,7 +925,7 @@ p6_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	g_return_if_fail( validating_label && GTK_IS_LABEL( validating_label ));
 
 	for( it=priv->close_list ; it ; it=it->next ){
-		p6_init_plugin(
+		p6_plugin_init(
 				self, grid,
 				OFA_IEXECLOSE( it->data ), EXECLOSE_CLOSING, EXECLOSE_CLOSING_DATA,
 				validating_label, ( GWeakNotify ) on_closing_instance_finalized );
@@ -935,7 +935,7 @@ p6_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	g_return_if_fail( summary_label && GTK_IS_LABEL( summary_label ));
 
 	for( it=priv->close_list ; it ; it=it->next ){
-		p6_init_plugin(
+		p6_plugin_init(
 				self, grid,
 				OFA_IEXECLOSE( it->data ), EXECLOSE_OPENING, EXECLOSE_OPENING_DATA,
 				summary_label, ( GWeakNotify ) on_opening_instance_finalized );
@@ -949,7 +949,7 @@ p6_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
  * the instance.
  */
 static void
-p6_init_plugin( ofaExerciceCloseAssistant *self, GtkWidget *grid, ofaIExeClose *instance,
+p6_plugin_init( ofaExerciceCloseAssistant *self, GtkWidget *grid, ofaIExeClose *instance,
 					guint type, const gchar *data_name, GtkWidget *sibling, GWeakNotify fn )
 {
 	gchar *text;
@@ -1035,7 +1035,7 @@ p6_closing_plugin( ofaExerciceCloseAssistant *self )
 	if( 1 ){
 		g_idle_add(( GSourceFunc ) p6_validate_entries, self );
 	} else {
-		g_idle_add(( GSourceFunc ) p6_open, self );
+		g_idle_add(( GSourceFunc ) p6_close_ran_ledger, self );
 	}
 
 	/* do not continue and remove from idle callbacks list */
@@ -1416,7 +1416,7 @@ p6_archive_exercice( ofaExerciceCloseAssistant *self )
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	ok = p6_do_archive_exercice( self, FALSE );
+	ok = p6_do_archive_db_open_new( self, FALSE );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-archived" );
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
@@ -1435,9 +1435,9 @@ p6_archive_exercice( ofaExerciceCloseAssistant *self )
  * opening the new one
  */
 static gboolean
-p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
+p6_do_archive_db_open_new( ofaExerciceCloseAssistant *self, gboolean with_ui )
 {
-	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_archive_exercice";
+	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_archive_db_open_new";
 	ofaExerciceCloseAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
 	ofaISignaler *signaler;
@@ -1843,7 +1843,7 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	g_free( sdfin );
 
 	if( ok ){
-		g_idle_add(( GSourceFunc ) p6_forward, self );
+		g_idle_add(( GSourceFunc ) p6_insert_forward, self );
 
 	} else {
 		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
@@ -1865,9 +1865,9 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
  *   and the effect date)
  */
 static gboolean
-p6_forward( ofaExerciceCloseAssistant *self )
+p6_insert_forward( ofaExerciceCloseAssistant *self )
 {
-	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_forward";
+	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_insert_forward";
 	ofaExerciceCloseAssistantPrivate *priv;
 	ofaISignaler *signaler;
 	myProgressBar *bar;
@@ -1924,7 +1924,7 @@ p6_forward( ofaExerciceCloseAssistant *self )
 	g_list_free_full( priv->p6_forwards, ( GDestroyNotify ) g_list_free );
 
 	gtk_widget_show_all( GTK_WIDGET( bar ));
-	g_idle_add(( GSourceFunc ) p6_open, self );
+	g_idle_add(( GSourceFunc ) p6_close_ran_ledger, self );
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
@@ -1945,7 +1945,7 @@ p6_forward( ofaExerciceCloseAssistant *self )
  * balance.
  */
 static gboolean
-p6_open( ofaExerciceCloseAssistant *self )
+p6_close_ran_ledger( ofaExerciceCloseAssistant *self )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
 	const gchar *for_ope, *led_mnemo;
@@ -1972,7 +1972,7 @@ p6_open( ofaExerciceCloseAssistant *self )
 	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
 
 	if( ok ){
-		g_idle_add(( GSourceFunc ) p6_accarc, self );
+		g_idle_add(( GSourceFunc ) p6_archive_opening_account_soldes, self );
 
 	} else {
 		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
@@ -1988,7 +1988,7 @@ p6_open( ofaExerciceCloseAssistant *self )
  * only considering those which have a non-null balance
  */
 static gboolean
-p6_accarc( ofaExerciceCloseAssistant *self )
+p6_archive_opening_account_soldes( ofaExerciceCloseAssistant *self )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
 	const GDate *begin_next;
@@ -2006,7 +2006,7 @@ p6_accarc( ofaExerciceCloseAssistant *self )
 	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
 
 	if( ok ){
-		g_idle_add(( GSourceFunc ) p6_future, self );
+		g_idle_add(( GSourceFunc ) p6_future_to_current, self );
 
 	} else {
 		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
@@ -2022,7 +2022,7 @@ p6_accarc( ofaExerciceCloseAssistant *self )
  * if appropriate
  */
 static gboolean
-p6_future( ofaExerciceCloseAssistant *self )
+p6_future_to_current( ofaExerciceCloseAssistant *self )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_future";
 	ofaExerciceCloseAssistantPrivate *priv;
@@ -2057,7 +2057,7 @@ p6_future( ofaExerciceCloseAssistant *self )
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( bar ));
-	g_idle_add(( GSourceFunc ) p6_opening_plugin, self );
+	g_idle_add(( GSourceFunc ) p6_plugin_open_exercice, self );
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
@@ -2067,9 +2067,9 @@ p6_future( ofaExerciceCloseAssistant *self )
  * let the plugins do their stuff
  */
 static gboolean
-p6_opening_plugin( ofaExerciceCloseAssistant *self )
+p6_plugin_open_exercice( ofaExerciceCloseAssistant *self )
 {
-	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_opening_plugin";
+	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_plugin_open_exercice";
 	ofaExerciceCloseAssistantPrivate *priv;
 	GList *it;
 	sClose *close_data;
