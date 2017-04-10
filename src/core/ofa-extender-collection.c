@@ -197,7 +197,7 @@ load_modules( ofaExtenderCollection *self )
  * Returns: a list of objects instanciated by loaded modules which are
  *  willing to deal with requested @type.
  *
- * The returned list should be #g_list_free() by the caller.
+ * The returned list should be g_list_free() by the caller.
  */
 GList *
 ofa_extender_collection_get_for_type( ofaExtenderCollection *collection, GType type )
