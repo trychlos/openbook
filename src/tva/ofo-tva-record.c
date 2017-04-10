@@ -839,28 +839,25 @@ void
 ofo_tva_record_delete_accounting_entries( ofoTVARecord *record, GList *opes )
 {
 	ofaIGetter *getter;
-	GList *dataset, *it;
+	GList *entries, *it;
 	ofoEntry *entry;
 	ofeEntryStatus status;
-	ofxCounter openum;
 
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
 
 	getter = ofo_base_get_getter( OFO_BASE( record ));
 
-	if( g_list_length( opes ) > 0 ){
-		dataset = ofo_entry_get_dataset( getter );
-		for( it=dataset ; it ; it=it->next ){
-			entry = OFO_ENTRY( it->data );
-			openum = ofo_entry_get_ope_number( entry );
-			if( g_list_find( opes, ( gpointer ) openum ) != NULL ){
-				status = ofo_entry_get_status( entry );
-				g_return_if_fail( status == ENT_STATUS_ROUGH );
-				ofo_entry_delete( entry );
-			}
-		}
+	entries = ofo_entry_get_by_ope_numbers( getter, opes );
+	for( it=entries ; it ; it=it->next ){
+		entry = OFO_ENTRY( it->data );
+		//g_debug( "ofo_tva_record_delete_accounting_entries: number=%lu", ofo_entry_get_number( entry ));
+		status = ofo_entry_get_status( entry );
+		g_return_if_fail( status == ENT_STATUS_ROUGH );
+		ofo_entry_delete( entry );
 	}
+
+	g_list_free( entries );
 }
 
 /**
@@ -988,22 +985,38 @@ ofo_tva_record_detail_get_ope_number( ofoTVARecord *record, guint idx )
 /**
  * ofo_tva_record_is_deletable:
  * @record: the tva record.
+ * @gen_opes: the generated accounting operations.
  *
  * Returns: %TRUE if the tva record is deletable.
  *
- * A TVA record may be deleted while it is not validated.
+ * A TVA record may be deleted while it is not validated, and none of
+ * the generated accounting entries has been validated.
  */
 gboolean
-ofo_tva_record_is_deletable( const ofoTVARecord *record )
+ofo_tva_record_is_deletable( const ofoTVARecord *record, GList *gen_opes )
 {
-	ofeVatStatus status;
+	ofaIGetter *getter;
+	GList *entries, *it;
+	guint count;
 
 	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
 
-	status = ofo_tva_record_get_status( record );
+	if( ofo_tva_record_get_status( record ) != VAT_STATUS_NO ){
+		return( FALSE );
+	}
 
-	return( status == VAT_STATUS_NO );
+	count = 0;
+	getter = ofo_base_get_getter( OFO_BASE( record ));
+	entries = ofo_entry_get_by_ope_numbers( getter, gen_opes );
+	for( it=entries ; it ; it=it->next ){
+		if( ofo_entry_get_status( OFO_ENTRY( it->data )) == ENT_STATUS_VALIDATED ){
+			count += 1;
+		}
+	}
+	g_list_free( entries );
+
+	return( count == 0 );
 }
 
 /**
@@ -1968,7 +1981,7 @@ ofo_tva_record_delete( ofoTVARecord *tva_record )
 	g_debug( "%s: record=%p", thisfn, ( void * ) tva_record );
 
 	g_return_val_if_fail( tva_record && OFO_IS_TVA_RECORD( tva_record ), FALSE );
-	g_return_val_if_fail( ofo_tva_record_is_deletable( tva_record ), FALSE );
+	g_return_val_if_fail( ofo_tva_record_is_deletable( tva_record, NULL ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( tva_record )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;

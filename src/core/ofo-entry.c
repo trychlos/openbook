@@ -897,9 +897,9 @@ ofo_entry_get_by_number( ofaIGetter *getter, ofxCounter number )
 }
 
 /**
- * ofo_entry_get_by_ope_number:
+ * ofo_entry_get_by_ope_numbers:
  * @getter: a #ofaIGetter instance.
- * @number: the operation number.
+ * @ope_numbers: a #GList of operation numbers.
  *
  * Returns: a new #GList which contains the entries of this same
  * operation.
@@ -907,19 +907,20 @@ ofo_entry_get_by_number( ofaIGetter *getter, ofxCounter number )
  * The returned #GList should be g_list_free() by the caller.
  */
 GList *
-ofo_entry_get_by_ope_number( ofaIGetter *getter, ofxCounter number )
+ofo_entry_get_by_ope_numbers( ofaIGetter *getter, GList *ope_numbers )
 {
 	GList *dataset, *it, *result;
+	ofxCounter openum;
 	ofoEntry *entry;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
-	g_return_val_if_fail( number > 0, NULL );
 
 	result = NULL;
 	dataset = ofo_entry_get_dataset( getter );
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		if( ofo_entry_get_ope_number( entry ) == number ){
+		openum = ofo_entry_get_ope_number( entry );
+		if( g_list_find( ope_numbers, ( gpointer ) openum )){
 			result = g_list_prepend( result, entry );
 		}
 	}

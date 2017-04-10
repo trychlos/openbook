@@ -70,6 +70,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	ofoTVARecord         *sel_record;
 	GList                *sel_opes;
 }
 	ofaTVARecordPagePrivate;
@@ -86,7 +87,7 @@ static void       on_delete_key( ofaTVARecordTreeview *view, ofoTVARecord *recor
 static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self );
 static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self );
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self );
-static gboolean   check_for_deletability( ofaTVARecordPage *self, ofoTVARecord *record );
+static gboolean   check_for_deletability( ofaTVARecordPage *self, ofoTVARecord *record, GList *gen_opes );
 static void       delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record );
 static void       action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self );
 static void       validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record );
@@ -337,6 +338,8 @@ update_on_selection( ofaTVARecordPage *self, ofoTVARecord *record )
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
+	priv->sel_record = record;
+
 	is_record = record && OFO_IS_TVA_RECORD( record );
 	status = is_record ? ofo_tva_record_get_status( record ) : 0;
 	validate_ok = is_record && status == VAT_STATUS_NO;
@@ -345,7 +348,7 @@ update_on_selection( ofaTVARecordPage *self, ofoTVARecord *record )
 	priv->sel_opes = validate_ok ? ofo_tva_record_get_accounting_opes( record ) : NULL;
 
 	g_simple_action_set_enabled( priv->update_action, is_record );
-	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, record ));
+	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, record, priv->sel_opes ));
 	g_simple_action_set_enabled( priv->validate_action, validate_ok );
 }
 
@@ -365,15 +368,15 @@ on_row_activated( ofaTVARecordTreeview *view, ofoTVARecord *form, ofaTVARecordPa
 }
 
 static void
-on_delete_key( ofaTVARecordTreeview *view, ofoTVARecord *form, ofaTVARecordPage *self )
+on_delete_key( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordPage *self )
 {
 	ofaTVARecordPagePrivate *priv;
 
-	g_return_if_fail( form && OFO_IS_TVA_RECORD( form ));
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
-	if( check_for_deletability( self, form )){
+	if( check_for_deletability( self, record, priv->sel_opes )){
 		g_action_activate( G_ACTION( priv->delete_action ), NULL );
 	}
 }
@@ -387,34 +390,30 @@ static void
 action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self )
 {
 	ofaTVARecordPagePrivate *priv;
-	ofoTVARecord *record;
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
-	record = ofa_tva_record_treeview_get_selected( priv->tview );
-	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( priv->sel_record && OFO_IS_TVA_RECORD( priv->sel_record ));
 
-	ofa_tva_record_properties_run( priv->getter, NULL, record );
+	ofa_tva_record_properties_run( priv->getter, NULL, priv->sel_record );
 }
 
 static void
 action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self )
 {
 	ofaTVARecordPagePrivate *priv;
-	ofoTVARecord *record;
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
-	record = ofa_tva_record_treeview_get_selected( priv->tview );
-	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( priv->sel_record && OFO_IS_TVA_RECORD( priv->sel_record ));
 
-	delete_with_confirm( self, record );
+	delete_with_confirm( self, priv->sel_record );
 
 	gtk_widget_grab_focus( page_v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 static gboolean
-check_for_deletability( ofaTVARecordPage *self, ofoTVARecord *record )
+check_for_deletability( ofaTVARecordPage *self, ofoTVARecord *record, GList *gen_opes )
 {
 	ofaTVARecordPagePrivate *priv;
 	gboolean is_record;
@@ -423,7 +422,7 @@ check_for_deletability( ofaTVARecordPage *self, ofoTVARecord *record )
 
 	is_record = record && OFO_IS_TVA_RECORD( record );
 
-	return( priv->is_writable && is_record && ofo_tva_record_is_deletable( record ));
+	return( priv->is_writable && is_record && ofo_tva_record_is_deletable( record, gen_opes ));
 }
 
 static void
@@ -433,6 +432,7 @@ delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 	gchar *msg, *send;
 	gboolean delete_ok;
 	GtkWindow *toplevel;
+	GList *opes;
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
@@ -447,7 +447,10 @@ delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 	g_free( send );
 
 	if( delete_ok ){
+		opes = ofo_tva_record_get_accounting_opes( record );
 		ofo_tva_record_delete( record );
+		ofo_tva_record_delete_accounting_entries( record, opes );
+		g_list_free( opes );
 	}
 }
 

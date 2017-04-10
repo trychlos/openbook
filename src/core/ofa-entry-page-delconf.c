@@ -296,6 +296,7 @@ setup_data( ofaEntryPageDelconf *self )
 	ofaEntryPageDelconfPrivate *priv;
 	GString *gstr1, *gstr2;
 	guint count;
+	GList *opes;
 
 	priv = ofa_entry_page_delconf_get_instance_private( self );
 
@@ -305,7 +306,9 @@ setup_data( ofaEntryPageDelconf *self )
 	g_list_free( priv->sel_opes );
 
 	if( priv->ope_number > 0 ){
-		*priv->entries = ofo_entry_get_by_ope_number( priv->getter, priv->ope_number );
+		opes = g_list_append( NULL, ( gpointer ) priv->ope_number );
+		*priv->entries = ofo_entry_get_by_ope_numbers( priv->getter, opes );
+		g_list_free( opes );
 		priv->sel_opes = g_list_append( NULL, ( gpointer ) priv->ope_number );
 	} else {
 		*priv->entries = g_list_append( NULL, priv->entry );

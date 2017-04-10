@@ -237,15 +237,12 @@
                 vertically (+ review left and right margins)
      2016-10- 6 margins reviewed.
 
-1231 2016-10-11 Feature question: should we reset the last closed date
-                of the ledgers when closing an exercice ?
-                For now, they are not reset. On the new exercice, ledgers
-                are displayed with a last closed date in the previous
-                exercice (weird ?)
-
 1235 2016-10-12 begining of the exercice cannot be modified anymore after
                 the first exercice operation
      2017- 3-29 unless entries are rightly remediated
+     2017- 4-10 which is the eventually the case
+                + is the beginning of the exercice relative to a period
+                closing or to a ledger closing ?
 
 1236 2016-10-13 DBMS: move user and dossier settings to dbms
      2016-11-13 dossier settings are:
@@ -329,19 +326,6 @@
 
 1418 2017- 3-24 ope template has a prof. share (quote-part pro)
      2017- 3-25 dbms is updated
-
-1436 2017- 4- 5 vat record should not be deletable if generated entries
-                have been validated
-
-1437 2017- 4- 5 deleting a vat record should also imply deleting generated
-                operations
-
-1439 2017- 4- 9 make sure a future entry may be validated and is not
-                archived on exercice closing
-
-1442 2017- 4-10 review entry remediation
-                if there has been a ledger/period closing, the begin date
-                should not be modifiable anymore - why ? 
 
 1445 2017- 4-10 check integrity: check char(1) columns
 
@@ -478,6 +462,16 @@
 1228 2016-10-10 DBMS: Entry: have a role: exercice_open / exercice_close / normal
                 (may be useful when computing solde of an account)
      2017- 2- 6 done
+
+1231 2016-10-11 Feature question: should we reset the last closed date
+                of the ledgers when closing an exercice ?
+                For now, they are not reset. On the new exercice, ledgers
+                are displayed with a last closed date in the previous
+                exercice (weird ?)
+     2017- 4-10 this is fine: on the new exercice, ledgers appear to have
+                been closed on the ending of the previous exercice, but the
+                RAN which has been closed on the first day of the new
+                exercice
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
      2017- 1-12 done in CORE v34
@@ -1030,8 +1024,20 @@
 1435 2017- 4- 5 vat record should be automatically validated on period close
      2017- 4- 7 done
 
+1436 2017- 4- 5 vat record should not be deletable if generated entries
+                have been validated
+     2017- 4-10 done
+
+1437 2017- 4- 5 deleting a vat record should also imply deleting generated
+                operations
+     2017- 4-10 done
+
 1438 2017- 4- 7 ledgers closing: ledgers treeview: have columns
      2017- 4- 9 fixed
+
+1439 2017- 4- 9 make sure a future entry may be validated and is not
+                archived on exercice closing
+     2017- 4-10 this has been checked - ok
 
 1440 2017- 4- 9 vat record: shoud reinitialise the ope_date when deleting
                 accounting operations
@@ -1039,6 +1045,11 @@
 
 1441 2017- 4- 9 core dbmodel v37: to be installed (ofo_account & ofo_ledger)
      2017- 4-10 done
+
+1442 2017- 4-10 review entry remediation
+                if there has been a ledger/period closing, the begin date
+                should not be modifiable anymore - why ? 
+     2017- 4-10 cancelled as same than #1235
 
 1443 2017- 4-10 review export fec with new entry period indicator
      2017- 4-10 done

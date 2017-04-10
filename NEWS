@@ -58,6 +58,7 @@
    - VAT records: are automatically validated on period/exercice close (todo #1435).
    - VAT records: cannot anymore be validated from the properties, but only from the page.
    - VAT records: let the accounting entries to be deleted.
+   - VAT records: also delete generated accounting entries (todo #1437).
 
  Bug fixes:
 

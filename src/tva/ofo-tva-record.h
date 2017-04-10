@@ -127,7 +127,7 @@ ofxAmount       ofo_tva_record_detail_get_base          ( ofoTVARecord *record, 
 ofxAmount       ofo_tva_record_detail_get_amount        ( ofoTVARecord *record, guint idx );
 ofxCounter      ofo_tva_record_detail_get_ope_number    ( ofoTVARecord *record, guint idx );
 
-gboolean        ofo_tva_record_is_deletable             ( const ofoTVARecord *record );
+gboolean        ofo_tva_record_is_deletable             ( const ofoTVARecord *record, GList *gen_opes );
 gboolean        ofo_tva_record_is_valid_data            ( const gchar *mnemo, const gchar *label, const GDate *begin, const GDate *end, gchar **msgerr );
 
 gint            ofo_tva_record_compare_by_key           ( const ofoTVARecord *record, const gchar *mnemo, const GDate *end );
