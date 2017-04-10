@@ -46,8 +46,6 @@
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-bat-def.h"
 
-#include "core/ofa-batline-treeview.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_BAT_PROPERTIES_BIN                ( ofa_bat_properties_bin_get_type())
@@ -76,8 +74,6 @@ ofaBatPropertiesBin *ofa_bat_properties_bin_new                 ( ofaIGetter *ge
 
 void                 ofa_bat_properties_bin_set_bat             ( ofaBatPropertiesBin *bin,
 																		ofoBat *bat );
-
-ofaBatlineTreeview  *ofa_bat_properties_bin_get_batline_treeview( ofaBatPropertiesBin *bin );
 
 G_END_DECLS
 

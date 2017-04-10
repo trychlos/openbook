@@ -75,8 +75,6 @@ GType           ofa_bat_treeview_get_type        ( void ) G_GNUC_CONST;
 ofaBatTreeview *ofa_bat_treeview_new             ( ofaIGetter *getter,
 														const gchar *settings_prefix );
 
-void            ofa_bat_treeview_setup_columns   ( ofaBatTreeview *view );
-
 void            ofa_bat_treeview_setup_store     ( ofaBatTreeview *view );
 
 ofoBat         *ofa_bat_treeview_get_selected    ( ofaBatTreeview *view );

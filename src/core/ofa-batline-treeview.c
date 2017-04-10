@@ -297,6 +297,9 @@ ofa_batline_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 
 	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
+	setup_columns( view );
+	setup_actions( view );
+
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoBatLine object instead of just the raw GtkTreeSelection
 	 */
@@ -310,33 +313,6 @@ ofa_batline_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
 	return( view );
-}
-
-/**
- * ofa_batline_treeview_setup_columns:
- * @view: this #ofaBatlineTreeview instance.
- *
- * Setup the treeview columns.
- *
- * This should be called only after the user settings prefix key has
- * already been set by the caller.
- */
-void
-ofa_batline_treeview_setup_columns( ofaBatlineTreeview *view )
-{
-	static const gchar *thisfn = "ofa_batline_treeview_setup_columns";
-	ofaBatlineTreeviewPrivate *priv;
-
-	g_debug( "%s: view=%p", thisfn, ( void * ) view );
-
-	g_return_if_fail( view && OFA_IS_BATLINE_TREEVIEW( view ));
-
-	priv = ofa_batline_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	setup_columns( view );
-	setup_actions( view );
 }
 
 /*

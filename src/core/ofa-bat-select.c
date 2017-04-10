@@ -295,7 +295,6 @@ setup_treeview( ofaBatSelect *self )
 	priv->tview = ofa_bat_treeview_new( priv->getter, priv->settings_prefix );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 0, 0, 0, 2 );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
-	ofa_bat_treeview_setup_columns( priv->tview );
 
 	g_signal_connect( priv->tview, "ofa-batchanged", G_CALLBACK( on_selection_changed ), self );
 	g_signal_connect( priv->tview, "ofa-batactivated", G_CALLBACK( on_row_activated ), self );
@@ -315,7 +314,6 @@ setup_properties( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
 	GtkWidget *container;
-	ofaBatlineTreeview *line_tview;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
@@ -325,9 +323,6 @@ setup_properties( ofaBatSelect *self )
 	priv->bat_bin = ofa_bat_properties_bin_new( priv->getter, priv->settings_prefix );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->bat_bin ), 0, 0, 2, 0 );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->bat_bin ));
-
-	line_tview = ofa_bat_properties_bin_get_batline_treeview( priv->bat_bin );
-	ofa_batline_treeview_setup_columns( line_tview );
 }
 
 static void

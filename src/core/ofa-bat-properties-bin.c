@@ -398,26 +398,3 @@ ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat )
 	display_bat_properties( bin, bat );
 	ofa_batline_treeview_set_bat( priv->tview, bat );
 }
-
-/**
- * ofa_bat_properties_bin_get_batline_treeview:
- * @view: this #ofaBatlineTreeview instance.
- *
- * Returns: the #ofaBatlineTreeview embedded widget.
- *
- * The returned reference is owned by the @view, and should not be
- * unreffed by the caller.
- */
-ofaBatlineTreeview *
-ofa_bat_properties_bin_get_batline_treeview( ofaBatPropertiesBin *bin )
-{
-	ofaBatPropertiesBinPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_BAT_PROPERTIES_BIN( bin ), NULL );
-
-	priv = ofa_bat_properties_bin_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->tview );
-}

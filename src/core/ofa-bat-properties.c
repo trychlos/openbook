@@ -251,7 +251,6 @@ idialog_init( myIDialog *instance )
 	ofaHub *hub;
 	gchar *title;
 	GtkWidget *parent, *btn;
-	ofaBatlineTreeview *line_tview;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -273,9 +272,6 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->bat_bin = ofa_bat_properties_bin_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bat_bin ));
-
-	line_tview = ofa_bat_properties_bin_get_batline_treeview( priv->bat_bin );
-	ofa_batline_treeview_setup_columns( line_tview );
 
 	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat );
 

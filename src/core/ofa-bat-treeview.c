@@ -268,6 +268,8 @@ ofa_bat_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 
 	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
+	setup_columns( view );
+
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoBat object instead of just the raw GtkTreeSelection
 	 */
@@ -281,26 +283,6 @@ ofa_bat_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
 	return( view );
-}
-
-/**
- * ofa_bat_treeview_setup_columns:
- * @view: this #ofaBatTreeview instance.
- *
- * Setup the treeview columns.
- */
-void
-ofa_bat_treeview_setup_columns( ofaBatTreeview *view )
-{
-	ofaBatTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
-
-	priv = ofa_bat_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	setup_columns( view );
 }
 
 /*

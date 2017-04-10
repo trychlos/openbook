@@ -194,7 +194,6 @@ action_page_v_setup_view( ofaActionPage *page )
 	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	priv->tview = ofa_bat_treeview_new( priv->getter, priv->settings_prefix );
-	ofa_bat_treeview_setup_columns( priv->tview );
 
 	/* ofaBatTreeview signals */
 	g_signal_connect( priv->tview, "ofa-batchanged", G_CALLBACK( on_row_selected ), page );
