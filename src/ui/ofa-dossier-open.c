@@ -426,7 +426,6 @@ setup_dossier( ofaDossierOpen *self, GtkSizeGroup *group )
 	priv->dossier_tview = ofa_dossier_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->dossier_tview ));
 	ofa_tvbin_set_headers( OFA_TVBIN( priv->dossier_tview ), FALSE );
-	ofa_dossier_treeview_setup_columns( priv->dossier_tview );
 	ofa_dossier_treeview_set_show_all( priv->dossier_tview, FALSE );
 
 	g_signal_connect( priv->dossier_tview, "ofa-doschanged", G_CALLBACK( on_dossier_changed ), self );

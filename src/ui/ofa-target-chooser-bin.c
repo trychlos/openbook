@@ -277,7 +277,6 @@ setup_bin( ofaTargetChooserBin *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->dossier_tview = ofa_dossier_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_tview ));
-	ofa_dossier_treeview_setup_columns( priv->dossier_tview );
 	ofa_dossier_treeview_set_show_all( priv->dossier_tview, FALSE );
 	ofa_dossier_treeview_setup_store( priv->dossier_tview );
 	g_signal_connect( priv->dossier_tview, "ofa-doschanged", G_CALLBACK( dossier_on_selection_changed ), self );
