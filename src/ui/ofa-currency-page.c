@@ -203,7 +203,6 @@ action_page_v_setup_view( ofaActionPage *page )
 	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	priv->tview = ofa_currency_treeview_new( priv->getter, priv->settings_prefix );
-	ofa_currency_treeview_setup_columns( priv->tview );
 
 	/* in case the last consumer of a currency disappears, then update
 	 * the actions sensitivities */

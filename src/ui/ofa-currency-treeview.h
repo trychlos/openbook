@@ -74,8 +74,6 @@ GType                ofa_currency_treeview_get_type     ( void ) G_GNUC_CONST;
 ofaCurrencyTreeview *ofa_currency_treeview_new          ( ofaIGetter *getter,
 																const gchar *settings_prefix );
 
-void                 ofa_currency_treeview_setup_columns( ofaCurrencyTreeview *view );
-
 void                 ofa_currency_treeview_setup_store  ( ofaCurrencyTreeview *view );
 
 ofoCurrency         *ofa_currency_treeview_get_selected ( ofaCurrencyTreeview *view );
