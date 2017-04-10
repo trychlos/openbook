@@ -400,13 +400,13 @@ my_idialog_run_maybe_modal( myIDialog *instance )
 	g_debug( "%s: parent=%p (%s)", thisfn, ( void * ) parent, G_OBJECT_TYPE_NAME( parent ));
 
 	if( parent && gtk_window_get_modal( GTK_WINDOW( parent ))){
-		g_debug( "%s: parent is modal: running my_idialog_run", thisfn );
+		g_debug( "%s: parent is modal: running my_idialog_run()", thisfn );
 		my_idialog_run( instance );
 		shown = NULL;
 
 	} else {
 		/* after this call, @instance may be invalid */
-		g_debug( "%s: parent is not modal: running my_iwindow_present", thisfn );
+		g_debug( "%s: parent is not modal: running my_iwindow_present()", thisfn );
 		shown = my_iwindow_present( MY_IWINDOW( instance ));
 	}
 
