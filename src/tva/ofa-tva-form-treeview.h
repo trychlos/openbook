@@ -75,8 +75,6 @@ GType               ofa_tva_form_treeview_get_type     ( void ) G_GNUC_CONST;
 ofaTVAFormTreeview *ofa_tva_form_treeview_new          ( ofaIGetter *getter,
 																const gchar *settings_prefix );
 
-void                ofa_tva_form_treeview_setup_columns( ofaTVAFormTreeview *view );
-
 void                ofa_tva_form_treeview_setup_store  ( ofaTVAFormTreeview *view );
 
 ofoTVAForm         *ofa_tva_form_treeview_get_selected ( ofaTVAFormTreeview *view );

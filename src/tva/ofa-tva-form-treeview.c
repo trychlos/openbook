@@ -266,6 +266,10 @@ ofa_tva_form_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 
 	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 
+	setup_columns( view );
+
+	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_fn, view );
+
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoCurrency object instead of just the raw GtkTreeSelection
 	 */
@@ -279,27 +283,6 @@ ofa_tva_form_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
 	return( view );
-}
-
-/**
- * ofa_tva_form_treeview_setup_columns:
- * @view: this #ofaTVAFormTreeview instance.
- *
- * Setup the treeview columns.
- */
-void
-ofa_tva_form_treeview_setup_columns( ofaTVAFormTreeview *view )
-{
-	ofaTVAFormTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_TVA_FORM_TREEVIEW( view ));
-
-	priv = ofa_tva_form_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	setup_columns( view );
-	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_fn, view );
 }
 
 /*
