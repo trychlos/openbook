@@ -339,8 +339,6 @@
 1439 2017- 4- 9 make sure a future entry may be validated and is not
                 archived on exercice closing
 
-1441 2017- 4- 9 core dbmodel v37: to be installed (ofo_account & ofo_ledger)
-
 1442 2017- 4-10 review entry remediation
                 if there has been a ledger/period closing, the begin date
                 should not be modifiable anymore - why ? 
@@ -1038,6 +1036,9 @@
 
 1440 2017- 4- 9 vat record: shoud reinitialise the ope_date when deleting
                 accounting operations
+     2017- 4-10 done
+
+1441 2017- 4- 9 core dbmodel v37: to be installed (ofo_account & ofo_ledger)
      2017- 4-10 done
 
 -----------------------------------------------------------------------

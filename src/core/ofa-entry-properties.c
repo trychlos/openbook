@@ -98,6 +98,7 @@ typedef struct {
 	GtkWidget      *sens_combo;
 	GtkWidget      *amount_entry;
 	GtkWidget      *status_label;
+	GtkWidget      *period_label;
 	GtkWidget      *rule_label;
 	GtkWidget      *openum_entry;
 	GtkWidget      *entnum_entry;
@@ -473,6 +474,11 @@ setup_ui_properties( ofaEntryProperties *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->status_label = label;
 
+	/* period */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-period-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv->period_label = label;
+
 	/* rule */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-rule-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -555,6 +561,7 @@ setup_data( ofaEntryProperties *self )
 	ofxAmount amount;
 	gchar *str;
 	ofeEntryStatus status;
+	ofeEntryPeriod period;
 	ofeEntryRule rule;
 	ofoConcil *concil;
 	ofxCounter counter, settle_num;
@@ -617,6 +624,11 @@ setup_data( ofaEntryProperties *self )
 	status = ofo_entry_get_status( priv->entry );
 	cstr = ofo_entry_status_get_label( status );
 	gtk_label_set_text( GTK_LABEL( priv->status_label ), cstr );
+
+	/* period */
+	period = ofo_entry_get_period( priv->entry );
+	cstr = ofo_entry_period_get_label( period );
+	gtk_label_set_text( GTK_LABEL( priv->period_label ), cstr );
 
 	/* rule */
 	rule = ofo_entry_get_rule( priv->entry );
