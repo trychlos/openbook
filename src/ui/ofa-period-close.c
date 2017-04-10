@@ -477,6 +477,9 @@ do_close( ofaPeriodClose *self )
 
 	priv = ofa_period_close_get_instance_private( self );
 
+	signaler = ofa_igetter_get_signaler( priv->getter );
+	g_signal_emit_by_name( signaler, SIGNALER_DOSSIER_PERIOD_CLOSING, &priv->closing );
+
 	/* close all ledgers, archiving their balance if asked for
 	 */
 	do_archive = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledgers_btn ));
@@ -542,7 +545,6 @@ do_close( ofaPeriodClose *self )
 	ofo_dossier_set_last_closing_date( dossier, &priv->closing );
 	ofo_dossier_update( dossier );
 
-	signaler = ofa_igetter_get_signaler( priv->getter );
 	g_signal_emit_by_name( signaler, SIGNALER_DOSSIER_PERIOD_CLOSED, &priv->closing );
 
 	return( TRUE );
