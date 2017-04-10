@@ -434,7 +434,7 @@ Or just click on 'Apply' button.</property>
         </child>
         <child>
           <object class="GtkButton" id="p5-backup-btn">
-            <property name="label" translatable="yes">_Backup now...</property>
+            <property name="label" translatable="yes">Back_up now...</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
