@@ -312,6 +312,29 @@ my_iwindow_set_geometry_key( myIWindow *instance, const gchar *key )
 }
 
 /**
+ * my_iwindow_get_manage_geometry:
+ * @instance: this #myIWindow instance.
+ *
+ * Returns: whether the @instance should try to restore (resp. save)
+ *  its geometry (size and position).
+ *
+ * The #myIWindow interface defaults to try to restore (resp. save) the
+ * geometry settings - size and position - of the corresponding
+ * #GtkWindow.
+ */
+gboolean
+my_iwindow_get_manage_geometry( myIWindow *instance )
+{
+	sIWindow *sdata;
+
+	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), FALSE );
+
+	sdata = get_instance_data( instance );
+
+	return( sdata->manage_geometry );
+}
+
+/**
  * my_iwindow_set_manage_geometry:
  * @instance: this #myIWindow instance.
  * @manage: whether the @instance should try to restore (resp. save)

@@ -144,6 +144,8 @@ void         my_iwindow_set_geometry_settings     ( myIWindow *instance,
 void         my_iwindow_set_geometry_key          ( myIWindow *instance,
 														const gchar *key );
 
+gboolean     my_iwindow_get_manage_geometry       ( myIWindow *instance );
+
 void         my_iwindow_set_manage_geometry       ( myIWindow *instance,
 														gboolean manage );
 

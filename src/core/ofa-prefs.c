@@ -39,56 +39,56 @@
 /* private instance data
  */
 typedef struct {
-	gboolean     dispose_has_run;
+	gboolean        dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter  *getter;
+	ofaIGetter     *getter;
 
 	/* account
 	 */
-	gboolean     account_delete_with_children;
-	gboolean     account_settle_warns;
-	gboolean     account_settle_ctrl;
-	gboolean     account_reconcil_warns;
-	gboolean     account_reconcil_ctrl;
+	gboolean        account_delete_with_children;
+	gboolean        account_settle_warns;
+	gboolean        account_settle_ctrl;
+	gboolean        account_reconcil_warns;
+	gboolean        account_reconcil_ctrl;
 
 	/* amount
 	 */
-	gchar       *amount_decimal_sep;
-	gchar       *amount_thousand_sep;
-	gboolean     amount_accept_dot;
-	gboolean     amount_accept_comma;
+	gchar          *amount_decimal_sep;
+	gchar          *amount_thousand_sep;
+	gboolean        amount_accept_dot;
+	gboolean        amount_accept_comma;
 
 	/* application
 	 */
-	gboolean     appli_confirm_on_altf4;
-	gboolean     appli_confirm_on_quit;
+	gboolean        appli_confirm_on_altf4;
+	gboolean        appli_confirm_on_quit;
 
 	/* assistant
 	 */
-	gboolean     assistant_quit_on_escape;
-	gboolean     assistant_confirm_on_escape;
-	gboolean     assistant_confirm_on_cancel;
+	gboolean        assistant_quit_on_escape;
+	gboolean        assistant_confirm_on_escape;
+	gboolean        assistant_confirm_on_cancel;
 
 	/* check dbms integrity
 	 */
-	gboolean     check_integrity_display_all;
+	gboolean        check_integrity_display_all;
 
 	/* date
 	 */
-	myDateFormat date_display_format;
-	myDateFormat date_check_format;
-	gboolean     date_overwrite;
+	myDateFormat    date_display_format;
+	myDateFormat    date_check_format;
+	gboolean        date_overwrite;
 
 	/* export
 	 */
-	gchar       *export_default_folder;
+	gchar          *export_default_folder;
 
 	/* main notebook
 	 */
-	gboolean     mainbook_dnd_reorder;
-	gboolean     mainbook_with_detach_pin;
+	ofeMainbookMode mainbook_pages_mode;
+	gboolean        mainbook_with_detach_pin;
 }
 	ofaPrefsPrivate;
 
@@ -205,8 +205,8 @@ ofa_prefs_init( ofaPrefs *self )
 
 	priv->export_default_folder = g_strdup( "/tmp" );
 
-	priv->mainbook_dnd_reorder = TRUE;
-	priv->mainbook_with_detach_pin = TRUE;
+	priv->mainbook_pages_mode = MAINBOOK_REORDER;
+	priv->mainbook_with_detach_pin = FALSE;
 }
 
 static void
@@ -1369,13 +1369,13 @@ export_write_settings( ofaPrefs *self )
 }
 
 /**
- * ofa_prefs_mainbook_get_dnd_reorder:
+ * ofa_prefs_mainbook_get_pages_mode:
  * @getter: a #ofaIGetter instance.
  *
- * Returns: %TRUE if the user can reorder the main tabs.
+ * Returns: the display mode of the user interface.
  */
-gboolean
-ofa_prefs_mainbook_get_dnd_reorder( ofaIGetter *getter )
+ofeMainbookMode
+ofa_prefs_mainbook_get_pages_mode( ofaIGetter *getter )
 {
 	ofaPrefs *prefs;
 	ofaPrefsPrivate *priv;
@@ -1388,7 +1388,7 @@ ofa_prefs_mainbook_get_dnd_reorder( ofaIGetter *getter )
 	priv = ofa_prefs_get_instance_private( prefs );
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( priv->mainbook_dnd_reorder );
+	return( priv->mainbook_pages_mode );
 }
 
 /**
@@ -1422,13 +1422,13 @@ ofa_prefs_mainbook_get_with_detach_pin( ofaIGetter *getter )
 /**
  * ofa_prefs_mainbook_set_user_settings:
  * @getter: a #ofaIGetter instance.
- * @dnd_reorder: whether the tabs of the main notebook are reorderable.
+ * @pages_mode: whether the tabs of the main notebook are reorderable.
  * @with_detach_pin: whether the tabs of the main notebook display a detach pin.
  *
  * Set the user settings.
  */
 void
-ofa_prefs_mainbook_set_user_settings( ofaIGetter *getter, gboolean dnd_reorder, gboolean with_detach_pin )
+ofa_prefs_mainbook_set_user_settings( ofaIGetter *getter, ofeMainbookMode pages_mode, gboolean with_detach_pin )
 {
 	ofaPrefs *prefs;
 	ofaPrefsPrivate *priv;
@@ -1441,7 +1441,7 @@ ofa_prefs_mainbook_set_user_settings( ofaIGetter *getter, gboolean dnd_reorder, 
 	priv = ofa_prefs_get_instance_private( prefs );
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->mainbook_dnd_reorder = dnd_reorder;
+	priv->mainbook_pages_mode = pages_mode;
 	priv->mainbook_with_detach_pin = with_detach_pin;
 
 	mainbook_write_settings( prefs );
@@ -1451,7 +1451,7 @@ ofa_prefs_mainbook_set_user_settings( ofaIGetter *getter, gboolean dnd_reorder, 
  * Main notebook tabs are either detachable or reorderable by DnD.
  * When they are reorderable, a 'detach' pin may be displayed.
  *
- * DndMainTabs settings: reorderable;with_pin;
+ * DndMainTabs settings: pages_mode;with_pin;
  */
 static void
 mainbook_read_settings( ofaPrefs *self )
@@ -1460,6 +1460,7 @@ mainbook_read_settings( ofaPrefs *self )
 	myISettings *settings;
 	GList *strlist, *it;
 	const gchar *cstr;
+	guint i;
 
 	priv = ofa_prefs_get_instance_private( self );
 
@@ -1468,9 +1469,15 @@ mainbook_read_settings( ofaPrefs *self )
 
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_mainbook );
 
+	i = 0;
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	priv->mainbook_dnd_reorder = my_utils_boolean_from_str( cstr );
+	if( my_strlen( cstr )){
+		i = atoi( cstr );
+	}
+	if( i > 0 ){
+		priv->mainbook_pages_mode = i;
+	}
 
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -1491,8 +1498,8 @@ mainbook_write_settings( ofaPrefs *self )
 	settings = ofa_igetter_get_user_settings( priv->getter );
 	g_return_if_fail( settings && MY_IS_ISETTINGS( settings ));
 
-	str = g_strdup_printf( "%s;%s;",
-			priv->mainbook_dnd_reorder ? "True":"False",
+	str = g_strdup_printf( "%u;%s;",
+			priv->mainbook_pages_mode,
 			priv->mainbook_with_detach_pin ? "True":"False" );
 
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_mainbook, str );

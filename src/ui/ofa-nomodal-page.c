@@ -31,6 +31,7 @@
 
 #include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
+#include "api/ofa-prefs.h"
 
 #include "ui/ofa-nomodal-page.h"
 
@@ -51,6 +52,11 @@ typedef struct {
 	GtkWindow  *actual_parent;
 }
 	ofaNomodalPagePrivate;
+
+#define NOMODAL_SHIFT_X                   100
+#define NOMODAL_SHIFT_Y                   100
+#define NOMODAL_DEC_WIDTH                 200
+#define NOMODAL_DEC_HEIGHT                 50
 
 static GList *st_list                   = NULL;
 
@@ -192,6 +198,7 @@ static void
 iwindow_init( myIWindow *instance )
 {
 	ofaNomodalPagePrivate *priv;
+	ofeMainbookMode mode;
 
 	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
 
@@ -200,7 +207,9 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 	my_iwindow_set_identifier( instance, G_OBJECT_TYPE_NAME( priv->top_widget ));
-	my_iwindow_set_manage_geometry( instance, FALSE );
+
+	mode = ofa_prefs_mainbook_get_pages_mode( priv->getter );
+	my_iwindow_set_manage_geometry( instance, mode == MAINBOOK_MINI );
 
 	gtk_window_set_title( GTK_WINDOW( instance ), priv->title );
 	gtk_window_set_resizable( GTK_WINDOW( instance ), TRUE );
@@ -232,11 +241,13 @@ on_realize_cb( GtkWidget *widget, void *empty )
 	/* we set the default size and position to those of the main window
 	 * so that we are sure they are suitable for the page
 	 */
-	if( priv->actual_parent ){
+	if( priv->actual_parent && !my_iwindow_get_manage_geometry( MY_IWINDOW( widget ))){
 		gtk_window_get_position( priv->actual_parent, &x, &y );
-		gtk_window_move( GTK_WINDOW( widget ), x+100, y+100 );
+		gtk_window_move( GTK_WINDOW( widget ), x+NOMODAL_SHIFT_X, y+NOMODAL_SHIFT_Y );
 		gtk_window_get_size( priv->actual_parent, &width, &height );
-		gtk_window_resize( GTK_WINDOW( widget ), width-200, height-50 );
+		if( width > NOMODAL_DEC_WIDTH && height > NOMODAL_DEC_HEIGHT ){
+			gtk_window_resize( GTK_WINDOW( widget ), width-NOMODAL_DEC_WIDTH, height-NOMODAL_DEC_HEIGHT );
+		}
 	}
 
 	gtk_widget_show_all( priv->top_widget );

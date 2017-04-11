@@ -77,6 +77,7 @@ typedef struct {
 
 	/* UI - User interface
 	 */
+	GSList                   *p1_ui_group;
 	GtkWidget                *p1_dnd_reorder_btn;
 	GtkWidget                *p1_pin_detach_btn;
 	GtkWidget                *p1_display_all_btn;
@@ -85,7 +86,7 @@ typedef struct {
 	GtkWidget                *p1_confirm_on_cancel_btn;
 	GtkWidget                *p1_confirm_altf4_btn;
 	GtkWidget                *p1_confirm_quit_btn;
-	gboolean                  p1_orig_dnd;
+	guint                     p1_orig_dnd;
 	gboolean                  p1_orig_pin;
 	gboolean                  p1_dirty_ui;
 
@@ -125,6 +126,7 @@ typedef struct {
 	ofaPreferencesPrivate;
 
 #define IPROPERTIES_PAGE                  "ofaIProperties"
+#define PREFERENCES_MAINBOOK_UI           "ofaPreferences-mainbook-ui"
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-preferences.ui";
 
@@ -363,18 +365,21 @@ init_user_interface_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkWidget *button;
-	gboolean reorder, bvalue;
+	gboolean bvalue;
+	guint mode;
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	/* reorder vs. detach main tabs */
+	/* user interface mode */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-reorder" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
 	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
-	reorder = ofa_prefs_mainbook_get_dnd_reorder( priv->getter );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), reorder );
+	mode = ofa_prefs_mainbook_get_pages_mode( priv->getter );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), mode == MAINBOOK_REORDER );
+	priv->p1_orig_dnd = mode;
 	priv->p1_dnd_reorder_btn = button;
-	priv->p1_orig_dnd = reorder;
+	priv->p1_ui_group = gtk_radio_button_get_group( GTK_RADIO_BUTTON( button ));
+	g_object_set_data( G_OBJECT( button ), PREFERENCES_MAINBOOK_UI, GUINT_TO_POINTER( MAINBOOK_REORDER ));
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-pin-detach" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
@@ -386,8 +391,16 @@ init_user_interface_page( ofaPreferences *self )
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-detach" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
 	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !reorder );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), mode == MAINBOOK_DETACH );
 	on_dnd_main_tabs_toggled( GTK_TOGGLE_BUTTON( button ), self );
+	g_object_set_data( G_OBJECT( button ), PREFERENCES_MAINBOOK_UI, GUINT_TO_POINTER( MAINBOOK_DETACH ));
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ui-mini" );
+	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
+	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), mode == MAINBOOK_MINI );
+	on_dnd_main_tabs_toggled( GTK_TOGGLE_BUTTON( button ), self );
+	g_object_set_data( G_OBJECT( button ), PREFERENCES_MAINBOOK_UI, GUINT_TO_POINTER( MAINBOOK_MINI ));
 
 	/* check integrity display messages */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-disp-all" );
@@ -1018,16 +1031,25 @@ static gboolean
 do_update_user_interface_page( ofaPreferences *self, gchar **msgerr )
 {
 	ofaPreferencesPrivate *priv;
-	gboolean dnd_reorder, detach_pin, display_all, quit_on_escape, confirm_on_escape, confirm_on_cancel;
+	gboolean detach_pin, display_all, quit_on_escape, confirm_on_escape, confirm_on_cancel;
+	guint mainbook_mode;
 	gboolean confirm_altf4, confirm_quit;
+	GSList *it;
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	dnd_reorder = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_dnd_reorder_btn ));
+	mainbook_mode = 0;
+	for( it=priv->p1_ui_group ; it ; it=it->next ){
+		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( it->data ))){
+			mainbook_mode = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( it->data ), PREFERENCES_MAINBOOK_UI ));
+			break;
+		}
+	}
+	g_return_val_if_fail( mainbook_mode > 0, FALSE );
 	detach_pin = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_pin_detach_btn ));
-	ofa_prefs_mainbook_set_user_settings( priv->getter, dnd_reorder, detach_pin );
+	ofa_prefs_mainbook_set_user_settings( priv->getter, mainbook_mode, detach_pin );
 
-	priv->p1_dirty_ui = ( dnd_reorder != priv->p1_orig_dnd ) || ( detach_pin != priv->p1_orig_pin );
+	priv->p1_dirty_ui = ( mainbook_mode != priv->p1_orig_dnd ) || ( detach_pin != priv->p1_orig_pin );
 
 	display_all = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_display_all_btn ));
 	ofa_prefs_check_integrity_set_user_settings( priv->getter, display_all );

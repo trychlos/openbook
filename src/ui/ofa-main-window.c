@@ -107,7 +107,7 @@ typedef struct {
 	GtkMenuBar      *menubar;
 	myAccelGroup    *accel_group;
 	guint            paned_position;
-	gboolean         have_reorder;
+	ofeMainbookMode  pages_mode;
 	gboolean         have_detach_pin;
 
 	/* when a dossier is opened
@@ -301,6 +301,7 @@ static void         menubar_init( ofaMainWindow *self );
 static void         menubar_setup( ofaMainWindow *window, GActionMap *map );
 static void         menubar_update_items( ofaMainWindow *self );
 static void         init_themes( ofaMainWindow *self );
+static void         init_minimal_size( ofaMainWindow *self );
 static void         signaler_on_dossier_opened( ofaISignaler *signaler, ofaMainWindow *self );
 static void         signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self );
 static void         signaler_on_dossier_changed( ofaISignaler *signaler, ofaMainWindow *main_window );
@@ -315,6 +316,7 @@ static void         pane_create( ofaMainWindow *self );
 static void         pane_left_add_treeview( ofaMainWindow *window );
 static void         pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static void         pane_right_add_empty_notebook( ofaMainWindow *window );
+static void         background_destroy( ofaMainWindow *self );
 static void         background_image_update( ofaMainWindow *self );
 static void         background_image_set_uri( ofaMainWindow *self, const gchar *uri );
 static void         do_backup( ofaMainWindow *self );
@@ -326,6 +328,8 @@ static void         book_attach_page( ofaMainWindow *self, GtkNotebook *book, Gt
 static void         notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
 static gboolean     notebook_on_draw( GtkWidget *widget, cairo_t *cr, ofaMainWindow *self );
 static gboolean     book_on_append_page( myDndBook *book, GtkWidget *page, const gchar *title, ofaMainWindow *self );
+static void         nomodal_create( ofaMainWindow *self, sThemeDef *theme_def );
+static ofaPage     *page_create( ofaMainWindow *self, sThemeDef *theme_def, gchar **title );
 static void         on_tab_close_clicked( myTab *tab, ofaPage *page );
 static void         do_close( ofaPage *page );
 static void         on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *self );
@@ -562,6 +566,8 @@ ofa_main_window_new( ofaIGetter *getter )
 	 * no background image
 	 */
 
+	init_minimal_size( window );
+
 	return( window );
 }
 
@@ -712,6 +718,15 @@ init_themes( ofaMainWindow *self )
 }
 
 static void
+init_minimal_size( ofaMainWindow *self )
+{
+	GtkRequisition min_size;
+
+	gtk_widget_get_preferred_size( GTK_WIDGET( self ), &min_size, NULL );
+	gtk_window_resize( GTK_WINDOW( self ), min_size.width, min_size.height );
+}
+
+static void
 signaler_on_dossier_opened( ofaISignaler *signaler, ofaMainWindow *self )
 {
 	static const gchar *thisfn = "ofa_main_window_signaler_on_dossier_opened";
@@ -738,7 +753,6 @@ static void
 signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self )
 {
 	static const gchar *thisfn = "ofa_main_window_signaler_on_dossier_closed";
-	ofaMainWindowPrivate *priv;
 	GtkApplication *application;
 
 	g_debug( "%s: signaler=%p, self=%p", thisfn, ( void * ) signaler, ( void * ) self );
@@ -746,20 +760,15 @@ signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self )
 	//if( GTK_IS_WINDOW( self ) && ofa_hub_get_dossier( signaler )){
 	if( GTK_IS_WINDOW( self )){
 
-		priv = ofa_main_window_get_instance_private( self );
-
 		ofa_main_window_dossier_close_windows( self );
-
-		if( priv->background_image ){
-			cairo_surface_destroy( priv->background_image );
-			priv->background_image = NULL;
-		}
 
 		pane_destroy( self );
 
 		application = gtk_window_get_application( GTK_WINDOW( self ));
 		menubar_setup( self, G_ACTION_MAP( application ));
+
 		set_window_title( self, FALSE );
+
 		reset_pages_count( self );
 	}
 }
@@ -781,7 +790,7 @@ signaler_on_dossier_changed( ofaISignaler *signaler, ofaMainWindow *self )
 }
 
 /*
- * set a background image
+ * set a background image (if the UI permits this)
  */
 static void
 signaler_on_dossier_preview( ofaISignaler *signaler, const gchar *uri, ofaMainWindow *self )
@@ -811,7 +820,9 @@ signaler_on_ui_restart( ofaISignaler *signaler, ofaMainWindow *self )
 	pane_destroy( self );
 	pane_create( self );
 
-	gtk_widget_show_all( priv->pane );
+	if( priv->pane ){
+		gtk_widget_show_all( priv->pane );
+	}
 }
 
 /*
@@ -1082,6 +1093,8 @@ pane_destroy( ofaMainWindow *self )
 
 	priv = ofa_main_window_get_instance_private( self );
 
+	background_destroy( self );
+
 	if( priv->pane ){
 		priv->paned_position = gtk_paned_get_position( GTK_PANED( priv->pane ));
 		gtk_widget_destroy( priv->pane );
@@ -1092,15 +1105,30 @@ pane_destroy( ofaMainWindow *self )
 static void
 pane_create( ofaMainWindow *self )
 {
+	static const gchar *thisfn = "ofa_main_window_pane_create";
 	ofaMainWindowPrivate *priv;
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	priv->pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
-	gtk_grid_attach( GTK_GRID( priv->grid ), priv->pane, 0, 1, 1, 1 );
-	gtk_paned_set_position( GTK_PANED( priv->pane ), priv->paned_position );
-	pane_left_add_treeview( self );
-	pane_right_add_empty_notebook( self );
+	/* get the 'pin detach' user pref
+	 * it will be not re-evaluated unless the ui is restarted
+	 */
+	priv->have_detach_pin = ofa_prefs_mainbook_get_with_detach_pin( priv->getter );
+	priv->pages_mode = ofa_prefs_mainbook_get_pages_mode( priv->getter );
+
+	g_debug( "%s: pages_mode=%u, have_detach_pin=%s",
+			thisfn, priv->pages_mode, priv->have_detach_pin ? "True":"False" );
+
+	if( priv->pages_mode != MAINBOOK_MINI ){
+		priv->pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
+		gtk_grid_attach( GTK_GRID( priv->grid ), priv->pane, 0, 1, 1, 1 );
+		gtk_paned_set_position( GTK_PANED( priv->pane ), priv->paned_position );
+		pane_left_add_treeview( self );
+		pane_right_add_empty_notebook( self );
+
+	} else {
+		init_minimal_size( self );
+	}
 }
 
 static void
@@ -1184,27 +1212,16 @@ pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewCo
 static void
 pane_right_add_empty_notebook( ofaMainWindow *self )
 {
-	static const gchar *thisfn = "ofa_main_window_pane_right_add_empty_notebook";
 	ofaMainWindowPrivate *priv;
 	GtkWidget *book;
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	/* get the 'pin detach' user pref
-	 * it will be not re-evaluated unless the ui is restarted
-	 */
-	priv->have_detach_pin = ofa_prefs_mainbook_get_with_detach_pin( priv->getter );
-	priv->have_reorder = ofa_prefs_mainbook_get_dnd_reorder( priv->getter );
-
-	g_debug( "%s: have_reorder=%s, have_detach_pin=%s",
-			thisfn,
-			priv->have_reorder ? "True":"False",
-			priv->have_detach_pin ? "True":"False" );
-
-	if( !priv->have_reorder ){
+	if( priv->pages_mode == MAINBOOK_DETACH ){
 		book = GTK_WIDGET( my_dnd_book_new());
 		g_signal_connect( book, "my-append-page", G_CALLBACK( book_on_append_page ), self );
 	} else {
+		g_return_if_fail( priv->pages_mode == MAINBOOK_REORDER );
 		book = gtk_notebook_new();
 	}
 
@@ -1218,6 +1235,19 @@ pane_right_add_empty_notebook( ofaMainWindow *self )
 	g_signal_connect( book, "page-removed", G_CALLBACK( on_page_removed ), self );
 
 	gtk_paned_pack2( GTK_PANED( priv->pane ), book, TRUE, FALSE );
+}
+
+static void
+background_destroy( ofaMainWindow *self )
+{
+	ofaMainWindowPrivate *priv;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	if( priv->background_image ){
+		cairo_surface_destroy( priv->background_image );
+		priv->background_image = NULL;
+	}
 }
 
 static void
@@ -1257,33 +1287,33 @@ background_image_set_uri( ofaMainWindow *self, const gchar *uri )
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	if( priv->background_image ){
-		cairo_surface_destroy( priv->background_image );
-		priv->background_image = NULL;
-	}
+	background_destroy( self );
 
-	if( my_strlen( uri )){
-		filename = g_filename_from_uri( uri, NULL, NULL );
-		surface = cairo_image_surface_create_from_png( filename );
-		g_free( filename );
-		width = cairo_image_surface_get_width( surface );
-		height = cairo_image_surface_get_height ( surface );
+	if( priv->pane ){
 
-		if( width > 0 && height > 0 ){
-			priv->background_image = surface;
-			priv->background_image_width = width;
-			priv->background_image_height = height;
-			g_debug( "%s: uri=%s, width=%d, height=%d",
-					thisfn, uri, priv->background_image_width, priv->background_image_height );
+		if( my_strlen( uri )){
+			filename = g_filename_from_uri( uri, NULL, NULL );
+			surface = cairo_image_surface_create_from_png( filename );
+			g_free( filename );
+			width = cairo_image_surface_get_width( surface );
+			height = cairo_image_surface_get_height ( surface );
 
-		} else {
-			cairo_surface_destroy( surface );
-			g_debug( "%s: unable to load %s", thisfn, uri );
+			if( width > 0 && height > 0 ){
+				priv->background_image = surface;
+				priv->background_image_width = width;
+				priv->background_image_height = height;
+				g_debug( "%s: uri=%s, width=%d, height=%d",
+						thisfn, uri, priv->background_image_width, priv->background_image_height );
+
+			} else {
+				cairo_surface_destroy( surface );
+				g_debug( "%s: unable to load %s", thisfn, uri );
+			}
 		}
-	}
 
-	book = notebook_get_book( self );
-	gtk_widget_queue_draw( GTK_WIDGET( book ));
+		book = notebook_get_book( self );
+		gtk_widget_queue_draw( GTK_WIDGET( book ));
+	}
 }
 
 /**
@@ -1809,22 +1839,11 @@ notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeD
 static ofaPage *
 notebook_create_page( ofaMainWindow *self, GtkNotebook *book, sThemeDef *def )
 {
-	ofaMainWindowPrivate *priv;
 	ofaPage *page;
-	const gchar *ctitle;
 	gchar *title;
 
-	priv = ofa_main_window_get_instance_private( self );
-
-	page = g_object_new( def->type, "ofa-page-getter", priv->getter, NULL );
-	ctitle = gettext( def->label );
-	def->count += 1;
-
-	if( def->multiple ){
-		title = g_strdup_printf( "%s [%u]", ctitle, def->count );
-	} else {
-		title = g_strdup( ctitle );
-	}
+	page = page_create( self, def, &title );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	book_attach_page( self, book, GTK_WIDGET( page ), title );
 
@@ -1853,7 +1872,7 @@ book_attach_page( ofaMainWindow *self, GtkNotebook *book, GtkWidget *page, const
 	g_signal_connect( tab, MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), page );
 
 	/* pin is only displayed if dnd is off */
-	my_tab_set_show_detach( tab, priv->have_reorder && priv->have_detach_pin );
+	my_tab_set_show_detach( tab, priv->pages_mode == MAINBOOK_REORDER && priv->have_detach_pin );
 	g_signal_connect( tab, MY_SIGNAL_TAB_PIN_CLICKED, G_CALLBACK( on_tab_pin_clicked ), page );
 
 	/* the menu widget */
@@ -1935,6 +1954,60 @@ book_on_append_page( myDndBook *book, GtkWidget *page, const gchar *title, ofaMa
 	book_attach_page( self, GTK_NOTEBOOK( book ), page, title );
 
 	return( TRUE );
+}
+
+/*
+ * create a new page as a NomodalPage window
+ */
+static void
+nomodal_create( ofaMainWindow *self, sThemeDef *theme_def )
+{
+	ofaMainWindowPrivate *priv;
+	ofaPage *page;
+	gchar *title1, *title2;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	page = page_create( self, theme_def, &title1 );
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
+
+	title2 = my_utils_str_remove_underlines( title1 );
+
+	ofa_nomodal_page_run( priv->getter, NULL, title2, GTK_WIDGET( page ));
+
+	g_free( title2 );
+	g_free( title1 );
+}
+
+/*
+ * Create a new page
+ * @self:
+ * @theme_def:
+ * @title: [out]: a placeholder for the title of the page which should
+ *  be g_free() by the caller.
+ *
+ * Returns: the new #ofaPage.
+ */
+static ofaPage *
+page_create( ofaMainWindow *self, sThemeDef *theme_def, gchar **title )
+{
+	ofaMainWindowPrivate *priv;
+	ofaPage *page;
+	const gchar *ctitle;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	page = g_object_new( theme_def->type, "ofa-page-getter", priv->getter, NULL );
+	ctitle = gettext( theme_def->label );
+	theme_def->count += 1;
+
+	if( theme_def->multiple ){
+		*title = g_strdup_printf( "%s [%u]", ctitle, theme_def->count );
+	} else {
+		*title = g_strdup( ctitle );
+	}
+
+	return( page );
 }
 
 static void
@@ -2137,25 +2210,30 @@ ipage_manager_activate( ofaIPageManager *instance, GType type )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	page = NULL;
-	found = FALSE;
-	book = notebook_get_book( OFA_MAIN_WINDOW( instance ));
-	g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
-
 	theme_def = theme_get_by_type( &priv->themes, type, FALSE );
 
 	if( theme_def ){
+		found = FALSE;
+		book = notebook_get_book( OFA_MAIN_WINDOW( instance ));
+
 		if( !theme_def->multiple ){
 			found = my_dnd_window_present_by_type( type ) || ofa_nomodal_page_present_by_type( type );
-			if( !found ){
+			if( !found && book ){
+				g_return_val_if_fail( GTK_IS_NOTEBOOK( book ), NULL );
 				page = notebook_get_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
 				found = ( page != NULL );
 			}
 		}
 		if( !found ){
-			page = notebook_create_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
+			if( book ){
+				page = notebook_create_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
+				g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+				notebook_activate_page( OFA_MAIN_WINDOW( instance ), book, page );
+
+			} else {
+				nomodal_create( OFA_MAIN_WINDOW( instance ), theme_def );
+			}
 		}
-		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-		notebook_activate_page( OFA_MAIN_WINDOW( instance ), book, page );
 
 	} else {
 		g_warning( "%s: theme not found for type=%lu", thisfn, type );
