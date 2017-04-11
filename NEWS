@@ -27,7 +27,8 @@
 
  Bug fixes:
 
-   - 
+   - configure.ac: display 'pwirender' plugin build status (todo #1453).
+   - ofaMainWindow: better switch back from 'minimal' display mode.
 
  Other changes:
 

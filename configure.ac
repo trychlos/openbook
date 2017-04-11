@@ -181,6 +181,7 @@ if test "${have_POSTGRE}" = "yes"; then
 else
 	$as_echo "	  PostgreSQL                    ${have_POSTGRE}"
 fi
+	$as_echo "	  pwirender                     yes"
 	$as_echo "	  Recurrent                     yes"
 	$as_echo "	  VAT                           yes"
 	$as_echo " "

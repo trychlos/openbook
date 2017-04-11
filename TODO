@@ -306,8 +306,6 @@
 
 1452 2017- 4-11 generalize the ofaIRenderer interface
 
-1453 2017- 4-11 configure.ac: does not display pwirenderer plugin infos
-
 1454
 
 -----------------------------------------------------------------------
@@ -1087,6 +1085,9 @@
 
 1449 2017- 4-10 check balances bin: widget are not well aligned
      2017- 4-10 fixed
+
+1453 2017- 4-11 configure.ac: does not display pwirenderer plugin infos
+     2017- 4-11 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
