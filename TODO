@@ -222,9 +222,6 @@
 1110 2016- 5- 5 BUG DnD: when drag and drop page - see TODO_1110/trace
                 gdk_window_move_resize_internal: assertion 'GDK_IS_WINDOW (window)' failed
 
-1149 2016- 6- 8 FEAT: print the accounts archived balances for a given date
-                SELECT a.ACC_NUMBER,a.ACC_LABEL,b.ACC_ARC_DEBIT-b.ACC_ARC_CREDIT FROM OFA_T_ACCOUNTS a,OFA_T_ACCOUNTS_ARC b WHERE a.ACC_NUMBER LIKE '5%' AND b.ACC_ARC_DATE='2016-01-31' AND a.ACC_NUMBER=b.ACC_NUMBER;
-
 1153 2016- 6-22 FEAT: besides of the integrity constraint checks, display
                 e.g. operation templates which use such account, and so on
 
@@ -440,6 +437,10 @@
                 or of detachable pages in the main book as the two are
                 mutually exclusive
      2017- 1-27 done
+
+1149 2016- 6- 8 FEAT: print the accounts archived balances for a given date
+                SELECT a.ACC_NUMBER,a.ACC_LABEL,b.ACC_ARC_DEBIT-b.ACC_ARC_CREDIT FROM OFA_T_ACCOUNTS a,OFA_T_ACCOUNTS_ARC b WHERE a.ACC_NUMBER LIKE '5%' AND b.ACC_ARC_DATE='2016-01-31' AND a.ACC_NUMBER=b.ACC_NUMBER;
+     2017- 4-11 see AccountsBalancesRender
 
 1150 2016- 6-20 BUG: LedgersBook: template code should be ellipsized
                 + review all prints for identifiers which have been
