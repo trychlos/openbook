@@ -20,12 +20,6 @@
    7 2014- 5- 2 have a preference to set the application menu on the
                 top bar (gnome-shell) or on the main windows
 
-  21 2014- 5- 6 DossierNew: let the user be able to choose to
-                create a new database (if the data provider allows it)
-                or to use an existing one
-     2014- 7-14 when using an existing database, have an option to
-                reinitialize it, or to use it as is
-
   41 2014- 5-12 ofaMainWindow: set menu tooltips
 
   43 2014- 5-12 ofaMainWindow left pane: should display a big icon and
@@ -140,12 +134,6 @@
                 it would be easier that row-activate on templates page
                 opens the guided input rather that the properties)
 
- 808 2015- 4-17 DISP when rendering, automatically computes the width of 
-                     standard field as date or amount
-     2015- 4-20      depending of the different headers and footers of
-                     the current print, this should involve selecting the
-                     ad-hoc font before computing the size
-
  809 2015- 4-17 FEAT when computing the ODs, do not generate an OD for
                      "forfait kilométrique BNC" when option is "FR"
 
@@ -160,10 +148,6 @@
                      limit (as the MySQL truncation may make the string
                      invalid utf-8) and take care to truncate to a valid
                      utf-8
-
- 822 2015- 4-27 FEAT Review "solde at 01/01": these are not accounts
-                     balances after entries from 01/01, but opening
-                     exercice after carried forward entries *only*
 
  824 2015- 9-22 PACK use AX_COMPILER_FLAGS
 
@@ -330,6 +314,14 @@
  DONE
  ====
 
+  21 2014- 5- 6 DossierNew: let the user be able to choose to
+                create a new database (if the data provider allows it)
+                or to use an existing one
+     2014- 7-14 when using an existing database, have an option to
+                reinitialize it, or to use it as is
+     2017- 4-11 cancelled: the current mode is good: delete the database
+                with the dossier, recreating it with the dossier
+
  325 2014-10-12 DossierManage Properties: to be written
      2017- 1-27 cancelled (because do not know what this is about)
 
@@ -398,6 +390,18 @@
                      - added to the account label or rigt-aligned before the
                        debit ?
      2017- 3-29 cancelled as useless
+
+ 808 2015- 4-17 DISP when rendering, automatically computes the width of 
+                     standard field as date or amount
+     2015- 4-20      depending of the different headers and footers of
+                     the current print, this should involve selecting the
+                     ad-hoc font before computing the size
+     2017- 4-11 done
+
+ 822 2015- 4-27 FEAT Review "solde at 01/01": these are not accounts
+                     balances after entries from 01/01, but opening
+                     exercice after carried forward entries *only*
+     2017- 4-11 done - see AccountsBalance
 
  909 2015-11-26 ARCH SIGNAL_DOSSIER_EXE_DATE_CHANGED: change to same
                      signal (exe_dates_changed) sent on main window so

@@ -387,8 +387,10 @@ main_window_dispose( GObject *instance )
 		hub = ofa_igetter_get_hub( priv->getter );
 		ofa_hub_close_dossier( hub );
 
-		settings = ofa_igetter_get_user_settings( priv->getter );
-		my_utils_window_position_save( GTK_WINDOW( instance ), settings, priv->settings_prefix );
+		if( priv->pages_mode != MAINBOOK_MINI ){
+			settings = ofa_igetter_get_user_settings( priv->getter );
+			my_utils_window_position_save( GTK_WINDOW( instance ), settings, priv->settings_prefix );
+		}
 
 		write_settings( OFA_MAIN_WINDOW( instance ));
 
@@ -509,7 +511,6 @@ ofa_main_window_new( ofaIGetter *getter )
 	ofaMainWindow *window;
 	ofaMainWindowPrivate *priv;
 	GApplication *application;
-	myISettings *settings;
 	ofaHub *hub;
 	ofaISignaler *signaler;
 
@@ -535,8 +536,6 @@ ofa_main_window_new( ofaIGetter *getter )
 	/* restore window geometry
 	 * (here because application is not yet set in constructed()
 	 */
-	settings = ofa_igetter_get_user_settings( getter );
-	my_utils_window_position_restore( GTK_WINDOW( window ), settings, priv->settings_prefix );
 	read_settings( window );
 
 	hub = ofa_igetter_get_hub( getter );
@@ -1107,6 +1106,7 @@ pane_create( ofaMainWindow *self )
 {
 	static const gchar *thisfn = "ofa_main_window_pane_create";
 	ofaMainWindowPrivate *priv;
+	myISettings *settings;
 
 	priv = ofa_main_window_get_instance_private( self );
 
@@ -1120,6 +1120,9 @@ pane_create( ofaMainWindow *self )
 			thisfn, priv->pages_mode, priv->have_detach_pin ? "True":"False" );
 
 	if( priv->pages_mode != MAINBOOK_MINI ){
+		settings = ofa_igetter_get_user_settings( priv->getter );
+		my_utils_window_position_restore( GTK_WINDOW( self ), settings, priv->settings_prefix );
+
 		priv->pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
 		gtk_grid_attach( GTK_GRID( priv->grid ), priv->pane, 0, 1, 1, 1 );
 		gtk_paned_set_position( GTK_PANED( priv->pane ), priv->paned_position );
