@@ -917,6 +917,13 @@ void               ofa_irenderable_get_body_color            ( const ofaIRendera
 
 gdouble            ofa_irenderable_get_body_vspace_rate      ( const ofaIRenderable *instance );
 
+const gchar       *ofa_irenderable_get_footer_font           ( const ofaIRenderable *instance );
+
+void               ofa_irenderable_get_footer_color          ( const ofaIRenderable *instance,
+																	gdouble *r,
+																	gdouble *g,
+																	gdouble *b );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_IRENDERABLE_H__ */

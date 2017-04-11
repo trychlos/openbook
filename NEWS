@@ -32,7 +32,7 @@
 
  Other changes:
 
-   - 
+   - ofaIRenderer: interface is completed with font and color getters (todo #1452).
 
 -----------------------------------------------------------------------
  Version 0.69

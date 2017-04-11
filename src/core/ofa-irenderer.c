@@ -171,6 +171,106 @@ ofa_irenderer_get_interface_version( GType type )
 }
 
 /**
+ * ofa_irenderer_begin_render:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ *
+ * This method is called by the #ofaIRenderable interface when about to
+ * begin the pagination, just after having called its own
+ * ofaIRenderable::begin_render() method.
+ *
+ * The #ofaIRenderer implementation may take advantage of this method to
+ * do its own initialization.
+ *
+ * Please note that all known #ofaIRenderer implementations are called
+ * by the #ofaIRenderable interface.
+ */
+void
+ofa_irenderer_begin_render( ofaIRenderer *instance, ofaIRenderable *renderable )
+{
+	sIRenderer *sdata;
+
+	g_return_if_fail( instance && OFA_IS_IRENDERER( instance ));
+	g_return_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ));
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->begin_render ){
+		OFA_IRENDERER_GET_INTERFACE( instance )->begin_render( instance, renderable );
+		return;
+	}
+
+	sdata->empty = NULL;
+}
+
+/**
+ * ofa_irenderer_render_page:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ *
+ * This method is called by the #ofaIRenderable interface to draw a page.
+ *
+ * Returns: %TRUE if the @instance has drawn the page, %FALSE to let the
+ * #ofaIRenderable interface calls other implementations.
+ *
+ * If no #ofaIRenderer implementation returns %TRUE, then the
+ * ofaIRenderable::render_page() method is called. It this later is not
+ * implemented, then #ofaIRenderable interface defaults to draw the page
+ * on the provided cairo context.
+ */
+gboolean
+ofa_irenderer_render_page( ofaIRenderer *instance, ofaIRenderable *renderable )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), FALSE );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), FALSE );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->render_page ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->render_page( instance, renderable ));
+	}
+
+	sdata->empty = NULL;
+
+	return( FALSE );
+}
+
+/**
+ * ofa_irenderer_end_render:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ *
+ * This method is called by the #ofaIRenderable interface after having
+ * rendered all pages, just before calling its own
+ * ofaIRenderable::end_render() method.
+ *
+ * The #ofaIRenderer implementation may take advantage of this method to
+ * free its allocated resources.
+ *
+ * Please note that all known #ofaIRenderer implementations are called
+ * by the #ofaIRenderable interface.
+ */
+void
+ofa_irenderer_end_render( ofaIRenderer *instance, ofaIRenderable *renderable )
+{
+	sIRenderer *sdata;
+
+	g_return_if_fail( instance && OFA_IS_IRENDERER( instance ));
+	g_return_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ));
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->end_render ){
+		OFA_IRENDERER_GET_INTERFACE( instance )->end_render( instance, renderable );
+		return;
+	}
+
+	sdata->empty = NULL;
+}
+
+/**
  * ofa_irenderer_draw_page_header_dossier:
  * @instance: this #ofaIRenderer instance.
  * @renderable: the #ofaIRenderable target.
@@ -189,7 +289,488 @@ ofa_irenderer_draw_page_header_dossier( ofaIRenderer *instance, ofaIRenderable *
 
 	if( OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_header_dossier ){
 		return( OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_header_dossier( instance, renderable ));
-		return( TRUE );
+	}
+
+	sdata->empty = NULL;
+
+	return( FALSE );
+}
+
+/**
+ * ofa_irenderer_get_dossier_font:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @page_num: the number of the page to be rendered, counted from zero.
+ *
+ * Returns: the name of the font to be used to draw the dosssier header.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer implementation
+ * until the first which returns a non-empty font name.
+ *
+ * It will try its own ofaIRenderable::get_dossier_font() method only if no
+ * #ofaIRenderer implementation has returned something.
+ */
+const gchar *
+ofa_irenderer_get_dossier_font( ofaIRenderer *instance, const ofaIRenderable *renderable, guint page_num )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), NULL );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), NULL );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_dossier_font ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_dossier_font( instance, renderable, page_num ));
+	}
+
+	sdata->empty = NULL;
+
+	return( NULL );
+}
+
+/**
+ * ofa_irenderer_get_dossier_color:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @r: [out]: a placeholder for red component.
+ * @g: [out]: a placeholder for green component.
+ * @b: [out]: a placeholder for blue component.
+ *
+ * Returns: %TRUE if the interface implements the method and has executed
+ * it.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer
+ * implementation until the first which returns %TRUE.
+ *
+ * It will try its own ofaIRenderable::get_dossier_color() method only
+ * if no #ofaIRenderer implementation has returned something.
+ */
+gboolean
+ofa_irenderer_get_dossier_color( ofaIRenderer *instance, const ofaIRenderable *renderable, gdouble *r, gdouble *g, gdouble *b )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), FALSE );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), FALSE );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_dossier_color ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_dossier_color( instance, renderable, r, g, b ));
+	}
+
+	sdata->empty = NULL;
+
+	return( FALSE );
+}
+
+/**
+ * ofa_irenderer_get_title_font:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @page_num: the number of the page to be rendered, counted from zero.
+ *
+ * Returns: the name of the font to be used to draw the dosssier header.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer implementation
+ * until the first which returns a non-empty font name.
+ *
+ * It will try its own ofaIRenderable::get_title_font() method only if no
+ * #ofaIRenderer implementation has returned something.
+ */
+const gchar *
+ofa_irenderer_get_title_font( ofaIRenderer *instance, const ofaIRenderable *renderable, guint page_num )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), NULL );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), NULL );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_title_font ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_title_font( instance, renderable, page_num ));
+	}
+
+	sdata->empty = NULL;
+
+	return( NULL );
+}
+
+/**
+ * ofa_irenderer_get_title_color:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @r: [out]: a placeholder for red component.
+ * @g: [out]: a placeholder for green component.
+ * @b: [out]: a placeholder for blue component.
+ *
+ * Returns: %TRUE if the interface implements the method and has executed
+ * it.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer
+ * implementation until the first which returns %TRUE.
+ *
+ * It will try its own ofaIRenderable::get_title_color() method only
+ * if no #ofaIRenderer implementation has returned something.
+ */
+gboolean
+ofa_irenderer_get_title_color( ofaIRenderer *instance, const ofaIRenderable *renderable, gdouble *r, gdouble *g, gdouble *b )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), FALSE );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), FALSE );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_title_color ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_title_color( instance, renderable, r, g, b ));
+	}
+
+	sdata->empty = NULL;
+
+	return( FALSE );
+}
+
+/**
+ * ofa_irenderer_get_columns_font:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @page_num: the number of the page to be rendered, counted from zero.
+ *
+ * Returns: the name of the font to be used to draw the dosssier header.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer implementation
+ * until the first which returns a non-empty font name.
+ *
+ * It will try its own ofaIRenderable::get_columns_font() method only if no
+ * #ofaIRenderer implementation has returned something.
+ */
+const gchar *
+ofa_irenderer_get_columns_font( ofaIRenderer *instance, const ofaIRenderable *renderable, guint page_num )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), NULL );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), NULL );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_columns_font ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_columns_font( instance, renderable, page_num ));
+	}
+
+	sdata->empty = NULL;
+
+	return( NULL );
+}
+
+/**
+ * ofa_irenderer_get_columns_color:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @r: [out]: a placeholder for red component.
+ * @g: [out]: a placeholder for green component.
+ * @b: [out]: a placeholder for blue component.
+ *
+ * Returns: %TRUE if the interface implements the method and has executed
+ * it.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer
+ * implementation until the first which returns %TRUE.
+ *
+ * It will try its own ofaIRenderable::get_columns_color() method only
+ * if no #ofaIRenderer implementation has returned something.
+ */
+gboolean
+ofa_irenderer_get_columns_color( ofaIRenderer *instance, const ofaIRenderable *renderable, gdouble *r, gdouble *g, gdouble *b )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), FALSE );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), FALSE );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_columns_color ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_columns_color( instance, renderable, r, g, b ));
+	}
+
+	sdata->empty = NULL;
+
+	return( FALSE );
+}
+
+/**
+ * ofa_irenderer_get_summary_font:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @page_num: the number of the page to be rendered, counted from zero.
+ *
+ * Returns: the name of the font to be used to draw the dosssier header.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer implementation
+ * until the first which returns a non-empty font name.
+ *
+ * It will try its own ofaIRenderable::get_summary_font() method only if no
+ * #ofaIRenderer implementation has returned something.
+ */
+const gchar *
+ofa_irenderer_get_summary_font( ofaIRenderer *instance, const ofaIRenderable *renderable, guint page_num )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), NULL );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), NULL );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_summary_font ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_summary_font( instance, renderable, page_num ));
+	}
+
+	sdata->empty = NULL;
+
+	return( NULL );
+}
+
+/**
+ * ofa_irenderer_get_summary_color:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @r: [out]: a placeholder for red component.
+ * @g: [out]: a placeholder for green component.
+ * @b: [out]: a placeholder for blue component.
+ *
+ * Returns: %TRUE if the interface implements the method and has executed
+ * it.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer
+ * implementation until the first which returns %TRUE.
+ *
+ * It will try its own ofaIRenderable::get_summary_color() method only
+ * if no #ofaIRenderer implementation has returned something.
+ */
+gboolean
+ofa_irenderer_get_summary_color( ofaIRenderer *instance, const ofaIRenderable *renderable, gdouble *r, gdouble *g, gdouble *b )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), FALSE );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), FALSE );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_summary_color ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_summary_color( instance, renderable, r, g, b ));
+	}
+
+	sdata->empty = NULL;
+
+	return( FALSE );
+}
+
+/**
+ * ofa_irenderer_get_group_font:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @page_num: the number of the page to be rendered, counted from zero.
+ *
+ * Returns: the name of the font to be used to draw the dosssier header.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer implementation
+ * until the first which returns a non-empty font name.
+ *
+ * It will try its own ofaIRenderable::get_group_font() method only if no
+ * #ofaIRenderer implementation has returned something.
+ */
+const gchar *
+ofa_irenderer_get_group_font( ofaIRenderer *instance, const ofaIRenderable *renderable, guint page_num )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), NULL );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), NULL );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_group_font ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_group_font( instance, renderable, page_num ));
+	}
+
+	sdata->empty = NULL;
+
+	return( NULL );
+}
+
+/**
+ * ofa_irenderer_get_group_color:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @r: [out]: a placeholder for red component.
+ * @g: [out]: a placeholder for green component.
+ * @b: [out]: a placeholder for blue component.
+ *
+ * Returns: %TRUE if the interface implements the method and has executed
+ * it.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer
+ * implementation until the first which returns %TRUE.
+ *
+ * It will try its own ofaIRenderable::get_group_color() method only
+ * if no #ofaIRenderer implementation has returned something.
+ */
+gboolean
+ofa_irenderer_get_group_color( ofaIRenderer *instance, const ofaIRenderable *renderable, gdouble *r, gdouble *g, gdouble *b )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), FALSE );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), FALSE );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_group_color ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_group_color( instance, renderable, r, g, b ));
+	}
+
+	sdata->empty = NULL;
+
+	return( FALSE );
+}
+
+/**
+ * ofa_irenderer_get_report_font:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @page_num: the number of the page to be rendered, counted from zero.
+ *
+ * Returns: the name of the font to be used to draw the dosssier header.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer implementation
+ * until the first which returns a non-empty font name.
+ *
+ * It will try its own ofaIRenderable::get_report_font() method only if no
+ * #ofaIRenderer implementation has returned something.
+ */
+const gchar *
+ofa_irenderer_get_report_font( ofaIRenderer *instance, const ofaIRenderable *renderable, guint page_num )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), NULL );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), NULL );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_report_font ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_report_font( instance, renderable, page_num ));
+	}
+
+	sdata->empty = NULL;
+
+	return( NULL );
+}
+
+/**
+ * ofa_irenderer_get_report_color:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @r: [out]: a placeholder for red component.
+ * @g: [out]: a placeholder for green component.
+ * @b: [out]: a placeholder for blue component.
+ *
+ * Returns: %TRUE if the interface implements the method and has executed
+ * it.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer
+ * implementation until the first which returns %TRUE.
+ *
+ * It will try its own ofaIRenderable::get_report_color() method only
+ * if no #ofaIRenderer implementation has returned something.
+ */
+gboolean
+ofa_irenderer_get_report_color( ofaIRenderer *instance, const ofaIRenderable *renderable, gdouble *r, gdouble *g, gdouble *b )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), FALSE );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), FALSE );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_report_color ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_report_color( instance, renderable, r, g, b ));
+	}
+
+	sdata->empty = NULL;
+
+	return( FALSE );
+}
+
+/**
+ * ofa_irenderer_get_body_font:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ *
+ * Returns: the name of the font to be used to draw the dosssier header.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer implementation
+ * until the first which returns a non-empty font name.
+ *
+ * It will try its own ofaIRenderable::get_body_font() method only if no
+ * #ofaIRenderer implementation has returned something.
+ */
+const gchar *
+ofa_irenderer_get_body_font( ofaIRenderer *instance, const ofaIRenderable *renderable )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), NULL );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), NULL );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_body_font ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_body_font( instance, renderable ));
+	}
+
+	sdata->empty = NULL;
+
+	return( NULL );
+}
+
+/**
+ * ofa_irenderer_get_body_color:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @r: [out]: a placeholder for red component.
+ * @g: [out]: a placeholder for green component.
+ * @b: [out]: a placeholder for blue component.
+ *
+ * Returns: %TRUE if the interface implements the method and has executed
+ * it.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer
+ * implementation until the first which returns %TRUE.
+ *
+ * It will try its own ofaIRenderable::get_body_color() method only
+ * if no #ofaIRenderer implementation has returned something.
+ */
+gboolean
+ofa_irenderer_get_body_color( ofaIRenderer *instance, const ofaIRenderable *renderable, gdouble *r, gdouble *g, gdouble *b )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), FALSE );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), FALSE );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_body_color ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_body_color( instance, renderable, r, g, b ));
 	}
 
 	sdata->empty = NULL;
@@ -216,6 +797,74 @@ ofa_irenderer_draw_page_footer( ofaIRenderer *instance, ofaIRenderable *renderab
 
 	if( OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_footer ){
 		return( OFA_IRENDERER_GET_INTERFACE( instance )->draw_page_footer( instance, renderable ));
+	}
+
+	sdata->empty = NULL;
+
+	return( FALSE );
+}
+
+/**
+ * ofa_irenderer_get_footer_font:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ *
+ * Returns: the name of the font to be used to draw the dosssier header.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer implementation
+ * until the first which returns a non-empty font name.
+ *
+ * It will try its own ofaIRenderable::get_footer_font() method only if no
+ * #ofaIRenderer implementation has returned something.
+ */
+const gchar *
+ofa_irenderer_get_footer_font( ofaIRenderer *instance, const ofaIRenderable *renderable )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), NULL );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), NULL );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_footer_font ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_footer_font( instance, renderable ));
+	}
+
+	sdata->empty = NULL;
+
+	return( NULL );
+}
+
+/**
+ * ofa_irenderer_get_footer_color:
+ * @instance: this #ofaIRenderer instance.
+ * @renderable: the #ofaIRenderable target.
+ * @r: [out]: a placeholder for red component.
+ * @g: [out]: a placeholder for green component.
+ * @b: [out]: a placeholder for blue component.
+ *
+ * Returns: %TRUE if the interface implements the method and has executed
+ * it.
+ *
+ * The #ofaIRenderable interface will call each #ofaIRenderer
+ * implementation until the first which returns %TRUE.
+ *
+ * It will try its own ofaIRenderable::get_footer_color() method only
+ * if no #ofaIRenderer implementation has returned something.
+ */
+gboolean
+ofa_irenderer_get_footer_color( ofaIRenderer *instance, const ofaIRenderable *renderable, gdouble *r, gdouble *g, gdouble *b )
+{
+	sIRenderer *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERER( instance ), FALSE );
+	g_return_val_if_fail( renderable && OFA_IS_IRENDERABLE( renderable ), FALSE );
+
+	sdata = get_instance_data( instance );
+
+	if( OFA_IRENDERER_GET_INTERFACE( instance )->get_footer_color ){
+		return( OFA_IRENDERER_GET_INTERFACE( instance )->get_footer_color( instance, renderable, r, g, b ));
 	}
 
 	sdata->empty = NULL;

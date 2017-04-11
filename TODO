@@ -304,8 +304,6 @@
                 (at least a second icon appears in the gnome status bar)
      2017- 4-11 nor are the nomodal pages, nor the mydndwindows
 
-1452 2017- 4-11 generalize the ofaIRenderer interface
-
 1454
 
 -----------------------------------------------------------------------
@@ -1085,6 +1083,9 @@
 
 1449 2017- 4-10 check balances bin: widget are not well aligned
      2017- 4-10 fixed
+
+1452 2017- 4-11 generalize the ofaIRenderer interface
+     2017- 4-11 done with font and color getters
 
 1453 2017- 4-11 configure.ac: does not display pwirenderer plugin infos
      2017- 4-11 fixed

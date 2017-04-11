@@ -164,8 +164,6 @@ static gdouble       get_group_footer_height( ofaIRenderable *instance, sIRender
 static void          irenderable_draw_last_summary( ofaIRenderable *instance, sIRenderable *sdata );
 static void          irenderable_draw_page_footer( ofaIRenderable *instance, sIRenderable *sdata );
 static gdouble       get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata );
-static const gchar  *irenderable_get_footer_font( const ofaIRenderable *instance, sIRenderable *sdata );
-static void          irenderable_get_footer_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b, sIRenderable *sdata );
 static void          set_rgb( gdouble *r, gdouble *g, gdouble *b, gdouble sr, gdouble sg, gdouble sb );
 static void          set_font( PangoLayout *layout, const gchar *font_str, gdouble *size );
 static gdouble       set_text( PangoLayout *layout, cairo_t *context, gdouble x, gdouble y, const gchar *text, PangoAlignment align );
@@ -380,6 +378,7 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 {
 	static const gchar *thisfn = "ofa_irenderable_begin_render";
 	sIRenderable *sdata;
+	GList *it;
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), 0 );
 
@@ -406,6 +405,9 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->begin_render ){
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->begin_render( instance );
+	}
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		ofa_irenderer_begin_render( OFA_IRENDERER( it->data ), instance );
 	}
 
 	/* run the pagination
@@ -441,17 +443,32 @@ ofa_irenderable_render_page( ofaIRenderable *instance, cairo_t *cr, guint page_n
 {
 	static const gchar *thisfn = "ofa_irenderable_render_page";
 	sIRenderable *sdata;
+	gboolean done;
+	GList *it;
 
 	g_debug( "%s: instance=%p, cr=%p, page_number=%d",
 			thisfn, ( void * ) instance, ( void * ) cr, page_number );
 
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->render_page ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->render_page( instance );
+	done = FALSE;
+	sdata = get_instance_data( instance );
 
-	} else {
-		sdata = get_instance_data( instance );
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		done = ofa_irenderer_render_page( OFA_IRENDERER( it->data ), instance );
+		if( done ){
+			break;
+		}
+	}
+
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->render_page ){
+			OFA_IRENDERABLE_GET_INTERFACE( instance )->render_page( instance );
+			done = TRUE;
+		}
+	}
+
+	if( !done ){
 		create_temp_context( instance, cr, sdata );
 
 		sdata->current_context = sdata->in_context;
@@ -475,16 +492,21 @@ ofa_irenderable_end_render( ofaIRenderable *instance, cairo_t *cr )
 {
 	static const gchar *thisfn = "ofa_irenderable_end_render";
 	sIRenderable *sdata;
+	GList *it;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 
+	sdata = get_instance_data( instance );
+
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		ofa_irenderer_end_render( OFA_IRENDERER( it->data ), instance );
+	}
+
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->end_render ){
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->end_render( instance );
 	}
-
-	sdata = get_instance_data( instance );
 
 	g_debug( "%s: dataset_count=%u, rendered_count=%u",
 			thisfn, g_list_length( sdata->dataset ), sdata->count_rendered );
@@ -784,17 +806,23 @@ irenderable_draw_page_header_dossier( ofaIRenderable *instance, sIRenderable *sd
 	gboolean done;
 
 	done = FALSE;
+
 	for( it=sdata->renderer_plugins ; it ; it=it->next ){
-		if( ofa_irenderer_draw_page_header_dossier( OFA_IRENDERER( it->data ), instance )){
-			done = TRUE;
+		done = ofa_irenderer_draw_page_header_dossier( OFA_IRENDERER( it->data ), instance );
+		if( done ){
 			break;
 		}
 	}
+
 	if( !done ){
 		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_dossier ){
 			OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_dossier( instance );
+			done = TRUE;
+		}
+	}
 
-		} else if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_label ){
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_label ){
 
 			ofa_irenderable_get_dossier_color( instance, &r, &g, &b );
 			ofa_irenderable_set_color( instance, r, g, b );
@@ -1239,35 +1267,6 @@ get_page_footer_height( ofaIRenderable *instance, sIRenderable *sdata )
 	}
 
 	return( height );
-}
-
-static const gchar *
-irenderable_get_footer_font( const ofaIRenderable *instance, sIRenderable *sdata )
-{
-	const gchar *font;
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_font ){
-		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_font( instance );
-
-	} else {
-		font = st_default_footer_font;
-	}
-
-	return( font );
-}
-
-static void
-irenderable_get_footer_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b, sIRenderable *sdata )
-{
-	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
-	g_return_if_fail( r && g && b );
-
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_color ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_color( instance, r, g, b );
-
-	} else {
-		set_rgb( r, g, b, COLOR_FOOTER );
-	}
 }
 
 /*
@@ -1822,7 +1821,7 @@ ofa_irenderable_draw_default_page_footer( ofaIRenderable *instance )
 	sdata = get_instance_data( instance );
 
 	/* page footer color */
-	irenderable_get_footer_color( instance, &r, &g, &b, sdata );
+	ofa_irenderable_get_footer_color( instance, &r, &g, &b );
 	ofa_irenderable_set_color( instance, r, g, b );
 
 	/* draw the separation line
@@ -1836,7 +1835,7 @@ ofa_irenderable_draw_default_page_footer( ofaIRenderable *instance )
 	y += vspace_after_line;
 
 	/* draw the footer line */
-	ofa_irenderable_set_font( instance, irenderable_get_footer_font( instance, sdata ));
+	ofa_irenderable_set_font( instance, ofa_irenderable_get_footer_font( instance ));
 	text_height = ofa_irenderable_get_text_height( instance );
 
 	str = g_strdup_printf( "%s v %s", PACKAGE_NAME, PACKAGE_VERSION );
@@ -1995,14 +1994,29 @@ ofa_irenderable_get_columns_spacing( const ofaIRenderable *instance )
 const gchar *
 ofa_irenderable_get_dossier_font( const ofaIRenderable *instance, guint page_num )
 {
+	sIRenderable *sdata;
 	const gchar *font;
+	GList *it;
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_font ){
-		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_font( instance, page_num );
+	sdata = get_instance_data( instance );
+	font = NULL;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		font = ofa_irenderer_get_dossier_font( OFA_IRENDERER( it->data ), instance, page_num );
+		if( my_strlen( font )){
+			break;
+		}
+	}
+
+	if( !my_strlen( font )){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_font ){
+			font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_font( instance, page_num );
+		}
+	}
+
+	if( !my_strlen( font )){
 		font = st_default_header_dossier_font;
 	}
 
@@ -2018,13 +2032,31 @@ ofa_irenderable_get_dossier_font( const ofaIRenderable *instance, guint page_num
 void
 ofa_irenderable_get_dossier_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
 {
+	sIRenderable *sdata;
+	GList *it;
+	gboolean done;
+
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 	g_return_if_fail( r && g && b );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_color ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_color( instance, r, g, b );
+	sdata = get_instance_data( instance );
+	done = FALSE;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		done = ofa_irenderer_get_dossier_color( OFA_IRENDERER( it->data ), instance, r, g, b );
+		if( done ){
+			break;
+		}
+	}
+
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_color ){
+			OFA_IRENDERABLE_GET_INTERFACE( instance )->get_dossier_color( instance, r, g, b );
+			done = TRUE;
+		}
+	}
+
+	if( !done ){
 		set_rgb( r, g, b, COLOR_HEADER_DOSSIER );
 	}
 }
@@ -2039,14 +2071,29 @@ ofa_irenderable_get_dossier_color( const ofaIRenderable *instance, gdouble *r, g
 const gchar *
 ofa_irenderable_get_title_font( const ofaIRenderable *instance, guint page_num )
 {
+	sIRenderable *sdata;
 	const gchar *font;
+	GList *it;
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_font ){
-		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_font( instance, page_num );
+	sdata = get_instance_data( instance );
+	font = NULL;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		font = ofa_irenderer_get_title_font( OFA_IRENDERER( it->data ), instance, page_num );
+		if( my_strlen( font )){
+			break;
+		}
+	}
+
+	if( !my_strlen( font )){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_font ){
+			font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_font( instance, page_num );
+		}
+	}
+
+	if( !my_strlen( font )){
 		font = st_default_header_title_font;
 	}
 
@@ -2062,13 +2109,31 @@ ofa_irenderable_get_title_font( const ofaIRenderable *instance, guint page_num )
 void
 ofa_irenderable_get_title_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
 {
+	sIRenderable *sdata;
+	GList *it;
+	gboolean done;
+
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 	g_return_if_fail( r && g && b );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_color ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_color( instance, r, g, b );
+	sdata = get_instance_data( instance );
+	done = FALSE;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		done = ofa_irenderer_get_title_color( OFA_IRENDERER( it->data ), instance, r, g, b );
+		if( done ){
+			break;
+		}
+	}
+
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_color ){
+			OFA_IRENDERABLE_GET_INTERFACE( instance )->get_title_color( instance, r, g, b );
+			done = TRUE;
+		}
+	}
+
+	if( !done ){
 		set_rgb( r, g, b, COLOR_HEADER_TITLE );
 	}
 }
@@ -2083,14 +2148,29 @@ ofa_irenderable_get_title_color( const ofaIRenderable *instance, gdouble *r, gdo
 const gchar *
 ofa_irenderable_get_columns_font( const ofaIRenderable *instance, guint page_num )
 {
+	sIRenderable *sdata;
 	const gchar *font;
+	GList *it;
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_font ){
-		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_font( instance, page_num );
+	sdata = get_instance_data( instance );
+	font = NULL;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		font = ofa_irenderer_get_columns_font( OFA_IRENDERER( it->data ), instance, page_num );
+		if( my_strlen( font )){
+			break;
+		}
+	}
+
+	if( !my_strlen( font )){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_font ){
+			font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_font( instance, page_num );
+		}
+	}
+
+	if( !my_strlen( font )){
 		font = st_default_header_columns_font;
 	}
 
@@ -2106,13 +2186,31 @@ ofa_irenderable_get_columns_font( const ofaIRenderable *instance, guint page_num
 void
 ofa_irenderable_get_columns_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
 {
+	sIRenderable *sdata;
+	GList *it;
+	gboolean done;
+
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 	g_return_if_fail( r && g && b );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_color ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_color( instance, r, g, b );
+	sdata = get_instance_data( instance );
+	done = FALSE;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		done = ofa_irenderer_get_columns_color( OFA_IRENDERER( it->data ), instance, r, g, b );
+		if( done ){
+			break;
+		}
+	}
+
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_color ){
+			OFA_IRENDERABLE_GET_INTERFACE( instance )->get_columns_color( instance, r, g, b );
+			done = TRUE;
+		}
+	}
+
+	if( !done ){
 		set_rgb( r, g, b, COLOR_HEADER_COLUMNS_FG );
 	}
 }
@@ -2127,14 +2225,29 @@ ofa_irenderable_get_columns_color( const ofaIRenderable *instance, gdouble *r, g
 const gchar *
 ofa_irenderable_get_summary_font( const ofaIRenderable *instance, guint page_num )
 {
+	sIRenderable *sdata;
 	const gchar *font;
+	GList *it;
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_font ){
-		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_font( instance, page_num );
+	sdata = get_instance_data( instance );
+	font = NULL;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		font = ofa_irenderer_get_summary_font( OFA_IRENDERER( it->data ), instance, page_num );
+		if( my_strlen( font )){
+			break;
+		}
+	}
+
+	if( !my_strlen( font )){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_font ){
+			font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_font( instance, page_num );
+		}
+	}
+
+	if( !my_strlen( font )){
 		font = st_default_summary_font;
 	}
 
@@ -2150,13 +2263,31 @@ ofa_irenderable_get_summary_font( const ofaIRenderable *instance, guint page_num
 void
 ofa_irenderable_get_summary_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
 {
+	sIRenderable *sdata;
+	GList *it;
+	gboolean done;
+
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 	g_return_if_fail( r && g && b );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_color ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_color( instance, r, g, b );
+	sdata = get_instance_data( instance );
+	done = FALSE;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		done = ofa_irenderer_get_summary_color( OFA_IRENDERER( it->data ), instance, r, g, b );
+		if( done ){
+			break;
+		}
+	}
+
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_color ){
+			OFA_IRENDERABLE_GET_INTERFACE( instance )->get_summary_color( instance, r, g, b );
+			done = TRUE;
+		}
+	}
+
+	if( !done ){
 		ofa_irenderable_get_title_color( instance, r, g, b );
 	}
 }
@@ -2171,14 +2302,29 @@ ofa_irenderable_get_summary_color( const ofaIRenderable *instance, gdouble *r, g
 const gchar *
 ofa_irenderable_get_group_font( const ofaIRenderable *instance, guint page_num )
 {
+	sIRenderable *sdata;
 	const gchar *font;
+	GList *it;
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_font ){
-		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_font( instance, page_num );
+	sdata = get_instance_data( instance );
+	font = NULL;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		font = ofa_irenderer_get_group_font( OFA_IRENDERER( it->data ), instance, page_num );
+		if( my_strlen( font )){
+			break;
+		}
+	}
+
+	if( !my_strlen( font )){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_font ){
+			font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_font( instance, page_num );
+		}
+	}
+
+	if( !my_strlen( font )){
 		font = st_default_group_font;
 	}
 
@@ -2194,13 +2340,31 @@ ofa_irenderable_get_group_font( const ofaIRenderable *instance, guint page_num )
 void
 ofa_irenderable_get_group_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
 {
+	sIRenderable *sdata;
+	GList *it;
+	gboolean done;
+
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 	g_return_if_fail( r && g && b );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_color ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_color( instance, r, g, b );
+	sdata = get_instance_data( instance );
+	done = FALSE;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		done = ofa_irenderer_get_group_color( OFA_IRENDERER( it->data ), instance, r, g, b );
+		if( done ){
+			break;
+		}
+	}
+
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_color ){
+			OFA_IRENDERABLE_GET_INTERFACE( instance )->get_group_color( instance, r, g, b );
+			done = TRUE;
+		}
+	}
+
+	if( !done ){
 		ofa_irenderable_get_summary_color( instance, r, g, b );
 	}
 }
@@ -2215,14 +2379,29 @@ ofa_irenderable_get_group_color( const ofaIRenderable *instance, gdouble *r, gdo
 const gchar *
 ofa_irenderable_get_report_font( const ofaIRenderable *instance, guint page_num )
 {
+	sIRenderable *sdata;
 	const gchar *font;
+	GList *it;
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_font ){
-		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_font( instance, page_num );
+	sdata = get_instance_data( instance );
+	font = NULL;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		font = ofa_irenderer_get_report_font( OFA_IRENDERER( it->data ), instance, page_num );
+		if( my_strlen( font )){
+			break;
+		}
+	}
+
+	if( !my_strlen( font )){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_font ){
+			font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_font( instance, page_num );
+		}
+	}
+
+	if( !my_strlen( font )){
 		font = st_default_report_font;
 	}
 
@@ -2238,13 +2417,31 @@ ofa_irenderable_get_report_font( const ofaIRenderable *instance, guint page_num 
 void
 ofa_irenderable_get_report_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
 {
+	sIRenderable *sdata;
+	GList *it;
+	gboolean done;
+
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 	g_return_if_fail( r && g && b );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_color ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_color( instance, r, g, b );
+	sdata = get_instance_data( instance );
+	done = FALSE;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		done = ofa_irenderer_get_report_color( OFA_IRENDERER( it->data ), instance, r, g, b );
+		if( done ){
+			break;
+		}
+	}
+
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_color ){
+			OFA_IRENDERABLE_GET_INTERFACE( instance )->get_report_color( instance, r, g, b );
+			done = TRUE;
+		}
+	}
+
+	if( !done ){
 		ofa_irenderable_get_summary_color( instance, r, g, b );
 	}
 }
@@ -2258,14 +2455,29 @@ ofa_irenderable_get_report_color( const ofaIRenderable *instance, gdouble *r, gd
 const gchar *
 ofa_irenderable_get_body_font( const ofaIRenderable *instance )
 {
+	sIRenderable *sdata;
 	const gchar *font;
+	GList *it;
 
 	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font ){
-		font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font( instance );
+	sdata = get_instance_data( instance );
+	font = NULL;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		font = ofa_irenderer_get_body_font( OFA_IRENDERER( it->data ), instance );
+		if( my_strlen( font )){
+			break;
+		}
+	}
+
+	if( !my_strlen( font )){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font ){
+			font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_font( instance );
+		}
+	}
+
+	if( !my_strlen( font )){
 		font = st_default_body_font;
 	}
 
@@ -2281,13 +2493,31 @@ ofa_irenderable_get_body_font( const ofaIRenderable *instance )
 void
 ofa_irenderable_get_body_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
 {
+	sIRenderable *sdata;
+	GList *it;
+	gboolean done;
+
 	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
 	g_return_if_fail( r && g && b );
 
-	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_color ){
-		OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_color( instance, r, g, b );
+	sdata = get_instance_data( instance );
+	done = FALSE;
 
-	} else {
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		done = ofa_irenderer_get_body_color( OFA_IRENDERER( it->data ), instance, r, g, b );
+		if( done ){
+			break;
+		}
+	}
+
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_color ){
+			OFA_IRENDERABLE_GET_INTERFACE( instance )->get_body_color( instance, r, g, b );
+			done = TRUE;
+		}
+	}
+
+	if( !done ){
 		set_rgb( r, g, b, COLOR_BODY );
 	}
 }
@@ -2316,6 +2546,82 @@ ofa_irenderable_get_body_vspace_rate( const ofaIRenderable *instance )
 	}
 
 	return( rate );
+}
+
+/**
+ * ofa_irenderable_get_footer_font:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the font used for the page footer.
+ */
+const gchar *
+ofa_irenderable_get_footer_font( const ofaIRenderable *instance )
+{
+	sIRenderable *sdata;
+	const gchar *font;
+	GList *it;
+
+	g_return_val_if_fail( instance && OFA_IS_IRENDERABLE( instance ), NULL );
+
+	sdata = get_instance_data( instance );
+	font = NULL;
+
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		font = ofa_irenderer_get_footer_font( OFA_IRENDERER( it->data ), instance );
+		if( my_strlen( font )){
+			break;
+		}
+	}
+
+	if( !my_strlen( font )){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_font ){
+			font = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_font( instance );
+		}
+	}
+
+	if( !my_strlen( font )){
+		font = st_default_footer_font;
+	}
+
+	return( font );
+}
+
+/**
+ * ofa_irenderable_get_body_color:
+ * @instance: this #ofaIRenderable instance.
+ *
+ * Returns: the color used for the page footer.
+ */
+void
+ofa_irenderable_get_footer_color( const ofaIRenderable *instance, gdouble *r, gdouble *g, gdouble *b )
+{
+	sIRenderable *sdata;
+	GList *it;
+	gboolean done;
+
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+	g_return_if_fail( r && g && b );
+
+	sdata = get_instance_data( instance );
+	done = FALSE;
+
+	for( it=sdata->renderer_plugins ; it ; it=it->next ){
+		done = ofa_irenderer_get_footer_color( OFA_IRENDERER( it->data ), instance, r, g, b );
+		if( done ){
+			break;
+		}
+	}
+
+	if( !done ){
+		if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_color ){
+			OFA_IRENDERABLE_GET_INTERFACE( instance )->get_footer_color( instance, r, g, b );
+			done = TRUE;
+		}
+	}
+
+	if( !done ){
+		set_rgb( r, g, b, COLOR_FOOTER );
+	}
 }
 
 static sIRenderable *
