@@ -1176,6 +1176,7 @@ ofa_idbconnect_restore_db( const ofaIDBConnect *connect,
 		}
 
 		g_free( sope );
+		g_object_unref( file );
 
 		return( ok );
 	}
@@ -1204,6 +1205,7 @@ restore_open_archive( const ofaIDBConnect *self, GFile *file, sRestore *sope )
 		archive_read_support_format_all( sope->archive );
 
 		pathname = g_file_get_path( file );
+
 		if( archive_read_open_filename( sope->archive, pathname, 16384 ) != ARCHIVE_OK ){
 			g_warning( "%s: archive_read_open_filename: path=%s, %s", thisfn, pathname, archive_error_string( sope->archive ));
 
@@ -1217,6 +1219,8 @@ restore_open_archive( const ofaIDBConnect *self, GFile *file, sRestore *sope )
 				archive_read_data_skip( sope->archive );
 			}
 		}
+
+		g_free( pathname );
 
 		if( !found ){
 			archive_read_close( sope->archive );
