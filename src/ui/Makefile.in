@@ -143,10 +143,11 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-account-book-render.$(OBJEXT) \
 	ofa-account-filter-vv-bin.$(OBJEXT) ofa-account-page.$(OBJEXT) \
 	ofa-admin-credentials-bin.$(OBJEXT) ofa-application.$(OBJEXT) \
-	ofa-backup-assistant.$(OBJEXT) ofa-balance-args.$(OBJEXT) \
-	ofa-balance-grid-bin.$(OBJEXT) ofa-balance-render.$(OBJEXT) \
-	ofa-bat-page.$(OBJEXT) ofa-check-balances.$(OBJEXT) \
-	ofa-check-balances-bin.$(OBJEXT) ofa-check-integrity.$(OBJEXT) \
+	ofa-backup-assistant.$(OBJEXT) ofa-backup-display.$(OBJEXT) \
+	ofa-balance-args.$(OBJEXT) ofa-balance-grid-bin.$(OBJEXT) \
+	ofa-balance-render.$(OBJEXT) ofa-bat-page.$(OBJEXT) \
+	ofa-check-balances.$(OBJEXT) ofa-check-balances-bin.$(OBJEXT) \
+	ofa-check-integrity.$(OBJEXT) \
 	ofa-check-integrity-bin.$(OBJEXT) ofa-class-page.$(OBJEXT) \
 	ofa-class-properties.$(OBJEXT) ofa-class-store.$(OBJEXT) \
 	ofa-class-treeview.$(OBJEXT) ofa-closing-parms-bin.$(OBJEXT) \
@@ -519,6 +520,8 @@ openbook_SOURCES = \
 	ofa-application-def.h								\
 	ofa-backup-assistant.c								\
 	ofa-backup-assistant.h								\
+	ofa-backup-display.c								\
+	ofa-backup-display.h								\
 	ofa-balance-args.c									\
 	ofa-balance-args.h									\
 	ofa-balance-grid-bin.c								\
@@ -787,6 +790,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-admin-credentials-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-application.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-backup-assistant.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-backup-display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-grid-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-balance-render.Po@am__quote@

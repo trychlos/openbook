@@ -24,6 +24,7 @@
  New features and improvements:
 
    - Main window has a new 'minimal' display mode.
+   - Restore assistant let the user display the metadata of the archive (todo #1450).
 
  Bug fixes:
 
@@ -32,6 +33,7 @@
 
  Other changes:
 
+   - ofaBackupDisplay: new class.
    - ofaIRenderer: interface is completed with font and color getters (todo #1452).
 
 -----------------------------------------------------------------------

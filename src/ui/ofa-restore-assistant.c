@@ -52,6 +52,7 @@
 #include "api/ofo-exemeta.h"
 
 #include "ui/ofa-admin-credentials-bin.h"
+#include "ui/ofa-backup-display.h"
 #include "ui/ofa-dossier-actions-bin.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-main-window.h"
@@ -106,6 +107,7 @@ typedef struct {
 	/* p2: select the dossier target
 	 */
 	GtkWidget              *p2_uri_label;
+	GtkWidget              *p2_uri_btn;
 	ofaTargetChooserBin    *p2_chooser;
 	ofaIDBDossierMeta      *p2_dossier_meta;
 	gboolean                p2_new_dossier;
@@ -121,6 +123,7 @@ typedef struct {
 	 */
 	GtkSizeGroup           *p3_hgroup;
 	GtkWidget              *p3_uri_label;
+	GtkWidget              *p3_uri_btn;
 	GtkWidget              *p3_dossier_label;
 	GtkWidget              *p3_name_label;
 	GtkWidget              *p3_connect_parent;
@@ -134,6 +137,7 @@ typedef struct {
 	 */
 	GtkSizeGroup           *p4_hgroup;
 	GtkWidget              *p4_uri_label;
+	GtkWidget              *p4_uri_btn;
 	GtkWidget              *p4_dossier_label;
 	GtkWidget              *p4_name_label;
 	GtkWidget              *p4_connect_parent;
@@ -146,6 +150,7 @@ typedef struct {
 	/* p5: display operations to be done and ask for confirmation
 	 */
 	GtkWidget              *p5_uri_label;
+	GtkWidget              *p5_uri_btn;
 	GtkWidget              *p5_dossier_label;
 	GtkWidget              *p5_name_label;
 	GtkWidget              *p5_su_account;
@@ -214,6 +219,7 @@ static gboolean p2_check_for_complete( ofaRestoreAssistant *self );
 static gboolean p2_check_for_restore_rules( ofaRestoreAssistant *self );
 static gboolean p2_check_for_rule1_dates( ofaRestoreAssistant *self );
 static gboolean p2_check_for_rule2_status( ofaRestoreAssistant *self );
+static void     p2_on_view_metadata_clicked( GtkButton *button, ofaRestoreAssistant *self );
 static void     p2_set_message( ofaRestoreAssistant *self, const gchar *message );
 static void     p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -332,7 +338,7 @@ restore_assistant_dispose( GObject *instance )
 
 			/* if the archive has been successfully restored and opened,
 			 * it is now time to (maybe) apply standard actions */
-			if( priv->p6_restored && priv->p6_opened && priv->p5_apply && priv->getter ){
+			if( priv->p6_restored && priv->p6_opened && priv->p5_apply ){
 				main_window = ofa_igetter_get_main_window( priv->getter );
 				g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 				ofa_main_window_dossier_apply_actions( OFA_MAIN_WINDOW( main_window ));
@@ -637,7 +643,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p2_do_init";
 	ofaRestoreAssistantPrivate *priv;
-	GtkWidget *parent;
+	GtkWidget *parent, *btn;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -649,6 +655,11 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv->p2_uri_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-furi" );
 	g_return_if_fail( priv->p2_uri_label && GTK_IS_LABEL( priv->p2_uri_label ));
 	my_style_add( priv->p2_uri_label, "labelinfo" );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-uri-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect( btn, "clicked", G_CALLBACK( p2_on_view_metadata_clicked ), self );
+	priv->p2_uri_btn = btn;
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-chooser-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -677,6 +688,7 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( page && GTK_IS_CONTAINER( page ));
 
 	gtk_label_set_text( GTK_LABEL( priv->p2_uri_label ), priv->p1_uri );
+	gtk_widget_set_sensitive( priv->p2_uri_btn, priv->p1_format == OFA_BACKUP_HEADER_ZIP );
 
 	ofa_target_chooser_bin_set_selected(
 			priv->p2_chooser, priv->p2_dossier_meta, priv->p2_exercice_meta );
@@ -843,6 +855,18 @@ p2_check_for_rule2_status( ofaRestoreAssistant *self )
 }
 
 static void
+p2_on_view_metadata_clicked( GtkButton *button, ofaRestoreAssistant *self )
+{
+	ofaRestoreAssistantPrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_backup_display_run( priv->getter, toplevel, priv->p1_uri );
+}
+
+static void
 p2_set_message( ofaRestoreAssistant *self, const gchar *message )
 {
 	ofaRestoreAssistantPrivate *priv;
@@ -881,7 +905,7 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p3_do_init";
 	ofaRestoreAssistantPrivate *priv;
-	GtkWidget *label, *parent;
+	GtkWidget *label, *parent, *btn;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -891,6 +915,11 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv->p3_uri_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-furi" );
 	g_return_if_fail( priv->p3_uri_label && GTK_IS_LABEL( priv->p3_uri_label ));
 	my_style_add( priv->p3_uri_label, "labelinfo" );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-uri-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect( btn, "clicked", G_CALLBACK( p2_on_view_metadata_clicked ), self );
+	priv->p3_uri_btn = btn;
 
 	priv->p3_dossier_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-dossier" );
 	g_return_if_fail( priv->p3_dossier_label && GTK_IS_LABEL( priv->p3_dossier_label ));
@@ -953,6 +982,7 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->p3_uri_label ), priv->p1_uri );
+	gtk_widget_set_sensitive( priv->p3_uri_btn, priv->p1_format == OFA_BACKUP_HEADER_ZIP );
 	gtk_label_set_text( GTK_LABEL( priv->p3_dossier_label ), priv->p2_dossier_name );
 	gtk_label_set_text( GTK_LABEL( priv->p3_name_label ), priv->p2_exercice_name );
 
@@ -1070,7 +1100,7 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p4_do_init";
 	ofaRestoreAssistantPrivate *priv;
-	GtkWidget *parent, *label;
+	GtkWidget *parent, *label, *btn;
 	GtkSizeGroup *group_bin;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
@@ -1081,6 +1111,11 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv->p4_uri_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-furi" );
 	g_return_if_fail( priv->p4_uri_label && GTK_IS_LABEL( priv->p4_uri_label ));
 	my_style_add( priv->p4_uri_label, "labelinfo" );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-uri-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect( btn, "clicked", G_CALLBACK( p2_on_view_metadata_clicked ), self );
+	priv->p4_uri_btn = btn;
 
 	priv->p4_dossier_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-dossier" );
 	g_return_if_fail( priv->p4_dossier_label && GTK_IS_LABEL( priv->p4_dossier_label ));
@@ -1152,6 +1187,7 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->p4_uri_label ), priv->p1_uri );
+	gtk_widget_set_sensitive( priv->p4_uri_btn, priv->p1_format == OFA_BACKUP_HEADER_ZIP );
 	gtk_label_set_text( GTK_LABEL( priv->p4_dossier_label ), priv->p2_dossier_name );
 	gtk_label_set_text( GTK_LABEL( priv->p4_name_label ), priv->p2_exercice_name );
 
@@ -1242,6 +1278,7 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p5_do_init";
 	ofaRestoreAssistantPrivate *priv;
+	GtkWidget *btn;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
@@ -1253,6 +1290,11 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv->p5_uri_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-furi" );
 	g_return_if_fail( priv->p5_uri_label && GTK_IS_LABEL( priv->p5_uri_label ));
 	my_style_add( priv->p5_uri_label, "labelinfo" );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-uri-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect( btn, "clicked", G_CALLBACK( p2_on_view_metadata_clicked ), self );
+	priv->p5_uri_btn = btn;
 
 	priv->p5_dossier_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-dossier" );
 	g_return_if_fail( priv->p5_dossier_label && GTK_IS_LABEL( priv->p5_dossier_label ));
@@ -1302,6 +1344,7 @@ p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->p5_uri_label ), priv->p1_uri );
+	gtk_widget_set_sensitive( priv->p5_uri_btn, priv->p1_format == OFA_BACKUP_HEADER_ZIP );
 	gtk_label_set_text( GTK_LABEL( priv->p5_dossier_label ), priv->p2_dossier_name );
 	gtk_label_set_text( GTK_LABEL( priv->p5_name_label ), priv->p2_exercice_name );
 

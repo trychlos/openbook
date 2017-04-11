@@ -94,6 +94,8 @@ openbook_SOURCES = \
 	ofa-application-def.h								\
 	ofa-backup-assistant.c								\
 	ofa-backup-assistant.h								\
+	ofa-backup-display.c								\
+	ofa-backup-display.h								\
 	ofa-balance-args.c									\
 	ofa-balance-args.h									\
 	ofa-balance-grid-bin.c								\

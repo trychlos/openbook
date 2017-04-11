@@ -298,8 +298,6 @@
 1445 2017- 4-10 check integrity: check char(1) columns
                 eg. entry status, rule, period
 
-1450 2017- 4-10 restore assistant: display meta data found in the zip file
-
 1451 2017- 4-10 assistants are not transient vs. the main window ?
                 (at least a second icon appears in the gnome status bar)
      2017- 4-11 nor are the nomodal pages, nor the mydndwindows
@@ -1083,6 +1081,9 @@
 
 1449 2017- 4-10 check balances bin: widget are not well aligned
      2017- 4-10 fixed
+
+1450 2017- 4-10 restore assistant: display meta data found in the zip file
+     2017- 4-11 done
 
 1452 2017- 4-11 generalize the ofaIRenderer interface
      2017- 4-11 done with font and color getters
