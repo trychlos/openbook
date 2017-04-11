@@ -37,7 +37,17 @@
 typedef struct {
 	gboolean   dispose_has_run;
 
+	/* initialization
+	 */
 	GtkWidget *child_widget;				/* the widget detached from the notebook */
+	gchar     *title;
+	gint       x;
+	gint       y;
+	gint       width;
+	gint       height;
+
+	/* runtime
+	 */
 	GtkWidget *drag_popup;					/* the popup during re-attaching */
 }
 	myDndWindowPrivate;
@@ -51,6 +61,7 @@ static const GtkTargetEntry st_dnd_format[] = {
 
 static void iwindow_iface_init( myIWindowInterface *iface );
 static void iwindow_init( myIWindow *instance );
+static void on_realize_cb( GtkWidget *widget, void *empty );
 static void on_drag_begin( GtkWidget *self, GdkDragContext *context, void *empty );
 static void on_drag_data_get( GtkWidget *self, GdkDragContext *context, GtkSelectionData *data, guint info, guint time, void *empty );
 
@@ -62,6 +73,7 @@ static void
 dnd_window_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "my_dnd_window_finalize";
+	myDndWindowPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s), st_list_count=%d",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), g_list_length( st_list ));
@@ -69,6 +81,9 @@ dnd_window_finalize( GObject *instance )
 	g_return_if_fail( instance && MY_IS_DND_WINDOW( instance ));
 
 	/* free data members here */
+	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
+
+	g_free( priv->title );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( my_dnd_window_parent_class )->finalize( instance );
@@ -160,15 +175,15 @@ my_dnd_window_new( GtkWidget *widget, const gchar *title, gint x, gint y, gint w
 	window = g_object_new( MY_TYPE_DND_WINDOW,
 					"type", GTK_WINDOW_TOPLEVEL,
 					NULL );
+
 	priv = my_dnd_window_get_instance_private( window );
 
 	priv->child_widget = widget;
-	gtk_container_add( GTK_CONTAINER( window ), widget );
-	gtk_window_set_title( GTK_WINDOW( window ), title );
-	gtk_window_move( GTK_WINDOW( window ), x-MY_DND_SHIFT, y-MY_DND_SHIFT );
-	gtk_window_resize( GTK_WINDOW( window ), 0.9*width, 0.9*height );
-
-	my_iwindow_set_manage_geometry( MY_IWINDOW( window ), FALSE );
+	priv->title = g_strdup( title );
+	priv->x = x;
+	priv->y = y;
+	priv->width = width;
+	priv->height = height;
 
 	return( window );
 }
@@ -194,9 +209,38 @@ iwindow_init( myIWindow *instance )
 	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
 
 	my_iwindow_set_identifier( instance, G_OBJECT_TYPE_NAME( priv->child_widget ));
+	my_iwindow_set_manage_geometry( instance, FALSE );
 
 	gtk_window_set_resizable( GTK_WINDOW( instance ), TRUE );
 	gtk_window_set_modal( GTK_WINDOW( instance ), FALSE );
+
+	/* See https://gna.org/bugs/?24474
+	 * which works around this same bug by hiding/showing the widget */
+	gtk_widget_hide( priv->child_widget );
+
+	gtk_container_add( GTK_CONTAINER( instance ), priv->child_widget );
+
+	g_signal_connect( instance, "realize", G_CALLBACK( on_realize_cb ), NULL );
+}
+
+static void
+on_realize_cb( GtkWidget *widget, void *empty )
+{
+	static const gchar *thisfn = "ofa_nommodal_page_on_realize_cb";
+	myDndWindowPrivate *priv;
+
+	g_debug( "%s: GdkWindow=%p, GdkParentWindow=%p",
+			thisfn, gtk_widget_get_window( widget ), gtk_widget_get_parent_window( widget ));
+
+	g_return_if_fail( widget && MY_IS_DND_WINDOW( widget ));
+
+	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( widget ));
+
+	gtk_window_set_title( GTK_WINDOW( widget ), priv->title );
+	gtk_window_move( GTK_WINDOW( widget ), priv->x-MY_DND_SHIFT, priv->y-MY_DND_SHIFT );
+	gtk_window_resize( GTK_WINDOW( widget ), MY_DND_WINDOW_SCALE*priv->width, MY_DND_WINDOW_SCALE*priv->height );
+
+	gtk_widget_show_all( priv->child_widget );
 }
 
 /**

@@ -40,8 +40,8 @@ G_BEGIN_DECLS
 
 #define MY_DND_TARGET                   "XdndOpenbookDrag"
 
-#define MY_DND_SHIFT                     20
-
+#define MY_DND_SHIFT                     50
+#define MY_DND_WINDOW_SCALE            0.95
 #define MY_DND_POPUP_SCALE             0.75
 
 /**

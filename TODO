@@ -219,9 +219,6 @@
 1102 2016- 5- 1 my_utils_widget_style_xx: is not consistent with a CSS
                 file in the application directory layout
 
-1110 2016- 5- 5 BUG DnD: when drag and drop page - see TODO_1110/trace
-                gdk_window_move_resize_internal: assertion 'GDK_IS_WINDOW (window)' failed
-
 1153 2016- 6-22 FEAT: besides of the integrity constraint checks, display
                 e.g. operation templates which use such account, and so on
 
@@ -432,6 +429,10 @@
      2017- 2- 7 for now, error message is displayed or emitted as a
                 warning which is enough
                 -> cancelled
+
+1110 2016- 5- 5 BUG DnD: when drag and drop page - see TODO_1110/trace
+                gdk_window_move_resize_internal: assertion 'GDK_IS_WINDOW (window)' failed
+     2017- 4-11 fixed
 
 1147 2016- 6- 8 UserPref: whether to take advantage of tab reordering
                 or of detachable pages in the main book as the two are
