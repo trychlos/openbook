@@ -144,6 +144,7 @@ ofa_nomodal_page_run( ofaIGetter *getter, GtkWindow *parent, const gchar *title,
 	static const gchar *thisfn = "ofa_nomodal_page_run";
 	ofaNomodalPage *self;
 	ofaNomodalPagePrivate *priv;
+	myIWindow *shown;
 
 	g_debug( "%s: getter=%p, parent=%p, title=%s, page=%p",
 			thisfn, ( void * ) getter, ( void * ) parent, title, ( void * ) page );
@@ -165,9 +166,9 @@ ofa_nomodal_page_run( ofaIGetter *getter, GtkWindow *parent, const gchar *title,
 	priv->top_widget = page;
 
 	/* after this call, @self may be invalid */
-	my_iwindow_present( MY_IWINDOW( self ));
+	shown = my_iwindow_present( MY_IWINDOW( self ));
 
-	if( MY_IS_IWINDOW( self )){
+	if( shown == MY_IWINDOW( self )){
 		st_list = g_list_prepend( st_list, self );
 		g_object_weak_ref( G_OBJECT( self ), ( GWeakNotify ) on_finalized_page, NULL );
 	}
