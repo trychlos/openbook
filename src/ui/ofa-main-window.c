@@ -107,6 +107,7 @@ typedef struct {
 	GtkMenuBar      *menubar;
 	myAccelGroup    *accel_group;
 	guint            paned_position;
+	gboolean         have_reorder;
 	gboolean         have_detach_pin;
 
 	/* when a dossier is opened
@@ -304,10 +305,13 @@ static void         signaler_on_dossier_opened( ofaISignaler *signaler, ofaMainW
 static void         signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self );
 static void         signaler_on_dossier_changed( ofaISignaler *signaler, ofaMainWindow *main_window );
 static void         signaler_on_dossier_preview( ofaISignaler *signaler, const gchar *uri, ofaMainWindow *main_window );
+static void         signaler_on_ui_restart( ofaISignaler *signaler, ofaMainWindow *self );
 static gboolean     on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void         set_window_title( ofaMainWindow *window, gboolean with_dossier );
 static void         warning_exercice_unset( ofaMainWindow *window );
 static void         reset_pages_count( ofaMainWindow *self );
+static void         pane_destroy( ofaMainWindow *self );
+static void         pane_create( ofaMainWindow *self );
 static void         pane_left_add_treeview( ofaMainWindow *window );
 static void         pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static void         pane_right_add_empty_notebook( ofaMainWindow *window );
@@ -503,6 +507,7 @@ ofa_main_window_new( ofaIGetter *getter )
 	GApplication *application;
 	myISettings *settings;
 	ofaHub *hub;
+	ofaISignaler *signaler;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -534,12 +539,14 @@ ofa_main_window_new( ofaIGetter *getter )
 	ofa_hub_set_main_window( hub, GTK_APPLICATION_WINDOW( window ));
 	ofa_hub_set_page_manager( hub, OFA_IPAGE_MANAGER( window ));
 
-	/* connect to the ofaHub signals
+	/* connect to the ofaISignaler signals
 	 */
-	g_signal_connect( hub, SIGNALER_DOSSIER_OPENED, G_CALLBACK( signaler_on_dossier_opened ), window );
-	g_signal_connect( hub, SIGNALER_DOSSIER_CLOSED, G_CALLBACK( signaler_on_dossier_closed ), window );
-	g_signal_connect( hub, SIGNALER_DOSSIER_CHANGED, G_CALLBACK( signaler_on_dossier_changed ), window );
-	g_signal_connect( hub, SIGNALER_DOSSIER_PREVIEW, G_CALLBACK( signaler_on_dossier_preview ), window );
+	signaler = ofa_igetter_get_signaler( getter );
+	g_signal_connect( signaler, SIGNALER_DOSSIER_OPENED, G_CALLBACK( signaler_on_dossier_opened ), window );
+	g_signal_connect( signaler, SIGNALER_DOSSIER_CLOSED, G_CALLBACK( signaler_on_dossier_closed ), window );
+	g_signal_connect( signaler, SIGNALER_DOSSIER_CHANGED, G_CALLBACK( signaler_on_dossier_changed ), window );
+	g_signal_connect( signaler, SIGNALER_DOSSIER_PREVIEW, G_CALLBACK( signaler_on_dossier_preview ), window );
+	g_signal_connect( signaler, SIGNALER_UI_RESTART, G_CALLBACK( signaler_on_ui_restart ), window );
 
 	/* let the plugins update the managed themes */
 	init_themes( window );
@@ -554,11 +561,6 @@ ofa_main_window_new( ofaIGetter *getter )
 	 * the application menubar does not have any dynamic item
 	 * no background image
 	 */
-
-	/* get the 'pin detach' user pref
-	 * it will be not re-evaluated unless the application is restarted
-	 */
-	priv->have_detach_pin = ofa_prefs_mainbook_get_with_detach_pin( getter );
 
 	return( window );
 }
@@ -713,17 +715,10 @@ static void
 signaler_on_dossier_opened( ofaISignaler *signaler, ofaMainWindow *self )
 {
 	static const gchar *thisfn = "ofa_main_window_signaler_on_dossier_opened";
-	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: signaler=%p, self=%p", thisfn, ( void * ) signaler, ( void * ) self );
 
-	priv = ofa_main_window_get_instance_private( self );
-
-	priv->pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
-	gtk_grid_attach( GTK_GRID( priv->grid ), priv->pane, 0, 1, 1, 1 );
-	gtk_paned_set_position( GTK_PANED( priv->pane ), priv->paned_position );
-	pane_left_add_treeview( self );
-	pane_right_add_empty_notebook( self );
+	pane_create( self );
 
 	/* install the application menubar
 	 */
@@ -751,21 +746,16 @@ signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self )
 	//if( GTK_IS_WINDOW( self ) && ofa_hub_get_dossier( signaler )){
 	if( GTK_IS_WINDOW( self )){
 
-		close_all_pages( self );
-		my_iwindow_close_all();
-
 		priv = ofa_main_window_get_instance_private( self );
+
+		ofa_main_window_dossier_close_windows( self );
 
 		if( priv->background_image ){
 			cairo_surface_destroy( priv->background_image );
 			priv->background_image = NULL;
 		}
 
-		if( priv->pane ){
-			priv->paned_position = gtk_paned_get_position( GTK_PANED( priv->pane ));
-			gtk_widget_destroy( priv->pane );
-			priv->pane = NULL;
-		}
+		pane_destroy( self );
 
 		application = gtk_window_get_application( GTK_WINDOW( self ));
 		menubar_setup( self, G_ACTION_MAP( application ));
@@ -797,6 +787,31 @@ static void
 signaler_on_dossier_preview( ofaISignaler *signaler, const gchar *uri, ofaMainWindow *self )
 {
 	background_image_set_uri( self, uri );
+}
+
+/*
+ * Restart the UI let us take into account the new user preferences.
+ * This is mainly recreating the main notebook.
+ */
+static void
+signaler_on_ui_restart( ofaISignaler *signaler, ofaMainWindow *self )
+{
+	static const gchar *thisfn = "ofa_main_window_signaler_on_ui_restart";
+	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: signaler=%p, self=%p",
+			thisfn, ( void * ) signaler, ( void * ) self );
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	/* close all */
+	ofa_main_window_dossier_close_windows( self );
+
+	/* recreate the main ui */
+	pane_destroy( self );
+	pane_create( self );
+
+	gtk_widget_show_all( priv->pane );
 }
 
 /*
@@ -1061,6 +1076,34 @@ reset_pages_count( ofaMainWindow *self )
 }
 
 static void
+pane_destroy( ofaMainWindow *self )
+{
+	ofaMainWindowPrivate *priv;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	if( priv->pane ){
+		priv->paned_position = gtk_paned_get_position( GTK_PANED( priv->pane ));
+		gtk_widget_destroy( priv->pane );
+		priv->pane = NULL;
+	}
+}
+
+static void
+pane_create( ofaMainWindow *self )
+{
+	ofaMainWindowPrivate *priv;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	priv->pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
+	gtk_grid_attach( GTK_GRID( priv->grid ), priv->pane, 0, 1, 1, 1 );
+	gtk_paned_set_position( GTK_PANED( priv->pane ), priv->paned_position );
+	pane_left_add_treeview( self );
+	pane_right_add_empty_notebook( self );
+}
+
+static void
 pane_left_add_treeview( ofaMainWindow *window )
 {
 	ofaMainWindowPrivate *priv;
@@ -1141,14 +1184,24 @@ pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewCo
 static void
 pane_right_add_empty_notebook( ofaMainWindow *self )
 {
+	static const gchar *thisfn = "ofa_main_window_pane_right_add_empty_notebook";
 	ofaMainWindowPrivate *priv;
 	GtkWidget *book;
-	gboolean detacheable;
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	detacheable = !ofa_prefs_mainbook_get_dnd_reorder( priv->getter );
-	if( detacheable ){
+	/* get the 'pin detach' user pref
+	 * it will be not re-evaluated unless the ui is restarted
+	 */
+	priv->have_detach_pin = ofa_prefs_mainbook_get_with_detach_pin( priv->getter );
+	priv->have_reorder = ofa_prefs_mainbook_get_dnd_reorder( priv->getter );
+
+	g_debug( "%s: have_reorder=%s, have_detach_pin=%s",
+			thisfn,
+			priv->have_reorder ? "True":"False",
+			priv->have_detach_pin ? "True":"False" );
+
+	if( !priv->have_reorder ){
 		book = GTK_WIDGET( my_dnd_book_new());
 		g_signal_connect( book, "my-append-page", G_CALLBACK( book_on_append_page ), self );
 	} else {
@@ -1760,16 +1813,12 @@ notebook_create_page( ofaMainWindow *self, GtkNotebook *book, sThemeDef *def )
 	ofaPage *page;
 	const gchar *ctitle;
 	gchar *title;
-	GtkRequisition natural_size;
 
 	priv = ofa_main_window_get_instance_private( self );
 
 	page = g_object_new( def->type, "ofa-page-getter", priv->getter, NULL );
 	ctitle = gettext( def->label );
 	def->count += 1;
-
-	/* natural_size is not used, but this makes Gtk happy */
-	gtk_widget_get_preferred_size( GTK_WIDGET( page ), NULL, &natural_size );
 
 	if( def->multiple ){
 		title = g_strdup_printf( "%s [%u]", ctitle, def->count );
@@ -1790,8 +1839,12 @@ book_attach_page( ofaMainWindow *self, GtkNotebook *book, GtkWidget *page, const
 	ofaMainWindowPrivate *priv;
 	myTab *tab;
 	GtkWidget *label;
+	GtkRequisition natural_size;
 
 	priv = ofa_main_window_get_instance_private( self );
+
+	/* natural_size is not used, but this makes Gtk happy */
+	gtk_widget_get_preferred_size( GTK_WIDGET( page ), NULL, &natural_size );
 
 	/* the tab widget */
 	tab = my_tab_new( NULL, title );
@@ -1799,7 +1852,8 @@ book_attach_page( ofaMainWindow *self, GtkNotebook *book, GtkWidget *page, const
 	my_tab_set_show_close( tab, TRUE );
 	g_signal_connect( tab, MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), page );
 
-	my_tab_set_show_detach( tab, priv->have_detach_pin );
+	/* pin is only displayed if dnd is off */
+	my_tab_set_show_detach( tab, priv->have_reorder && priv->have_detach_pin );
 	g_signal_connect( tab, MY_SIGNAL_TAB_PIN_CLICKED, G_CALLBACK( on_tab_pin_clicked ), page );
 
 	/* the menu widget */
