@@ -322,7 +322,9 @@
 
 1452 2017- 4-11 generalize the ofaIRenderer interface
 
-1453
+1453 2017- 4-11 configure.ac: does not display pwirenderer plugin infos
+
+1454
 
 -----------------------------------------------------------------------
  DONE
