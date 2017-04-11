@@ -85,16 +85,9 @@
     OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf \
       gdb ./_install/bin/openbook
 
- Total lines count:
- for f in $(find src -type f | grep -E 'c$|h$|ui$|am$'); do c=$(wc -l $f | awk '{ print $1 }'); let total+=$c; done; echo $total
-
- or also:
- $ echo "Total: $(find src -type f | wc -l) files"
-Total: 779 files
-
- and:
- $ find src -type f | grep -vE '\.in$' | xargs wc -l | awk '{ sum += $1 } END { printf( "Total: %d lines\n", sum )}'
-Total: 534436 lines
+ echo " Total files count:    $(find src -type f | wc -l) files"; find src -type f | grep -vE '\.in$' | xargs wc -l | awk '{ sum += $1 } END { printf( " Total lines count: %d lines\n", sum )}'
+ Total files count:    836 files
+ Total lines count: 565028 lines
 
 -----------------------------------------------------------------------
  environment variables
