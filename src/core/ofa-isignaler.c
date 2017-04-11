@@ -62,6 +62,7 @@ enum {
 	STATUS_CHANGE,
 
 	/* UI-related */
+	UI_RESTART,
 	MENU_AVAILABLE,
 	PAGE_MANAGER_AVAILABLE,
 
@@ -536,6 +537,32 @@ interface_base_init( ofaISignalerInterface *klass )
 					G_TYPE_NONE,
 					5,
 					G_TYPE_OBJECT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT );
+
+		/**
+		 * ofaISignaler::ofa-signaler-ui-restart:
+		 *
+		 * The signal is emitted to ask the application to restart the
+		 * user interface.
+		 *
+		 * Use case: taking into account new user preferences.
+		 *
+		 * This is an ACTION signal.
+		 *
+		 * Handler is of type:
+		 * 		void user_handler( ofaISignaler *signaler,
+		 * 							gpointer     user_data );
+		 */
+		st_signals[ UI_RESTART ] = g_signal_new_class_handler(
+					SIGNALER_UI_RESTART,
+					OFA_TYPE_ISIGNALER,
+					G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					0,
+					G_TYPE_NONE );
 
 		/**
 		 * ofaISignaler::ofa-signaler-menu-available:

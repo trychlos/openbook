@@ -105,6 +105,7 @@ typedef struct {
 #define SIGNALER_CHANGE_COUNT               "ofa-signaler-entry-change-count"
 #define SIGNALER_PERIOD_STATUS_CHANGE       "ofa-signaler-entry-period-status-change"
 
+#define SIGNALER_UI_RESTART                 "ofa-signaler-ui-restart"
 #define SIGNALER_MENU_AVAILABLE             "ofa-signaler-menu-available"
 #define SIGNALER_PAGE_MANAGER_AVAILABLE     "ofa-signaler-page-manager-available"
 
