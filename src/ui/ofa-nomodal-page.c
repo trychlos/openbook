@@ -56,6 +56,7 @@ static GList *st_list                   = NULL;
 
 static void iwindow_iface_init( myIWindowInterface *iface );
 static void iwindow_init( myIWindow *instance );
+static void on_realize_cb( GtkWidget *widget, void *empty );
 static void on_finalized_page( void *empty, GObject *finalized_page );
 
 G_DEFINE_TYPE_EXTENDED( ofaNomodalPage, ofa_nomodal_page, GTK_TYPE_WINDOW, 0,
@@ -191,7 +192,6 @@ static void
 iwindow_init( myIWindow *instance )
 {
 	ofaNomodalPagePrivate *priv;
-	gint x, y, width, height;
 
 	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
 
@@ -206,17 +206,40 @@ iwindow_init( myIWindow *instance )
 	gtk_window_set_resizable( GTK_WINDOW( instance ), TRUE );
 	gtk_window_set_modal( GTK_WINDOW( instance ), FALSE );
 
+	/* See https://gna.org/bugs/?24474
+	 * which works around this same bug by hiding/showing the widget */
+	gtk_widget_hide( priv->top_widget );
+
 	gtk_container_add( GTK_CONTAINER( instance ), priv->top_widget );
+
+	g_signal_connect( instance, "realize", G_CALLBACK( on_realize_cb ), NULL );
+}
+
+static void
+on_realize_cb( GtkWidget *widget, void *empty )
+{
+	static const gchar *thisfn = "ofa_nommodal_page_on_realize_cb";
+	ofaNomodalPagePrivate *priv;
+	gint x, y, width, height;
+
+	g_debug( "%s: GdkWindow=%p, GdkParentWindow=%p",
+			thisfn, gtk_widget_get_window( widget ), gtk_widget_get_parent_window( widget ));
+
+	g_return_if_fail( widget && OFA_IS_NOMODAL_PAGE( widget ));
+
+	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( widget ));
 
 	/* we set the default size and position to those of the main window
 	 * so that we are sure they are suitable for the page
 	 */
-	if( priv->parent ){
-		gtk_window_get_position( priv->parent, &x, &y );
-		gtk_window_move( GTK_WINDOW( instance ), x+100, y+100 );
-		gtk_window_get_size( priv->parent, &width, &height );
-		gtk_window_resize( GTK_WINDOW( instance ), width-150, height-150 );
+	if( priv->actual_parent ){
+		gtk_window_get_position( priv->actual_parent, &x, &y );
+		gtk_window_move( GTK_WINDOW( widget ), x+100, y+100 );
+		gtk_window_get_size( priv->actual_parent, &width, &height );
+		gtk_window_resize( GTK_WINDOW( widget ), width-200, height-50 );
 	}
+
+	gtk_widget_show_all( priv->top_widget );
 }
 
 static void
