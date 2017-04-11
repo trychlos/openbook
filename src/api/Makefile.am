@@ -105,6 +105,7 @@ api_include_HEADERS = \
 	ofa-paimean-editable.h								\
 	ofa-preferences.h									\
 	ofa-prefs.h											\
+	ofa-prefs-def.h										\
 	ofa-render-page.h									\
 	ofa-stream-format.h									\
 	ofa-tree-store.h									\
