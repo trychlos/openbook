@@ -68,6 +68,7 @@
    - ofaAccountFrameBin: fix notebook size when the dataset is empty.
    - ofaAccountPage: fix page display when the dataset is empty.
    - ofaAccountStore: let the treeview be repopulated on collection reload.
+   - ofaEntryPage: fix the height of IDateFilter frame (todo #1194).
    - ofaLedgerClose: display the columns in ledgers treeview (todo #1438).
    - ofaLedgerClose: fix signaler handlers GList management.
    - ofaOpeTemplateFrameBin: fix notebook size when the dataset is empty.

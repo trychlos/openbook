@@ -233,10 +233,6 @@
 
 1192 2016- 9-14 FEAT: export the balance for a period
 
-1194 2016- 9-14 ViewEntries: the effect dates filter frame should expand
-                vertically (+ review left and right margins)
-     2016-10- 6 margins reviewed.
-
 1235 2016-10-12 begining of the exercice cannot be modified anymore after
                 the first exercice operation
      2017- 3-29 unless entries are rightly remediated
@@ -292,18 +288,17 @@
 1344 2017- 2- 3 re-authorize dossier open from command-line
 
 1351 2017- 2- 9 Review export and import formats, especially the tables
-                with children and companions (e.g. entries+concil)
+                with children and companions (e.g. entries+concil, or
+                accounts+archived_balances)
                 + have a version number
 
-1379 2017- 3- 9 VatForm: set template column to fixed width, rather expand label
+1379 2017- 3- 9 UI: VatForm: set template column to fixed width, rather expand label
 
 1396 2017- 3-16 check conciliation groups integrity is wrong
                 - display erroneous orphan conciliation member with BatLineId xxx
                 - count is wrong
                 + anyway, this cannot be really done while the exercice has
                 not been rightly archived
-
-1401 2017- 3-16 export accounts at least with opening balance
 
 1402 2017- 3-17 when generating the ODs for non-deductible CSG, should
                 also generate an OD for deductible CSG to 629 account 
@@ -328,6 +323,7 @@
      2017- 3-25 dbms is updated
 
 1445 2017- 4-10 check integrity: check char(1) columns
+                eg. entry status, rule, period
 
 1450 2017- 4-10 restore assistant: display meta data found in the zip file
 
@@ -454,6 +450,11 @@
                 + review all prints for identifiers which have been
                 expanded
      2017- 3-29 fixed
+
+1194 2016- 9-14 ViewEntries: the effect dates filter frame should expand
+                vertically (+ review left and right margins)
+     2016-10- 6 margins reviewed.
+     2017- 4-11 fixed
 
 1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
                 background
@@ -929,6 +930,9 @@
 1400 2017- 3-16 Gtk-CRITICAL **: gtk_tree_model_sort_get_path: assertion 'priv->stamp == iter->stamp' failed
                 when deleting the 69 account (last account of a page)
      2017- 3-16 fixed
+
+1401 2017- 3-16 export accounts at least with opening balance
+     2017- 4-11 cancelled as same than #1351
 
 1403 2017- 3-17 have a progress bar on renderings
      2017- 3-20 done

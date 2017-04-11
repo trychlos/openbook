@@ -141,7 +141,6 @@
                       <object class="GtkBox" id="effect-date-filter">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="orientation">vertical</property>
                         <child>
                           <placeholder/>
                         </child>
