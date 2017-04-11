@@ -22,6 +22,7 @@
  New features and improvements:
 
    Core DB Model v37
+   VAT DB Model v9
 
    - AccountsBalance: new with beginning and ending soldes (todo #1385).
    - AccountsBookSummary: have balance and page break by class (todo #1390). 
@@ -140,6 +141,7 @@
    - ofaExerciceCloseAssistant: make sure only entries of the closed exercice are archived (todo #1387).
    - ofaExerciceCloseAssistant: fix first entry insertion on new exercice.
    - ofaIExportable: reinitalize progress count between exports (todo #1389).
+   - ofaMainWindow: fix Gtk-Warning on size allocation (todo #1172).
    - ofaMainWindow: reset the count of opened multiple pages when closing the dossier (todo #1391).
    - Recurrent: fix periodicity details count.
    - VAT declaration: fix the display of notes indicator.

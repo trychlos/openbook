@@ -228,11 +228,6 @@
 1153 2016- 6-22 FEAT: besides of the integrity constraint checks, display
                 e.g. operation templates which use such account, and so on
 
-1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
-                when opening the first page
-
-1192 2016- 9-14 FEAT: export the balance for a period
-
 1235 2016-10-12 begining of the exercice cannot be modified anymore after
                 the first exercice operation
      2017- 3-29 unless entries are rightly remediated
@@ -450,6 +445,13 @@
                 + review all prints for identifiers which have been
                 expanded
      2017- 3-29 fixed
+
+1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
+                when opening the first page
+     2017- 4-11 fixed
+
+1192 2016- 9-14 FEAT: export the balance for a period
+     2017- 4-11 done with AccountsBalanceRender
 
 1194 2016- 9-14 ViewEntries: the effect dates filter frame should expand
                 vertically (+ review left and right margins)

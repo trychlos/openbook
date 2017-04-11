@@ -1760,12 +1760,16 @@ notebook_create_page( ofaMainWindow *self, GtkNotebook *book, sThemeDef *def )
 	ofaPage *page;
 	const gchar *ctitle;
 	gchar *title;
+	GtkRequisition natural_size;
 
 	priv = ofa_main_window_get_instance_private( self );
 
 	page = g_object_new( def->type, "ofa-page-getter", priv->getter, NULL );
 	ctitle = gettext( def->label );
 	def->count += 1;
+
+	/* natural_size is not used, but this makes Gtk happy */
+	gtk_widget_get_preferred_size( GTK_WIDGET( page ), NULL, &natural_size );
 
 	if( def->multiple ){
 		title = g_strdup_printf( "%s [%u]", ctitle, def->count );
