@@ -41,6 +41,7 @@
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iproperties.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-prefs.h"
 
@@ -84,6 +85,9 @@ typedef struct {
 	GtkWidget                *p1_confirm_on_cancel_btn;
 	GtkWidget                *p1_confirm_altf4_btn;
 	GtkWidget                *p1_confirm_quit_btn;
+	gboolean                  p1_orig_dnd;
+	gboolean                  p1_orig_pin;
+	gboolean                  p1_dirty_ui;
 
 	/* UI - Dossier page
 	 */
@@ -154,6 +158,7 @@ static void     on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *
 static void     on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
 static void     check_for_activable_dlg( ofaPreferences *self );
 static void     on_ok_clicked( ofaPreferences *self );
+static gboolean user_confirm_restart( ofaPreferences *self );
 static gboolean do_update_user_interface_page( ofaPreferences *self, gchar **msgerr );
 static gboolean do_update_dossier_page( ofaPreferences *self, gchar **msgerr );
 static gboolean do_update_account_page( ofaPreferences *self, gchar **msgerr );
@@ -365,35 +370,37 @@ init_user_interface_page( ofaPreferences *self )
 	/* reorder vs. detach main tabs */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-reorder" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
+	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
 	reorder = ofa_prefs_mainbook_get_dnd_reorder( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), reorder );
 	priv->p1_dnd_reorder_btn = button;
-	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
+	priv->p1_orig_dnd = reorder;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-pin-detach" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_mainbook_get_with_detach_pin( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	priv->p1_pin_detach_btn = button;
+	priv->p1_orig_pin = bvalue;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-detach" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !reorder );
 	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !reorder );
 	on_dnd_main_tabs_toggled( GTK_TOGGLE_BUTTON( button ), self );
 
 	/* check integrity display messages */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-disp-all" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
+	g_signal_connect( button, "toggled", G_CALLBACK( on_display_all_toggled ), self );
 	bvalue = ofa_prefs_check_integrity_get_display_all( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	priv->p1_display_all_btn = button;
-	g_signal_connect( button, "toggled", G_CALLBACK( on_display_all_toggled ), self );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-disp-errs" );
 	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
 	g_signal_connect( button, "toggled", G_CALLBACK( on_display_all_toggled ), self );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
 	on_display_all_toggled( GTK_TOGGLE_BUTTON( button ), self );
 
 	/* quitting an assistant */
@@ -944,8 +951,12 @@ static void
 on_ok_clicked( ofaPreferences *self )
 {
 	static const gchar *thisfn = "ofa_preferences_do_update";
+	ofaPreferencesPrivate *priv;
 	gboolean ok;
 	gchar *msgerr;
+	ofaISignaler *signaler;
+
+	priv = ofa_preferences_get_instance_private( self );
 
 	msgerr = NULL;
 
@@ -964,7 +975,43 @@ on_ok_clicked( ofaPreferences *self )
 		g_free( msgerr );
 	}
 
+	if( priv->p1_dirty_ui ){
+		if( user_confirm_restart( self )){
+			my_iwindow_set_allow_close( MY_IWINDOW( self ), FALSE );
+			signaler = ofa_igetter_get_signaler( priv->getter );
+			g_signal_emit_by_name( signaler, SIGNALER_UI_RESTART );
+			my_iwindow_set_allow_close( MY_IWINDOW( self ), TRUE );
+		}
+	}
+
 	my_iwindow_close( MY_IWINDOW( self ));
+}
+
+static gboolean
+user_confirm_restart( ofaPreferences *self )
+{
+	GtkWidget *dialog;
+	gint response;
+
+	dialog = gtk_message_dialog_new(
+			my_utils_widget_get_toplevel( GTK_WIDGET( self )),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_QUESTION,
+			GTK_BUTTONS_NONE, "%s",
+			_( "Some of the preferences you have updated require a restart "
+				"of the application to be taken into account.\n"
+				"Do you want to restart now ?" ));
+
+	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
+			_( "_No, I will restart later" ), GTK_RESPONSE_CANCEL,
+			_( "_Yes, restart now" ), GTK_RESPONSE_OK,
+			NULL );
+
+	response = gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	gtk_widget_destroy( dialog );
+
+	return( response == GTK_RESPONSE_OK );
 }
 
 static gboolean
@@ -979,6 +1026,8 @@ do_update_user_interface_page( ofaPreferences *self, gchar **msgerr )
 	dnd_reorder = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_dnd_reorder_btn ));
 	detach_pin = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_pin_detach_btn ));
 	ofa_prefs_mainbook_set_user_settings( priv->getter, dnd_reorder, detach_pin );
+
+	priv->p1_dirty_ui = ( dnd_reorder != priv->p1_orig_dnd ) || ( detach_pin != priv->p1_orig_pin );
 
 	display_all = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_display_all_btn ));
 	ofa_prefs_check_integrity_set_user_settings( priv->getter, display_all );
