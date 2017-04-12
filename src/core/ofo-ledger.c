@@ -220,7 +220,8 @@ static const ofsBoxDef st_doc_defs[] = {
 		{ 0 }
 };
 
-#define TABLES_COUNT                    4
+#define LEDGER_TABLES_COUNT             4
+#define LEDGER_EXPORT_VERSION           1
 
 typedef struct {
 	GList *balances;					/* the balances per currency as a GList of GList fields */
@@ -1338,6 +1339,25 @@ get_last_archive_date( ofoLedger *ledger, GDate *date )
 }
 
 /**
+ * ofo_ledger_doc_get_count:
+ * @ledger: this #ofoLedger object.
+ *
+ * Returns: the count of attached documents.
+ */
+guint
+ofo_ledger_doc_get_count( ofoLedger *ledger )
+{
+	ofoLedgerPrivate *priv;
+
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0 );
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, 0 );
+
+	priv = ofo_ledger_get_instance_private( ledger );
+
+	return( g_list_length( priv->docs ));
+}
+
+/**
  * ofo_ledger_set_mnemo:
  */
 void
@@ -2149,8 +2169,8 @@ iexportable_export_default( ofaIExportable *exportable )
 	ofaIGetter *getter;
 	ofaStreamFormat *stformat;
 	ofoLedgerPrivate *priv;
-	GList *dataset, *it, *ic, *bal;
-	gchar *str, *str2;
+	GList *dataset, *it, *ic, *bal, *itd;
+	gchar *str1, *str2;
 	gboolean ok;
 	gulong count;
 	gchar field_sep;
@@ -2166,46 +2186,72 @@ iexportable_export_default( ofaIExportable *exportable )
 
 	count = ( gulong ) g_list_length( dataset );
 	if( ofa_stream_format_get_with_headers( stformat )){
-		count += TABLES_COUNT;
+		count += LEDGER_TABLES_COUNT;
 	}
 	for( it=dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
 		priv = ofo_ledger_get_instance_private( ledger );
 		count += g_list_length( priv->balances );
+		count += ofo_ledger_archive_get_count( ledger );
+		count += ofo_ledger_doc_get_count( ledger );
 	}
 	ofa_iexportable_set_count( exportable, count );
 
-	/* add new ofsBoxDef array at the end of the list */
-	ok = ofa_iexportable_append_headers( exportable,
-				TABLES_COUNT, st_boxed_defs, st_balance_defs, st_archive_defs, st_doc_defs );
+	/* add a version line at the very beginning of the file */
+	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, LEDGER_EXPORT_VERSION );
+	ok = ofa_iexportable_append_line( exportable, str1 );
+	g_free( str1 );
 
-	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, stformat, NULL );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str );
+	if( ok ){
+		/* add new ofsBoxDef array at the end of the list */
+		ok = ofa_iexportable_append_headers( exportable,
+					LEDGER_TABLES_COUNT, st_boxed_defs, st_balance_defs, st_archive_defs, st_doc_defs );
+	}
+
+	/* export the dataset */
+	for( it=dataset ; it && ok ; it=it->next ){
+		ledger = OFO_LEDGER( it->data );
+
+		str1 = ofa_box_csv_get_line( OFO_BASE( ledger )->prot->fields, stformat, NULL );
+		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
+		g_free( str1 );
 
-		ledger = OFO_LEDGER( it->data );
 		priv = ofo_ledger_get_instance_private( ledger );
 
-		for( ic=priv->balances ; ic ; ic=ic->next ){
+		for( ic=priv->balances ; ic && ok ; ic=ic->next ){
 			bal = ( GList * ) ic->data;
 			cur_code = ofa_box_get_string( bal, LED_CURRENCY );
 			g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
 			currency = ofo_currency_get_by_code( getter, cur_code );
 			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-			str = ofa_box_csv_get_line( bal, stformat, currency );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str );
+			str1 = ofa_box_csv_get_line( bal, stformat, currency );
+			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
-			g_free( str );
-			if( !ok ){
-				return( FALSE );
-			}
+			g_free( str1 );
+		}
+
+		for( ic=priv->archives ; ic && ok ; ic=ic->next ){
+			bal = ( GList * ) ic->data;
+			cur_code = ofa_box_get_string( bal, LED_ARC_CURRENCY );
+			g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
+			currency = ofo_currency_get_by_code( getter, cur_code );
+			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
+			str1 = ofa_box_csv_get_line( bal, stformat, currency );
+			str2 = g_strdup_printf( "3%c%s", field_sep, str1 );
+			ok = ofa_iexportable_append_line( exportable, str2 );
+			g_free( str2 );
+			g_free( str1 );
+		}
+
+		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
+			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
+			str2 = g_strdup_printf( "4%c%s", field_sep, str1 );
+			ok = ofa_iexportable_append_line( exportable, str2 );
+			g_free( str2 );
+			g_free( str1 );
 		}
 	}
 

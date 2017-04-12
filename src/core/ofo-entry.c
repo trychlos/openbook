@@ -3136,7 +3136,7 @@ iexportable_export_default( ofaIExportable *exportable )
 		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 		str1 = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, stformat, currency );
 
-		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ));
+		concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
 		suser = g_strdup( concil ? ofo_concil_get_upd_user( concil ) : "" );
 		sstamp = concil ? my_stamp_to_str( ofo_concil_get_upd_stamp( concil ), MY_STAMP_YYMDHMS ) : g_strdup( "" );
