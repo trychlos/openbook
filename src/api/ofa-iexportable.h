@@ -44,6 +44,7 @@
 
 #include "my/my-iprogress.h"
 
+#include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-stream-format.h"
 
@@ -89,7 +90,7 @@ typedef struct {
 	 * get_label:
 	 * @instance: the #ofaIExportable provider.
 	 *
-	 * Return: the label to be associated with this @instance, as a
+	 * Returns: the label to be associated with this @instance, as a
 	 * newly allocated string which should be g_free() by the caller.
 	 */
 	gchar *                ( *get_label )            ( const ofaIExportable *instance );
@@ -120,17 +121,13 @@ typedef struct {
 	 * @instance: the #ofaIExportable provider.
 	 * @format_id: the name of the export format,
 	 *  which defaults to OFA_IEXPORTABLE_DEFAULT_FORMAT_ID.
-	 * @settings: the current export settings for the operation.
-	 * @getter: a #ofaIGetter instance.
 	 *
 	 * Export the dataset to the named file.
 	 *
-	 * Return: %TRUE if the dataset has been successfully exported.
+	 * Returns: %TRUE if the dataset has been successfully exported.
 	 */
 	gboolean               ( *export )               ( ofaIExportable *instance,
-															const gchar *format_id,
-															ofaStreamFormat *settings,
-															ofaIGetter *getter );
+															const gchar *format_id );
 }
 	ofaIExportableInterface;
 
@@ -139,7 +136,7 @@ typedef struct {
  * @format_id: a string which identifies the format.
  * @format_label: a localized string to be displayed.
  *
- * A structure which defined a specific export format for a target
+ * A structure which defines a specific export format for a target
  * class.
  *
  * A null-terminated array of these structures has to be provided in
@@ -178,14 +175,22 @@ void                  ofa_iexportable_free_formats              ( ofaIExportable
 gboolean              ofa_iexportable_export_to_uri             ( ofaIExportable *exportable,
 																		const gchar *uri,
 																		const gchar *format_id,
-																		ofaStreamFormat *settings,
+																		ofaStreamFormat *stformat,
 																		ofaIGetter *getter,
 																		myIProgress *progress );
+
+ofaIGetter           *ofa_iexportable_get_getter                ( const ofaIExportable *exportable );
+
+ofaStreamFormat      *ofa_iexportable_get_stream_format         ( const ofaIExportable *exportable );
 
 gulong                ofa_iexportable_get_count                 ( ofaIExportable *exportable );
 
 void                  ofa_iexportable_set_count                 ( ofaIExportable *exportable,
 																		gulong count );
+
+gboolean              ofa_iexportable_append_headers            ( ofaIExportable *exportable,
+																		guint tables_count,
+																		... );
 
 gboolean              ofa_iexportable_append_line               ( ofaIExportable *exportable,
 																		const gchar *line );

@@ -146,6 +146,8 @@ gboolean        ofo_bat_is_deletable               ( ofoBat *bat );
 gint            ofo_bat_get_lines_count            ( ofoBat *bat );
 gint            ofo_bat_get_used_count             ( ofoBat *bat );
 
+guint           ofo_bat_doc_get_count              ( ofoBat *bat );
+
 void            ofo_bat_set_uri                    ( ofoBat *bat, const gchar *uri );
 void            ofo_bat_set_format                 ( ofoBat *bat, const gchar *format );
 void            ofo_bat_set_begin_date             ( ofoBat *bat, const GDate *date );

@@ -74,14 +74,17 @@ enum {
 	TFO_DET_AMOUNT,
 	TFO_DET_HAS_TEMPLATE,
 	TFO_DET_TEMPLATE,
+	TFO_DOC_ID,
 };
 
 /*
- * MAINTAINER NOTE: the dataset is exported in this same order. So:
- * 1/ put in in an order compatible with import
- * 2/ no more modify it
- * 3/ take attention to be able to support the import of a previously
- *    exported file
+ * MAINTAINER NOTE: the dataset is exported in this same order.
+ * So:
+ * 1/ the class default import should expect these fields in this same
+ *    order.
+ * 2/ new datas should be added to the end of the list.
+ * 3/ a removed column should be replaced by an empty one to stay
+ *    compatible with the class default import.
  */
 static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( TFO_MNEMO ),
@@ -179,12 +182,24 @@ static const ofsBoxDef st_detail_defs[] = {
 		{ 0 }
 };
 
-typedef struct {
+static const ofsBoxDef st_doc_defs[] = {
+		{ OFA_BOX_CSV( TFO_MNEMO ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DOC_ID ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
 
-	/* the details of the form as a GList of GList fields
-	 */
-	GList     *bools;
-	GList     *details;
+#define TABLES_COUNT                    4
+
+typedef struct {
+	GList *bools;						/* the details of the form as a GList of GList fields */
+	GList *details;
+	GList *docs;
 }
 	ofoTVAFormPrivate;
 
@@ -216,7 +231,8 @@ static guint       idoc_get_interface_version( void );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
+static gboolean    iexportable_export( ofaIExportable *exportable, const gchar *format_id );
+static gboolean    iexportable_export_default( ofaIExportable *exportable );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( void );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
@@ -326,9 +342,16 @@ static void
 ofo_tva_form_init( ofoTVAForm *self )
 {
 	static const gchar *thisfn = "ofo_tva_form_init";
+	ofoTVAFormPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	priv = ofo_tva_form_get_instance_private( self );
+
+	priv->bools = NULL;
+	priv->details = NULL;
+	priv->docs = NULL;
 }
 
 static void
@@ -1760,33 +1783,48 @@ iexportable_get_label( const ofaIExportable *instance )
 
 /*
  * iexportable_export:
+ * @format_id: is 'DEFAULT' for the standard class export.
  *
- * Exports the VAT forms line by line.
- * 1: the main record
- * 2: the booleans
- * 3: the details
+ * Exports all the defined VAT forms.
  *
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export( ofaIExportable *exportable, const gchar *format_id )
 {
+	static const gchar *thisfn = "ofo_tva_form_iexportable_export";
+
+	if( !my_collate( format_id, OFA_IEXPORTABLE_DEFAULT_FORMAT_ID )){
+		return( iexportable_export_default( exportable ));
+	}
+
+	g_warning( "%s: format_id=%s unmanaged here", thisfn, format_id );
+
+	return( FALSE );
+}
+
+static gboolean
+iexportable_export_default( ofaIExportable *exportable )
+{
+	ofaIGetter *getter;
+	ofaStreamFormat *stformat;
 	ofoTVAFormPrivate *priv;
 	GList *dataset, *it, *det;
 	ofoTVAForm *form;
 	gchar *str, *str2;
-	gboolean ok, with_headers;
+	gboolean ok;
 	gulong count;
 	gchar field_sep;
 
+	getter = ofa_iexportable_get_getter( exportable );
 	dataset = ofo_tva_form_get_dataset( getter );
 
-	with_headers = ofa_stream_format_get_with_headers( settings );
-	field_sep = ofa_stream_format_get_field_sep( settings );
+	stformat = ofa_iexportable_get_stream_format( exportable );
+	field_sep = ofa_stream_format_get_field_sep( stformat );
 
 	count = ( gulong ) g_list_length( dataset );
-	if( with_headers ){
-		count += 3;
+	if( ofa_stream_format_get_with_headers( stformat )){
+		count += TABLES_COUNT;
 	}
 	for( it=dataset ; it ; it=it->next ){
 		form = OFO_TVA_FORM( it->data );
@@ -1795,72 +1833,38 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	}
 	ofa_iexportable_set_count( exportable, count );
 
-	if( with_headers ){
-		str = ofa_box_csv_get_header( st_boxed_defs, settings );
+	/* add new ofsBoxDef array at the end of the list */
+	ok = ofa_iexportable_append_headers( exportable,
+				TABLES_COUNT, st_boxed_defs, st_boolean_defs, st_detail_defs, st_doc_defs );
+
+	for( it=dataset ; it && ok ; it=it->next ){
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, stformat, NULL );
 		str2 = g_strdup_printf( "1%c%s", field_sep, str );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
-
-		str = ofa_box_csv_get_header( st_boolean_defs, settings );
-		str2 = g_strdup_printf( "2%c%s", field_sep, str );
-		ok = ofa_iexportable_append_line( exportable, str2 );
-		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
-
-		str = ofa_box_csv_get_header( st_detail_defs, settings );
-		str2 = g_strdup_printf( "3%c%s", field_sep, str );
-		ok = ofa_iexportable_append_line( exportable, str2 );
-		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
-	}
-
-	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, NULL );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str );
-		ok = ofa_iexportable_append_line( exportable, str2 );
-		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
 
 		form = OFO_TVA_FORM( it->data );
 		priv = ofo_tva_form_get_instance_private( form );
 
-		for( det=priv->bools ; det ; det=det->next ){
-			str = ofa_box_csv_get_line( det->data, settings, NULL );
+		for( det=priv->bools ; det && ok ; det=det->next ){
+			str = ofa_box_csv_get_line( det->data, stformat, NULL );
 			str2 = g_strdup_printf( "2%c%s", field_sep, str );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str );
-			if( !ok ){
-				return( FALSE );
-			}
 		}
 
-		for( det=priv->details ; det ; det=det->next ){
-			str = ofa_box_csv_get_line( det->data, settings, NULL );
+		for( det=priv->details ; det && ok ; det=det->next ){
+			str = ofa_box_csv_get_line( det->data, stformat, NULL );
 			str2 = g_strdup_printf( "3%c%s", field_sep, str );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str );
-			if( !ok ){
-				return( FALSE );
-			}
 		}
 	}
 
-	return( TRUE );
+	return( ok );
 }
 
 /*

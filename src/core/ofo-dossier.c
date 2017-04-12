@@ -47,6 +47,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
+#include "api/ofo-counters.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -56,7 +57,8 @@
 /* priv instance data
  */
 enum {
-	DOS_DEF_CURRENCY = 1,
+	DOS_ID = 1,
+	DOS_DEF_CURRENCY,
 	DOS_EXE_BEGIN,
 	DOS_EXE_END,
 	DOS_EXE_LENGTH,
@@ -79,21 +81,32 @@ enum {
 	DOS_RPID,
 	DOS_VATIC,
 	DOS_NAF,
-	DOS_LABEL2
+	DOS_LABEL2,
+	DOS_DOC_ID,
+	DOS_PREF_KEY,
+	DOS_PREF_VALUE,
+	DOS_IDS_KEY,
+	DOS_IDS_LAST,
 };
 
 /*
- * MAINTAINER NOTE: the dataset is exported in this same order. So:
- * 1/ put in in an order compatible with import
- * 2/ no more modify it
- * 3/ take attention to be able to support the import of a previously
- *    exported file
+ * MAINTAINER NOTE: the dataset is exported in this same order.
+ * So:
+ * 1/ the class default import should expect these fields in this same
+ *    order.
+ * 2/ new datas should be added to the end of the list.
+ * 3/ a removed column should be replaced by an empty one to stay
+ *    compatible with the class default import.
  */
 static const ofsBoxDef st_boxed_defs[] = {
-		{ OFA_BOX_CSV( DOS_DEF_CURRENCY ),
-				OFA_TYPE_STRING,
+		{ OFA_BOX_CSV( DOS_ID ),
+				OFA_TYPE_INTEGER,
 				TRUE,					/* importable */
 				FALSE },				/* amount, counter: export zero as empty */
+		{ OFA_BOX_CSV( DOS_DEF_CURRENCY ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( DOS_EXE_BEGIN ),
 				OFA_TYPE_DATE,
 				TRUE,
@@ -150,7 +163,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-										/* below data are not imported */
 		{ OFA_BOX_CSV( DOS_UPD_USER ),
 				OFA_TYPE_STRING,
 				FALSE,
@@ -183,10 +195,14 @@ static const ofsBoxDef st_boxed_defs[] = {
 };
 
 static const ofsBoxDef st_currency_defs[] = {
-		{ OFA_BOX_CSV( DOS_CURRENCY ),
-				OFA_TYPE_STRING,
+		{ OFA_BOX_CSV( DOS_ID ),
+				OFA_TYPE_INTEGER,
 				TRUE,					/* importable */
 				FALSE },				/* amount, counter: export zero as empty */
+		{ OFA_BOX_CSV( DOS_CURRENCY ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( DOS_SLD_ACCOUNT ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -194,8 +210,56 @@ static const ofsBoxDef st_currency_defs[] = {
 		{ 0 }
 };
 
+static const ofsBoxDef st_doc_defs[] = {
+		{ OFA_BOX_CSV( DOS_ID ),
+				OFA_TYPE_INTEGER,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_DOC_ID ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
+
+static const ofsBoxDef st_pref_defs[] = {
+		{ OFA_BOX_CSV( DOS_ID ),
+				OFA_TYPE_INTEGER,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_PREF_KEY ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_PREF_VALUE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
+
+static const ofsBoxDef st_id_defs[] = {
+		{ OFA_BOX_CSV( DOS_ID ),
+				OFA_TYPE_INTEGER,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_IDS_KEY ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_IDS_LAST ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
+
+#define TABLES_COUNT                    5
+
 typedef struct {
-	GList         *cur_details;			/* a list of details per currency */
+	GList *cur_details;					/* a list of solde accounts per currency */
+	GList *docs;
+	GList *prefs;
 }
 	ofoDossierPrivate;
 
@@ -216,7 +280,8 @@ static guint       idoc_get_interface_version( void );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
+static gboolean    iexportable_export( ofaIExportable *exportable, const gchar *format_id );
+static gboolean    iexportable_export_default( ofaIExportable *exportable );
 static void        free_currency_details( ofoDossier *dossier );
 static void        free_cur_detail( GList *fields );
 static void        isignalable_iface_init( ofaISignalableInterface *iface );
@@ -277,9 +342,16 @@ static void
 ofo_dossier_init( ofoDossier *self )
 {
 	static const gchar *thisfn = "ofo_dossier_init";
+	ofoDossierPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	priv = ofo_dossier_get_instance_private( self );
+
+	priv->cur_details = NULL;
+	priv->docs = NULL;
+	priv->prefs = NULL;
 }
 
 static void
@@ -838,6 +910,44 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 	return( dmax );
 }
 #endif
+
+/**
+ * ofo_dossier_doc_get_count:
+ * @dossier: this #ofoDossier object.
+ *
+ * Returns: the count of attached documents.
+ */
+guint
+ofo_dossier_doc_get_count( ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
+
+	priv = ofo_dossier_get_instance_private( dossier );
+
+	return( g_list_length( priv->docs ));
+}
+
+/**
+ * ofo_dossier_prefs_get_count:
+ * @dossier: this #ofoDossier object.
+ *
+ * Returns: the count of recorded @dossier preferences.
+ */
+guint
+ofo_dossier_prefs_get_count( ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
+
+	priv = ofo_dossier_get_instance_private( dossier );
+
+	return( g_list_length( priv->prefs ));
+}
 
 /**
  * ofo_dossier_is_current:
@@ -1636,80 +1746,99 @@ iexportable_get_label( const ofaIExportable *instance )
 
 /*
  * iexportable_export:
+ * @format_id: is 'DEFAULT' for the standard class export.
  *
- * Exports the classes line by line.
+ * Exports the dossier properties.
  *
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export( ofaIExportable *exportable, const gchar *format_id )
 {
+	static const gchar *thisfn = "ofo_dossier_iexportable_export";
+
+	if( !my_collate( format_id, OFA_IEXPORTABLE_DEFAULT_FORMAT_ID )){
+		return( iexportable_export_default( exportable ));
+	}
+
+	g_warning( "%s: format_id=%s unmanaged here", thisfn, format_id );
+
+	return( FALSE );
+}
+
+static gboolean
+iexportable_export_default( ofaIExportable *exportable )
+{
+	ofaIGetter *getter;
+	ofaStreamFormat *stformat;
 	ofoDossier *dossier;
 	ofoDossierPrivate *priv;
 	ofaHub *hub;
-	GList *cur_detail;
-	gchar *str, *str2;
-	gboolean ok, with_headers;
+	GList *cur_detail, *itd, *itp;
+	gchar *str1, *str2;
+	gboolean ok;
 	gulong count;
 	gchar field_sep;
 
+	getter = ofa_iexportable_get_getter( exportable );
 	hub = ofa_igetter_get_hub( getter );
 	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	priv = ofo_dossier_get_instance_private( dossier );
 
-	with_headers = ofa_stream_format_get_with_headers( settings );
-	field_sep = ofa_stream_format_get_field_sep( settings );
+	stformat = ofa_iexportable_get_stream_format( exportable );
+	field_sep = ofa_stream_format_get_field_sep( stformat );
 
 	count = 1;
-	if( with_headers ){
-		count += 2;
+	if( ofa_stream_format_get_with_headers( stformat )){
+		count += TABLES_COUNT;
 	}
 	count += g_list_length( priv->cur_details );
+	count += ofo_dossier_doc_get_count( dossier );
+	count += ofo_dossier_prefs_get_count( dossier );
+	count += ofo_counters_get_count( getter );
 	ofa_iexportable_set_count( exportable, count );
 
-	if( with_headers ){
-		str = ofa_box_csv_get_header( st_boxed_defs, settings );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str );
+	/* add new ofsBoxDef array at the end of the list */
+	ok = ofa_iexportable_append_headers( exportable,
+				TABLES_COUNT, st_boxed_defs, st_currency_defs, st_doc_defs, st_pref_defs, st_id_defs );
+
+	if( ok ){
+		str1 = ofa_box_csv_get_line( OFO_BASE( dossier )->prot->fields, stformat, NULL );
+		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
+		g_free( str1 );
+	}
 
-		str = ofa_box_csv_get_header( st_currency_defs, settings );
-		str2 = g_strdup_printf( "2%c%s", field_sep, str );
+	for( cur_detail=priv->cur_details ; cur_detail && ok ; cur_detail=cur_detail->next ){
+		str1 = ofa_box_csv_get_line( cur_detail->data, stformat, NULL );
+		str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
+		g_free( str1 );
 	}
 
-	str = ofa_box_csv_get_line( OFO_BASE( dossier )->prot->fields, settings, NULL );
-	str2 = g_strdup_printf( "1%c%s", field_sep, str );
-	ok = ofa_iexportable_append_line( exportable, str2 );
-	g_free( str2 );
-	g_free( str );
-	if( !ok ){
-		return( FALSE );
-	}
-
-	for( cur_detail=priv->cur_details ; cur_detail ; cur_detail=cur_detail->next ){
-		str = ofa_box_csv_get_line( cur_detail->data, settings, NULL );
-		str2 = g_strdup_printf( "2%c%s", field_sep, str );
+	for( itd=priv->docs ; itd && ok ; itd=itd->next ){
+		str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
+		str2 = g_strdup_printf( "3%c%s", field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
+		g_free( str1 );
 	}
 
-	return( TRUE );
+	for( itp=priv->prefs ; itp && ok ; itp=itp->next ){
+		str1 = ofa_box_csv_get_line( itp->data, stformat, NULL );
+		str2 = g_strdup_printf( "4%c%s", field_sep, str1 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
+		g_free( str2 );
+		g_free( str1 );
+	}
+
+	/* how to export counters ? */
+
+	return( ok );
 }
 
 static void

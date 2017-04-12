@@ -87,6 +87,8 @@ gboolean        ofo_class_is_valid_number       ( gint number );
 gboolean        ofo_class_is_valid_label        ( const gchar *label );
 gboolean        ofo_class_is_deletable          ( const ofoClass *class );
 
+guint           ofo_class_doc_get_count         ( ofoClass *class );
+
 void            ofo_class_set_number            ( ofoClass *class, gint number );
 void            ofo_class_set_label             ( ofoClass *class, const gchar *label );
 void            ofo_class_set_notes             ( ofoClass *class, const gchar *notes );

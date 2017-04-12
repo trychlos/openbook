@@ -78,6 +78,15 @@ enum {
 	BAT_DOC_ID,
 };
 
+/*
+ * MAINTAINER NOTE: the dataset is exported in this same order.
+ * So:
+ * 1/ the class default import should expect these fields in this same
+ *    order.
+ * 2/ new datas should be added to the end of the list.
+ * 3/ a removed column should be replaced by an empty one to stay
+ *    compatible with the class default import.
+ */
 static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( BAT_ID ),
 				OFA_TYPE_COUNTER,
@@ -142,10 +151,24 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
+static const ofsBoxDef st_doc_defs[] = {
+		{ OFA_BOX_CSV( BAT_ID ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_DOC_ID ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
+
+#define TABLES_COUNT                    2
+
 /* priv instance data
  */
 typedef struct {
-	void *empty;							/* so that gcc -pedantic is happy */
+	GList *docs;
 }
 	ofoBatPrivate;
 
@@ -170,7 +193,8 @@ static guint       idoc_get_interface_version( void );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
+static gboolean    iexportable_export( ofaIExportable *exportable, const gchar *format_id );
+static gboolean    iexportable_export_default( ofaIExportable *exportable );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( void );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
@@ -235,9 +259,14 @@ static void
 ofo_bat_init( ofoBat *self )
 {
 	static const gchar *thisfn = "ofo_bat_init";
+	ofoBatPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	priv = ofo_bat_get_instance_private( self );
+
+	priv->docs = NULL;
 }
 
 static void
@@ -678,6 +707,25 @@ ofo_bat_get_used_count( ofoBat *bat )
 	g_free( query );
 
 	return( count );
+}
+
+/**
+ * ofo_bat_doc_get_count:
+ * @bat: this #ofoBat instance.
+ *
+ * Returns the count of attached documents.
+ */
+guint
+ofo_bat_doc_get_count( ofoBat *bat )
+{
+	ofoBatPrivate *priv;
+
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
+	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, 0 );
+
+	priv = ofo_bat_get_instance_private( bat );
+
+	return( g_list_length( priv->docs ));
 }
 
 /*
@@ -1357,47 +1405,80 @@ iexportable_get_label( const ofaIExportable *instance )
 
 /*
  * iexportable_export:
+ * @format_id: is 'DEFAULT' for the standard class export.
  *
- * Exports the classes line by line.
+ * Exports all the BAT files.
  *
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export( ofaIExportable *exportable, const gchar *format_id )
 {
-	GList *dataset, *it;
-	gchar *str;
-	gboolean with_headers, ok;
-	gulong count;
+	static const gchar *thisfn = "ofo_bat_iexportable_export";
 
+	if( !my_collate( format_id, OFA_IEXPORTABLE_DEFAULT_FORMAT_ID )){
+		return( iexportable_export_default( exportable ));
+	}
+
+	g_warning( "%s: format_id=%s unmanaged here", thisfn, format_id );
+
+	return( FALSE );
+}
+
+static gboolean
+iexportable_export_default( ofaIExportable *exportable )
+{
+	ofaIGetter *getter;
+	ofaStreamFormat *stformat;
+	GList *dataset, *it, *itd;
+	gchar *str1, *str2;
+	gboolean ok;
+	gulong count;
+	ofoBat *bat;
+	ofoBatPrivate *priv;
+	gchar field_sep;
+
+	getter = ofa_iexportable_get_getter( exportable );
 	dataset = ofo_bat_get_dataset( getter );
-	with_headers = ofa_stream_format_get_with_headers( settings );
+
+	stformat = ofa_iexportable_get_stream_format( exportable );
+	field_sep = ofa_stream_format_get_field_sep( stformat );
 
 	count = ( gulong ) g_list_length( dataset );
-	if( with_headers ){
-		count += 1;
+	if( ofa_stream_format_get_with_headers( stformat )){
+		count += TABLES_COUNT;
+	}
+	for( it=dataset ; it ; it=it->next ){
+		bat = OFO_BAT( it->data );
+		count += ofo_bat_doc_get_count( bat );
 	}
 	ofa_iexportable_set_count( exportable, count );
 
-	if( with_headers ){
-		str = ofa_box_csv_get_header( st_boxed_defs, settings );
-		ok = ofa_iexportable_append_line( exportable, str );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
+	/* add new ofsBoxDef array at the end of the list */
+	ok = ofa_iexportable_append_headers( exportable,
+				TABLES_COUNT, st_boxed_defs, st_doc_defs );
+
+	for( it=dataset ; it && ok ; it=it->next ){
+		bat = OFO_BAT( it->data );
+
+		str1 = ofa_box_csv_get_line( OFO_BASE( bat )->prot->fields, stformat, NULL );
+		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
+		g_free( str2 );
+		g_free( str1 );
+
+		priv = ofo_bat_get_instance_private( bat );
+
+		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
+			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
+			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			ok = ofa_iexportable_append_line( exportable, str2 );
+			g_free( str2 );
+			g_free( str1 );
 		}
 	}
 
-	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, NULL );
-		ok = ofa_iexportable_append_line( exportable, str );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
-	}
-
-	return( TRUE );
+	return( ok );
 }
 
 /*

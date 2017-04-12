@@ -78,14 +78,17 @@ enum {
 	OTE_DET_DEBIT_LOCKED,
 	OTE_DET_CREDIT,
 	OTE_DET_CREDIT_LOCKED,
+	OTE_DOC_ID,
 };
 
 /*
- * MAINTAINER NOTE: the dataset is exported in this same order. So:
- * 1/ put in in an order compatible with import
- * 2/ no more modify it
- * 3/ take attention to be able to support the import of a previously
- *    exported file
+ * MAINTAINER NOTE: the dataset is exported in this same order.
+ * So:
+ * 1/ the class default import should expect these fields in this same
+ *    order.
+ * 2/ new datas should be added to the end of the list.
+ * 3/ a removed column should be replaced by an empty one to stay
+ *    compatible with the class default import.
  */
 static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( OTE_MNEMO ),
@@ -179,11 +182,23 @@ static const ofsBoxDef st_detail_defs[] = {
 		{ 0 }
 };
 
-typedef struct {
+static const ofsBoxDef st_doc_defs[] = {
+		{ OFA_BOX_CSV( OTE_MNEMO ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( OTE_DOC_ID ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
 
-	/* the details of the operation template as a GList of GList fields
-	 */
-	GList     *details;
+#define TABLES_COUNT                    3
+
+typedef struct {
+	GList *details;						/* the details of the operation template as a GList of GList fields */
+	GList *docs;
 }
 	ofoOpeTemplatePrivate;
 
@@ -209,8 +224,9 @@ static guint           idoc_get_interface_version( void );
 static void            iexportable_iface_init( ofaIExportableInterface *iface );
 static guint           iexportable_get_interface_version( void );
 static gchar          *iexportable_get_label( const ofaIExportable *instance );
-static gboolean        iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
-static gchar          *update_decimal_sep( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, void *empty );
+static gboolean        iexportable_export( ofaIExportable *exportable, const gchar *format_id );
+static gboolean        iexportable_export_default( ofaIExportable *exportable );
+static gchar          *update_decimal_sep( const ofsBoxData *box_data, ofaStreamFormat *stformat, const gchar *text, void *empty );
 static void            iimportable_iface_init( ofaIImportableInterface *iface );
 static guint           iimportable_get_interface_version( void );
 static gchar          *iimportable_get_label( const ofaIImportable *instance );
@@ -301,9 +317,15 @@ static void
 ofo_ope_template_init( ofoOpeTemplate *self )
 {
 	static const gchar *thisfn = "ofo_ope_template_init";
+	ofoOpeTemplatePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	priv = ofo_ope_template_get_instance_private( self );
+
+	priv->details = NULL;
+	priv->docs = NULL;
 }
 
 static void
@@ -1626,14 +1648,31 @@ iexportable_get_label( const ofaIExportable *instance )
 
 /*
  * iexportable_export:
+ * @format_id: is 'DEFAULT' for the standard class export.
  *
- * Exports the classes line by line.
+ * Exports all the operation templates.
  *
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export( ofaIExportable *exportable, const gchar *format_id )
 {
+	static const gchar *thisfn = "ofo_ope_template_iexportable_export";
+
+	if( !my_collate( format_id, OFA_IEXPORTABLE_DEFAULT_FORMAT_ID )){
+		return( iexportable_export_default( exportable ));
+	}
+
+	g_warning( "%s: format_id=%s unmanaged here", thisfn, format_id );
+
+	return( FALSE );
+}
+
+static gboolean
+iexportable_export_default( ofaIExportable *exportable )
+{
+	ofaIGetter *getter;
+	ofaStreamFormat *stformat;
 	ofoOpeTemplatePrivate *priv;
 	GList *dataset, *it, *det;
 	gchar *str, *str2;
@@ -1642,10 +1681,12 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	gchar field_sep;
 	gulong count;
 
+	getter = ofa_iexportable_get_getter( exportable );
 	dataset = ofo_ope_template_get_dataset( getter );
 
-	with_headers = ofa_stream_format_get_with_headers( settings );
-	field_sep = ofa_stream_format_get_field_sep( settings );
+	stformat = ofa_iexportable_get_stream_format( exportable );
+	with_headers = ofa_stream_format_get_with_headers( stformat );
+	field_sep = ofa_stream_format_get_field_sep( stformat );
 
 	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
@@ -1657,28 +1698,12 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	}
 	ofa_iexportable_set_count( exportable, count );
 
-	if( with_headers ){
-		str = ofa_box_csv_get_header( st_boxed_defs, settings );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str );
-		ok = ofa_iexportable_append_line( exportable, str2 );
-		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
-
-		str = ofa_box_csv_get_header( st_detail_defs, settings );
-		str2 = g_strdup_printf( "2%c%s", field_sep, str );
-		ok = ofa_iexportable_append_line( exportable, str2 );
-		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
-	}
+	/* add new ofsBoxDef array at the end of the list */
+	ok = ofa_iexportable_append_headers( exportable,
+				TABLES_COUNT, st_boxed_defs, st_detail_defs, st_doc_defs );
 
 	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, NULL );
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, stformat, NULL );
 		str2 = g_strdup_printf( "1%c%s", field_sep, str );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
@@ -1691,7 +1716,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 		priv = ofo_ope_template_get_instance_private( model );
 
 		for( det=priv->details ; det ; det=det->next ){
-			str = ofa_box_csv_get_line_ex( det->data, settings, NULL, ( CSVExportFunc ) update_decimal_sep, NULL );
+			str = ofa_box_csv_get_line_ex( det->data, stformat, NULL, ( CSVExportFunc ) update_decimal_sep, NULL );
 			str2 = g_strdup_printf( "2%c%s", field_sep, str );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
@@ -1712,7 +1737,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
  * => this user-remediation function
  */
 static gchar *
-update_decimal_sep( const ofsBoxData *box_data, ofaStreamFormat *settings, const gchar *text, void *empty )
+update_decimal_sep( const ofsBoxData *box_data, ofaStreamFormat *stformat, const gchar *text, void *empty )
 {
 	const ofsBoxDef *box_def;
 	gchar *str;
@@ -1722,7 +1747,7 @@ update_decimal_sep( const ofsBoxData *box_data, ofaStreamFormat *settings, const
 	box_def = ofa_box_data_get_def( box_data );
 
 	if( box_def->id == OTE_DET_DEBIT || box_def->id == OTE_DET_CREDIT ){
-		decimal_sep = ofa_stream_format_get_decimal_sep( settings );
+		decimal_sep = ofa_stream_format_get_decimal_sep( stformat );
 		if( decimal_sep != '.' ){
 			g_free( str );
 			str = my_utils_char_replace( text, '.', decimal_sep );

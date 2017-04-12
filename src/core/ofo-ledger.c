@@ -80,14 +80,17 @@ enum {
 	LED_ARC_DATE,
 	LED_ARC_DEBIT,
 	LED_ARC_CREDIT,
+	LED_DOC_ID,
 };
 
 /*
- * MAINTAINER NOTE: the dataset is exported in this same order. So:
- * 1/ put in in an order compatible with import
- * 2/ no more modify it
- * 3/ take attention to be able to support the import of a previously
- *    exported file
+ * MAINTAINER NOTE: the dataset is exported in this same order.
+ * So:
+ * 1/ the class default import should expect these fields in this same
+ *    order.
+ * 2/ new datas should be added to the end of the list.
+ * 3/ a removed column should be replaced by an empty one to stay
+ *    compatible with the class default import.
  */
 static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( LED_MNEMO ),
@@ -205,9 +208,24 @@ static const ofsBoxDef st_archive_defs[] = {
 		{ 0 }
 };
 
+static const ofsBoxDef st_doc_defs[] = {
+		{ OFA_BOX_CSV( LED_MNEMO ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( LED_DOC_ID ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
+
+#define TABLES_COUNT                    4
+
 typedef struct {
 	GList *balances;					/* the balances per currency as a GList of GList fields */
 	GList *archives;					/* archived balances of the ledger */
+	GList *docs;
 }
 	ofoLedgerPrivate;
 
@@ -242,7 +260,8 @@ static guint      idoc_get_interface_version( void );
 static void       iexportable_iface_init( ofaIExportableInterface *iface );
 static guint      iexportable_get_interface_version( void );
 static gchar     *iexportable_get_label( const ofaIExportable *instance );
-static gboolean   iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
+static gboolean   iexportable_export( ofaIExportable *exportable, const gchar *format_id );
+static gboolean   iexportable_export_default( ofaIExportable *exportable );
 static void       iimportable_iface_init( ofaIImportableInterface *iface );
 static guint      iimportable_get_interface_version( void );
 static gchar     *iimportable_get_label( const ofaIImportable *instance );
@@ -324,9 +343,16 @@ static void
 ofo_ledger_init( ofoLedger *self )
 {
 	static const gchar *thisfn = "ofo_ledger_init";
+	ofoLedgerPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	priv = ofo_ledger_get_instance_private( self );
+
+	priv->balances = NULL;
+	priv->archives = NULL;
+	priv->docs = NULL;
 }
 
 static void
@@ -2097,32 +2123,50 @@ iexportable_get_label( const ofaIExportable *instance )
 
 /*
  * iexportable_export:
+ * @format_id: is 'DEFAULT' for the standard class export.
  *
- * Exports the classes line by line.
+ * Exports all the ledgers.
  *
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export( ofaIExportable *exportable, const gchar *format_id )
 {
+	static const gchar *thisfn = "ofo_ledger_iexportable_export";
+
+	if( !my_collate( format_id, OFA_IEXPORTABLE_DEFAULT_FORMAT_ID )){
+		return( iexportable_export_default( exportable ));
+	}
+
+	g_warning( "%s: format_id=%s unmanaged here", thisfn, format_id );
+
+	return( FALSE );
+}
+
+static gboolean
+iexportable_export_default( ofaIExportable *exportable )
+{
+	ofaIGetter *getter;
+	ofaStreamFormat *stformat;
 	ofoLedgerPrivate *priv;
 	GList *dataset, *it, *ic, *bal;
 	gchar *str, *str2;
-	gboolean ok, with_headers;
+	gboolean ok;
 	gulong count;
 	gchar field_sep;
 	ofoLedger *ledger;
 	const gchar *cur_code;
 	ofoCurrency *currency;
 
+	getter = ofa_iexportable_get_getter( exportable );
 	dataset = ofo_ledger_get_dataset( getter );
 
-	with_headers = ofa_stream_format_get_with_headers( settings );
-	field_sep = ofa_stream_format_get_field_sep( settings );
+	stformat = ofa_iexportable_get_stream_format( exportable );
+	field_sep = ofa_stream_format_get_field_sep( stformat );
 
 	count = ( gulong ) g_list_length( dataset );
-	if( with_headers ){
-		count += 2;
+	if( ofa_stream_format_get_with_headers( stformat )){
+		count += TABLES_COUNT;
 	}
 	for( it=dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
@@ -2131,28 +2175,12 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	}
 	ofa_iexportable_set_count( exportable, count );
 
-	if( with_headers ){
-		str = ofa_box_csv_get_header( st_boxed_defs, settings );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str );
-		ok = ofa_iexportable_append_line( exportable, str2 );
-		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
-
-		str = ofa_box_csv_get_header( st_balance_defs, settings );
-		str2 = g_strdup_printf( "2%c%s", field_sep, str );
-		ok = ofa_iexportable_append_line( exportable, str2 );
-		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
-	}
+	/* add new ofsBoxDef array at the end of the list */
+	ok = ofa_iexportable_append_headers( exportable,
+				TABLES_COUNT, st_boxed_defs, st_balance_defs, st_archive_defs, st_doc_defs );
 
 	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, NULL );
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, stformat, NULL );
 		str2 = g_strdup_printf( "1%c%s", field_sep, str );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
@@ -2170,7 +2198,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 			g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
 			currency = ofo_currency_get_by_code( getter, cur_code );
 			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-			str = ofa_box_csv_get_line( bal, settings, currency );
+			str = ofa_box_csv_get_line( bal, stformat, currency );
 			str2 = g_strdup_printf( "2%c%s", field_sep, str );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );

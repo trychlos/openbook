@@ -211,7 +211,7 @@ read_counter_by_key( ofoCounters *self, ofaIDBConnect *connect, const gchar *key
 
 /**
  * ofo_counters_get_last_bat_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the last used BAT identifier.
  */
@@ -223,7 +223,7 @@ ofo_counters_get_last_bat_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_next_bat_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the next available BAT identifier.
  */
@@ -235,7 +235,7 @@ ofo_counters_get_next_bat_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_last_batline_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the last used BATLine identifier.
  */
@@ -247,7 +247,7 @@ ofo_counters_get_last_batline_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_next_batline_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the next available BATLine identifier.
  */
@@ -259,7 +259,7 @@ ofo_counters_get_next_batline_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_last_concil_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the last used Conciliation identifier.
  */
@@ -271,7 +271,7 @@ ofo_counters_get_last_concil_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_next_concil_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the next available Conciliation identifier.
  */
@@ -283,7 +283,7 @@ ofo_counters_get_next_concil_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_last_doc_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the last used Document identifier.
  */
@@ -295,7 +295,7 @@ ofo_counters_get_last_doc_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_next_doc_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the next available Document identifier.
  */
@@ -307,7 +307,7 @@ ofo_counters_get_next_doc_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_last_entry_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the last used Entry identifier.
  */
@@ -319,7 +319,7 @@ ofo_counters_get_last_entry_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_next_entry_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the next available Entry identifier.
  */
@@ -331,7 +331,7 @@ ofo_counters_get_next_entry_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_last_ope_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the last used Operation identifier.
  */
@@ -343,7 +343,7 @@ ofo_counters_get_last_ope_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_next_ope_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the next available Operation identifier.
  */
@@ -355,7 +355,7 @@ ofo_counters_get_next_ope_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_last_settlement_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the last used Settlement identifier.
  */
@@ -367,7 +367,7 @@ ofo_counters_get_last_settlement_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_next_settlement_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the next available Settlement identifier.
  */
@@ -379,7 +379,7 @@ ofo_counters_get_next_settlement_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_last_tiers_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the last used Tiers identifier.
  */
@@ -391,7 +391,7 @@ ofo_counters_get_last_tiers_id( ofaIGetter *getter )
 
 /**
  * ofo_counters_get_next_tiers_id:
- * @counters: this #ofoCounters object.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: the next available Tiers identifier.
  */
@@ -495,4 +495,35 @@ get_next_counter( ofaIGetter *getter, const gchar *key )
 	g_free( query );
 
 	return( *pnumber );
+}
+
+/**
+ * ofo_counters_get_count:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the count of defined internal identifiers.
+ */
+guint
+ofo_counters_get_count( ofaIGetter *getter )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	gchar *query;
+	gint result;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
+
+	hub = ofa_igetter_get_hub( getter );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
+
+	connect = ofa_hub_get_connect( hub );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), 0 );
+
+	query = g_strdup_printf(
+				"SELECT COUNT(*) FROM OFA_T_DOSSIER_IDS "
+				"	WHERE DOS_ID=%u", DOSSIER_ROW_ID );
+	ofa_idbconnect_query_int( connect, query, &result, TRUE );
+	g_free( query );
+
+	return(( guint ) result );
 }

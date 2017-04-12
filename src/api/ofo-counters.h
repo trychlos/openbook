@@ -102,6 +102,8 @@ ofxCounter   ofo_counters_get_next_settlement_id( ofaIGetter *getter );
 ofxCounter   ofo_counters_get_last_tiers_id     ( ofaIGetter *getter );
 ofxCounter   ofo_counters_get_next_tiers_id     ( ofaIGetter *getter );
 
+guint        ofo_counters_get_count             ( ofaIGetter *getter );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFO_COUNTERS_H__ */

@@ -88,17 +88,21 @@ enum {
 	ENT_STLMT_STAMP,
 	ENT_TIERS,
 	ENT_NOTES,
+	ENT_DOC_ID,
 };
 
 /*
- * MAINTAINER NOTE: the dataset is exported in this same order. So:
- * 1/ put in in an import-compatible order
- * 2/ no more modify it
- * 3/ take attention to be able to support the import of a previously
- *    exported file
+ * MAINTAINER NOTE: the dataset is exported in this same order.
+ * So:
+ * 1/ the class default import should expect these fields in this same
+ *    order.
+ * 2/ new datas should be added to the end of the list.
+ * 3/ a removed column should be replaced by an empty one to stay
+ *    compatible with the class default import.
  *
  * Adding a field here should be reported in iexportable_export_fec()
- * function (Fichier des Ecritures Comptables).
+ * function (Fichier des Ecritures Comptables), and the corresponding
+ * document should be updated accordingly.
  */
 static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( ENT_DOPE ),
@@ -149,7 +153,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_COUNTER,
 				TRUE,
 				FALSE },
-										/* below data are not imported */
 		{ OFA_BOX_CSV( ENT_STLMT_USER ),
 				OFA_TYPE_STRING,
 				FALSE,
@@ -174,7 +177,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				FALSE },
-										/* below data are imported */
 		{ OFA_BOX_CSV( ENT_RULE ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -193,6 +195,20 @@ static const ofsBoxDef st_boxed_defs[] = {
 				FALSE },
 		{ 0 }
 };
+
+static const ofsBoxDef st_doc_defs[] = {
+		{ OFA_BOX_CSV( ENT_NUMBER ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( ENT_DOC_ID ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
+
+#define TABLES_COUNT                    2
 
 typedef struct {
 	gboolean   import_settled;
@@ -311,9 +327,9 @@ static void                  iexportable_iface_init( ofaIExportableInterface *if
 static guint                 iexportable_get_interface_version( void );
 static gchar                *iexportable_get_label( const ofaIExportable *instance );
 static ofsIExportableFormat *iexportable_get_formats( ofaIExportable *exportable );
-static gboolean              iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
-static gboolean              iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
-static gboolean              iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter );
+static gboolean              iexportable_export( ofaIExportable *exportable, const gchar *format_id );
+static gboolean              iexportable_export_default( ofaIExportable *exportable );
+static gboolean              iexportable_export_fec( ofaIExportable *exportable );
 static GList                *iexportable_export_fec_get_entries( ofaIGetter *getter );
 static gint                  iexportable_export_fec_cmp_entries( ofoEntry *a, ofoEntry *b );
 static void                  iimportable_iface_init( ofaIImportableInterface *iface );
@@ -3004,28 +3020,28 @@ iexportable_get_formats( ofaIExportable *instance )
  * at the end of the entry.
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export( ofaIExportable *exportable, const gchar *format_id )
 {
 	static const gchar *thisfn = "ofo_entry_iexportable_export";
-	gboolean res;
 
 	if( !my_collate( format_id, OFA_IEXPORTABLE_DEFAULT_FORMAT_ID )){
-		res = iexportable_export_default( exportable, settings, getter );
-
-	} else if( !my_collate( format_id, EXPORT_FORMAT_FEC )){
-		res = iexportable_export_fec( exportable, settings, getter );
-
-	} else {
-		res = FALSE;
-		g_warning( "%s: unknown or invalid export format %s", thisfn, format_id );
+		return( iexportable_export_default( exportable ));
 	}
 
-	return( res );
+	if( !my_collate( format_id, EXPORT_FORMAT_FEC )){
+		return( iexportable_export_fec( exportable ));
+	}
+
+	g_warning( "%s: format_id=%s unmanaged here", thisfn, format_id );
+
+	return( FALSE );
 }
 
 static gboolean
-iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export_default( ofaIExportable *exportable )
 {
+	ofaIGetter *getter;
+	ofaStreamFormat *stformat;
 	GList *result, *it;
 	gboolean ok, with_headers;
 	gchar field_sep;
@@ -3036,19 +3052,21 @@ iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *setting
 	ofoAccount *account;
 	ofoCurrency *currency;
 
+	getter = ofa_iexportable_get_getter( exportable );
 	result = ofo_entry_get_dataset( getter );
 
-	with_headers = ofa_stream_format_get_with_headers( settings );
-	field_sep = ofa_stream_format_get_field_sep( settings );
+	stformat = ofa_iexportable_get_stream_format( exportable );
+	with_headers = ofa_stream_format_get_with_headers( stformat );
+	field_sep = ofa_stream_format_get_field_sep( stformat );
 
 	count = ( gulong ) g_list_length( result );
 	if( with_headers ){
-		count += 1;
+		count += TABLES_COUNT;
 	}
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = ofa_box_csv_get_header( st_boxed_defs, settings );
+		str = ofa_box_csv_get_header( st_boxed_defs, stformat );
 		str2 = g_strdup_printf( "%s%c%s%c%s%c%s%c%s",
 				"Version", field_sep,
 				"ConcilDval", field_sep, "ConcilUser", field_sep, "ConcilStamp", field_sep,
@@ -3056,8 +3074,11 @@ iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *setting
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
-		if( !ok ){
-			return( FALSE );
+
+		if( ok ){
+			/* add new ofsBoxDef array at the end of the list */
+			ok = ofa_iexportable_append_headers( exportable,
+						TABLES_COUNT-1, st_doc_defs );
 		}
 	}
 
@@ -3070,7 +3091,7 @@ iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *setting
 		g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
 		currency = ofo_currency_get_by_code( getter, cur_code );
 		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, currency );
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, stformat, currency );
 
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ));
 		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
@@ -3122,8 +3143,10 @@ iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *setting
  * 'docs/DGI/FEC_Description.ods' sheet.
  */
 static gboolean
-iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export_fec( ofaIExportable *exportable )
 {
+	ofaIGetter *getter;
+	ofaStreamFormat *stformat;
 	GList *sorted, *it;
 	gboolean ok, with_headers;
 	gchar field_sep;
@@ -3144,11 +3167,13 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 	ofeEntryRule rule;
 	ofeEntryPeriod period;
 
+	getter = ofa_iexportable_get_getter( exportable );
 	sorted = iexportable_export_fec_get_entries( getter );
 
+	stformat = ofa_iexportable_get_stream_format( exportable );
 	with_headers = TRUE;
 	date_fmt = MY_DATE_YYMD;
-	field_sep = ofa_stream_format_get_field_sep( settings );
+	field_sep = ofa_stream_format_get_field_sep( stformat );
 
 	count = ( gulong ) g_list_length( sorted );
 	if( with_headers ){
@@ -3222,8 +3247,8 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 
 		sdope = my_date_to_str( ofo_entry_get_dope( entry ), date_fmt );
 		sdeffect = my_date_to_str( ofo_entry_get_deffect( entry ), date_fmt );
-		sdebit = ofa_amount_to_csv( ofo_entry_get_debit( entry ), currency, settings );
-		scredit = ofa_amount_to_csv( ofo_entry_get_credit( entry ), currency, settings );
+		sdebit = ofa_amount_to_csv( ofo_entry_get_debit( entry ), currency, stformat );
+		scredit = ofa_amount_to_csv( ofo_entry_get_credit( entry ), currency, stformat );
 
 		cref = ofo_entry_get_ref( entry );
 		/* piece ref is mandatory */

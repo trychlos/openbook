@@ -158,6 +158,8 @@ ofeAccountType  ofo_account_archive_get_type        ( ofoAccount *account, guint
 ofxAmount       ofo_account_archive_get_debit       ( ofoAccount *account, guint idx );
 ofxAmount       ofo_account_archive_get_credit      ( ofoAccount *account, guint idx );
 
+guint           ofo_account_doc_get_count           ( ofoAccount *account );
+
 void            ofo_account_set_number              ( ofoAccount *account, const gchar *number );
 void            ofo_account_set_label               ( ofoAccount *account, const gchar *label );
 void            ofo_account_set_currency            ( ofoAccount *account, const gchar *devise );

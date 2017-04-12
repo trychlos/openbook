@@ -126,6 +126,10 @@ gboolean             ofo_dossier_is_valid_data             ( const gchar *label,
 																	const GDate *end,
 																	gchar **msgerr );
 
+guint                ofo_dossier_doc_get_count             ( ofoDossier *dossier );
+
+guint                ofo_dossier_prefs_get_count           ( ofoDossier *dossier );
+
 void                 ofo_dossier_set_default_currency      ( ofoDossier *dossier, const gchar *currency );
 void                 ofo_dossier_set_exe_begin             ( ofoDossier *dossier, const GDate *date );
 void                 ofo_dossier_set_exe_end               ( ofoDossier *dossier, const GDate *date );

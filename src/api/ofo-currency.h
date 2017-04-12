@@ -84,6 +84,8 @@ const gdouble   ofo_currency_get_precision         ( const ofoCurrency *currency
 gboolean        ofo_currency_is_deletable          ( const ofoCurrency *currency );
 gboolean        ofo_currency_is_valid_data         ( const gchar *code, const gchar *label, const gchar *symbol, gint digits, gchar **msgerr );
 
+guint           ofo_currency_doc_get_count         ( ofoCurrency *currency );
+
 void            ofo_currency_set_code              ( ofoCurrency *currency, const gchar *code );
 void            ofo_currency_set_label             ( ofoCurrency *currency, const gchar *label );
 void            ofo_currency_set_symbol            ( ofoCurrency *currency, const gchar *symbol );

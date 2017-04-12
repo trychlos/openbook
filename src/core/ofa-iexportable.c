@@ -28,6 +28,7 @@
 
 #include <gio/gio.h>
 #include <glib/gi18n.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "my/my-utils.h"
@@ -42,7 +43,8 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaStreamFormat *settings;
+	ofaIGetter      *getter;
+	ofaStreamFormat *stformat;
 	myIProgress     *instance;
 
 	/* runtime data
@@ -61,9 +63,9 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIExportableInterface *klass );
 static void          interface_base_finalize( ofaIExportableInterface *klass );
-static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter );
-static sIExportable *get_iexportable_data( ofaIExportable *exportable );
-static void          on_exportable_finalized( sIExportable *sdata, GObject *finalized_object );
+static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const gchar *format_id );
+static sIExportable *get_instance_data( const ofaIExportable *exportable );
+static void          on_instance_finalized( sIExportable *sdata, GObject *finalized_object );
 
 /**
  * ofa_iexportable_get_type:
@@ -191,9 +193,9 @@ ofa_iexportable_get_interface_version( GType type )
 
 /**
  * ofa_iexporter_get_label:
- * @instance: this #ofaIExportable instance.
+ * @exportable: this #ofaIExportable instance.
  *
- * Returns: the displayable label to be associated with @instance, as a
+ * Returns: the displayable label to be associated with @exportable, as a
  * newly allocated string which should be g_free() by the caller.
  *
  * The returned string may contain one '_' underline, to be used as a
@@ -208,66 +210,66 @@ ofa_iexportable_get_interface_version( GType type )
  * It is so a strong suggestion to implement this method.
  */
 gchar *
-ofa_iexportable_get_label( const ofaIExportable *instance )
+ofa_iexportable_get_label( const ofaIExportable *exportable )
 {
 	static const gchar *thisfn = "ofa_iexportable_get_label";
 
-	g_return_val_if_fail( instance && OFA_IS_IEXPORTABLE( instance ), NULL );
+	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), NULL );
 
-	if( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_label ){
-		return( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_label( instance ));
+	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->get_label ){
+		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->get_label( exportable ));
 	}
 
 	g_info( "%s: ofaIExportable's %s implementation does not provide 'get_label()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
+			thisfn, G_OBJECT_TYPE_NAME( exportable ));
 	return( NULL );
 }
 
 /**
  * ofa_iexporter_get_formats:
- * @instance: this #ofaIExportable instance.
+ * @exportable: this #ofaIExportable instance.
  *
  * Returns: %NULL, or a null-terminated array of #ofsIExportableFormat
  * structures.
  */
 ofsIExportableFormat *
-ofa_iexportable_get_formats( ofaIExportable *instance )
+ofa_iexportable_get_formats( ofaIExportable *exportable )
 {
 	static const gchar *thisfn = "ofa_iexportable_get_formats";
 
-	g_return_val_if_fail( instance && OFA_IS_IEXPORTABLE( instance ), NULL );
+	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), NULL );
 
-	if( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_formats ){
-		return( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_formats( instance ));
+	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->get_formats ){
+		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->get_formats( exportable ));
 	}
 
 	g_info( "%s: ofaIExportable's %s implementation does not provide 'get_formats()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
+			thisfn, G_OBJECT_TYPE_NAME( exportable ));
 	return( NULL );
 }
 
 /**
  * ofa_iexporter_free_formats:
- * @instance: this #ofaIExportable instance.
+ * @exportable: this #ofaIExportable instance.
  * @formats: [allow-none]: the #ofsIExportableFormat array as returned
  *  by ofa_iexportable_get_formats() function.
  *
  * Let the implementation release the @formats resources.
  */
 void
-ofa_iexportable_free_formats( ofaIExportable *instance, ofsIExportableFormat *formats )
+ofa_iexportable_free_formats( ofaIExportable *exportable, ofsIExportableFormat *formats )
 {
 	static const gchar *thisfn = "ofa_iexportable_free_formats";
 
-	g_return_if_fail( instance && OFA_IS_IEXPORTABLE( instance ));
+	g_return_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ));
 
-	if( OFA_IEXPORTABLE_GET_INTERFACE( instance )->free_formats ){
-		OFA_IEXPORTABLE_GET_INTERFACE( instance )->free_formats( instance, formats );
+	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->free_formats ){
+		OFA_IEXPORTABLE_GET_INTERFACE( exportable )->free_formats( exportable, formats );
 		return;
 	}
 
 	g_info( "%s: ofaIExportable's %s implementation does not provide 'free_formats()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
+			thisfn, G_OBJECT_TYPE_NAME( exportable ));
 }
 
 /**
@@ -276,7 +278,7 @@ ofa_iexportable_free_formats( ofaIExportable *instance, ofsIExportableFormat *fo
  * @uri: the output URI,
  *  will be overriden without any further confirmation if already exists.
  * @format_id: the identifier of the export format.
- * @settings: a #ofaStreamFormat object.
+ * @stformat: a #ofaStreamFormat object.
  * @getter: a #ofaIGetter instance.
  * @progress: the #myIProgress instance which display the export progress.
  *
@@ -286,7 +288,7 @@ ofa_iexportable_free_formats( ofaIExportable *instance, ofsIExportableFormat *fo
  */
 gboolean
 ofa_iexportable_export_to_uri( ofaIExportable *exportable,
-									const gchar *uri, const gchar *format_id, ofaStreamFormat *settings,
+									const gchar *uri, const gchar *format_id, ofaStreamFormat *stformat,
 									ofaIGetter *getter, myIProgress *progress )
 {
 	GFile *output_file;
@@ -295,12 +297,14 @@ ofa_iexportable_export_to_uri( ofaIExportable *exportable,
 	gboolean ok;
 
 	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), FALSE );
+	g_return_val_if_fail( stformat && OFA_IS_STREAM_FORMAT( stformat ), FALSE );
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	sdata = get_iexportable_data( exportable );
+	sdata = get_instance_data( exportable );
 	g_return_val_if_fail( sdata, FALSE );
 
-	sdata->settings = settings;
+	sdata->getter = getter;
+	sdata->stformat = stformat;
 	sdata->instance = progress;
 	sdata->count = 0;
 	sdata->progress = 0;
@@ -310,7 +314,7 @@ ofa_iexportable_export_to_uri( ofaIExportable *exportable,
 	}
 	g_return_val_if_fail( G_IS_FILE_OUTPUT_STREAM( output_stream ), FALSE );
 
-	ok = iexportable_export_to_stream( exportable, output_stream, format_id, settings, getter );
+	ok = iexportable_export_to_stream( exportable, output_stream, format_id );
 
 	g_output_stream_close( output_stream, NULL, NULL );
 	g_object_unref( output_file );
@@ -319,13 +323,12 @@ ofa_iexportable_export_to_uri( ofaIExportable *exportable,
 }
 
 static gboolean
-iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream,
-									const gchar *format_id, ofaStreamFormat *settings, ofaIGetter *getter )
+iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const gchar *format_id )
 {
 	static const gchar *thisfn = "ofa_iexportable_export_to_stream";
 	sIExportable *sdata;
 
-	sdata = get_iexportable_data( exportable );
+	sdata = get_instance_data( exportable );
 	g_return_val_if_fail( sdata, FALSE );
 
 	sdata->stream = stream;
@@ -333,12 +336,50 @@ iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream,
 	my_iprogress_start_work( sdata->instance, exportable, NULL );
 
 	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export ){
-		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export( exportable, format_id, settings, getter ));
+		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export( exportable, format_id ));
 	}
 
 	g_info( "%s: ofaIExportable's %s implementation does not provide 'export()' method",
 			thisfn, G_OBJECT_TYPE_NAME( exportable ));
 	return( FALSE );
+}
+
+/**
+ * ofa_iexporter_get_getter:
+ * @exportable: this #ofaIExportable instance.
+ *
+ * Returns: the #ofaIGetter instance provided to ofa_iexportable_export_to_uri().
+ */
+ofaIGetter *
+ofa_iexportable_get_getter( const ofaIExportable *exportable )
+{
+	sIExportable *sdata;
+
+	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), NULL );
+
+	sdata = get_instance_data( exportable );
+	g_return_val_if_fail( sdata, 0 );
+
+	return( sdata->getter );
+}
+
+/**
+ * ofa_iexporter_get_stream_format:
+ * @exportable: this #ofaIExportable instance.
+ *
+ * Returns: the #ofaStreamformat object provided to ofa_iexportable_export_to_uri().
+ */
+ofaStreamFormat *
+ofa_iexportable_get_stream_format( const ofaIExportable *exportable )
+{
+	sIExportable *sdata;
+
+	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), NULL );
+
+	sdata = get_instance_data( exportable );
+	g_return_val_if_fail( sdata, 0 );
+
+	return( sdata->stformat );
 }
 
 /**
@@ -354,7 +395,7 @@ ofa_iexportable_get_count( ofaIExportable *exportable )
 
 	g_return_val_if_fail( OFA_IS_IEXPORTABLE( exportable ), 0 );
 
-	sdata = get_iexportable_data( exportable );
+	sdata = get_instance_data( exportable );
 	g_return_val_if_fail( sdata, 0 );
 
 	return( sdata->count );
@@ -377,10 +418,60 @@ ofa_iexportable_set_count( ofaIExportable *exportable, gulong count )
 
 	g_return_if_fail( OFA_IS_IEXPORTABLE( exportable ));
 
-	sdata = get_iexportable_data( exportable );
+	sdata = get_instance_data( exportable );
 	g_return_if_fail( sdata );
 
 	sdata->count = count;
+}
+
+/**
+ * ofa_iexportable_append_headers:
+ * @exportable: this #ofaIExportable instance.
+ * @tables_count: the count of tables.
+ *
+ * Export the headers corresponding to the provided table definitions.
+ *
+ * Exactly @tables_count #ofsBoxDef arrays must be provided after the
+ * @tables_count argument.
+ *
+ * Returns: %TRUE if the headers have been successfully written to the
+ * output stream.
+ */
+gboolean
+ofa_iexportable_append_headers( ofaIExportable *exportable, guint tables_count, ... )
+{
+	sIExportable *sdata;
+	gchar *str1, *str2;
+	va_list ap;
+	guint i;
+	ofsBoxDef *box_def;
+	gboolean ok;
+	gchar field_sep;
+
+	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), FALSE );
+
+	sdata = get_instance_data( exportable );
+	g_return_val_if_fail( sdata->stformat && OFA_IS_STREAM_FORMAT( sdata->stformat ), FALSE );
+
+	ok = TRUE;
+
+	if( ofa_stream_format_get_with_headers( sdata->stformat )){
+		field_sep = ofa_stream_format_get_field_sep( sdata->stformat );
+		va_start( ap, tables_count );
+
+		for( i=0 ; i<tables_count && ok ; ++i ){
+			box_def = ( ofsBoxDef * ) va_arg( ap, ofsBoxDef * );
+			str1 = ofa_box_csv_get_header( box_def, sdata->stformat );
+			str2 = g_strdup_printf( "%u%c%s", i+1, field_sep, str1 );
+			ok = ofa_iexportable_append_line( exportable, str2 );
+			g_free( str2 );
+			g_free( str1 );
+		}
+
+		va_end( ap );
+	}
+
+	return( ok );
 }
 
 /**
@@ -390,7 +481,7 @@ ofa_iexportable_set_count( ofaIExportable *exportable, gulong count )
  *
  * The #ofaIExportable implementation code must have taken into account
  * the decimal dot and the field separators specified in provided
- * #ofaStreamFormat settings.
+ * #ofaStreamFormat stformat.
  *
  * The #ofaIExportable interface takes care here of charset conversions.
  *
@@ -410,7 +501,7 @@ ofa_iexportable_append_line( ofaIExportable *exportable, const gchar *line )
 	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), FALSE );
 
 	if( my_strlen( line )){
-		sdata = get_iexportable_data( exportable );
+		sdata = get_instance_data( exportable );
 		g_return_val_if_fail( sdata, FALSE );
 
 		error = NULL;
@@ -421,17 +512,18 @@ ofa_iexportable_append_line( ofaIExportable *exportable, const gchar *line )
 			g_usleep( 0.01*G_USEC_PER_SEC );
 		}
 
+		str = g_strdup_printf( "%s\n", line );
+		dest_codeset = ofa_stream_format_get_charmap( sdata->stformat );
+
 		/* pwi 2017- 3-23 It happens that g_convert doesn't know how to
 		 * convert from long dash (utf8) to dash (iso-8859-15)
-		 * help it in this matter
-		 */
-		str = g_strdup_printf( "%s\n", line );
-		dest_codeset = ofa_stream_format_get_charmap( sdata->settings );
+		 * help it in this matter */
 		if( !g_str_has_prefix( dest_codeset, "UTF" )){
 			str2 = my_utils_subst_long_dash( str );
 			g_free( str );
 			str = str2;
 		}
+
 		converted = g_convert( str, -1, dest_codeset, "UTF-8", &bytes_read, NULL, &error );
 		if( !converted ){
 			msg = g_strdup_printf(
@@ -471,7 +563,7 @@ ofa_iexportable_append_line( ofaIExportable *exportable, const gchar *line )
 }
 
 static sIExportable *
-get_iexportable_data( ofaIExportable *exportable )
+get_instance_data( const ofaIExportable *exportable )
 {
 	sIExportable *sdata;
 
@@ -480,16 +572,16 @@ get_iexportable_data( ofaIExportable *exportable )
 	if( !sdata ){
 		sdata = g_new0( sIExportable, 1 );
 		g_object_set_data( G_OBJECT( exportable ), IEXPORTABLE_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( exportable ), ( GWeakNotify ) on_exportable_finalized, sdata );
+		g_object_weak_ref( G_OBJECT( exportable ), ( GWeakNotify ) on_instance_finalized, sdata );
 	}
 
 	return( sdata );
 }
 
 static void
-on_exportable_finalized( sIExportable *sdata, GObject *finalized_object )
+on_instance_finalized( sIExportable *sdata, GObject *finalized_object )
 {
-	static const gchar *thisfn = "ofa_iexportable_on_exportable_finalized";
+	static const gchar *thisfn = "ofa_iexportable_on_instance_finalized";
 
 	g_debug( "%s: sdata=%p, finalized_object=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_object );
