@@ -91,8 +91,6 @@ gboolean           ofo_recurrent_model_get_is_enabled         ( const ofoRecurre
 gboolean           ofo_recurrent_model_is_deletable           ( const ofoRecurrentModel *model );
 gboolean           ofo_recurrent_model_is_valid_data          ( const gchar *mnemo, const gchar *label, const gchar *ope_template, ofoRecPeriod *period, ofxCounter detail, gchar **msgerr );
 
-guint              ofo_recurrent_model_doc_get_count          ( ofoRecurrentModel *model );
-
 void               ofo_recurrent_model_set_mnemo              ( ofoRecurrentModel *model, const gchar *mnemo );
 void               ofo_recurrent_model_set_label              ( ofoRecurrentModel *model, const gchar *label );
 void               ofo_recurrent_model_set_ope_template       ( ofoRecurrentModel *model, const gchar *ope_template );
@@ -104,8 +102,10 @@ void               ofo_recurrent_model_set_def_amount2        ( ofoRecurrentMode
 void               ofo_recurrent_model_set_def_amount3        ( ofoRecurrentModel *model, const gchar *def_amount );
 void               ofo_recurrent_model_set_is_enabled         ( ofoRecurrentModel *model, gboolean is_enabled );
 
-GList             *ofo_recurrent_model_get_doc_orphans        ( ofaIGetter *getter );
-#define            ofo_recurrent_model_free_doc_orphans( L )  ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+guint              ofo_recurrent_model_doc_get_count          ( ofoRecurrentModel *model );
+
+GList             *ofo_recurrent_model_doc_get_orphans        ( ofaIGetter *getter );
+#define            ofo_recurrent_model_doc_free_orphans( L )  ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
 gboolean           ofo_recurrent_model_insert                 ( ofoRecurrentModel *model );
 gboolean           ofo_recurrent_model_update                 ( ofoRecurrentModel *model, const gchar *prev_mnemo );

@@ -209,8 +209,6 @@ GSList         *ofo_entry_get_currencies             ( ofaIGetter *getter );
 
 gboolean        ofo_entry_is_editable                ( const ofoEntry *entry );
 
-guint           ofo_entry_doc_get_count              ( ofoEntry *entry );
-
 void            ofo_entry_set_label                  ( ofoEntry *entry, const gchar *label );
 void            ofo_entry_set_deffect                ( ofoEntry *entry, const GDate *date );
 void            ofo_entry_set_dope                   ( ofoEntry *entry, const GDate *date );
@@ -242,8 +240,10 @@ ofoEntry       *ofo_entry_new_with_data              ( ofaIGetter *getter,
 															const gchar *ledger, const gchar *model,
 															ofxAmount debit, ofxAmount credit );
 
-GList          *ofo_entry_get_doc_orphans            ( ofaIGetter *getter );
-#define         ofo_entry_free_doc_orphans( L )      ( g_list_free( L ))
+guint           ofo_entry_doc_get_count              ( ofoEntry *entry );
+
+GList          *ofo_entry_doc_get_orphans            ( ofaIGetter *getter );
+#define         ofo_entry_doc_free_orphans( L )      ( g_list_free( L ))
 
 gboolean        ofo_entry_insert                     ( ofoEntry *entry );
 

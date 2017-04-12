@@ -710,25 +710,6 @@ ofo_bat_get_used_count( ofoBat *bat )
 	return( count );
 }
 
-/**
- * ofo_bat_doc_get_count:
- * @bat: this #ofoBat instance.
- *
- * Returns the count of attached documents.
- */
-guint
-ofo_bat_doc_get_count( ofoBat *bat )
-{
-	ofoBatPrivate *priv;
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, 0 );
-
-	priv = ofo_bat_get_instance_private( bat );
-
-	return( g_list_length( priv->docs ));
-}
-
 /*
  * bat_set_id:
  * @bat: this #ofoBat object.
@@ -917,7 +898,26 @@ bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
 }
 
 /**
- * ofo_bat_get_doc_orphans:
+ * ofo_bat_doc_get_count:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the count of attached documents.
+ */
+guint
+ofo_bat_doc_get_count( ofoBat *bat )
+{
+	ofoBatPrivate *priv;
+
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), 0 );
+	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, 0 );
+
+	priv = ofo_bat_get_instance_private( bat );
+
+	return( g_list_length( priv->docs ));
+}
+
+/**
+ * ofo_bat_doc_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown BAT_ID in OFA_T_BAT_DOC child table.
@@ -926,7 +926,7 @@ bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
  * caller.
  */
 GList *
-ofo_bat_get_doc_orphans( ofaIGetter *getter )
+ofo_bat_doc_get_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_BAT_DOC" ));
 }
@@ -1453,13 +1453,19 @@ iexportable_export_default( ofaIExportable *exportable )
 		bat = OFO_BAT( it->data );
 		count += ofo_bat_doc_get_count( bat );
 	}
-	ofa_iexportable_set_count( exportable, count );
+	ofa_iexportable_set_count( exportable, count+2 );
 
-	/* add a version line at the very beginning of the file */
-	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, BAT_EXPORT_VERSION );
+	/* add version lines at the very beginning of the file */
+	str1 = g_strdup_printf( "0%c0%cVersion", field_sep, field_sep );
 	ok = ofa_iexportable_append_line( exportable, str1 );
 	g_free( str1 );
+	if( ok ){
+		str1 = g_strdup_printf( "1%c0%c%u", field_sep, field_sep, BAT_EXPORT_VERSION );
+		ok = ofa_iexportable_append_line( exportable, str1 );
+		g_free( str1 );
+	}
 
+	/* export headers */
 	if( ok ){
 		/* add new ofsBoxDef array at the end of the list */
 		ok = ofa_iexportable_append_headers( exportable,
@@ -1471,7 +1477,7 @@ iexportable_export_default( ofaIExportable *exportable )
 		bat = OFO_BAT( it->data );
 
 		str1 = ofa_box_csv_get_line( OFO_BASE( bat )->prot->fields, stformat, NULL );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "1%c1%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
@@ -1480,7 +1486,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
 			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c2%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );
@@ -1523,10 +1529,6 @@ iimportable_get_label( const ofaIImportable *instance )
  * Receives a GSList of lines, where data are GSList of fields.
  *
  * Returns: the total count of errors.
- *
- * As the table may have been dropped between import phase and insert
- * phase, if an error occurs during insert phase, then the table is
- * changed and only contains the successfully inserted records.
  */
 static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )

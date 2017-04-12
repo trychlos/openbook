@@ -1455,10 +1455,10 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 					ope->ref = g_strdup( ofo_tva_record_get_mnemo( priv->tva_record ));
 					ope->ref_user_set = TRUE;
 
-					tmpl_count = ofo_ope_template_get_detail_count( template );
+					tmpl_count = ofo_ope_template_detail_get_count( template );
 					for( tmpl_idx=0 ; tmpl_idx < tmpl_count ; ++tmpl_idx ){
-						if( !ofo_ope_template_get_detail_debit_locked( template, tmpl_idx )){
-							cstr = ofo_ope_template_get_detail_debit( template, tmpl_idx );
+						if( !ofo_ope_template_detail_get_debit_locked( template, tmpl_idx )){
+							cstr = ofo_ope_template_detail_get_debit( template, tmpl_idx );
 							if( !my_strlen( cstr )){
 								detail = ( ofsOpeDetail * ) g_list_nth( ope->detail, tmpl_idx )->data;
 								detail->debit = amount;
@@ -1467,8 +1467,8 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 								break;
 
 							}
-						} else if( !ofo_ope_template_get_detail_credit_locked( template, tmpl_idx )){
-							cstr = ofo_ope_template_get_detail_credit( template, tmpl_idx );
+						} else if( !ofo_ope_template_detail_get_credit_locked( template, tmpl_idx )){
+							cstr = ofo_ope_template_detail_get_credit( template, tmpl_idx );
 							if( !my_strlen( cstr )){
 								detail = ( ofsOpeDetail * ) g_list_nth( ope->detail, tmpl_idx )->data;
 								detail->credit = amount;

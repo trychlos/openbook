@@ -264,12 +264,12 @@ typedef struct {
 }
 	ofoDossierPrivate;
 
-static GList      *dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency );
-static GList      *dossier_find_currency_by_account( ofoDossier *dossier, const gchar *account );
-static GList      *dossier_new_currency_with_code( ofoDossier *dossier, const gchar *currency );
 static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
 static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
 static void        dossier_setup_rpid( ofoDossier *self );
+static GList      *dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency );
+static GList      *dossier_find_currency_by_account( ofoDossier *dossier, const gchar *account );
+static GList      *dossier_new_currency_with_code( ofoDossier *dossier, const gchar *currency );
 static GList      *get_orphans( ofaIGetter *getter, const gchar *table );
 static ofoDossier *dossier_do_read( ofaIGetter *getter );
 static gboolean    dossier_do_update( ofoDossier *dossier );
@@ -743,129 +743,6 @@ ofo_dossier_get_min_deffect( const ofoDossier *dossier, const ofoLedger *ledger,
 	return( date );
 }
 
-/**
- * ofo_dossier_get_currencies:
- * @dossier: this dossier.
- *
- * Returns: an alphabetically sorted #GSList of the currencies defined
- * in the subtable.
- *
- * The returned list should be #ofo_dossier_free_currencies() by the
- * caller.
- */
-GSList *
-ofo_dossier_get_currencies( ofoDossier *dossier )
-{
-	ofoDossierPrivate *priv;
-	GSList *list;
-	GList *it;
-	GList *cur_detail;
-	const gchar *currency;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
-
-	priv = ofo_dossier_get_instance_private( dossier );
-	list = NULL;
-
-	for( it=priv->cur_details ; it ; it=it->next ){
-		cur_detail = ( GList * ) it->data;
-		currency = ofa_box_get_string( cur_detail, DOS_CURRENCY );
-		list = g_slist_insert_sorted( list, g_strdup( currency ), ( GCompareFunc ) g_utf8_collate );
-	}
-
-	return( list );
-}
-
-/**
- * ofo_dossier_get_sld_account:
- * @dossier: this dossier.
- * @currency: the serched currency.
- *
- * Returns: the account configured as balancing account for this
- * currency.
- *
- * The returned string is owned by the @dossier, and must not be freed
- * by the caller.
- */
-const gchar *
-ofo_dossier_get_sld_account( ofoDossier *dossier, const gchar *currency )
-{
-	GList *cur_detail;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
-
-	cur_detail = dossier_find_currency_by_code( dossier, currency );
-	if( cur_detail ){
-		return( ofa_box_get_string( cur_detail, DOS_SLD_ACCOUNT ));
-	}
-
-	return( NULL );
-}
-
-static GList *
-dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency )
-{
-	ofoDossierPrivate *priv;
-	GList *it;
-	GList *cur_detail;
-	const gchar *cur_code;
-
-	priv = ofo_dossier_get_instance_private( dossier );
-
-	for( it=priv->cur_details ; it ; it=it->next ){
-		cur_detail = ( GList * ) it->data;
-		cur_code = ofa_box_get_string( cur_detail, DOS_CURRENCY );
-		if( !my_collate( cur_code, currency )){
-			return( cur_detail );
-		}
-	}
-
-	return( NULL );
-}
-
-static GList *
-dossier_find_currency_by_account( ofoDossier *dossier, const gchar *account )
-{
-	ofoDossierPrivate *priv;
-	GList *it;
-	GList *cur_detail;
-	const gchar *cur_account;
-
-	priv = ofo_dossier_get_instance_private( dossier );
-
-	for( it=priv->cur_details ; it ; it=it->next ){
-		cur_detail = ( GList * ) it->data;
-		cur_account = ofa_box_get_string( cur_detail, DOS_SLD_ACCOUNT );
-		if( !my_collate( cur_account, account )){
-			return( cur_detail );
-		}
-	}
-
-	return( NULL );
-}
-
-static GList *
-dossier_new_currency_with_code( ofoDossier *dossier, const gchar *currency )
-{
-	ofoDossierPrivate *priv;
-	GList *cur_detail;
-
-	cur_detail = dossier_find_currency_by_code( dossier, currency );
-
-	if( !cur_detail ){
-		cur_detail = ofa_box_init_fields_list( st_currency_defs );
-		ofa_box_set_string( cur_detail, DOS_CURRENCY, currency );
-		ofa_box_set_string( cur_detail, DOS_SLD_ACCOUNT, NULL );
-
-		priv = ofo_dossier_get_instance_private( dossier );
-		priv->cur_details = g_list_prepend( priv->cur_details, cur_detail );
-	}
-
-	return( cur_detail );
-}
-
 #if 0
 /**
  * ofo_dossier_get_last_closed_exercice:
@@ -911,44 +788,6 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 	return( dmax );
 }
 #endif
-
-/**
- * ofo_dossier_doc_get_count:
- * @dossier: this #ofoDossier object.
- *
- * Returns: the count of attached documents.
- */
-guint
-ofo_dossier_doc_get_count( ofoDossier *dossier )
-{
-	ofoDossierPrivate *priv;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
-
-	priv = ofo_dossier_get_instance_private( dossier );
-
-	return( g_list_length( priv->docs ));
-}
-
-/**
- * ofo_dossier_prefs_get_count:
- * @dossier: this #ofoDossier object.
- *
- * Returns: the count of recorded @dossier preferences.
- */
-guint
-ofo_dossier_prefs_get_count( ofoDossier *dossier )
-{
-	ofoDossierPrivate *priv;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
-
-	priv = ofo_dossier_get_instance_private( dossier );
-
-	return( g_list_length( priv->prefs ));
-}
 
 /**
  * ofo_dossier_is_current:
@@ -1249,49 +1088,130 @@ ofo_dossier_set_prevexe_end( ofoDossier *dossier, const GDate *date )
 }
 
 /**
- * ofo_dossier_reset_currencies:
+ * ofo_dossier_currency_get_list:
  * @dossier: this dossier.
  *
- * Reset the currencies (free all).
+ * Returns: an alphabetically sorted #GSList of the currencies defined
+ * in the subtable.
  *
- * This function should be called when updating the currencies
- * properties, as we are only able to set new elements in the list.
+ * The returned list should be #ofo_dossier_currency_free_list() by the
+ * caller.
  */
-void
-ofo_dossier_reset_currencies( ofoDossier *dossier )
+GSList *
+ofo_dossier_currency_get_list( ofoDossier *dossier )
 {
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
+	ofoDossierPrivate *priv;
+	GSList *list;
+	GList *it;
+	GList *cur_detail;
+	const gchar *currency;
 
-	free_currency_details( dossier );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
+
+	priv = ofo_dossier_get_instance_private( dossier );
+	list = NULL;
+
+	for( it=priv->cur_details ; it ; it=it->next ){
+		cur_detail = ( GList * ) it->data;
+		currency = ofa_box_get_string( cur_detail, DOS_CURRENCY );
+		list = g_slist_insert_sorted( list, g_strdup( currency ), ( GCompareFunc ) g_utf8_collate );
+	}
+
+	return( list );
 }
 
 /**
- * ofo_dossier_set_sld_account:
+ * ofo_dossier_currency_get_sld_account:
  * @dossier: this dossier.
- * @currency: the currency.
- * @account: the account.
+ * @currency: the serched currency.
  *
- * Set the balancing account for the currency.
+ * Returns: the account configured as balancing account for this
+ * currency.
+ *
+ * The returned string is owned by the @dossier, and must not be freed
+ * by the caller.
  */
-void
-ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *currency, const gchar *account )
+const gchar *
+ofo_dossier_currency_get_sld_account( ofoDossier *dossier, const gchar *currency )
 {
 	GList *cur_detail;
 
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	g_return_if_fail( my_strlen( currency ));
-	g_return_if_fail( my_strlen( account ));
-	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
 
-	cur_detail = dossier_new_currency_with_code( dossier, currency );
-	g_return_if_fail( cur_detail );
+	cur_detail = dossier_find_currency_by_code( dossier, currency );
+	if( cur_detail ){
+		return( ofa_box_get_string( cur_detail, DOS_SLD_ACCOUNT ));
+	}
 
-	ofa_box_set_string( cur_detail, DOS_SLD_ACCOUNT, account );
+	return( NULL );
+}
+
+static GList *
+dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency )
+{
+	ofoDossierPrivate *priv;
+	GList *it;
+	GList *cur_detail;
+	const gchar *cur_code;
+
+	priv = ofo_dossier_get_instance_private( dossier );
+
+	for( it=priv->cur_details ; it ; it=it->next ){
+		cur_detail = ( GList * ) it->data;
+		cur_code = ofa_box_get_string( cur_detail, DOS_CURRENCY );
+		if( !my_collate( cur_code, currency )){
+			return( cur_detail );
+		}
+	}
+
+	return( NULL );
+}
+
+static GList *
+dossier_find_currency_by_account( ofoDossier *dossier, const gchar *account )
+{
+	ofoDossierPrivate *priv;
+	GList *it;
+	GList *cur_detail;
+	const gchar *cur_account;
+
+	priv = ofo_dossier_get_instance_private( dossier );
+
+	for( it=priv->cur_details ; it ; it=it->next ){
+		cur_detail = ( GList * ) it->data;
+		cur_account = ofa_box_get_string( cur_detail, DOS_SLD_ACCOUNT );
+		if( !my_collate( cur_account, account )){
+			return( cur_detail );
+		}
+	}
+
+	return( NULL );
+}
+
+static GList *
+dossier_new_currency_with_code( ofoDossier *dossier, const gchar *currency )
+{
+	ofoDossierPrivate *priv;
+	GList *cur_detail;
+
+	cur_detail = dossier_find_currency_by_code( dossier, currency );
+
+	if( !cur_detail ){
+		cur_detail = ofa_box_init_fields_list( st_currency_defs );
+		ofa_box_set_string( cur_detail, DOS_CURRENCY, currency );
+		ofa_box_set_string( cur_detail, DOS_SLD_ACCOUNT, NULL );
+
+		priv = ofo_dossier_get_instance_private( dossier );
+		priv->cur_details = g_list_prepend( priv->cur_details, cur_detail );
+	}
+
+	return( cur_detail );
 }
 
 /**
- * ofo_dossier_get_cur_orphans:
+ * ofo_dossier_currency_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown DOS_ID in OFA_T_DOSSIER_CUR child table.
@@ -1300,39 +1220,9 @@ ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *currency, const g
  * caller.
  */
 GList *
-ofo_dossier_get_cur_orphans( ofaIGetter *getter )
+ofo_dossier_currency_get_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_DOSSIER_CUR" ));
-}
-
-/**
- * ofo_dossier_get_doc_orphans:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the list of unknown DOS_ID in OFA_T_DOSSIER_DOC child table.
- *
- * The returned list should be #ofo_dossier_doc_free_orphans() by the
- * caller.
- */
-GList *
-ofo_dossier_get_doc_orphans( ofaIGetter *getter )
-{
-	return( get_orphans( getter, "OFA_T_DOSSIER_DOC" ));
-}
-
-/**
- * ofo_dossier_get_prefs_orphans:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the list of unknown DOS_ID in OFA_T_DOSSIER_PREFS child table.
- *
- * The returned list should be #ofo_dossier_prefs_free_orphans() by the
- * caller.
- */
-GList *
-ofo_dossier_get_prefs_orphans( ofaIGetter *getter )
-{
-	return( get_orphans( getter, "OFA_T_DOSSIER_PREFS" ));
 }
 
 static GList *
@@ -1366,6 +1256,116 @@ get_orphans( ofaIGetter *getter, const gchar *table )
 	g_free( query );
 
 	return( orphans );
+}
+
+/**
+ * ofo_dossier_currency_reset:
+ * @dossier: this dossier.
+ *
+ * Reset the currencies (free all).
+ *
+ * This function should be called when updating the currencies
+ * properties, as we are only able to set new elements in the list.
+ */
+void
+ofo_dossier_currency_reset( ofoDossier *dossier )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
+
+	free_currency_details( dossier );
+}
+
+/**
+ * ofo_dossier_currency_set_sld_account:
+ * @dossier: this dossier.
+ * @currency: the currency.
+ * @account: the account.
+ *
+ * Set the balancing account for the currency.
+ */
+void
+ofo_dossier_currency_set_sld_account( ofoDossier *dossier, const gchar *currency, const gchar *account )
+{
+	GList *cur_detail;
+
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( my_strlen( currency ));
+	g_return_if_fail( my_strlen( account ));
+	g_return_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run );
+
+	cur_detail = dossier_new_currency_with_code( dossier, currency );
+	g_return_if_fail( cur_detail );
+
+	ofa_box_set_string( cur_detail, DOS_SLD_ACCOUNT, account );
+}
+
+/**
+ * ofo_dossier_doc_get_count:
+ * @dossier: this #ofoDossier object.
+ *
+ * Returns: the count of attached documents.
+ */
+guint
+ofo_dossier_doc_get_count( ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
+
+	priv = ofo_dossier_get_instance_private( dossier );
+
+	return( g_list_length( priv->docs ));
+}
+
+/**
+ * ofo_dossier_doc_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown DOS_ID in OFA_T_DOSSIER_DOC child table.
+ *
+ * The returned list should be #ofo_dossier_doc_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_dossier_doc_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_DOSSIER_DOC" ));
+}
+
+/**
+ * ofo_dossier_prefs_get_count:
+ * @dossier: this #ofoDossier object.
+ *
+ * Returns: the count of recorded @dossier preferences.
+ */
+guint
+ofo_dossier_prefs_get_count( ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
+
+	priv = ofo_dossier_get_instance_private( dossier );
+
+	return( g_list_length( priv->prefs ));
+}
+
+/**
+ * ofo_dossier_prefs_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown DOS_ID in OFA_T_DOSSIER_PREFS child table.
+ *
+ * The returned list should be #ofo_dossier_prefs_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_dossier_prefs_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_DOSSIER_PREFS" ));
 }
 
 static ofoDossier *
@@ -1801,13 +1801,19 @@ iexportable_export_default( ofaIExportable *exportable )
 	count += ofo_dossier_prefs_get_count( dossier );
 	counters_count = ofo_counters_get_count();
 	count += counters_count;
-	ofa_iexportable_set_count( exportable, count );
+	ofa_iexportable_set_count( exportable, count+2 );
 
-	/* add a version line at the very beginning of the file */
-	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, DOSSIER_EXPORT_VERSION );
+	/* add version lines at the very beginning of the file */
+	str1 = g_strdup_printf( "0%c0%cVersion", field_sep, field_sep );
 	ok = ofa_iexportable_append_line( exportable, str1 );
 	g_free( str1 );
+	if( ok ){
+		str1 = g_strdup_printf( "1%c0%c%u", field_sep, field_sep, DOSSIER_EXPORT_VERSION );
+		ok = ofa_iexportable_append_line( exportable, str1 );
+		g_free( str1 );
+	}
 
+	/* export headers */
 	if( ok ){
 		/* add new ofsBoxDef array at the end of the list */
 		ok = ofa_iexportable_append_headers( exportable,
@@ -1817,7 +1823,7 @@ iexportable_export_default( ofaIExportable *exportable )
 	/* export the dataset */
 	if( ok ){
 		str1 = ofa_box_csv_get_line( OFO_BASE( dossier )->prot->fields, stformat, NULL );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "1%c1%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
@@ -1825,7 +1831,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 	for( cur_detail=priv->cur_details ; cur_detail && ok ; cur_detail=cur_detail->next ){
 		str1 = ofa_box_csv_get_line( cur_detail->data, stformat, NULL );
-		str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "1%c2%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
@@ -1833,7 +1839,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 	for( itd=priv->docs ; itd && ok ; itd=itd->next ){
 		str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
-		str2 = g_strdup_printf( "3%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "1%c3%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
@@ -1841,14 +1847,15 @@ iexportable_export_default( ofaIExportable *exportable )
 
 	for( itp=priv->prefs ; itp && ok ; itp=itp->next ){
 		str1 = ofa_box_csv_get_line( itp->data, stformat, NULL );
-		str2 = g_strdup_printf( "4%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "1%c4%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
 	}
 
 	for( i=0 ; i<counters_count ; ++i ){
-		str1 = g_strdup_printf( "5%c%u%c%s%c%lu",
+		str1 = g_strdup_printf( "1%c5%c%u%c%s%c%lu",
+					field_sep,
 					field_sep, DOSSIER_ROW_ID,
 					field_sep, ofo_counters_get_key( getter, i ),
 					field_sep, ofo_counters_get_last_value( getter, i ));

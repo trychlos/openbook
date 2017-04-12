@@ -90,24 +90,26 @@ const gchar    *ofo_rate_get_notes         ( const ofoRate *rate );
 const gchar    *ofo_rate_get_upd_user      ( const ofoRate *rate );
 const GTimeVal *ofo_rate_get_upd_stamp     ( const ofoRate *rate );
 
-const GDate    *ofo_rate_get_min_valid     ( ofoRate *rate );
-const GDate    *ofo_rate_get_max_valid     ( ofoRate *rate );
-gint            ofo_rate_get_val_count     ( ofoRate *rate );
-const GDate    *ofo_rate_get_val_begin     ( ofoRate *rate, gint idx );
-const GDate    *ofo_rate_get_val_end       ( ofoRate *rate, gint idx );
-ofxAmount       ofo_rate_get_val_rate      ( ofoRate *rate, gint idx );
 ofxAmount       ofo_rate_get_rate_at_date  ( ofoRate *rate, const GDate *date );
 
 gboolean        ofo_rate_is_deletable      ( const ofoRate *rate );
 gboolean        ofo_rate_is_valid_data     ( const gchar *mnemo, const gchar *label, GList *validities, gchar **msgerr );
 
-guint           ofo_rate_doc_get_count     ( ofoRate *rate );
-
 void            ofo_rate_set_mnemo         ( ofoRate *rate, const gchar *number );
 void            ofo_rate_set_label         ( ofoRate *rate, const gchar *label );
 void            ofo_rate_set_notes         ( ofoRate *rate, const gchar *notes );
-void            ofo_rate_free_all_val      ( ofoRate *rate );
-void            ofo_rate_add_val           ( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
+
+gint            ofo_rate_valid_get_count   ( ofoRate *rate );
+const GDate    *ofo_rate_valid_get_begin   ( ofoRate *rate, gint idx );
+const GDate    *ofo_rate_valid_get_end     ( ofoRate *rate, gint idx );
+ofxAmount       ofo_rate_valid_get_rate    ( ofoRate *rate, gint idx );
+const GDate    *ofo_rate_valid_get_min_date( ofoRate *rate );
+const GDate    *ofo_rate_valid_get_max_date( ofoRate *rate );
+
+void            ofo_rate_valid_reset       ( ofoRate *rate );
+void            ofo_rate_valid_add         ( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
+
+guint           ofo_rate_doc_get_count     ( ofoRate *rate );
 
 gboolean        ofo_rate_insert            ( ofoRate *rate );
 gboolean        ofo_rate_update            ( ofoRate *rate, const gchar *prev_mnemo );

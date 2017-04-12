@@ -153,28 +153,28 @@ typedef struct {
 static sColumnDef st_col_defs[] = {
 		{ OPE_COL_ACCOUNT,
 				TYPE_ENTRY,
-				ofo_ope_template_get_detail_account,
-				ofo_ope_template_get_detail_account_locked,
+				ofo_ope_template_detail_get_account,
+				ofo_ope_template_detail_get_account_locked,
 				/* ofa_account_editable() sets width, max_with,
 				 * max_length, horiz.alignment */
 				-1, ACCOUNT_MAX_WIDTH, FALSE, -1, FALSE, NULL
 		},
 		{ OPE_COL_LABEL,
 				TYPE_ENTRY,
-				ofo_ope_template_get_detail_label,
-				ofo_ope_template_get_detail_label_locked,
+				ofo_ope_template_detail_get_label,
+				ofo_ope_template_detail_get_label_locked,
 				-1, LABEL_MAX_WIDTH, FALSE, 0, TRUE, NULL
 		},
 		{ OPE_COL_DEBIT,
 				TYPE_ENTRY,
-				ofo_ope_template_get_detail_debit,
-				ofo_ope_template_get_detail_debit_locked,
+				ofo_ope_template_detail_get_debit,
+				ofo_ope_template_detail_get_debit_locked,
 				AMOUNTS_WIDTH, AMOUNTS_MAX_WIDTH, TRUE, 0, FALSE, NULL
 		},
 		{ OPE_COL_CREDIT,
 				TYPE_ENTRY,
-				ofo_ope_template_get_detail_credit,
-				ofo_ope_template_get_detail_credit_locked,
+				ofo_ope_template_detail_get_credit,
+				ofo_ope_template_detail_get_credit_locked,
 				AMOUNTS_WIDTH, AMOUNTS_MAX_WIDTH, TRUE, 0, FALSE, NULL
 		},
 		{ OPE_COL_CURRENCY,
@@ -555,7 +555,7 @@ ofa_guided_input_bin_set_ope_template( ofaGuidedInputBin *bin, ofoOpeTemplate *t
 	priv->model = template;
 	priv->ope = ofs_ope_new( template );
 
-	count = ofo_ope_template_get_detail_count( priv->model );
+	count = ofo_ope_template_detail_get_count( priv->model );
 	for( i=1 ; i<=count ; ++i ){
 		add_entry_row( bin, i );
 	}
@@ -681,7 +681,7 @@ add_entry_row_widget( ofaGuidedInputBin *self, gint col_id, gint row )
 	}
 
 	if( widget ){
-		comment = ofo_ope_template_get_detail_comment( priv->model, row-1 );
+		comment = ofo_ope_template_detail_get_comment( priv->model, row-1 );
 		gtk_widget_set_tooltip_text( widget, comment );
 		gtk_grid_attach( priv->entries_grid, widget, col_id, row, 1, 1 );
 	}
@@ -1253,7 +1253,7 @@ setup_message_area( ofaGuidedInputBin *self, gint row_id, gint column_id )
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	comment = ofo_ope_template_get_detail_comment( priv->model, row_id );
+	comment = ofo_ope_template_detail_get_comment( priv->model, row_id );
 
 	set_comment( self, comment ? comment : "" );
 }
@@ -1546,7 +1546,7 @@ update_totals( ofaGuidedInputBin *self )
 	}
 
 	ok = TRUE;
-	model_count = ofo_ope_template_get_detail_count( priv->model );
+	model_count = ofo_ope_template_detail_get_count( priv->model );
 
 	g_debug( "%s: model_count=%d, rows_count=%d, currencies_length=%d",
 			thisfn, model_count, priv->rows_count, g_list_length( priv->currency_list ));
@@ -1842,7 +1842,7 @@ do_reset_entries_rows( ofaGuidedInputBin *self )
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	model_count = ofo_ope_template_get_detail_count( priv->model );
+	model_count = ofo_ope_template_detail_get_count( priv->model );
 	for( i=priv->rows_count ; i>=1+model_count ; --i ){
 		gtk_grid_remove_row( priv->entries_grid, i );
 	}

@@ -494,7 +494,7 @@ check_ledgers_balance_run( ofaCheckBalancesBin *self )
 	} else {
 		for( i=1, it=ledgers ; it && count ; ++i, it=it->next ){
 			ledger = OFO_LEDGER( it->data );
-			currencies = ofo_ledger_get_currencies( ledger );
+			currencies = ofo_ledger_currency_get_list( ledger );
 
 			for( ic=currencies ; ic ; ic=ic->next ){
 				currency = ( const gchar * ) ic->data;

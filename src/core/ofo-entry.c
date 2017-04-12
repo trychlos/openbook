@@ -1730,25 +1730,6 @@ ofo_entry_is_editable( const ofoEntry *entry )
 	return( editable );
 }
 
-/**
- * ofo_entry_doc_get_count:
- * @entry: this #ofoEntry object.
- *
- * Returns: the count of attached documents.
- */
-guint
-ofo_entry_doc_get_count( ofoEntry *entry )
-{
-	ofoEntryPrivate *priv;
-
-	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), 0 );
-	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, 0 );
-
-	priv = ofo_entry_get_instance_private( entry );
-
-	return( g_list_length( priv->docs ));
-}
-
 /*
  * entry_set_number:
  */
@@ -2165,7 +2146,26 @@ ofo_entry_new_with_data( ofaIGetter *getter,
 }
 
 /**
- * ofo_entry_get_doc_orphans:
+ * ofo_entry_doc_get_count:
+ * @entry: this #ofoEntry object.
+ *
+ * Returns: the count of attached documents.
+ */
+guint
+ofo_entry_doc_get_count( ofoEntry *entry )
+{
+	ofoEntryPrivate *priv;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), 0 );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, 0 );
+
+	priv = ofo_entry_get_instance_private( entry );
+
+	return( g_list_length( priv->docs ));
+}
+
+/**
+ * ofo_entry_doc_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown ENT_NUMBER in OFA_T_ENTRIES_DOC child table.
@@ -2174,7 +2174,7 @@ ofo_entry_new_with_data( ofaIGetter *getter,
  * caller.
  */
 GList *
-ofo_entry_get_doc_orphans( ofaIGetter *getter )
+ofo_entry_doc_get_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_ENTRIES_DOC" ));
 }
@@ -3095,17 +3095,23 @@ iexportable_export_default( ofaIExportable *exportable )
 		entry = OFO_ENTRY( it->data );
 		count += ofo_entry_doc_get_count( entry );
 	}
-	ofa_iexportable_set_count( exportable, count );
+	ofa_iexportable_set_count( exportable, count+2 );
 
-	/* add a version line at the very beginning of the file */
-	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, ENTRY_EXPORT_VERSION );
+	/* add version lines at the very beginning of the file */
+	str1 = g_strdup_printf( "0%c0%cVersion", field_sep, field_sep );
 	ok = ofa_iexportable_append_line( exportable, str1 );
 	g_free( str1 );
+	if( ok ){
+		str1 = g_strdup_printf( "1%c0%c%u", field_sep, field_sep, ENTRY_EXPORT_VERSION );
+		ok = ofa_iexportable_append_line( exportable, str1 );
+		g_free( str1 );
+	}
 
 	/* export a specific version of the headers */
 	if( ok && with_headers ){
 		str1 = ofa_box_csv_get_header( st_boxed_defs, stformat );
-		str2 = g_strdup_printf( "1%c%s%c%s%c%s%c%s",
+		str2 = g_strdup_printf( "0%c1%c%s%c%s%c%s%c%s",
+				field_sep,
 				field_sep, "ConcilDval",
 				field_sep, "ConcilUser",
 				field_sep, "ConcilStamp",
@@ -3116,7 +3122,7 @@ iexportable_export_default( ofaIExportable *exportable )
 	}
 	if( ok && with_headers ){
 		str1 = ofa_box_csv_get_header( st_doc_defs, stformat );
-		str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "0%c2%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
@@ -3141,7 +3147,8 @@ iexportable_export_default( ofaIExportable *exportable )
 		suser = g_strdup( concil ? ofo_concil_get_upd_user( concil ) : "" );
 		sstamp = concil ? my_stamp_to_str( ofo_concil_get_upd_stamp( concil ), MY_STAMP_YYMDHMS ) : g_strdup( "" );
 
-		str2 = g_strdup_printf( "1%c%s%c%s%c%s%c%s",
+		str2 = g_strdup_printf( "1%c1%c%s%c%s%c%s%c%s",
+				field_sep,
 				field_sep, sdate,
 				field_sep, suser,
 				field_sep, sstamp,
@@ -3157,7 +3164,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
 			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c2%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );

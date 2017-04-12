@@ -1685,7 +1685,7 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	}
 
 	/* check that all documents have a model parent */
-	orphans = ofo_recurrent_model_get_doc_orphans( getter );
+	orphans = ofo_recurrent_model_doc_get_orphans( getter );
 	if( g_list_length( orphans ) > 0 ){
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
@@ -1698,7 +1698,7 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	} else if( all_messages ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan recurrent model document found: OK" ));
 	}
-	ofo_recurrent_model_free_doc_orphans( orphans );
+	ofo_recurrent_model_doc_free_orphans( orphans );
 	if( progress ){
 		my_iprogress_pulse( progress, worker, ++i, count );
 	}
@@ -1903,7 +1903,7 @@ check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *prog
 	}
 
 	/* check that all details have a model parent */
-	orphans = ofo_rec_period_get_det_orphans( getter );
+	orphans = ofo_rec_period_detail_get_orphans( getter );
 	if( g_list_length( orphans ) > 0 ){
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
@@ -1916,13 +1916,13 @@ check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *prog
 	} else if( all_messages ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan periodicity detail found: OK" ));
 	}
-	ofo_rec_period_free_det_orphans( orphans );
+	ofo_rec_period_detail_free_orphans( orphans );
 	if( progress ){
 		my_iprogress_pulse( progress, worker, ++i, count );
 	}
 
 	/* check that all documents have a model parent */
-	orphans = ofo_rec_period_get_doc_orphans( getter );
+	orphans = ofo_rec_period_doc_get_orphans( getter );
 	if( g_list_length( orphans ) > 0 ){
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
@@ -1935,7 +1935,7 @@ check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *prog
 	} else if( all_messages ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan periodicity document found: OK" ));
 	}
-	ofo_rec_period_free_doc_orphans( orphans );
+	ofo_rec_period_doc_free_orphans( orphans );
 	if( progress ){
 		my_iprogress_pulse( progress, worker, ++i, count );
 	}

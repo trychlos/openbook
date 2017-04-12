@@ -760,72 +760,109 @@ tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *upd_stamp )
 }
 
 /**
- * ofo_tva_form_detail_add:
+ * ofo_tva_form_boolean_get_count:
+ */
+guint
+ofo_tva_form_boolean_get_count( ofoTVAForm *form )
+{
+	ofoTVAFormPrivate *priv;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), 0 );
+	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, 0 );
+
+	priv = ofo_tva_form_get_instance_private( form );
+
+	return( g_list_length( priv->bools ));
+}
+
+/**
+ * ofo_tva_form_boolean_get_label:
+ * @idx is the index in the booleans list, starting with zero
+ */
+const gchar *
+ofo_tva_form_boolean_get_label( ofoTVAForm *form, guint idx )
+{
+	ofoTVAFormPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
+	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, NULL );
+
+	priv = ofo_tva_form_get_instance_private( form );
+
+	nth = g_list_nth( priv->bools, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_BOOL_LABEL ) : NULL;
+
+	return( cstr );
+}
+
+/**
+ * ofo_tva_form_boolean_reset:
  */
 void
-ofo_tva_form_detail_add( ofoTVAForm *form,
-							guint level,
-							const gchar *code, const gchar *label,
-							gboolean has_base, const gchar *base,
-							gboolean has_amount, const gchar *amount,
-							gboolean has_template, const gchar *template )
+ofo_tva_form_boolean_reset( ofoTVAForm *form )
+{
+	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
+	g_return_if_fail( !OFO_BASE( form )->prot->dispose_has_run );
+
+	bools_list_free( form );
+}
+
+/**
+ * ofo_tva_form_boolean_add:
+ * @form:
+ * @label:
+ */
+void
+ofo_tva_form_boolean_add( ofoTVAForm *form, const gchar *label )
 {
 	GList *fields;
 
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 	g_return_if_fail( !OFO_BASE( form )->prot->dispose_has_run );
 
-	fields = form_detail_new( form, level, code, label, has_base, base, has_amount, amount, has_template, template );
-	form_detail_add( form, fields );
+	fields = form_boolean_new( form, label );
+	form_boolean_add( form, fields );
 }
 
 static GList *
-form_detail_new( ofoTVAForm *form,
-							guint level,
-							const gchar *code, const gchar *label,
-							gboolean has_base, const gchar *base,
-							gboolean has_amount, const gchar *amount,
-							gboolean has_template, const gchar *template )
+form_boolean_new( ofoTVAForm *form, const gchar *label )
 {
 	GList *fields;
 
-	fields = ofa_box_init_fields_list( st_detail_defs );
+	fields = ofa_box_init_fields_list( st_boolean_defs );
 	ofa_box_set_string( fields, TFO_MNEMO, ofo_tva_form_get_mnemo( form ));
-	ofa_box_set_int( fields, TFO_DET_ROW, 1+ofo_tva_form_detail_get_count( form ));
-	ofa_box_set_int( fields, TFO_DET_LEVEL, level );
-	ofa_box_set_string( fields, TFO_DET_CODE, code );
-	ofa_box_set_string( fields, TFO_DET_LABEL, label );
-	ofa_box_set_string( fields, TFO_DET_HAS_BASE, has_base ? "Y":"N" );
-	ofa_box_set_string( fields, TFO_DET_BASE, base );
-	ofa_box_set_string( fields, TFO_DET_HAS_AMOUNT, has_amount ? "Y":"N" );
-	ofa_box_set_string( fields, TFO_DET_AMOUNT, amount );
-	ofa_box_set_string( fields, TFO_DET_HAS_TEMPLATE, has_template ? "Y":"N" );
-	ofa_box_set_string( fields, TFO_DET_TEMPLATE, template );
+	ofa_box_set_int( fields, TFO_BOOL_ROW, 1+ofo_tva_form_boolean_get_count( form ));
+	ofa_box_set_string( fields, TFO_BOOL_LABEL, label );
 
 	return( fields );
 }
 
 static void
-form_detail_add( ofoTVAForm *form, GList *fields )
+form_boolean_add( ofoTVAForm *form, GList *fields )
 {
 	ofoTVAFormPrivate *priv;
 
 	priv = ofo_tva_form_get_instance_private( form );
 
-	priv->details = g_list_append( priv->details, fields );
+	priv->bools = g_list_append( priv->bools, fields );
 }
 
 /**
- * ofo_tva_form_detail_free_all:
+ * ofo_tva_form_boolean_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown period mnemos in TVA_T_FORMS_BOOL
+ * child table.
+ *
+ * The returned list should be #ofo_tva_form_boolean_free_orphans() by the
+ * caller.
  */
-void
-ofo_tva_form_detail_free_all( ofoTVAForm *form )
+GList *
+ofo_tva_form_boolean_get_orphans( ofaIGetter *getter )
 {
-	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
-
-	g_return_if_fail( !OFO_BASE( form )->prot->dispose_has_run );
-
-	details_list_free( form );
+	return( get_orphans( getter, "TVA_T_FORMS_BOOL" ));
 }
 
 /**
@@ -1079,97 +1116,95 @@ ofo_tva_form_update_ope_template( ofoTVAForm *form, const gchar *prev_id, const 
 }
 
 /**
- * ofo_tva_form_boolean_add:
- * @form:
- * @label:
+ * ofo_tva_form_detail_reset:
  */
 void
-ofo_tva_form_boolean_add( ofoTVAForm *form, const gchar *label )
+ofo_tva_form_detail_reset( ofoTVAForm *form )
+{
+	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
+
+	g_return_if_fail( !OFO_BASE( form )->prot->dispose_has_run );
+
+	details_list_free( form );
+}
+
+/**
+ * ofo_tva_form_detail_add:
+ */
+void
+ofo_tva_form_detail_add( ofoTVAForm *form,
+							guint level,
+							const gchar *code, const gchar *label,
+							gboolean has_base, const gchar *base,
+							gboolean has_amount, const gchar *amount,
+							gboolean has_template, const gchar *template )
 {
 	GList *fields;
 
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 	g_return_if_fail( !OFO_BASE( form )->prot->dispose_has_run );
 
-	fields = form_boolean_new( form, label );
-	form_boolean_add( form, fields );
+	fields = form_detail_new( form, level, code, label, has_base, base, has_amount, amount, has_template, template );
+	form_detail_add( form, fields );
 }
 
 static GList *
-form_boolean_new( ofoTVAForm *form, const gchar *label )
+form_detail_new( ofoTVAForm *form,
+							guint level,
+							const gchar *code, const gchar *label,
+							gboolean has_base, const gchar *base,
+							gboolean has_amount, const gchar *amount,
+							gboolean has_template, const gchar *template )
 {
 	GList *fields;
 
-	fields = ofa_box_init_fields_list( st_boolean_defs );
+	fields = ofa_box_init_fields_list( st_detail_defs );
 	ofa_box_set_string( fields, TFO_MNEMO, ofo_tva_form_get_mnemo( form ));
-	ofa_box_set_int( fields, TFO_BOOL_ROW, 1+ofo_tva_form_boolean_get_count( form ));
-	ofa_box_set_string( fields, TFO_BOOL_LABEL, label );
+	ofa_box_set_int( fields, TFO_DET_ROW, 1+ofo_tva_form_detail_get_count( form ));
+	ofa_box_set_int( fields, TFO_DET_LEVEL, level );
+	ofa_box_set_string( fields, TFO_DET_CODE, code );
+	ofa_box_set_string( fields, TFO_DET_LABEL, label );
+	ofa_box_set_string( fields, TFO_DET_HAS_BASE, has_base ? "Y":"N" );
+	ofa_box_set_string( fields, TFO_DET_BASE, base );
+	ofa_box_set_string( fields, TFO_DET_HAS_AMOUNT, has_amount ? "Y":"N" );
+	ofa_box_set_string( fields, TFO_DET_AMOUNT, amount );
+	ofa_box_set_string( fields, TFO_DET_HAS_TEMPLATE, has_template ? "Y":"N" );
+	ofa_box_set_string( fields, TFO_DET_TEMPLATE, template );
 
 	return( fields );
 }
 
 static void
-form_boolean_add( ofoTVAForm *form, GList *fields )
+form_detail_add( ofoTVAForm *form, GList *fields )
 {
 	ofoTVAFormPrivate *priv;
 
 	priv = ofo_tva_form_get_instance_private( form );
 
-	priv->bools = g_list_append( priv->bools, fields );
+	priv->details = g_list_append( priv->details, fields );
 }
 
 /**
- * ofo_tva_form_boolean_free_all:
+ * ofo_tva_form_detail_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown period mnemos in TVA_T_FORMS_DET
+ * child table.
+ *
+ * The returned list should be #ofo_tva_form_detail_free_orphans() by the
+ * caller.
  */
-void
-ofo_tva_form_boolean_free_all( ofoTVAForm *form )
+GList *
+ofo_tva_form_detail_get_orphans( ofaIGetter *getter )
 {
-	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
-	g_return_if_fail( !OFO_BASE( form )->prot->dispose_has_run );
-
-	bools_list_free( form );
-}
-
-/**
- * ofo_tva_form_boolean_get_count:
- */
-guint
-ofo_tva_form_boolean_get_count( ofoTVAForm *form )
-{
-	ofoTVAFormPrivate *priv;
-
-	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), 0 );
-	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, 0 );
-
-	priv = ofo_tva_form_get_instance_private( form );
-
-	return( g_list_length( priv->bools ));
-}
-
-/**
- * ofo_tva_form_boolean_get_label:
- * @idx is the index in the booleans list, starting with zero
- */
-const gchar *
-ofo_tva_form_boolean_get_label( ofoTVAForm *form, guint idx )
-{
-	ofoTVAFormPrivate *priv;
-	GList *nth;
-	const gchar *cstr;
-
-	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
-	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, NULL );
-
-	priv = ofo_tva_form_get_instance_private( form );
-
-	nth = g_list_nth( priv->bools, idx );
-	cstr = nth ? ofa_box_get_string( nth->data, TFO_BOOL_LABEL ) : NULL;
-
-	return( cstr );
+	return( get_orphans( getter, "TVA_T_FORMS_DET" ));
 }
 
 /**
  * ofo_tva_form_doc_get_count:
+ * @form: this #ofoTVAForm object.
+ *
+ * Returns: the count of attached documents.
  */
 guint
 ofo_tva_form_doc_get_count( ofoTVAForm *form )
@@ -1185,49 +1220,17 @@ ofo_tva_form_doc_get_count( ofoTVAForm *form )
 }
 
 /**
- * ofo_tva_form_get_bool_orphans:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the list of unknown period mnemos in TVA_T_FORMS_BOOL
- * child table.
- *
- * The returned list should be #ofo_tva_form_free_bool_orphans() by the
- * caller.
- */
-GList *
-ofo_tva_form_get_bool_orphans( ofaIGetter *getter )
-{
-	return( get_orphans( getter, "TVA_T_FORMS_BOOL" ));
-}
-
-/**
- * ofo_tva_form_get_det_orphans:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the list of unknown period mnemos in TVA_T_FORMS_DET
- * child table.
- *
- * The returned list should be #ofo_tva_form_free_det_orphans() by the
- * caller.
- */
-GList *
-ofo_tva_form_get_det_orphans( ofaIGetter *getter )
-{
-	return( get_orphans( getter, "TVA_T_FORMS_DET" ));
-}
-
-/**
- * ofo_tva_form_get_doc_orphans:
+ * ofo_tva_form_doc_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown period mnemos in TVA_T_FORMS_DOC
  * child table.
  *
- * The returned list should be #ofo_tva_form_free_doc_orphans() by the
+ * The returned list should be #ofo_tva_form_doc_free_orphans() by the
  * caller.
  */
 GList *
-ofo_tva_form_get_doc_orphans( ofaIGetter *getter )
+ofo_tva_form_doc_get_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "TVA_T_FORMS_DOC" ));
 }
@@ -1849,13 +1852,19 @@ iexportable_export_default( ofaIExportable *exportable )
 		count += ofo_tva_form_detail_get_count( form );
 		count += ofo_tva_form_doc_get_count( form );
 	}
-	ofa_iexportable_set_count( exportable, count );
+	ofa_iexportable_set_count( exportable, count+2 );
 
-	/* add a version line at the very beginning of the file */
-	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, FORM_EXPORT_VERSION );
+	/* add version lines at the very beginning of the file */
+	str1 = g_strdup_printf( "0%c0%cVersion", field_sep, field_sep );
 	ok = ofa_iexportable_append_line( exportable, str1 );
 	g_free( str1 );
+	if( ok ){
+		str1 = g_strdup_printf( "1%c0%c%u", field_sep, field_sep, FORM_EXPORT_VERSION );
+		ok = ofa_iexportable_append_line( exportable, str1 );
+		g_free( str1 );
+	}
 
+	/* export headers */
 	if( ok ){
 		/* add new ofsBoxDef array at the end of the list */
 		ok = ofa_iexportable_append_headers( exportable,
@@ -1867,7 +1876,7 @@ iexportable_export_default( ofaIExportable *exportable )
 		form = OFO_TVA_FORM( it->data );
 
 		str1 = ofa_box_csv_get_line( OFO_BASE( form )->prot->fields, stformat, NULL );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "1%c1%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
@@ -1876,7 +1885,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( det=priv->bools ; det && ok ; det=det->next ){
 			str1 = ofa_box_csv_get_line( det->data, stformat, NULL );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c2%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );
@@ -1884,7 +1893,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( det=priv->details ; det && ok ; det=det->next ){
 			str1 = ofa_box_csv_get_line( det->data, stformat, NULL );
-			str2 = g_strdup_printf( "3%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c3%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );
@@ -1892,7 +1901,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
 			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c4%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );

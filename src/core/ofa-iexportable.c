@@ -462,7 +462,7 @@ ofa_iexportable_append_headers( ofaIExportable *exportable, guint tables_count, 
 		for( i=0 ; i<tables_count && ok ; ++i ){
 			box_def = ( ofsBoxDef * ) va_arg( ap, ofsBoxDef * );
 			str1 = ofa_box_csv_get_header( box_def, sdata->stformat );
-			str2 = g_strdup_printf( "%u%c%s", i+1, field_sep, str1 );
+			str2 = g_strdup_printf( "0%c%u%c%s", field_sep, i+1, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );

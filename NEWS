@@ -23,6 +23,7 @@
 
  New features and improvements:
 
+   - Exportable standard class format is reviewed (todo #1351).
    - Main window has a new 'minimal' display mode.
    - Restore assistant let the user display the metadata of the archive (todo #1450).
 
@@ -30,6 +31,7 @@
 
    - configure.ac: display 'pwirender' plugin build status (todo #1453).
    - ofaMainWindow: better switch back from 'minimal' display mode.
+   - Fix conversion to DBModel v37 of OFA_T_BAT table.
 
  Other changes:
 

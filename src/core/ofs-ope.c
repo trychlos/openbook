@@ -185,7 +185,7 @@ ofs_ope_new( ofoOpeTemplate *template )
 	ope = g_new0( ofsOpe, 1 );
 	ope->ope_template = g_object_ref(( gpointer ) template );
 
-	count = ofo_ope_template_get_detail_count( template );
+	count = ofo_ope_template_detail_get_count( template );
 	for( i=0 ; i<count ; ++i ){
 		detail = g_new0( ofsOpeDetail, 1 );
 		ope->detail = g_list_prepend( ope->detail, detail );
@@ -259,7 +259,7 @@ compute_simple_formulas( sOpeHelper *helper )
 
 	compute_dates( helper );
 
-	count = ofo_ope_template_get_detail_count( template );
+	count = ofo_ope_template_detail_get_count( template );
 	for( i=0 ; i<count ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
 		helper->row = i;
@@ -268,25 +268,25 @@ compute_simple_formulas( sOpeHelper *helper )
 		if( !detail->account_user_set ){
 			g_free( detail->account );
 			helper->column = OPE_COL_ACCOUNT;
-			detail->account = compute_formula( ofo_ope_template_get_detail_account( template, i ), helper );
+			detail->account = compute_formula( ofo_ope_template_detail_get_account( template, i ), helper );
 		}
 
 		if( !detail->label_user_set ){
 			g_free( detail->label );
 			helper->column = OPE_COL_LABEL;
-			detail->label = compute_formula( ofo_ope_template_get_detail_label( template, i ), helper );
+			detail->label = compute_formula( ofo_ope_template_detail_get_label( template, i ), helper );
 		}
 
 		if( !detail->debit_user_set ){
 			helper->column = OPE_COL_DEBIT;
-			str = compute_formula( ofo_ope_template_get_detail_debit( template, i ), helper );
+			str = compute_formula( ofo_ope_template_detail_get_debit( template, i ), helper );
 			detail->debit = ofa_amount_from_str( str, getter );
 			g_free( str );
 		}
 
 		if( !detail->credit_user_set ){
 			helper->column = OPE_COL_CREDIT;
-			str = compute_formula( ofo_ope_template_get_detail_credit( template, i ), helper );
+			str = compute_formula( ofo_ope_template_detail_get_credit( template, i ), helper );
 			detail->credit = ofa_amount_from_str( str, getter );
 			g_free( str );
 		}
@@ -578,7 +578,7 @@ eval_accl( ofsFormulaHelper *helper )
 	account = my_strlen( cstr ) ? ofo_account_get_by_number( getter, cstr ) : NULL;
 	currency = ( account && !ofo_account_is_root( account )) ? ofo_account_get_currency( account ) : NULL;
 	dossier = ofa_hub_get_dossier( hub );
-	solding = currency ? ofo_dossier_get_sld_account( dossier, currency ) : NULL;
+	solding = currency ? ofo_dossier_currency_get_sld_account( dossier, currency ) : NULL;
 	res = g_strdup( solding ? solding : "" );
 
 	return( res );

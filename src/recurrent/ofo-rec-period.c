@@ -437,6 +437,174 @@ ofo_rec_period_get_upd_stamp( ofoRecPeriod *period )
 }
 
 /**
+ * ofo_rec_period_is_valid_data:
+ * @label:
+ * @msgerr: [out][allow-none]: error message placeholder
+ *
+ * Wants a label at least.
+ */
+gboolean
+ofo_rec_period_is_valid_data( const gchar *label, gchar **msgerr )
+{
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+	if( !my_strlen( label )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Label is empty" ));
+		}
+		return( FALSE );
+	}
+	return( TRUE );
+}
+
+/**
+ * ofo_rec_period_is_deletable:
+ *
+ * A periodicity may be deleted when it is not referenced anywhere.
+ */
+gboolean
+ofo_rec_period_is_deletable( ofoRecPeriod *period )
+{
+	ofaIGetter *getter;
+	ofaISignaler *signaler;
+	gboolean deletable;
+
+	g_return_val_if_fail( period && OFO_IS_REC_PERIOD( period ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( period )->prot->dispose_has_run, FALSE );
+
+	deletable = TRUE;
+	getter = ofo_base_get_getter( OFO_BASE( period ));
+	signaler = ofa_igetter_get_signaler( getter );
+
+	if( deletable ){
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_IS_DELETABLE, period, &deletable );
+	}
+
+	return( deletable );
+}
+
+/**
+ * ofo_rec_period_enum_between:
+ * @period: this #ofoRecPeriod instance.
+ * @detail: the detail identifier.
+ * @begin: the beginning date.
+ * @end: the ending date.
+ * @cb: the user callback.
+ * @user_data: a user data provided pointer.
+ *
+ * Enumerates all valid dates between @begin and @end included dates.
+ */
+void
+ofo_rec_period_enum_between( ofoRecPeriod *period, ofxCounter detail_id,
+										const GDate *begin, const GDate *end, RecPeriodEnumBetweenCb cb, void *user_data )
+{
+	GDate date;
+	GDateDay date_month;
+	GDateWeekday date_week;
+	const gchar *period_id;
+	gint idx;
+	guint detail_month, detail_week;
+
+	g_return_if_fail( period && OFO_IS_REC_PERIOD( period ));
+	g_return_if_fail( !OFO_BASE( period )->prot->dispose_has_run);
+	g_return_if_fail( my_date_is_valid( begin ));
+	g_return_if_fail( my_date_is_valid( end ));
+
+	my_date_set_from_date( &date, begin );
+	period_id = ofo_rec_period_get_id( period );
+	idx = ofo_rec_period_detail_get_by_id( period, detail_id );
+
+	detail_week = G_DATE_BAD_WEEKDAY;
+	if( idx >= 0 && !my_collate( period_id, REC_PERIOD_WEEKLY )){
+		detail_week = ofo_rec_period_detail_get_value( period, idx );
+	}
+
+	detail_month = G_DATE_BAD_DAY;
+	if( idx >= 0 && !my_collate( period_id, REC_PERIOD_MONTHLY )){
+		detail_month = ofo_rec_period_detail_get_value( period, idx );
+	}
+
+	while( my_date_compare( &date, end ) <= 0 ){
+		if( !my_collate( period_id, REC_PERIOD_WEEKLY )){
+			date_week = g_date_get_weekday( &date );
+			if(( guint ) date_week == detail_week ){
+				( *cb )( &date, user_data );
+			}
+		}
+		if( !my_collate( period_id, REC_PERIOD_MONTHLY )){
+			date_month = g_date_get_day( &date );
+			if(( guint ) date_month == detail_month ){
+				( *cb )( &date, user_data );
+			}
+		}
+		g_date_add_days( &date, 1 );
+	}
+}
+
+/**
+ * ofo_rec_period_set_per_id:
+ * @period: this #ofoRecPeriod object.
+ * @id:
+ */
+void
+ofo_rec_period_set_id( ofoRecPeriod *period, const gchar *id )
+{
+	ofo_base_setter( REC_PERIOD, period, string, REC_ID, id );
+}
+
+/**
+ * ofo_rec_period_set_order:
+ * @period: this #ofoRecPeriod object.
+ * @order:
+ */
+void
+ofo_rec_period_set_order( ofoRecPeriod *period, guint order )
+{
+	ofo_base_setter( REC_PERIOD, period, int, REC_ORDER, order );
+}
+
+/**
+ * ofo_rec_period_set_label:
+ * @period: this #ofoRecPeriod object.
+ * @label:
+ */
+void
+ofo_rec_period_set_label( ofoRecPeriod *period, const gchar *label )
+{
+	ofo_base_setter( REC_PERIOD, period, string, REC_LABEL, label );
+}
+
+/**
+ * ofo_rec_period_set_notes:
+ * @period: this #ofoRecPeriod object.
+ * @notes:
+ */
+void
+ofo_rec_period_set_notes( ofoRecPeriod *period, const gchar *notes )
+{
+	ofo_base_setter( REC_PERIOD, period, string, REC_NOTES, notes );
+}
+
+/*
+ * ofo_rec_period_set_upd_user:
+ */
+static void
+rec_period_set_upd_user( ofoRecPeriod *period, const gchar *upd_user )
+{
+	ofo_base_setter( REC_PERIOD, period, string, REC_UPD_USER, upd_user );
+}
+
+/*
+ * ofo_rec_period_set_upd_stamp:
+ */
+static void
+rec_period_set_upd_stamp( ofoRecPeriod *period, const GTimeVal *upd_stamp )
+{
+	ofo_base_setter( REC_PERIOD, period, string, REC_UPD_STAMP, upd_stamp );
+}
+
+/**
  * ofo_rec_period_detail_get_count:
  * @period: this #ofoRecPeriod object.
  *
@@ -612,198 +780,11 @@ ofo_rec_period_detail_get_label( ofoRecPeriod *period, guint idx )
 }
 
 /**
- * ofo_rec_period_is_valid_data:
- * @label:
- * @msgerr: [out][allow-none]: error message placeholder
- *
- * Wants a label at least.
- */
-gboolean
-ofo_rec_period_is_valid_data( const gchar *label, gchar **msgerr )
-{
-	if( msgerr ){
-		*msgerr = NULL;
-	}
-	if( !my_strlen( label )){
-		if( msgerr ){
-			*msgerr = g_strdup( _( "Label is empty" ));
-		}
-		return( FALSE );
-	}
-	return( TRUE );
-}
-
-/**
- * ofo_rec_period_is_deletable:
- *
- * A periodicity may be deleted when it is not referenced anywhere.
- */
-gboolean
-ofo_rec_period_is_deletable( ofoRecPeriod *period )
-{
-	ofaIGetter *getter;
-	ofaISignaler *signaler;
-	gboolean deletable;
-
-	g_return_val_if_fail( period && OFO_IS_REC_PERIOD( period ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( period )->prot->dispose_has_run, FALSE );
-
-	deletable = TRUE;
-	getter = ofo_base_get_getter( OFO_BASE( period ));
-	signaler = ofa_igetter_get_signaler( getter );
-
-	if( deletable ){
-		g_signal_emit_by_name( signaler, SIGNALER_BASE_IS_DELETABLE, period, &deletable );
-	}
-
-	return( deletable );
-}
-
-/**
- * ofo_rec_period_doc_get_count:
- * @period: this #ofoRecPeriod object.
- *
- * Returns: the count of attached documents.
- */
-guint
-ofo_rec_period_doc_get_count( ofoRecPeriod *period )
-{
-	ofoRecPeriodPrivate *priv;
-
-	g_return_val_if_fail( period && OFO_IS_REC_PERIOD( period ), 0 );
-	g_return_val_if_fail( !OFO_BASE( period )->prot->dispose_has_run, 0 );
-
-	priv = ofo_rec_period_get_instance_private( period );
-
-	return( g_list_length( priv->docs ));
-}
-
-/**
- * ofo_rec_period_enum_between:
- * @period: this #ofoRecPeriod instance.
- * @detail: the detail identifier.
- * @begin: the beginning date.
- * @end: the ending date.
- * @cb: the user callback.
- * @user_data: a user data provided pointer.
- *
- * Enumerates all valid dates between @begin and @end included dates.
- */
-void
-ofo_rec_period_enum_between( ofoRecPeriod *period, ofxCounter detail_id,
-										const GDate *begin, const GDate *end, RecPeriodEnumBetweenCb cb, void *user_data )
-{
-	GDate date;
-	GDateDay date_month;
-	GDateWeekday date_week;
-	const gchar *period_id;
-	gint idx;
-	guint detail_month, detail_week;
-
-	g_return_if_fail( period && OFO_IS_REC_PERIOD( period ));
-	g_return_if_fail( !OFO_BASE( period )->prot->dispose_has_run);
-	g_return_if_fail( my_date_is_valid( begin ));
-	g_return_if_fail( my_date_is_valid( end ));
-
-	my_date_set_from_date( &date, begin );
-	period_id = ofo_rec_period_get_id( period );
-	idx = ofo_rec_period_detail_get_by_id( period, detail_id );
-
-	detail_week = G_DATE_BAD_WEEKDAY;
-	if( idx >= 0 && !my_collate( period_id, REC_PERIOD_WEEKLY )){
-		detail_week = ofo_rec_period_detail_get_value( period, idx );
-	}
-
-	detail_month = G_DATE_BAD_DAY;
-	if( idx >= 0 && !my_collate( period_id, REC_PERIOD_MONTHLY )){
-		detail_month = ofo_rec_period_detail_get_value( period, idx );
-	}
-
-	while( my_date_compare( &date, end ) <= 0 ){
-		if( !my_collate( period_id, REC_PERIOD_WEEKLY )){
-			date_week = g_date_get_weekday( &date );
-			if(( guint ) date_week == detail_week ){
-				( *cb )( &date, user_data );
-			}
-		}
-		if( !my_collate( period_id, REC_PERIOD_MONTHLY )){
-			date_month = g_date_get_day( &date );
-			if(( guint ) date_month == detail_month ){
-				( *cb )( &date, user_data );
-			}
-		}
-		g_date_add_days( &date, 1 );
-	}
-}
-
-/**
- * ofo_rec_period_set_per_id:
- * @period: this #ofoRecPeriod object.
- * @id:
- */
-void
-ofo_rec_period_set_id( ofoRecPeriod *period, const gchar *id )
-{
-	ofo_base_setter( REC_PERIOD, period, string, REC_ID, id );
-}
-
-/**
- * ofo_rec_period_set_order:
- * @period: this #ofoRecPeriod object.
- * @order:
- */
-void
-ofo_rec_period_set_order( ofoRecPeriod *period, guint order )
-{
-	ofo_base_setter( REC_PERIOD, period, int, REC_ORDER, order );
-}
-
-/**
- * ofo_rec_period_set_label:
- * @period: this #ofoRecPeriod object.
- * @label:
- */
-void
-ofo_rec_period_set_label( ofoRecPeriod *period, const gchar *label )
-{
-	ofo_base_setter( REC_PERIOD, period, string, REC_LABEL, label );
-}
-
-/**
- * ofo_rec_period_set_notes:
- * @period: this #ofoRecPeriod object.
- * @notes:
- */
-void
-ofo_rec_period_set_notes( ofoRecPeriod *period, const gchar *notes )
-{
-	ofo_base_setter( REC_PERIOD, period, string, REC_NOTES, notes );
-}
-
-/*
- * ofo_rec_period_set_upd_user:
- */
-static void
-rec_period_set_upd_user( ofoRecPeriod *period, const gchar *upd_user )
-{
-	ofo_base_setter( REC_PERIOD, period, string, REC_UPD_USER, upd_user );
-}
-
-/*
- * ofo_rec_period_set_upd_stamp:
- */
-static void
-rec_period_set_upd_stamp( ofoRecPeriod *period, const GTimeVal *upd_stamp )
-{
-	ofo_base_setter( REC_PERIOD, period, string, REC_UPD_STAMP, upd_stamp );
-}
-
-/**
- * ofo_rec_period_free_detail_all:
+ * ofo_rec_period_detail_reset:
  * @period:
  */
 void
-ofo_rec_period_free_detail_all( ofoRecPeriod *period )
+ofo_rec_period_detail_reset( ofoRecPeriod *period )
 {
 	g_return_if_fail( period && OFO_IS_REC_PERIOD( period ));
 	g_return_if_fail( !OFO_BASE( period )->prot->dispose_has_run );
@@ -812,7 +793,7 @@ ofo_rec_period_free_detail_all( ofoRecPeriod *period )
 }
 
 /**
- * ofo_rec_period_add_detail:
+ * ofo_rec_period_detail_add:
  * @period:
  * @order:
  * @label:
@@ -820,7 +801,7 @@ ofo_rec_period_free_detail_all( ofoRecPeriod *period )
  * @value:
  */
 void
-ofo_rec_period_add_detail( ofoRecPeriod *period, guint order, const gchar *label, guint number, guint value )
+ofo_rec_period_detail_add( ofoRecPeriod *period, guint order, const gchar *label, guint number, guint value )
 {
 	ofoRecPeriodPrivate *priv;
 	GList *fields;
@@ -864,33 +845,52 @@ rec_period_detail_set_id( ofoRecPeriod *period, gint idx, ofxCounter id )
 }
 
 /**
- * ofo_rec_period_get_det_orphans:
+ * ofo_rec_period_detail_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown period mnemos in REC_T_PERIODS_DET
  * child table.
  *
- * The returned list should be #ofo_rec_period_free_det_orphans() by the
+ * The returned list should be #ofo_rec_period_detail_free_orphans() by the
  * caller.
  */
 GList *
-ofo_rec_period_get_det_orphans( ofaIGetter *getter )
+ofo_rec_period_detail_get_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "REC_T_PERIODS_DET" ));
 }
 
 /**
- * ofo_rec_period_get_doc_orphans:
+ * ofo_rec_period_doc_get_count:
+ * @period: this #ofoRecPeriod object.
+ *
+ * Returns: the count of attached documents.
+ */
+guint
+ofo_rec_period_doc_get_count( ofoRecPeriod *period )
+{
+	ofoRecPeriodPrivate *priv;
+
+	g_return_val_if_fail( period && OFO_IS_REC_PERIOD( period ), 0 );
+	g_return_val_if_fail( !OFO_BASE( period )->prot->dispose_has_run, 0 );
+
+	priv = ofo_rec_period_get_instance_private( period );
+
+	return( g_list_length( priv->docs ));
+}
+
+/**
+ * ofo_rec_period_doc_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown period mnemos in REC_T_PERIODS_DOC
  * child table.
  *
- * The returned list should be #ofo_rec_period_free_doc_orphans() by the
+ * The returned list should be #ofo_rec_period_doc_free_orphans() by the
  * caller.
  */
 GList *
-ofo_rec_period_get_doc_orphans( ofaIGetter *getter )
+ofo_rec_period_doc_get_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "REC_T_PERIODS_DOC" ));
 }
@@ -1403,13 +1403,19 @@ iexportable_export_default( ofaIExportable *exportable )
 		count += ofo_rec_period_detail_get_count( period );
 		count += ofo_rec_period_doc_get_count( period );
 	}
-	ofa_iexportable_set_count( exportable, count );
+	ofa_iexportable_set_count( exportable, count+2 );
 
-	/* add a version line at the very beginning of the file */
-	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, PERIOD_EXPORT_VERSION );
+	/* add version lines at the very beginning of the file */
+	str1 = g_strdup_printf( "0%c0%cVersion", field_sep, field_sep );
 	ok = ofa_iexportable_append_line( exportable, str1 );
 	g_free( str1 );
+	if( ok ){
+		str1 = g_strdup_printf( "1%c0%c%u", field_sep, field_sep, PERIOD_EXPORT_VERSION );
+		ok = ofa_iexportable_append_line( exportable, str1 );
+		g_free( str1 );
+	}
 
+	/* export headers */
 	if( ok ){
 		/* add new ofsBoxDef array at the end of the list */
 		ok = ofa_iexportable_append_headers( exportable,
@@ -1421,7 +1427,7 @@ iexportable_export_default( ofaIExportable *exportable )
 		period = OFO_REC_PERIOD( it->data );
 
 		str1 = ofa_box_csv_get_line( OFO_BASE( period )->prot->fields, stformat, NULL );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "1%c1%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
@@ -1430,7 +1436,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( det=priv->details ; det && ok ; det=det->next ){
 			str1 = ofa_box_csv_get_line( det->data, stformat, NULL );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c2%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );
@@ -1438,7 +1444,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
 			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c3%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );

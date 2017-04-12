@@ -1020,7 +1020,7 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	}
 
 	/* check that all booleans have a form parent */
-	orphans = ofo_tva_form_get_bool_orphans( getter );
+	orphans = ofo_tva_form_boolean_get_orphans( getter );
 	if( g_list_length( orphans ) > 0 ){
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
@@ -1033,13 +1033,13 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	} else if( all_messages ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT form boolean found: OK" ));
 	}
-	ofo_tva_form_free_bool_orphans( orphans );
+	ofo_tva_form_boolean_free_orphans( orphans );
 	if( progress ){
 		my_iprogress_pulse( progress, worker, ++i, count );
 	}
 
 	/* check that all details have a form parent */
-	orphans = ofo_tva_form_get_det_orphans( getter );
+	orphans = ofo_tva_form_detail_get_orphans( getter );
 	if( g_list_length( orphans ) > 0 ){
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
@@ -1052,13 +1052,13 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	} else if( all_messages ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT form found: OK" ));
 	}
-	ofo_tva_form_free_det_orphans( orphans );
+	ofo_tva_form_detail_free_orphans( orphans );
 	if( progress ){
 		my_iprogress_pulse( progress, worker, ++i, count );
 	}
 
 	/* check that all documents have a form parent */
-	orphans = ofo_tva_form_get_doc_orphans( getter );
+	orphans = ofo_tva_form_doc_get_orphans( getter );
 	if( g_list_length( orphans ) > 0 ){
 		for( it=orphans ; it ; it=it->next ){
 			if( progress ){
@@ -1071,7 +1071,7 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	} else if( all_messages ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT form document found: OK" ));
 	}
-	ofo_tva_form_free_doc_orphans( orphans );
+	ofo_tva_form_doc_free_orphans( orphans );
 	if( progress ){
 		my_iprogress_pulse( progress, worker, ++i, count );
 	}

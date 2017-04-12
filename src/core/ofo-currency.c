@@ -452,25 +452,6 @@ ofo_currency_is_valid_data( const gchar *code, const gchar *label, const gchar *
 }
 
 /**
- * ofo_currency_doc_get_count:
- * @currency: this #ofoCurrency object.
- *
- * Returns: the count of attached documents.
- */
-guint
-ofo_currency_doc_get_count( ofoCurrency *currency )
-{
-	ofoCurrencyPrivate *priv;
-
-	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), 0 );
-	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, 0 );
-
-	priv = ofo_currency_get_instance_private( currency );
-
-	return( g_list_length( priv->docs ));
-}
-
-/**
  * ofo_currency_set_code:
  */
 void
@@ -534,17 +515,36 @@ currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp )
 }
 
 /**
- * ofo_currency_get_doc_orphans:
+ * ofo_currency_doc_get_count:
+ * @currency: this #ofoCurrency object.
+ *
+ * Returns: the count of attached documents.
+ */
+guint
+ofo_currency_doc_get_count( ofoCurrency *currency )
+{
+	ofoCurrencyPrivate *priv;
+
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), 0 );
+	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, 0 );
+
+	priv = ofo_currency_get_instance_private( currency );
+
+	return( g_list_length( priv->docs ));
+}
+
+/**
+ * ofo_currency_doc_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown ledger mnemos in OFA_T_CURRENCIES_DOC
  * child table.
  *
- * The returned list should be #ofo_currency_free_doc_orphans() by the
+ * The returned list should be #ofo_currency_doc_free_orphans() by the
  * caller.
  */
 GList *
-ofo_currency_get_doc_orphans( ofaIGetter *getter )
+ofo_currency_doc_get_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_CURRENCIES_DOC" ));
 }
@@ -943,13 +943,19 @@ iexportable_export_default( ofaIExportable *exportable )
 		currency = OFO_CURRENCY( it->data );
 		count += ofo_currency_doc_get_count( currency );
 	}
-	ofa_iexportable_set_count( exportable, count );
+	ofa_iexportable_set_count( exportable, count+2 );
 
-	/* add a version line at the very beginning of the file */
-	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, CURRENCY_EXPORT_VERSION );
+	/* add version lines at the very beginning of the file */
+	str1 = g_strdup_printf( "0%c0%cVersion", field_sep, field_sep );
 	ok = ofa_iexportable_append_line( exportable, str1 );
 	g_free( str1 );
+	if( ok ){
+		str1 = g_strdup_printf( "1%c0%c%u", field_sep, field_sep, CURRENCY_EXPORT_VERSION );
+		ok = ofa_iexportable_append_line( exportable, str1 );
+		g_free( str1 );
+	}
 
+	/* export headers */
 	if( ok ){
 		/* add new ofsBoxDef array at the end of the list */
 		ok = ofa_iexportable_append_headers( exportable,
@@ -961,7 +967,7 @@ iexportable_export_default( ofaIExportable *exportable )
 		currency = OFO_CURRENCY( it->data );
 
 		str1 = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, stformat, NULL );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "1%c1%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
@@ -970,7 +976,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
 			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c2%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );

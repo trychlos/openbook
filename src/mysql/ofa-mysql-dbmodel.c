@@ -2637,29 +2637,20 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
-	/* 27-30. remediate ofa_t_bat */
-	if( !exec_query( self,
-			"UPDATE OFA_T_BAT SET BAT_SOLDE_BEGIN_SET='Y' "
-			"	WHERE BAT_SOLDE_BEGIN IS NOT NULL AND BAT_SOLDE_BEGIN>0" )){
+	/* 27-29. remediate ofa_t_bat */
+	if( !exec_query( self, "UPDATE OFA_T_BAT SET BAT_SOLDE_BEGIN_SET='N',BAT_SOLDE_END_SET='N'" )){
 		return( FALSE );
 	}
 	if( !exec_query( self,
-			"UPDATE OFA_T_BAT SET BAT_SOLDE_BEGIN_SET='N' "
-			"	WHERE BAT_SOLDE_BEGIN IS NULL OR BAT_SOLDE_BEGIN=0" )){
+			"UPDATE OFA_T_BAT SET BAT_SOLDE_BEGIN_SET='Y' WHERE BAT_SOLDE_BEGIN IS NOT NULL" )){
 		return( FALSE );
 	}
 	if( !exec_query( self,
-			"UPDATE OFA_T_BAT SET BAT_SOLDE_END_SET='Y' "
-			"	WHERE BAT_SOLDE_END IS NOT NULL AND BAT_SOLDE_END>0" )){
-		return( FALSE );
-	}
-	if( !exec_query( self,
-			"UPDATE OFA_T_BAT SET BAT_SOLDE_END_SET='N'"
-			"	WHERE BAT_SOLDE_END IS NULL OR BAT_SOLDE_END=0" )){
+			"UPDATE OFA_T_BAT SET BAT_SOLDE_END_SET='Y' WHERE BAT_SOLDE_END IS NOT NULL" )){
 		return( FALSE );
 	}
 
-	/* 31. alter ofa_t_accounts */
+	/* 30. alter ofa_t_accounts */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_ACCOUNTS "
 			"	ADD    COLUMN ACC_FV_DEBIT           DECIMAL(20,5)                       COMMENT 'Sum of future validated debits',"
@@ -2673,7 +2664,7 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
-	/* 32. alter ofa_t_ledgers_cur */
+	/* 31. alter ofa_t_ledgers_cur */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_LEDGERS_CUR "
 			"	ADD    COLUMN LED_CUR_FV_DEBIT           DECIMAL(20,5)                   COMMENT 'Sum of future validated debits',"
@@ -2697,5 +2688,5 @@ dbmodel_v37( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v37( ofaMysqlDBModel *self )
 {
-	return( 32 );
+	return( 31 );
 }

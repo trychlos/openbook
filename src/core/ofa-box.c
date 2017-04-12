@@ -808,7 +808,7 @@ ofa_box_csv_get_line_ex( const GList *fields_list, ofaStreamFormat *format, ofoC
 	ofsBoxData *box_data;
 	const ofsBoxDef *def;
 	const sBoxHelpers *ihelper;
-	gchar *str, *str2;
+	gchar *str1, *str2;
 	gchar decimal_sep, field_sep;
 
 	line = g_string_new( "" );
@@ -826,20 +826,20 @@ ofa_box_csv_get_line_ex( const GList *fields_list, ofaStreamFormat *format, ofoC
 		ihelper = box_get_helper_for_type( def->type );
 		g_return_val_if_fail( ihelper, NULL );
 
-		str = ihelper->to_string_fn( it->data, format );
+		str1 = ihelper->to_string_fn( it->data, format );
 		if( ihelper->type == OFA_TYPE_AMOUNT ){
 			if( currency ){
-				g_free( str );
-				str = ofa_amount_to_csv( ofa_box_data_get_amount( box_data ), currency, format );
+				g_free( str1 );
+				str1 = ofa_amount_to_csv( ofa_box_data_get_amount( box_data ), currency, format );
 			} else {
-				set_decimal_point( str, decimal_sep );
+				set_decimal_point( str1, decimal_sep );
 			}
 		}
 
 		if( cb ){
-			str2 = cb( box_data, format, currency, str, user_data );
+			str2 = cb( box_data, format, currency, str1, user_data );
 		} else {
-			str2 = g_strdup( str );
+			str2 = g_strdup( str1 );
 		}
 
 		if( line->len ){
@@ -849,7 +849,7 @@ ofa_box_csv_get_line_ex( const GList *fields_list, ofaStreamFormat *format, ofoC
 		g_string_append_printf( line, "%s", str2 );
 
 		g_free( str2 );
-		g_free( str );
+		g_free( str1 );
 	}
 
 	return( g_string_free( line, FALSE ));

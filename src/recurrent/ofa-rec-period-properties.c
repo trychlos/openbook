@@ -598,7 +598,7 @@ do_update( ofaRecPeriodProperties *self, gchar **msgerr )
 
 	ofo_rec_period_set_label( priv->rec_period, clabel );
 
-	ofo_rec_period_free_detail_all( priv->rec_period );
+	ofo_rec_period_detail_reset( priv->rec_period );
 	count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ));
 	for( i=1 ; i<=count ; ++i ){
 		get_detail_list( self, i );
@@ -641,7 +641,7 @@ get_detail_list( ofaRecPeriodProperties *self, gint row )
 	spin = gtk_grid_get_child_at( GTK_GRID( priv->p3_details_grid ), 1+DET_COL_VALUE, row );
 	value = ( guint ) gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( spin ));
 
-	ofo_rec_period_add_detail( priv->rec_period, row-1, clabel, number, value );
+	ofo_rec_period_detail_add( priv->rec_period, row-1, clabel, number, value );
 }
 
 static void

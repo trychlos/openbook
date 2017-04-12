@@ -213,7 +213,7 @@ iwindow_init( myIWindow *instance )
 	g_free( id );
 
 	key = g_strdup_printf( "%s-%d",
-				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_get_detail_count( priv->model ));
+				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_detail_get_count( priv->model ));
 	my_iwindow_set_geometry_key( instance, key );
 	g_free( key );
 }

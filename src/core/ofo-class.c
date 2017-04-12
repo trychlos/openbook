@@ -413,25 +413,6 @@ ofo_class_is_deletable( const ofoClass *class )
 }
 
 /**
- * ofo_class_doc_get_count:
- * @class: this #ofoClass object.
- *
- * Returns: the count of attached documents.
- */
-guint
-ofo_class_doc_get_count( ofoClass *class )
-{
-	ofoClassPrivate *priv;
-
-	g_return_val_if_fail( class && OFO_IS_CLASS( class ), 0 );
-	g_return_val_if_fail( !OFO_BASE( class )->prot->dispose_has_run, 0 );
-
-	priv = ofo_class_get_instance_private( class );
-
-	return( g_list_length( priv->docs ));
-}
-
-/**
  * ofo_class_set_number:
  */
 void
@@ -481,17 +462,36 @@ class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp )
 }
 
 /**
- * ofo_class_get_doc_orphans:
+ * ofo_class_doc_get_count:
+ * @class: this #ofoClass object.
+ *
+ * Returns: the count of attached documents.
+ */
+guint
+ofo_class_doc_get_count( ofoClass *class )
+{
+	ofoClassPrivate *priv;
+
+	g_return_val_if_fail( class && OFO_IS_CLASS( class ), 0 );
+	g_return_val_if_fail( !OFO_BASE( class )->prot->dispose_has_run, 0 );
+
+	priv = ofo_class_get_instance_private( class );
+
+	return( g_list_length( priv->docs ));
+}
+
+/**
+ * ofo_class_doc_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown ledger mnemos in OFA_T_CLASSES_DOC
  * child table.
  *
- * The returned list should be #ofo_class_free_doc_orphans() by the
+ * The returned list should be #ofo_class_doc_free_orphans() by the
  * caller.
  */
 GList *
-ofo_class_get_doc_orphans( ofaIGetter *getter )
+ofo_class_doc_get_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_CLASSES_DOC" ));
 }
@@ -889,13 +889,19 @@ iexportable_export_default( ofaIExportable *exportable )
 		class = OFO_CLASS( it->data );
 		count += ofo_class_doc_get_count( class );
 	}
-	ofa_iexportable_set_count( exportable, count );
+	ofa_iexportable_set_count( exportable, count+2 );
 
-	/* add a version line at the very beginning of the file */
-	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, CLASS_EXPORT_VERSION );
+	/* add version lines at the very beginning of the file */
+	str1 = g_strdup_printf( "0%c0%cVersion", field_sep, field_sep );
 	ok = ofa_iexportable_append_line( exportable, str1 );
 	g_free( str1 );
+	if( ok ){
+		str1 = g_strdup_printf( "1%c0%c%u", field_sep, field_sep, CLASS_EXPORT_VERSION );
+		ok = ofa_iexportable_append_line( exportable, str1 );
+		g_free( str1 );
+	}
 
+	/* export headers */
 	if( ok ){
 		/* add new ofsBoxDef array at the end of the list */
 		ok = ofa_iexportable_append_headers( exportable,
@@ -907,7 +913,7 @@ iexportable_export_default( ofaIExportable *exportable )
 		class = OFO_CLASS( it->data );
 
 		str1 = ofa_box_csv_get_line( OFO_BASE( class )->prot->fields, stformat, NULL );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "1%c1%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
@@ -916,7 +922,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
 			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c2%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );

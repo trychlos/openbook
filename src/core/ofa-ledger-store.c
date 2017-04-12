@@ -334,7 +334,7 @@ set_currency_new_id( ofaLedgerStore *self, const gchar *prev_id, const gchar *ne
 			g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 			g_object_unref( ledger );
 
-			ofo_ledger_update_currency( ledger, prev_id, new_id );
+			ofo_ledger_currency_update_code( ledger, prev_id, new_id );
 
 			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
 				break;

@@ -357,14 +357,14 @@ setup_currencies( ofaClosingParmsBin *self )
 	/* currencies already archived in dossier_cur
 	 * normally all archived currencies should have at least one entry,
 	 * so be already in the list */
-	currencies = ofo_dossier_get_currencies( priv->dossier );
+	currencies = ofo_dossier_currency_get_list( priv->dossier );
 	for( it=currencies ; it ; it=it->next ){
 		cur = ( const gchar * ) it->data;
 		if( !g_list_find_custom( priv->currencies, cur, ( GCompareFunc ) my_collate )){
 			priv->currencies = g_list_insert_sorted( priv->currencies, g_strdup( cur ), ( GCompareFunc ) my_collate );
 		}
 	}
-	ofo_dossier_free_currencies( currencies );
+	ofo_dossier_currency_free_list( currencies );
 
 	/* add the default currency for the dossier */
 	cur = ofo_dossier_get_default_currency( priv->dossier );
@@ -475,7 +475,7 @@ set_detail_values( ofaClosingParmsBin *self, GtkGrid *grid, guint row, const gch
 
 		entry = gtk_grid_get_child_at( GTK_GRID( priv->acc_grid ), 1+COL_ACCOUNT, row );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-		account = ofo_dossier_get_sld_account( priv->dossier, currency );
+		account = ofo_dossier_currency_get_sld_account( priv->dossier, currency );
 		gtk_entry_set_text( GTK_ENTRY( entry ), account ? account : "" );
 	}
 }
@@ -829,7 +829,7 @@ ofa_closing_parms_bin_apply( ofaClosingParmsBin *bin )
 	ofo_dossier_set_sld_ope( priv->dossier,
 				gtk_entry_get_text( GTK_ENTRY( priv->sld_ope )));
 
-	ofo_dossier_reset_currencies( priv->dossier );
+	ofo_dossier_currency_reset( priv->dossier );
 
 	details_count = my_igridlist_get_details_count( MY_IGRIDLIST( bin ), GTK_GRID( priv->acc_grid ));
 
@@ -846,7 +846,7 @@ ofa_closing_parms_bin_apply( ofaClosingParmsBin *bin )
 
 			if( my_strlen( acc_number )){
 				g_debug( "%s: code=%s, acc_number=%s", thisfn, code, acc_number );
-				ofo_dossier_set_sld_account( priv->dossier, code, acc_number );
+				ofo_dossier_currency_set_sld_account( priv->dossier, code, acc_number );
 			}
 		}
 		g_free( code );

@@ -264,6 +264,7 @@
                 with children and companions (e.g. entries+concil, or
                 accounts+archived_balances)
                 + have a version number
+     2017- 4-12 review standard class export format
 
 1379 2017- 3- 9 UI: VatForm: set template column to fixed width, rather expand label
 
@@ -302,7 +303,9 @@
                 (at least a second icon appears in the gnome status bar)
      2017- 4-11 nor are the nomodal pages, nor the mydndwindows
 
-1454
+1454 2017- 4-12 rate: have validity and doc orphans
+
+1455
 
 -----------------------------------------------------------------------
  DONE

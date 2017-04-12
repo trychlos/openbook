@@ -231,6 +231,9 @@ typedef struct {
 	ofoLedgerPrivate;
 
 static ofoLedger *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
+static void       ledger_set_upd_user( ofoLedger *ledger, const gchar *upd_user );
+static void       ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp );
+static void       ledger_set_last_clo( ofoLedger *ledger, const GDate *date );
 static gint       cmp_currencies( const gchar *a_currency, const gchar *b_currency );
 static GList     *ledger_find_balance_by_code( ofoLedger *ledger, const gchar *currency );
 static GList     *ledger_new_balance_with_code( ofoLedger *ledger, const gchar *currency );
@@ -239,14 +242,11 @@ static GList     *ledger_add_balance_current_val( ofoLedger *ledger, const gchar
 static GList     *ledger_add_balance_futur_rough( ofoLedger *ledger, const gchar *currency, ofxAmount debit, ofxAmount credit );
 static GList     *ledger_add_balance_futur_val( ofoLedger *ledger, const gchar *currency, ofxAmount debit, ofxAmount credit );
 static GList     *ledger_add_to_balance( ofoLedger *ledger, const gchar *currency, gint debit_id, ofxAmount debit, gint credit_id, ofxAmount credit );
+static GList     *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean   do_add_archive_dbms( ofoLedger *ledger, const gchar *currency, const GDate *date, ofxAmount debit, ofxAmount credit );
 static void       do_add_archive_list( ofoLedger *ledger, const gchar *currency, const GDate *date, ofxAmount debit, ofxAmount credit );
 static gint       get_archive_index( ofoLedger *ledger, const gchar *currency, const GDate *date );
 static void       get_last_archive_date( ofoLedger *ledger, GDate *date );
-static void       ledger_set_upd_user( ofoLedger *ledger, const gchar *upd_user );
-static void       ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp );
-static void       ledger_set_last_clo( ofoLedger *ledger, const GDate *date );
-static GList     *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean   ledger_do_insert( ofoLedger *ledger, const ofaIDBConnect *connect );
 static gboolean   ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect );
 static gboolean   ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaIDBConnect *connect );
@@ -540,7 +540,182 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger, GDate *date )
 }
 
 /**
- * ofo_ledger_get_currencies:
+ * ofo_ledger_get_max_last_close:
+ * @getter: a #ofaIGetter instance.
+ * @date: [out]: the date to be set
+ *
+ * Set the @date to the max of all closing dates for the ledgers.
+ *
+ * Return: this same @date.
+ */
+GDate *
+ofo_ledger_get_max_last_close( ofaIGetter *getter, GDate *date )
+{
+	GSList *result, *icol;
+	ofaHub *hub;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( date, NULL );
+
+	my_date_clear( date );
+	hub = ofa_igetter_get_hub( getter );
+
+	if( ofa_idbconnect_query_ex(
+			ofa_hub_get_connect( hub ),
+			"SELECT MAX(LED_LAST_CLO) FROM OFA_T_LEDGERS", &result, TRUE )){
+
+		icol = result ? result->data : NULL;
+		my_date_set_from_sql( date, icol ? icol->data : NULL );
+		ofa_idbconnect_free_results( result );
+	}
+
+	return( date );
+}
+
+/**
+ * ofo_ledger_has_entries:
+ */
+gboolean
+ofo_ledger_has_entries( const ofoLedger *ledger )
+{
+	ofaIGetter *getter;
+	gboolean ok;
+	const gchar *mnemo;
+
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
+
+	getter = ofo_base_get_getter( OFO_BASE( ledger ));
+	mnemo = ofo_ledger_get_mnemo( ledger );
+	ok = ofo_entry_use_ledger( getter, mnemo );
+
+	return( ok );
+}
+
+/**
+ * ofo_ledger_is_deletable:
+ *
+ * A ledger is considered to be deletable if no entry has been recorded
+ * during the current exercice - This means that all its amounts must be
+ * nuls for all currencies.
+ *
+ * There is no need to test for the last closing date as this is not
+ * relevant here: even if set, they does not mean that there has been
+ * any entries recorded on the ledger.
+ *
+ * More: a ledger should not be deleted while it is referenced by a
+ * model or an entry or the dossier itself (or the dossier is an
+ * archive).
+ */
+gboolean
+ofo_ledger_is_deletable( const ofoLedger *ledger )
+{
+	ofaIGetter *getter;
+	ofaISignaler *signaler;
+	gboolean deletable;
+
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
+
+	deletable = TRUE;
+	getter = ofo_base_get_getter( OFO_BASE( ledger ));
+	signaler = ofa_igetter_get_signaler( getter );
+
+	if( deletable ){
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_IS_DELETABLE, ledger, &deletable );
+	}
+
+	return( deletable );
+}
+
+/**
+ * ofo_ledger_is_valid_data:
+ *
+ * Returns: %TRUE if the provided data makes the ofoLedger a valid
+ * object.
+ *
+ * Note that this does NOT check for key duplicate.
+ */
+gboolean
+ofo_ledger_is_valid_data( const gchar *mnemo, const gchar *label, gchar **msgerr )
+{
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+	if( !my_strlen( mnemo )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Mnemonic is empty" ));
+		}
+		return( FALSE );
+	}
+	if( !my_strlen( label )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Label is empty" ));
+		}
+		return( FALSE );
+	}
+	return( TRUE );
+}
+
+/**
+ * ofo_ledger_set_mnemo:
+ */
+void
+ofo_ledger_set_mnemo( ofoLedger *ledger, const gchar *mnemo )
+{
+	ofo_base_setter( LEDGER, ledger, string, LED_MNEMO, mnemo );
+}
+
+/**
+ * ofo_ledger_set_label:
+ */
+void
+ofo_ledger_set_label( ofoLedger *ledger, const gchar *label )
+{
+	ofo_base_setter( LEDGER, ledger, string, LED_LABEL, label );
+}
+
+/**
+ * ofo_ledger_set_notes:
+ */
+void
+ofo_ledger_set_notes( ofoLedger *ledger, const gchar *notes )
+{
+	ofo_base_setter( LEDGER, ledger, string, LED_NOTES, notes );
+}
+
+/*
+ * ledger_set_upd_user:
+ */
+static void
+ledger_set_upd_user( ofoLedger *ledger, const gchar *upd_user )
+{
+	ofo_base_setter( LEDGER, ledger, string, LED_UPD_USER, upd_user );
+}
+
+/*
+ * ledger_set_upd_stamp:
+ */
+static void
+ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp )
+{
+	ofo_base_setter( LEDGER, ledger, timestamp, LED_UPD_STAMP, upd_stamp );
+}
+
+/*
+ * ledger_set_last_clo:
+ * @ledger:
+ *
+ * Set the closing date for the ledger.
+ */
+static void
+ledger_set_last_clo( ofoLedger *ledger, const GDate *date )
+{
+	ofo_base_setter( LEDGER, ledger, date, LED_LAST_CLO, date );
+}
+
+/**
+ * ofo_ledger_currency_get_list:
  *
  * Returns: the list of currency codes ISO 3A used by this ledger.
  *
@@ -548,7 +723,7 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger, GDate *date )
  * The returned list itself should be g_list_free() by the caller.
  */
 GList *
-ofo_ledger_get_currencies( ofoLedger *ledger )
+ofo_ledger_currency_get_list( ofoLedger *ledger )
 {
 	ofoLedgerPrivate *priv;
 	GList *list, *it, *balance;
@@ -576,7 +751,7 @@ cmp_currencies( const gchar *a_currency, const gchar *b_currency )
 }
 
 /**
- * ofo_ledger_update_currency:
+ * ofo_ledger_currency_update_code:
  * @ledger: this #ofoLedger instance.
  * @prev_id: the previous currency code.
  * @new_id: the new currency code.
@@ -584,7 +759,7 @@ cmp_currencies( const gchar *a_currency, const gchar *b_currency )
  * Update the detail balances with this new currency code.
  */
 void
-ofo_ledger_update_currency( ofoLedger *ledger, const gchar *prev_id, const gchar *new_id )
+ofo_ledger_currency_update_code( ofoLedger *ledger, const gchar *prev_id, const gchar *new_id )
 {
 	GList *balances;
 
@@ -820,6 +995,156 @@ ledger_find_balance_by_code( ofoLedger *ledger, const gchar *currency )
 	return( NULL );
 }
 
+/**
+ * ofo_ledger_set_current_val_debit:
+ * @ledger:
+ * @amount:
+ * @currency:
+ *
+ * Set the debit balance of this ledger from validated entries for
+ * the currency specified.
+ *
+ * Creates an occurrence of the detail record if it didn't exist yet.
+ */
+void
+ofo_ledger_set_current_val_debit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
+{
+	GList *balance;
+
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
+
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
+
+	ofa_box_set_amount( balance, LED_CV_DEBIT, amount );
+}
+
+/**
+ * ofo_ledger_set_current_val_credit:
+ * @ledger:
+ * @amount:
+ * @currency:
+ *
+ * Set the credit balance of this ledger from validated entries for
+ * the currency specified.
+ *
+ * Creates an occurrence of the detail record if it didn't exist yet.
+ */
+void
+ofo_ledger_set_current_val_credit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
+{
+	GList *balance;
+
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
+
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
+
+	ofa_box_set_amount( balance, LED_CV_CREDIT, amount );
+}
+
+/**
+ * ofo_ledger_set_current_rough_debit:
+ * @ledger:
+ * @amount:
+ * @currency:
+ *
+ * Set the current debit balance of this ledger for
+ * the currency specified.
+ *
+ * Creates an occurrence of the detail record if it didn't exist yet.
+ */
+void
+ofo_ledger_set_current_rough_debit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
+{
+	GList *balance;
+
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
+
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
+
+	ofa_box_set_amount( balance, LED_CR_DEBIT, amount );
+}
+
+/**
+ * ofo_ledger_set_current_rough_credit:
+ * @ledger:
+ * @amount:
+ * @currency:
+ *
+ * Set the current credit balance of this ledger for
+ * the currency specified.
+ *
+ * Creates an occurrence of the detail record if it didn't exist yet.
+ */
+void
+ofo_ledger_set_current_rough_credit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
+{
+	GList *balance;
+
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
+
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
+
+	ofa_box_set_amount( balance, LED_CR_CREDIT, amount );
+}
+
+/**
+ * ofo_ledger_set_futur_rough_debit:
+ * @ledger:
+ * @amount:
+ * @currency:
+ *
+ * Set the debit balance of this ledger for
+ * the currency specified from future entries.
+ *
+ * Creates an occurrence of the detail record if it didn't exist yet.
+ */
+void
+ofo_ledger_set_futur_rough_debit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
+{
+	GList *balance;
+
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
+
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
+
+	ofa_box_set_amount( balance, LED_FR_DEBIT, amount );
+}
+
+/**
+ * ofo_ledger_set_futur_rough_credit:
+ * @ledger:
+ * @amount:
+ * @currency:
+ *
+ * Set the credit balance of this ledger for
+ * the currency specified from future entries.
+ *
+ * Creates an occurrence of the detail record if it didn't exist yet.
+ */
+void
+ofo_ledger_set_futur_rough_credit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
+{
+	GList *balance;
+
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
+
+	balance = ledger_new_balance_with_code( ledger, currency );
+	g_return_if_fail( balance );
+
+	ofa_box_set_amount( balance, LED_FR_CREDIT, amount );
+}
+
 static GList *
 ledger_new_balance_with_code( ofoLedger *ledger, const gchar *currency )
 {
@@ -906,121 +1231,50 @@ ledger_add_to_balance( ofoLedger *ledger, const gchar *currency, gint debit_id, 
 }
 
 /**
- * ofo_ledger_get_max_last_close:
+ * ofo_ledger_currency_get_orphans:
  * @getter: a #ofaIGetter instance.
- * @date: [out]: the date to be set
  *
- * Set the @date to the max of all closing dates for the ledgers.
+ * Returns: the list of unknown ledger mnemos in OFA_T_LEDGERS_CUR child table.
  *
- * Return: this same @date.
+ * The returned list should be #ofo_ledger_currency_free_orphans() by the
+ * caller.
  */
-GDate *
-ofo_ledger_get_max_last_close( ofaIGetter *getter, GDate *date )
+GList *
+ofo_ledger_currency_get_orphans( ofaIGetter *getter )
 {
-	GSList *result, *icol;
+	return( get_orphans( getter, "OFA_T_LEDGERS_CUR" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
 	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
-	g_return_val_if_fail( date, NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
 
-	my_date_clear( date );
+	orphans = NULL;
 	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
 
-	if( ofa_idbconnect_query_ex(
-			ofa_hub_get_connect( hub ),
-			"SELECT MAX(LED_LAST_CLO) FROM OFA_T_LEDGERS", &result, TRUE )){
+	query = g_strdup_printf( "SELECT DISTINCT(LED_MNEMO) FROM %s "
+			"	WHERE LED_MNEMO NOT IN (SELECT LED_MNEMO FROM OFA_T_LEDGERS)", table );
 
-		icol = result ? result->data : NULL;
-		my_date_set_from_sql( date, icol ? icol->data : NULL );
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			orphans = g_list_prepend( orphans, g_strdup(( const gchar * ) icol->data ));
+		}
 		ofa_idbconnect_free_results( result );
 	}
 
-	return( date );
-}
+	g_free( query );
 
-/**
- * ofo_ledger_has_entries:
- */
-gboolean
-ofo_ledger_has_entries( const ofoLedger *ledger )
-{
-	ofaIGetter *getter;
-	gboolean ok;
-	const gchar *mnemo;
-
-	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
-
-	getter = ofo_base_get_getter( OFO_BASE( ledger ));
-	mnemo = ofo_ledger_get_mnemo( ledger );
-	ok = ofo_entry_use_ledger( getter, mnemo );
-
-	return( ok );
-}
-
-/**
- * ofo_ledger_is_deletable:
- *
- * A ledger is considered to be deletable if no entry has been recorded
- * during the current exercice - This means that all its amounts must be
- * nuls for all currencies.
- *
- * There is no need to test for the last closing date as this is not
- * relevant here: even if set, they does not mean that there has been
- * any entries recorded on the ledger.
- *
- * More: a ledger should not be deleted while it is referenced by a
- * model or an entry or the dossier itself (or the dossier is an
- * archive).
- */
-gboolean
-ofo_ledger_is_deletable( const ofoLedger *ledger )
-{
-	ofaIGetter *getter;
-	ofaISignaler *signaler;
-	gboolean deletable;
-
-	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
-
-	deletable = TRUE;
-	getter = ofo_base_get_getter( OFO_BASE( ledger ));
-	signaler = ofa_igetter_get_signaler( getter );
-
-	if( deletable ){
-		g_signal_emit_by_name( signaler, SIGNALER_BASE_IS_DELETABLE, ledger, &deletable );
-	}
-
-	return( deletable );
-}
-
-/**
- * ofo_ledger_is_valid_data:
- *
- * Returns: %TRUE if the provided data makes the ofoLedger a valid
- * object.
- *
- * Note that this does NOT check for key duplicate.
- */
-gboolean
-ofo_ledger_is_valid_data( const gchar *mnemo, const gchar *label, gchar **msgerr )
-{
-	if( msgerr ){
-		*msgerr = NULL;
-	}
-	if( !my_strlen( mnemo )){
-		if( msgerr ){
-			*msgerr = g_strdup( _( "Mnemonic is empty" ));
-		}
-		return( FALSE );
-	}
-	if( !my_strlen( label )){
-		if( msgerr ){
-			*msgerr = g_strdup( _( "Label is empty" ));
-		}
-		return( FALSE );
-	}
-	return( TRUE );
+	return( orphans );
 }
 
 /**
@@ -1078,7 +1332,7 @@ ofo_ledger_archive_balances( ofoLedger *ledger, const GDate *date )
 	 */
 	led_id = ofo_ledger_get_mnemo( ledger );
 	list = ofo_entry_get_dataset_ledger_balance( getter, led_id, &from_date, date );
-	currencies = ofo_ledger_get_currencies( ledger );
+	currencies = ofo_ledger_currency_get_list( ledger );
 
 	for( it=currencies ; it ; it=it->next ){
 		cur_id = ( const gchar * ) it->data;
@@ -1339,6 +1593,21 @@ get_last_archive_date( ofoLedger *ledger, GDate *date )
 }
 
 /**
+ * ofo_ledger_archive_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown ledger mnemos in OFA_T_LEDGERS_ARC child table.
+ *
+ * The returned list should be #ofo_ledger_archive_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_ledger_archive_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_LEDGERS_ARC" ));
+}
+
+/**
  * ofo_ledger_doc_get_count:
  * @ledger: this #ofoLedger object.
  *
@@ -1358,210 +1627,18 @@ ofo_ledger_doc_get_count( ofoLedger *ledger )
 }
 
 /**
- * ofo_ledger_set_mnemo:
+ * ofo_ledger_doc_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown ledger mnemos in OFA_T_LEDGERS_DOC child table.
+ *
+ * The returned list should be #ofo_ledger_doc_free_orphans() by the
+ * caller.
  */
-void
-ofo_ledger_set_mnemo( ofoLedger *ledger, const gchar *mnemo )
+GList *
+ofo_ledger_doc_get_orphans( ofaIGetter *getter )
 {
-	ofo_base_setter( LEDGER, ledger, string, LED_MNEMO, mnemo );
-}
-
-/**
- * ofo_ledger_set_label:
- */
-void
-ofo_ledger_set_label( ofoLedger *ledger, const gchar *label )
-{
-	ofo_base_setter( LEDGER, ledger, string, LED_LABEL, label );
-}
-
-/**
- * ofo_ledger_set_notes:
- */
-void
-ofo_ledger_set_notes( ofoLedger *ledger, const gchar *notes )
-{
-	ofo_base_setter( LEDGER, ledger, string, LED_NOTES, notes );
-}
-
-/*
- * ledger_set_upd_user:
- */
-static void
-ledger_set_upd_user( ofoLedger *ledger, const gchar *upd_user )
-{
-	ofo_base_setter( LEDGER, ledger, string, LED_UPD_USER, upd_user );
-}
-
-/*
- * ledger_set_upd_stamp:
- */
-static void
-ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp )
-{
-	ofo_base_setter( LEDGER, ledger, timestamp, LED_UPD_STAMP, upd_stamp );
-}
-
-/*
- * ledger_set_last_clo:
- * @ledger:
- *
- * Set the closing date for the ledger.
- */
-static void
-ledger_set_last_clo( ofoLedger *ledger, const GDate *date )
-{
-	ofo_base_setter( LEDGER, ledger, date, LED_LAST_CLO, date );
-}
-
-/**
- * ofo_ledger_set_current_val_debit:
- * @ledger:
- * @amount:
- * @currency:
- *
- * Set the debit balance of this ledger from validated entries for
- * the currency specified.
- *
- * Creates an occurrence of the detail record if it didn't exist yet.
- */
-void
-ofo_ledger_set_current_val_debit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
-{
-	GList *balance;
-
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
-
-	balance = ledger_new_balance_with_code( ledger, currency );
-	g_return_if_fail( balance );
-
-	ofa_box_set_amount( balance, LED_CV_DEBIT, amount );
-}
-
-/**
- * ofo_ledger_set_current_val_credit:
- * @ledger:
- * @amount:
- * @currency:
- *
- * Set the credit balance of this ledger from validated entries for
- * the currency specified.
- *
- * Creates an occurrence of the detail record if it didn't exist yet.
- */
-void
-ofo_ledger_set_current_val_credit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
-{
-	GList *balance;
-
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
-
-	balance = ledger_new_balance_with_code( ledger, currency );
-	g_return_if_fail( balance );
-
-	ofa_box_set_amount( balance, LED_CV_CREDIT, amount );
-}
-
-/**
- * ofo_ledger_set_current_rough_debit:
- * @ledger:
- * @amount:
- * @currency:
- *
- * Set the current debit balance of this ledger for
- * the currency specified.
- *
- * Creates an occurrence of the detail record if it didn't exist yet.
- */
-void
-ofo_ledger_set_current_rough_debit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
-{
-	GList *balance;
-
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
-
-	balance = ledger_new_balance_with_code( ledger, currency );
-	g_return_if_fail( balance );
-
-	ofa_box_set_amount( balance, LED_CR_DEBIT, amount );
-}
-
-/**
- * ofo_ledger_set_current_rough_credit:
- * @ledger:
- * @amount:
- * @currency:
- *
- * Set the current credit balance of this ledger for
- * the currency specified.
- *
- * Creates an occurrence of the detail record if it didn't exist yet.
- */
-void
-ofo_ledger_set_current_rough_credit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
-{
-	GList *balance;
-
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
-
-	balance = ledger_new_balance_with_code( ledger, currency );
-	g_return_if_fail( balance );
-
-	ofa_box_set_amount( balance, LED_CR_CREDIT, amount );
-}
-
-/**
- * ofo_ledger_set_futur_rough_debit:
- * @ledger:
- * @amount:
- * @currency:
- *
- * Set the debit balance of this ledger for
- * the currency specified from future entries.
- *
- * Creates an occurrence of the detail record if it didn't exist yet.
- */
-void
-ofo_ledger_set_futur_rough_debit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
-{
-	GList *balance;
-
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
-
-	balance = ledger_new_balance_with_code( ledger, currency );
-	g_return_if_fail( balance );
-
-	ofa_box_set_amount( balance, LED_FR_DEBIT, amount );
-}
-
-/**
- * ofo_ledger_set_futur_rough_credit:
- * @ledger:
- * @amount:
- * @currency:
- *
- * Set the credit balance of this ledger for
- * the currency specified from future entries.
- *
- * Creates an occurrence of the detail record if it didn't exist yet.
- */
-void
-ofo_ledger_set_futur_rough_credit( ofoLedger *ledger, ofxAmount amount, const gchar *currency )
-{
-	GList *balance;
-
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
-
-	balance = ledger_new_balance_with_code( ledger, currency );
-	g_return_if_fail( balance );
-
-	ofa_box_set_amount( balance, LED_FR_CREDIT, amount );
+	return( get_orphans( getter, "OFA_T_LEDGERS_DOC" ));
 }
 
 /**
@@ -1598,83 +1675,6 @@ ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
 	}
 
 	return( ok );
-}
-
-/**
- * ofo_ledger_get_arc_orphans:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the list of unknown ledger mnemos in OFA_T_LEDGERS_ARC child table.
- *
- * The returned list should be #ofo_ledger_free_arc_orphans() by the
- * caller.
- */
-GList *
-ofo_ledger_get_arc_orphans( ofaIGetter *getter )
-{
-	return( get_orphans( getter, "OFA_T_LEDGERS_ARC" ));
-}
-
-/**
- * ofo_ledger_get_cur_orphans:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the list of unknown ledger mnemos in OFA_T_LEDGERS_CUR child table.
- *
- * The returned list should be #ofo_ledger_free_cur_orphans() by the
- * caller.
- */
-GList *
-ofo_ledger_get_cur_orphans( ofaIGetter *getter )
-{
-	return( get_orphans( getter, "OFA_T_LEDGERS_CUR" ));
-}
-
-/**
- * ofo_ledger_get_doc_orphans:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the list of unknown ledger mnemos in OFA_T_LEDGERS_DOC child table.
- *
- * The returned list should be #ofo_ledger_free_doc_orphans() by the
- * caller.
- */
-GList *
-ofo_ledger_get_doc_orphans( ofaIGetter *getter )
-{
-	return( get_orphans( getter, "OFA_T_LEDGERS_DOC" ));
-}
-
-static GList *
-get_orphans( ofaIGetter *getter, const gchar *table )
-{
-	ofaHub *hub;
-	ofaIDBConnect *connect;
-	GList *orphans;
-	GSList *result, *irow, *icol;
-	gchar *query;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
-	g_return_val_if_fail( my_strlen( table ), NULL );
-
-	orphans = NULL;
-	hub = ofa_igetter_get_hub( getter );
-	connect = ofa_hub_get_connect( hub );
-
-	query = g_strdup_printf( "SELECT DISTINCT(LED_MNEMO) FROM %s "
-			"	WHERE LED_MNEMO NOT IN (SELECT LED_MNEMO FROM OFA_T_LEDGERS)", table );
-
-	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = irow->data;
-			orphans = g_list_prepend( orphans, g_strdup(( const gchar * ) icol->data ));
-		}
-		ofa_idbconnect_free_results( result );
-	}
-
-	g_free( query );
-
-	return( orphans );
 }
 
 /**
@@ -2195,13 +2195,19 @@ iexportable_export_default( ofaIExportable *exportable )
 		count += ofo_ledger_archive_get_count( ledger );
 		count += ofo_ledger_doc_get_count( ledger );
 	}
-	ofa_iexportable_set_count( exportable, count );
+	ofa_iexportable_set_count( exportable, count+2 );
 
-	/* add a version line at the very beginning of the file */
-	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, LEDGER_EXPORT_VERSION );
+	/* add version lines at the very beginning of the file */
+	str1 = g_strdup_printf( "0%c0%cVersion", field_sep, field_sep );
 	ok = ofa_iexportable_append_line( exportable, str1 );
 	g_free( str1 );
+	if( ok ){
+		str1 = g_strdup_printf( "1%c0%c%u", field_sep, field_sep, LEDGER_EXPORT_VERSION );
+		ok = ofa_iexportable_append_line( exportable, str1 );
+		g_free( str1 );
+	}
 
+	/* export headers */
 	if( ok ){
 		/* add new ofsBoxDef array at the end of the list */
 		ok = ofa_iexportable_append_headers( exportable,
@@ -2213,7 +2219,7 @@ iexportable_export_default( ofaIExportable *exportable )
 		ledger = OFO_LEDGER( it->data );
 
 		str1 = ofa_box_csv_get_line( OFO_BASE( ledger )->prot->fields, stformat, NULL );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "1%c1%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
@@ -2227,7 +2233,7 @@ iexportable_export_default( ofaIExportable *exportable )
 			currency = ofo_currency_get_by_code( getter, cur_code );
 			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 			str1 = ofa_box_csv_get_line( bal, stformat, currency );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c2%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );
@@ -2240,7 +2246,7 @@ iexportable_export_default( ofaIExportable *exportable )
 			currency = ofo_currency_get_by_code( getter, cur_code );
 			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 			str1 = ofa_box_csv_get_line( bal, stformat, currency );
-			str2 = g_strdup_printf( "3%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c3%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );
@@ -2248,7 +2254,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
 			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
-			str2 = g_strdup_printf( "4%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c4%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );

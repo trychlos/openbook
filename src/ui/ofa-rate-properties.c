@@ -355,7 +355,7 @@ idialog_init( myIDialog *instance )
 			MY_IGRIDLIST( instance ), GTK_GRID( priv->grid ),
 			TRUE, priv->is_writable, N_COLUMNS );
 
-	count = ofo_rate_get_val_count( priv->rate );
+	count = ofo_rate_valid_get_count( priv->rate );
 	for( idx=0 ; idx<count ; ++idx ){
 		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->grid ), NULL );
 	}
@@ -486,15 +486,15 @@ set_detail_values( ofaRateProperties *self, guint row )
 	idx = row - 1;
 
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_BEGIN, row );
-	d = ofo_rate_get_val_begin( priv->rate, idx );
+	d = ofo_rate_valid_get_begin( priv->rate, idx );
 	my_date_editable_set_date( GTK_EDITABLE( entry ), d );
 
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_END, row );
-	d = ofo_rate_get_val_end( priv->rate, idx );
+	d = ofo_rate_valid_get_end( priv->rate, idx );
 	my_date_editable_set_date( GTK_EDITABLE( entry ), d );
 
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_RATE, row );
-	rate = ofo_rate_get_val_rate( priv->rate, idx );
+	rate = ofo_rate_valid_get_rate( priv->rate, idx );
 	my_double_editable_set_amount( GTK_EDITABLE( entry ), rate );
 }
 
@@ -684,7 +684,7 @@ do_update( ofaRateProperties *self, gchar **msgerr )
 	ofo_rate_set_label( priv->rate, priv->label );
 	my_utils_container_notes_get( self, rate );
 
-	ofo_rate_free_all_val( priv->rate );
+	ofo_rate_valid_reset( priv->rate );
 	count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
 
 	for( i=1 ; i<=count ; ++i ){
@@ -700,7 +700,7 @@ do_update( ofaRateProperties *self, gchar **msgerr )
 			my_date_is_valid( dend ) ||
 			( rate > 0 )){
 
-			ofo_rate_add_val( priv->rate, dbegin, dend, rate );
+			ofo_rate_valid_add( priv->rate, dbegin, dend, rate );
 		}
 	}
 

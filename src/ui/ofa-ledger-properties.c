@@ -397,7 +397,7 @@ init_balances_page( ofaLedgerProperties *self )
 	g_return_if_fail( grid && GTK_IS_GRID( grid ));
 
 	row = 1;
-	currencies = ofo_ledger_get_currencies( priv->ledger );
+	currencies = ofo_ledger_currency_get_list( priv->ledger );
 	for( it=currencies ; it ; it=it->next ){
 		code = ( const gchar * ) it->data;
 		g_return_if_fail( my_strlen( code ));

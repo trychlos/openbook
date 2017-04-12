@@ -81,90 +81,90 @@ typedef struct {
  */
 #define DOSSIER_ROW_ID                  1
 
-GType                ofo_dossier_get_type                  ( void ) G_GNUC_CONST;
+GType                ofo_dossier_get_type                   ( void ) G_GNUC_CONST;
 
-ofoDossier          *ofo_dossier_new                       ( ofaIGetter *getter );
+ofoDossier          *ofo_dossier_new                        ( ofaIGetter *getter );
 
-const gchar         *ofo_dossier_get_default_currency      ( const ofoDossier *dossier );
-const GDate         *ofo_dossier_get_exe_begin             ( const ofoDossier *dossier );
-const GDate         *ofo_dossier_get_exe_end               ( const ofoDossier *dossier );
-gint                 ofo_dossier_get_exe_length            ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_exe_notes             ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_forward_ope           ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_sld_ope               ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_import_ledger         ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_label                 ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_label2                ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_notes                 ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_siren                 ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_siret                 ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_vatic                 ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_naf                   ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_upd_user              ( const ofoDossier *dossier );
-const GTimeVal      *ofo_dossier_get_upd_stamp             ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_status                ( const ofoDossier *dossier );
-const GDate         *ofo_dossier_get_last_closing_date     ( const ofoDossier *dossier );
-ofxCounter           ofo_dossier_get_prevexe_last_entry    ( const ofoDossier *dossier );
-const GDate         *ofo_dossier_get_prevexe_end           ( const ofoDossier *dossier );
-const gchar         *ofo_dossier_get_rpid                  ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_default_currency       ( const ofoDossier *dossier );
+const GDate         *ofo_dossier_get_exe_begin              ( const ofoDossier *dossier );
+const GDate         *ofo_dossier_get_exe_end                ( const ofoDossier *dossier );
+gint                 ofo_dossier_get_exe_length             ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_exe_notes              ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_forward_ope            ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_sld_ope                ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_import_ledger          ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_label                  ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_label2                 ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_notes                  ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_siren                  ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_siret                  ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_vatic                  ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_naf                    ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_upd_user               ( const ofoDossier *dossier );
+const GTimeVal      *ofo_dossier_get_upd_stamp              ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_status                 ( const ofoDossier *dossier );
+const GDate         *ofo_dossier_get_last_closing_date      ( const ofoDossier *dossier );
+ofxCounter           ofo_dossier_get_prevexe_last_entry     ( const ofoDossier *dossier );
+const GDate         *ofo_dossier_get_prevexe_end            ( const ofoDossier *dossier );
+const gchar         *ofo_dossier_get_rpid                   ( const ofoDossier *dossier );
 
-GDate               *ofo_dossier_get_min_deffect           ( const ofoDossier *dossier,
+GDate               *ofo_dossier_get_min_deffect            ( const ofoDossier *dossier,
 																	const ofoLedger *ledger, GDate *date );
 
-GSList              *ofo_dossier_get_currencies            ( ofoDossier *dossier );
-#define              ofo_dossier_free_currencies( L )      ( g_slist_free_full(( L ), ( GDestroyNotify ) g_free ))
+gboolean             ofo_dossier_is_current                 ( const ofoDossier *dossier );
 
-const gchar         *ofo_dossier_get_sld_account           ( ofoDossier *dossier,
-																	const gchar *currency );
-
-gboolean             ofo_dossier_is_current                ( const ofoDossier *dossier );
-
-gboolean             ofo_dossier_is_valid_data             ( const gchar *label,
+gboolean             ofo_dossier_is_valid_data              ( const gchar *label,
 																	gint nb_months,
 																	const gchar *currency,
 																	const GDate *begin,
 																	const GDate *end,
 																	gchar **msgerr );
 
-guint                ofo_dossier_doc_get_count             ( ofoDossier *dossier );
+void                 ofo_dossier_set_default_currency       ( ofoDossier *dossier, const gchar *currency );
+void                 ofo_dossier_set_exe_begin              ( ofoDossier *dossier, const GDate *date );
+void                 ofo_dossier_set_exe_end                ( ofoDossier *dossier, const GDate *date );
+void                 ofo_dossier_set_exe_length             ( ofoDossier *dossier, gint nb_months );
+void                 ofo_dossier_set_exe_notes              ( ofoDossier *dossier, const gchar *notes );
+void                 ofo_dossier_set_forward_ope            ( ofoDossier *dossier, const gchar *ope );
+void                 ofo_dossier_set_sld_ope                ( ofoDossier *dossier, const gchar *ope );
+void                 ofo_dossier_set_import_ledger          ( ofoDossier *dossier, const gchar *mnemo );
+void                 ofo_dossier_set_label                  ( ofoDossier *dossier, const gchar *label );
+void                 ofo_dossier_set_label2                 ( ofoDossier *dossier, const gchar *label );
+void                 ofo_dossier_set_notes                  ( ofoDossier *dossier, const gchar *notes );
+void                 ofo_dossier_set_siren                  ( ofoDossier *dossier, const gchar *siren );
+void                 ofo_dossier_set_siret                  ( ofoDossier *dossier, const gchar *siret );
+void                 ofo_dossier_set_vatic                  ( ofoDossier *dossier, const gchar *tvaic );
+void                 ofo_dossier_set_naf                    ( ofoDossier *dossier, const gchar *naf );
+void                 ofo_dossier_set_last_closing_date      ( ofoDossier *dossier, const GDate *last_closing );
+void                 ofo_dossier_set_prevexe_last_entry     ( ofoDossier *dossier, ofxCounter number );
+void                 ofo_dossier_set_prevexe_end            ( ofoDossier *dossier, const GDate *date );
+void                 ofo_dossier_set_current                ( ofoDossier *dossier, gboolean current );
+void                 ofo_dossier_set_rpid                   ( ofoDossier *dossier, const gchar *rpid );
 
-guint                ofo_dossier_prefs_get_count           ( ofoDossier *dossier );
+GSList              *ofo_dossier_currency_get_list          ( ofoDossier *dossier );
+#define              ofo_dossier_currency_free_list( L )    ( g_slist_free_full(( L ), ( GDestroyNotify ) g_free ))
 
-void                 ofo_dossier_set_default_currency      ( ofoDossier *dossier, const gchar *currency );
-void                 ofo_dossier_set_exe_begin             ( ofoDossier *dossier, const GDate *date );
-void                 ofo_dossier_set_exe_end               ( ofoDossier *dossier, const GDate *date );
-void                 ofo_dossier_set_exe_length            ( ofoDossier *dossier, gint nb_months );
-void                 ofo_dossier_set_exe_notes             ( ofoDossier *dossier, const gchar *notes );
-void                 ofo_dossier_set_forward_ope           ( ofoDossier *dossier, const gchar *ope );
-void                 ofo_dossier_set_sld_ope               ( ofoDossier *dossier, const gchar *ope );
-void                 ofo_dossier_set_import_ledger         ( ofoDossier *dossier, const gchar *mnemo );
-void                 ofo_dossier_set_label                 ( ofoDossier *dossier, const gchar *label );
-void                 ofo_dossier_set_label2                ( ofoDossier *dossier, const gchar *label );
-void                 ofo_dossier_set_notes                 ( ofoDossier *dossier, const gchar *notes );
-void                 ofo_dossier_set_siren                 ( ofoDossier *dossier, const gchar *siren );
-void                 ofo_dossier_set_siret                 ( ofoDossier *dossier, const gchar *siret );
-void                 ofo_dossier_set_vatic                 ( ofoDossier *dossier, const gchar *tvaic );
-void                 ofo_dossier_set_naf                   ( ofoDossier *dossier, const gchar *naf );
-void                 ofo_dossier_set_last_closing_date     ( ofoDossier *dossier, const GDate *last_closing );
-void                 ofo_dossier_set_prevexe_last_entry    ( ofoDossier *dossier, ofxCounter number );
-void                 ofo_dossier_set_prevexe_end           ( ofoDossier *dossier, const GDate *date );
-void                 ofo_dossier_set_current               ( ofoDossier *dossier, gboolean current );
-void                 ofo_dossier_set_rpid                  ( ofoDossier *dossier, const gchar *rpid );
+const gchar         *ofo_dossier_currency_get_sld_account   ( ofoDossier *dossier,
+																	const gchar *currency );
 
-void                 ofo_dossier_reset_currencies          ( ofoDossier *dossier );
-void                 ofo_dossier_set_sld_account           ( ofoDossier *dossier, const gchar *currency, const gchar *account );
+GList               *ofo_dossier_currency_get_orphans           ( ofaIGetter *getter );
+#define              ofo_dossier_currency_free_orphans( L ) ( g_list_free( L ))
 
-GList               *ofo_dossier_get_cur_orphans           ( ofaIGetter *getter );
-#define              ofo_dossier_free_cur_orphans( L )     ( g_list_free( L ))
+void                 ofo_dossier_currency_reset             ( ofoDossier *dossier );
+void                 ofo_dossier_currency_set_sld_account   ( ofoDossier *dossier, const gchar *currency, const gchar *account );
 
-GList               *ofo_dossier_get_doc_orphans           ( ofaIGetter *getter );
-#define              ofo_dossier_free_doc_orphans( L )     ( g_list_free( L ))
+guint                ofo_dossier_doc_get_count              ( ofoDossier *dossier );
 
-GList               *ofo_dossier_get_prefs_orphans         ( ofaIGetter *getter );
-#define              ofo_dossier_free_prefs_orphans( L )   ( g_list_free( L ))
+GList               *ofo_dossier_doc_get_orphans            ( ofaIGetter *getter );
+#define              ofo_dossier_doc_free_orphans( L )      ( g_list_free( L ))
 
-gboolean             ofo_dossier_update                    ( ofoDossier *dossier );
-gboolean             ofo_dossier_update_currencies         ( ofoDossier *dossier );
+guint                ofo_dossier_prefs_get_count            ( ofoDossier *dossier );
+
+GList               *ofo_dossier_prefs_get_orphans          ( ofaIGetter *getter );
+#define              ofo_dossier_prefs_free_orphans( L )    ( g_list_free( L ))
+
+gboolean             ofo_dossier_update                     ( ofoDossier *dossier );
+gboolean             ofo_dossier_update_currencies          ( ofoDossier *dossier );
 
 G_END_DECLS
 

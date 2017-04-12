@@ -146,8 +146,6 @@ gboolean        ofo_bat_is_deletable               ( ofoBat *bat );
 gint            ofo_bat_get_lines_count            ( ofoBat *bat );
 gint            ofo_bat_get_used_count             ( ofoBat *bat );
 
-guint           ofo_bat_doc_get_count              ( ofoBat *bat );
-
 void            ofo_bat_set_uri                    ( ofoBat *bat, const gchar *uri );
 void            ofo_bat_set_format                 ( ofoBat *bat, const gchar *format );
 void            ofo_bat_set_begin_date             ( ofoBat *bat, const GDate *date );
@@ -161,8 +159,10 @@ void            ofo_bat_set_currency               ( ofoBat *bat, const gchar *c
 void            ofo_bat_set_notes                  ( ofoBat *bat, const gchar *notes );
 void            ofo_bat_set_account                ( ofoBat *bat, const gchar *account );
 
-GList          *ofo_bat_get_doc_orphans            ( ofaIGetter *getter );
-#define         ofo_bat_free_doc_orphans( L )      ( g_list_free( L ))
+guint           ofo_bat_doc_get_count              ( ofoBat *bat );
+
+GList          *ofo_bat_doc_get_orphans            ( ofaIGetter *getter );
+#define         ofo_bat_doc_free_orphans( L )      ( g_list_free( L ))
 
 gboolean        ofo_bat_insert                     ( ofoBat *bat );
 gboolean        ofo_bat_update                     ( ofoBat *bat );

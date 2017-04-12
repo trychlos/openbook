@@ -289,12 +289,12 @@ static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
+static void         account_set_upd_user( ofoAccount *account, const gchar *user );
+static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static gboolean     archive_balances_ex( ofoAccount *account, const GDate *exe_begin, const GDate *archive_date, ofeAccountType type );
 static gboolean     archive_do_add_dbms( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
 static void         archive_do_add_list( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
 static gint         archive_get_last_index( ofoAccount *account, const GDate *requested );
-static void         account_set_upd_user( ofoAccount *account, const gchar *user );
-static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static GList       *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
 static gboolean     account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
@@ -1318,6 +1318,240 @@ ofo_account_get_balance_type_short( ofeAccountType type )
 }
 
 /**
+ * ofo_account_set_number:
+ * @account: the #ofoAccount account
+ */
+void
+ofo_account_set_number( ofoAccount *account, const gchar *number )
+{
+	account_set_string( ACC_NUMBER, number );
+}
+
+/**
+ * ofo_account_set_label:
+ * @account: the #ofoAccount account
+ */
+void
+ofo_account_set_label( ofoAccount *account, const gchar *label )
+{
+	account_set_string( ACC_LABEL, label );
+}
+
+/**
+ * ofo_account_set_currency:
+ * @account: the #ofoAccount account
+ */
+void
+ofo_account_set_currency( ofoAccount *account, const gchar *currency )
+{
+	account_set_string( ACC_CURRENCY, currency );
+}
+
+/**
+ * ofo_account_set_notes:
+ * @account: the #ofoAccount account
+ */
+void
+ofo_account_set_notes( ofoAccount *account, const gchar *notes )
+{
+	account_set_string( ACC_NOTES, notes );
+}
+
+/**
+ * ofo_account_set_root:
+ * @account: the #ofoAccount account
+ * @root: %TRUE if @account is a root account, %FALSE if this is a
+ *  detail account.
+ */
+void
+ofo_account_set_root( ofoAccount *account, gboolean root )
+{
+	account_set_string( ACC_ROOT, root ? "Y":"N" );
+}
+
+/**
+ * ofo_account_set_settleable:
+ * @account: the #ofoAccount account
+ * @settleable: %TRUE if the account is to be set settleable
+ */
+void
+ofo_account_set_settleable( ofoAccount *account, gboolean settleable )
+{
+	account_set_string( ACC_SETTLEABLE, settleable ? "Y":"N" );
+}
+
+/**
+ * ofo_account_set_keep_unsettled:
+ * @account: the #ofoAccount account.
+ * @keep: whether the unsettled entries should be kept.
+ */
+void
+ofo_account_set_keep_unsettled( ofoAccount *account, gboolean keep )
+{
+	account_set_string( ACC_KEEP_UNSETTLED, keep ? "Y":"N" );
+}
+
+/**
+ * ofo_account_set_reconciliable:
+ * @account: the #ofoAccount account
+ * @reconciliable: %TRUE if the account is to be set reconciliable
+ */
+void
+ofo_account_set_reconciliable( ofoAccount *account, gboolean reconciliable )
+{
+	account_set_string( ACC_RECONCILIABLE, reconciliable ? "Y":"N" );
+}
+
+/**
+ * ofo_account_set_keep_unreconciliated:
+ * @account: the #ofoAccount account.
+ * @keep: whether the unreconciliated entries should be kept.
+ */
+void
+ofo_account_set_keep_unreconciliated( ofoAccount *account, gboolean keep )
+{
+	account_set_string( ACC_KEEP_UNRECONCILIATED, keep ? "Y":"N" );
+}
+
+/**
+ * ofo_account_set_forwardable:
+ * @account: the #ofoAccount account
+ * @forwardable: %TRUE if the account supports carried forward entries
+ */
+void
+ofo_account_set_forwardable( ofoAccount *account, gboolean forwardable )
+{
+	account_set_string( ACC_FORWARDABLE, forwardable ? "Y":"N" );
+}
+
+/**
+ * ofo_account_set_closed:
+ * @account: the #ofoAccount account
+ * @closed: %TRUE if the account is closed
+ */
+void
+ofo_account_set_closed( ofoAccount *account, gboolean closed )
+{
+	account_set_string( ACC_CLOSED, closed ? "Y":"N" );
+}
+
+/*
+ * ofo_account_set_upd_user:
+ * @account: the #ofoAccount account
+ */
+static void
+account_set_upd_user( ofoAccount *account, const gchar *user )
+{
+	account_set_string( ACC_UPD_USER, user );
+}
+
+/*
+ * ofo_account_set_upd_stamp:
+ * @account: the #ofoAccount account
+ */
+static void
+account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp )
+{
+	account_set_timestamp( ACC_UPD_STAMP, stamp );
+}
+
+/**
+ * ofo_ofo_account_set_current_rough_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of debits for rought entries in the current exercice.
+ */
+void
+ofo_account_set_current_rough_debit( ofoAccount *account, ofxAmount amount )
+{
+	account_set_amount( ACC_CR_DEBIT, amount );
+}
+
+/**
+ * ofo_ofo_account_set_current_rough_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of credits for rought entries in the current exercice.
+ */
+void
+ofo_account_set_current_rough_credit( ofoAccount *account, ofxAmount amount )
+{
+	account_set_amount( ACC_CR_CREDIT, amount );
+}
+
+/**
+ * ofo_ofo_account_set_current_val_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of debits for validated entries in the current exercice.
+ */
+void
+ofo_account_set_current_val_debit( ofoAccount *account, ofxAmount amount )
+{
+	account_set_amount( ACC_CV_DEBIT, amount );
+}
+
+/**
+ * ofo_ofo_account_set_current_val_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of credits for validated entries in the current exercice.
+ */
+void
+ofo_account_set_current_val_credit( ofoAccount *account, ofxAmount amount )
+{
+	account_set_amount( ACC_CV_CREDIT, amount );
+}
+
+/**
+ * ofo_ofo_account_set_futur_rough_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of debits for rought entries in a future exercice.
+ */
+void
+ofo_account_set_futur_rough_debit( ofoAccount *account, ofxAmount amount )
+{
+	account_set_amount( ACC_FR_DEBIT, amount );
+}
+
+/**
+ * ofo_ofo_account_set_futur_rough_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of credits for rought entries in a future exercice.
+ */
+void
+ofo_account_set_futur_rough_credit( ofoAccount *account, ofxAmount amount )
+{
+	account_set_amount( ACC_FR_CREDIT, amount );
+}
+
+/**
+ * ofo_ofo_account_set_futur_val_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of debits for validated entries in a future exercice.
+ */
+void
+ofo_account_set_futur_val_debit( ofoAccount *account, ofxAmount amount )
+{
+	account_set_amount( ACC_FV_DEBIT, amount );
+}
+
+/**
+ * ofo_ofo_account_set_futur_val_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Set the sum of credits for validated entries in a future exercice.
+ */
+void
+ofo_account_set_futur_val_credit( ofoAccount *account, ofxAmount amount )
+{
+	account_set_amount( ACC_FV_CREDIT, amount );
+}
+
+/**
  * ofo_account_archive_openings:
  * @getter: the #ofaIGetter of the application.
  * @exe_begin: the beginning of the exercice
@@ -1686,286 +1920,18 @@ archive_get_last_index( ofoAccount *account, const GDate *requested )
 }
 
 /**
- * ofo_account_doc_get_count:
- * @account: the #ofoAccount account.
- *
- * Returns: the count of attached documents.
- */
-guint
-ofo_account_doc_get_count( ofoAccount *account )
-{
-	ofoAccountPrivate *priv;
-
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
-	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
-
-	priv = ofo_account_get_instance_private( account );
-
-	return( g_list_length( priv->docs ));
-}
-
-/**
- * ofo_account_set_number:
- * @account: the #ofoAccount account
- */
-void
-ofo_account_set_number( ofoAccount *account, const gchar *number )
-{
-	account_set_string( ACC_NUMBER, number );
-}
-
-/**
- * ofo_account_set_label:
- * @account: the #ofoAccount account
- */
-void
-ofo_account_set_label( ofoAccount *account, const gchar *label )
-{
-	account_set_string( ACC_LABEL, label );
-}
-
-/**
- * ofo_account_set_currency:
- * @account: the #ofoAccount account
- */
-void
-ofo_account_set_currency( ofoAccount *account, const gchar *currency )
-{
-	account_set_string( ACC_CURRENCY, currency );
-}
-
-/**
- * ofo_account_set_notes:
- * @account: the #ofoAccount account
- */
-void
-ofo_account_set_notes( ofoAccount *account, const gchar *notes )
-{
-	account_set_string( ACC_NOTES, notes );
-}
-
-/**
- * ofo_account_set_root:
- * @account: the #ofoAccount account
- * @root: %TRUE if @account is a root account, %FALSE if this is a
- *  detail account.
- */
-void
-ofo_account_set_root( ofoAccount *account, gboolean root )
-{
-	account_set_string( ACC_ROOT, root ? "Y":"N" );
-}
-
-/**
- * ofo_account_set_settleable:
- * @account: the #ofoAccount account
- * @settleable: %TRUE if the account is to be set settleable
- */
-void
-ofo_account_set_settleable( ofoAccount *account, gboolean settleable )
-{
-	account_set_string( ACC_SETTLEABLE, settleable ? "Y":"N" );
-}
-
-/**
- * ofo_account_set_keep_unsettled:
- * @account: the #ofoAccount account.
- * @keep: whether the unsettled entries should be kept.
- */
-void
-ofo_account_set_keep_unsettled( ofoAccount *account, gboolean keep )
-{
-	account_set_string( ACC_KEEP_UNSETTLED, keep ? "Y":"N" );
-}
-
-/**
- * ofo_account_set_reconciliable:
- * @account: the #ofoAccount account
- * @reconciliable: %TRUE if the account is to be set reconciliable
- */
-void
-ofo_account_set_reconciliable( ofoAccount *account, gboolean reconciliable )
-{
-	account_set_string( ACC_RECONCILIABLE, reconciliable ? "Y":"N" );
-}
-
-/**
- * ofo_account_set_keep_unreconciliated:
- * @account: the #ofoAccount account.
- * @keep: whether the unreconciliated entries should be kept.
- */
-void
-ofo_account_set_keep_unreconciliated( ofoAccount *account, gboolean keep )
-{
-	account_set_string( ACC_KEEP_UNRECONCILIATED, keep ? "Y":"N" );
-}
-
-/**
- * ofo_account_set_forwardable:
- * @account: the #ofoAccount account
- * @forwardable: %TRUE if the account supports carried forward entries
- */
-void
-ofo_account_set_forwardable( ofoAccount *account, gboolean forwardable )
-{
-	account_set_string( ACC_FORWARDABLE, forwardable ? "Y":"N" );
-}
-
-/**
- * ofo_account_set_closed:
- * @account: the #ofoAccount account
- * @closed: %TRUE if the account is closed
- */
-void
-ofo_account_set_closed( ofoAccount *account, gboolean closed )
-{
-	account_set_string( ACC_CLOSED, closed ? "Y":"N" );
-}
-
-/*
- * ofo_account_set_upd_user:
- * @account: the #ofoAccount account
- */
-static void
-account_set_upd_user( ofoAccount *account, const gchar *user )
-{
-	account_set_string( ACC_UPD_USER, user );
-}
-
-/*
- * ofo_account_set_upd_stamp:
- * @account: the #ofoAccount account
- */
-static void
-account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp )
-{
-	account_set_timestamp( ACC_UPD_STAMP, stamp );
-}
-
-/**
- * ofo_ofo_account_set_current_rough_debit:
- * @account: the #ofoAccount account.
- *
- * Set the sum of debits for rought entries in the current exercice.
- */
-void
-ofo_account_set_current_rough_debit( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_CR_DEBIT, amount );
-}
-
-/**
- * ofo_ofo_account_set_current_rough_credit:
- * @account: the #ofoAccount account.
- *
- * Set the sum of credits for rought entries in the current exercice.
- */
-void
-ofo_account_set_current_rough_credit( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_CR_CREDIT, amount );
-}
-
-/**
- * ofo_ofo_account_set_current_val_debit:
- * @account: the #ofoAccount account.
- *
- * Set the sum of debits for validated entries in the current exercice.
- */
-void
-ofo_account_set_current_val_debit( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_CV_DEBIT, amount );
-}
-
-/**
- * ofo_ofo_account_set_current_val_credit:
- * @account: the #ofoAccount account.
- *
- * Set the sum of credits for validated entries in the current exercice.
- */
-void
-ofo_account_set_current_val_credit( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_CV_CREDIT, amount );
-}
-
-/**
- * ofo_ofo_account_set_futur_rough_debit:
- * @account: the #ofoAccount account.
- *
- * Set the sum of debits for rought entries in a future exercice.
- */
-void
-ofo_account_set_futur_rough_debit( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_FR_DEBIT, amount );
-}
-
-/**
- * ofo_ofo_account_set_futur_rough_credit:
- * @account: the #ofoAccount account.
- *
- * Set the sum of credits for rought entries in a future exercice.
- */
-void
-ofo_account_set_futur_rough_credit( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_FR_CREDIT, amount );
-}
-
-/**
- * ofo_ofo_account_set_futur_val_debit:
- * @account: the #ofoAccount account.
- *
- * Set the sum of debits for validated entries in a future exercice.
- */
-void
-ofo_account_set_futur_val_debit( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_FV_DEBIT, amount );
-}
-
-/**
- * ofo_ofo_account_set_futur_val_credit:
- * @account: the #ofoAccount account.
- *
- * Set the sum of credits for validated entries in a future exercice.
- */
-void
-ofo_account_set_futur_val_credit( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_FV_CREDIT, amount );
-}
-
-/**
- * ofo_account_get_arc_orphans:
+ * ofo_account_archive_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown account numbers in OFA_T_ACCOUNT_ARC child table.
  *
- * The returned list should be #ofo_account_free_arc_orphans() by the
+ * The returned list should be #ofo_account_archive_free_orphans() by the
  * caller.
  */
 GList *
-ofo_account_get_arc_orphans( ofaIGetter *getter )
+ofo_account_archive_get_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_ACCOUNTS_ARC" ));
-}
-
-/**
- * ofo_account_get_doc_orphans:
- * @getter: a #ofaIGetter instance.
- *
- * Returns: the list of unknown account numbers in OFA_T_ACCOUNT_DOC child table.
- *
- * The returned list should be #ofo_account_free_doc_orphans() by the
- * caller.
- */
-GList *
-ofo_account_get_doc_orphans( ofaIGetter *getter )
-{
-	return( get_orphans( getter, "OFA_T_ACCOUNTS_DOC" ));
 }
 
 static GList *
@@ -1998,6 +1964,40 @@ get_orphans( ofaIGetter *getter, const gchar *table )
 	g_free( query );
 
 	return( orphans );
+}
+
+/**
+ * ofo_account_doc_get_count:
+ * @account: this #ofoAccount object.
+ *
+ * Returns: the count of attached documents.
+ */
+guint
+ofo_account_doc_get_count( ofoAccount *account )
+{
+	ofoAccountPrivate *priv;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
+
+	priv = ofo_account_get_instance_private( account );
+
+	return( g_list_length( priv->docs ));
+}
+
+/**
+ * ofo_account_doc_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown account numbers in OFA_T_ACCOUNT_DOC child table.
+ *
+ * The returned list should be #ofo_account_doc_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_account_doc_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_ACCOUNTS_DOC" ));
 }
 
 /**
@@ -2654,13 +2654,19 @@ iexportable_export_default( ofaIExportable *exportable )
 		count += ofo_account_archive_get_count( account );
 		count += ofo_account_doc_get_count( account );
 	}
-	ofa_iexportable_set_count( exportable, count );
+	ofa_iexportable_set_count( exportable, count+2 );
 
-	/* add a version line at the very beginning of the file */
-	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, ACCOUNT_EXPORT_VERSION );
+	/* add version lines at the very beginning of the file */
+	str1 = g_strdup_printf( "0%c0%cVersion", field_sep, field_sep );
 	ok = ofa_iexportable_append_line( exportable, str1 );
 	g_free( str1 );
+	if( ok ){
+		str1 = g_strdup_printf( "1%c0%c%u", field_sep, field_sep, ACCOUNT_EXPORT_VERSION );
+		ok = ofa_iexportable_append_line( exportable, str1 );
+		g_free( str1 );
+	}
 
+	/* export headers */
 	if( ok ){
 		/* add new ofsBoxDef array at the end of the list */
 		ok = ofa_iexportable_append_headers( exportable,
@@ -2674,7 +2680,7 @@ iexportable_export_default( ofaIExportable *exportable )
 		cur_code = ofo_account_get_currency( account );
 		currency = my_strlen( cur_code ) ? ofo_currency_get_by_code( getter, cur_code ) : NULL;
 		str1 = ofa_box_csv_get_line( OFO_BASE( account )->prot->fields, stformat, currency );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
+		str2 = g_strdup_printf( "1%c1%c%s", field_sep, field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str1 );
@@ -2683,7 +2689,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( itc=priv->archives ; itc && ok ; itc=itc->next ){
 			str1 = ofa_box_csv_get_line( itc->data, stformat, currency );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c2%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );
@@ -2691,7 +2697,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
 			str1 = ofa_box_csv_get_line( itd->data, stformat, currency );
-			str2 = g_strdup_printf( "3%c%s", field_sep, str1 );
+			str2 = g_strdup_printf( "1%c3%c%s", field_sep, field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str1 );

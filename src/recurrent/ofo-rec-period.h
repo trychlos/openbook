@@ -85,58 +85,62 @@ typedef struct {
  */
 typedef void (*RecPeriodEnumBetweenCb)( const GDate *date, void *user_data );
 
-GType           ofo_rec_period_get_type              ( void ) G_GNUC_CONST;
+GType           ofo_rec_period_get_type                 ( void ) G_GNUC_CONST;
 
-GList          *ofo_rec_period_get_dataset           ( ofaIGetter *getter );
-#define         ofo_rec_period_free_dataset( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref ))
+GList          *ofo_rec_period_get_dataset              ( ofaIGetter *getter );
+#define         ofo_rec_period_free_dataset( L )        ( g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref ))
 
-ofoRecPeriod   *ofo_rec_period_get_by_id             ( ofaIGetter *getter, const gchar *id );
+ofoRecPeriod   *ofo_rec_period_get_by_id                ( ofaIGetter *getter, const gchar *id );
 
-ofoRecPeriod   *ofo_rec_period_new                   ( ofaIGetter *getter );
+ofoRecPeriod   *ofo_rec_period_new                      ( ofaIGetter *getter );
 
-const gchar    *ofo_rec_period_get_id                ( ofoRecPeriod *period );
-guint           ofo_rec_period_get_order             ( ofoRecPeriod *period );
-const gchar    *ofo_rec_period_get_label             ( ofoRecPeriod *period );
-const gchar    *ofo_rec_period_get_notes             ( ofoRecPeriod *period );
-const gchar    *ofo_rec_period_get_upd_user          ( ofoRecPeriod *period );
-const GTimeVal *ofo_rec_period_get_upd_stamp         ( ofoRecPeriod *period );
+const gchar    *ofo_rec_period_get_id                   ( ofoRecPeriod *period );
+guint           ofo_rec_period_get_order                ( ofoRecPeriod *period );
+const gchar    *ofo_rec_period_get_label                ( ofoRecPeriod *period );
+const gchar    *ofo_rec_period_get_notes                ( ofoRecPeriod *period );
+const gchar    *ofo_rec_period_get_upd_user             ( ofoRecPeriod *period );
+const GTimeVal *ofo_rec_period_get_upd_stamp            ( ofoRecPeriod *period );
 
-guint           ofo_rec_period_detail_get_count      ( ofoRecPeriod *period );
-gint            ofo_rec_period_detail_get_by_id      ( ofoRecPeriod *period, ofxCounter det_id );
-ofxCounter      ofo_rec_period_detail_get_id         ( ofoRecPeriod *period, guint idx );
-guint           ofo_rec_period_detail_get_order      ( ofoRecPeriod *period, guint idx );
-guint           ofo_rec_period_detail_get_number     ( ofoRecPeriod *period, guint idx );
-guint           ofo_rec_period_detail_get_value      ( ofoRecPeriod *period, guint idx );
-const gchar    *ofo_rec_period_detail_get_label      ( ofoRecPeriod *period, guint idx );
+gboolean        ofo_rec_period_is_valid_data            ( const gchar *label, gchar **msgerr );
 
-gboolean        ofo_rec_period_is_valid_data         ( const gchar *label, gchar **msgerr );
+gboolean        ofo_rec_period_is_deletable             ( ofoRecPeriod *period );
 
-gboolean        ofo_rec_period_is_deletable          ( ofoRecPeriod *period );
-
-guint           ofo_rec_period_doc_get_count         ( ofoRecPeriod *period );
-
-void            ofo_rec_period_enum_between          ( ofoRecPeriod *period,
+void            ofo_rec_period_enum_between             ( ofoRecPeriod *period,
 															ofxCounter detail_id,
 															const GDate *begin, const GDate *end,
 															RecPeriodEnumBetweenCb cb, void *user_data );
 
-void            ofo_rec_period_set_id                ( ofoRecPeriod *period, const gchar *id );
-void            ofo_rec_period_set_order             ( ofoRecPeriod *period, guint order );
-void            ofo_rec_period_set_label             ( ofoRecPeriod *period, const gchar *label );
-void            ofo_rec_period_set_notes             ( ofoRecPeriod *period, const gchar *notes );
+void            ofo_rec_period_set_id                   ( ofoRecPeriod *period, const gchar *id );
+void            ofo_rec_period_set_order                ( ofoRecPeriod *period, guint order );
+void            ofo_rec_period_set_label                ( ofoRecPeriod *period, const gchar *label );
+void            ofo_rec_period_set_notes                ( ofoRecPeriod *period, const gchar *notes );
 
-void            ofo_rec_period_free_detail_all       ( ofoRecPeriod *period );
-void            ofo_rec_period_add_detail            ( ofoRecPeriod *period, guint order, const gchar *label, guint number, guint value );
+guint           ofo_rec_period_detail_get_count         ( ofoRecPeriod *period );
+gint            ofo_rec_period_detail_get_by_id         ( ofoRecPeriod *period, ofxCounter det_id );
+ofxCounter      ofo_rec_period_detail_get_id            ( ofoRecPeriod *period, guint idx );
+guint           ofo_rec_period_detail_get_order         ( ofoRecPeriod *period, guint idx );
+guint           ofo_rec_period_detail_get_number        ( ofoRecPeriod *period, guint idx );
+guint           ofo_rec_period_detail_get_value         ( ofoRecPeriod *period, guint idx );
+const gchar    *ofo_rec_period_detail_get_label         ( ofoRecPeriod *period, guint idx );
 
-GList          *ofo_rec_period_get_det_orphans       ( ofaIGetter *getter );
-#define         ofo_rec_period_free_det_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+void            ofo_rec_period_detail_reset             ( ofoRecPeriod *period );
+void            ofo_rec_period_detail_add               ( ofoRecPeriod *period,
+															guint order,
+															const gchar *label,
+															guint number,
+															guint value );
 
-GList          *ofo_rec_period_get_doc_orphans       ( ofaIGetter *getter );
-#define         ofo_rec_period_free_doc_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+GList          *ofo_rec_period_detail_get_orphans       ( ofaIGetter *getter );
+#define         ofo_rec_period_detail_free_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
-gboolean        ofo_rec_period_insert                ( ofoRecPeriod *period );
-gboolean        ofo_rec_period_update                ( ofoRecPeriod *period );
-gboolean        ofo_rec_period_delete                ( ofoRecPeriod *period );
+guint           ofo_rec_period_doc_get_count            ( ofoRecPeriod *period );
+
+GList          *ofo_rec_period_doc_get_orphans          ( ofaIGetter *getter );
+#define         ofo_rec_period_doc_free_orphans( L )    ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+
+gboolean        ofo_rec_period_insert                   ( ofoRecPeriod *period );
+gboolean        ofo_rec_period_update                   ( ofoRecPeriod *period );
+gboolean        ofo_rec_period_delete                   ( ofoRecPeriod *period );
 
 G_END_DECLS
 

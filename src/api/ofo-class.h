@@ -87,14 +87,14 @@ gboolean        ofo_class_is_valid_number       ( gint number );
 gboolean        ofo_class_is_valid_label        ( const gchar *label );
 gboolean        ofo_class_is_deletable          ( const ofoClass *class );
 
-guint           ofo_class_doc_get_count         ( ofoClass *class );
-
 void            ofo_class_set_number            ( ofoClass *class, gint number );
 void            ofo_class_set_label             ( ofoClass *class, const gchar *label );
 void            ofo_class_set_notes             ( ofoClass *class, const gchar *notes );
 
-GList          *ofo_class_get_doc_orphans       ( ofaIGetter *getter );
-#define         ofo_class_free_doc_orphans( L ) ( g_list_free( L ))
+guint           ofo_class_doc_get_count         ( ofoClass *class );
+
+GList          *ofo_class_doc_get_orphans       ( ofaIGetter *getter );
+#define         ofo_class_doc_free_orphans( L ) ( g_list_free( L ))
 
 gboolean        ofo_class_insert                ( ofoClass *class );
 gboolean        ofo_class_update                ( ofoClass *class, gint prev_id );

@@ -303,7 +303,7 @@ iwindow_init( myIWindow *instance )
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 
 	key = g_strdup_printf( "%s-%d",
-				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_get_detail_count( priv->ope_template ));
+				G_OBJECT_TYPE_NAME( instance ), ofo_ope_template_detail_get_count( priv->ope_template ));
 	my_iwindow_set_geometry_key( instance, key );
 	g_free( key );
 
@@ -540,7 +540,7 @@ init_detail( ofaOpeTemplateProperties *self )
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
 			TRUE, priv->is_writable, DET_N_COLUMNS );
 
-	count = ofo_ope_template_get_detail_count( priv->ope_template );
+	count = ofo_ope_template_detail_get_count( priv->ope_template );
 	for( i=1 ; i<=count ; ++i ){
 		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ), NULL );
 	}
@@ -698,7 +698,7 @@ set_detail_values( ofaOpeTemplateProperties *self, guint row )
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_COMMENT, row ));
-	str = ofo_ope_template_get_detail_comment( priv->ope_template, row-1 );
+	str = ofo_ope_template_detail_get_comment( priv->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
 
 	pam_row = ofo_ope_template_get_pam_row( priv->ope_template );
@@ -706,32 +706,32 @@ set_detail_values( ofaOpeTemplateProperties *self, guint row )
 	gtk_toggle_button_set_active( toggle, 1+pam_row == row );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_ACCOUNT, row ));
-	str = ofo_ope_template_get_detail_account( priv->ope_template, row-1 );
+	str = ofo_ope_template_detail_get_account( priv->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
 
 	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_ACCOUNT_LOCKED, row ));
-	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_account_locked( priv->ope_template, row-1 ));
+	gtk_toggle_button_set_active( toggle, ofo_ope_template_detail_get_account_locked( priv->ope_template, row-1 ));
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_LABEL, row ));
-	str = ofo_ope_template_get_detail_label( priv->ope_template, row-1 );
+	str = ofo_ope_template_detail_get_label( priv->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
 
 	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_LABEL_LOCKED, row ));
-	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_label_locked( priv->ope_template, row-1 ));
+	gtk_toggle_button_set_active( toggle, ofo_ope_template_detail_get_label_locked( priv->ope_template, row-1 ));
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_DEBIT, row ));
-	str = ofo_ope_template_get_detail_debit( priv->ope_template, row-1 );
+	str = ofo_ope_template_detail_get_debit( priv->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
 
 	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_DEBIT_LOCKED, row ));
-	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_debit_locked( priv->ope_template, row-1 ));
+	gtk_toggle_button_set_active( toggle, ofo_ope_template_detail_get_debit_locked( priv->ope_template, row-1 ));
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_CREDIT, row ));
-	str = ofo_ope_template_get_detail_credit( priv->ope_template, row-1 );
+	str = ofo_ope_template_detail_get_credit( priv->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
 
 	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_CREDIT_LOCKED, row ));
-	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_credit_locked( priv->ope_template, row-1 ));
+	gtk_toggle_button_set_active( toggle, ofo_ope_template_detail_get_credit_locked( priv->ope_template, row-1 ));
 }
 
 static void
@@ -959,7 +959,7 @@ do_update( ofaOpeTemplateProperties *self, gchar **msgerr )
 	ofo_ope_template_set_ref_locked( priv->ope_template, priv->ref_locked );
 	my_utils_container_notes_get( GTK_WINDOW( self ), ope_template );
 
-	ofo_ope_template_free_detail_all( priv->ope_template );
+	ofo_ope_template_detail_reset( priv->ope_template );
 	count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
 	pam_row = -1;
 	for( i=1 ; i<=count ; ++i ){
@@ -1028,7 +1028,7 @@ get_detail_list( ofaOpeTemplateProperties *self, gint row, gboolean update )
 	credit_locked = gtk_toggle_button_get_active( toggle );
 
 	if( update ){
-		ofo_ope_template_add_detail( priv->ope_template,
+		ofo_ope_template_detail_add( priv->ope_template,
 					comment,
 					account, account_locked,
 					label, label_locked,
