@@ -63,6 +63,10 @@ typedef struct {
 		gboolean with_headers;
 		gint     count_headers;
 	} h;
+
+	/* an user-updatable bitfield
+	 */
+	guint        updatable;
 }
 	ofaStreamFormatPrivate;
 
@@ -149,6 +153,7 @@ ofa_stream_format_init( ofaStreamFormat *self )
 	priv = ofa_stream_format_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->updatable = OFA_SFHAS_ALL;
 }
 
 static void
@@ -733,9 +738,58 @@ ofa_stream_format_get_headers_count( ofaStreamFormat *format )
 	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
-	g_return_val_if_fail( priv->mode == OFA_SFMODE_IMPORT, FALSE );
+	g_return_val_if_fail( priv->mode == OFA_SFMODE_IMPORT, 0 );
 
 	return( priv->h.count_headers );
+}
+
+/**
+ * ofa_stream_format_get_updatable:
+ * @format: this #ofaStreamFormat instance.
+ * @field: the #ofeSFHas identifier of the field;
+ *  @field must identify one field, i.e. it cannot be OFA_SFHAS_ALL.
+ *
+ * Returns: %TRUE if the @field is user-updatable.
+ */
+gboolean
+ofa_stream_format_get_updatable( ofaStreamFormat *format, ofeSFHas field )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), FALSE );
+
+	priv = ofa_stream_format_get_instance_private( format );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+	g_return_val_if_fail( field != OFA_SFHAS_ALL, FALSE );
+
+	return( priv->updatable & field );
+}
+
+/**
+ * ofa_stream_format_set_updatable:
+ * @format: this #ofaStreamFormat instance.
+ * @field: the #ofeSFHas identifier of the field.
+ * @updatable: the bitfield to be set.
+ *
+ * Set the @updatable bitfield.
+ *
+ * This function replace all the current bitfield with the provided one.
+ * It is up to the caller to say which field is updatable, and which is
+ * not, and to provide the ad-hoc @updatable bitfield.
+ */
+void
+ofa_stream_format_set_updatable( ofaStreamFormat *format, ofeSFHas field, guint updatable )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_if_fail( format && OFA_IS_STREAM_FORMAT( format ));
+
+	priv = ofa_stream_format_get_instance_private( format );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->updatable = updatable;
 }
 
 /**

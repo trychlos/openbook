@@ -33,7 +33,7 @@
  * A convenience class which manages the format to be used on input/output
  * streams.
  *
- * File formats are named..
+ * File formats are identified by their name and their mode.
  *
  * Import and export assistants may save the used stream format using
  * the data type class name as the user-provided name.
@@ -51,6 +51,9 @@
  * - the user-provided name, which defaults to 'Default'
  * - the mode associated to the format 'Import' or 'Export'
  * - a 'Format suffix.
+ *
+ * The code which defines a stream format may also define which fields
+ * are user-updatable.
  */
 
 #include "my/my-date.h"
@@ -91,6 +94,7 @@ typedef struct {
 
 /**
  * ofeSFMode:
+ *
  * The destination of the file format:
  * @OFA_SFMODE_EXPORT: file format for export, with headers indicator
  * @OFA_SFMODE_IMPORT: file format for import, with count of headers
@@ -102,15 +106,22 @@ typedef enum {
 	ofeSFMode;
 
 /**
+ * ofeSFHas:
+ *
  * Whether this stream format has which indicators.
+ *
+ * This same enumerator is also used to define which fields are user-
+ * updatable.
  */
 typedef enum {
-	OFA_SFHAS_CHARMAP     = 1 << 0,
-	OFA_SFHAS_DATEFMT     = 1 << 1,
-	OFA_SFHAS_THOUSANDSEP = 1 << 2,
-	OFA_SFHAS_DECIMALSEP  = 1 << 3,
-	OFA_SFHAS_FIELDSEP    = 1 << 4,
-	OFA_SFHAS_STRDELIM    = 1 << 5,
+	OFA_SFHAS_NAME        = 1 << 0,
+	OFA_SFHAS_MODE        = 1 << 1,
+	OFA_SFHAS_CHARMAP     = 1 << 2,
+	OFA_SFHAS_DATEFMT     = 1 << 3,
+	OFA_SFHAS_THOUSANDSEP = 1 << 4,
+	OFA_SFHAS_DECIMALSEP  = 1 << 5,
+	OFA_SFHAS_FIELDSEP    = 1 << 6,
+	OFA_SFHAS_STRDELIM    = 1 << 7,
 	OFA_SFHAS_ALL         = 0xffff,
 }
 	ofeSFHas;
@@ -155,6 +166,13 @@ gchar            ofa_stream_format_get_string_delim  ( ofaStreamFormat *format )
 
 gboolean         ofa_stream_format_get_with_headers  ( ofaStreamFormat *format );
 gint             ofa_stream_format_get_headers_count ( ofaStreamFormat *format );
+
+gboolean         ofa_stream_format_get_updatable     ( ofaStreamFormat *format,
+															ofeSFHas field );
+
+void             ofa_stream_format_set_updatable     ( ofaStreamFormat *format,
+															ofeSFHas field,
+															guint updatable );
 
 void             ofa_stream_format_set               ( ofaStreamFormat *format,
 															gboolean has_charmap, const gchar *charmap,
