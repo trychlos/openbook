@@ -64,21 +64,15 @@ typedef struct {
 }
 	ofaStreamFormatBinClass;
 
-GType               ofa_stream_format_bin_get_type          ( void ) G_GNUC_CONST;
+GType               ofa_stream_format_bin_get_type     ( void ) G_GNUC_CONST;
 
-ofaStreamFormatBin *ofa_stream_format_bin_new               ( ofaStreamFormat *format );
+ofaStreamFormatBin *ofa_stream_format_bin_new          ( ofaStreamFormat *format );
 
-void                ofa_stream_format_bin_set_name_sensitive( ofaStreamFormatBin *bin,
-																	gboolean sensitive );
+void                ofa_stream_format_bin_set_format   ( ofaStreamFormatBin *bin,
+															ofaStreamFormat *format );
 
-void                ofa_stream_format_bin_set_mode_sensitive( ofaStreamFormatBin *bin,
-																	gboolean sensitive );
-
-void                ofa_stream_format_bin_set_format        ( ofaStreamFormatBin *bin,
-																ofaStreamFormat *format );
-
-void                ofa_stream_format_bin_set_updatable     ( ofaStreamFormatBin *bin,
-																gboolean updatable );
+void                ofa_stream_format_bin_set_updatable( ofaStreamFormatBin *bin,
+															gboolean updatable );
 
 G_END_DECLS
 

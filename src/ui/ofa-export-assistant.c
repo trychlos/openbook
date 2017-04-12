@@ -94,7 +94,7 @@ typedef struct {
 	 */
 	GtkWidget            *p2_datatype;
 	GtkWidget            *p2_format_combo;
-	ofaStreamFormat      *p2_export_settings;
+	ofaStreamFormat      *p2_stformat;
 	ofaStreamFormatBin   *p2_settings_prefs;
 	GtkWidget            *p2_message;
 	gchar                *p2_specific_id;
@@ -294,7 +294,7 @@ export_assistant_dispose( GObject *instance )
 		/* unref object members here */
 
 		g_list_free( priv->p1_exportables );
-		g_clear_object( &priv->p2_export_settings );
+		g_clear_object( &priv->p2_stformat );
 
 		if( priv->p1_selected_btn ){
 			exportable = ( ofaIExportable * ) g_object_get_data( G_OBJECT( priv->p1_selected_btn ), DATA_TYPE_INDEX );
@@ -325,7 +325,7 @@ ofa_export_assistant_init( ofaExportAssistant *self )
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->p1_exportables = NULL;
-	priv->p2_export_settings = NULL;
+	priv->p2_stformat = NULL;
 	priv->p3_output_file_uri = NULL;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
@@ -612,7 +612,6 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p2_settings_prefs = ofa_stream_format_bin_new( NULL );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_settings_prefs ));
-	ofa_stream_format_bin_set_mode_sensitive( priv->p2_settings_prefs, FALSE );
 
 	g_signal_connect( priv->p2_settings_prefs, "ofa-changed", G_CALLBACK( p2_on_settings_changed ), self );
 
@@ -697,9 +696,10 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 		found_key = priv->p1_selected_class;
 	}
 
-	g_clear_object( &priv->p2_export_settings );
-	priv->p2_export_settings = ofa_stream_format_new( priv->getter, found_key, OFA_SFMODE_EXPORT );
-	ofa_stream_format_bin_set_format( priv->p2_settings_prefs, priv->p2_export_settings );
+	g_clear_object( &priv->p2_stformat );
+	priv->p2_stformat = ofa_stream_format_new( priv->getter, found_key, OFA_SFMODE_EXPORT );
+	ofa_stream_format_set_updatable( priv->p2_stformat, OFA_SFHAS_MODE, FALSE );
+	ofa_stream_format_bin_set_format( priv->p2_settings_prefs, priv->p2_stformat );
 
 	p2_check_for_complete( self );
 }
@@ -821,7 +821,7 @@ p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	/* stream format */
 	my_ibin_apply( MY_IBIN( priv->p2_settings_prefs ));
 	g_free( priv->p2_stream_format_name );
-	priv->p2_stream_format_name = g_strdup( ofa_stream_format_get_name( priv->p2_export_settings ));
+	priv->p2_stream_format_name = g_strdup( ofa_stream_format_get_name( priv->p2_stformat ));
 }
 
 /*
@@ -1111,7 +1111,7 @@ p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	my_style_add( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ), priv->p2_specific_label );
 
-	ofa_stream_format_disp_set_format( priv->p4_format, priv->p2_export_settings );
+	ofa_stream_format_disp_set_format( priv->p4_format, priv->p2_stformat );
 
 	complete = ( my_strlen( priv->p3_output_file_uri ) > 0 );
 
@@ -1183,7 +1183,7 @@ p5_export_data( ofaExportAssistant *self )
 	/* first, export */
 	ok = ofa_iexportable_export_to_uri(
 			priv->p5_base, priv->p3_output_file_uri,
-			priv->p2_specific_id, priv->p2_export_settings, priv->getter, MY_IPROGRESS( self ));
+			priv->p2_specific_id, priv->p2_stformat, priv->getter, MY_IPROGRESS( self ));
 
 	/* then display the result */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-label" );

@@ -636,6 +636,8 @@ get_default_stream_format( const ofaImporterTxtBourso *self, ofaIGetter *getter 
 			TRUE,  MY_CHAR_DQUOTE,			/* double quote string delim */
 			0 );							/* no header */
 
+	ofa_stream_format_set_updatable( format, OFA_SFHAS_ALL, FALSE );
+
 	return( format );
 }
 

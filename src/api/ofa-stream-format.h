@@ -122,6 +122,7 @@ typedef enum {
 	OFA_SFHAS_DECIMALSEP  = 1 << 5,
 	OFA_SFHAS_FIELDSEP    = 1 << 6,
 	OFA_SFHAS_STRDELIM    = 1 << 7,
+	OFA_SFHAS_HEADERS     = 1 << 8,
 	OFA_SFHAS_ALL         = 0xffff,
 }
 	ofeSFHas;
@@ -172,7 +173,7 @@ gboolean         ofa_stream_format_get_updatable     ( ofaStreamFormat *format,
 
 void             ofa_stream_format_set_updatable     ( ofaStreamFormat *format,
 															ofeSFHas field,
-															guint updatable );
+															gboolean updatable );
 
 void             ofa_stream_format_set               ( ofaStreamFormat *format,
 															gboolean has_charmap, const gchar *charmap,

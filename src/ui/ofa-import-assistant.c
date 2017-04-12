@@ -160,7 +160,7 @@ typedef struct {
 	GtkWidget           *p5_empty;
 	GtkWidget           *p5_mode;
 	GtkWidget           *p5_stop;
-	ofaStreamFormat     *p5_import_settings;
+	ofaStreamFormat     *p5_stformat;
 	gboolean             p5_updatable;
 	ofaStreamFormatBin  *p5_settings_prefs;
 	GtkWidget           *p5_message;
@@ -345,7 +345,7 @@ import_assistant_dispose( GObject *instance )
 		/* unref object members here */
 		g_list_free( priv->p2_importables );
 		g_list_free_full( priv->p3_importers, ( GDestroyNotify ) g_object_unref );
-		g_clear_object( &priv->p5_import_settings );
+		g_clear_object( &priv->p5_stformat );
 	}
 
 	/* chain up to the parent class */
@@ -1216,24 +1216,24 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	/* stream format */
 	priv->p5_updatable = TRUE;
-	g_clear_object( &priv->p5_import_settings );
+	g_clear_object( &priv->p5_stformat );
 
-	priv->p5_import_settings = ofa_iimporter_get_default_format( priv->p3_importer_obj, priv->getter, &priv->p5_updatable );
+	priv->p5_stformat = ofa_iimporter_get_default_format( priv->p3_importer_obj, priv->getter, &priv->p5_updatable );
+	ofa_stream_format_set_updatable( priv->p5_stformat, OFA_SFHAS_MODE, FALSE );
 
-	if( !priv->p5_import_settings ){
+	if( !priv->p5_stformat ){
 		found_key = NULL;
 		class_name = g_type_name( priv->p2_selected_type );
 		if( ofa_stream_format_exists( priv->getter, class_name, OFA_SFMODE_IMPORT )){
 			found_key = class_name;
 		}
-		priv->p5_import_settings = ofa_stream_format_new( priv->getter, found_key, OFA_SFMODE_IMPORT );
+		priv->p5_stformat = ofa_stream_format_new( priv->getter, found_key, OFA_SFMODE_IMPORT );
 		if( !found_key ){
-			ofa_stream_format_set_name( priv->p5_import_settings, class_name );
+			ofa_stream_format_set_name( priv->p5_stformat, class_name );
 		}
 	}
 
-	ofa_stream_format_bin_set_format( priv->p5_settings_prefs, priv->p5_import_settings );
-	ofa_stream_format_bin_set_mode_sensitive( priv->p5_settings_prefs, FALSE );
+	ofa_stream_format_bin_set_format( priv->p5_settings_prefs, priv->p5_stformat );
 	ofa_stream_format_bin_set_updatable( priv->p5_settings_prefs, priv->p5_updatable );
 
 	p5_check_for_complete( self );
@@ -1381,7 +1381,7 @@ p6_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	my_style_add( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ), gettext( priv->p4_stop ? st_stop_true : st_stop_false ));
 
-	ofa_stream_format_disp_set_format( priv->p6_format, priv->p5_import_settings );
+	ofa_stream_format_disp_set_format( priv->p6_format, priv->p5_stformat );
 
 	complete = my_strlen( priv->p1_furi ) > 0;
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), complete );
@@ -1476,7 +1476,7 @@ p7_do_import( ofaImportAssistant *self )
 	parms.stop = priv->p4_stop;
 	parms.uri = priv->p1_furi;
 	parms.type = priv->p2_selected_type;
-	parms.format = priv->p5_import_settings;
+	parms.format = priv->p5_stformat;
 	parms.progress = MY_IPROGRESS( self );
 
 	text = NULL;

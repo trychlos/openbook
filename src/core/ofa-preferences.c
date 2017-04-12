@@ -663,7 +663,7 @@ init_export_page( ofaPreferences *self )
 	ofaPreferencesPrivate *priv;
 	GtkWidget *target, *label;
 	GtkSizeGroup *group, *group_bin;
-	ofaStreamFormat *format;
+	ofaStreamFormat *stformat;
 	const gchar *cstr;
 
 	priv = ofa_preferences_get_instance_private( self );
@@ -673,15 +673,15 @@ init_export_page( ofaPreferences *self )
 	target = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-export-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	format = ofa_stream_format_new( priv->getter, NULL, OFA_SFMODE_EXPORT );
-	priv->export_settings = ofa_stream_format_bin_new( format );
-	g_object_unref( format );
+	stformat = ofa_stream_format_new( priv->getter, NULL, OFA_SFMODE_EXPORT );
+	ofa_stream_format_set_updatable( stformat, OFA_SFHAS_NAME, FALSE );
+	ofa_stream_format_set_updatable( stformat, OFA_SFHAS_MODE, FALSE );
+	priv->export_settings = ofa_stream_format_bin_new( stformat );
+	g_object_unref( stformat );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->export_settings ));
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->export_settings ), 0 ))){
 		my_utils_size_group_add_size_group( group, group_bin );
 	}
-	ofa_stream_format_bin_set_name_sensitive( priv->export_settings, FALSE );
-	ofa_stream_format_bin_set_mode_sensitive( priv->export_settings, FALSE );
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p52-folder" ));
 	cstr = ofa_prefs_export_get_default_folder( priv->getter );
@@ -702,20 +702,19 @@ init_import_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkWidget *target;
-	ofaStreamFormat *settings;
+	ofaStreamFormat *stformat;
 
 	priv = ofa_preferences_get_instance_private( self );
 
 	target = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-import-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	settings = ofa_stream_format_new( priv->getter, NULL, OFA_SFMODE_IMPORT );
-	priv->import_settings = ofa_stream_format_bin_new( settings );
-	g_object_unref( settings );
+	stformat = ofa_stream_format_new( priv->getter, NULL, OFA_SFMODE_IMPORT );
+	ofa_stream_format_set_updatable( stformat, OFA_SFHAS_NAME, FALSE );
+	ofa_stream_format_set_updatable( stformat, OFA_SFHAS_MODE, FALSE );
+	priv->import_settings = ofa_stream_format_bin_new( stformat );
+	g_object_unref( stformat );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->import_settings ));
-
-	ofa_stream_format_bin_set_name_sensitive( priv->import_settings, FALSE );
-	ofa_stream_format_bin_set_mode_sensitive( priv->import_settings, FALSE );
 }
 
 static gboolean

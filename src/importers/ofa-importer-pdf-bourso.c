@@ -847,6 +847,8 @@ get_default_stream_format( const ofaImporterPdfBourso *self, ofaIGetter *getter 
 			FALSE, MY_CHAR_ZERO,			/* no string delim */
 			0 );							/* no header */
 
+	ofa_stream_format_set_updatable( format, OFA_SFHAS_ALL, FALSE );
+
 	return( format );
 }
 

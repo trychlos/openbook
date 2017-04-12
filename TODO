@@ -91,6 +91,7 @@
      2015- 1- 8 opened back as doesn't work
 
  461 2014-11-24 ExportAssistant: implement 'on_new_profile'
+     2017- 4-12 id. on import assistant
 
  462 2014-11-26 move ofoBat/ofoBatLine to ofaBoxed
      2015- 1- 5 really only required when ofoBat/ofoBatLine will implement
@@ -305,7 +306,10 @@
 
 1454 2017- 4-12 rate: have validity and doc orphans
 
-1455
+1455 2017- 4-12 when importing the default accounts chart on new dossier:
+                review the source file (does not fit the new table format)
+
+1456
 
 -----------------------------------------------------------------------
  DONE

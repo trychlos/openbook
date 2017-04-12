@@ -49,7 +49,7 @@ typedef struct {
 	 */
 	gchar       *name;
 	ofeSFMode    mode;
-	gint         indicators;
+	gint         indicators;			/* has field indicators */
 
 	/* runtime data
 	 */
@@ -770,16 +770,12 @@ ofa_stream_format_get_updatable( ofaStreamFormat *format, ofeSFHas field )
  * ofa_stream_format_set_updatable:
  * @format: this #ofaStreamFormat instance.
  * @field: the #ofeSFHas identifier of the field.
- * @updatable: the bitfield to be set.
+ * @updatable: whether the @field is updatable.
  *
  * Set the @updatable bitfield.
- *
- * This function replace all the current bitfield with the provided one.
- * It is up to the caller to say which field is updatable, and which is
- * not, and to provide the ad-hoc @updatable bitfield.
  */
 void
-ofa_stream_format_set_updatable( ofaStreamFormat *format, ofeSFHas field, guint updatable )
+ofa_stream_format_set_updatable( ofaStreamFormat *format, ofeSFHas field, gboolean updatable )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -789,7 +785,11 @@ ofa_stream_format_set_updatable( ofaStreamFormat *format, ofeSFHas field, guint 
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->updatable = updatable;
+	priv->updatable &= ~field;
+
+	if( updatable ){
+		priv->updatable |= field;
+	}
 }
 
 /**

@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-char.h"
 #include "my/my-iident.h"
 #include "my/my-utils.h"
 
@@ -40,10 +41,11 @@
 
 static guint st_initializations = 0;	/* interface initialization count */
 
-static GType register_type( void );
-static void  interface_base_init( ofaIImporterInterface *klass );
-static void  interface_base_finalize( ofaIImporterInterface *klass );
-static void  free_fields( GSList *fields );
+static GType            register_type( void );
+static void             interface_base_init( ofaIImporterInterface *klass );
+static void             interface_base_finalize( ofaIImporterInterface *klass );
+static ofaStreamFormat *get_default_stream_format( ofaIGetter *getter );
+static void             free_fields( GSList *fields );
 
 /**
  * ofa_iimporter_get_type:
@@ -341,6 +343,7 @@ ofaStreamFormat *
 ofa_iimporter_get_default_format( const ofaIImporter *instance, ofaIGetter *getter, gboolean *is_user_modifiable )
 {
 	static const gchar *thisfn = "ofa_iimporter_get_default_format";
+	ofaStreamFormat *format;
 
 	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), NULL );
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
@@ -351,7 +354,31 @@ ofa_iimporter_get_default_format( const ofaIImporter *instance, ofaIGetter *gett
 
 	g_info( "%s: ofaIImporter's %s implementation does not provide 'get_default_format()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( NULL );
+
+	format = get_default_stream_format( getter );
+
+	return( format );
+}
+
+static ofaStreamFormat *
+get_default_stream_format( ofaIGetter *getter )
+{
+	ofaStreamFormat *format;
+
+	format = ofa_stream_format_new( getter, NULL, OFA_SFMODE_IMPORT );
+
+	ofa_stream_format_set( format,
+			TRUE,  "UTF-8",
+			TRUE,  MY_DATE_SQL,
+			FALSE, MY_CHAR_ZERO,
+			FALSE, MY_CHAR_COMMA,
+			FALSE, MY_CHAR_TAB,
+			FALSE, MY_CHAR_ZERO,
+			0 );
+
+	ofa_stream_format_set_updatable( format, OFA_SFHAS_ALL, TRUE );
+
+	return( format );
 }
 
 /**
