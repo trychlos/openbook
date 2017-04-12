@@ -208,14 +208,14 @@ static const ofsBoxDef st_doc_defs[] = {
 		{ 0 }
 };
 
-#define TABLES_COUNT                    2
+#define ENTRY_TABLES_COUNT              2
+#define ENTRY_EXPORT_VERSION            2
 
 typedef struct {
-	gboolean   import_settled;
+	gboolean  import_settled;
+	GList    *docs;
 }
 	ofoEntryPrivate;
-
-#define ENTRY_IE_FORMAT                 1
 
 /* manage the period indicator
  * - the identifier is from a public enum (easier for the code)
@@ -402,9 +402,14 @@ static void
 ofo_entry_init( ofoEntry *self )
 {
 	static const gchar *thisfn = "ofo_entry_init";
+	ofoEntryPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	priv = ofo_entry_get_instance_private( self );
+
+	priv->docs = NULL;
 }
 
 static void
@@ -1725,6 +1730,25 @@ ofo_entry_is_editable( const ofoEntry *entry )
 	return( editable );
 }
 
+/**
+ * ofo_entry_doc_get_count:
+ * @entry: this #ofoEntry object.
+ *
+ * Returns: the count of attached documents.
+ */
+guint
+ofo_entry_doc_get_count( ofoEntry *entry )
+{
+	ofoEntryPrivate *priv;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), 0 );
+	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, 0 );
+
+	priv = ofo_entry_get_instance_private( entry );
+
+	return( g_list_length( priv->docs ));
+}
+
 /*
  * entry_set_number:
  */
@@ -3018,6 +3042,8 @@ iexportable_get_formats( ofaIExportable *instance )
  * Starting from now, the added conciliation group comes just after this
  * version number, and the entry comes after. This let us add new fields
  * at the end of the entry.
+ *
+ * v0.70: the version number is now in the very first line (for now: 2).
  */
 static gboolean
 iexportable_export( ofaIExportable *exportable, const gchar *format_id )
@@ -3042,48 +3068,65 @@ iexportable_export_default( ofaIExportable *exportable )
 {
 	ofaIGetter *getter;
 	ofaStreamFormat *stformat;
-	GList *result, *it;
+	GList *dataset, *it, *itd;
 	gboolean ok, with_headers;
 	gchar field_sep;
 	gulong count;
-	gchar *str, *str2, *sdate, *suser, *sstamp;
+	gchar *str1, *str2, *sdate, *suser, *sstamp;
 	ofoConcil *concil;
 	const gchar *acc_id, *cur_code;
 	ofoAccount *account;
 	ofoCurrency *currency;
+	ofoEntry *entry;
+	ofoEntryPrivate *priv;
 
 	getter = ofa_iexportable_get_getter( exportable );
-	result = ofo_entry_get_dataset( getter );
+	dataset = ofo_entry_get_dataset( getter );
 
 	stformat = ofa_iexportable_get_stream_format( exportable );
 	with_headers = ofa_stream_format_get_with_headers( stformat );
 	field_sep = ofa_stream_format_get_field_sep( stformat );
 
-	count = ( gulong ) g_list_length( result );
+	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
-		count += TABLES_COUNT;
+		count += ENTRY_TABLES_COUNT;
+	}
+	for( it=dataset ; it ; it=it->next ){
+		entry = OFO_ENTRY( it->data );
+		count += ofo_entry_doc_get_count( entry );
 	}
 	ofa_iexportable_set_count( exportable, count );
 
-	if( with_headers ){
-		str = ofa_box_csv_get_header( st_boxed_defs, stformat );
-		str2 = g_strdup_printf( "%s%c%s%c%s%c%s%c%s",
-				"Version", field_sep,
-				"ConcilDval", field_sep, "ConcilUser", field_sep, "ConcilStamp", field_sep,
-				str );
+	/* add a version line at the very beginning of the file */
+	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, ENTRY_EXPORT_VERSION );
+	ok = ofa_iexportable_append_line( exportable, str1 );
+	g_free( str1 );
+
+	/* export a specific version of the headers */
+	if( ok && with_headers ){
+		str1 = ofa_box_csv_get_header( st_boxed_defs, stformat );
+		str2 = g_strdup_printf( "1%c%s%c%s%c%s%c%s",
+				field_sep, "ConcilDval",
+				field_sep, "ConcilUser",
+				field_sep, "ConcilStamp",
+				field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
-		g_free( str );
-
-		if( ok ){
-			/* add new ofsBoxDef array at the end of the list */
-			ok = ofa_iexportable_append_headers( exportable,
-						TABLES_COUNT-1, st_doc_defs );
-		}
+		g_free( str1 );
+	}
+	if( ok && with_headers ){
+		str1 = ofa_box_csv_get_header( st_doc_defs, stformat );
+		str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
+		g_free( str2 );
+		g_free( str1 );
 	}
 
-	for( it=result ; it ; it=it->next ){
-		acc_id = ofo_entry_get_account( OFO_ENTRY( it->data ));
+	/* export the dataset */
+	for( it=dataset ; it && ok ; it=it->next ){
+		entry = OFO_ENTRY( it->data );
+
+		acc_id = ofo_entry_get_account( entry );
 		g_return_val_if_fail( acc_id && my_strlen( acc_id ), FALSE );
 		account = ofo_account_get_by_number( getter, acc_id );
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
@@ -3091,25 +3134,33 @@ iexportable_export_default( ofaIExportable *exportable )
 		g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
 		currency = ofo_currency_get_by_code( getter, cur_code );
 		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, stformat, currency );
+		str1 = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, stformat, currency );
 
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ));
 		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
 		suser = g_strdup( concil ? ofo_concil_get_upd_user( concil ) : "" );
 		sstamp = concil ? my_stamp_to_str( ofo_concil_get_upd_stamp( concil ), MY_STAMP_YYMDHMS ) : g_strdup( "" );
 
-		str2 = g_strdup_printf( "%u%c%s%c%s%c%s%c%s",
-				ENTRY_IE_FORMAT, field_sep,
-				sdate, field_sep, suser, field_sep, sstamp, field_sep,
-				str );
+		str2 = g_strdup_printf( "1%c%s%c%s%c%s%c%s",
+				field_sep, sdate,
+				field_sep, suser,
+				field_sep, sstamp,
+				field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
-		g_free( str );
+		g_free( str1 );
 		g_free( sdate );
 		g_free( suser );
 		g_free( sstamp );
-		if( !ok ){
-			return( FALSE );
+
+		priv = ofo_entry_get_instance_private( entry );
+
+		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
+			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
+			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			ok = ofa_iexportable_append_line( exportable, str2 );
+			g_free( str2 );
+			g_free( str1 );
 		}
 	}
 
@@ -3584,7 +3635,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		format = atoi( cstr );
 
 		/* valid format >= 1 */
-		if( !my_date_is_valid( &date ) && format > 0 && format <= ENTRY_IE_FORMAT ){
+		if( !my_date_is_valid( &date ) && format > 0 && format <= ENTRY_EXPORT_VERSION ){
 
 			/* conciliation group */
 			iimportable_import_concil( importer, parms, entry, &itf );

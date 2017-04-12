@@ -209,6 +209,8 @@ GSList         *ofo_entry_get_currencies             ( ofaIGetter *getter );
 
 gboolean        ofo_entry_is_editable                ( const ofoEntry *entry );
 
+guint           ofo_entry_doc_get_count              ( ofoEntry *entry );
+
 void            ofo_entry_set_label                  ( ofoEntry *entry, const gchar *label );
 void            ofo_entry_set_deffect                ( ofoEntry *entry, const GDate *date );
 void            ofo_entry_set_dope                   ( ofoEntry *entry, const GDate *date );
