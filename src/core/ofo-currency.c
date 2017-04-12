@@ -122,7 +122,8 @@ static const ofsBoxDef st_doc_defs[] = {
 		{ 0 }
 };
 
-#define TABLES_COUNT                    2
+#define CURRENCY_TABLES_COUNT           2
+#define CURRENCY_EXPORT_VERSION         1
 
 typedef struct {
 	GList *docs;
@@ -936,7 +937,7 @@ iexportable_export_default( ofaIExportable *exportable )
 
 	count = ( gulong ) g_list_length( dataset );
 	if( ofa_stream_format_get_with_headers( stformat )){
-		count += TABLES_COUNT;
+		count += CURRENCY_TABLES_COUNT;
 	}
 	for( it=dataset ; it ; it=it->next ){
 		currency = OFO_CURRENCY( it->data );
@@ -944,10 +945,18 @@ iexportable_export_default( ofaIExportable *exportable )
 	}
 	ofa_iexportable_set_count( exportable, count );
 
-	/* add new ofsBoxDef array at the end of the list */
-	ok = ofa_iexportable_append_headers( exportable,
-				TABLES_COUNT, st_boxed_defs, st_doc_defs );
+	/* add a version line at the very beginning of the file */
+	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, CURRENCY_EXPORT_VERSION );
+	ok = ofa_iexportable_append_line( exportable, str1 );
+	g_free( str1 );
 
+	if( ok ){
+		/* add new ofsBoxDef array at the end of the list */
+		ok = ofa_iexportable_append_headers( exportable,
+					CURRENCY_TABLES_COUNT, st_boxed_defs, st_doc_defs );
+	}
+
+	/* export the dataset */
 	for( it=dataset ; it && ok ; it=it->next ){
 		currency = OFO_CURRENCY( it->data );
 
