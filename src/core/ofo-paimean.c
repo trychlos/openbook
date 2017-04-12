@@ -111,7 +111,8 @@ static const ofsBoxDef st_doc_defs[] = {
 		{ 0 }
 };
 
-#define TABLES_COUNT                    2
+#define PAIMEAN_TABLES_COUNT            2
+#define PAIMEAN_EXPORT_VERSION          1
 
 typedef struct {
 	GList *docs;
@@ -379,6 +380,25 @@ ofo_paimean_is_valid_data( const gchar *code, gchar **msgerr )
 		return( FALSE );
 	}
 	return( TRUE );
+}
+
+/**
+ * ofo_paimean_doc_get_count:
+ * @paimean: this #ofoClass instance.
+ *
+ * Returns the count of attached documents.
+ */
+guint
+ofo_paimean_doc_get_count( ofoPaimean *paimean )
+{
+	ofoPaimeanPrivate *priv;
+
+	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), 0 );
+	g_return_val_if_fail( !OFO_BASE( paimean )->prot->dispose_has_run, 0 );
+
+	priv = ofo_paimean_get_instance_private( paimean );
+
+	return( g_list_length( priv->docs ));
 }
 
 /**
@@ -834,30 +854,60 @@ iexportable_export_default( ofaIExportable *exportable )
 {
 	ofaIGetter *getter;
 	ofaStreamFormat *stformat;
-	GList *dataset, *it;
-	gchar *str;
+	GList *dataset, *it, *itd;
+	gchar *str1, *str2;
 	gboolean ok;
 	gulong count;
+	ofoPaimean *paimean;
+	ofoPaimeanPrivate *priv;
+	gchar field_sep;
 
 	getter = ofa_iexportable_get_getter( exportable );
 	dataset = ofo_paimean_get_dataset( getter );
 
 	stformat = ofa_iexportable_get_stream_format( exportable );
+	field_sep = ofa_stream_format_get_field_sep( stformat );
 
 	count = ( gulong ) g_list_length( dataset );
 	if( ofa_stream_format_get_with_headers( stformat )){
-		count += TABLES_COUNT;
+		count += PAIMEAN_TABLES_COUNT;
+	}
+	for( it=dataset ; it ; it=it->next ){
+		paimean = OFO_PAIMEAN( it->data );
+		count += ofo_paimean_doc_get_count( paimean );
 	}
 	ofa_iexportable_set_count( exportable, count );
 
-	/* add new ofsBoxDef array at the end of the list */
-	ok = ofa_iexportable_append_headers( exportable,
-				TABLES_COUNT, st_boxed_defs, st_doc_defs );
+	/* add a version line at the very beginning of the file */
+	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, PAIMEAN_EXPORT_VERSION );
+	ok = ofa_iexportable_append_line( exportable, str1 );
+	g_free( str1 );
 
+	if( ok ){
+		/* add new ofsBoxDef array at the end of the list */
+		ok = ofa_iexportable_append_headers( exportable,
+					PAIMEAN_TABLES_COUNT, st_boxed_defs, st_doc_defs );
+	}
+
+	/* export the dataset */
 	for( it=dataset ; it && ok ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, stformat, NULL );
-		ok = ofa_iexportable_append_line( exportable, str );
-		g_free( str );
+		paimean = OFO_PAIMEAN( it->data );
+
+		str1 = ofa_box_csv_get_line( OFO_BASE( paimean )->prot->fields, stformat, NULL );
+		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
+		g_free( str2 );
+		g_free( str1 );
+
+		priv = ofo_paimean_get_instance_private( paimean );
+
+		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
+			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
+			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			ok = ofa_iexportable_append_line( exportable, str2 );
+			g_free( str2 );
+			g_free( str1 );
+		}
 	}
 
 	return( ok );

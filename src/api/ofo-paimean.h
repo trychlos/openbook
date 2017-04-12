@@ -83,6 +83,8 @@ const GTimeVal *ofo_paimean_get_upd_stamp         ( const ofoPaimean *paimean );
 gboolean        ofo_paimean_is_deletable          ( const ofoPaimean *paimean );
 gboolean        ofo_paimean_is_valid_data         ( const gchar *code, gchar **msgerr );
 
+guint           ofo_paimean_doc_get_count         ( ofoPaimean *paimean );
+
 void            ofo_paimean_set_code              ( ofoPaimean *paimean, const gchar *code );
 void            ofo_paimean_set_label             ( ofoPaimean *paimean, const gchar *label );
 void            ofo_paimean_set_account           ( ofoPaimean *paimean, const gchar *account );
