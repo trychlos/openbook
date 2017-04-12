@@ -414,9 +414,9 @@ ofo_class_is_deletable( const ofoClass *class )
 
 /**
  * ofo_class_doc_get_count:
- * @class: this #ofoClass instance.
+ * @class: this #ofoClass object.
  *
- * Returns the count of attached documents.
+ * Returns: the count of attached documents.
  */
 guint
 ofo_class_doc_get_count( ofoClass *class )

@@ -101,6 +101,8 @@ ofxAmount       ofo_rate_get_rate_at_date  ( ofoRate *rate, const GDate *date );
 gboolean        ofo_rate_is_deletable      ( const ofoRate *rate );
 gboolean        ofo_rate_is_valid_data     ( const gchar *mnemo, const gchar *label, GList *validities, gchar **msgerr );
 
+guint           ofo_rate_doc_get_count     ( ofoRate *rate );
+
 void            ofo_rate_set_mnemo         ( ofoRate *rate, const gchar *number );
 void            ofo_rate_set_label         ( ofoRate *rate, const gchar *label );
 void            ofo_rate_set_notes         ( ofoRate *rate, const gchar *notes );
