@@ -2255,7 +2255,7 @@ iexportable_export_default( ofaIExportable *exportable )
 		}
 	}
 
-	return( TRUE );
+	return( ok );
 }
 
 /*

@@ -207,6 +207,8 @@ gboolean        ofo_ope_template_get_detail_debit_locked  ( ofoOpeTemplate *mode
 const gchar    *ofo_ope_template_get_detail_credit        ( ofoOpeTemplate *model, gint idx );
 gboolean        ofo_ope_template_get_detail_credit_locked ( ofoOpeTemplate *model, gint idx );
 
+guint           ofo_ope_template_doc_get_count            ( ofoOpeTemplate *model );
+
 void            ofo_ope_template_update_account           ( ofoOpeTemplate *model, const gchar *prev_id, const gchar *new_id );
 
 GList          *ofo_ope_template_get_det_orphans          ( ofaIGetter *getter );
