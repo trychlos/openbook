@@ -156,6 +156,8 @@ void            ofo_tva_form_boolean_free_all       ( ofoTVAForm *form );
 guint           ofo_tva_form_boolean_get_count      ( ofoTVAForm *form );
 const gchar    *ofo_tva_form_boolean_get_label      ( ofoTVAForm *form, guint idx );
 
+guint           ofo_tva_form_doc_get_count          ( ofoTVAForm *form );
+
 GList          *ofo_tva_form_get_bool_orphans       ( ofaIGetter *getter );
 #define         ofo_tva_form_free_bool_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
