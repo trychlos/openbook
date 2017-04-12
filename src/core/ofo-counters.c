@@ -58,14 +58,28 @@ typedef struct {
 }
 	ofoCountersPrivate;
 
-static const gchar *st_bat_id           = "last-bat-id";
-static const gchar *st_batline_id       = "last-batline-id";
-static const gchar *st_concil_id        = "last-conciliation-id";
-static const gchar *st_doc_id           = "last-document-id";
-static const gchar *st_entry_id         = "last-entry-id";
-static const gchar *st_ope_id           = "last-operation-id";
-static const gchar *st_settlement_id    = "last-settlement-id";
-static const gchar *st_tiers_id         = "last-tiers-id";
+/* known keys in alpha order */
+#define st_bat_id           "last-bat-id"
+#define st_batline_id       "last-batline-id"
+#define st_concil_id        "last-conciliation-id"
+#define st_doc_id           "last-document-id"
+#define st_entry_id         "last-entry-id"
+#define st_ope_id           "last-operation-id"
+#define st_settlement_id    "last-settlement-id"
+#define st_tiers_id         "last-tiers-id"
+
+/* list of known keys in alpha order */
+static const gchar *st_list[] = {
+		st_bat_id,
+		st_batline_id,
+		st_concil_id,
+		st_doc_id,
+		st_entry_id,
+		st_ope_id,
+		st_settlement_id,
+		st_tiers_id,
+		NULL
+};
 
 static void        read_counters( ofoCounters *self );
 static ofxCounter  read_counter_by_key( ofoCounters *self, ofaIDBConnect *connect, const gchar *key );
@@ -499,31 +513,77 @@ get_next_counter( ofaIGetter *getter, const gchar *key )
 
 /**
  * ofo_counters_get_count:
- * @getter: a #ofaIGetter instance.
  *
  * Returns: the count of defined internal identifiers.
  */
 guint
-ofo_counters_get_count( ofaIGetter *getter )
+ofo_counters_get_count( void )
 {
-	ofaHub *hub;
-	ofaIDBConnect *connect;
-	gchar *query;
-	gint result;
+	guint i;
+
+	for( i=0 ; st_list[i] ; ++ i )
+		;
+
+	return( i );
+}
+
+/**
+ * ofo_counters_get_key:
+ * @getter: a #ofaIGetter instance.
+ * idx: the index of the requested key, counted from zero.
+ *
+ * Returns: the key at @idx.
+ */
+const gchar *
+ofo_counters_get_key( ofaIGetter *getter, guint idx )
+{
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
+	return( st_list[idx] );
+}
+
+/**
+ * ofo_counters_get_last_value:
+ * @getter: a #ofaIGetter instance.
+ * idx: the index of the requested key, counted from zero.
+ *
+ * Returns: the value of the key at @idx.
+ */
+ofxCounter
+ofo_counters_get_last_value( ofaIGetter *getter, guint idx )
+{
+	static const gchar *thisfn = "ofo_counters_get_value";
+	const gchar *key;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
 
-	hub = ofa_igetter_get_hub( getter );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
+	key = ofo_counters_get_key( getter, idx );
 
-	connect = ofa_hub_get_connect( hub );
-	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), 0 );
+	if( !my_collate( key, st_bat_id )){
+		return( ofo_counters_get_last_bat_id( getter ));
 
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_DOSSIER_IDS "
-				"	WHERE DOS_ID=%u", DOSSIER_ROW_ID );
-	ofa_idbconnect_query_int( connect, query, &result, TRUE );
-	g_free( query );
+	} else if( !my_collate( key, st_batline_id )){
+		return( ofo_counters_get_last_batline_id( getter ));
 
-	return(( guint ) result );
+	} else if( !my_collate( key, st_concil_id )){
+		return( ofo_counters_get_last_concil_id( getter ));
+
+	} else if( !my_collate( key, st_doc_id )){
+		return( ofo_counters_get_last_doc_id( getter ));
+
+	} else if( !my_collate( key, st_entry_id )){
+		return( ofo_counters_get_last_entry_id( getter ));
+
+	} else if( !my_collate( key, st_ope_id )){
+		return( ofo_counters_get_last_ope_id( getter ));
+
+	} else if( !my_collate( key, st_settlement_id )){
+		return( ofo_counters_get_last_settlement_id( getter ));
+
+	} else if( !my_collate( key, st_tiers_id )){
+		return( ofo_counters_get_last_tiers_id( getter ));
+	}
+
+	g_warning( "%s: unknown or invalid index idx=%u", thisfn, idx );
+	return( 0 );
 }

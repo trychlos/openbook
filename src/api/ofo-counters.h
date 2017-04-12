@@ -102,7 +102,9 @@ ofxCounter   ofo_counters_get_next_settlement_id( ofaIGetter *getter );
 ofxCounter   ofo_counters_get_last_tiers_id     ( ofaIGetter *getter );
 ofxCounter   ofo_counters_get_next_tiers_id     ( ofaIGetter *getter );
 
-guint        ofo_counters_get_count             ( ofaIGetter *getter );
+guint        ofo_counters_get_count             ( void );
+const gchar *ofo_counters_get_key               ( ofaIGetter *getter, guint idx );
+ofxCounter   ofo_counters_get_last_value        ( ofaIGetter *getter, guint idx );
 
 G_END_DECLS
 

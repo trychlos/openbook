@@ -254,7 +254,8 @@ static const ofsBoxDef st_id_defs[] = {
 		{ 0 }
 };
 
-#define TABLES_COUNT                    5
+#define DOSSIER_TABLES_COUNT            5
+#define DOSSIER_EXPORT_VERSION          1
 
 typedef struct {
 	GList *cur_details;					/* a list of solde accounts per currency */
@@ -1779,6 +1780,7 @@ iexportable_export_default( ofaIExportable *exportable )
 	gboolean ok;
 	gulong count;
 	gchar field_sep;
+	guint counters_count, i;
 
 	getter = ofa_iexportable_get_getter( exportable );
 	hub = ofa_igetter_get_hub( getter );
@@ -1792,18 +1794,27 @@ iexportable_export_default( ofaIExportable *exportable )
 
 	count = 1;
 	if( ofa_stream_format_get_with_headers( stformat )){
-		count += TABLES_COUNT;
+		count += DOSSIER_TABLES_COUNT;
 	}
 	count += g_list_length( priv->cur_details );
 	count += ofo_dossier_doc_get_count( dossier );
 	count += ofo_dossier_prefs_get_count( dossier );
-	count += ofo_counters_get_count( getter );
+	counters_count = ofo_counters_get_count();
+	count += counters_count;
 	ofa_iexportable_set_count( exportable, count );
 
-	/* add new ofsBoxDef array at the end of the list */
-	ok = ofa_iexportable_append_headers( exportable,
-				TABLES_COUNT, st_boxed_defs, st_currency_defs, st_doc_defs, st_pref_defs, st_id_defs );
+	/* add a version line at the very beginning of the file */
+	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, DOSSIER_EXPORT_VERSION );
+	ok = ofa_iexportable_append_line( exportable, str1 );
+	g_free( str1 );
 
+	if( ok ){
+		/* add new ofsBoxDef array at the end of the list */
+		ok = ofa_iexportable_append_headers( exportable,
+					DOSSIER_TABLES_COUNT, st_boxed_defs, st_currency_defs, st_doc_defs, st_pref_defs, st_id_defs );
+	}
+
+	/* export the dataset */
 	if( ok ){
 		str1 = ofa_box_csv_get_line( OFO_BASE( dossier )->prot->fields, stformat, NULL );
 		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
@@ -1836,7 +1847,14 @@ iexportable_export_default( ofaIExportable *exportable )
 		g_free( str1 );
 	}
 
-	/* how to export counters ? */
+	for( i=0 ; i<counters_count ; ++i ){
+		str1 = g_strdup_printf( "5%c%u%c%s%c%lu",
+					field_sep, DOSSIER_ROW_ID,
+					field_sep, ofo_counters_get_key( getter, i ),
+					field_sep, ofo_counters_get_last_value( getter, i ));
+		ok = ofa_iexportable_append_line( exportable, str1 );
+		g_free( str1 );
+	}
 
 	return( ok );
 }
