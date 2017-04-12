@@ -91,6 +91,8 @@ gboolean           ofo_recurrent_model_get_is_enabled         ( const ofoRecurre
 gboolean           ofo_recurrent_model_is_deletable           ( const ofoRecurrentModel *model );
 gboolean           ofo_recurrent_model_is_valid_data          ( const gchar *mnemo, const gchar *label, const gchar *ope_template, ofoRecPeriod *period, ofxCounter detail, gchar **msgerr );
 
+guint              ofo_recurrent_model_doc_get_count          ( ofoRecurrentModel *model );
+
 void               ofo_recurrent_model_set_mnemo              ( ofoRecurrentModel *model, const gchar *mnemo );
 void               ofo_recurrent_model_set_label              ( ofoRecurrentModel *model, const gchar *label );
 void               ofo_recurrent_model_set_ope_template       ( ofoRecurrentModel *model, const gchar *ope_template );
