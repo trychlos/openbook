@@ -2583,7 +2583,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 
 	if( with_headers ){
 		str = ofa_box_csv_get_header( st_boxed_defs, settings );
-		ok = ofa_iexportable_set_line( exportable, str );
+		ok = ofa_iexportable_append_line( exportable, str );
 		g_free( str );
 		if( !ok ){
 			return( FALSE );
@@ -2599,7 +2599,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 		} else {
 			str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, NULL );
 		}
-		ok = ofa_iexportable_set_line( exportable, str );
+		ok = ofa_iexportable_append_line( exportable, str );
 		g_free( str );
 		if( !ok ){
 			return( FALSE );

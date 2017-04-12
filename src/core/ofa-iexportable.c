@@ -384,7 +384,7 @@ ofa_iexportable_set_count( ofaIExportable *exportable, gulong count )
 }
 
 /**
- * ofa_iexportable_set_line:
+ * ofa_iexportable_append_line:
  * @exportable: this #ofaIExportable instance.
  * @line: the line to be outputed, silently ignored if empty.
  *
@@ -398,7 +398,7 @@ ofa_iexportable_set_count( ofaIExportable *exportable, gulong count )
  * output stream.
  */
 gboolean
-ofa_iexportable_set_line( ofaIExportable *exportable, const gchar *line )
+ofa_iexportable_append_line( ofaIExportable *exportable, const gchar *line )
 {
 	sIExportable *sdata;
 	gchar *str, *converted, *msg, *str2;

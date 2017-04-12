@@ -2134,7 +2134,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	if( with_headers ){
 		str = ofa_box_csv_get_header( st_boxed_defs, settings );
 		str2 = g_strdup_printf( "1%c%s", field_sep, str );
-		ok = ofa_iexportable_set_line( exportable, str2 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
 		if( !ok ){
@@ -2143,7 +2143,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 
 		str = ofa_box_csv_get_header( st_balance_defs, settings );
 		str2 = g_strdup_printf( "2%c%s", field_sep, str );
-		ok = ofa_iexportable_set_line( exportable, str2 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
 		if( !ok ){
@@ -2154,7 +2154,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	for( it=dataset ; it ; it=it->next ){
 		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, NULL );
 		str2 = g_strdup_printf( "1%c%s", field_sep, str );
-		ok = ofa_iexportable_set_line( exportable, str2 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
 		if( !ok ){
@@ -2172,7 +2172,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 			str = ofa_box_csv_get_line( bal, settings, currency );
 			str2 = g_strdup_printf( "2%c%s", field_sep, str );
-			ok = ofa_iexportable_set_line( exportable, str2 );
+			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str );
 			if( !ok ){

@@ -3053,7 +3053,7 @@ iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *setting
 				"Version", field_sep,
 				"ConcilDval", field_sep, "ConcilUser", field_sep, "ConcilStamp", field_sep,
 				str );
-		ok = ofa_iexportable_set_line( exportable, str2 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
 		if( !ok ){
@@ -3081,7 +3081,7 @@ iexportable_export_default( ofaIExportable *exportable, ofaStreamFormat *setting
 				ENTRY_IE_FORMAT, field_sep,
 				sdate, field_sep, suser, field_sep, sstamp, field_sep,
 				str );
-		ok = ofa_iexportable_set_line( exportable, str2 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
 		g_free( sdate );
@@ -3188,7 +3188,7 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		g_string_append_printf( str, "%cRule", field_sep );
 		g_string_append_printf( str, "%cPeriod", field_sep );
 
-		ok = ofa_iexportable_set_line( exportable, str->str );
+		ok = ofa_iexportable_append_line( exportable, str->str );
 
 		g_string_free( str, TRUE );
 
@@ -3298,7 +3298,7 @@ iexportable_export_fec( ofaIExportable *exportable, ofaStreamFormat *settings, o
 		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_rule_get_dbms( rule ));
 		g_string_append_printf( str, "%c%s", field_sep, ofo_entry_period_get_dbms( period ));
 
-		ok = ofa_iexportable_set_line( exportable, str->str );
+		ok = ofa_iexportable_append_line( exportable, str->str );
 
 		g_string_free( str, TRUE );
 		g_free( sdope );

@@ -38,7 +38,7 @@
  *
  * The implementation should begin by counting and advertizing the
  * interface about the total count of lines it expects to output.
- * Then each call to #ofa_iexportable_set_line() method will increment
+ * Then each call to #ofa_iexportable_append_line() method will increment
  * the progress.
  */
 
@@ -187,7 +187,7 @@ gulong                ofa_iexportable_get_count                 ( ofaIExportable
 void                  ofa_iexportable_set_count                 ( ofaIExportable *exportable,
 																		gulong count );
 
-gboolean              ofa_iexportable_set_line                  ( ofaIExportable *exportable,
+gboolean              ofa_iexportable_append_line               ( ofaIExportable *exportable,
 																		const gchar *line );
 
 G_END_DECLS

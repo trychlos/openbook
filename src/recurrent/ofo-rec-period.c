@@ -1345,7 +1345,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	if( with_headers ){
 		str = ofa_box_csv_get_header( st_boxed_defs, settings );
 		str2 = g_strdup_printf( "1%c%s", field_sep, str );
-		ok = ofa_iexportable_set_line( exportable, str2 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
 		if( !ok ){
@@ -1354,7 +1354,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 
 		str = ofa_box_csv_get_header( st_detail_defs, settings );
 		str2 = g_strdup_printf( "2%c%s", field_sep, str );
-		ok = ofa_iexportable_set_line( exportable, str2 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
 		if( !ok ){
@@ -1365,7 +1365,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 	for( it=dataset ; it ; it=it->next ){
 		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings, NULL );
 		str2 = g_strdup_printf( "1%c%s", field_sep, str );
-		ok = ofa_iexportable_set_line( exportable, str2 );
+		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
 		if( !ok ){
@@ -1378,7 +1378,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id, ofaStrea
 		for( det=priv->details ; det ; det=det->next ){
 			str = ofa_box_csv_get_line( det->data, settings, NULL );
 			str2 = g_strdup_printf( "2%c%s", field_sep, str );
-			ok = ofa_iexportable_set_line( exportable, str2 );
+			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
 			g_free( str );
 			if( !ok ){
