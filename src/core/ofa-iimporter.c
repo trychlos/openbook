@@ -376,7 +376,7 @@ get_default_stream_format( ofaIGetter *getter )
 			FALSE, MY_CHAR_ZERO,
 			0 );
 
-	ofa_stream_format_set_updatable( format, OFA_SFHAS_ALL, TRUE );
+	ofa_stream_format_set_field_updatable( format, OFA_SFHAS_ALL, TRUE );
 
 	return( format );
 }

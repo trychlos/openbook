@@ -698,7 +698,7 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	g_clear_object( &priv->p2_stformat );
 	priv->p2_stformat = ofa_stream_format_new( priv->getter, found_key, OFA_SFMODE_EXPORT );
-	ofa_stream_format_set_updatable( priv->p2_stformat, OFA_SFHAS_MODE, FALSE );
+	ofa_stream_format_set_field_updatable( priv->p2_stformat, OFA_SFHAS_MODE, FALSE );
 	ofa_stream_format_bin_set_format( priv->p2_settings_prefs, priv->p2_stformat );
 
 	p2_check_for_complete( self );

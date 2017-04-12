@@ -599,7 +599,7 @@ encoding_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	allow = ofa_stream_format_get_updatable( priv->stformat, OFA_SFHAS_CHARMAP );
+	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_CHARMAP );
 	gtk_widget_set_sensitive( priv->encoding_combo, active && allow && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
@@ -647,7 +647,7 @@ date_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	allow = ofa_stream_format_get_updatable( priv->stformat, OFA_SFHAS_DATEFMT );
+	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_DATEFMT );
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->date_combo ), active && allow && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
@@ -695,7 +695,7 @@ thousand_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	allow = ofa_stream_format_get_updatable( priv->stformat, OFA_SFHAS_THOUSANDSEP );
+	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_THOUSANDSEP );
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->thousand_combo ), active && allow && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
@@ -743,7 +743,7 @@ decimal_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	allow = ofa_stream_format_get_updatable( priv->stformat, OFA_SFHAS_DECIMALSEP );
+	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_DECIMALSEP );
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->decimal_combo ), active && allow && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
@@ -791,7 +791,7 @@ field_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	allow = ofa_stream_format_get_updatable( priv->stformat, OFA_SFHAS_FIELDSEP );
+	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_FIELDSEP );
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->field_combo ), active && allow && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
@@ -835,7 +835,7 @@ str_delim_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	allow = ofa_stream_format_get_updatable( priv->stformat, OFA_SFHAS_STRDELIM );
+	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_STRDELIM );
 	gtk_widget_set_sensitive( priv->strdelim_entry, active && allow && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
@@ -893,7 +893,7 @@ headers_set_sensitive( ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	mode = priv->stformat ? ofa_stream_format_get_mode( priv->stformat ) : ofa_stream_format_get_default_mode();
-	allow = ofa_stream_format_get_updatable( priv->stformat, OFA_SFHAS_HEADERS );
+	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_HEADERS );
 
 	switch( mode ){
 		case OFA_SFMODE_EXPORT:
@@ -1062,11 +1062,11 @@ setup_updatable( ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	/* name */
-	allow = ofa_stream_format_get_updatable( priv->stformat, OFA_SFHAS_NAME );
+	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_NAME );
 	gtk_widget_set_sensitive( priv->name_entry, allow && priv->updatable );
 
 	/* mode */
-	allow = ofa_stream_format_get_updatable( priv->stformat, OFA_SFHAS_MODE );
+	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_MODE );
 	gtk_widget_set_sensitive( priv->mode_combo, allow && priv->updatable );
 
 	/* encoding */

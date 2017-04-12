@@ -674,8 +674,8 @@ init_export_page( ofaPreferences *self )
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
 	stformat = ofa_stream_format_new( priv->getter, NULL, OFA_SFMODE_EXPORT );
-	ofa_stream_format_set_updatable( stformat, OFA_SFHAS_NAME, FALSE );
-	ofa_stream_format_set_updatable( stformat, OFA_SFHAS_MODE, FALSE );
+	ofa_stream_format_set_field_updatable( stformat, OFA_SFHAS_NAME, FALSE );
+	ofa_stream_format_set_field_updatable( stformat, OFA_SFHAS_MODE, FALSE );
 	priv->export_settings = ofa_stream_format_bin_new( stformat );
 	g_object_unref( stformat );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->export_settings ));
@@ -710,8 +710,8 @@ init_import_page( ofaPreferences *self )
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
 	stformat = ofa_stream_format_new( priv->getter, NULL, OFA_SFMODE_IMPORT );
-	ofa_stream_format_set_updatable( stformat, OFA_SFHAS_NAME, FALSE );
-	ofa_stream_format_set_updatable( stformat, OFA_SFHAS_MODE, FALSE );
+	ofa_stream_format_set_field_updatable( stformat, OFA_SFHAS_NAME, FALSE );
+	ofa_stream_format_set_field_updatable( stformat, OFA_SFHAS_MODE, FALSE );
 	priv->import_settings = ofa_stream_format_bin_new( stformat );
 	g_object_unref( stformat );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->import_settings ));

@@ -1219,7 +1219,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	g_clear_object( &priv->p5_stformat );
 
 	priv->p5_stformat = ofa_iimporter_get_default_format( priv->p3_importer_obj, priv->getter, &priv->p5_updatable );
-	ofa_stream_format_set_updatable( priv->p5_stformat, OFA_SFHAS_MODE, FALSE );
+	ofa_stream_format_set_field_updatable( priv->p5_stformat, OFA_SFHAS_MODE, FALSE );
 
 	if( !priv->p5_stformat ){
 		found_key = NULL;

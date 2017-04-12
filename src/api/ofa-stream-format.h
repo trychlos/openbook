@@ -127,55 +127,55 @@ typedef enum {
 }
 	ofeSFHas;
 
-GType            ofa_stream_format_get_type          ( void ) G_GNUC_CONST;
+GType            ofa_stream_format_get_type           ( void ) G_GNUC_CONST;
 
-const gchar     *ofa_stream_format_get_default_name  ( void );
+const gchar     *ofa_stream_format_get_default_name   ( void );
 
-ofeSFMode        ofa_stream_format_get_default_mode  ( void );
+ofeSFMode        ofa_stream_format_get_default_mode   ( void );
 
-const gchar     *ofa_stream_format_get_mode_str      ( ofeSFMode mode );
-const gchar     *ofa_stream_format_get_mode_localestr( ofeSFMode mode );
+const gchar     *ofa_stream_format_get_mode_str       ( ofeSFMode mode );
+const gchar     *ofa_stream_format_get_mode_localestr ( ofeSFMode mode );
 
-gboolean         ofa_stream_format_exists            ( ofaIGetter *getter,
+gboolean         ofa_stream_format_exists             ( ofaIGetter *getter,
 															const gchar *name,
 															ofeSFMode mode );
 
-ofaStreamFormat *ofa_stream_format_new               ( ofaIGetter *getter,
+ofaStreamFormat *ofa_stream_format_new                ( ofaIGetter *getter,
 															const gchar *name,
 															ofeSFMode mode );
 
-const gchar     *ofa_stream_format_get_name          ( ofaStreamFormat *format );
-ofeSFMode        ofa_stream_format_get_mode          ( ofaStreamFormat *format );
+const gchar     *ofa_stream_format_get_name           ( ofaStreamFormat *format );
+ofeSFMode        ofa_stream_format_get_mode           ( ofaStreamFormat *format );
 
-gboolean         ofa_stream_format_get_has_charmap   ( ofaStreamFormat *format );
-const gchar     *ofa_stream_format_get_charmap       ( ofaStreamFormat *format );
+gboolean         ofa_stream_format_get_has_charmap    ( ofaStreamFormat *format );
+const gchar     *ofa_stream_format_get_charmap        ( ofaStreamFormat *format );
 
-gboolean         ofa_stream_format_get_has_date      ( ofaStreamFormat *format );
-myDateFormat     ofa_stream_format_get_date_format   ( ofaStreamFormat *format );
+gboolean         ofa_stream_format_get_has_date       ( ofaStreamFormat *format );
+myDateFormat     ofa_stream_format_get_date_format    ( ofaStreamFormat *format );
 
-gboolean         ofa_stream_format_get_has_thousand  ( ofaStreamFormat *format );
-gchar            ofa_stream_format_get_thousand_sep  ( ofaStreamFormat *format );
+gboolean         ofa_stream_format_get_has_thousand   ( ofaStreamFormat *format );
+gchar            ofa_stream_format_get_thousand_sep   ( ofaStreamFormat *format );
 
-gboolean         ofa_stream_format_get_has_decimal   ( ofaStreamFormat *format );
-gchar            ofa_stream_format_get_decimal_sep   ( ofaStreamFormat *format );
+gboolean         ofa_stream_format_get_has_decimal    ( ofaStreamFormat *format );
+gchar            ofa_stream_format_get_decimal_sep    ( ofaStreamFormat *format );
 
-gboolean         ofa_stream_format_get_has_field     ( ofaStreamFormat *format );
-gchar            ofa_stream_format_get_field_sep     ( ofaStreamFormat *format );
+gboolean         ofa_stream_format_get_has_field      ( ofaStreamFormat *format );
+gchar            ofa_stream_format_get_field_sep      ( ofaStreamFormat *format );
 
-gboolean         ofa_stream_format_get_has_strdelim  ( ofaStreamFormat *format );
-gchar            ofa_stream_format_get_string_delim  ( ofaStreamFormat *format );
+gboolean         ofa_stream_format_get_has_strdelim   ( ofaStreamFormat *format );
+gchar            ofa_stream_format_get_string_delim   ( ofaStreamFormat *format );
 
-gboolean         ofa_stream_format_get_with_headers  ( ofaStreamFormat *format );
-gint             ofa_stream_format_get_headers_count ( ofaStreamFormat *format );
+gboolean         ofa_stream_format_get_with_headers   ( ofaStreamFormat *format );
+gint             ofa_stream_format_get_headers_count  ( ofaStreamFormat *format );
 
-gboolean         ofa_stream_format_get_updatable     ( ofaStreamFormat *format,
+gboolean         ofa_stream_format_get_field_updatable( ofaStreamFormat *format,
 															ofeSFHas field );
 
-void             ofa_stream_format_set_updatable     ( ofaStreamFormat *format,
+void             ofa_stream_format_set_field_updatable( ofaStreamFormat *format,
 															ofeSFHas field,
 															gboolean updatable );
 
-void             ofa_stream_format_set               ( ofaStreamFormat *format,
+void             ofa_stream_format_set                ( ofaStreamFormat *format,
 															gboolean has_charmap, const gchar *charmap,
 															gboolean has_datefmt, myDateFormat datefmt,
 															gboolean has_thousand_sep, gchar thousand_sep,
@@ -184,8 +184,8 @@ void             ofa_stream_format_set               ( ofaStreamFormat *format,
 															gboolean has_string_delim, gchar string_delim,
 															gint count_headers );
 
-void             ofa_stream_format_set_name          ( ofaStreamFormat *format, const gchar *name );
-void             ofa_stream_format_set_mode          ( ofaStreamFormat *format, ofeSFMode mode );
+void             ofa_stream_format_set_name           ( ofaStreamFormat *format, const gchar *name );
+void             ofa_stream_format_set_mode           ( ofaStreamFormat *format, ofeSFMode mode );
 
 G_END_DECLS
 

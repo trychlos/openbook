@@ -744,7 +744,7 @@ ofa_stream_format_get_headers_count( ofaStreamFormat *format )
 }
 
 /**
- * ofa_stream_format_get_updatable:
+ * ofa_stream_format_get_field_updatable:
  * @format: this #ofaStreamFormat instance.
  * @field: the #ofeSFHas identifier of the field;
  *  @field must identify one field, i.e. it cannot be OFA_SFHAS_ALL.
@@ -752,7 +752,7 @@ ofa_stream_format_get_headers_count( ofaStreamFormat *format )
  * Returns: %TRUE if the @field is user-updatable.
  */
 gboolean
-ofa_stream_format_get_updatable( ofaStreamFormat *format, ofeSFHas field )
+ofa_stream_format_get_field_updatable( ofaStreamFormat *format, ofeSFHas field )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -767,7 +767,7 @@ ofa_stream_format_get_updatable( ofaStreamFormat *format, ofeSFHas field )
 }
 
 /**
- * ofa_stream_format_set_updatable:
+ * ofa_stream_format_set_field_updatable:
  * @format: this #ofaStreamFormat instance.
  * @field: the #ofeSFHas identifier of the field.
  * @updatable: whether the @field is updatable.
@@ -775,7 +775,7 @@ ofa_stream_format_get_updatable( ofaStreamFormat *format, ofeSFHas field )
  * Set the @updatable bitfield.
  */
 void
-ofa_stream_format_set_updatable( ofaStreamFormat *format, ofeSFHas field, gboolean updatable )
+ofa_stream_format_set_field_updatable( ofaStreamFormat *format, ofeSFHas field, gboolean updatable )
 {
 	ofaStreamFormatPrivate *priv;
 
