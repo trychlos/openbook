@@ -802,7 +802,7 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 	GType type;
 	ofaIImporter *importer;
 	ofsImporterParms parms;
-	ofaStreamFormat *settings;
+	ofaStreamFormat *stformat;
 	GtkWidget *label;
 	ofaHub *hub;
 
@@ -835,8 +835,8 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 			g_free( str );
 			my_iprogress_start_progress( MY_IPROGRESS( self ), self, label, FALSE );
 
-			settings = ofa_stream_format_new( priv->getter, NULL, OFA_SFMODE_IMPORT );
-			ofa_stream_format_set( settings,
+			stformat = ofa_stream_format_new( priv->getter, NULL, OFA_SFMODE_IMPORT );
+			ofa_stream_format_set( stformat,
 										TRUE,  "UTF-8", 				/* charmap */
 										TRUE,  MY_DATE_SQL, 			/* date format */
 										FALSE, MY_CHAR_ZERO,			/* no thousand sep */
@@ -844,6 +844,7 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 										TRUE,  MY_CHAR_PIPE, 			/* pipe field sep */
 										FALSE, MY_CHAR_ZERO, 			/* no string delimiter */
 										import->header_count );
+			ofa_stream_format_set_field_updatable( stformat, OFA_SFHAS_ALL, FALSE );
 
 			memset( &parms, '\0', sizeof( parms ));
 			parms.version = 1;
@@ -853,7 +854,7 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 			parms.stop = FALSE;
 			parms.uri = uri;
 			parms.type = type;
-			parms.format = settings;
+			parms.format = stformat;
 
 			errors = ofa_iimporter_import( importer, &parms );
 
@@ -867,7 +868,7 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 			g_free( str );
 			my_iprogress_set_row( MY_IPROGRESS( self ), self, label );
 
-			g_object_unref( settings );
+			g_object_unref( stformat );
 			g_object_unref( importer );
 		}
 	}
