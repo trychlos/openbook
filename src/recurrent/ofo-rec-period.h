@@ -113,6 +113,8 @@ gboolean        ofo_rec_period_is_valid_data         ( const gchar *label, gchar
 
 gboolean        ofo_rec_period_is_deletable          ( ofoRecPeriod *period );
 
+guint           ofo_rec_period_doc_get_count         ( ofoRecPeriod *period );
+
 void            ofo_rec_period_enum_between          ( ofoRecPeriod *period,
 															ofxCounter detail_id,
 															const GDate *begin, const GDate *end,

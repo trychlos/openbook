@@ -384,9 +384,9 @@ ofo_paimean_is_valid_data( const gchar *code, gchar **msgerr )
 
 /**
  * ofo_paimean_doc_get_count:
- * @paimean: this #ofoClass instance.
+ * @paimean: this #ofoPaimean object.
  *
- * Returns the count of attached documents.
+ * Returns: the count of attached documents.
  */
 guint
 ofo_paimean_doc_get_count( ofoPaimean *paimean )

@@ -171,7 +171,8 @@ static const ofsBoxDef st_doc_defs[] = {
 		{ 0 }
 };
 
-#define TABLES_COUNT                    3
+#define PERIOD_TABLES_COUNT             3
+#define PERIOD_EXPORT_VERSION           1
 
 typedef struct {
 	GList *details;						/* the details of the periodicity as a GList of GList fields */
@@ -656,6 +657,25 @@ ofo_rec_period_is_deletable( ofoRecPeriod *period )
 	}
 
 	return( deletable );
+}
+
+/**
+ * ofo_rec_period_doc_get_count:
+ * @period: this #ofoRecPeriod object.
+ *
+ * Returns: the count of attached documents.
+ */
+guint
+ofo_rec_period_doc_get_count( ofoRecPeriod *period )
+{
+	ofoRecPeriodPrivate *priv;
+
+	g_return_val_if_fail( period && OFO_IS_REC_PERIOD( period ), 0 );
+	g_return_val_if_fail( !OFO_BASE( period )->prot->dispose_has_run, 0 );
+
+	priv = ofo_rec_period_get_instance_private( period );
+
+	return( g_list_length( priv->docs ));
 }
 
 /**
@@ -1361,8 +1381,8 @@ iexportable_export_default( ofaIExportable *exportable )
 	ofaIGetter *getter;
 	ofaStreamFormat *stformat;
 	ofoRecPeriodPrivate *priv;
-	GList *dataset, *it, *det;
-	gchar *str, *str2;
+	GList *dataset, *it, *det, *itd;
+	gchar *str1, *str2;
 	ofoRecPeriod *period;
 	gboolean ok;
 	gchar field_sep;
@@ -1376,44 +1396,56 @@ iexportable_export_default( ofaIExportable *exportable )
 
 	count = ( gulong ) g_list_length( dataset );
 	if( ofa_stream_format_get_with_headers( stformat )){
-		count += TABLES_COUNT;
+		count += PERIOD_TABLES_COUNT;
 	}
 	for( it=dataset ; it ; it=it->next ){
 		period = OFO_REC_PERIOD( it->data );
 		count += ofo_rec_period_detail_get_count( period );
+		count += ofo_rec_period_doc_get_count( period );
 	}
 	ofa_iexportable_set_count( exportable, count );
 
-	/* add new ofsBoxDef array at the end of the list */
-	ok = ofa_iexportable_append_headers( exportable,
-				TABLES_COUNT, st_boxed_defs, st_detail_defs, st_doc_defs );
+	/* add a version line at the very beginning of the file */
+	str1 = g_strdup_printf( "0%cVersion%c%u", field_sep, field_sep, PERIOD_EXPORT_VERSION );
+	ok = ofa_iexportable_append_line( exportable, str1 );
+	g_free( str1 );
 
-	for( it=dataset ; it ; it=it->next ){
-		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, stformat, NULL );
-		str2 = g_strdup_printf( "1%c%s", field_sep, str );
+	if( ok ){
+		/* add new ofsBoxDef array at the end of the list */
+		ok = ofa_iexportable_append_headers( exportable,
+					PERIOD_TABLES_COUNT, st_boxed_defs, st_detail_defs, st_doc_defs );
+	}
+
+	/* export the dataset */
+	for( it=dataset ; it && ok ; it=it->next ){
+		period = OFO_REC_PERIOD( it->data );
+
+		str1 = ofa_box_csv_get_line( OFO_BASE( period )->prot->fields, stformat, NULL );
+		str2 = g_strdup_printf( "1%c%s", field_sep, str1 );
 		ok = ofa_iexportable_append_line( exportable, str2 );
 		g_free( str2 );
-		g_free( str );
-		if( !ok ){
-			return( FALSE );
-		}
+		g_free( str1 );
 
-		period = OFO_REC_PERIOD( it->data );
 		priv = ofo_rec_period_get_instance_private( period );
 
-		for( det=priv->details ; det ; det=det->next ){
-			str = ofa_box_csv_get_line( det->data, stformat, NULL );
-			str2 = g_strdup_printf( "2%c%s", field_sep, str );
+		for( det=priv->details ; det && ok ; det=det->next ){
+			str1 = ofa_box_csv_get_line( det->data, stformat, NULL );
+			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
 			ok = ofa_iexportable_append_line( exportable, str2 );
 			g_free( str2 );
-			g_free( str );
-			if( !ok ){
-				return( FALSE );
-			}
+			g_free( str1 );
+		}
+
+		for( itd=priv->docs ; itd && ok ; itd=itd->next ){
+			str1 = ofa_box_csv_get_line( itd->data, stformat, NULL );
+			str2 = g_strdup_printf( "2%c%s", field_sep, str1 );
+			ok = ofa_iexportable_append_line( exportable, str2 );
+			g_free( str2 );
+			g_free( str1 );
 		}
 	}
 
-	return( TRUE );
+	return( ok );
 }
 
 /*
