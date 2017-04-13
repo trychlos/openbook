@@ -63,6 +63,7 @@ enum {
 
 	/* UI-related */
 	UI_RESTART,
+	EXPORT_RUN,
 	MENU_AVAILABLE,
 	PAGE_MANAGER_AVAILABLE,
 
@@ -563,6 +564,31 @@ interface_base_init( ofaISignalerInterface *klass )
 					G_TYPE_NONE,
 					0,
 					G_TYPE_NONE );
+
+		/**
+		 * ofaISignaler::ofa-signaler-export-assistant-run:
+		 *
+		 * The signal is emitted to run the export assistant.
+		 *
+		 * This is an ACTION signal.
+		 *
+		 * Handler is of type:
+		 * 		void user_handler( ofaISignaler    *signaler,
+		 * 							ofaIExportable *exportable,
+		 * 							gboolea         force_modal,
+		 * 							gpointer        user_data );
+		 */
+		st_signals[ EXPORT_RUN ] = g_signal_new_class_handler(
+				SIGNALER_EXPORT_ASSISTANT_RUN,
+					OFA_TYPE_ISIGNALER,
+					G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					2,
+					G_TYPE_POINTER, G_TYPE_BOOLEAN );
 
 		/**
 		 * ofaISignaler::ofa-signaler-menu-available:
