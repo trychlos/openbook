@@ -70,6 +70,7 @@ api_include_HEADERS = \
 	ofa-idoc.h											\
 	ofa-iexe-close.h									\
 	ofa-iexportable.h									\
+	ofa-iexporter.h										\
 	ofa-iextender-setter.h								\
 	ofa-igetter.h										\
 	ofa-igetter-def.h									\

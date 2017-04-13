@@ -185,19 +185,19 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-idbdossier-editor.lo ofa-idbdossier-meta.lo \
 	ofa-idbexercice-meta.lo ofa-idbmodel.lo ofa-idbprovider.lo \
 	ofa-idbexercice-editor.lo ofa-idbsuperuser.lo ofa-idoc.lo \
-	ofa-iexe-close.lo ofa-iexportable.lo ofa-iextender-setter.lo \
-	ofa-igetter.lo ofa-iimporter.lo ofa-iimportable.lo \
-	ofa-ijson.lo ofa-import-duplicate.lo ofa-ipage-manager.lo \
-	ofa-iprintable.lo ofa-iproperties.lo ofa-irecover.lo \
-	ofa-irenderable.lo ofa-irenderer.lo ofa-isignalable.lo \
-	ofa-isignaler.lo ofa-istore.lo ofa-itree-adder.lo \
-	ofa-itvcolumnable.lo ofa-itvfilterable.lo ofa-itvsortable.lo \
-	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
-	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
-	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
-	ofa-ope-template-select.lo ofa-ope-template-store.lo \
-	ofa-ope-template-treeview.lo ofa-open-prefs.lo \
-	ofa-open-prefs-bin.lo ofa-openbook-props.lo \
+	ofa-iexe-close.lo ofa-iexportable.lo ofa-iexporter.lo \
+	ofa-iextender-setter.lo ofa-igetter.lo ofa-iimporter.lo \
+	ofa-iimportable.lo ofa-ijson.lo ofa-import-duplicate.lo \
+	ofa-ipage-manager.lo ofa-iprintable.lo ofa-iproperties.lo \
+	ofa-irecover.lo ofa-irenderable.lo ofa-irenderer.lo \
+	ofa-isignalable.lo ofa-isignaler.lo ofa-istore.lo \
+	ofa-itree-adder.lo ofa-itvcolumnable.lo ofa-itvfilterable.lo \
+	ofa-itvsortable.lo ofa-ledger-combo.lo ofa-ledger-store.lo \
+	ofa-list-store.lo ofa-ope-template-editable.lo \
+	ofa-ope-template-frame-bin.lo ofa-ope-template-help.lo \
+	ofa-ope-template-properties.lo ofa-ope-template-select.lo \
+	ofa-ope-template-store.lo ofa-ope-template-treeview.lo \
+	ofa-open-prefs.lo ofa-open-prefs-bin.lo ofa-openbook-props.lo \
 	ofa-operation-group.lo ofa-paimean-editable.lo \
 	ofa-paimean-frame-bin.lo ofa-paimean-properties.lo \
 	ofa-paimean-select.lo ofa-paimean-store.lo \
@@ -582,6 +582,7 @@ libofa_core_la_SOURCES = \
 	ofa-idoc.c											\
 	ofa-iexe-close.c									\
 	ofa-iexportable.c									\
+	ofa-iexporter.c										\
 	ofa-iextender-setter.c								\
 	ofa-igetter.c										\
 	ofa-iimporter.c										\
@@ -848,6 +849,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idoc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexe-close.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexporter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iextender-setter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-igetter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimportable.Plo@am__quote@

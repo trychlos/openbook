@@ -36,6 +36,7 @@
  Other changes:
 
    - ofaBackupDisplay: new class.
+   - ofaIExporter: new interface.
    - ofaIRenderer: interface is completed with font and color getters (todo #1452).
    - ofaStreamFormat: is now able to define which fields are user-updatable.
 

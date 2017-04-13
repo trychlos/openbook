@@ -45,6 +45,7 @@
 #include "my/my-iprogress.h"
 
 #include "api/ofa-box.h"
+#include "api/ofa-iexporter.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-stream-format.h"
 
@@ -56,7 +57,6 @@ G_BEGIN_DECLS
 #define OFA_IEXPORTABLE_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IEXPORTABLE, ofaIExportableInterface ))
 
 typedef struct _ofaIExportable                    ofaIExportable;
-typedef struct _ofsIExportableFormat              ofsIExportableFormat;
 
 /**
  * ofaIExportableInterface:
@@ -96,31 +96,10 @@ typedef struct {
 	gchar *                ( *get_label )            ( const ofaIExportable *instance );
 
 	/**
-	 * get_formats:
-	 * @instance: the #ofaIExportable provider.
-	 * @getter: a #ofaIGetter instance.
-	 *
-	 * Returns: a null-terminated array of specific #ofsIExportableFormat
-	 * structures managed by the target class.
-	 */
-	ofsIExportableFormat * ( *get_formats )          ( ofaIExportable *instance );
-
-	/**
-	 * free_formats:
-	 * @instance: the #ofaIExportable provider.
-	 * @formats: [allow-none]: the #ofsIExportableFormats as returned by
-	 *  get_formats() method.
-	 *
-	 * Let the implementation free the @formats resources.
-	 */
-	void                   ( *free_formats )         ( ofaIExportable *instance,
-															ofsIExportableFormat *formats );
-
-	/**
 	 * export:
 	 * @instance: the #ofaIExportable provider.
 	 * @format_id: the name of the export format,
-	 *  which defaults to OFA_IEXPORTABLE_DEFAULT_FORMAT_ID.
+	 *  which defaults to OFA_IEXPORTER_DEFAULT_FORMAT_ID.
 	 *
 	 * Export the dataset to the named file.
 	 *
@@ -130,25 +109,6 @@ typedef struct {
 															const gchar *format_id );
 }
 	ofaIExportableInterface;
-
-/**
- * ofsIExportableFormat:
- * @format_id: a string which identifies the format.
- * @format_label: a localized string to be displayed.
- *
- * A structure which defines a specific export format for a target
- * class.
- *
- * A null-terminated array of these structures has to be provided in
- * answer to the get_formats() method.
- */
-struct _ofsIExportableFormat {
-	gchar           *format_id;
-	gchar           *format_label;
-	ofaStreamFormat *stream_format;
-};
-
-#define OFA_IEXPORTABLE_DEFAULT_FORMAT_ID   "DEFAULT"
 
 /*
  * Interface-wide
@@ -167,13 +127,9 @@ guint                 ofa_iexportable_get_interface_version     ( GType type );
  */
 gchar                *ofa_iexportable_get_label                 ( const ofaIExportable *exportable );
 
-ofsIExportableFormat *ofa_iexportable_get_formats               ( ofaIExportable *exportable );
-
-void                  ofa_iexportable_free_formats              ( ofaIExportable *exportable,
-																		ofsIExportableFormat *formats );
-
 gboolean              ofa_iexportable_export_to_uri             ( ofaIExportable *exportable,
 																		const gchar *uri,
+																		ofaIExporter *exporter,
 																		const gchar *format_id,
 																		ofaStreamFormat *stformat,
 																		ofaIGetter *getter,

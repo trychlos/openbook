@@ -283,10 +283,6 @@
 1411 2017- 3-24 when a specific format is provided, should also provide
                 a stream format with user-updatable fields
 
-1412 2017- 3-24 record the new stream formats in user settings
-                + replace the GtkEntry with a GtkComboBox+GtkEntry
-                (this is for new profiles)
-
 1416 2017- 3-24 dossier administrative credentials: does not remember the account
      2017- 3-29 restore assistant:  fixed
                 recovery assistant:
@@ -309,7 +305,24 @@
 1455 2017- 4-12 when importing the default accounts chart on new dossier:
                 review the source file (does not fit the new table format)
 
-1456
+1456 2017- 4-13 guided input: do not change the ope date when changing
+                the ope template if it is already valid
+
+1457 2017- 4-13 ope template properties: add a right margin to the buttons
+                to manage the scrollbar
+
+1458 2017- 4-13 recurrent model page: relabel view operations button as
+                this is a link to generated recurrent opes (not accounting
+                opes)
+
+1459 2017- 4-13 recurrent generation: do not generate if amount 1 is zero
+
+1460 2017- 4-13 recurrent opes: validated status should be labeled accounted
+                id for the button
+
+1461 2017- 4-13 change the id of recurrent and vat dbmodels
+
+1462
 
 -----------------------------------------------------------------------
  DONE
@@ -971,6 +984,11 @@
 1409 2017- 3-22 dbms integrity: whether to display all messages or only
                 errors should be a user preference
      2017- 3-29 done
+
+1412 2017- 3-24 record the new stream formats in user settings
+                + replace the GtkEntry with a GtkComboBox+GtkEntry
+                (this is for new profiles)
+     2017- 4-13 cancelled as same than #461
 
 1413 2017- 3-24 review reconciliation summary at date
      2017- 3-28 done

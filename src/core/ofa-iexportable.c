@@ -226,57 +226,12 @@ ofa_iexportable_get_label( const ofaIExportable *exportable )
 }
 
 /**
- * ofa_iexporter_get_formats:
- * @exportable: this #ofaIExportable instance.
- *
- * Returns: %NULL, or a null-terminated array of #ofsIExportableFormat
- * structures.
- */
-ofsIExportableFormat *
-ofa_iexportable_get_formats( ofaIExportable *exportable )
-{
-	static const gchar *thisfn = "ofa_iexportable_get_formats";
-
-	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), NULL );
-
-	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->get_formats ){
-		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->get_formats( exportable ));
-	}
-
-	g_info( "%s: ofaIExportable's %s implementation does not provide 'get_formats()' method",
-			thisfn, G_OBJECT_TYPE_NAME( exportable ));
-	return( NULL );
-}
-
-/**
- * ofa_iexporter_free_formats:
- * @exportable: this #ofaIExportable instance.
- * @formats: [allow-none]: the #ofsIExportableFormat array as returned
- *  by ofa_iexportable_get_formats() function.
- *
- * Let the implementation release the @formats resources.
- */
-void
-ofa_iexportable_free_formats( ofaIExportable *exportable, ofsIExportableFormat *formats )
-{
-	static const gchar *thisfn = "ofa_iexportable_free_formats";
-
-	g_return_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ));
-
-	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->free_formats ){
-		OFA_IEXPORTABLE_GET_INTERFACE( exportable )->free_formats( exportable, formats );
-		return;
-	}
-
-	g_info( "%s: ofaIExportable's %s implementation does not provide 'free_formats()' method",
-			thisfn, G_OBJECT_TYPE_NAME( exportable ));
-}
-
-/**
  * ofa_iexportable_export_to_uri:
  * @exportable: a #ofaIExportable instance.
  * @uri: the output URI,
  *  will be overriden without any further confirmation if already exists.
+ * @exporter: [allow-none]: the #ofaIExporter which provides the
+ *  following @format_id, or %NULL if this is the default class exporter.
  * @format_id: the identifier of the export format.
  * @stformat: a #ofaStreamFormat object.
  * @getter: a #ofaIGetter instance.
@@ -287,18 +242,27 @@ ofa_iexportable_free_formats( ofaIExportable *exportable, ofsIExportableFormat *
  * Returns: %TRUE if the export has successfully completed.
  */
 gboolean
-ofa_iexportable_export_to_uri( ofaIExportable *exportable,
-									const gchar *uri, const gchar *format_id, ofaStreamFormat *stformat,
-									ofaIGetter *getter, myIProgress *progress )
+ofa_iexportable_export_to_uri( ofaIExportable *exportable, const gchar *uri,
+									ofaIExporter *exporter, const gchar *format_id,
+									ofaStreamFormat *stformat, ofaIGetter *getter, myIProgress *progress )
 {
+	static const gchar *thisfn = "ofa_iexportable_export_to_uri";
 	GFile *output_file;
 	sIExportable *sdata;
 	GOutputStream *output_stream;
 	gboolean ok;
 
+	g_debug( "%s: exportable=%p, uri=%s, exporter=%p, format_id=%s, stformat=%p, getter=%p, progress=%p",
+			thisfn, ( void * ) exportable, uri, ( void * ) exporter, format_id,
+			( void * ) stformat, ( void * ) getter, ( void * ) progress );
+
 	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), FALSE );
+	g_return_val_if_fail( my_strlen( uri ) > 0, FALSE );
+	g_return_val_if_fail( !exporter || OFA_IS_IEXPORTER( exporter ), FALSE );
+	g_return_val_if_fail( my_strlen( format_id ) > 0, FALSE );
 	g_return_val_if_fail( stformat && OFA_IS_STREAM_FORMAT( stformat ), FALSE );
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+	g_return_val_if_fail( progress && MY_IS_IPROGRESS( progress ), FALSE );
 
 	sdata = get_instance_data( exportable );
 	g_return_val_if_fail( sdata, FALSE );

@@ -145,6 +145,7 @@ libofa_core_la_SOURCES = \
 	ofa-idoc.c											\
 	ofa-iexe-close.c									\
 	ofa-iexportable.c									\
+	ofa-iexporter.c										\
 	ofa-iextender-setter.c								\
 	ofa-igetter.c										\
 	ofa-iimporter.c										\

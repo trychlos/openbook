@@ -43,6 +43,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-idoc.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-iexporter.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignalable.h"
@@ -907,7 +908,7 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id )
 {
 	static const gchar *thisfn = "ofo_currency_iexportable_export";
 
-	if( !my_collate( format_id, OFA_IEXPORTABLE_DEFAULT_FORMAT_ID )){
+	if( !my_collate( format_id, OFA_IEXPORTER_DEFAULT_FORMAT_ID )){
 		return( iexportable_export_default( exportable ));
 	}
 
