@@ -830,7 +830,10 @@ signaler_on_ui_restart( ofaISignaler *signaler, ofaMainWindow *self )
 static void
 signaler_on_run_export( ofaISignaler *signaler, ofaIExportable *exportable, gboolean force_modal, ofaMainWindow *self )
 {
+	static const gchar *thisfn = "ofa_main_window_signaler_on_run_export";
 	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: handling '%s' signal", thisfn, SIGNALER_EXPORT_ASSISTANT_RUN );
 
 	priv = ofa_main_window_get_instance_private( self );
 
