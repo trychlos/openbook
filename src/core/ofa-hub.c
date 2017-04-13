@@ -48,6 +48,7 @@
 #include "api/ofa-isignaler.h"
 #include "api/ofa-openbook-props.h"
 #include "api/ofa-prefs.h"
+#include "api/ofa-tvbin.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-class.h"
@@ -276,20 +277,28 @@ hub_register_types( ofaHub *self )
 
 	priv = ofa_hub_get_instance_private( self );
 
+	priv->core_objects = NULL;
+
+	/* this is needed to be able to export from ofaTVBin */
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFA_TYPE_TVBIN, "ofa-tvbin-getter", self, NULL ));
+
+	/* this is not exportable, nor importable */
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
+
 	/* this is also the order of IExportable/IImportable classes in the
 	 * assistants: do not change this order */
-	priv->core_objects = NULL;
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_DOSSIER, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CLASS, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CURRENCY, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_LEDGER, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_PAIMEAN, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_RATE, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ENTRY, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_BAT, NULL ));
+
+	/* plugins exportables/importables will come at the end of the list */
 }
 
 static void
