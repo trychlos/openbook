@@ -415,6 +415,7 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 				ENTRY_COL_IPERIOD_I,      period,
 				-1 );
 
+	g_free( stiers );
 	g_free( supdstamp );
 	g_free( sentnum );
 	g_free( ssetstamp );
