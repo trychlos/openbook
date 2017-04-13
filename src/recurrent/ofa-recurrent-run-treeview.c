@@ -36,6 +36,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-prefs.h"
@@ -57,6 +58,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	GList       *signaler_handlers;
 	gint         visible;
 	const GDate *from;
 	const GDate *to;
@@ -88,6 +90,8 @@ static void     on_selection_activated( ofaRecurrentRunTreeview *self, GtkTreeSe
 static void     on_selection_delete( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     get_and_send( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static GList   *get_selected_with_selection( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection );
+static void     signaler_connect_to_signaling_system( ofaRecurrentRunTreeview *self );
+static void     signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaRecurrentRunTreeview *self );
 static gboolean tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gint     tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
@@ -118,6 +122,7 @@ static void
 recurrent_run_treeview_dispose( GObject *instance )
 {
 	ofaRecurrentRunTreeviewPrivate *priv;
+	ofaISignaler *signaler;
 
 	g_return_if_fail( instance && OFA_IS_RECURRENT_RUN_TREEVIEW( instance ));
 
@@ -128,6 +133,8 @@ recurrent_run_treeview_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		signaler = ofa_igetter_get_signaler( priv->getter );
+		ofa_isignaler_disconnect_handlers( signaler, &priv->signaler_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -284,8 +291,8 @@ ofa_recurrent_run_treeview_new( ofaIGetter *getter, const gchar *settings_prefix
 	}
 
 	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
-
 	setup_columns( view );
+	signaler_connect_to_signaling_system( view );
 
 	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_func, view );
 	ofa_tvbin_set_cell_edited_func( OFA_TVBIN( view ), ( GCallback ) on_cell_edited, view );
@@ -707,6 +714,44 @@ ofa_recurrent_run_treeview_unselect( ofaRecurrentRunTreeview *view, ofoRecurrent
 
 		selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
 		gtk_tree_selection_unselect_iter( selection, &tview_iter );
+	}
+}
+
+/*
+ * Connect to ofaISignaler signaling system
+ */
+static void
+signaler_connect_to_signaling_system( ofaRecurrentRunTreeview *self )
+{
+	ofaRecurrentRunTreeviewPrivate *priv;
+	ofaISignaler *signaler;
+	gulong handler;
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+}
+
+/*
+ * SIGNALER_BASE_UPDATED signal handler
+ */
+static void
+signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaRecurrentRunTreeview *self )
+{
+	static const gchar *thisfn = "ofa_recurrent_run_treeview_signaler_on_updated_base";
+
+	g_debug( "%s: signaler=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( OFO_IS_RECURRENT_RUN( object )){
+		ofa_tvbin_refilter( OFA_TVBIN( self ));
 	}
 }
 

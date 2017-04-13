@@ -36,6 +36,7 @@
    - configure.ac: display 'pwirender' plugin build status (todo #1453).
    - ofaMainWindow: better switch back from 'minimal' display mode.
    - Fix conversion to DBModel v37 of OFA_T_BAT table.
+   - ofaRecurrentRunTreeview: fix refresh bug when cancelling operations.
 
  Other changes:
 
