@@ -73,6 +73,8 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
+	ofaIExportable      *exportable;
+	gboolean             force_modal;
 
 	/* runtime
 	 */
@@ -345,25 +347,31 @@ ofa_export_assistant_class_init( ofaExportAssistantClass *klass )
 /**
  * ofa_export_assistant_run:
  * @getter: a #ofaIGetter instance.
+ * @exportable: [allow-none]: a #ofaIExportable provided by the caller.
+ * @force_modal: whether this assistant should be run modal vs. its parent.
  *
  * Run the assistant.
  */
 void
-ofa_export_assistant_run( ofaIGetter *getter )
+ofa_export_assistant_run( ofaIGetter *getter, ofaIExportable *exportable, gboolean force_modal )
 {
 	static const gchar *thisfn = "ofa_export_assistant_run";
 	ofaExportAssistant *self;
 	ofaExportAssistantPrivate *priv;;
 
-	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+	g_debug( "%s: getter=%p, exportable=%p, force_modal=%s",
+			thisfn, ( void * ) getter, ( void * ) exportable, force_modal ? "True":"False" );
 
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !exportable || OFA_IS_IEXPORTABLE( exportable ));
 
 	self = g_object_new( OFA_TYPE_EXPORT_ASSISTANT, NULL );
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
 	priv->getter = getter;
+	priv->exportable = exportable;
+	priv->force_modal = force_modal;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -396,6 +404,8 @@ iwindow_init( myIWindow *instance )
 
 	my_iwindow_set_parent( instance, GTK_WINDOW( ofa_igetter_get_main_window( priv->getter )));
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
+
+	gtk_window_set_modal( GTK_WINDOW( instance ), priv->force_modal );
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 

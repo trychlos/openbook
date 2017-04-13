@@ -31,10 +31,19 @@
  * @include: ui/ofa-export.h
  *
  * Guide the user through the process of exporting data.
+ *
+ * Note that this same assistant can be not only run from the menu,
+ * which is the usual way for the user to export datas, but also
+ * from treeviews or render pages, as a way to export the viewed or
+ * the rendered content.
+ *
+ * In this latter way, the #ofaIExportable instance is directly
+ * provided by the caller.
  */
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-iexportable.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -60,7 +69,9 @@ typedef struct {
 
 GType   ofa_export_assistant_get_type( void ) G_GNUC_CONST;
 
-void    ofa_export_assistant_run     ( ofaIGetter *getter );
+void    ofa_export_assistant_run     ( ofaIGetter *getter,
+											ofaIExportable *exportable,
+											gboolean force_modal );
 
 G_END_DECLS
 

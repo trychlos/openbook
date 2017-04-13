@@ -46,6 +46,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-isignaler.h"
@@ -307,6 +308,7 @@ static void         signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainW
 static void         signaler_on_dossier_changed( ofaISignaler *signaler, ofaMainWindow *main_window );
 static void         signaler_on_dossier_preview( ofaISignaler *signaler, const gchar *uri, ofaMainWindow *main_window );
 static void         signaler_on_ui_restart( ofaISignaler *signaler, ofaMainWindow *self );
+static void         signaler_on_run_export( ofaISignaler *signaler, ofaIExportable *exportable, gboolean force_modal, ofaMainWindow *self );
 static gboolean     on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void         set_window_title( ofaMainWindow *window, gboolean with_dossier );
 static void         warning_exercice_unset( ofaMainWindow *window );
@@ -550,6 +552,7 @@ ofa_main_window_new( ofaIGetter *getter )
 	g_signal_connect( signaler, SIGNALER_DOSSIER_CHANGED, G_CALLBACK( signaler_on_dossier_changed ), window );
 	g_signal_connect( signaler, SIGNALER_DOSSIER_PREVIEW, G_CALLBACK( signaler_on_dossier_preview ), window );
 	g_signal_connect( signaler, SIGNALER_UI_RESTART, G_CALLBACK( signaler_on_ui_restart ), window );
+	g_signal_connect( signaler, SIGNALER_EXPORT_ASSISTANT_RUN, G_CALLBACK( signaler_on_run_export ), window );
 
 	/* let the plugins update the managed themes */
 	init_themes( window );
@@ -822,6 +825,16 @@ signaler_on_ui_restart( ofaISignaler *signaler, ofaMainWindow *self )
 	if( priv->pane ){
 		gtk_widget_show_all( priv->pane );
 	}
+}
+
+static void
+signaler_on_run_export( ofaISignaler *signaler, ofaIExportable *exportable, gboolean force_modal, ofaMainWindow *self )
+{
+	ofaMainWindowPrivate *priv;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	ofa_export_assistant_run( priv->getter, exportable, force_modal );
 }
 
 /*
@@ -1578,7 +1591,7 @@ on_ope_export( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
 
-	ofa_export_assistant_run( priv->getter );
+	ofa_export_assistant_run( priv->getter, NULL, FALSE );
 }
 
 static void
