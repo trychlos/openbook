@@ -73,6 +73,8 @@ static void                on_instance_finalized( sFecData *sdata, GObject * fin
  * @getter: the #ofaIGetter of the application.
  *
  * Returns: the export formats we are able to manage for @exportable_type.
+ *
+ * This function is called because #ofoEntry is an #ofaIExporter.
  */
 ofsIExporterFormat *
 ofo_entry_fec_get_exporter_formats( ofaIExporter *exporter, GType exportable_type, ofaIGetter *getter )
@@ -146,6 +148,8 @@ get_fec_format( ofaIExporter *self, ofaIGetter *getter )
  *
  * NOTE TO THE MAINTAINER: every update here should be described in the
  * 'docs/DGI/FEC_Description.ods' sheet.
+ *
+ * This function is called because #ofoEntry is an #ofaIExportable.
  */
 gboolean
 ofo_entry_fec_export( ofaIExportable *exportable )
