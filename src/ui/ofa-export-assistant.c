@@ -94,6 +94,7 @@ typedef struct {
 	gchar               *p1_selected_class;
 	gchar               *p1_selected_label;
 	GType                p1_selected_type;
+	ofaIExportable      *p1_selected_exportable;
 
 	/* p2: select format
 	 */
@@ -325,6 +326,7 @@ ofa_export_assistant_init( ofaExportAssistant *self )
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->p1_exportables = NULL;
 	priv->p1_exporters = NULL;
+	priv->p1_selected_type = 0;
 	priv->p2_stformat = NULL;
 	priv->p3_output_file_uri = NULL;
 
@@ -461,8 +463,11 @@ p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget )
  * Attach to each button the fake ofaIEXportable object.
  *
  * p1_selected_class: may be set from settings
- * p1_selected_btn: is only set in p1_is_complete().
- * p1_selected_label: is only set in p1_is_complete().
+ * p1_selected_type:  may be set from settings
+ *
+ * p1_selected_btn:        is only set in p1_is_complete().
+ * p1_selected_label:      is only set in p1_is_complete().
+ * p1_selected_exportable: is only set in p1_is_complete().
  */
 static void
 p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
@@ -472,6 +477,8 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	GList *it;
 	gchar *label;
 	GtkWidget *btn, *first;
+	gboolean publishable, is_a;
+	ofaIExportable *exportable;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -492,17 +499,42 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( priv->p1_parent && GTK_IS_GRID( priv->p1_parent ));
 
 	for( it=priv->p1_exportables ; it ; it=it->next ){
-		label = ofa_iexportable_get_label( OFA_IEXPORTABLE( it->data ));
+		exportable = OFA_IEXPORTABLE( it->data );
+		label = ofa_iexportable_get_label( exportable );
+
 		if( my_strlen( label )){
-			if( !first ){
-				btn = gtk_radio_button_new_with_mnemonic( NULL, label );
-				first = btn;
+			publishable = ofa_iexportable_get_published( exportable );
+			is_a = priv->exportable ?
+						g_type_is_a( G_OBJECT_TYPE( priv->exportable ), G_OBJECT_TYPE( exportable )) :
+						FALSE;
+
+			g_debug( "%s: priv->exportable=%p, exportable=%p, label=%s, publishable=%s, is_a=%s",
+					thisfn, priv->exportable, exportable, label, publishable ? "True":"False",
+					is_a ? "True":"False" );
+
+			if( publishable || is_a ){
+				if( !first ){
+					btn = gtk_radio_button_new_with_mnemonic( NULL, label );
+					first = btn;
+				} else {
+					btn = gtk_radio_button_new_with_mnemonic_from_widget( GTK_RADIO_BUTTON( first ), label );
+				}
+
+				/* for all other objects, we are not interested by the exact instance
+				 * which is used as an IExportable; but when we export the content of
+				 * a treeview, we do need to keep the exact passed instance */
+				g_object_set_data( G_OBJECT( btn ), DATA_TYPE_INDEX, is_a ? priv->exportable : exportable );
+				g_signal_connect( btn, "toggled", G_CALLBACK( p1_on_type_toggled ), self );
+				gtk_grid_attach( GTK_GRID( priv->p1_parent ), btn, 0, priv->p1_row++, 1, 1 );
+
+				/* if an exportable as been specified at initialization
+				 * then it is the only button to be sensitive */
+				if( priv->exportable != NULL ){
+					gtk_widget_set_sensitive( btn, is_a );
+				}
 			} else {
-				btn = gtk_radio_button_new_with_mnemonic_from_widget( GTK_RADIO_BUTTON( first ), label );
+				g_debug( "not published" );
 			}
-			g_object_set_data( G_OBJECT( btn ), DATA_TYPE_INDEX, it->data );
-			g_signal_connect( btn, "toggled", G_CALLBACK( p1_on_type_toggled ), self );
-			gtk_grid_attach( GTK_GRID( priv->p1_parent ), btn, 0, priv->p1_row++, 1, 1 );
 		}
 		g_free( label );
 	}
@@ -523,15 +555,24 @@ p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	if( my_strlen( priv->p1_selected_class )){
-		for( i=0 ; i<priv->p1_row ; ++i ){
-			btn = gtk_grid_get_child_at( GTK_GRID( priv->p1_parent ), 0, i );
-			g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
-			object = OFA_IEXPORTABLE( g_object_get_data( G_OBJECT( btn ), DATA_TYPE_INDEX ));
-			if( !my_collate( G_OBJECT_TYPE_NAME( object ), priv->p1_selected_class )){
-				gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), TRUE );
-				break;
-			}
+	/* set again a previously selected type
+	 * or initialize to the last selected
+	 * or set active the only possible exportable if all but one are insensitive */
+
+	for( i=0 ; i<priv->p1_row ; ++i ){
+		btn = gtk_grid_get_child_at( GTK_GRID( priv->p1_parent ), 0, i );
+		g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
+		if( !gtk_widget_get_sensitive( btn )){
+			continue;
+		}
+		object = OFA_IEXPORTABLE( g_object_get_data( G_OBJECT( btn ), DATA_TYPE_INDEX ));
+		if( priv->exportable && object == priv->exportable ){
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), TRUE );
+			break;
+		}
+		if( priv->p1_selected_type > 0 && G_OBJECT_TYPE( object ) == priv->p1_selected_type ){
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), TRUE );
+			break;
 		}
 	}
 
@@ -565,6 +606,7 @@ p1_is_complete( ofaExportAssistant *self )
 		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
 			object = OFA_IEXPORTABLE( g_object_get_data( G_OBJECT( btn ), DATA_TYPE_INDEX ));
 			priv->p1_selected_btn = btn;
+			priv->p1_selected_exportable = object;
 			g_free( priv->p1_selected_class );
 			priv->p1_selected_class = g_strdup( G_OBJECT_TYPE_NAME( object ));
 			g_free( priv->p1_selected_label );
@@ -876,7 +918,7 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p3_do_init";
 	ofaExportAssistantPrivate *priv;
-	gchar *basename;
+	gchar *basedef, *basename;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -909,10 +951,12 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	/* build a default output filename from the last used folder
 	 * plus the default basename for this data type class */
-	basename = g_strdup_printf( "%s.csv", priv->p1_selected_class );
+	basedef = ofa_iexportable_get_basename( priv->p1_selected_exportable );
+	basename = g_strdup_printf( "%s.csv", basedef );
 	priv->p3_output_file_uri = g_build_filename( priv->p3_folder_uri, basename, NULL );
 	g_debug( "%s: p3_output_file_uri=%s", thisfn, priv->p3_output_file_uri );
 	g_free( basename );
+	g_free( basedef );
 }
 
 /*
@@ -1280,6 +1324,7 @@ read_settings( ofaExportAssistant *self )
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		priv->p1_selected_class = g_strdup( cstr );
+		priv->p1_selected_type = g_type_from_name( cstr );
 	}
 
 	my_isettings_free_string_list( settings, strlist );
