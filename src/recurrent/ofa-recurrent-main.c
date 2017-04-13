@@ -81,7 +81,7 @@ static const GActionEntry st_win_entries[] = {
 /* The items respectively added to Operations and References menus
  */
 static const sItemDef st_items_ope2[] = {
-		{ "recurrent-run", N_( "_Recurrent operations validation..." ) },
+		{ "recurrent-run", N_( "_Recurrent operations accounting..." ) },
 		{ 0 }
 };
 
@@ -95,7 +95,7 @@ static const sItemDef st_items_ref[] = {
  */
 static sThemeDef st_theme_defs[] = {
 		{ "rec-period",       N_( "Recurrent periodicities" ),         ofa_rec_period_page_get_type,      FALSE },
-		{ "recurrent-run",    N_( "Recurrent operations validation" ), ofa_recurrent_run_page_get_type,   FALSE },
+		{ "recurrent-run",    N_( "Recurrent operations accounting" ), ofa_recurrent_run_page_get_type,   FALSE },
 		{ "recurrent-define", N_( "Recurrent models management" ),     ofa_recurrent_model_page_get_type, FALSE },
 		{ 0 }
 };

@@ -58,7 +58,7 @@
                 </child>
                 <child>
                   <object class="GtkCheckButton" id="p3-validated-btn">
-                    <property name="label" translatable="yes">_Validated operations</property>
+                    <property name="label" translatable="yes">_Accounted operations</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
@@ -110,6 +110,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Cancel the selected waiting operations.</property>
                     <property name="use_underline">True</property>
                   </object>
                   <packing>
@@ -123,6 +124,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Reset the selected cancelled operations to a waiting status.</property>
                     <property name="use_underline">True</property>
                   </object>
                   <packing>
@@ -132,10 +134,11 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="p2-validate-btn">
-                    <property name="label" translatable="yes">_Validate</property>
+                    <property name="label" translatable="yes">_Account</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Send the selected waiting operations to the accounting.</property>
                     <property name="use_underline">True</property>
                   </object>
                   <packing>

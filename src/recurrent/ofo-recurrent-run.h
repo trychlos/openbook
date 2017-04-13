@@ -70,7 +70,7 @@ typedef struct {
  * @REC_STATUS_WAITING  : the operation is waiting for a status change,
  * either to be cancelled or to be validated.
  *
- * @REC_STATUS_VALIDATED: the operation has been validated.
+ * @REC_STATUS_VALIDATED: the operation has been sent to the accounting.
  */
 typedef enum {
 	REC_STATUS_CANCELLED = 1,

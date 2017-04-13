@@ -344,7 +344,7 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 	g_signal_connect( priv->cancel_action, "activate", G_CALLBACK( action_on_cancel_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->cancel_action ),
-			_( "Cancel..." ));
+			_( "Cancel" ));
 	btn = my_utils_container_get_child_by_name( parent, "p2-cancel-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	ofa_iactionable_set_button(
@@ -355,7 +355,7 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 	g_signal_connect( priv->waiting_action, "activate", G_CALLBACK( action_on_wait_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->waiting_action ),
-			_( "Wait..." ));
+			_( "Reset to wait" ));
 	btn = my_utils_container_get_child_by_name( parent, "p2-wait-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	ofa_iactionable_set_button(
@@ -366,7 +366,7 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 	g_signal_connect( priv->validate_action, "activate", G_CALLBACK( action_on_validate_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->validate_action ),
-			_( "Validate..." ));
+			_( "Send to accounting..." ));
 	btn = my_utils_container_get_child_by_name( parent, "p2-validate-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	ofa_iactionable_set_button(

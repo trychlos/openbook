@@ -133,7 +133,7 @@ typedef struct {
 static sStatus st_status[] = {
 		{ REC_STATUS_CANCELLED, "C", N_( "C" ), N_( "Cancelled" ) },
 		{ REC_STATUS_WAITING,   "W", N_( "W" ), N_( "Waiting" ) },
-		{ REC_STATUS_VALIDATED, "V", N_( "V" ), N_( "Validated" ) },
+		{ REC_STATUS_VALIDATED, "V", N_( "A" ), N_( "Accounted" ) },
 		{ 0 },
 };
 
