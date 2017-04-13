@@ -42,9 +42,9 @@ typedef struct {
 }
 	sBuildableByName;
 
-static GRegex         *st_quote_single_regex    = NULL;
-static GRegex         *st_long_dash_regex       = NULL;
-static const gchar    *st_save_restore_group    = "orgtrychlosmy";
+static GRegex      *st_quote_single_regex      = NULL;
+static GRegex      *st_long_dash_regex         = NULL;
+static const gchar *st_save_restore_group      = "orgtrychlosmy";
 
 static gchar      *quote_backslashes( const gchar *str );
 static gboolean    utils_quote_cb( const GMatchInfo *info, GString *res, gpointer data );
@@ -705,6 +705,44 @@ my_utils_str_first_word( const gchar *string )
 	/*g_debug( "my_utils_str_first_word: in.str=%s, out.str=%s", string, new_str );*/
 
 	return( new_str );
+}
+
+/**
+ * my_utils_str_funny_capitalized:
+ * @string: the string to be dealt with.
+ *
+ * Returns: The funny capitalized @string, as a new string which should
+ * be g_free() by the caller.
+ */
+gchar *
+my_utils_str_funny_capitalized( const gchar *string )
+{
+	gchar **array, **it;
+	GString *gstr;
+	gchar *first, *first_case, *others, *others_case;
+
+	gstr = NULL;
+
+	if( string ){
+		array = g_regex_split_simple( "[- \\.]", string, 0, 0 );
+		it = array;
+		gstr = g_string_new( "" );
+		while( *it ){
+			first = g_utf8_substring( *it, 0, 1 );
+			first_case = g_utf8_strup( first, -1 );
+			others = g_utf8_substring( *it, 1, my_strlen( *it ));
+			others_case = g_utf8_strdown( others, -1 );
+			g_string_append_printf( gstr, "%s%s", first_case, others_case );
+			g_free( first );
+			g_free( first_case );
+			g_free( others );
+			g_free( others_case );
+			it++;
+		}
+		g_strfreev( array );
+	}
+
+	return( gstr ? g_string_free( gstr, FALSE ) : NULL );
 }
 
 /**
