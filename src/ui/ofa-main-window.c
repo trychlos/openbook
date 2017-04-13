@@ -719,10 +719,27 @@ init_themes( ofaMainWindow *self )
 	g_signal_emit_by_name( signaler, SIGNALER_PAGE_MANAGER_AVAILABLE, self );
 }
 
+/*
+ * Set the main window minimal size
+ * But set it at the right position, so that it will not shift when a
+ * dossier will be opened
+ */
 static void
 init_minimal_size( ofaMainWindow *self )
 {
+	ofaMainWindowPrivate *priv;
+	myISettings *settings;
 	GtkRequisition min_size;
+	gint x, y;
+	gboolean set;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	settings = ofa_igetter_get_user_settings( priv->getter );
+	set = my_utils_window_position_get( settings, priv->settings_prefix, &x, &y );
+	if( set ){
+		gtk_window_move( GTK_WINDOW( self ), x, y );
+	}
 
 	gtk_widget_get_preferred_size( GTK_WIDGET( self ), &min_size, NULL );
 	gtk_window_resize( GTK_WINDOW( self ), min_size.width, min_size.height );

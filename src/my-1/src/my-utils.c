@@ -53,7 +53,7 @@ static void        child_set_editable_cb( GtkWidget *widget, gpointer data );
 static void        my_utils_container_dump_rec( GtkContainer *container, const gchar *prefix );
 static void        on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static GMenuModel *menu_get_model_rec( GMenuModel *menu, const gchar *id, gint *pos );
-static void        position_set_from_int_list( GList *list, gint *x, gint *y, gint *width, gint *height );
+static gboolean    position_get_geometry( myISettings *settings, const gchar *name, gint *x, gint *y, gint *width, gint *height );
 static gchar      *position_get_key( const gchar *name );
 static GSList     *split_by_line( const gchar *content );
 static gboolean    is_dir( GFile *file );
@@ -1851,6 +1851,30 @@ my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width )
 }
 
 /**
+ * my_utils_window_position_get:
+ * @settings: the #myISettings implementation which holds these settings.
+ * @name: the prefix of the key in the settings; the actual key name
+ *  will be "@name-pos".
+ * @x: [out]: the x position.
+ * @y: [out]: the y position.
+ *
+ * Set @x and @y.
+ *
+ * Returns: %TRUE if a position has been actually found in the settings
+ * file.
+ */
+gboolean
+my_utils_window_position_get( myISettings *settings, const gchar *name, gint *x, gint *y )
+{
+	gint width=0, height=0;
+	gboolean set;
+
+	set = position_get_geometry( settings, name, x, y, &width, &height );
+
+	return( set );
+}
+
+/**
  * my_utils_window_position_restore:
  * @toplevel: a #GtkWindow whose size and position has to be restored
  *  from the settings.
@@ -1863,26 +1887,12 @@ my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width )
 gboolean
 my_utils_window_position_restore( GtkWindow *toplevel, myISettings *settings, const gchar *name )
 {
-	static const gchar *thisfn = "my_utils_window_position_restore";
-	gchar *key;
-	GList *list;
 	gint x=0, y=0, width=0, height=0;
 	gboolean set;
 
-	/*g_debug( "%s: toplevel=%p (%s), name=%s",
-			thisfn, ( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ), name );*/
+	set = position_get_geometry( settings, name, &x, &y, &width, &height );
 
-	key = position_get_key( name );
-	list = my_isettings_get_uint_list( settings, st_save_restore_group, key );
-	g_free( key );
-	g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));
-	set = ( list != NULL );
-
-	if( list ){
-		position_set_from_int_list( list, &x, &y, &width, &height );
-		g_debug( "%s: name=%s, x=%d, y=%d, width=%d, height=%d", thisfn, name, x, y, width, height );
-		my_isettings_free_uint_list( settings, list );
-
+	if( set ){
 		gtk_window_move( toplevel, x, y );
 		gtk_window_resize( toplevel, width, height );
 	}
@@ -1891,35 +1901,51 @@ my_utils_window_position_restore( GtkWindow *toplevel, myISettings *settings, co
 }
 
 /*
- * extract the position of the window from the list of unsigned integers
+ * returns the int list which defines the window geometry, or %NULL if not found
  */
-static void
-position_set_from_int_list( GList *list, gint *x, gint *y, gint *width, gint *height )
+static gboolean
+position_get_geometry( myISettings *settings, const gchar *name, gint *x, gint *y, gint *width, gint *height )
 {
-	GList *it;
-	int i;
+	static const gchar *thisfn = "my_utils_position_get_geometry";
+	gchar *key;
+	GList *list, *it;
+	gboolean set;
 
 	g_assert( x );
 	g_assert( y );
 	g_assert( width );
 	g_assert( height );
 
-	for( it=list, i=0 ; it ; it=it->next, i+=1 ){
-		switch( i ){
-			case 0:
-				*x = GPOINTER_TO_UINT( it->data );
-				break;
-			case 1:
-				*y = GPOINTER_TO_UINT( it->data );
-				break;
-			case 2:
-				*width = GPOINTER_TO_UINT( it->data );
-				break;
-			case 3:
-				*height = GPOINTER_TO_UINT( it->data );
-				break;
-		}
+	key = position_get_key( name );
+	list = my_isettings_get_uint_list( settings, st_save_restore_group, key );
+	g_free( key );
+
+	g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));
+	set = ( g_list_length( list ) > 0 );
+
+	if( set ){
+		it = list;
+		*x = GPOINTER_TO_UINT( it->data );
+
+		it = it->next;
+		*y = GPOINTER_TO_UINT( it->data );
+
+		it = it->next;
+		*width = GPOINTER_TO_UINT( it->data );
+
+		it = it->next;
+		*height = GPOINTER_TO_UINT( it->data );
+
+	} else {
+		*x = -1;
+		*y = -1;
+		*width = -1;
+		*height = -1;
 	}
+
+	my_isettings_free_uint_list( settings, list );
+
+	return( set );
 }
 
 /**

@@ -45,6 +45,7 @@
 
  Other changes:
 
+   - my_utils_window_position_get(): new function.
    - ofaBackupDisplay: new class.
    - ofaIExportable::get_basename(): new method.
    - ofaIExportable::get_published(): new method.
