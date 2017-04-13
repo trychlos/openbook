@@ -40,6 +40,7 @@
    - ofaMainWindow: better switch back from 'minimal' display mode.
    - Fix conversion to DBModel v37 of OFA_T_BAT table.
    - ofaRecurrentRunTreeview: fix refresh bug when cancelling operations.
+   - ofoEntry: fix export format for unset counters.
 
  Other changes:
 
