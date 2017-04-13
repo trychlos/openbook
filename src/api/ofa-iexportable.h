@@ -94,8 +94,24 @@ typedef struct {
 	 *
 	 * Returns: the label to be associated with this @instance, as a
 	 * newly allocated string which should be g_free() by the caller.
+	 *
+	 * If the implementation does not return a label (or does not
+	 * provide this method), then the @instance will not be advertized
+	 * in the export assistant relevant page.
+	 *
+	 * In order to be advertized, the implementation must also return
+	 * %TRUE to the get_published() method below.
 	 */
 	gchar *                ( *get_label )            ( const ofaIExportable *instance );
+
+	/**
+	 * get_published:
+	 * @instance: the #ofaIExportable provider.
+	 *
+	 * Returns: %TRUE if the label returned by get_label() method above
+	 * has to be advertized on the relevant page of the export assistant.
+	 */
+	gboolean               ( *get_published )        ( const ofaIExportable *instance );
 
 	/**
 	 * export:
@@ -128,6 +144,8 @@ guint                 ofa_iexportable_get_interface_version     ( GType type );
  * Instance-wide
  */
 gchar                *ofa_iexportable_get_label                 ( const ofaIExportable *exportable );
+
+gboolean              ofa_iexportable_get_published             ( const ofaIExportable *exportable );
 
 gboolean              ofa_iexportable_export_to_uri             ( ofaIExportable *exportable,
 																		const gchar *uri,

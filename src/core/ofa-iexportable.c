@@ -207,6 +207,9 @@ ofa_iexportable_get_interface_version( GType type )
  * not implement this method, would just not be proposed for export to
  * the user.
  *
+ * In order to be advertized, the implementation must also return
+ * %TRUE to the get_published() method below.
+ *
  * It is so a strong suggestion to implement this method.
  */
 gchar *
@@ -222,7 +225,33 @@ ofa_iexportable_get_label( const ofaIExportable *exportable )
 
 	g_info( "%s: ofaIExportable's %s implementation does not provide 'get_label()' method",
 			thisfn, G_OBJECT_TYPE_NAME( exportable ));
+
 	return( NULL );
+}
+
+/**
+ * ofa_iexportable_get_published:
+ * @exportable: this #ofaIExportable instance.
+ *
+ * Returns: %TRUE if the label returned by ofa_iexportable_get_label()
+ * above has to be published on the relevant page of the export
+ * assistant.
+ */
+gboolean
+ofa_iexportable_get_published( const ofaIExportable *exportable )
+{
+	static const gchar *thisfn = "ofa_iexportable_get_published";
+
+	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), FALSE );
+
+	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->get_published ){
+		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->get_published( exportable ));
+	}
+
+	g_info( "%s: ofaIExportable's %s implementation does not provide 'get_published()' method",
+			thisfn, G_OBJECT_TYPE_NAME( exportable ));
+
+	return( FALSE );
 }
 
 /**
