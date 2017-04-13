@@ -36,6 +36,7 @@
  * operation template.
  */
 
+#include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 
@@ -94,9 +95,9 @@ const gchar       *ofo_recurrent_run_status_get_abr        ( ofeRecurrentStatus 
 const gchar       *ofo_recurrent_run_status_get_label      ( ofeRecurrentStatus status );
 const gchar       *ofo_recurrent_run_get_upd_user          ( const ofoRecurrentRun *model );
 const GTimeVal    *ofo_recurrent_run_get_upd_stamp         ( const ofoRecurrentRun *model );
-gdouble            ofo_recurrent_run_get_amount1           ( const ofoRecurrentRun *model );
-gdouble            ofo_recurrent_run_get_amount2           ( const ofoRecurrentRun *model );
-gdouble            ofo_recurrent_run_get_amount3           ( const ofoRecurrentRun *model );
+ofxAmount          ofo_recurrent_run_get_amount1           ( const ofoRecurrentRun *model );
+ofxAmount          ofo_recurrent_run_get_amount2           ( const ofoRecurrentRun *model );
+ofxAmount          ofo_recurrent_run_get_amount3           ( const ofoRecurrentRun *model );
 ofxCounter         ofo_recurrent_run_get_numseq            ( const ofoRecurrentRun *model );
 
 gint               ofo_recurrent_run_compare               ( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
@@ -104,9 +105,9 @@ gint               ofo_recurrent_run_compare               ( const ofoRecurrentR
 void               ofo_recurrent_run_set_mnemo             ( ofoRecurrentRun *model, const gchar *mnemo );
 void               ofo_recurrent_run_set_date              ( ofoRecurrentRun *model, const GDate *date );
 void               ofo_recurrent_run_set_status            ( ofoRecurrentRun *model, ofeRecurrentStatus status );
-void               ofo_recurrent_run_set_amount1           ( ofoRecurrentRun *model, gdouble amount );
-void               ofo_recurrent_run_set_amount2           ( ofoRecurrentRun *model, gdouble amount );
-void               ofo_recurrent_run_set_amount3           ( ofoRecurrentRun *model, gdouble amount );
+void               ofo_recurrent_run_set_amount1           ( ofoRecurrentRun *model, ofxAmount amount );
+void               ofo_recurrent_run_set_amount2           ( ofoRecurrentRun *model, ofxAmount amount );
+void               ofo_recurrent_run_set_amount3           ( ofoRecurrentRun *model, ofxAmount amount );
 
 GList             *ofo_recurrent_run_get_doc_orphans       ( ofaIGetter *getter );
 #define            ofo_recurrent_run_free_doc_orphans( L ) ( g_list_free( L ))

@@ -309,8 +309,6 @@
                 this is a link to generated recurrent opes (not accounting
                 opes)
 
-1459 2017- 4-13 recurrent generation: do not generate if amount 1 is zero
-
 1460 2017- 4-13 recurrent opes: validated status should be labeled accounted
                 id for the button
 
@@ -1117,6 +1115,9 @@
 1457 2017- 4-13 ope template properties: add a right margin to the buttons
                 to manage the scrollbar
      2017- 4-13 done
+
+1459 2017- 4-13 recurrent generation: do not generate if amount 1 is zero
+     2017- 4-13 fixed
 
 1461 2017- 4-13 change the id of recurrent and vat dbmodels
      2017- 4-13 done

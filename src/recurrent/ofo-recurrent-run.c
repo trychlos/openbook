@@ -450,29 +450,38 @@ ofo_recurrent_run_get_upd_stamp( const ofoRecurrentRun *model )
 
 /**
  * ofo_recurrent_run_get_amount1:
+ * @recope: this #ofoRecurrentRun object.
+ *
+ * Returns: the #1 @amount.
  */
-gdouble
-ofo_recurrent_run_get_amount1( const ofoRecurrentRun *model )
+ofxAmount
+ofo_recurrent_run_get_amount1( const ofoRecurrentRun *recope )
 {
-	ofo_base_getter( RECURRENT_RUN, model, amount, 0, REC_AMOUNT1 );
+	ofo_base_getter( RECURRENT_RUN, recope, amount, 0, REC_AMOUNT1 );
 }
 
 /**
  * ofo_recurrent_run_get_amount2:
+ * @recope: this #ofoRecurrentRun object.
+ *
+ * Returns: the #2 @amount.
  */
-gdouble
-ofo_recurrent_run_get_amount2( const ofoRecurrentRun *model )
+ofxAmount
+ofo_recurrent_run_get_amount2( const ofoRecurrentRun *recope )
 {
-	ofo_base_getter( RECURRENT_RUN, model, amount, 0, REC_AMOUNT2 );
+	ofo_base_getter( RECURRENT_RUN, recope, amount, 0, REC_AMOUNT2 );
 }
 
 /**
  * ofo_recurrent_run_get_amount3:
+ * @recope: this #ofoRecurrentRun object.
+ *
+ * Returns: the #2 @amount.
  */
-gdouble
-ofo_recurrent_run_get_amount3( const ofoRecurrentRun *model )
+ofxAmount
+ofo_recurrent_run_get_amount3( const ofoRecurrentRun *recope )
 {
-	ofo_base_getter( RECURRENT_RUN, model, amount, 0, REC_AMOUNT3 );
+	ofo_base_getter( RECURRENT_RUN, recope, amount, 0, REC_AMOUNT3 );
 }
 
 /**
@@ -566,29 +575,41 @@ recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp )
 
 /**
  * ofo_recurrent_run_set_amount1:
+ * @recope: this #ofoRecurrentRun object.
+ * @amount: the amount to be set.
+ *
+ * Set the #1 @amount.
  */
 void
-ofo_recurrent_run_set_amount1( ofoRecurrentRun *model, gdouble amount )
+ofo_recurrent_run_set_amount1( ofoRecurrentRun *recope, ofxAmount amount )
 {
-	ofo_base_setter( RECURRENT_RUN, model, amount, REC_AMOUNT1, amount );
+	ofo_base_setter( RECURRENT_RUN, recope, amount, REC_AMOUNT1, amount );
 }
 
 /**
  * ofo_recurrent_run_set_amount2:
+ * @recope: this #ofoRecurrentRun object.
+ * @amount: the amount to be set.
+ *
+ * Set the #2 @amount.
  */
 void
-ofo_recurrent_run_set_amount2( ofoRecurrentRun *model, gdouble amount )
+ofo_recurrent_run_set_amount2( ofoRecurrentRun *recope, ofxAmount amount )
 {
-	ofo_base_setter( RECURRENT_RUN, model, amount, REC_AMOUNT2, amount );
+	ofo_base_setter( RECURRENT_RUN, recope, amount, REC_AMOUNT2, amount );
 }
 
 /**
  * ofo_recurrent_run_set_amount3:
+ * @recope: this #ofoRecurrentRun object.
+ * @amount: the amount to be set.
+ *
+ * Set the #3 @amount.
  */
 void
-ofo_recurrent_run_set_amount3( ofoRecurrentRun *model, gdouble amount )
+ofo_recurrent_run_set_amount3( ofoRecurrentRun *recope, ofxAmount amount )
 {
-	ofo_base_setter( RECURRENT_RUN, model, amount, REC_AMOUNT3, amount );
+	ofo_base_setter( RECURRENT_RUN, recope, amount, REC_AMOUNT3, amount );
 }
 
 /**

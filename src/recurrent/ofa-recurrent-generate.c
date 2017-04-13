@@ -740,7 +740,7 @@ generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GD
 
 /*
  * Takes care of having at most one Waiting|Validated operation for a
- * given mnemo+date couple
+ * given mnemo+date couple.
  */
 static void
 generate_enum_dates_cb( const GDate *date, sEnumBetween *data )
@@ -849,36 +849,60 @@ on_ok_clicked( ofaRecurrentGenerate *self )
 	ofaRecurrentGeneratePrivate *priv;
 	ofoRecurrentRun *object;
 	GList *it;
-	gchar *str;
-	gint count;
+	GString *gstr;
+	gint count, notgen;
 	gboolean ok;
+	ofxAmount amount;
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	ok = TRUE;
+	count = 0;
+	notgen = 0;
 
 	for( it=priv->dataset ; it ; it=it->next ){
 		object = OFO_RECURRENT_RUN( it->data );
-		if( !ofo_recurrent_run_insert( object )){
+		amount = ofo_recurrent_run_get_amount1( object );
+
+		if( amount == 0 ){
+			notgen += 1;
+
+		} else if( !ofo_recurrent_run_insert( object )){
 			ok = FALSE;
-			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to insert a new operation" ));
+			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to insert a new recurrent operation" ));
 			break;
+
+		} else {
+			/* this is the reference we just give to the collection dataset */
+			g_object_ref( object );
+			count += 1;
 		}
-		/* this is the reference we just give to the collection dataset */
-		g_object_ref( object );
 	}
 
 	if( ok ){
-		count = g_list_length( priv->dataset );
 		ofo_recurrent_gen_set_last_run_date( priv->getter, &priv->end_date );
 
+		gstr = g_string_new( "" );
+
 		if( count == 1 ){
-			str = g_strdup( _( "One successfully inserted operation" ));
+			g_string_printf( gstr, _( "One successfully inserted operation." ));
 		} else {
-			str = g_strdup_printf( _( "%d successfully inserted operations" ), count );
+			g_string_printf( gstr, _( "%d successfully inserted operations." ), count );
 		}
-		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO, str );
-		g_free( str );
+
+		if( notgen > 0 ){
+			gstr = g_string_append( gstr, "\n" );
+			if( notgen == 1 ){
+				gstr = g_string_append( gstr,
+						_( "One operation has not been recorded as its first amount was zero." ));
+			} else {
+				g_string_append_printf( gstr,
+						_( "%u operations have not been recorded as their first amount was zero." ), notgen );
+			}
+		}
+
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO, gstr->str );
+		g_string_free( gstr, TRUE );
 	}
 
 	my_iwindow_close( MY_IWINDOW( self ));
