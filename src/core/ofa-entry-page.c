@@ -45,7 +45,9 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-idate-filter.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-isignaler.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-operation-group.h"
 #include "api/ofa-page.h"
@@ -144,6 +146,7 @@ typedef struct {
 	GSimpleAction       *vope_action;			/* display operation */
 	GSimpleAction       *vconcil_action;		/* display reconciliation group */
 	GSimpleAction       *vsettle_action;		/* display settlement group */
+	GSimpleAction       *export_action;			/* export */
 
 	/* footer
 	 */
@@ -388,6 +391,7 @@ static void       delete_row( ofaEntryPage *self, GtkTreeSelection *selection );
 static void       action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static void       action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static void       action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
+static void       action_on_export_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static gboolean   row_is_editable( ofaEntryPage *self, GtkTreeSelection *selection );
 static ofxCounter row_get_operation_id( ofaEntryPage *self, GtkTreeSelection *selection );
 static ofxCounter row_get_concil_id( ofaEntryPage *self, GtkTreeSelection *selection );
@@ -457,6 +461,7 @@ entry_page_dispose( GObject *instance )
 		g_clear_object( &priv->vope_action );
 		g_clear_object( &priv->vconcil_action );
 		g_clear_object( &priv->vsettle_action );
+		g_clear_object( &priv->export_action );
 	}
 
 	/* chain up to the parent class */
@@ -2093,6 +2098,14 @@ setup_actions( ofaEntryPage *self )
 			_( "View settlement group..." ));
 	g_simple_action_set_enabled( priv->vsettle_action, FALSE );
 
+	/* display settlement group action */
+	priv->export_action = g_simple_action_new( "export", NULL );
+	g_signal_connect( priv->export_action, "activate", G_CALLBACK( action_on_export_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->export_action ),
+			_( "Export the view content..." ));
+	g_simple_action_set_enabled( priv->export_action, TRUE );
+
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
 	ofa_icontext_set_menu(
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( self ),
@@ -3610,6 +3623,22 @@ action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaEntryPag
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_settlement_group_run( priv->getter, toplevel, priv->sel_settle_id );
+}
+
+/*
+ * export the content of the treeview
+ */
+static void
+action_on_export_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	ofaISignaler *signaler;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	signaler = ofa_igetter_get_signaler( priv->getter );
+
+	g_signal_emit_by_name( signaler, SIGNALER_EXPORT_ASSISTANT_RUN, OFA_IEXPORTABLE( priv->tview ), TRUE );
 }
 
 /*
