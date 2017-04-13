@@ -64,8 +64,10 @@ typedef struct _ofaIExportable                    ofaIExportable;
  * ofaIExportableInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
- * @get_label              [must]   returns the label.
- * @export:                [should] exports a dataset.
+ * @get_basename           [may] returns the default basename of the export file.
+ * @get_label              [should] returns the label.
+ * @get_published          [should] returns whether the label should be published.
+ * @export:                [should] exports a dataset to an URI.
  *
  * This defines the interface that an #ofaIExportable should implement.
  */
@@ -88,6 +90,18 @@ typedef struct {
 	guint                  ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
+	/**
+	 * get_basename:
+	 * @instance: the #ofaIExportable provider.
+	 *
+	 * Returns: the default basename to be used for the export file,
+	 * as a newly allocated string which will be g_free() by the caller.
+	 *
+	 * If not implemented, the interface defaults to the class name of
+	 * the @instance.
+	 */
+	gchar *                ( *get_basename )         ( ofaIExportable *instance );
+
 	/**
 	 * get_label:
 	 * @instance: the #ofaIExportable provider.
@@ -143,6 +157,8 @@ guint                 ofa_iexportable_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
+gchar                *ofa_iexportable_get_basename              ( ofaIExportable *exportable );
+
 gchar                *ofa_iexportable_get_label                 ( const ofaIExportable *exportable );
 
 gboolean              ofa_iexportable_get_published             ( const ofaIExportable *exportable );

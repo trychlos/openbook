@@ -43,6 +43,8 @@
  Other changes:
 
    - ofaBackupDisplay: new class.
+   - ofaIExportable::get_basename(): new method.
+   - ofaIExportable::get_published(): new method.
    - ofaIExporter: new interface.
    - ofaIRenderer: interface is completed with font and color getters (todo #1452).
    - ofaRecurrentModelPage: precise the action label (todo #1458). 

@@ -192,6 +192,33 @@ ofa_iexportable_get_interface_version( GType type )
 }
 
 /**
+ * ofa_iexporter_get_basename:
+ * @exportable: this #ofaIExportable instance.
+ *
+ * Returns: the default basename of the export file, as a
+ * newly allocated string which should be g_free() by the caller.
+ *
+ * If not implemented, the interface defaults to the class name of
+ * the @exportable instance.
+ */
+gchar *
+ofa_iexportable_get_basename( ofaIExportable *exportable )
+{
+	static const gchar *thisfn = "ofa_iexportable_get_basename";
+
+	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), NULL );
+
+	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->get_basename ){
+		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->get_basename( exportable ));
+	}
+
+	g_info( "%s: ofaIExportable's %s implementation does not provide 'get_basename()' method",
+			thisfn, G_OBJECT_TYPE_NAME( exportable ));
+
+	return( g_strdup( G_OBJECT_TYPE_NAME( exportable )));
+}
+
+/**
  * ofa_iexporter_get_label:
  * @exportable: this #ofaIExportable instance.
  *
