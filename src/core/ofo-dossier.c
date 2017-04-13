@@ -282,6 +282,7 @@ static guint       idoc_get_interface_version( void );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
+static gboolean    iexportable_get_published( const ofaIExportable *instance );
 static gboolean    iexportable_export( ofaIExportable *exportable, const gchar *format_id );
 static gboolean    iexportable_export_default( ofaIExportable *exportable );
 static void        free_currency_details( ofoDossier *dossier );
@@ -1731,6 +1732,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 
 	iface->get_interface_version = iexportable_get_interface_version;
 	iface->get_label = iexportable_get_label;
+	iface->get_published = iexportable_get_published;
 	iface->export = iexportable_export;
 }
 
@@ -1744,6 +1746,12 @@ static gchar *
 iexportable_get_label( const ofaIExportable *instance )
 {
 	return( g_strdup( _( "_Dossier" )));
+}
+
+static gboolean
+iexportable_get_published( const ofaIExportable *instance )
+{
+	return( TRUE );
 }
 
 /*
