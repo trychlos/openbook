@@ -110,6 +110,10 @@ typedef struct {
 	 * @instance: the #ofaIImportable provider.
 	 *
 	 * Returns: the label to be associated to the class.
+	 *
+	 * If the implementation does not return a label (or does not
+	 * provide this method), then the @instance will not be advertized
+	 * in the import assistant relevant page.
 	 */
 	gchar *  ( *get_label )            ( const ofaIImportable *instance );
 }
