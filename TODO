@@ -277,6 +277,7 @@
                 also generate an OD for deductible CSG to 629 account 
 
 1410 2017- 3-24 export fec should be a plugin (new ofaIExporter interface)
+     2017- 4-13 for now is isolated in a separate file
 
 1416 2017- 3-24 dossier administrative credentials: does not remember the account
      2017- 3-29 restore assistant:  fixed
