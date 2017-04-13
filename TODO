@@ -302,9 +302,6 @@
 1455 2017- 4-12 when importing the default accounts chart on new dossier:
                 review the source file (does not fit the new table format)
 
-1456 2017- 4-13 guided input: do not change the ope date when changing
-                the ope template if it is already valid
-
 1462 2017- 4-13 PACK: check that each header can be compiled stand-alone
 
 1463
@@ -1104,6 +1101,10 @@
 
 1453 2017- 4-11 configure.ac: does not display pwirenderer plugin infos
      2017- 4-11 fixed
+
+1456 2017- 4-13 guided input: do not change the ope date when changing
+                the ope template if it is already valid
+     2017- 4-13 done
 
 1457 2017- 4-13 ope template properties: add a right margin to the buttons
                 to manage the scrollbar
