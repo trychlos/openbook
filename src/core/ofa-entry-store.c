@@ -68,15 +68,15 @@ static GType st_col_types[ENTRY_N_COLUMNS] = {
 	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* ope_template, account, debit */
 	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_ULONG,		/* credit, ope_number, ope_number_i */
 	G_TYPE_STRING,  G_TYPE_ULONG,						/* stlmt_number, stlmt_number_i */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* stlmt_user, stlmt_stamp, ent_number_str */
-	G_TYPE_ULONG,   G_TYPE_ULONG,						/* ent_number_int, tiers_id */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* stlmt_user, stlmt_stamp, ent_number */
+	G_TYPE_ULONG,   G_TYPE_STRING,						/* ent_number_i, tiers */
 	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* upd_user, upd_stamp, concil_number */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_ULONG,		/* concil_date, status_str, status_int */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_UINT,			/* concil_date, status, status_i */
 	G_TYPE_OBJECT,										/* the #ofoEntry itself */
 	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_BOOLEAN, 		/* msgerr, msgwarn, dope_set */
 	G_TYPE_BOOLEAN, G_TYPE_BOOLEAN,						/* deffect_set, currency_set */
-	G_TYPE_INT,     G_TYPE_STRING, G_TYPE_STRING, 0,	/* rule_int, rule, notes, notes_png */
-	G_TYPE_STRING,  G_TYPE_ULONG						/* period, period_i */
+	G_TYPE_UINT,    G_TYPE_STRING, G_TYPE_STRING, 0,	/* rule_i, rule, notes, notes_png */
+	G_TYPE_STRING,  G_TYPE_UINT							/* period, period_i */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";

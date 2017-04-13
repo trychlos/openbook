@@ -35,6 +35,7 @@
  Bug fixes:
 
    - configure.ac: display 'pwirender' plugin build status (todo #1453).
+   - ofaEntryStore: fix ENT_TIERS column type.
    - ofaGuidedInputBin: do not override a user-set date when setting a template (todo #1456). 
    - ofaMainWindow: better switch back from 'minimal' display mode.
    - Fix conversion to DBModel v37 of OFA_T_BAT table.
