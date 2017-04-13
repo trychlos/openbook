@@ -26,6 +26,7 @@
    - Exportable standard class format is reviewed (todo #1351).
    - Exporters can provide their own stream format (todo #1411).
    - Main window has a new 'minimal' display mode.
+   - Operation template properties: fields are not masked by the scrollbar (todo #1457).
    - Plugins now advertize their DB model with their canonical name (todo #1461).
    - Restore assistant let the user display the metadata of the archive (todo #1450).
 

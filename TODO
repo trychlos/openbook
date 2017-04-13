@@ -305,9 +305,6 @@
 1456 2017- 4-13 guided input: do not change the ope date when changing
                 the ope template if it is already valid
 
-1457 2017- 4-13 ope template properties: add a right margin to the buttons
-                to manage the scrollbar
-
 1458 2017- 4-13 recurrent model page: relabel view operations button as
                 this is a link to generated recurrent opes (not accounting
                 opes)
@@ -1116,6 +1113,10 @@
 
 1453 2017- 4-11 configure.ac: does not display pwirenderer plugin infos
      2017- 4-11 fixed
+
+1457 2017- 4-13 ope template properties: add a right margin to the buttons
+                to manage the scrollbar
+     2017- 4-13 done
 
 1461 2017- 4-13 change the id of recurrent and vat dbmodels
      2017- 4-13 done
