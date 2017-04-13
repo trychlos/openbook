@@ -300,17 +300,17 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->generate_action ),
 					_( "_Generate from selected..." )));
 
-	/* view operations - always enabled */
+	/* view generated operations - always enabled */
 	priv->view_opes_action = g_simple_action_new( "viewopes", NULL );
 	g_signal_connect( priv->view_opes_action, "activate", G_CALLBACK( action_on_view_opes_activated ), page );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_opes_action ),
-			_( "View operations..." ));
+			_( "View generated operations..." ));
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_opes_action ),
-					_( "_View operations..." )));
+					_( "_View generated opes..." )));
 	g_simple_action_set_enabled( priv->view_opes_action, TRUE );
 }
 

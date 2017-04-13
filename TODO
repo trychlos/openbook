@@ -305,10 +305,6 @@
 1456 2017- 4-13 guided input: do not change the ope date when changing
                 the ope template if it is already valid
 
-1458 2017- 4-13 recurrent model page: relabel view operations button as
-                this is a link to generated recurrent opes (not accounting
-                opes)
-
 1462 2017- 4-13 PACK: check that each header can be compiled stand-alone
 
 1463
@@ -1111,6 +1107,11 @@
 
 1457 2017- 4-13 ope template properties: add a right margin to the buttons
                 to manage the scrollbar
+     2017- 4-13 done
+
+1458 2017- 4-13 recurrent model page: relabel view operations button as
+                this is a link to generated recurrent opes (not accounting
+                opes)
      2017- 4-13 done
 
 1459 2017- 4-13 recurrent generation: do not generate if amount 1 is zero

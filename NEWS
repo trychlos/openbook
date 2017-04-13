@@ -44,6 +44,7 @@
    - ofaBackupDisplay: new class.
    - ofaIExporter: new interface.
    - ofaIRenderer: interface is completed with font and color getters (todo #1452).
+   - ofaRecurrentModelPage: precise the action label (todo #1458). 
    - ofaStreamFormat: is now able to define which fields are user-updatable.
    - core/ofo-entry-fec.{c,h}: new files.
 
