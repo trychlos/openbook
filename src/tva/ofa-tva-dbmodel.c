@@ -222,7 +222,7 @@ iident_get_canon_name( const myIIdent *instance, void *user_data )
 static gchar *
 iident_get_version( const myIIdent *instance, void *user_data )
 {
-	return( g_strdup_printf( "DBMS:%u", get_last_version()));
+	return( g_strdup_printf( "%s:%u", DBMODEL_CANON_NAME, get_last_version()));
 }
 
 /*
