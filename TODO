@@ -229,8 +229,6 @@
                 of dossier_collection (due to file monitoring)
      2017- 2- 6 we also need an ofaIDBConnect opened connection on the dossier
 
-1239 2016-10-19 export from EntryPage
-
 1243 2016-10-22 have a command-line tool which displays the version of
                 each of the DBModels of a saved database
 
@@ -485,6 +483,9 @@
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
      2017- 1-12 done in CORE v34
+
+1239 2016-10-19 export from EntryPage
+     2017- 4-13 done
 
 1246 2016-11-10 mysql root account could go to settings to be preset in dialogs
      2017- 1-25 done in ofaMysqlRootBin class through ofaIDBSuperuser interface

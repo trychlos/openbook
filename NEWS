@@ -23,6 +23,7 @@
 
  New features and improvements:
 
+   - Entry page is now able to export the content of its view (todo #1239).
    - Exportable standard class format is reviewed (todo #1351).
    - Exporters can provide their own stream format (todo #1411).
    - Main window has a new 'minimal' display mode.
@@ -51,6 +52,7 @@
    - ofaIRenderer: interface is completed with font and color getters (todo #1452).
    - ofaRecurrentModelPage: precise the action label (todo #1458). 
    - ofaStreamFormat: is now able to define which fields are user-updatable.
+   - ofaTVBin: is now exportable (for now only implemented in ofaEntryPage).
    - core/ofo-entry-fec.{c,h}: new files.
 
 -----------------------------------------------------------------------

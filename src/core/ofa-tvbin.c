@@ -34,6 +34,8 @@
 
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
+#include "api/ofa-iexportable.h"
+#include "api/ofa-iexporter.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
@@ -88,6 +90,20 @@ enum {
  */
 typedef void (*ofaTVBinInitEditableFn )( gint, GtkCellRenderer *, void * );
 
+/* a data structure to export the treview content
+ */
+typedef struct {
+	gint               id;
+	ofeBoxType         type;
+	gchar             *header;
+	GtkTreeViewColumn *column;
+}
+	sColumn;
+
+/* the callback which exports the view content
+ */
+typedef gboolean ( *ExportCb )( ofaIExportable *, GList *, void *, GtkTreeModel *, GtkTreeIter * );
+
 /* signals defined here
  */
 enum {
@@ -98,33 +114,49 @@ enum {
 	N_SIGNALS
 };
 
-static guint        st_signals[ N_SIGNALS ] = { 0 };
+static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void         init_top_widget( ofaTVBin *self );
-static void         tview_on_row_selected( GtkTreeSelection *selection, ofaTVBin *self );
-static void         tview_on_row_activated( GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVBin *self );
-static gboolean     tview_on_key_pressed( GtkWidget *treeview, GdkEventKey *event, ofaTVBin *self );
-static void         add_column( ofaTVBin *bin, GtkTreeViewColumn *column, gint column_id, const gchar *menu_label, ofeBoxType type );
-static void         iactionable_iface_init( ofaIActionableInterface *iface );
-static guint        iactionable_get_interface_version( void );
-static void         icontext_iface_init( ofaIContextInterface *iface );
-static guint        icontext_get_interface_version( void );
-static GtkWidget   *icontext_get_focused_widget( ofaIContext *instance );
-static void         itvcolumnable_iface_init( ofaITVColumnableInterface *iface );
-static guint        itvcolumnable_get_interface_version( void );
-static void         itvfilterable_iface_init( ofaITVFilterableInterface *iface );
-static guint        itvfilterable_get_interface_version( void );
-static gboolean     itvfilterable_filter_model( const ofaITVFilterable *instance, GtkTreeModel *model, GtkTreeIter *iter );
-static void         itvsortable_iface_init( ofaITVSortableInterface *iface );
-static guint        itvsortable_get_interface_version( void );
-static gint         itvsortable_get_column_id( ofaITVSortable *instance, GtkTreeViewColumn *column );
-static gboolean     itvsortable_has_sort_model( const ofaITVSortable *instance );
-static gint         itvsortable_sort_model( const ofaITVSortable *instance, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static void       init_top_widget( ofaTVBin *self );
+static void       tview_on_row_selected( GtkTreeSelection *selection, ofaTVBin *self );
+static void       tview_on_row_activated( GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVBin *self );
+static gboolean   tview_on_key_pressed( GtkWidget *treeview, GdkEventKey *event, ofaTVBin *self );
+static void       add_column( ofaTVBin *bin, GtkTreeViewColumn *column, gint column_id, const gchar *menu_label, ofeBoxType type );
+static void       iactionable_iface_init( ofaIActionableInterface *iface );
+static guint      iactionable_get_interface_version( void );
+static void       icontext_iface_init( ofaIContextInterface *iface );
+static guint      icontext_get_interface_version( void );
+static GtkWidget *icontext_get_focused_widget( ofaIContext *instance );
+static void       iexportable_iface_init( ofaIExportableInterface *iface );
+static guint      iexportable_get_interface_version( void );
+static gchar     *iexportable_get_basename( ofaIExportable *instance );
+static gchar     *iexportable_get_label( const ofaIExportable *instance );
+static gboolean   iexportable_export( ofaIExportable *instance, const gchar *format_id );
+static gboolean   iexportable_export_default( ofaIExportable *exportable );
+static GList     *export_default_get_columns( ofaIExportable *self );
+static gboolean   export_default_headers( ofaIExportable *exportable, GList *columns );
+static gboolean   export_default_iter_dataset( ofaIExportable *self, GList *columns, ExportCb cb, void *user_data );
+static gboolean   export_default_iter_dataset_rec( ofaIExportable *self, GList *columns, ExportCb cb, void *user_data, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gboolean   export_default_count_cb( ofaIExportable *exportable, GList *columns, gulong *count, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gboolean   export_default_export_cb( ofaIExportable *exportable, GList *columns, void *user_data, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gint       cmp_columns( sColumn *a, sColumn *b );
+static void       free_columns( GList *columns );
+static void       free_column( sColumn *scol );
+static void       itvcolumnable_iface_init( ofaITVColumnableInterface *iface );
+static guint      itvcolumnable_get_interface_version( void );
+static void       itvfilterable_iface_init( ofaITVFilterableInterface *iface );
+static guint      itvfilterable_get_interface_version( void );
+static gboolean   itvfilterable_filter_model( const ofaITVFilterable *instance, GtkTreeModel *model, GtkTreeIter *iter );
+static void       itvsortable_iface_init( ofaITVSortableInterface *iface );
+static guint      itvsortable_get_interface_version( void );
+static gint       itvsortable_get_column_id( ofaITVSortable *instance, GtkTreeViewColumn *column );
+static gboolean   itvsortable_has_sort_model( const ofaITVSortable *instance );
+static gint       itvsortable_sort_model( const ofaITVSortable *instance, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaTVBin, ofa_tvbin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaTVBin )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACTIONABLE, iactionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICONTEXT, icontext_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITVCOLUMNABLE, itvcolumnable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITVFILTERABLE, itvfilterable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITVSORTABLE, itvsortable_iface_init ))
@@ -1921,6 +1953,274 @@ icontext_get_focused_widget( ofaIContext *instance )
 	priv = ofa_tvbin_get_instance_private( OFA_TVBIN( instance ));
 
 	return( priv->treeview );
+}
+
+/*
+ * ofaIExportable interface management
+ */
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofa_tvbin_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->get_basename = iexportable_get_basename;
+	iface->get_label = iexportable_get_label;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static gchar *
+iexportable_get_basename( ofaIExportable *instance )
+{
+	return( g_strdup( ofa_tvbin_get_name( OFA_TVBIN( instance ))));
+}
+
+static gchar *
+iexportable_get_label( const ofaIExportable *instance )
+{
+	return( g_strdup( _( "Current view content" )));
+}
+
+static gboolean
+iexportable_export( ofaIExportable *instance, const gchar *format_id )
+{
+	static const gchar *thisfn = "ofa_tvbin_iexportable_export";
+
+	if( !my_collate( format_id, OFA_IEXPORTER_DEFAULT_FORMAT_ID )){
+		return( iexportable_export_default( instance ));
+	}
+
+	g_warning( "%s: format=%s is not managed here", thisfn, format_id );
+
+	return( FALSE );
+}
+
+static gboolean
+iexportable_export_default( ofaIExportable *exportable )
+{
+	GList *columns, *it;
+	sColumn *scol;
+	gboolean ok;
+	gulong count;
+
+	columns = export_default_get_columns( exportable );
+
+	for( it=columns ; it ; it=it->next ){
+		scol = ( sColumn * ) it->data;
+		g_debug( "iexportable_export_default: scolumn: id=%d, header=%s", scol->id, scol->header );
+	}
+
+	/* export the headers */
+	export_default_headers( exportable, columns );
+
+	/* count the visible rows */
+	count = 0;
+	ok = export_default_iter_dataset( exportable, columns, ( ExportCb ) export_default_count_cb, &count );
+	ofa_iexportable_set_count( exportable, count+1 );
+
+	/* export the dataset */
+	ok = export_default_iter_dataset( exportable, columns, ( ExportCb ) export_default_export_cb, NULL );
+
+	free_columns( columns );
+
+	return( ok );
+}
+
+/*
+ * Returns: a GList of sColumn structures sorted by column_id.
+ * The returned list should be free_columns() by the caller.
+ * We filter the text columns (not the png)
+ */
+static GList *
+export_default_get_columns( ofaIExportable *self )
+{
+	ofaTVBinPrivate *priv;
+	GList *columns, *list, *it;
+	GtkTreeViewColumn *gtkcol;
+	sColumn *scol;
+	const gchar *cname;
+	ofeBoxType type;
+
+	priv = ofa_tvbin_get_instance_private( OFA_TVBIN( self ));
+
+	columns = NULL;
+	list = gtk_tree_view_get_columns( GTK_TREE_VIEW( priv->treeview ));
+
+	for( it=list ; it ; it=it->next ){
+		gtkcol = GTK_TREE_VIEW_COLUMN( it->data );
+		type = ofa_itvcolumnable_get_column_type( OFA_ITVCOLUMNABLE( self ), gtkcol );
+		if( type > 0 ){
+			scol = g_new0( sColumn, 1 );
+			scol->id = ofa_itvcolumnable_get_column_id( OFA_ITVCOLUMNABLE( self ), gtkcol );
+			scol->type = type;
+			cname = ofa_itvcolumnable_get_menu_label( OFA_ITVCOLUMNABLE( self ), gtkcol );
+			scol->header = my_utils_str_funny_capitalized( cname );
+			scol->column = gtkcol;
+			columns = g_list_insert_sorted( columns, scol, ( GCompareFunc ) cmp_columns );
+		}
+	}
+
+	g_list_free( list );
+
+	return( columns );
+}
+
+/*
+ * export the headers
+ */
+static gboolean
+export_default_headers( ofaIExportable *exportable, GList *columns )
+{
+	ofaStreamFormat *stformat;
+	gchar field_sep;
+	GList *it;
+	GString *gstr;
+	sColumn *scol;
+	gboolean ok;
+
+	stformat = ofa_iexportable_get_stream_format( exportable );
+	g_return_val_if_fail( stformat && OFA_IS_STREAM_FORMAT( stformat ), FALSE );
+
+	field_sep = ofa_stream_format_get_field_sep( stformat );
+	gstr = g_string_new( "" );
+
+	for( it=columns ; it ; it=it->next ){
+		scol = ( sColumn * ) it->data;
+		if( field_sep && gstr->len > 0 ){
+			g_string_append_printf( gstr, "%c", field_sep );
+		}
+		gstr = g_string_append( gstr, scol->header );
+	}
+
+	ok = ofa_iexportable_append_line( exportable, gstr->str );
+	g_string_free( gstr, TRUE );
+
+	return( ok );
+}
+
+/*
+ * Returns a GList of GObject which are currently visible on the treeview.
+ * The returned GList should be g_ist_free() by the caller.
+ *
+ * The underlying store may be a GtkTreeStore, so have to consider children.
+ */
+static gboolean
+export_default_iter_dataset( ofaIExportable *self, GList *columns, ExportCb cb, void *user_data )
+{
+	ofaTVBinPrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gboolean ok;
+
+	priv = ofa_tvbin_get_instance_private( OFA_TVBIN( self ));
+
+	ok = TRUE;
+	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
+
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		ok = export_default_iter_dataset_rec( self, columns, cb, user_data, tmodel, &iter );
+	}
+
+	return( ok );
+}
+
+static gboolean
+export_default_iter_dataset_rec( ofaIExportable *self, GList *columns, ExportCb cb, void *user_data, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	GtkTreeIter child_iter;
+	gboolean ok;
+
+	ok = TRUE;
+
+	while( ok ){
+		if( gtk_tree_model_iter_has_child( tmodel, iter )){
+			gtk_tree_model_iter_children( tmodel, &child_iter, iter );
+			if( !export_default_iter_dataset_rec( self, columns, cb, user_data, tmodel, &child_iter )){
+				return( FALSE );
+			}
+		}
+		if( cb ){
+			ok = cb( self, columns, user_data, tmodel, iter );
+		}
+		if( !gtk_tree_model_iter_next( tmodel, iter )){
+			break;
+		}
+	}
+
+	return( TRUE );
+}
+
+/*
+ * count the visible rows
+ */
+static gboolean
+export_default_count_cb( ofaIExportable *exportable, GList *columns, gulong *count, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	*count += 1;
+
+	return( TRUE );
+}
+
+/*
+ * export the content of a row
+ */
+static gboolean
+export_default_export_cb( ofaIExportable *exportable, GList *columns, void *user_data, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	ofaStreamFormat *stformat;
+	gchar field_sep, *str;
+	GList *it;
+	GString *gstr;
+	sColumn *scol;
+	gboolean ok;
+
+	stformat = ofa_iexportable_get_stream_format( exportable );
+	g_return_val_if_fail( stformat && OFA_IS_STREAM_FORMAT( stformat ), FALSE );
+
+	field_sep = ofa_stream_format_get_field_sep( stformat );
+	gstr = g_string_new( "" );
+
+	for( it=columns ; it ; it=it->next ){
+		scol = ( sColumn * ) it->data;
+		gtk_tree_model_get( tmodel, iter, scol->id, &str, -1 );
+		if( field_sep && gstr->len > 0 ){
+			g_string_append_printf( gstr, "%c", field_sep );
+		}
+		gstr = g_string_append( gstr, my_strlen( str ) ? str : "" );
+		g_free( str );
+	}
+
+	ok = ofa_iexportable_append_line( exportable, gstr->str );
+	g_string_free( gstr, TRUE );
+
+	return( ok );
+}
+
+static gint
+cmp_columns( sColumn *a, sColumn *b )
+{
+	return( a->id > b->id ? 1 : ( a->id < b->id ? -1 : 0 ));
+}
+
+static void
+free_columns( GList *columns )
+{
+	g_list_free_full( columns, ( GDestroyNotify ) free_column );
+}
+
+static void
+free_column( sColumn *scol )
+{
+	g_free( scol->header );
+	g_free( scol );
 }
 
 /*

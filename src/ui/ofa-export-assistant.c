@@ -324,6 +324,7 @@ ofa_export_assistant_init( ofaExportAssistant *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
+	priv->exportable = NULL;
 	priv->p1_exportables = NULL;
 	priv->p1_exporters = NULL;
 	priv->p1_selected_type = 0;
@@ -1421,7 +1422,7 @@ iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong
 	progress = total ? ( gdouble ) count / ( gdouble ) total : 0;
 	g_signal_emit_by_name( priv->p5_bar, "my-double", progress );
 
-	str = total ? g_strdup_printf( "%ld/%ld", count, total ) : g_strdup_printf( "%ld", count );
+	str = total ? g_strdup_printf( "%lu/%lu", count, total ) : g_strdup_printf( "%lu", count );
 	g_signal_emit_by_name( priv->p5_bar, "my-text", str );
 	g_free( str );
 }
