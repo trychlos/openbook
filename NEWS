@@ -24,6 +24,7 @@
  New features and improvements:
 
    - Exportable standard class format is reviewed (todo #1351).
+   - Exporters can provide their own stream format (todo #1411).
    - Main window has a new 'minimal' display mode.
    - Restore assistant let the user display the metadata of the archive (todo #1450).
 
@@ -39,6 +40,7 @@
    - ofaIExporter: new interface.
    - ofaIRenderer: interface is completed with font and color getters (todo #1452).
    - ofaStreamFormat: is now able to define which fields are user-updatable.
+   - core/ofo-entry-fec.{c,h}: new files.
 
 -----------------------------------------------------------------------
  Version 0.69

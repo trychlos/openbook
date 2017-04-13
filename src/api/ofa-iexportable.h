@@ -42,6 +42,8 @@
  * the progress.
  */
 
+#include <glib-object.h>
+
 #include "my/my-iprogress.h"
 
 #include "api/ofa-box.h"

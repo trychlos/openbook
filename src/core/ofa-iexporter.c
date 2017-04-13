@@ -27,6 +27,7 @@
 #endif
 
 #include "api/ofa-iexporter.h"
+#include "api/ofa-igetter.h"
 
 /* data set against the exported object
  */
@@ -177,19 +178,21 @@ ofa_iexporter_get_interface_version( GType type )
  * @exportable: this #ofaIExporter instance.
  * @type: the target class to export;
  *  the corresponding class must implement #ofaIExportable interface.
+ * @getter: the #ofaIGetter of the application.
  *
  * Returns: %NULL, or a null-terminated array of #ofsIExporterFormat
  * structures.
  */
 ofsIExporterFormat *
-ofa_iexporter_get_formats( ofaIExporter *exporter, GType type )
+ofa_iexporter_get_formats( ofaIExporter *exporter, GType type, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_iexporter_get_formats";
 
 	g_return_val_if_fail( exporter && OFA_IS_IEXPORTER( exporter ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	if( OFA_IEXPORTER_GET_INTERFACE( exporter )->get_formats ){
-		return( OFA_IEXPORTER_GET_INTERFACE( exporter )->get_formats( exporter, type ));
+		return( OFA_IEXPORTER_GET_INTERFACE( exporter )->get_formats( exporter, type, getter ));
 	}
 
 	g_info( "%s: ofaIExporter's %s implementation does not provide 'get_formats()' method",

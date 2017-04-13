@@ -89,6 +89,9 @@
  Total files count:    836 files
  Total lines count: 565028 lines
 
+ Top ten of filesize:
+ find src -type f -exec ls -l {} \; | awk '{ printf( "%s %s\n", $5, $9 )}' | sort -nr | head -10
+
 -----------------------------------------------------------------------
  environment variables
  =====================

@@ -46,7 +46,7 @@ G_BEGIN_DECLS
  * @MY_DATE_DMYY   | dd/mm/yyyy |    X    |   X   |     |          |         |
  * @MY_DATE_SQL    | yyyy-mm-dd |         |       |  X  |          |         |
  * @MY_DATE_YYMD   |  yyyymmdd  |         |       |     |     X    |         |
- * @MY_DATE_DMYDOT |  yyyymmdd  |         |       |     |          |    X    |
+ * @MY_DATE_DMYDOT | dd.mm.yyyy |         |       |     |          |    X    |
  * ----------------+------------+---------+-------+-----+----------+---------+
  *
  * MAINTAINER_NOTE: only add a new format at the end of the list as the

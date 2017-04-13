@@ -34,7 +34,8 @@
  * The #ofaIExporter interface exports items to the outside world.
  */
 
-#include "api/ofa-box.h"
+#include <glib-object.h>
+
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-stream-format.h"
 
@@ -80,12 +81,14 @@ typedef struct {
 	 * @instance: the #ofaIExporter provider.
 	 * @type: the #GType which is candidate to export;
 	 *  the corresponding class must implement #ofaIExportable interface.
+	 * @getter: the #ofaIGetter of the application.
 	 *
 	 * Returns: a null-terminated array of specific #ofsIExporterFormat
 	 * structures managed by the target @type class.
 	 */
 	ofsIExporterFormat * ( *get_formats )          ( ofaIExporter *instance,
-														GType type );
+														GType type,
+														ofaIGetter *getter );
 }
 	ofaIExporterInterface;
 
@@ -124,7 +127,8 @@ guint               ofa_iexporter_get_interface_version     ( GType type );
  * Instance-wide
  */
 ofsIExporterFormat *ofa_iexporter_get_formats               ( ofaIExporter *exporter,
-																	GType type );
+																	GType type,
+																	ofaIGetter *getter );
 
 G_END_DECLS
 

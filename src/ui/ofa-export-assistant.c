@@ -97,6 +97,7 @@ typedef struct {
 	 */
 	GtkWidget           *p2_datatype;
 	GtkWidget           *p2_format_combo;
+	ofaStreamFormat     *p2_default_stformat;
 	ofaStreamFormat     *p2_stformat;
 	ofaStreamFormatBin  *p2_settings_prefs;
 	GtkWidget           *p2_message;
@@ -165,7 +166,8 @@ enum {
 enum {
 	FORMAT_COL_ID = 0,
 	FORMAT_COL_LABEL,
-	FORMAT_COL_OBJECT,
+	FORMAT_COL_FORMAT,					/* ofaStreamFormat */
+	FORMAT_COL_EXPORTER,				/* ofaIExporter */
 	FORMAT_N_COLUMNS
 };
 
@@ -297,7 +299,7 @@ export_assistant_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->p2_stformat );
+		g_clear_object( &priv->p2_default_stformat );
 	}
 
 	/* chain up to the parent class */
@@ -593,6 +595,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	ofaExportAssistantPrivate *priv;
 	GtkWidget *label, *parent, *button;
 	GtkSizeGroup *hgroup, *group_bin;
+	const gchar *found_key;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -615,6 +618,15 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_settings_prefs ));
 
 	g_signal_connect( priv->p2_settings_prefs, "ofa-changed", G_CALLBACK( p2_on_settings_changed ), self );
+
+	/* get a suitable default stream format */
+	found_key = NULL;
+	if( ofa_stream_format_exists( priv->getter, priv->p1_selected_class, OFA_SFMODE_EXPORT )){
+		found_key = priv->p1_selected_class;
+	}
+	g_clear_object( &priv->p2_default_stformat );
+	priv->p2_default_stformat = ofa_stream_format_new( priv->getter, found_key, OFA_SFMODE_EXPORT );
+	ofa_stream_format_set_field_updatable( priv->p2_default_stformat, OFA_SFHAS_MODE, FALSE );
 
 	/* new profile */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-new-btn" );
@@ -660,7 +672,7 @@ p2_init_format_combo( ofaExportAssistant *self, GtkWidget *page )
 	priv->p2_format_combo = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-format-combo" );
 	g_return_if_fail( priv->p2_format_combo && GTK_IS_COMBO_BOX( priv->p2_format_combo ));
 
-	store = gtk_list_store_new( FORMAT_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT );
+	store = gtk_list_store_new( FORMAT_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT, G_TYPE_OBJECT );
 	gtk_combo_box_set_model( GTK_COMBO_BOX( priv->p2_format_combo ), GTK_TREE_MODEL( store ));
 	g_object_unref( store );
 
@@ -678,7 +690,6 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p2_do_display";
 	ofaExportAssistantPrivate *priv;
-	const gchar *found_key;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -689,18 +700,9 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( priv->p2_datatype ), priv->p1_selected_label );
 
 	/* display specific format combo */
+	priv->p2_stformat = NULL;
+
 	p2_display_format_combo( self );
-
-	/* get a suitable stream format */
-	found_key = NULL;
-	if( ofa_stream_format_exists( priv->getter, priv->p1_selected_class, OFA_SFMODE_EXPORT )){
-		found_key = priv->p1_selected_class;
-	}
-
-	g_clear_object( &priv->p2_stformat );
-	priv->p2_stformat = ofa_stream_format_new( priv->getter, found_key, OFA_SFMODE_EXPORT );
-	ofa_stream_format_set_field_updatable( priv->p2_stformat, OFA_SFHAS_MODE, FALSE );
-	ofa_stream_format_bin_set_format( priv->p2_settings_prefs, priv->p2_stformat );
 
 	p2_check_for_complete( self );
 }
@@ -708,12 +710,11 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 static void
 p2_display_format_combo( ofaExportAssistant *self )
 {
-	static const gchar *thisfn = "ofa_export_assistant_p2_display_format_combo";
 	ofaExportAssistantPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	guint i, count;
-	GList *exporters, *it;
+	GList *it;
 	ofsIExporterFormat *fmt_array;
 
 	priv = ofa_export_assistant_get_instance_private( self );
@@ -725,39 +726,56 @@ p2_display_format_combo( ofaExportAssistant *self )
 
 	for( i=0 ; st_def_format[i].format_id ; ++i ){
 		gtk_list_store_insert_with_values( GTK_LIST_STORE( tmodel ), &iter, -1,
-				FORMAT_COL_ID,     st_def_format[i].format_id,
-				FORMAT_COL_LABEL,  gettext( st_def_format[i].format_label ),
-				FORMAT_COL_OBJECT, NULL,
+				FORMAT_COL_ID,       st_def_format[i].format_id,
+				FORMAT_COL_LABEL,    gettext( st_def_format[i].format_label ),
+				FORMAT_COL_FORMAT,   priv->p2_default_stformat,
+				FORMAT_COL_EXPORTER, NULL,
 				-1 );
 	}
 
-	exporters = ofa_igetter_get_for_type( priv->getter, OFA_TYPE_IEXPORTER );
-	g_debug( "%s: exporters count=%d", thisfn, g_list_length( exporters ));
 	count = 0;
 
-	for( it=exporters ; it ; it=it->next ){
-		fmt_array = ofa_iexporter_get_formats( OFA_IEXPORTER( it->data ), priv->p1_selected_type );
+	for( it=priv->p1_exporters ; it ; it=it->next ){
+		fmt_array = ofa_iexporter_get_formats( OFA_IEXPORTER( it->data ), priv->p1_selected_type, priv->getter );
 		if( fmt_array ){
 			for( i=0 ; fmt_array[i].format_id ; ++i ){
 				count += 1;
 				gtk_list_store_insert_with_values( GTK_LIST_STORE( tmodel ), &iter, -1,
-						FORMAT_COL_ID,     fmt_array[i].format_id,
-						FORMAT_COL_LABEL,  gettext( fmt_array[i].format_label ),
-						FORMAT_COL_OBJECT, it->data,
+						FORMAT_COL_ID,       fmt_array[i].format_id,
+						FORMAT_COL_LABEL,    fmt_array[i].format_label,
+						FORMAT_COL_FORMAT,   fmt_array[i].stream_format,
+						FORMAT_COL_EXPORTER, it->data,
 						-1 );
 			}
 		}
 	}
 
-	g_list_free( exporters );
-
 	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->p2_format_combo ), OFA_IEXPORTER_DEFAULT_FORMAT_ID );
 	gtk_widget_set_sensitive( priv->p2_format_combo, count > 0 );
 }
 
+/*
+ * change the stream format when the user change the specific export format
+ */
 static void
 p2_on_format_combo_changed( GtkComboBox *combo, ofaExportAssistant *self )
 {
+	ofaExportAssistantPrivate *priv;
+	GtkTreeIter iter;
+	GtkTreeModel *tmodel;
+	ofaStreamFormat *stformat;
+
+	priv = ofa_export_assistant_get_instance_private( self );
+
+	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->p2_format_combo ), &iter )){
+		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->p2_format_combo ));
+		gtk_tree_model_get( tmodel, &iter, FORMAT_COL_FORMAT, &stformat, -1 );
+		g_return_if_fail( stformat && OFA_IS_STREAM_FORMAT( stformat ));
+		g_object_unref( stformat );
+		ofa_stream_format_bin_set_format( priv->p2_settings_prefs, stformat );
+		priv->p2_stformat = stformat;
+	}
+
 	p2_check_for_complete( self );
 }
 
@@ -825,9 +843,9 @@ p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->p2_format_combo ));
 	gtk_tree_model_get( tmodel, &iter,
-			FORMAT_COL_ID,     &priv->p2_specific_id,
-			FORMAT_COL_LABEL,  &priv->p2_specific_label,
-			FORMAT_COL_OBJECT, &priv->p2_specific_exporter,		/* may be NULL */
+			FORMAT_COL_ID,       &priv->p2_specific_id,
+			FORMAT_COL_LABEL,    &priv->p2_specific_label,
+			FORMAT_COL_EXPORTER, &priv->p2_specific_exporter,		/* may be NULL */
 			-1 );
 
 	/* stream format */

@@ -280,9 +280,6 @@
 
 1410 2017- 3-24 export fec should be a plugin (new ofaIExporter interface)
 
-1411 2017- 3-24 when a specific format is provided, should also provide
-                a stream format with user-updatable fields
-
 1416 2017- 3-24 dossier administrative credentials: does not remember the account
      2017- 3-29 restore assistant:  fixed
                 recovery assistant:
@@ -322,7 +319,9 @@
 
 1461 2017- 4-13 change the id of recurrent and vat dbmodels
 
-1462
+1462 2017- 4-13 PACK: check that each header can be compiled stand-alone
+
+1463
 
 -----------------------------------------------------------------------
  DONE
@@ -984,6 +983,10 @@
 1409 2017- 3-22 dbms integrity: whether to display all messages or only
                 errors should be a user preference
      2017- 3-29 done
+
+1411 2017- 3-24 when a specific format is provided, should also provide
+                a stream format with user-updatable fields
+     2017- 4-13 done
 
 1412 2017- 3-24 record the new stream formats in user settings
                 + replace the GtkEntry with a GtkComboBox+GtkEntry

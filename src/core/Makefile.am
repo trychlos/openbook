@@ -242,6 +242,8 @@ libofa_core_la_SOURCES = \
 	ofo-doc.c											\
 	ofo-dossier.c										\
 	ofo-entry.c											\
+	ofo-entry-fec.c										\
+	ofo-entry-fec.h										\
 	ofo-exemeta.c										\
 	ofo-ledger.c										\
 	ofo-ope-template.c									\
