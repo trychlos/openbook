@@ -645,6 +645,7 @@ gchar
 ofa_stream_format_get_field_sep( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
+	gchar sep;
 
 	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), 0 );
 
@@ -652,7 +653,9 @@ ofa_stream_format_get_field_sep( ofaStreamFormat *format )
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
-	return( priv->field_sep );
+	sep = ofa_stream_format_get_has_field( format ) ? priv->field_sep : MY_CHAR_ZERO;
+
+	return( sep );
 }
 
 /**
