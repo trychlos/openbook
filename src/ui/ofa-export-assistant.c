@@ -83,17 +83,16 @@ typedef struct {
 
 	/* p0: introduction
 	 */
+	GList               *p0_exportables;
+	GList               *p0_exporters;
+	gchar               *p0_class;				/* initially read from settings */
 
 	/* p1: select data type to be exported
 	 */
-	GList               *p1_exportables;
-	GList               *p1_exporters;
 	GtkWidget           *p1_parent;
 	gint                 p1_row;
-	GtkWidget           *p1_selected_btn;
-	gchar               *p1_selected_class;
-	gchar               *p1_selected_label;
 	GType                p1_selected_type;
+	gchar               *p1_selected_label;
 	ofaIExportable      *p1_selected_exportable;
 
 	/* p2: select format
@@ -125,7 +124,6 @@ typedef struct {
 	/* p5: apply
 	 */
 	myProgressBar       *p5_bar;
-	ofaIExportable      *p5_exportable;
 	GtkWidget           *p5_page;
 }
 	ofaExportAssistantPrivate;
@@ -271,10 +269,10 @@ export_assistant_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
 
-	g_list_free( priv->p1_exportables );
-	g_list_free( priv->p1_exporters );
 	g_free( priv->settings_prefix );
-	g_free( priv->p1_selected_class );
+	g_list_free( priv->p0_exportables );
+	g_list_free( priv->p0_exporters );
+	g_free( priv->p0_class );
 	g_free( priv->p1_selected_label );
 	g_free( priv->p2_specific_id );
 	g_free( priv->p2_specific_label );
@@ -325,8 +323,8 @@ ofa_export_assistant_init( ofaExportAssistant *self )
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->exportable = NULL;
-	priv->p1_exportables = NULL;
-	priv->p1_exporters = NULL;
+	priv->p0_exportables = NULL;
+	priv->p0_exporters = NULL;
 	priv->p1_selected_type = 0;
 	priv->p2_stformat = NULL;
 	priv->p3_output_file_uri = NULL;
@@ -449,9 +447,18 @@ static void
 p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p0_do_forward";
+	ofaExportAssistantPrivate *priv;
 
 	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
+
+	priv = ofa_export_assistant_get_instance_private( self );
+
+	priv->p0_exportables = ofa_igetter_get_for_type( priv->getter, OFA_TYPE_IEXPORTABLE );
+	g_debug( "%s: exportables count=%d", thisfn, g_list_length( priv->p0_exportables ));
+
+	priv->p0_exporters = ofa_igetter_get_for_type( priv->getter, OFA_TYPE_IEXPORTER );
+	g_debug( "%s: exporters count=%d", thisfn, g_list_length( priv->p0_exporters ));
 }
 
 /*
@@ -463,10 +470,8 @@ p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget )
  *
  * Attach to each button the fake ofaIEXportable object.
  *
- * p1_selected_class: may be set from settings
  * p1_selected_type:  may be set from settings
  *
- * p1_selected_btn:        is only set in p1_is_complete().
  * p1_selected_label:      is only set in p1_is_complete().
  * p1_selected_exportable: is only set in p1_is_complete().
  */
@@ -486,20 +491,13 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	priv->p1_exportables = ofa_igetter_get_for_type( priv->getter, OFA_TYPE_IEXPORTABLE );
-	g_debug( "%s: exportables count=%d", thisfn, g_list_length( priv->p1_exportables ));
-
-	priv->p1_exporters = ofa_igetter_get_for_type( priv->getter, OFA_TYPE_IEXPORTER );
-	g_debug( "%s: exporters count=%d", thisfn, g_list_length( priv->p1_exporters ));
-
-	priv->p1_selected_btn = NULL;
 	priv->p1_row = 0;
 	first = NULL;
 
 	priv->p1_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p1-parent" );
 	g_return_if_fail( priv->p1_parent && GTK_IS_GRID( priv->p1_parent ));
 
-	for( it=priv->p1_exportables ; it ; it=it->next ){
+	for( it=priv->p0_exportables ; it ; it=it->next ){
 		exportable = OFA_IEXPORTABLE( it->data );
 		label = ofa_iexportable_get_label( exportable );
 
@@ -598,27 +596,30 @@ p1_is_complete( ofaExportAssistant *self )
 	GtkWidget *btn;
 	ofaIExportable *object;
 	const gchar *label;
+	gboolean found;
 
 	priv = ofa_export_assistant_get_instance_private( self );
+
+	found = FALSE;
 
 	/* which is the currently active button ? */
 	for( i=0 ; i<priv->p1_row ; ++i ){
 		btn = gtk_grid_get_child_at( GTK_GRID( priv->p1_parent ), 0, i );
-		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
+		if( gtk_widget_is_sensitive( btn ) &&
+				gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
+
+			found = TRUE;
 			object = OFA_IEXPORTABLE( g_object_get_data( G_OBJECT( btn ), DATA_TYPE_INDEX ));
-			priv->p1_selected_btn = btn;
 			priv->p1_selected_exportable = object;
-			g_free( priv->p1_selected_class );
-			priv->p1_selected_class = g_strdup( G_OBJECT_TYPE_NAME( object ));
 			g_free( priv->p1_selected_label );
-			label = gtk_button_get_label( GTK_BUTTON( priv->p1_selected_btn ));
+			label = gtk_button_get_label( GTK_BUTTON( btn ));
 			priv->p1_selected_label = my_utils_str_remove_underlines( label );
 			priv->p1_selected_type = G_OBJECT_TYPE( object );
 			break;
 		}
 	}
 
-	return( GTK_IS_WIDGET( priv->p1_selected_btn ));
+	return( found );
 }
 
 static void
@@ -631,8 +632,8 @@ p1_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	g_debug( "%s: selected_btn=%p, selected_label='%s', selected_class=%s",
-			thisfn, ( void * ) priv->p1_selected_btn, priv->p1_selected_label, priv->p1_selected_class );
+	g_debug( "%s: selected_label='%s', selected_class=%s",
+			thisfn, priv->p1_selected_label, g_type_name( priv->p1_selected_type ));
 }
 
 /*
@@ -648,7 +649,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	ofaExportAssistantPrivate *priv;
 	GtkWidget *label, *parent, *button;
 	GtkSizeGroup *hgroup, *group_bin;
-	const gchar *found_key;
+	const gchar *found_key, *selected_class;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -674,8 +675,9 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	/* get a suitable default stream format */
 	found_key = NULL;
-	if( ofa_stream_format_exists( priv->getter, priv->p1_selected_class, OFA_SFMODE_EXPORT )){
-		found_key = priv->p1_selected_class;
+	selected_class = g_type_name( priv->p1_selected_type );
+	if( ofa_stream_format_exists( priv->getter, selected_class, OFA_SFMODE_EXPORT )){
+		found_key = selected_class;
 	}
 	g_clear_object( &priv->p2_default_stformat );
 	priv->p2_default_stformat = ofa_stream_format_new( priv->getter, found_key, OFA_SFMODE_EXPORT );
@@ -788,7 +790,7 @@ p2_display_format_combo( ofaExportAssistant *self )
 
 	count = 0;
 
-	for( it=priv->p1_exporters ; it ; it=it->next ){
+	for( it=priv->p0_exporters ; it ; it=it->next ){
 		fmt_array = ofa_iexporter_get_formats( OFA_IEXPORTER( it->data ), priv->p1_selected_type, priv->getter );
 		if( fmt_array ){
 			for( i=0 ; fmt_array[i].format_id ; ++i ){
@@ -926,7 +928,7 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	g_return_if_fail( my_strlen( priv->p1_selected_class ));
+	g_return_if_fail( priv->p1_selected_type > 0 );
 
 	/* target class */
 	priv->p3_datatype = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-datatype" );
@@ -993,7 +995,7 @@ p3_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	} else if( my_strlen( priv->p3_folder_uri )){
 		gtk_file_chooser_set_current_folder_uri( GTK_FILE_CHOOSER( priv->p3_chooser ), priv->p3_folder_uri );
-		basename = g_strdup_printf( "%s.csv", priv->p1_selected_class );
+		basename = g_strdup_printf( "%s.csv", g_type_name( priv->p1_selected_type ));
 		gtk_file_chooser_set_current_name( GTK_FILE_CHOOSER( priv->p3_chooser ), basename );
 		g_debug( "%s: p3_folder_uri=%s, basename=%s",
 				thisfn, priv->p3_folder_uri, basename );
@@ -1250,7 +1252,6 @@ p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	priv = ofa_export_assistant_get_instance_private( self );
 
 	priv->p5_page = page;
-	priv->p5_exportable = OFA_IEXPORTABLE( g_object_get_data( G_OBJECT( priv->p1_selected_btn ), DATA_TYPE_INDEX ));
 
 	g_idle_add(( GSourceFunc ) p5_export_data, self );
 }
@@ -1267,7 +1268,7 @@ p5_export_data( ofaExportAssistant *self )
 
 	/* first, export */
 	ok = ofa_iexportable_export_to_uri(
-			priv->p5_exportable, priv->p3_output_file_uri,
+			priv->p1_selected_exportable, priv->p3_output_file_uri,
 			priv->p2_specific_exporter, priv->p2_specific_id,
 			priv->p2_stformat, priv->getter, MY_IPROGRESS( self ));
 
@@ -1277,7 +1278,7 @@ p5_export_data( ofaExportAssistant *self )
 	if( ok ){
 		text = g_strdup_printf( _( "OK: « %s » has been successfully exported.\n\n"
 				"%ld lines have been written in '%s' output stream." ),
-				priv->p1_selected_label, ofa_iexportable_get_count( priv->p5_exportable ), priv->p3_output_file_uri );
+				priv->p1_selected_label, ofa_iexportable_get_count( priv->p1_selected_exportable ), priv->p3_output_file_uri );
 	} else {
 		text = g_strdup_printf( _( "Unfortunately, « %s » export has encountered errors.\n\n"
 				"The '%s' stream may be incomplete or inaccurate.\n\n"
@@ -1324,7 +1325,7 @@ read_settings( ofaExportAssistant *self )
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
-		priv->p1_selected_class = g_strdup( cstr );
+		priv->p0_class = g_strdup( cstr );
 		priv->p1_selected_type = g_type_from_name( cstr );
 	}
 
@@ -1348,20 +1349,32 @@ read_settings( ofaExportAssistant *self )
 	g_debug( "read_settings: p3_folder_uri=%s", priv->p3_folder_uri );
 }
 
+/*
+ */
 static void
 write_settings( ofaExportAssistant *self )
 {
 	ofaExportAssistantPrivate *priv;
 	myISettings *settings;
 	gchar *key, *str;
-	const gchar *group;
+	const gchar *group, *classname;
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
 	/* user settings
 	 */
-	str = g_strdup_printf( "%s;",
-			priv->p1_selected_class ? priv->p1_selected_class : "" );
+
+	/* Does not override the class if this assistant has been run for a
+	 * specific IExportable */
+	if( priv->exportable ){
+		classname = priv->p0_class;
+	} else if( priv->p1_selected_type > 0 ){
+		classname = g_type_name( priv->p1_selected_type );
+	} else {
+		classname = "";
+	}
+
+	str = g_strdup_printf( "%s;", classname );
 
 	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );

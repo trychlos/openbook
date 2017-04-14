@@ -62,6 +62,8 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
+#include "core/ofa-account-balance.h"
+
 /* private instance data
  */
 typedef struct {
@@ -232,12 +234,12 @@ ofa_hub_new( void )
 
 	priv = ofa_hub_get_instance_private( hub );
 
-	ofa_box_register_types();			/* register types */
-	hub_register_types( hub );
-
 	/* must have extenders_collection before the ISignaler be able
 	 * to initialize itself */
 	priv->extenders_collection = ofa_extender_collection_new( OFA_IGETTER( hub ), PKGLIBDIR );
+
+	ofa_box_register_types();			/* register types */
+	hub_register_types( hub );
 
 	ofa_isignaler_init_signaling_system( OFA_ISIGNALER( hub ), OFA_IGETTER( hub ));
 
@@ -281,6 +283,7 @@ hub_register_types( ofaHub *self )
 
 	/* this is needed to be able to export from ofaTVBin */
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFA_TYPE_TVBIN, "ofa-tvbin-getter", self, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFA_TYPE_ACCOUNT_BALANCE, "ofa-getter", self, NULL ));
 
 	/* this is not exportable, nor importable */
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CONCIL, NULL ));

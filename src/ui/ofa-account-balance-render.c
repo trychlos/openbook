@@ -48,6 +48,8 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
+#include "core/ofa-account-balance.h"
+
 #include "ui/ofa-account-balance-args.h"
 #include "ui/ofa-account-balance-render.h"
 
@@ -63,8 +65,8 @@ typedef struct {
 	gchar                 *settings_prefix;
 	GDate                  from_date;
 	GDate                  to_date;
-	gint                   count;						/* count of accounts */
-	GList                 *accounts;
+	ofaAccountBalance     *account_balance;
+	guint                  count;
 
 	/* print datas
 	 */
@@ -84,34 +86,11 @@ typedef struct {
 	gdouble                body_end_sens_ltab;
 	gdouble                body_currency_ltab;
 
-	/* general total by currency
-	 */
-	GList                 *gen_totals;
-
 	/* actions
 	 */
 	GSimpleAction         *export_action;
 }
 	ofaAccountBalanceRenderPrivate;
-
-/* A structure to hold the sum of all accounts
- */
-typedef struct {
-	ofoCurrency *currency;
-	ofxAmount    begin_solde;
-	ofxAmount    debits;
-	ofxAmount    credits;
-	ofxAmount    end_solde;
-}
-	sCurrency;
-
-/* A structure to hold the line for an account
- */
-typedef struct {
-	ofoAccount *account;
-	sCurrency  *scur;
-}
-	sAccount;
 
 /*
  * Accounts balances print uses a portrait orientation
@@ -121,20 +100,18 @@ typedef struct {
 
 static const gchar *st_page_header_title_accounts = N_( "Accounts Balance Summary" );
 
+/* see same labels in core/ofa-account-balance.c */
 static const gchar *st_header_account             = N_( "Account" );
 static const gchar *st_header_label               = N_( "Label" );
 static const gchar *st_header_solde_at            = N_( "Solde at" );
 static const gchar *st_header_total_debits        = N_( "Total debits" );
 static const gchar *st_header_total_credits       = N_( "Total credits" );
-static const gchar *st_header_sens_solde_begin    = N_( "SensSoldeBegin" );
-static const gchar *st_header_sens_solde_end      = N_( "SensSoldeEnd" );
-static const gchar *st_header_currency            = N_( "Currency" );
 
 /* these are parms which describe the page layout
  */
 
-static const gchar *st_title2_font       = "Sans Bold 8";
-static const gchar *st_summary_font      = "Sans Bold 6";
+static const gchar *st_title2_font                = "Sans Bold 8";
+static const gchar *st_summary_font               = "Sans Bold 6";
 
 static GtkWidget         *page_v_get_top_focusable_widget( const ofaPage *page );
 static void               paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
@@ -144,8 +121,6 @@ static const gchar       *render_page_v_get_paper_name( ofaRenderPage *page );
 static GtkPageOrientation render_page_v_get_page_orientation( ofaRenderPage *page );
 static void               render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
 static GList             *render_page_v_get_dataset( ofaRenderPage *page );
-static void               compute_accounts_balance( ofaAccountBalanceRender *self );
-static gint               cmp_entries( ofoEntry *a, ofoEntry *b );
 static void               render_page_v_free_dataset( ofaRenderPage *page, GList *dataset );
 static void               on_args_changed( ofaAccountBalanceArgs *bin, ofaAccountBalanceRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
@@ -159,27 +134,14 @@ static void               irenderable_draw_last_summary( ofaIRenderable *instanc
 static const gchar       *irenderable_get_summary_font( const ofaIRenderable *instance, guint page_num );
 static void               irenderable_clear_runtime_data( ofaIRenderable *instance );
 static void               draw_account_balance( ofaIRenderable *instance, GList *list, gdouble top, const gchar *title );
-static void               draw_amounts( ofaIRenderable *instance, sCurrency *scur );
-static void               add_by_currency( ofaAccountBalanceRender *self, GList **list, sCurrency *scur );
-static gint               cmp_currencies( const sCurrency *a, const sCurrency *b );
-static void               free_currencies( GList **list );
-static sAccount          *find_account( ofaAccountBalanceRender *self, ofoAccount *account );
-static gint               cmp_accounts( const sAccount *a, const sAccount *b );
-static void               free_accounts( GList **list );
-static void               free_account( sAccount *sacc );
+static void               draw_amounts( ofaIRenderable *instance, ofsAccountBalanceCurrency *scur );
 static void               irenderable_end_render( ofaIRenderable *instance );
 static void               action_on_export_activated( GSimpleAction *action, GVariant *empty, ofaAccountBalanceRender *self );
 static void               read_settings( ofaAccountBalanceRender *self );
 static void               write_settings( ofaAccountBalanceRender *self );
-static void               iexportable_iface_init( ofaIExportableInterface *iface );
-static guint              iexportable_get_interface_version( void );
-static gchar             *iexportable_get_label( const ofaIExportable *instance );
-static gboolean           iexportable_export( ofaIExportable *instance, const gchar *format_id );
-static gboolean           iexportable_export_default( ofaIExportable *exportable );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountBalanceRender, ofa_account_balance_render, OFA_TYPE_RENDER_PAGE, 0,
 		G_ADD_PRIVATE( ofaAccountBalanceRender )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IRENDERABLE, irenderable_iface_init ))
 
 static void
@@ -197,9 +159,6 @@ account_balance_render_finalize( GObject *instance )
 	priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( instance ));
 
 	g_free( priv->settings_prefix );
-
-	free_accounts( &priv->accounts );
-	free_currencies( &priv->gen_totals );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_account_balance_render_parent_class )->finalize( instance );
@@ -219,6 +178,7 @@ account_balance_render_dispose( GObject *instance )
 		/* unref object members here */
 		priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( instance ));
 
+		g_clear_object( &priv->account_balance );
 		g_clear_object( &priv->export_action );
 	}
 
@@ -274,7 +234,7 @@ page_v_get_top_focusable_widget( const ofaPage *page )
 static void
 paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 {
-	static const gchar *thisfn = "ofa_account_balance_paned_page_v_setup_view";
+	static const gchar *thisfn = "ofa_account_balance_render_paned_page_v_setup_view";
 	ofaAccountBalanceRenderPrivate *priv;
 	ofaIContext *render_context;
 	GMenu *menu;
@@ -282,6 +242,8 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 	g_debug( "%s: entering page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( page ));
+
+	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
 	/* call the parent class which defines the drawing area */
 	if( OFA_PANED_PAGE_CLASS( ofa_account_balance_render_parent_class )->setup_view ){
@@ -313,9 +275,11 @@ paned_page_v_init_view( ofaPanedPage *page )
 
 	priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( page ));
 
-	on_args_changed( priv->args_bin, OFA_ACCOUNT_BALANCE_RENDER( page ));
+	priv->account_balance = ofa_account_balance_new( priv->getter );
 
 	read_settings( OFA_ACCOUNT_BALANCE_RENDER( page ));
+
+	on_args_changed( priv->args_bin, OFA_ACCOUNT_BALANCE_RENDER( page ));
 }
 
 static GtkWidget *
@@ -325,8 +289,6 @@ render_page_v_get_args_widget( ofaRenderPage *page )
 	ofaAccountBalanceArgs *bin;
 
 	priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( page ));
-
-	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
 
 	bin = ofa_account_balance_args_new( priv->getter, priv->settings_prefix );
 	g_signal_connect( bin, "ofa-changed", G_CALLBACK( on_args_changed ), page );
@@ -364,9 +326,8 @@ static GList *
 render_page_v_get_dataset( ofaRenderPage *page )
 {
 	ofaAccountBalanceRenderPrivate *priv;
-	GList *dataset, *it, *details;
 	ofaIDateFilter *date_filter;
-	ofoAccount *account;
+	GList *accounts;
 
 	priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( page ));
 
@@ -374,148 +335,10 @@ render_page_v_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
-	/* compute the entries balances by account */
-	compute_accounts_balance( OFA_ACCOUNT_BALANCE_RENDER( page ));
+	accounts = ofa_account_balance_compute( priv->account_balance, &priv->from_date, &priv->to_date );
+	priv->count = g_list_length( accounts );
 
-	/* get only the detail accounts */
-	dataset = ofo_account_get_dataset( priv->getter );
-	details = NULL;
-
-	for( it=dataset ; it ; it=it->next ){
-		account = ( ofoAccount * ) it->data;
-		g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
-		if( !ofo_account_is_root( account )){
-			details = g_list_prepend( details, account );
-		}
-	}
-	priv->count = g_list_length( details );
-
-	return( g_list_reverse( details ));
-}
-
-/*
- * Compute the accounts balances once, before rendering
- */
-static void
-compute_accounts_balance( ofaAccountBalanceRender *self )
-{
-	static const gchar *thisfn = "ofa_account_balance_render_compute_accounts_balance";
-	ofaAccountBalanceRenderPrivate *priv;
-	ofaHub *hub;
-	ofoDossier *dossier;
-	const GDate *exe_begin, *deffect;
-	GList *entries, *sorted, *it;
-	ofoEntry *entry;
-	ofeEntryStatus status;
-	ofeEntryPeriod period;
-	ofeEntryRule rule;
-	const gchar *acc_number;
-	gchar *prev_number;
-	sAccount *sacc;
-	ofoAccount *account;
-	gint cmp;
-	ofxAmount debit, credit;
-	gboolean is_begin;
-
-	priv = ofa_account_balance_render_get_instance_private( self );
-
-	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
-	exe_begin = ofo_dossier_get_exe_begin( dossier );
-
-	/* whether the from_date is the beginning of the exercice */
-	is_begin = my_date_is_valid( exe_begin ) && my_date_compare( &priv->from_date, exe_begin ) == 0;
-
-	/* get all entries (once) sorted by account, effect_date */
-	entries = ofo_entry_get_dataset( priv->getter );
-	sorted = g_list_sort( entries, ( GCompareFunc ) cmp_entries );
-	prev_number = NULL;
-	priv->accounts = NULL;
-	sacc = NULL;
-
-	for( it=sorted ; it ; it=it->next ){
-		entry = ( ofoEntry * ) it->data;
-		g_return_if_fail( OFO_IS_ENTRY( entry ));
-		status = ofo_entry_get_status( entry );
-		if( status == ENT_STATUS_DELETED ){
-			continue;
-		}
-		period = ofo_entry_get_period( entry );
-		if( period == ENT_PERIOD_PAST ){
-			continue;
-		}
-		/* on new account, initialize a new structure */
-		acc_number = ofo_entry_get_account( entry );
-		if( my_collate( acc_number, prev_number ) != 0 ){
-			g_free( prev_number );
-			prev_number = g_strdup( acc_number );
-			account = ofo_account_get_by_number( priv->getter, acc_number );
-			g_return_if_fail( account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account ));
-			sacc = find_account( self, account );
-		}
-		g_return_if_fail( sacc != NULL );
-		/* do not consider the effect date after the to_date */
-		deffect = ofo_entry_get_deffect( entry );
-		if( my_date_compare( &priv->to_date, deffect ) < 0 ){
-			continue;
-		}
-		/* if from_date is the beginning of the exercice, then begin_solde
-		 * must take into account the forward entries at this date
-		 * else begin_solde stops at the day-1 */
-		rule = ofo_entry_get_rule( entry );
-		debit = ofo_entry_get_debit( entry );
-		credit = ofo_entry_get_credit( entry );
-		if( is_begin ){
-			cmp = my_date_compare( deffect, &priv->from_date );
-			if( cmp < 0 ){
-				g_warning(
-						"%s: have entry number %lu before the beginning of the exercice, but it is not 'past'",
-						thisfn, ofo_entry_get_number( entry ));
-				debit = 0.0;
-				credit = 0.0;
-			} else if( cmp == 0 && rule == ENT_RULE_FORWARD ){
-				sacc->scur->begin_solde += credit - debit;
-			} else {
-				sacc->scur->debits += debit;
-				sacc->scur->credits += credit;
-			}
-		} else {
-			cmp = my_date_compare( deffect, &priv->from_date );
-			if( cmp < 0 ){
-				sacc->scur->begin_solde += credit - debit;
-
-			} else {
-				sacc->scur->debits += debit;
-				sacc->scur->credits += credit;
-			}
-		}
-		sacc->scur->end_solde += credit - debit;
-	}
-
-	g_free( prev_number );
-}
-
-/*
- * sort the entries by account and effect_date
- */
-static gint
-cmp_entries( ofoEntry *a, ofoEntry *b )
-{
-	gint cmp;
-	const gchar *acc_a, *acc_b;
-	const GDate *effect_a, *effect_b;
-
-	acc_a = ofo_entry_get_account( a );
-	acc_b = ofo_entry_get_account( b );
-	cmp = my_collate( acc_a, acc_b );
-
-	if( cmp == 0 ){
-		effect_a = ofo_entry_get_deffect( a );
-		effect_b = ofo_entry_get_deffect( b );
-		cmp = my_date_compare( effect_a, effect_b );
-	}
-
-	return( cmp );
+	return( accounts );
 }
 
 static void
@@ -525,10 +348,7 @@ render_page_v_free_dataset( ofaRenderPage *page, GList *dataset )
 
 	priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( page ));
 
-	/* the filtered list of accounts */
-	g_list_free( dataset );
-
-	free_accounts( &priv->accounts );
+	ofa_account_balance_clear( priv->account_balance );
 
 	g_simple_action_set_enabled( priv->export_action, FALSE );
 }
@@ -765,8 +585,7 @@ irenderable_draw_line( ofaIRenderable *instance )
 {
 	ofaAccountBalanceRenderPrivate *priv;
 	GList *line;
-	ofoAccount *account;
-	sAccount *sacc;
+	ofsAccountBalanceAccount *sacc;
 	gdouble y;
 
 	priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( instance ));
@@ -775,27 +594,20 @@ irenderable_draw_line( ofaIRenderable *instance )
 	if( line ){
 
 		/* get the data properties */
-		account = ( ofoAccount * ) line->data;
-		g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-		sacc = find_account( OFA_ACCOUNT_BALANCE_RENDER( instance ), account );
+		sacc = ( ofsAccountBalanceAccount * ) line->data;
 
 		/* render the line */
 		y = ofa_irenderable_get_last_y( instance );
 
 		ofa_irenderable_ellipsize_text( instance,
 				priv->body_number_ltab, y,
-				ofo_account_get_number( account ), priv->body_number_max_size );
+				ofo_account_get_number( sacc->account ), priv->body_number_max_size );
 
 		ofa_irenderable_ellipsize_text( instance,
 				priv->body_label_ltab, y,
-				ofo_account_get_label( account ), priv->body_label_max_size );
+				ofo_account_get_label( sacc->account ), priv->body_label_max_size );
 
 		draw_amounts( instance, sacc->scur );
-
-		add_by_currency(
-				OFA_ACCOUNT_BALANCE_RENDER( instance ),
-				&priv->gen_totals, sacc->scur );
 	}
 }
 
@@ -809,6 +621,7 @@ irenderable_draw_last_summary( ofaIRenderable *instance )
 	ofaAccountBalanceRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.25;
 	gdouble bottom, top, vspace, req_height, height, last_y;
+	GList *totals;
 
 	priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( instance ));
 
@@ -817,6 +630,8 @@ irenderable_draw_last_summary( ofaIRenderable *instance )
 		return;
 	}
 
+	totals = ofa_account_balance_get_totals( priv->account_balance );
+
 	/* bottom of the rectangle */
 	bottom = ofa_irenderable_get_max_y( instance );
 	last_y = ofa_irenderable_get_last_y( instance );
@@ -824,14 +639,14 @@ irenderable_draw_last_summary( ofaIRenderable *instance )
 	/* top of the rectangle */
 	height = ofa_irenderable_get_text_height( instance );
 	vspace = height * st_vspace_rate;
-	req_height = g_list_length( priv->gen_totals ) * height
-			+ ( 1+g_list_length( priv->gen_totals )) * vspace;
+	req_height = g_list_length( totals ) * height
+			+ ( 1+g_list_length( totals )) * vspace;
 	top = bottom - req_height;
 
 	ofa_irenderable_draw_rect( instance, 0, top, -1, req_height );
 	top += vspace;
 
-	draw_account_balance( instance, priv->gen_totals, top, _( "General balance : " ));
+	draw_account_balance( instance, totals, top, _( "General balance : " ));
 
 	ofa_irenderable_set_last_y( instance, last_y + req_height );
 }
@@ -845,11 +660,6 @@ irenderable_get_summary_font( const ofaIRenderable *instance, guint page_num )
 static void
 irenderable_clear_runtime_data( ofaIRenderable *instance )
 {
-	ofaAccountBalanceRenderPrivate *priv;
-
-	priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( instance ));
-
-	free_currencies( &priv->gen_totals );
 }
 
 static void
@@ -859,7 +669,7 @@ draw_account_balance( ofaIRenderable *instance,
 	ofaAccountBalanceRenderPrivate *priv;
 	GList *it;
 	gboolean first;
-	sCurrency *scur;
+	ofsAccountBalanceCurrency *scur;
 	gdouble height;
 
 	priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( instance ));
@@ -875,7 +685,7 @@ draw_account_balance( ofaIRenderable *instance,
 			first = FALSE;
 			}
 
-		scur = ( sCurrency * ) it->data;
+		scur = ( ofsAccountBalanceCurrency * ) it->data;
 		g_return_if_fail( scur && OFO_IS_CURRENCY( scur->currency ));
 
 		draw_amounts( instance, scur );
@@ -885,7 +695,7 @@ draw_account_balance( ofaIRenderable *instance,
 }
 
 static void
-draw_amounts( ofaIRenderable *instance, sCurrency *scur )
+draw_amounts( ofaIRenderable *instance, ofsAccountBalanceCurrency *scur )
 {
 	ofaAccountBalanceRenderPrivate *priv;
 	gdouble y;
@@ -938,118 +748,6 @@ draw_amounts( ofaIRenderable *instance, sCurrency *scur )
 }
 
 static void
-add_by_currency( ofaAccountBalanceRender *self, GList **list, sCurrency *in_scur )
-{
-	GList *it;
-	sCurrency *gen_scur;
-	const gchar *cur_code;
-	gboolean found;
-
-	found = FALSE;
-	cur_code = ofo_currency_get_code( in_scur->currency );
-
-	for( it=*list ; it ; it=it->next ){
-		gen_scur = ( sCurrency * ) it->data;
-		if( !my_collate( cur_code, ofo_currency_get_code( gen_scur->currency ))){
-			found = TRUE;
-			break;
-		}
-	}
-
-	if( !found ){
-		gen_scur = g_new0( sCurrency, 1 );
-		gen_scur->currency = in_scur->currency;
-		*list = g_list_insert_sorted( *list, gen_scur, ( GCompareFunc ) cmp_currencies );
-		gen_scur->begin_solde = 0.0;
-		gen_scur->debits = 0.0;
-		gen_scur->credits = 0.0;
-		gen_scur->end_solde = 0.0;
-	}
-
-	g_return_if_fail( gen_scur != NULL );
-
-	gen_scur->begin_solde += in_scur->begin_solde;
-	gen_scur->debits += in_scur->debits;
-	gen_scur->credits += in_scur->credits;
-	gen_scur->end_solde += in_scur->end_solde;
-}
-
-static gint
-cmp_currencies( const sCurrency *a, const sCurrency *b )
-{
-	return( my_collate( ofo_currency_get_code( a->currency ), ofo_currency_get_code( b->currency )));
-}
-
-static void
-free_currencies( GList **list )
-{
-	g_list_free_full( *list, ( GDestroyNotify ) g_free );
-	*list = NULL;
-}
-
-/*
- * Search for a sAccount structure which would have been initialized
- * from get_dataset().
- * If not found, allocates a new one, and inserts it in the list
- */
-static sAccount *
-find_account( ofaAccountBalanceRender *self, ofoAccount *account )
-{
-	ofaAccountBalanceRenderPrivate *priv;
-	sAccount *sacc;
-	GList *it;
-	const gchar *cur_code;
-	gboolean found;
-
-	priv = ofa_account_balance_render_get_instance_private( self );
-
-	found = FALSE;
-	for( it=priv->accounts ; it ; it=it->next ){
-		sacc = ( sAccount * ) it->data;
-		if( sacc->account == account ){
-			found = TRUE;
-			break;
-		}
-	}
-
-	if( !found ){
-		sacc = g_new0( sAccount, 1 );
-		sacc->account = account;
-		sacc->scur = g_new0( sCurrency, 1 );
-		cur_code = ofo_account_get_currency( account );
-		g_return_val_if_fail( my_strlen( cur_code ), NULL );
-		sacc->scur->currency = ofo_currency_get_by_code( priv->getter, cur_code );
-		g_return_val_if_fail( sacc->scur->currency && OFO_IS_CURRENCY( sacc->scur->currency ), NULL );
-		sacc->scur->begin_solde = 0.0;
-		sacc->scur->debits = 0.0;
-		sacc->scur->credits = 0.0;
-		sacc->scur->end_solde = 0.0;
-		priv->accounts = g_list_insert_sorted( priv->accounts, sacc, ( GCompareFunc ) cmp_accounts );
-	}
-
-	return( sacc );
-}
-
-static gint
-cmp_accounts( const sAccount *a, const sAccount *b )
-{
-	return( my_collate( ofo_account_get_number( a->account ), ofo_account_get_number( b->account )));
-}
-
-static void
-free_accounts( GList **list )
-{
-	g_list_free_full( *list, ( GDestroyNotify ) free_account );
-	*list = NULL;
-}
-
-static void
-free_account( sAccount *sacc )
-{
-	g_free( sacc->scur );
-}
-
-static void
 irenderable_end_render( ofaIRenderable *instance )
 {
 	static const gchar *thisfn = "ofa_account_balance_render_irenderable_end_render";
@@ -1075,7 +773,7 @@ action_on_export_activated( GSimpleAction *action, GVariant *empty, ofaAccountBa
 
 	signaler = ofa_igetter_get_signaler( priv->getter );
 
-	g_signal_emit_by_name( signaler, SIGNALER_EXPORT_ASSISTANT_RUN, OFA_IEXPORTABLE( self ), TRUE );
+	g_signal_emit_by_name( signaler, SIGNALER_EXPORT_ASSISTANT_RUN, OFA_IEXPORTABLE( priv->account_balance ), TRUE );
 }
 
 /*
@@ -1132,159 +830,4 @@ write_settings( ofaAccountBalanceRender *self )
 
 	g_free( key );
 	g_free( str );
-}
-
-/*
- * ofaIExportable interface management
- */
-static void
-iexportable_iface_init( ofaIExportableInterface *iface )
-{
-	static const gchar *thisfn = "ofa_account_balance_render_iexportable_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iexportable_get_interface_version;
-	iface->get_label = iexportable_get_label;
-	iface->export = iexportable_export;
-}
-
-static guint
-iexportable_get_interface_version( void )
-{
-	return( 1 );
-}
-
-static gchar *
-iexportable_get_label( const ofaIExportable *instance )
-{
-	return( g_strdup( _( "Current account balances" )));
-}
-
-static gboolean
-iexportable_export( ofaIExportable *instance, const gchar *format_id )
-{
-	static const gchar *thisfn = "ofa_account_balance_render_iexportable_export";
-
-	if( !my_collate( format_id, OFA_IEXPORTER_DEFAULT_FORMAT_ID )){
-		return( iexportable_export_default( instance ));
-	}
-
-	g_warning( "%s: format=%s is not managed here", thisfn, format_id );
-
-	return( FALSE );
-}
-
-static gboolean
-iexportable_export_default( ofaIExportable *exportable )
-{
-	ofaAccountBalanceRenderPrivate *priv;
-	ofaStreamFormat *stformat;
-	gchar field_sep, *str, *sdate;
-	GString *gstr;
-	gboolean ok;
-	GList *it;
-	sAccount *sacc;
-	sCurrency *scur;
-	ofxAmount amount;
-	const gchar *cstr;
-
-	priv = ofa_account_balance_render_get_instance_private( OFA_ACCOUNT_BALANCE_RENDER( exportable ));
-
-	stformat = ofa_iexportable_get_stream_format( exportable );
-	g_return_val_if_fail( stformat && OFA_IS_STREAM_FORMAT( stformat ), FALSE );
-
-	field_sep = ofa_stream_format_get_field_sep( stformat );
-
-	ofa_iexportable_set_count( exportable, priv->count+1 );
-
-	/* export headers */
-	str = my_utils_str_funny_capitalized( gettext( st_header_account ));
-	gstr = g_string_new( str );
-	g_free( str );
-
-	str = my_utils_str_funny_capitalized( gettext( st_header_label ));
-	g_string_append_printf( gstr, "%c%s", field_sep, str );
-	g_free( str );
-
-	sdate = my_date_to_str( &priv->from_date, ofa_prefs_date_get_display_format( priv->getter ));
-	str = g_strdup_printf( "%s %s" , gettext( st_header_solde_at ), sdate );
-	g_string_append_printf( gstr, "%c%s", field_sep, str );
-	g_free( str );
-	g_free( sdate );
-
-	str = my_utils_str_funny_capitalized( gettext( st_header_sens_solde_begin ));
-	g_string_append_printf( gstr, "%c%s", field_sep, str );
-	g_free( str );
-
-	str = my_utils_str_funny_capitalized( gettext( st_header_total_debits ));
-	g_string_append_printf( gstr, "%c%s", field_sep, str );
-	g_free( str );
-
-	str = my_utils_str_funny_capitalized( gettext( st_header_total_credits ));
-	g_string_append_printf( gstr, "%c%s", field_sep, str );
-	g_free( str );
-
-	sdate = my_date_to_str( &priv->to_date, ofa_prefs_date_get_display_format( priv->getter ));
-	str = g_strdup_printf( "%s %s" , gettext( st_header_solde_at ), sdate );
-	g_string_append_printf( gstr, "%c%s", field_sep, str );
-	g_free( str );
-	g_free( sdate );
-
-	str = my_utils_str_funny_capitalized( gettext( st_header_sens_solde_end ));
-	g_string_append_printf( gstr, "%c%s", field_sep, str );
-	g_free( str );
-
-	str = my_utils_str_funny_capitalized( gettext( st_header_currency ));
-	g_string_append_printf( gstr, "%c%s", field_sep, str );
-	g_free( str );
-
-	ok = ofa_iexportable_append_line( exportable, gstr->str );
-	g_string_free( gstr, TRUE );
-
-
-	/* export dataset */
-	for( it=priv->accounts ; it && ok ; it=it->next ){
-		sacc = ( sAccount * ) it->data;
-		gstr = g_string_new( ofo_account_get_number( sacc->account ));
-		g_string_append_printf( gstr, "%c%s", field_sep, ofo_account_get_label( sacc->account ));
-
-		scur = sacc->scur;
-		amount = scur->begin_solde;
-		if( amount < 0 ){
-			amount *= -1.0;
-		}
-		str = ofa_amount_to_csv( amount, scur->currency, stformat );
-		g_string_append_printf( gstr, "%c%s", field_sep, str );
-		g_free( str );
-
-		cstr = amount > 0 ? ( scur->begin_solde > 0 ? _( "CR" ) : _( "DB" )) : "";
-		g_string_append_printf( gstr, "%c%s", field_sep, cstr );
-
-		str = ofa_amount_to_csv( scur->debits, scur->currency, stformat );
-		g_string_append_printf( gstr, "%c%s", field_sep, str );
-		g_free( str );
-
-		str = ofa_amount_to_csv( scur->credits, scur->currency, stformat );
-		g_string_append_printf( gstr, "%c%s", field_sep, str );
-		g_free( str );
-
-		amount = scur->end_solde;
-		if( amount < 0 ){
-			amount *= -1.0;
-		}
-		str = ofa_amount_to_csv( amount, scur->currency, stformat );
-		g_string_append_printf( gstr, "%c%s", field_sep, str );
-		g_free( str );
-
-		cstr = amount > 0 ? ( scur->end_solde > 0 ? _( "CR" ) : _( "DB" )) : "";
-		g_string_append_printf( gstr, "%c%s", field_sep, cstr );
-
-		g_string_append_printf( gstr, "%c%s", field_sep, ofo_currency_get_code( scur->currency ));
-
-		ok = ofa_iexportable_append_line( exportable, gstr->str );
-		g_string_free( gstr, TRUE );
-	}
-
-	return( ok );
 }

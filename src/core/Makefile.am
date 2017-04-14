@@ -65,6 +65,8 @@ libofa_core_la_SOURCES = \
 	ofa-account-arc-store.h								\
 	ofa-account-arc-treeview.c							\
 	ofa-account-arc-treeview.h							\
+	ofa-account-balance.c								\
+	ofa-account-balance.h								\
 	ofa-account-editable.c								\
 	ofa-account-frame-bin.c								\
 	ofa-account-frame-bin.h								\

@@ -163,11 +163,12 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_core_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
-	ofa-account-arc-treeview.lo ofa-account-editable.lo \
-	ofa-account-frame-bin.lo ofa-account-properties.lo \
-	ofa-account-select.lo ofa-account-store.lo \
-	ofa-account-treeview.lo ofa-action-page.lo ofa-amount.lo \
-	ofa-backup-header.lo ofa-backup-props.lo ofa-bat-properties.lo \
+	ofa-account-arc-treeview.lo ofa-account-balance.lo \
+	ofa-account-editable.lo ofa-account-frame-bin.lo \
+	ofa-account-properties.lo ofa-account-select.lo \
+	ofa-account-store.lo ofa-account-treeview.lo \
+	ofa-action-page.lo ofa-amount.lo ofa-backup-header.lo \
+	ofa-backup-props.lo ofa-bat-properties.lo \
 	ofa-bat-properties-bin.lo ofa-bat-select.lo ofa-bat-store.lo \
 	ofa-bat-treeview.lo ofa-bat-utils.lo ofa-batline-properties.lo \
 	ofa-batline-treeview.lo ofa-box.lo ofa-buttons-box.lo \
@@ -503,6 +504,8 @@ libofa_core_la_SOURCES = \
 	ofa-account-arc-store.h								\
 	ofa-account-arc-treeview.c							\
 	ofa-account-arc-treeview.h							\
+	ofa-account-balance.c								\
+	ofa-account-balance.h								\
 	ofa-account-editable.c								\
 	ofa-account-frame-bin.c								\
 	ofa-account-frame-bin.h								\
@@ -797,6 +800,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-arc-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-arc-treeview.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-balance.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-editable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-frame-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-properties.Plo@am__quote@

@@ -24,6 +24,7 @@
  New features and improvements:
 
    - Entry page is now able to export the content of its view (todo #1239).
+   - Account balance render page is now able to export the content of its view.
    - Exportable standard class format is reviewed (todo #1351).
    - Exporters can provide their own stream format (todo #1411).
    - Main window has a new 'minimal' display mode.
@@ -46,6 +47,7 @@
  Other changes:
 
    - my_utils_window_position_get(): new function.
+   - ofaAccountBalance: new (computing) class which implements ofaIExportable.
    - ofaBackupDisplay: new class.
    - ofaIExportable::get_basename(): new method.
    - ofaIExportable::get_published(): new method.
