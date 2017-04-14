@@ -45,6 +45,7 @@ typedef struct {
 	/* UI
 	 */
 	GtkWidget  *drawing_area;
+	GtkWidget  *event_box;
 
 	/* runtime
 	 */
@@ -180,9 +181,13 @@ setup_bin( ofaRenderArea *self )
 
 	priv = ofa_render_area_get_instance_private( self );
 
+	/* have an event box to get the mouse/keyboard events */
+	priv->event_box = gtk_event_box_new();
+	gtk_container_add( GTK_CONTAINER( self ), priv->event_box );
+
 	/* setup the drawing area */
 	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	gtk_container_add( GTK_CONTAINER( self ), scrolled );
+	gtk_container_add( GTK_CONTAINER( priv->event_box ), scrolled );
 
 	viewport = gtk_viewport_new( NULL, NULL );
 	gtk_container_add( GTK_CONTAINER( scrolled ), viewport );
@@ -544,5 +549,9 @@ icontext_get_interface_version( void )
 static GtkWidget *
 icontext_get_focused_widget( ofaIContext *instance )
 {
-	return( GTK_WIDGET( instance ));
+	ofaRenderAreaPrivate *priv;
+
+	priv = ofa_render_area_get_instance_private( OFA_RENDER_AREA( instance ));
+
+	return( priv->event_box );
 }
