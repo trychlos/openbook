@@ -116,6 +116,8 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
+#define TVBIN_EXPORT_VERSION                1
+
 static void       init_top_widget( ofaTVBin *self );
 static void       tview_on_row_selected( GtkTreeSelection *selection, ofaTVBin *self );
 static void       tview_on_row_activated( GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVBin *self );
@@ -2021,10 +2023,11 @@ iexportable_export_default( ofaIExportable *exportable )
 	/* export the headers */
 	export_default_headers( exportable, columns );
 
-	/* count the visible rows */
-	count = 0;
+	/* count the visible rows
+	 * have already exported 2 version lines + 1 header */
+	count = 3;
 	ok = export_default_iter_dataset( exportable, columns, ( ExportCb ) export_default_count_cb, &count );
-	ofa_iexportable_set_count( exportable, count+1 );
+	ofa_iexportable_set_count( exportable, count );
 
 	/* export the dataset */
 	ok = export_default_iter_dataset( exportable, columns, ( ExportCb ) export_default_export_cb, NULL );
@@ -2080,7 +2083,7 @@ static gboolean
 export_default_headers( ofaIExportable *exportable, GList *columns )
 {
 	ofaStreamFormat *stformat;
-	gchar field_sep;
+	gchar field_sep, *str;
 	GList *it;
 	GString *gstr;
 	sColumn *scol;
@@ -2090,14 +2093,23 @@ export_default_headers( ofaIExportable *exportable, GList *columns )
 	g_return_val_if_fail( stformat && OFA_IS_STREAM_FORMAT( stformat ), FALSE );
 
 	field_sep = ofa_stream_format_get_field_sep( stformat );
-	gstr = g_string_new( "" );
+
+	/* add version lines at the very beginning of the file */
+	str = g_strdup_printf( "0%c0%cVersion", field_sep, field_sep );
+	ok = ofa_iexportable_append_line( exportable, str );
+	g_free( str );
+	if( ok ){
+		str = g_strdup_printf( "1%c0%c%u", field_sep, field_sep, TVBIN_EXPORT_VERSION );
+		ok = ofa_iexportable_append_line( exportable, str );
+		g_free( str );
+	}
+
+	gstr = g_string_new( "0" );								// header
+	g_string_append_printf( gstr, "%c1", field_sep );		// first subtable (there is only one here)
 
 	for( it=columns ; it ; it=it->next ){
 		scol = ( sColumn * ) it->data;
-		if( field_sep && gstr->len > 0 ){
-			g_string_append_printf( gstr, "%c", field_sep );
-		}
-		gstr = g_string_append( gstr, scol->header );
+		g_string_append_printf( gstr, "%c%s", field_sep, scol->header );
 	}
 
 	ok = ofa_iexportable_append_line( exportable, gstr->str );
@@ -2186,15 +2198,14 @@ export_default_export_cb( ofaIExportable *exportable, GList *columns, void *user
 	g_return_val_if_fail( stformat && OFA_IS_STREAM_FORMAT( stformat ), FALSE );
 
 	field_sep = ofa_stream_format_get_field_sep( stformat );
-	gstr = g_string_new( "" );
+
+	gstr = g_string_new( "1" );								// data line
+	g_string_append_printf( gstr, "%c1", field_sep );		// first subtable (there is only one here)
 
 	for( it=columns ; it ; it=it->next ){
 		scol = ( sColumn * ) it->data;
 		gtk_tree_model_get( tmodel, iter, scol->id, &str, -1 );
-		if( field_sep && gstr->len > 0 ){
-			g_string_append_printf( gstr, "%c", field_sep );
-		}
-		gstr = g_string_append( gstr, my_strlen( str ) ? str : "" );
+		g_string_append_printf( gstr, "%c%s", field_sep, my_strlen( str ) ? str : "" );
 		g_free( str );
 	}
 
