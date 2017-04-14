@@ -26,8 +26,6 @@
 #include <config.h>
 #endif
 
-#include <cairo.h>
-#include <cairo-pdf.h>
 #include <glib/gi18n.h>
 #include <math.h>
 
@@ -41,6 +39,8 @@
 #include "api/ofa-page-prot.h"
 #include "api/ofa-render-page.h"
 
+#include "core/ofa-render-area.h"
+
 /* private instance data
  */
 typedef struct {
@@ -48,7 +48,7 @@ typedef struct {
 	/* UI
 	 */
 	GtkWidget     *paned;
-	GtkWidget     *drawing_area;
+	ofaRenderArea *render_area;
 	GtkWidget     *status_box;
 	GtkWidget     *msg_label;
 	myProgressBar *progress_bar;
@@ -63,7 +63,7 @@ typedef struct {
 	gdouble        render_width;			/* in points */
 	gdouble        render_height;
 	GList         *dataset;
-	GList         *pdf_crs;					/* one pdf cairo context per printed page */
+	GList         *pages;
 }
 	ofaRenderPagePrivate;
 
@@ -76,8 +76,6 @@ typedef struct {
 #define PAGE_SEPARATION_V_HEIGHT        4.0		/* separation between two pages */
 #define PAGE_EXT_MARGIN_V_HEIGHT        2.0		/* a margin before the first and after the last page */
 
-#define COLOR_LIGHT_GRAY                0.90980, 0.90980, 0.90980	/* widget background: #e8e8e8 */
-#define COLOR_WHITE                     1,       1,       1			/* page background: #ffffff */
 #define COLOR_BLACK                     0,       0,       0			/* #000000 */
 
 #define MSG_ERROR                       "labelerror"	/* red */
@@ -92,19 +90,13 @@ static GtkWidget         *setup_view2( ofaRenderPage *self );
 static void               setup_args_area( ofaRenderPage *self, GtkContainer *parent );
 static void               setup_actions_area( ofaRenderPage *self, GtkContainer *parent );
 static void               setup_page_size( ofaRenderPage *self );
-static void               render_page_clear_drawing_area( ofaRenderPage *page );
 static GList             *get_dataset( ofaRenderPage *page );
 static void               render_page_free_dataset( ofaRenderPage *page );
-static gboolean           on_draw( GtkWidget *area, cairo_t *cr, ofaRenderPage *page );
-static void               draw_widget_background( cairo_t *cr, GtkWidget *area );
-static gint               do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x );
-static void               draw_page_background( ofaRenderPage *page, cairo_t *cr, gdouble x, gdouble y );
 static void               on_render_clicked( GtkButton *button, ofaRenderPage *page );
 static void               render_pdf_pages( ofaRenderPage *page );
 static void               on_print_clicked( GtkButton *button, ofaRenderPage *page );
-static cairo_t           *create_context( ofaRenderPage *page, gdouble width, gdouble height );
+static void               clear_rendered_pages( ofaRenderPage *self );
 static void               set_message( ofaRenderPage *page, const gchar *message, const gchar *color_name );
-static void               render_page_free_pages( GList **pdf_crs );
 static void               progress_begin( ofaRenderPage *self );
 static void               progress_end( ofaRenderPage *self );
 static void               on_irenderable_render_page( ofaIRenderable *instance, gboolean paginating, guint page_num, guint pages_count, ofaRenderPage *self );
@@ -140,16 +132,11 @@ render_page_finalize( GObject *instance )
 static void
 render_page_dispose( GObject *instance )
 {
-	ofaRenderPagePrivate *priv;
-
 	g_return_if_fail( instance && OFA_IS_RENDER_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = ofa_render_page_get_instance_private( OFA_RENDER_PAGE( instance ));
-
-		render_page_free_pages( &priv->pdf_crs );
 	}
 
 	/* chain up to the parent class */
@@ -183,7 +170,7 @@ ofa_render_page_class_init( ofaRenderPageClass *klass )
 static void
 paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 {
-	static const gchar *thisfn = "ofa_render_page_v_setup_view";
+	static const gchar *thisfn = "ofa_render_page_paned_page_v_setup_view";
 	ofaRenderPagePrivate *priv;
 	GtkWidget *view;
 
@@ -208,26 +195,15 @@ static GtkWidget *
 setup_view1( ofaRenderPage *self )
 {
 	ofaRenderPagePrivate *priv;
-	GtkWidget *grid, *scrolled, *viewport, *drawing;
+	GtkWidget *grid;
 
 	priv = ofa_render_page_get_instance_private( self );
 
 	grid = gtk_grid_new();
 	gtk_grid_set_row_spacing( GTK_GRID( grid ), 2 );
 
-	/* setup the drawing area */
-	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	gtk_grid_attach( GTK_GRID( grid ), scrolled, 0, 0, 1, 1 );
-
-	viewport = gtk_viewport_new( NULL, NULL );
-	gtk_container_add( GTK_CONTAINER( scrolled ), viewport );
-
-	drawing = gtk_drawing_area_new();
-	gtk_container_add( GTK_CONTAINER( viewport ), drawing );
-	gtk_widget_set_hexpand( drawing, TRUE );
-	gtk_widget_set_vexpand( drawing, TRUE );
-	g_signal_connect( drawing, "draw", G_CALLBACK( on_draw ), self );
-	priv->drawing_area = drawing;
+	priv->render_area = ofa_render_area_new( ofa_page_get_getter( OFA_PAGE( self )));
+	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( priv->render_area ), 0, 0, 1, 1 );
 
 	/* setup the box
 	 * it defaults to contain a message zone (GtkLabel)
@@ -299,7 +275,6 @@ setup_actions_area( ofaRenderPage *self, GtkContainer *parent )
 static void
 setup_page_size( ofaRenderPage *self )
 {
-	static const gchar *thisfn = "ofa_render_page_setup_page_size";
 	ofaRenderPagePrivate *priv;
 	const gchar *paper_name;
 	GtkPaperSize *paper_size;
@@ -328,12 +303,12 @@ setup_page_size( ofaRenderPage *self )
 	priv->render_width = gtk_page_setup_get_page_width( page_setup, GTK_UNIT_POINTS );
 	priv->render_height = gtk_page_setup_get_page_height( page_setup, GTK_UNIT_POINTS );
 
-	g_debug( "%s: paper_width=%lf, paper_height=%lf, render_width=%lf, render_height=%lf",
-			thisfn,
-			priv->paper_width, priv->paper_height, priv->render_width, priv->render_height );
-
 	g_object_unref( page_setup );
 	gtk_paper_size_free( paper_size );
+
+	ofa_render_area_set_page_size( priv->render_area, priv->paper_width, priv->paper_height );
+	ofa_render_area_set_page_margins( priv->render_area, PAGE_EXT_MARGIN_V_HEIGHT, PAGE_SEPARATION_V_HEIGHT );
+	ofa_render_area_set_render_size( priv->render_area, priv->render_width, priv->render_height );
 }
 
 /**
@@ -369,37 +344,13 @@ ofa_render_page_set_args_changed( ofaRenderPage *page, gboolean is_valid, const 
 	priv = ofa_render_page_get_instance_private( page );
 
 	/* clear all datas as well as drawing area */
-	render_page_free_pages( &priv->pdf_crs );
 	render_page_free_dataset( page );
-	render_page_clear_drawing_area( page );
+	clear_rendered_pages( page );
+	ofa_render_area_clear( priv->render_area );
 
 	gtk_widget_set_sensitive( priv->render_btn, is_valid );
 	gtk_widget_set_sensitive( priv->print_btn, is_valid );
 	set_message( page, message ? message : "", MSG_ERROR );
-}
-
-/*
- * render_page_clear_drawing_area:
- * @page:
- *
- * Clear the drawing area.
- */
-static void
-render_page_clear_drawing_area( ofaRenderPage *page )
-{
-	ofaRenderPagePrivate *priv;
-	cairo_t *cr;
-
-	g_return_if_fail( page && OFA_IS_RENDER_PAGE( page ));
-	g_return_if_fail( !OFA_PAGE( page )->prot->dispose_has_run );
-
-	priv = ofa_render_page_get_instance_private( page );
-
-	cr = create_context( page, priv->render_width, priv->render_height );
-	draw_widget_background( cr, priv->drawing_area );
-	cairo_destroy( cr );
-
-	gtk_widget_queue_draw( priv->drawing_area );
 }
 
 static GList *
@@ -435,121 +386,6 @@ render_page_free_dataset( ofaRenderPage *page )
 	}
 }
 
-static void
-render_page_free_pages( GList **pdf_crs )
-{
-	g_list_free_full( *pdf_crs, ( GDestroyNotify ) cairo_destroy );
-	*pdf_crs = NULL;
-}
-
-/*
- * We are drawing pages:
- * - requested width is the width if the page
- *   if allocated width is greater than requested width, we center the
- *   drawn page into the widget, margins being light gray
- * - requested height is the total height of the pages, including the
- *   height of an horizontal separation between the pages
- */
-static gboolean
-on_draw( GtkWidget *area, cairo_t *cr, ofaRenderPage *page )
-{
-	ofaRenderPagePrivate *priv;
-	gint widget_width, req_width, req_height, nb_pages;
-	gdouble x;
-
-	priv = ofa_render_page_get_instance_private( page );
-
-	draw_widget_background( cr, area );
-
-	widget_width = gtk_widget_get_allocated_width( area );
-	x = widget_width > priv->paper_width ?
-			(( gdouble ) widget_width - priv->paper_width ) / 2.0 :
-			0;
-
-	nb_pages = do_drawing( page, cr, x );
-
-	req_width = widget_width > priv->paper_width ? -1 : priv->paper_width;
-
-	req_height = nb_pages > 0 ?
-			nb_pages * priv->paper_height
-				+ ( nb_pages-1 ) * PAGE_SEPARATION_V_HEIGHT
-				+ 2 * PAGE_EXT_MARGIN_V_HEIGHT:
-			-1;
-
-	gtk_widget_set_size_request( area, req_width, req_height );
-
-	/* TRUE stops other handlers from being invoked for the event */
-	return( TRUE );
-}
-
-/*
- * draw the background of the widget on which we are going to draw the
- * pages
- */
-static void
-draw_widget_background( cairo_t *cr, GtkWidget *area )
-{
-	gint widget_width, widget_height;
-
-	widget_width = gtk_widget_get_allocated_width( area );
-	widget_height = gtk_widget_get_allocated_height( area );
-
-	cairo_set_source_rgb( cr, COLOR_LIGHT_GRAY );
-	cairo_rectangle( cr, 0, 0, widget_width, widget_height );
-	cairo_fill( cr );
-}
-
-/*
- * @cr: the widget drawing area's cairo context
- * @x: the shift from be left border of the widget drawing area so that
- *  the page appears centered in the widget
- *
- * The passed-on cairo context is those of the drawing area widget.
- * Copy to it the prepared cairo pdf surface.
- *
- * Returns: the count of printed pages (needed to adjust the size
- * requirement of the widget drawing area)
- */
-static gint
-do_drawing( ofaRenderPage *page, cairo_t *cr, gdouble shift_x )
-{
-	ofaRenderPagePrivate *priv;
-	GList *it;
-	cairo_t *pdf_cr;
-	gdouble y, dx, dy;
-
-	priv = ofa_render_page_get_instance_private( page );
-
-	y = PAGE_EXT_MARGIN_V_HEIGHT;
-	dx = shift_x+(priv->paper_width-priv->render_width)/2.0;
-
-	for( it=priv->pdf_crs ; it ; it=it->next ){
-		draw_page_background( page, cr, shift_x, y );
-		pdf_cr = ( cairo_t * ) it->data;
-		dy = y+(priv->paper_height-priv->render_height)/2.0;
-		cairo_set_source_surface( cr, cairo_get_target( pdf_cr ), dx, dy );
-		cairo_paint( cr );
-		y += priv->paper_height + PAGE_SEPARATION_V_HEIGHT;
-	}
-
-	return( g_list_length( priv->pdf_crs ));
-}
-
-/*
- * draw the background of the page
- */
-static void
-draw_page_background( ofaRenderPage *page, cairo_t *cr, gdouble x, gdouble y )
-{
-	ofaRenderPagePrivate *priv;
-
-	priv = ofa_render_page_get_instance_private( page );
-
-	cairo_set_source_rgb( cr, COLOR_WHITE );
-	cairo_rectangle( cr, x, y, priv->paper_width, priv->paper_height );
-	cairo_fill( cr );
-}
-
 /*
  * Rendering is a two-phases action:
  * - render the pages, obtaining a #GList of rendered pages
@@ -563,15 +399,15 @@ on_render_clicked( GtkButton *button, ofaRenderPage *page )
 	priv = ofa_render_page_get_instance_private( page );
 
 	/* clear all datas as well as drawing area */
-	render_page_clear_drawing_area( page );
-	render_page_free_pages( &priv->pdf_crs );
 	render_page_free_dataset( page );
+	clear_rendered_pages( page );
+	ofa_render_area_clear( priv->render_area );
 
 	/* render pages */
 	render_pdf_pages( page );
 
 	/* and draw pages to the drawing area */
-	gtk_widget_queue_draw( priv->drawing_area );
+	ofa_render_area_queue_draw( priv->render_area );
 }
 
 static void
@@ -588,25 +424,27 @@ render_pdf_pages( ofaRenderPage *page )
 
 	if( !priv->dataset ){
 		priv->dataset = get_dataset( page );
-		render_page_free_pages( &priv->pdf_crs );
+		clear_rendered_pages( page );
+		ofa_render_area_clear( priv->render_area );
 	}
 
-	if( !priv->pdf_crs ){
-		cr = create_context( page, priv->render_width, priv->render_height );
+	if( !priv->pages ){
+		cr = ofa_render_area_new_context( priv->render_area );
 		pages_count = ofa_irenderable_begin_render(
 				OFA_IRENDERABLE( page ), cr, priv->render_width, priv->render_height, priv->dataset );
 
 		for( i=0 ; i<pages_count ; ++i ){
-			page_cr = create_context( page, priv->render_width, priv->render_height );
+			page_cr = ofa_render_area_new_context( priv->render_area );
 			ofa_irenderable_render_page( OFA_IRENDERABLE( page ), page_cr, i );
-			priv->pdf_crs = g_list_append( priv->pdf_crs, page_cr );
+			priv->pages = g_list_append( priv->pages, page_cr );
+			ofa_render_area_append_page( priv->render_area, page_cr );
 		}
 
 		ofa_irenderable_end_render( OFA_IRENDERABLE( page ), cr );
 		cairo_destroy( cr );
 
 	} else {
-		pages_count = g_list_length( priv->pdf_crs );
+		pages_count = g_list_length( priv->pages );
 	}
 
 	progress_end( page );
@@ -635,7 +473,7 @@ on_print_clicked( GtkButton *button, ofaRenderPage *page )
 
 	priv = ofa_render_page_get_instance_private( page );
 
-	if( !priv->pdf_crs ){
+	if( !priv->pages ){
 		render_pdf_pages( page );
 	}
 
@@ -643,7 +481,7 @@ on_print_clicked( GtkButton *button, ofaRenderPage *page )
 	ofa_iprintable_print( OFA_IPRINTABLE( page ));
 	progress_end( page );
 
-	pages_count = g_list_length( priv->pdf_crs );
+	pages_count = g_list_length( priv->pages );
 
 	if( pages_count == 1 ){
 		str = g_strdup_printf( _( "%d printed page." ), pages_count );
@@ -655,19 +493,17 @@ on_print_clicked( GtkButton *button, ofaRenderPage *page )
 }
 
 /*
- * Creates a cairo context suitable to render a PDF page of given size
+ * Clear the list of rendered pages.
  */
-static cairo_t *
-create_context( ofaRenderPage *page, gdouble width, gdouble height )
+static void
+clear_rendered_pages( ofaRenderPage *self )
 {
-	cairo_surface_t *surface;
-	cairo_t *cr;
+	ofaRenderPagePrivate *priv;
 
-	surface = cairo_pdf_surface_create( NULL, width, height );
-	cr = cairo_create( surface );
-	cairo_surface_destroy( surface );
+	priv = ofa_render_page_get_instance_private( self );
 
-	return( cr );
+	g_list_free_full( priv->pages, ( GDestroyNotify ) cairo_destroy );
+	priv->pages = NULL;
 }
 
 static void
@@ -679,6 +515,26 @@ set_message( ofaRenderPage *page, const gchar *message, const gchar *spec )
 
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), message );
 	my_style_add( priv->msg_label, spec );
+}
+
+/**
+ * ofa_render_page_get_icontext:
+ * @page: this #ofaRenderPage page.
+ *
+ * Returns: the widget as an #ofaIContext where the user can right-clicks
+ * to open a contextual submenu, here the drawing area.
+ */
+ofaIContext *
+ofa_render_page_get_icontext( ofaRenderPage *page )
+{
+	ofaRenderPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_RENDER_PAGE( page ), NULL );
+	g_return_val_if_fail( !OFA_PAGE( page )->prot->dispose_has_run, NULL );
+
+	priv = ofa_render_page_get_instance_private( page );
+
+	return( OFA_ICONTEXT( priv->render_area ));
 }
 
 /**

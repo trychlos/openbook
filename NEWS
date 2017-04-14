@@ -51,7 +51,8 @@
    - ofaIExportable::get_published(): new method.
    - ofaIExporter: new interface.
    - ofaIRenderer: interface is completed with font and color getters (todo #1452).
-   - ofaRecurrentModelPage: precise the action label (todo #1458). 
+   - ofaRecurrentModelPage: precise the action label (todo #1458).
+   - ofaRenderArea: new class which implements ofaIContext. 
    - ofaStreamFormat: is now able to define which fields are user-updatable.
    - ofaTVBin: is now exportable (for now only implemented in ofaEntryPage).
    - core/ofo-entry-fec.{c,h}: new files.

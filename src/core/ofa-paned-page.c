@@ -203,6 +203,9 @@ ofa_paned_page_class_init( ofaPanedPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_page = page_v_setup_page;
 }
 
+/*
+ * Called from page_constructed()
+ */
 static void
 page_v_setup_page( ofaPage *page )
 {

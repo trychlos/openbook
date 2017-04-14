@@ -399,6 +399,7 @@ get_focused_widget( ofaIContext *instance )
 
 	g_info( "%s: ofaIContext's %s implementation does not provide 'get_focused_widget()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
+
 	return( NULL );
 }
 
@@ -420,6 +421,8 @@ get_instance_data( ofaIContext *instance )
 		g_signal_connect( instance, "popup-menu", G_CALLBACK( on_popup_menu ), sdata );
 
 		widget = get_focused_widget( instance );
+		g_return_val_if_fail( widget && GTK_IS_WIDGET( widget ), NULL );
+
 		g_signal_connect( widget, "button-press-event", G_CALLBACK( on_button_pressed ), sdata );
 
 		g_object_set_data( G_OBJECT( instance ), ICONTEXT_DATA, sdata );

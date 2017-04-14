@@ -217,6 +217,8 @@ libofa_core_la_SOURCES = \
 	ofa-reconcil-store.h								\
 	ofa-reconcil-treeview.c								\
 	ofa-reconcil-treeview.h								\
+	ofa-render-area.c									\
+	ofa-render-area.h									\
 	ofa-render-page.c									\
 	ofa-settlement-group.c								\
 	ofa-settlement-group.h								\
