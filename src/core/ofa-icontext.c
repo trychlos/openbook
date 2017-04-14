@@ -55,6 +55,8 @@ static void       do_popup_menu( ofaIContext *instance, sIContext *sdata, guint 
 static void       enum_action_groups_cb( ofaIActionable *actionable, const gchar *group_name, GActionGroup *action_group, sIContext *sdata );
 static void       dump_menu_model( ofaIContext *instance, GMenuModel *model );
 static sIContext *get_instance_data( ofaIContext *instance );
+static void       connect_to_keyboard_event( ofaIContext *instance, sIContext *sdata );
+static void       connect_to_mouse_event( ofaIContext *instance, sIContext *sdata );
 static void       on_instance_finalized( sIContext *sdata, GObject *finalized_instance );
 static void       free_actionables( GList **actionables );
 
@@ -410,7 +412,6 @@ static sIContext *
 get_instance_data( ofaIContext *instance )
 {
 	sIContext *sdata;
-	GtkWidget *widget;
 
 	sdata = ( sIContext * ) g_object_get_data( G_OBJECT( instance ), ICONTEXT_DATA );
 
@@ -418,18 +419,127 @@ get_instance_data( ofaIContext *instance )
 		sdata = g_new0( sIContext, 1 );
 		sdata->menu = g_menu_new();
 
-		g_signal_connect( instance, "popup-menu", G_CALLBACK( on_popup_menu ), sdata );
-
-		widget = get_focused_widget( instance );
-		g_return_val_if_fail( widget && GTK_IS_WIDGET( widget ), NULL );
-
-		g_signal_connect( widget, "button-press-event", G_CALLBACK( on_button_pressed ), sdata );
-
 		g_object_set_data( G_OBJECT( instance ), ICONTEXT_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
+
+		connect_to_keyboard_event( instance, sdata );
+		connect_to_mouse_event( instance, sdata );
 	}
 
 	return( sdata );
+}
+
+/*
+ * From Gtk+ 3 Reference Manual:
+ *   This signal gets emitted whenever a widget should pop up a context
+ *   menu. This usually happens through the standard key binding
+ *   mechanism; by pressing a certain key while a widget is focused,
+ *   the user can cause the widget to pop up a menu.
+ *   For example, the GtkEntry widget creates a menu with clipboard
+ *   commands.
+ *
+ * From the Popup Menu Migration Checklist:
+ *   For the standard key bindings to work, your widget must be able to
+ *   take the keyboard focus. In general, widgets should be fully usable
+ *   through the keyboard and not just the mouse. The very first step of
+ *   this is to ensure that your widget can receive focus, using
+ *   gtk_widget_set_can_focus().
+ *
+ * As a summary, the 'popup-menu' signal is the one which is triggered
+ * to open a contextual menu from the keyboard.
+ * More than connecting to signal, we check here that the widget can
+ * take the focus.
+ */
+static void
+connect_to_keyboard_event( ofaIContext *instance, sIContext *sdata )
+{
+	static const gchar *thisfn = "ofa_icontext_connect_to_keyboard_event";
+	gboolean can_focus;
+
+	can_focus = gtk_widget_get_can_focus( GTK_WIDGET( instance ));
+
+	if( can_focus ){
+		g_debug( "%s: widget=%p can get focus: fine",
+				thisfn, ( void * ) instance );
+	} else {
+		g_debug( "%s: widget=%p cannot get focus",
+				thisfn, ( void * ) instance );
+	}
+
+#if 0
+		g_debug( "%s: widget=%p cannot get focus: modifying this",
+				thisfn, ( void * ) instance );
+		gtk_widget_set_can_focus( GTK_WIDGET( instance ), TRUE );
+		can_focus = gtk_widget_get_can_focus( GTK_WIDGET( instance ));
+		if( can_focus ){
+			g_debug( "%s: widget=%p can now get focus: fine",
+					thisfn, ( void * ) instance );
+		} else {
+			g_debug( "%s: widget=%p still cannot get focus: "
+						"the 'popup-menu' signal will not be received",
+					thisfn, ( void * ) instance );
+		}
+	}
+#endif
+
+	/* connect to signal anyway */
+	g_signal_connect( instance, "popup-menu", G_CALLBACK( on_popup_menu ), sdata );
+}
+
+/*
+ * From Gtk+ 3 Reference Manual:
+ *   The ::button-press-event signal will be emitted when a button
+ *   (typically from a mouse) is pressed.
+ *   To receive this signal, the GdkWindow associated to the widget
+ *   needs to enable the GDK_BUTTON_PRESS_MASK mask.
+ *   This signal will be sent to the grab widget if there is one.
+ *
+ * As a summary, the 'button-press-event' signal is the one which is
+ * triggered to open a contextual menu from the mouse.
+ * More than connecting to signal, we check here that the widget has
+ * the right event mask, and that it can grab take the focus.
+ */
+static void
+connect_to_mouse_event( ofaIContext *instance, sIContext *sdata )
+{
+	static const gchar *thisfn = "ofa_icontext_connect_to_mouse_event";
+	gint mask;
+	GtkWidget *widget;
+
+	widget = get_focused_widget( instance );
+	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
+
+	mask = gtk_widget_get_events( widget );
+
+	if( mask & GDK_BUTTON_PRESS_MASK ){
+		g_debug( "%s: GDK_BUTTON_PRESS_MASK is set on widget=%p: fine",
+				thisfn, ( void * ) instance );
+	} else {
+		g_debug( "%s: GDK_BUTTON_PRESS_MASK is cleared on widget=%p: modifying this",
+				thisfn, ( void * ) instance );
+		gtk_widget_add_events( GTK_WIDGET( instance ), GDK_BUTTON_PRESS_MASK );
+
+		mask = gtk_widget_get_events( widget );
+		if( mask & GDK_BUTTON_PRESS_MASK ){
+			g_debug( "%s: GDK_BUTTON_PRESS_MASK is now set on widget=%p: fine",
+					thisfn, ( void * ) instance );
+		} else {
+			g_debug( "%s: GDK_BUTTON_PRESS_MASK is still cleared on widget=%p: "
+						"the 'button-press-event' signal will not be received",
+					thisfn, ( void * ) instance );
+		}
+	}
+
+	/* connect to signal anyway */
+	g_signal_connect( widget, "button-press-event", G_CALLBACK( on_button_pressed ), sdata );
+
+#if 0
+	/* grab the focus */
+	if( gtk_widget_get_can_focus( widget )){
+		gtk_widget_grab_focus( widget );
+	}
+#endif
+
 }
 
 static void
