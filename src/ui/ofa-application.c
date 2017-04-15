@@ -773,7 +773,9 @@ application_activate( GApplication *application )
 	/* then create the main window */
 	priv->main_window = ofa_main_window_new( OFA_IGETTER( priv->hub ));
 	g_debug( "%s: main window instanciated at %p", thisfn, priv->main_window );
+	g_debug( "%s: about to call gtk_window_present()", thisfn );
 	gtk_window_present( GTK_WINDOW( priv->main_window ));
+	g_debug( "%s: return from gtk_window_present()", thisfn );
 
 #if 0
 	ofaDossierCollection *collection;
