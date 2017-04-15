@@ -43,7 +43,6 @@
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-irecover.h"
 #include "api/ofa-isignaler.h"
-#include "api/ofa-preferences.h"
 #include "api/ofa-prefs.h"
 
 #include "ui/ofa-about.h"
@@ -55,6 +54,7 @@
 #include "ui/ofa-maintainer.h"
 #include "ui/ofa-misc-collector-ui.h"
 #include "ui/ofa-plugin-manager.h"
+#include "ui/ofa-preferences.h"
 #include "ui/ofa-recovery-assistant.h"
 #include "ui/ofa-restore-assistant.h"
 

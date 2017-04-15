@@ -310,7 +310,7 @@
 
 1464 2017- 4-14 entry_page: when switching to extended filter, should
                  only display the result of the current filter, which
-                 is null the first time
+                 is null the first time - for now, display all
 
 1465 2017- 4-14 accounts balances: total soldes debits credits are zero
 

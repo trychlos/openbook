@@ -104,7 +104,6 @@ api_include_HEADERS = \
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
 	ofa-paimean-editable.h								\
-	ofa-preferences.h									\
 	ofa-prefs.h											\
 	ofa-prefs-def.h										\
 	ofa-render-page.h									\

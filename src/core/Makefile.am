@@ -203,7 +203,6 @@ libofa_core_la_SOURCES = \
 	ofa-paimean-treeview.h								\
 	ofa-paned-page.c									\
 	ofa-page.c											\
-	ofa-preferences.c									\
 	ofa-prefs.c											\
 	ofa-rate-store.c									\
 	ofa-rate-store.h									\

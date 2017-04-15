@@ -42,13 +42,14 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-iproperties.h"
 #include "api/ofa-isignaler.h"
-#include "api/ofa-preferences.h"
 #include "api/ofa-prefs.h"
 
 #include "core/ofa-open-prefs.h"
 #include "core/ofa-open-prefs-bin.h"
 #include "core/ofa-dossier-delete-prefs-bin.h"
 #include "core/ofa-stream-format-bin.h"
+
+#include "ui/ofa-preferences.h"
 
 /* private instance data
  */

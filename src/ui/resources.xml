@@ -38,6 +38,7 @@
     <file>ofa-misc-collector-ui.ui</file>
     <file>ofa-period-close.ui</file>
     <file>ofa-plugin-manager.ui</file>
+    <file>ofa-preferences.ui</file>
     <file>ofa-rate-properties.ui</file>
     <file>ofa-recovery-assistant.ui</file>
     <file>ofa-restore-assistant.ui</file>

@@ -516,6 +516,11 @@ add_by_currency( ofaAccountBalance *self, ofsAccountBalanceCurrency *scur )
 	total_scur->debits += scur->debits;
 	total_scur->credits += scur->credits;
 	total_scur->end_solde += scur->end_solde;
+
+#if 0
+	g_debug( "adding begin=%lf, end=%lf - total begin=%lf, end=%lf",
+			scur->begin_solde, scur->end_solde, total_scur->begin_solde, total_scur->end_solde );
+#endif
 }
 
 static gint

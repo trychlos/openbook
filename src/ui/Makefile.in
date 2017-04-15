@@ -176,8 +176,9 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-misc-collector-ui.$(OBJEXT) ofa-nomodal-page.$(OBJEXT) \
 	ofa-ope-template-page.$(OBJEXT) ofa-paimean-page.$(OBJEXT) \
 	ofa-period-close.$(OBJEXT) ofa-plugin-manager.$(OBJEXT) \
-	ofa-rate-page.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
-	ofa-rate-treeview.$(OBJEXT) ofa-recovery-assistant.$(OBJEXT) \
+	ofa-preferences.$(OBJEXT) ofa-rate-page.$(OBJEXT) \
+	ofa-rate-properties.$(OBJEXT) ofa-rate-treeview.$(OBJEXT) \
+	ofa-recovery-assistant.$(OBJEXT) \
 	ofa-restore-assistant.$(OBJEXT) \
 	ofa-target-chooser-bin.$(OBJEXT) ofa-unreconcil-page.$(OBJEXT) \
 	ofa-unsettled-page.$(OBJEXT) \
@@ -635,6 +636,8 @@ openbook_SOURCES = \
 	ofa-period-close.h									\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
+	ofa-preferences.c									\
+	ofa-preferences.h									\
 	ofa-rate-page.c										\
 	ofa-rate-page.h										\
 	ofa-rate-properties.c								\
@@ -847,6 +850,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paimean-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-period-close.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin-manager.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-preferences.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-treeview.Po@am__quote@

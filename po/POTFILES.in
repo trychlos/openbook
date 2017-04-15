@@ -59,8 +59,6 @@ src/core/ofa-paimean-properties.c
 src/core/ofa-paimean-properties.ui
 src/core/ofa-paimean-select.ui
 src/core/ofa-paimean-treeview.c
-src/core/ofa-preferences.c
-src/core/ofa-preferences.ui
 src/core/ofa-prefs.c
 src/core/ofa-reconcil-args.c
 src/core/ofa-reconcil-args.ui
@@ -244,6 +242,8 @@ src/ui/ofa-period-close.c
 src/ui/ofa-period-close.ui
 src/ui/ofa-plugin-manager.c
 src/ui/ofa-plugin-manager.ui
+src/ui/ofa-preferences.c
+src/ui/ofa-preferences.ui
 src/ui/ofa-rate-page.c
 src/ui/ofa-rate-properties.c
 src/ui/ofa-rate-properties.ui

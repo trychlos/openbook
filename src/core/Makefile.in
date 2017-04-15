@@ -203,21 +203,20 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-paimean-frame-bin.lo ofa-paimean-properties.lo \
 	ofa-paimean-select.lo ofa-paimean-store.lo \
 	ofa-paimean-treeview.lo ofa-paned-page.lo ofa-page.lo \
-	ofa-preferences.lo ofa-prefs.lo ofa-rate-store.lo \
-	ofa-reconcil-args.lo ofa-reconcil-group.lo \
-	ofa-reconcil-page.lo ofa-reconcil-render.lo \
-	ofa-reconcil-store.lo ofa-reconcil-treeview.lo \
-	ofa-render-area.lo ofa-render-page.lo ofa-settlement-group.lo \
-	ofa-settlement-page.lo ofa-stream-format.lo \
-	ofa-stream-format-bin.lo ofa-stream-format-disp.lo \
-	ofa-tree-store.lo ofa-tvbin.lo ofo-account.lo \
-	ofo-account-v34.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
-	ofo-class.lo ofo-concil.lo ofo-counters.lo ofo-currency.lo \
-	ofo-doc.lo ofo-dossier.lo ofo-entry.lo ofo-entry-fec.lo \
-	ofo-exemeta.lo ofo-ledger.lo ofo-ope-template.lo \
-	ofo-paimean.lo ofo-rate.lo ofs-account-balance.lo \
-	ofs-concil-id.lo ofs-currency.lo ofs-ledger-balance.lo \
-	ofs-ope.lo
+	ofa-prefs.lo ofa-rate-store.lo ofa-reconcil-args.lo \
+	ofa-reconcil-group.lo ofa-reconcil-page.lo \
+	ofa-reconcil-render.lo ofa-reconcil-store.lo \
+	ofa-reconcil-treeview.lo ofa-render-area.lo ofa-render-page.lo \
+	ofa-settlement-group.lo ofa-settlement-page.lo \
+	ofa-stream-format.lo ofa-stream-format-bin.lo \
+	ofa-stream-format-disp.lo ofa-tree-store.lo ofa-tvbin.lo \
+	ofo-account.lo ofo-account-v34.lo ofo-base.lo ofo-bat.lo \
+	ofo-bat-line.lo ofo-class.lo ofo-concil.lo ofo-counters.lo \
+	ofo-currency.lo ofo-doc.lo ofo-dossier.lo ofo-entry.lo \
+	ofo-entry-fec.lo ofo-exemeta.lo ofo-ledger.lo \
+	ofo-ope-template.lo ofo-paimean.lo ofo-rate.lo \
+	ofs-account-balance.lo ofs-concil-id.lo ofs-currency.lo \
+	ofs-ledger-balance.lo ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
@@ -642,7 +641,6 @@ libofa_core_la_SOURCES = \
 	ofa-paimean-treeview.h								\
 	ofa-paned-page.c									\
 	ofa-page.c											\
-	ofa-preferences.c									\
 	ofa-prefs.c											\
 	ofa-rate-store.c									\
 	ofa-rate-store.h									\
@@ -900,7 +898,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paimean-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paimean-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paned-page.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-preferences.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-prefs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-args.Plo@am__quote@

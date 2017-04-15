@@ -209,6 +209,8 @@ openbook_SOURCES = \
 	ofa-period-close.h									\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
+	ofa-preferences.c									\
+	ofa-preferences.h									\
 	ofa-rate-page.c										\
 	ofa-rate-page.h										\
 	ofa-rate-properties.c								\

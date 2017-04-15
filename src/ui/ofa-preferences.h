@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_preferences
  * @short_description: #ofaPreferences class definition.
- * @include: openbook/ofa-preferences.h
+ * @include: ui/ofa-preferences.h
  *
  * Manage the general user preferences,
  * i.e. user preferences which are not attached to any dossier.
