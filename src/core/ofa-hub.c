@@ -152,6 +152,20 @@ hub_finalize( GObject *instance )
 	G_OBJECT_CLASS( ofa_hub_parent_class )->finalize( instance );
 }
 
+/* (openbook:21666): Gtk-WARNING **: A floating object was finalized.
+ * This means that someone called g_object_unref() on an object that
+ * had only a floating reference; the initial floating reference is not
+ * owned by anyone and must be removed with g_object_ref_sink().
+ */
+static void
+free_core_object( GObject *object )
+{
+	if( g_object_is_floating( object )){
+		g_object_ref_sink( object );
+	}
+	g_object_unref( object );
+}
+
 static void
 hub_dispose( GObject *instance )
 {
@@ -179,7 +193,7 @@ hub_dispose( GObject *instance )
 		g_clear_object( &priv->scope_mapper );
 		g_clear_object( &priv->dossier_store );
 
-		g_list_free_full( priv->core_objects, ( GDestroyNotify ) g_object_unref );
+		g_list_free_full( priv->core_objects, ( GDestroyNotify ) free_core_object );
 
 		g_clear_object( &priv->dossiers_collection );
 		g_clear_object( &priv->extenders_collection );
@@ -285,7 +299,7 @@ hub_register_types( ofaHub *self )
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFA_TYPE_TVBIN, "ofa-tvbin-getter", self, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFA_TYPE_ACCOUNT_BALANCE, "ofa-getter", self, NULL ));
 
-	/* this is not exportable, nor importable */
+	/* it is or may be ISignalable */
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
 
 	/* this is also the order of IExportable/IImportable classes in the
