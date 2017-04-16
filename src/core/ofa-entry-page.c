@@ -887,8 +887,14 @@ tview_apply_extfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *it
 
 	visible = TRUE;
 	rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->ext_grid ));
-	for( i=0 ; i<rows_count ; ++i ){
-		visible = tview_apply_extfilter_by_row( self, tmodel, iter, i, visible );
+
+	if( rows_count == 0 ){
+		visible = FALSE;
+
+	} else {
+		for( i=0 ; i<rows_count ; ++i ){
+			visible &= tview_apply_extfilter_by_row( self, tmodel, iter, i, visible );
+		}
 	}
 
 	//g_debug( "tview_apply_extfilter: visible=%s", visible ? "True":"False" );

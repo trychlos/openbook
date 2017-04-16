@@ -38,6 +38,7 @@
  Bug fixes:
 
    - configure.ac: display 'pwirender' plugin build status (todo #1453).
+   - ofaEntryPage: fix initial display of the extended filter (todo #1464).
    - ofaEntryStore: fix ENT_TIERS column type.
    - ofaGuidedInputBin: do not override a user-set date when setting a template (todo #1456).
    - ofaHub: fix releasing object with floating references. 

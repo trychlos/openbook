@@ -303,10 +303,6 @@
 
 1462 2017- 4-13 PACK: check that each header can be compiled stand-alone
 
-1464 2017- 4-14 entry_page: when switching to extended filter, should
-                 only display the result of the current filter, which
-                 is null the first time - for now, display all
-
 1465 2017- 4-14 accounts balances: total soldes debits credits are zero
 
 1466
@@ -1137,6 +1133,11 @@
                 - on startup, the mini window is visibly shifted: hide it
                 - take care of not saving minimal size
                 - take care of restoring only valid position
+     2017- 4-16 fixed
+
+1464 2017- 4-14 entry_page: when switching to extended filter, should
+                 only display the result of the current filter, which
+                 is null the first time - for now, display all
      2017- 4-16 fixed
 
 -----------------------------------------------------------------------
