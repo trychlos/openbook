@@ -54,6 +54,7 @@ static void        my_utils_container_dump_rec( GtkContainer *container, const g
 static void        on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static GMenuModel *menu_get_model_rec( GMenuModel *menu, const gchar *id, gint *pos );
 static gboolean    position_get_geometry( myISettings *settings, const gchar *name, gint *x, gint *y, gint *width, gint *height );
+static void        position_save_geometry( myISettings *settings, const gchar *name, gint x, gint y, gint width, gint height );
 static gchar      *position_get_key( const gchar *name );
 static GSList     *split_by_line( const gchar *content );
 static gboolean    is_dir( GFile *file );
@@ -1857,19 +1858,20 @@ my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width )
  *  will be "@name-pos".
  * @x: [out]: the x position.
  * @y: [out]: the y position.
+ * @width: [out]: the width.
+ * @height: [out]: the height.
  *
- * Set @x and @y.
+ * Set @x, @y, @width and @height.
  *
  * Returns: %TRUE if a position has been actually found in the settings
  * file.
  */
 gboolean
-my_utils_window_position_get( myISettings *settings, const gchar *name, gint *x, gint *y )
+my_utils_window_position_get( myISettings *settings, const gchar *name, gint *x, gint *y, gint *width, gint *height )
 {
-	gint width=0, height=0;
 	gboolean set;
 
-	set = position_get_geometry( settings, name, x, y, &width, &height );
+	set = position_get_geometry( settings, name, x, y, width, height );
 
 	return( set );
 }
@@ -1900,6 +1902,47 @@ my_utils_window_position_restore( GtkWindow *toplevel, myISettings *settings, co
 	return( set );
 }
 
+/**
+ * my_utils_window_position_save:
+ * @toplevel: a #GtkWindow whose size and position has to be saved to
+ *  the settings.
+ * @settings: the #myISettings implementation which holds these settings.
+ * @name: the prefix of the key in the settings; the actual key name
+ *  will be "@name-pos".
+ *
+ * Save size and position of @toplevel to @settings.
+ */
+void
+my_utils_window_position_save( GtkWindow *toplevel, myISettings *settings, const gchar *name )
+{
+	gint x, y, width, height;
+
+	gtk_window_get_position( toplevel, &x, &y );
+	gtk_window_get_size( toplevel, &width, &height );
+	position_save_geometry( settings, name, x, y, width, height );
+}
+
+/**
+ * my_utils_window_position_save_pos_only:
+ * @toplevel: a #GtkWindow whose size and position has to be saved to
+ *  the settings.
+ * @settings: the #myISettings implementation which holds these settings.
+ * @name: the prefix of the key in the settings; the actual key name
+ *  will be "@name-pos".
+ *
+ * Save only current position of @toplevel to @settings.
+ * The currently saved size is kept.
+ */
+void
+my_utils_window_position_save_pos_only( GtkWindow *toplevel, myISettings *settings, const gchar *name )
+{
+	gint x, y, width, height, prev_x, prev_y;
+
+	position_get_geometry( settings, name, &prev_x, &prev_y, &width, &height );
+	gtk_window_get_position( toplevel, &x, &y );
+	position_save_geometry( settings, name, x, y, width, height );
+}
+
 /*
  * returns the int list which defines the window geometry, or %NULL if not found
  */
@@ -1920,7 +1963,6 @@ position_get_geometry( myISettings *settings, const gchar *name, gint *x, gint *
 	list = my_isettings_get_uint_list( settings, st_save_restore_group, key );
 	g_free( key );
 
-	g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));
 	set = ( g_list_length( list ) > 0 );
 
 	if( set ){
@@ -1943,37 +1985,29 @@ position_get_geometry( myISettings *settings, const gchar *name, gint *x, gint *
 		*height = -1;
 	}
 
+	g_debug( "%s: list=%p (count=%d) x=%d, y=%d, width=%d, height=%d",
+			thisfn, ( void * ) list, g_list_length( list ), *x, *y, *width, *height );
+
 	my_isettings_free_uint_list( settings, list );
 
 	return( set );
 }
 
-/**
- * my_utils_window_position_save:
- * @toplevel: a #GtkWindow whose size and position has to be saved to
- *  the settings.
- * @settings: the #myISettings implementation which holds these settings.
- * @name: the prefix of the key in the settings; the actual key name
- *  will be "@name-pos".
- *
- * Save size and position of @toplevel to @settings.
+/*
+ * returns the int list which defines the window geometry, or %NULL if not found
  */
-void
-my_utils_window_position_save( GtkWindow *toplevel, myISettings *settings, const gchar *name )
+static void
+position_save_geometry( myISettings *settings, const gchar *name, gint x, gint y, gint width, gint height )
 {
-	static const gchar *thisfn = "my_utils_window_position_save";
-	gint x, y, width, height;
+	static const gchar *thisfn = "my_utils_position_save_geometry";
 	gchar *key, *str;
 
-	gtk_window_get_position( toplevel, &x, &y );
-	gtk_window_get_size( toplevel, &width, &height );
-	g_debug( "%s: wsp_name=%s, x=%d, y=%d, width=%d, height=%d", thisfn, name, x, y, width, height );
+	g_debug( "%s: settings=%p, name=%s, x=%d, y=%d, width=%d, height=%d",
+			thisfn, ( void * ) settings, name, x, y, width, height );
 
 	key = position_get_key( name );
 	str = g_strdup_printf( "%d;%d;%d;%d;", x, y, width, height );
-
 	my_isettings_set_string( settings, st_save_restore_group, key, str );
-
 	g_free( str );
 	g_free( key );
 }

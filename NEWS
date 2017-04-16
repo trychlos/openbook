@@ -33,6 +33,7 @@
    - Recurrent operation is not generated is its first amount is zero (todo #1459).
    - Recurrent operation validation is now said 'accounting' (todo #1460).
    - Restore assistant let the user display the metadata of the archive (todo #1450).
+   - User may choose display at startup, and when a dossier is opened or closed.
 
  Bug fixes:
 

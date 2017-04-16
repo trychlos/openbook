@@ -108,7 +108,8 @@ typedef struct {
 	GtkMenuBar      *menubar;
 	myAccelGroup    *accel_group;
 	guint            paned_position;
-	ofeMainbookMode  pages_mode;
+	gboolean         is_mini;
+	ofeMainbookTabs  pages_mode;
 	gboolean         have_detach_pin;
 
 	/* when a dossier is opened
@@ -302,13 +303,16 @@ static void         menubar_init( ofaMainWindow *self );
 static void         menubar_setup( ofaMainWindow *window, GActionMap *map );
 static void         menubar_update_items( ofaMainWindow *self );
 static void         init_themes( ofaMainWindow *self );
-static void         init_minimal_size( ofaMainWindow *self );
+static void         setup_position_size( ofaMainWindow *self, gboolean position );
 static void         signaler_on_dossier_opened( ofaISignaler *signaler, ofaMainWindow *self );
 static void         signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self );
 static void         signaler_on_dossier_changed( ofaISignaler *signaler, ofaMainWindow *main_window );
 static void         signaler_on_dossier_preview( ofaISignaler *signaler, const gchar *uri, ofaMainWindow *main_window );
 static void         signaler_on_ui_restart( ofaISignaler *signaler, ofaMainWindow *self );
 static void         signaler_on_run_export( ofaISignaler *signaler, ofaIExportable *exportable, gboolean force_modal, ofaMainWindow *self );
+static void         on_map( ofaMainWindow *self, void *empty );
+static void         on_shown( ofaMainWindow *self, void *empty );
+static gboolean     on_map_event( ofaMainWindow *self, GdkEvent *event, void *empty );
 static gboolean     on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void         set_window_title( ofaMainWindow *window, gboolean with_dossier );
 static void         warning_exercice_unset( ofaMainWindow *window );
@@ -389,8 +393,12 @@ main_window_dispose( GObject *instance )
 		hub = ofa_igetter_get_hub( priv->getter );
 		ofa_hub_close_dossier( hub );
 
-		if( priv->pages_mode != MAINBOOK_MINI ){
-			settings = ofa_igetter_get_user_settings( priv->getter );
+		/* save the window position (always)
+		 * only save the windows size if display mode is normal */
+		settings = ofa_igetter_get_user_settings( priv->getter );
+		if( priv->is_mini ){
+			my_utils_window_position_save_pos_only( GTK_WINDOW( instance ), settings, priv->settings_prefix );
+		} else {
 			my_utils_window_position_save( GTK_WINDOW( instance ), settings, priv->settings_prefix );
 		}
 
@@ -455,6 +463,9 @@ main_window_constructed( GObject *instance )
 
 		/* connect some signals
 		 */
+		g_signal_connect( instance, "show", G_CALLBACK( on_shown ), NULL );
+		g_signal_connect( instance, "map", G_CALLBACK( on_map ), NULL );
+		g_signal_connect( instance, "map-event", G_CALLBACK( on_map_event ), NULL );
 		g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), NULL );
 
 		/* set the default icon for all windows of the application */
@@ -527,19 +538,8 @@ ofa_main_window_new( ofaIGetter *getter )
 	application = ofa_igetter_get_application( getter );
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW, "application", application, NULL );
 
-	priv = ofa_main_window_get_instance_private( window );
-	priv->getter = getter;
-
-	/* load the menubar
-	 * (just load it: it will be later attached to the main window)
+	/* advertise the main window and the page manager
 	 */
-	menubar_init( window );
-
-	/* restore window geometry
-	 * (here because application is not yet set in constructed()
-	 */
-	read_settings( window );
-
 	hub = ofa_igetter_get_hub( getter );
 	ofa_hub_set_main_window( hub, GTK_APPLICATION_WINDOW( window ));
 	ofa_hub_set_page_manager( hub, OFA_IPAGE_MANAGER( window ));
@@ -554,21 +554,25 @@ ofa_main_window_new( ofaIGetter *getter )
 	g_signal_connect( signaler, SIGNALER_UI_RESTART, G_CALLBACK( signaler_on_ui_restart ), window );
 	g_signal_connect( signaler, SIGNALER_EXPORT_ASSISTANT_RUN, G_CALLBACK( signaler_on_run_export ), window );
 
-	/* let the plugins update the managed themes */
-	init_themes( window );
+	/* set the IGetter and continue the initialization
+	 */
+	priv = ofa_main_window_get_instance_private( window );
+	priv->getter = getter;
 
+	read_settings( window );
 	g_object_get( G_OBJECT( application ), OFA_PROP_APPLICATION_NAME, &priv->orig_title, NULL );
 
-	/* install the application menubar
+	/* initialize the theme manager, then let the plugins advertise theirs */
+	init_themes( window );
+
+	/* load the main window menubar
+	 * installing the application one
 	 */
+	menubar_init( window );
 	menubar_setup( window, G_ACTION_MAP( application ));
 
-	/* the window title defaults to the application title
-	 * the application menubar does not have any dynamic item
-	 * no background image
-	 */
-
-	init_minimal_size( window );
+	priv->is_mini = ( ofa_prefs_mainbook_get_startup_mode( getter ) == MAINBOOK_STARTMINI );
+	setup_position_size( window, TRUE );
 
 	return( window );
 }
@@ -663,10 +667,10 @@ menubar_setup( ofaMainWindow *window, GActionMap *map )
 				( void * ) priv->grid, G_OBJECT_TYPE_NAME( priv->grid ));
 
 		gtk_grid_attach( GTK_GRID( priv->grid ), menubar, 0, 0, 1, 1 );
+		gtk_widget_show_all( priv->grid );
+
 		priv->menubar = GTK_MENU_BAR( menubar );
 	}
-
-	gtk_widget_show_all( GTK_WIDGET( window ));
 }
 
 /*
@@ -720,29 +724,43 @@ init_themes( ofaMainWindow *self )
 }
 
 /*
- * Set the main window minimal size
- * But set it at the right position, so that it will not shift when a
- * dossier will be opened
+ * Set the main window position (if asked for) and size.
+ *
+ * The priv->is_mini must have been set prior to call this function.
  */
 static void
-init_minimal_size( ofaMainWindow *self )
+setup_position_size( ofaMainWindow *self, gboolean position )
 {
+	static const gchar *thisfn = "ofa_main_window_setup_position_size";
 	ofaMainWindowPrivate *priv;
 	myISettings *settings;
-	GtkRequisition min_size;
-	gint x, y;
+	GtkRequisition min_size, nat_size;
+	gint x, y, width, height;
 	gboolean set;
 
 	priv = ofa_main_window_get_instance_private( self );
 
 	settings = ofa_igetter_get_user_settings( priv->getter );
-	set = my_utils_window_position_get( settings, priv->settings_prefix, &x, &y );
-	if( set ){
+	set = my_utils_window_position_get( settings, priv->settings_prefix, &x, &y, &width, &height );
+
+	if( set && position && x >= 0 && y >= 0 ){
 		gtk_window_move( GTK_WINDOW( self ), x, y );
 	}
 
-	gtk_widget_get_preferred_size( GTK_WIDGET( self ), &min_size, NULL );
-	gtk_window_resize( GTK_WINDOW( self ), min_size.width, min_size.height );
+	/* the minimal/natural sizes here are only relevant when the child
+	 * widgets have been gtk_widget_show() and even if they are not
+	 * actually visible at this time of the construction
+	 */
+	gtk_widget_get_preferred_size( GTK_WIDGET( self ), &min_size, &nat_size );
+	g_debug( "%s: min_size.width=%d, min_size.height=%d, nat_size.width=%d, nat_size.height=%d",
+			thisfn, min_size.width, min_size.height, nat_size.width, nat_size.height );
+
+	if( priv->is_mini && min_size.width > 0 && min_size.height > 0 ){
+		gtk_window_resize( GTK_WINDOW( self ), min_size.width, min_size.height );
+
+	} else if( width > 0 && height > 0 ){
+		gtk_window_resize( GTK_WINDOW( self ), width, height );
+	}
 }
 
 static void
@@ -772,12 +790,16 @@ static void
 signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self )
 {
 	static const gchar *thisfn = "ofa_main_window_signaler_on_dossier_closed";
+	ofaMainWindowPrivate *priv;
 	GtkApplication *application;
+	gboolean mini;
 
 	g_debug( "%s: signaler=%p, self=%p", thisfn, ( void * ) signaler, ( void * ) self );
 
 	//if( GTK_IS_WINDOW( self ) && ofa_hub_get_dossier( signaler )){
 	if( GTK_IS_WINDOW( self )){
+
+		priv = ofa_main_window_get_instance_private( self );
 
 		ofa_main_window_dossier_close_windows( self );
 
@@ -787,6 +809,15 @@ signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self )
 		menubar_setup( self, G_ACTION_MAP( application ));
 
 		set_window_title( self, FALSE );
+
+		/* must we come back from a 'normal' display mode to a 'mini' one ? */
+		if( ofa_prefs_mainbook_get_close_mode( priv->getter ) == MAINBOOK_CLOSERESET ){
+			mini = ( ofa_prefs_mainbook_get_startup_mode( priv->getter ) == MAINBOOK_STARTMINI );
+			if( mini != priv->is_mini ){
+				priv->is_mini = mini;
+				setup_position_size( self, FALSE );
+			}
+		}
 
 		reset_pages_count( self );
 	}
@@ -855,6 +886,25 @@ signaler_on_run_export( ofaISignaler *signaler, ofaIExportable *exportable, gboo
 	priv = ofa_main_window_get_instance_private( self );
 
 	ofa_export_assistant_run( priv->getter, exportable, force_modal );
+}
+
+static void
+on_map( ofaMainWindow *self, void *empty )
+{
+	g_debug( "ofaMainWindow::map" );
+}
+
+static void
+on_shown( ofaMainWindow *self, void *empty )
+{
+	g_debug( "ofaMainWindow::show" );
+}
+
+static gboolean
+on_map_event( ofaMainWindow *self, GdkEvent *event, void *empty )
+{
+	g_debug( "ofaMainWindow::map-event" );
+	return( FALSE );
 }
 
 /*
@@ -1139,31 +1189,33 @@ pane_create( ofaMainWindow *self )
 {
 	static const gchar *thisfn = "ofa_main_window_pane_create";
 	ofaMainWindowPrivate *priv;
-	myISettings *settings;
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	/* get the 'pin detach' user pref
-	 * it will be not re-evaluated unless the ui is restarted
+	/* compute the display mode when a dossier is opened:
+	 * is normal unless startup_mode=mini and open_mode=keep
+	 */
+	priv->is_mini =
+			ofa_prefs_mainbook_get_startup_mode( priv->getter ) == MAINBOOK_STARTMINI &&
+			ofa_prefs_mainbook_get_open_mode( priv->getter ) == MAINBOOK_OPENKEEP;
+
+	setup_position_size( self, FALSE );
+
+	/* pages_mode and pin_detach are evaluated on dossier opening
 	 */
 	priv->have_detach_pin = ofa_prefs_mainbook_get_with_detach_pin( priv->getter );
-	priv->pages_mode = ofa_prefs_mainbook_get_pages_mode( priv->getter );
+	priv->pages_mode = ofa_prefs_mainbook_get_tabs_mode( priv->getter );
 
-	g_debug( "%s: pages_mode=%u, have_detach_pin=%s",
-			thisfn, priv->pages_mode, priv->have_detach_pin ? "True":"False" );
+	g_debug( "%s: pages_mode=%u, have_detach_pin=%s, is_mini%s",
+			thisfn, priv->pages_mode, priv->have_detach_pin ? "True":"False",
+			priv->is_mini ? "True":"False" );
 
-	if( priv->pages_mode != MAINBOOK_MINI ){
-		settings = ofa_igetter_get_user_settings( priv->getter );
-		my_utils_window_position_restore( GTK_WINDOW( self ), settings, priv->settings_prefix );
-
+	if( !priv->is_mini ){
 		priv->pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
 		gtk_grid_attach( GTK_GRID( priv->grid ), priv->pane, 0, 1, 1, 1 );
 		gtk_paned_set_position( GTK_PANED( priv->pane ), priv->paned_position );
 		pane_left_add_treeview( self );
 		pane_right_add_empty_notebook( self );
-
-	} else {
-		init_minimal_size( self );
 	}
 }
 
@@ -1253,11 +1305,14 @@ pane_right_add_empty_notebook( ofaMainWindow *self )
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	if( priv->pages_mode == MAINBOOK_DETACH ){
+	g_return_if_fail( !priv->is_mini );
+
+	if( priv->pages_mode == MAINBOOK_TABDETACH ){
 		book = GTK_WIDGET( my_dnd_book_new());
 		g_signal_connect( book, "my-append-page", G_CALLBACK( book_on_append_page ), self );
+
 	} else {
-		g_return_if_fail( priv->pages_mode == MAINBOOK_REORDER );
+		g_return_if_fail( priv->pages_mode == MAINBOOK_TABREORDER );
 		book = gtk_notebook_new();
 	}
 
@@ -1908,7 +1963,7 @@ book_attach_page( ofaMainWindow *self, GtkNotebook *book, GtkWidget *page, const
 	g_signal_connect( tab, MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), page );
 
 	/* pin is only displayed if dnd is off */
-	my_tab_set_show_detach( tab, priv->pages_mode == MAINBOOK_REORDER && priv->have_detach_pin );
+	my_tab_set_show_detach( tab, priv->pages_mode == MAINBOOK_TABREORDER && priv->have_detach_pin );
 	g_signal_connect( tab, MY_SIGNAL_TAB_PIN_CLICKED, G_CALLBACK( on_tab_pin_clicked ), page );
 
 	/* the menu widget */

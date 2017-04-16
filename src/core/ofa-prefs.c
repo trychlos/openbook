@@ -39,56 +39,59 @@
 /* private instance data
  */
 typedef struct {
-	gboolean        dispose_has_run;
+	gboolean           dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter     *getter;
+	ofaIGetter        *getter;
 
 	/* account
 	 */
-	gboolean        account_delete_with_children;
-	gboolean        account_settle_warns;
-	gboolean        account_settle_ctrl;
-	gboolean        account_reconcil_warns;
-	gboolean        account_reconcil_ctrl;
+	gboolean           account_delete_with_children;
+	gboolean           account_settle_warns;
+	gboolean           account_settle_ctrl;
+	gboolean           account_reconcil_warns;
+	gboolean           account_reconcil_ctrl;
 
 	/* amount
 	 */
-	gchar          *amount_decimal_sep;
-	gchar          *amount_thousand_sep;
-	gboolean        amount_accept_dot;
-	gboolean        amount_accept_comma;
+	gchar             *amount_decimal_sep;
+	gchar             *amount_thousand_sep;
+	gboolean           amount_accept_dot;
+	gboolean           amount_accept_comma;
 
 	/* application
 	 */
-	gboolean        appli_confirm_on_altf4;
-	gboolean        appli_confirm_on_quit;
+	gboolean           appli_confirm_on_altf4;
+	gboolean           appli_confirm_on_quit;
 
 	/* assistant
 	 */
-	gboolean        assistant_quit_on_escape;
-	gboolean        assistant_confirm_on_escape;
-	gboolean        assistant_confirm_on_cancel;
+	gboolean           assistant_quit_on_escape;
+	gboolean           assistant_confirm_on_escape;
+	gboolean           assistant_confirm_on_cancel;
 
 	/* check dbms integrity
 	 */
-	gboolean        check_integrity_display_all;
+	gboolean           check_integrity_display_all;
 
 	/* date
 	 */
-	myDateFormat    date_display_format;
-	myDateFormat    date_check_format;
-	gboolean        date_overwrite;
+	myDateFormat       date_display_format;
+	myDateFormat       date_check_format;
+	gboolean           date_overwrite;
 
 	/* export
 	 */
-	gchar          *export_default_folder;
+	gchar             *export_default_folder;
 
-	/* main notebook
+	/* main window / main notebook
 	 */
-	ofeMainbookMode mainbook_pages_mode;
-	gboolean        mainbook_with_detach_pin;
+	ofeMainbookStartup mainbook_startup_mode;
+	ofeMainbookOpen    mainbook_open_mode;
+	ofeMainbookTabs    mainbook_tabs_mode;
+	gboolean           mainbook_with_detach_pin;
+	ofeMainbookClose   mainbook_close_mode;
 }
 	ofaPrefsPrivate;
 
@@ -101,23 +104,59 @@ static const gchar *st_date             = "ofaPreferences-Date";
 static const gchar *st_export           = "ofaPreferences-Export";
 static const gchar *st_mainbook         = "ofaPreferences-MainNotebook";
 
-static void     account_read_settings( ofaPrefs *self );
-static void     account_write_settings( ofaPrefs *self );
-static void     amount_read_settings( ofaPrefs *self );
-static void     amount_write_settings( ofaPrefs *self );
-static void     appli_read_settings( ofaPrefs *self );
-static void     appli_write_settings( ofaPrefs *self );
-static gboolean is_willing_to_quit( ofaPrefs *self );
-static void     assistant_read_settings( ofaPrefs *self );
-static void     assistant_write_settings( ofaPrefs *self );
-static void     check_integrity_read_settings( ofaPrefs *self );
-static void     check_integrity_write_settings( ofaPrefs *self );
-static void     date_read_settings( ofaPrefs *self );
-static void     date_write_settings( ofaPrefs *self );
-static void     export_read_settings( ofaPrefs *self );
-static void     export_write_settings( ofaPrefs *self );
-static void     mainbook_read_settings( ofaPrefs *self );
-static void     mainbook_write_settings( ofaPrefs *self );
+/* indicator are managed as enum's in the code (easier)
+ * but as unlocalized letters in the user settings (more maintainable)
+ */
+typedef struct {
+	gint         id;
+	const gchar *code;
+}
+	sEnum;
+
+static const sEnum st_mainbook_startup_mode[] = {
+		{ MAINBOOK_STARTNORMAL, "N" },
+		{ MAINBOOK_STARTMINI,   "M" },
+		{ 0 }
+};
+
+static const sEnum st_mainbook_open_mode[] = {
+		{ MAINBOOK_OPENKEEP,    "K" },
+		{ MAINBOOK_OPENNATURAL, "N" },
+		{ 0 }
+};
+
+static const sEnum st_mainbook_tabs_mode[] = {
+		{ MAINBOOK_TABDETACH,  "D" },
+		{ MAINBOOK_TABREORDER, "R" },
+		{ 0 }
+};
+
+static const sEnum st_mainbook_close_mode[] = {
+		{ MAINBOOK_CLOSEKEEP,  "K" },
+		{ MAINBOOK_CLOSERESET, "R" },
+		{ 0 }
+};
+
+static void         account_read_settings( ofaPrefs *self );
+static void         account_write_settings( ofaPrefs *self );
+static void         amount_read_settings( ofaPrefs *self );
+static void         amount_write_settings( ofaPrefs *self );
+static void         appli_read_settings( ofaPrefs *self );
+static void         appli_write_settings( ofaPrefs *self );
+static gboolean     is_willing_to_quit( ofaPrefs *self );
+static void         assistant_read_settings( ofaPrefs *self );
+static void         assistant_write_settings( ofaPrefs *self );
+static void         check_integrity_read_settings( ofaPrefs *self );
+static void         check_integrity_write_settings( ofaPrefs *self );
+static void         date_read_settings( ofaPrefs *self );
+static void         date_write_settings( ofaPrefs *self );
+static void         export_read_settings( ofaPrefs *self );
+static void         export_write_settings( ofaPrefs *self );
+static void         mainbook_read_settings( ofaPrefs *self );
+static void         mainbook_write_settings( ofaPrefs *self );
+static gint         enum_code_to_enum( const sEnum *table, const gchar *code, gint def_value );
+static const gchar *enum_enum_to_code( const sEnum *table, gint value, gint def_value );
+static const gchar *enum_find_enum( const sEnum *table, gint value );
 
 G_DEFINE_TYPE_EXTENDED( ofaPrefs, ofa_prefs, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaPrefs ))
@@ -205,8 +244,11 @@ ofa_prefs_init( ofaPrefs *self )
 
 	priv->export_default_folder = g_strdup( "/tmp" );
 
-	priv->mainbook_pages_mode = MAINBOOK_REORDER;
+	priv->mainbook_startup_mode = MAINBOOK_STARTNORMAL;
+	priv->mainbook_open_mode = MAINBOOK_OPENNATURAL;
+	priv->mainbook_tabs_mode = MAINBOOK_TABREORDER;
 	priv->mainbook_with_detach_pin = FALSE;
+	priv->mainbook_close_mode = MAINBOOK_CLOSEKEEP;
 }
 
 static void
@@ -1369,13 +1411,22 @@ export_write_settings( ofaPrefs *self )
 }
 
 /**
- * ofa_prefs_mainbook_get_pages_mode:
+ * ofa_prefs_mainbook_get_startup_mode:
  * @getter: a #ofaIGetter instance.
  *
- * Returns: the display mode of the user interface.
+ * Returns: the startup mmode of the main window.
+ *
+ * This determines how the main window is created at the application
+ * startup:
+ * - either with a natural size,
+ * - or with its minimal size: only the menubar is visible.
+ *
+ * In other words, we manage two display modes at application startup:
+ * - mini  : startup_mode=mini
+ * - normal: startup_mode=normal
  */
-ofeMainbookMode
-ofa_prefs_mainbook_get_pages_mode( ofaIGetter *getter )
+ofeMainbookStartup
+ofa_prefs_mainbook_get_startup_mode( ofaIGetter *getter )
 {
 	ofaPrefs *prefs;
 	ofaPrefsPrivate *priv;
@@ -1388,7 +1439,71 @@ ofa_prefs_mainbook_get_pages_mode( ofaIGetter *getter )
 	priv = ofa_prefs_get_instance_private( prefs );
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( priv->mainbook_pages_mode );
+	return( priv->mainbook_startup_mode );
+}
+
+/**
+ * ofa_prefs_mainbook_get_open_mode:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the sizing mode of the main window when opening a dossier.
+ *
+ * This may be:
+ * - either keep its startup time,
+ * - or let it go with a normal size,
+ *
+ * Giving the startup mode above, the main window may have two display
+ * modes when a dossier is opened:
+ * - mini  : startup_mode=mini   and open_mode=keep
+ * - normal: startup_mode=normal or  open_mode=natural
+ */
+ofeMainbookOpen
+ofa_prefs_mainbook_get_open_mode( ofaIGetter *getter )
+{
+	ofaPrefs *prefs;
+	ofaPrefsPrivate *priv;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	prefs = ofa_igetter_get_user_prefs( getter );
+	g_return_val_if_fail( prefs && OFA_IS_PREFS( prefs ), FALSE );
+
+	priv = ofa_prefs_get_instance_private( prefs );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->mainbook_open_mode );
+}
+
+/**
+ * ofa_prefs_mainbook_get_tabs_mode:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the display mode of the main notebook tabs.
+ *
+ * Either the tabs are reorderable via the standard mechanism of the
+ * #GtkNotebook (which happens to internally be a Drag-and-drop
+ * implementation), or the tabs are detachable via our own DnD
+ * implementation.
+ *
+ * This option is only relevant when the main window is normally
+ * displayed (i.e. with a child area large enough to contain the
+ * main notebook).
+ */
+ofeMainbookTabs
+ofa_prefs_mainbook_get_tabs_mode( ofaIGetter *getter )
+{
+	ofaPrefs *prefs;
+	ofaPrefsPrivate *priv;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	prefs = ofa_igetter_get_user_prefs( getter );
+	g_return_val_if_fail( prefs && OFA_IS_PREFS( prefs ), FALSE );
+
+	priv = ofa_prefs_get_instance_private( prefs );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->mainbook_tabs_mode );
 }
 
 /**
@@ -1401,6 +1516,10 @@ ofa_prefs_mainbook_get_pages_mode( ofaIGetter *getter )
  * reorder the tabs instead of DnD them.
  *
  * Defaults is %FALSE.
+ *
+ * This option is only relevant when the main window is normally
+ * displayed (i.e. with a child area large enough to contain the
+ * main notebook).
  */
 gboolean
 ofa_prefs_mainbook_get_with_detach_pin( ofaIGetter *getter )
@@ -1420,15 +1539,47 @@ ofa_prefs_mainbook_get_with_detach_pin( ofaIGetter *getter )
 }
 
 /**
+ * ofa_prefs_mainbook_get_close_mode:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the behavior of the main window when a dossier is closed.
+ *
+ * Either the main window keep its current size, or it is reset to its
+ * startup configuration.
+ */
+ofeMainbookClose
+ofa_prefs_mainbook_get_close_mode( ofaIGetter *getter )
+{
+	ofaPrefs *prefs;
+	ofaPrefsPrivate *priv;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+
+	prefs = ofa_igetter_get_user_prefs( getter );
+	g_return_val_if_fail( prefs && OFA_IS_PREFS( prefs ), FALSE );
+
+	priv = ofa_prefs_get_instance_private( prefs );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->mainbook_close_mode );
+}
+
+/**
  * ofa_prefs_mainbook_set_user_settings:
  * @getter: a #ofaIGetter instance.
- * @pages_mode: whether the tabs of the main notebook are reorderable.
+ * @startup_mode: the startup mode.
+ * @pages_size: the main window behavior on dossier opening.
+ * @tabs_mode: whether the tabs of the main notebook are reorderable.
  * @with_detach_pin: whether the tabs of the main notebook display a detach pin.
+ * @close_mode: the main window behavior on dossier closing.
  *
  * Set the user settings.
  */
 void
-ofa_prefs_mainbook_set_user_settings( ofaIGetter *getter, ofeMainbookMode pages_mode, gboolean with_detach_pin )
+ofa_prefs_mainbook_set_user_settings( ofaIGetter *getter,
+						ofeMainbookStartup startup_mode,
+						ofeMainbookOpen pages_size, ofeMainbookTabs tabs_mode, gboolean with_detach_pin,
+						ofeMainbookClose close_mode )
 {
 	ofaPrefs *prefs;
 	ofaPrefsPrivate *priv;
@@ -1441,17 +1592,25 @@ ofa_prefs_mainbook_set_user_settings( ofaIGetter *getter, ofeMainbookMode pages_
 	priv = ofa_prefs_get_instance_private( prefs );
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->mainbook_pages_mode = pages_mode;
+	priv->mainbook_startup_mode = startup_mode;
+	priv->mainbook_open_mode = pages_size;
+	priv->mainbook_tabs_mode = tabs_mode;
 	priv->mainbook_with_detach_pin = with_detach_pin;
+	priv->mainbook_close_mode = close_mode;
 
 	mainbook_write_settings( prefs );
 }
 
 /*
- * Main notebook tabs are either detachable or reorderable by DnD.
- * When they are reorderable, a 'detach' pin may be displayed.
+ * To make the user interface clearer, booleans are often displayed as
+ * a two-radio-buttons group.
+ * Because we are not really sure to not add an option in a future time,
+ * code is written to use an enumeration.
+ * And because this enumeration is subject to changes with the code, it
+ * is written in user settings as alpha codes, which are expected to be
+ * invariant.
  *
- * DndMainTabs settings: pages_mode;with_pin;
+ * MainNotebook settings: startup_mode, pages_size; tabs_mode; with_pin; close_mode;
  */
 static void
 mainbook_read_settings( ofaPrefs *self )
@@ -1460,7 +1619,6 @@ mainbook_read_settings( ofaPrefs *self )
 	myISettings *settings;
 	GList *strlist, *it;
 	const gchar *cstr;
-	guint i;
 
 	priv = ofa_prefs_get_instance_private( self );
 
@@ -1469,19 +1627,33 @@ mainbook_read_settings( ofaPrefs *self )
 
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_mainbook );
 
-	i = 0;
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
-		i = atoi( cstr );
+		priv->mainbook_startup_mode = enum_code_to_enum( st_mainbook_startup_mode, cstr, priv->mainbook_startup_mode );
 	}
-	if( i > 0 ){
-		priv->mainbook_pages_mode = i;
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->mainbook_open_mode = enum_code_to_enum( st_mainbook_open_mode, cstr, priv->mainbook_open_mode );
+	}
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->mainbook_tabs_mode = enum_code_to_enum( st_mainbook_tabs_mode, cstr, priv->mainbook_tabs_mode );
 	}
 
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	priv->mainbook_with_detach_pin = my_utils_boolean_from_str( cstr );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->mainbook_close_mode = enum_code_to_enum( st_mainbook_close_mode, cstr, priv->mainbook_close_mode );
+	}
 
 	my_isettings_free_string_list( settings, strlist );
 }
@@ -1498,11 +1670,69 @@ mainbook_write_settings( ofaPrefs *self )
 	settings = ofa_igetter_get_user_settings( priv->getter );
 	g_return_if_fail( settings && MY_IS_ISETTINGS( settings ));
 
-	str = g_strdup_printf( "%u;%s;",
-			priv->mainbook_pages_mode,
-			priv->mainbook_with_detach_pin ? "True":"False" );
+	str = g_strdup_printf( "%s;%s;%s;%s;%s;",
+			enum_enum_to_code( st_mainbook_startup_mode, priv->mainbook_tabs_mode, MAINBOOK_STARTNORMAL ),
+			enum_enum_to_code( st_mainbook_open_mode, priv->mainbook_open_mode, MAINBOOK_OPENNATURAL ),
+			enum_enum_to_code( st_mainbook_tabs_mode, priv->mainbook_tabs_mode, MAINBOOK_TABREORDER ),
+			priv->mainbook_with_detach_pin ? "True":"False",
+			enum_enum_to_code( st_mainbook_close_mode, priv->mainbook_close_mode, MAINBOOK_CLOSEKEEP ));
 
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_mainbook, str );
 
 	g_free( str );
+}
+
+/*
+ * Convert the unlocalized code found in user settings to a suitable
+ * value from the @table of #sEnum structures.
+ */
+static gint
+enum_code_to_enum( const sEnum *table, const gchar *code, gint def_value )
+{
+	guint i;
+
+	for( i=0 ; table[i].id ; ++i ){
+		if( !my_collate( code, table[i].code )){
+			return( table[i].id );
+		}
+	}
+
+	g_warning( "code=%s: unknown or invalid code, returning default value=%d", code, def_value );
+
+	return( def_value );
+}
+
+/*
+ * Convert an enum value to the unlocalized code to be written in user
+ * settings.
+ * Set @def_value to -1 if you do not want any default value.
+ */
+static const gchar *
+enum_enum_to_code( const sEnum *table, gint value, gint def_value )
+{
+	const gchar *code;
+
+	code = enum_find_enum( table, value );
+
+	if( my_strlen( code )){
+		return( code );
+	}
+
+	g_warning( "value=%d: unknown or invalid enum, returning code for default value=%d", value, def_value );
+
+	return( enum_find_enum( table, def_value ));
+}
+
+static const gchar *
+enum_find_enum( const sEnum *table, gint value )
+{
+	guint i;
+
+	for( i=0 ; table[i].id ; ++i ){
+		if( value == table[i].id ){
+			return( table[i].code );
+		}
+	}
+
+	return( NULL );
 }

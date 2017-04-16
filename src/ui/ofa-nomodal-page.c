@@ -198,7 +198,7 @@ static void
 iwindow_init( myIWindow *instance )
 {
 	ofaNomodalPagePrivate *priv;
-	ofeMainbookMode mode;
+	gboolean mini_display;
 
 	priv = ofa_nomodal_page_get_instance_private( OFA_NOMODAL_PAGE( instance ));
 
@@ -208,8 +208,10 @@ iwindow_init( myIWindow *instance )
 	my_iwindow_set_geometry_settings( instance, ofa_igetter_get_user_settings( priv->getter ));
 	my_iwindow_set_identifier( instance, G_OBJECT_TYPE_NAME( priv->top_widget ));
 
-	mode = ofa_prefs_mainbook_get_pages_mode( priv->getter );
-	my_iwindow_set_manage_geometry( instance, mode == MAINBOOK_MINI );
+	mini_display =
+			ofa_prefs_mainbook_get_startup_mode( priv->getter ) == MAINBOOK_STARTMINI &&
+			ofa_prefs_mainbook_get_open_mode( priv->getter ) == MAINBOOK_OPENKEEP;
+	my_iwindow_set_manage_geometry( instance, mini_display );
 
 	gtk_window_set_title( GTK_WINDOW( instance ), priv->title );
 	gtk_window_set_resizable( GTK_WINDOW( instance ), TRUE );

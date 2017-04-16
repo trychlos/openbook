@@ -78,18 +78,17 @@ typedef struct {
 
 	/* UI - User interface
 	 */
-	GSList                   *p1_ui_group;
-	GtkWidget                *p1_dnd_reorder_btn;
+	GSList                   *p1_startup_group;
+	GSList                   *p1_open_group;
+	GSList                   *p1_tabs_group;
 	GtkWidget                *p1_pin_detach_btn;
+	GSList                   *p1_close_group;
 	GtkWidget                *p1_display_all_btn;
 	GtkWidget                *p1_quit_on_escape_btn;
 	GtkWidget                *p1_confirm_on_escape_btn;
 	GtkWidget                *p1_confirm_on_cancel_btn;
 	GtkWidget                *p1_confirm_altf4_btn;
 	GtkWidget                *p1_confirm_quit_btn;
-	guint                     p1_orig_dnd;
-	gboolean                  p1_orig_pin;
-	gboolean                  p1_dirty_ui;
 
 	/* UI - Dossier page
 	 */
@@ -127,50 +126,59 @@ typedef struct {
 	ofaPreferencesPrivate;
 
 #define IPROPERTIES_PAGE                  "ofaIProperties"
-#define PREFERENCES_MAINBOOK_UI           "ofaPreferences-mainbook-ui"
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-preferences.ui";
+#define PREFERENCES_MAINBOOK_STARTUP_MODE "ofaPreferences-mainbook-startup-mode"
+#define PREFERENCES_MAINBOOK_OPEN_MODE    "ofaPreferences-mainbook-open-mode"
+#define PREFERENCES_MAINBOOK_TABS_MODE    "ofaPreferences-mainbook-tabs-mode"
+#define PREFERENCES_MAINBOOK_CLOSE_MODE   "ofaPreferences-mainbook-close-mode"
+
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-preferences.ui";
 
 typedef gboolean ( *pfnPlugin )( ofaPreferences *, gchar **msgerr, ofaIProperties * );
 
-static void     iwindow_iface_init( myIWindowInterface *iface );
-static void     iwindow_init( myIWindow *instance );
-static void     idialog_iface_init( myIDialogInterface *iface );
-static void     idialog_init( myIDialog *instance );
-static void     init_user_interface_page( ofaPreferences *self );
-static void     init_dossier_page( ofaPreferences *self );
-static void     init_account_page( ofaPreferences *self );
-static void     init_locales_page( ofaPreferences *self );
-static void     init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *label, const gchar *parent, myDateFormat ivalue );
-static void     init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *label, const gchar *wname, const gchar *svalue );
-static void     init_export_page( ofaPreferences *self );
-static void     init_import_page( ofaPreferences *self );
-static gboolean enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn );
-static gboolean init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *plugin );
-//static void     activate_first_page( ofaPreferences *self );
-static void     on_dnd_main_tabs_toggled( GtkToggleButton *button, ofaPreferences *self );
-static void     on_display_all_toggled( GtkToggleButton *button, ofaPreferences *self );
-static void     on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
-static void     on_settle_warns_toggled( GtkToggleButton *button, ofaPreferences *self );
-static void     on_reconciliate_warns_toggled( GtkToggleButton *button, ofaPreferences *self );
-static void     on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
-static void     on_check_date_changed( GtkComboBox *box, ofaPreferences *self );
-static void     on_date_overwrite_toggled( GtkToggleButton *toggle, ofaPreferences *self );
-static void     on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_name );
-static void     on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self );
-static void     on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
-static void     check_for_activable_dlg( ofaPreferences *self );
-static void     on_ok_clicked( ofaPreferences *self );
-static gboolean user_confirm_restart( ofaPreferences *self );
-static gboolean do_update_user_interface_page( ofaPreferences *self, gchar **msgerr );
-static gboolean do_update_dossier_page( ofaPreferences *self, gchar **msgerr );
-static gboolean do_update_account_page( ofaPreferences *self, gchar **msgerr );
-static gboolean do_update_locales_page( ofaPreferences *self, gchar **msgerr );
-/*static void     error_decimal_sep( ofaPreferences *self );*/
-static gboolean do_update_export_page( ofaPreferences *self, gchar **msgerr );
-static gboolean do_update_import_page( ofaPreferences *self, gchar **msgerr );
-static gboolean update_prefs_plugin( ofaPreferences *self, gchar **msgerr );
-static void     set_message( ofaPreferences *self, const gchar *message );
+static void       iwindow_iface_init( myIWindowInterface *iface );
+static void       iwindow_init( myIWindow *instance );
+static void       idialog_iface_init( myIDialogInterface *iface );
+static void       idialog_init( myIDialog *instance );
+static GtkWidget *radio_button_init( ofaPreferences *self, const gchar *group_name, guint current_value, const gchar *btn_name, guint btn_value, GCallback cb, GSList **group );
+static gint       radio_button_group_get_value( ofaPreferences *self, const gchar *group_name, GSList *group );
+static void       init_user_interface_page( ofaPreferences *self );
+static void       init_dossier_page( ofaPreferences *self );
+static void       init_account_page( ofaPreferences *self );
+static void       init_locales_page( ofaPreferences *self );
+static void       init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *label, const gchar *parent, myDateFormat ivalue );
+static void       init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *label, const gchar *wname, const gchar *svalue );
+static void       init_export_page( ofaPreferences *self );
+static void       init_import_page( ofaPreferences *self );
+static gboolean   enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn );
+static gboolean   init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *plugin );
+//static void       activate_first_page( ofaPreferences *self );
+static void       on_mainbook_startup_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void       on_mainbook_open_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void       on_mainbook_tabs_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void       on_mainbook_close_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void       on_display_all_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void       on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void       on_settle_warns_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void       on_reconciliate_warns_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void       on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
+static void       on_check_date_changed( GtkComboBox *box, ofaPreferences *self );
+static void       on_date_overwrite_toggled( GtkToggleButton *toggle, ofaPreferences *self );
+static void       on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_name );
+static void       on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self );
+static void       on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
+static void       check_for_activable_dlg( ofaPreferences *self );
+static void       on_ok_clicked( ofaPreferences *self );
+//static gboolean   user_confirm_restart( ofaPreferences *self );
+static gboolean   do_update_user_interface_page( ofaPreferences *self, gchar **msgerr );
+static gboolean   do_update_dossier_page( ofaPreferences *self, gchar **msgerr );
+static gboolean   do_update_account_page( ofaPreferences *self, gchar **msgerr );
+static gboolean   do_update_locales_page( ofaPreferences *self, gchar **msgerr );
+/*static void       error_decimal_sep( ofaPreferences *self );*/
+static gboolean   do_update_export_page( ofaPreferences *self, gchar **msgerr );
+static gboolean   do_update_import_page( ofaPreferences *self, gchar **msgerr );
+static gboolean   update_prefs_plugin( ofaPreferences *self, gchar **msgerr );
+static void       set_message( ofaPreferences *self, const gchar *message );
 
 G_DEFINE_TYPE_EXTENDED( ofaPreferences, ofa_preferences, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPreferences )
@@ -361,6 +369,79 @@ idialog_init( myIDialog *instance )
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
 
+/*
+ * @group_name: the key string to g_object_set_data() the @btn_value
+ * @current_value: the current_value for the data for this group
+ * @btn_name: the name of the widget in the UI XML description
+ * @btn_value: the integer to be associated with this button
+ * @cb: [allow-none]: the handler to be connected.
+ * @group_var: [out][allow-none]: placeholder for the buttons group GList;
+ *  should be only set for the first button of a group
+ */
+static GtkWidget *
+radio_button_init( ofaPreferences *self, const gchar *group_name, guint current_value,
+											const gchar *btn_name, guint btn_value, GCallback cb, GSList **group )
+{
+	GtkWidget *button;
+
+	g_debug( "radio_button_init: group_name=%s, current_value=%u, btn_name=%s, btn_value=%u",
+			group_name, current_value, btn_name, btn_value );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), btn_name );
+	g_return_val_if_fail( button && GTK_IS_RADIO_BUTTON( button ), NULL );
+	g_object_set_data( G_OBJECT( button ), group_name, GUINT_TO_POINTER( btn_value ));
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), current_value == btn_value );
+
+	if( cb ){
+		typedef void ( *localCb )( GtkToggleButton *, void * );
+		localCb local_cb = ( localCb ) cb;
+		g_signal_connect( button, "toggled", cb, self );
+		local_cb( GTK_TOGGLE_BUTTON( button ), self );
+	}
+
+	if( group ){
+		*group = gtk_radio_button_get_group( GTK_RADIO_BUTTON( button ));
+	}
+
+	return( button );
+}
+
+static gint
+radio_button_group_get_value( ofaPreferences *self, const gchar *group_name, GSList *group )
+{
+	GSList *it;
+	void *btn;
+	gboolean active;
+	gint value;
+
+	for( it=group ; it ; it=it->next ){
+		btn = it->data;
+		g_return_val_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ), -1 );
+		active = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ));
+		value = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( btn ), group_name ));
+		g_debug( "radio_button_group_get_value: group=%s, btn=%p, value=%d, active=%s",
+				group_name, btn, value, active ? "True":"False" );
+		if( active ){
+			return( value );
+		}
+	}
+
+	return( -1 );
+}
+
+/*
+ * Radio button management
+ * (E): the current value as an integer
+ * Foreach button:
+ *   set_active if current value is the one for this button
+ *   set_data with the int value associated with the button
+ *   if first button, then identify the buttons group
+ *   (so that we can explore the buttons group to know which is the selected final value)
+ * +
+ * if the UI is dynamic regarding these radio buttons
+ * Foreach button:
+ *
+ */
 static void
 init_user_interface_page( ofaPreferences *self )
 {
@@ -371,37 +452,49 @@ init_user_interface_page( ofaPreferences *self )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	/* user interface mode */
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-reorder" );
-	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
-	mode = ofa_prefs_mainbook_get_pages_mode( priv->getter );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), mode == MAINBOOK_REORDER );
-	priv->p1_orig_dnd = mode;
-	priv->p1_dnd_reorder_btn = button;
-	priv->p1_ui_group = gtk_radio_button_get_group( GTK_RADIO_BUTTON( button ));
-	g_object_set_data( G_OBJECT( button ), PREFERENCES_MAINBOOK_UI, GUINT_TO_POINTER( MAINBOOK_REORDER ));
+	/* startup mode */
+	mode = ofa_prefs_mainbook_get_startup_mode( priv->getter );
+	radio_button_init( self,
+			PREFERENCES_MAINBOOK_STARTUP_MODE, mode,
+			"p1-start-normal-btn", MAINBOOK_STARTNORMAL, G_CALLBACK( on_mainbook_startup_toggled ), &priv->p1_startup_group );
+	radio_button_init( self,
+			PREFERENCES_MAINBOOK_STARTUP_MODE, mode,
+			"p1-start-mini-btn", MAINBOOK_STARTMINI, G_CALLBACK( on_mainbook_startup_toggled ), NULL );
 
+	/* display mode when a dossier is opened */
+	mode = ofa_prefs_mainbook_get_open_mode( priv->getter );
+	radio_button_init( self,
+			PREFERENCES_MAINBOOK_OPEN_MODE, mode,
+			"p1-open-keep-btn", MAINBOOK_OPENKEEP, G_CALLBACK( on_mainbook_open_toggled ), &priv->p1_open_group );
+	radio_button_init( self,
+			PREFERENCES_MAINBOOK_OPEN_MODE, mode,
+			"p1-open-normal-btn", MAINBOOK_OPENNATURAL, G_CALLBACK( on_mainbook_open_toggled ), NULL );
+
+	/* display mode after a dossier has been closed */
+	mode = ofa_prefs_mainbook_get_close_mode( priv->getter );
+	radio_button_init( self,
+			PREFERENCES_MAINBOOK_CLOSE_MODE, mode,
+			"p1-close-keep-btn", MAINBOOK_CLOSEKEEP, G_CALLBACK( on_mainbook_close_toggled ), &priv->p1_close_group );
+	radio_button_init( self,
+			PREFERENCES_MAINBOOK_CLOSE_MODE, mode,
+			"p1-close-start-btn", MAINBOOK_CLOSERESET, G_CALLBACK( on_mainbook_close_toggled ), NULL );
+
+	/* tabs have a detach pin
+	 * must be setup before tabs management below because of the tabs handler */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-pin-detach" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_mainbook_get_with_detach_pin( priv->getter );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	priv->p1_pin_detach_btn = button;
-	priv->p1_orig_pin = bvalue;
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dnd-detach" );
-	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), mode == MAINBOOK_DETACH );
-	on_dnd_main_tabs_toggled( GTK_TOGGLE_BUTTON( button ), self );
-	g_object_set_data( G_OBJECT( button ), PREFERENCES_MAINBOOK_UI, GUINT_TO_POINTER( MAINBOOK_DETACH ));
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ui-mini" );
-	g_return_if_fail( button && GTK_IS_RADIO_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( on_dnd_main_tabs_toggled ), self );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), mode == MAINBOOK_MINI );
-	on_dnd_main_tabs_toggled( GTK_TOGGLE_BUTTON( button ), self );
-	g_object_set_data( G_OBJECT( button ), PREFERENCES_MAINBOOK_UI, GUINT_TO_POINTER( MAINBOOK_MINI ));
+	/* tab management in case of a normal display */
+	mode = ofa_prefs_mainbook_get_tabs_mode( priv->getter );
+	radio_button_init( self,
+			PREFERENCES_MAINBOOK_TABS_MODE, mode,
+			"p1-dnd-reorder-btn", MAINBOOK_TABREORDER, G_CALLBACK( on_mainbook_tabs_toggled ), &priv->p1_tabs_group );
+	radio_button_init( self,
+			PREFERENCES_MAINBOOK_TABS_MODE, mode,
+			"p1-dnd-detach-btn", MAINBOOK_TABDETACH, G_CALLBACK( on_mainbook_tabs_toggled ), NULL );
 
 	/* check integrity display messages */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-disp-all" );
@@ -811,15 +904,35 @@ activate_first_page( ofaPreferences *self )
 #endif
 
 static void
-on_dnd_main_tabs_toggled( GtkToggleButton *button, ofaPreferences *self )
+on_mainbook_startup_toggled( GtkToggleButton *button, ofaPreferences *self )
+{
+}
+
+static void
+on_mainbook_open_toggled( GtkToggleButton *button, ofaPreferences *self )
+{
+}
+
+static void
+on_mainbook_tabs_toggled( GtkToggleButton *button, ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
+	guint mode;
+	gboolean active;
 
 	priv = ofa_preferences_get_instance_private( self );
 
+	mode = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), PREFERENCES_MAINBOOK_TABS_MODE ));
+	active = gtk_toggle_button_get_active( button );
+
 	gtk_widget_set_sensitive(
 			priv->p1_pin_detach_btn,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_dnd_reorder_btn )));
+			( active && mode == MAINBOOK_TABREORDER ) || ( !active && mode != MAINBOOK_TABREORDER ) );
+}
+
+static void
+on_mainbook_close_toggled( GtkToggleButton *button, ofaPreferences *self )
+{
 }
 
 static void
@@ -964,12 +1077,11 @@ static void
 on_ok_clicked( ofaPreferences *self )
 {
 	static const gchar *thisfn = "ofa_preferences_do_update";
-	ofaPreferencesPrivate *priv;
+	//ofaPreferencesPrivate *priv;
 	gboolean ok;
 	gchar *msgerr;
-	ofaISignaler *signaler;
 
-	priv = ofa_preferences_get_instance_private( self );
+	//priv = ofa_preferences_get_instance_private( self );
 
 	msgerr = NULL;
 
@@ -988,6 +1100,8 @@ on_ok_clicked( ofaPreferences *self )
 		g_free( msgerr );
 	}
 
+#if 0
+	ofaISignaler *signaler;
 	if( priv->p1_dirty_ui ){
 		if( user_confirm_restart( self )){
 			my_iwindow_set_allow_close( MY_IWINDOW( self ), FALSE );
@@ -996,10 +1110,12 @@ on_ok_clicked( ofaPreferences *self )
 			my_iwindow_set_allow_close( MY_IWINDOW( self ), TRUE );
 		}
 	}
+#endif
 
 	my_iwindow_close( MY_IWINDOW( self ));
 }
 
+#if 0
 static gboolean
 user_confirm_restart( ofaPreferences *self )
 {
@@ -1026,30 +1142,30 @@ user_confirm_restart( ofaPreferences *self )
 
 	return( response == GTK_RESPONSE_OK );
 }
+#endif
 
 static gboolean
 do_update_user_interface_page( ofaPreferences *self, gchar **msgerr )
 {
 	ofaPreferencesPrivate *priv;
+	ofeMainbookStartup startup_mode;
+	ofeMainbookOpen open_mode;
+	ofeMainbookTabs tabs_mode;
+	ofeMainbookClose close_mode;
 	gboolean detach_pin, display_all, quit_on_escape, confirm_on_escape, confirm_on_cancel;
-	guint mainbook_mode;
 	gboolean confirm_altf4, confirm_quit;
-	GSList *it;
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	mainbook_mode = 0;
-	for( it=priv->p1_ui_group ; it ; it=it->next ){
-		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( it->data ))){
-			mainbook_mode = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( it->data ), PREFERENCES_MAINBOOK_UI ));
-			break;
-		}
-	}
-	g_return_val_if_fail( mainbook_mode > 0, FALSE );
-	detach_pin = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_pin_detach_btn ));
-	ofa_prefs_mainbook_set_user_settings( priv->getter, mainbook_mode, detach_pin );
+	startup_mode = radio_button_group_get_value( self, PREFERENCES_MAINBOOK_STARTUP_MODE, priv->p1_startup_group );
+	open_mode = radio_button_group_get_value( self, PREFERENCES_MAINBOOK_OPEN_MODE, priv->p1_open_group );
+	tabs_mode = radio_button_group_get_value( self, PREFERENCES_MAINBOOK_TABS_MODE, priv->p1_tabs_group );
+	close_mode = radio_button_group_get_value( self, PREFERENCES_MAINBOOK_CLOSE_MODE, priv->p1_close_group );
 
-	priv->p1_dirty_ui = ( mainbook_mode != priv->p1_orig_dnd ) || ( detach_pin != priv->p1_orig_pin );
+	detach_pin = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_pin_detach_btn ));
+
+	ofa_prefs_mainbook_set_user_settings( priv->getter,
+			startup_mode, open_mode, tabs_mode, detach_pin, close_mode );
 
 	display_all = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_display_all_btn ));
 	ofa_prefs_check_integrity_set_user_settings( priv->getter, display_all );
