@@ -382,7 +382,6 @@ main_window_dispose( GObject *instance )
 	static const gchar *thisfn = "ofa_main_window_dispose";
 	ofaMainWindowPrivate *priv;
 	ofaHub *hub;
-	myISettings *settings;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -394,17 +393,6 @@ main_window_dispose( GObject *instance )
 
 		hub = ofa_igetter_get_hub( priv->getter );
 		ofa_hub_close_dossier( hub );
-
-		/* save the window position (always)
-		 * only save the windows size if display mode is normal */
-		settings = ofa_igetter_get_user_settings( priv->getter );
-		if( priv->is_mini ){
-			my_utils_window_position_save_pos_only( GTK_WINDOW( instance ), settings, priv->settings_prefix );
-		} else {
-			my_utils_window_position_save( GTK_WINDOW( instance ), settings, priv->settings_prefix );
-		}
-
-		write_settings( OFA_MAIN_WINDOW( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -795,6 +783,7 @@ signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self )
 	ofaMainWindowPrivate *priv;
 	GtkApplication *application;
 	gboolean mini;
+	myISettings *settings;
 
 	g_debug( "%s: signaler=%p, self=%p", thisfn, ( void * ) signaler, ( void * ) self );
 
@@ -804,6 +793,17 @@ signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self )
 		priv = ofa_main_window_get_instance_private( self );
 
 		ofa_main_window_dossier_close_windows( self );
+
+		/* save the window position (always)
+		 * only save the windows size if display mode is normal */
+		settings = ofa_igetter_get_user_settings( priv->getter );
+		if( priv->is_mini ){
+			my_utils_window_position_save_pos_only( GTK_WINDOW( self ), settings, priv->settings_prefix );
+		} else {
+			my_utils_window_position_save( GTK_WINDOW( self ), settings, priv->settings_prefix );
+		}
+
+		write_settings( self );
 
 		pane_destroy( self );
 
