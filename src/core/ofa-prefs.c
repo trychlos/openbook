@@ -1649,7 +1649,7 @@ mainbook_read_settings( ofaPrefs *self )
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	priv->mainbook_with_detach_pin = my_utils_boolean_from_str( cstr );
 
-	it = strlist;
+	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		priv->mainbook_close_mode = enum_code_to_enum( st_mainbook_close_mode, cstr, priv->mainbook_close_mode );
