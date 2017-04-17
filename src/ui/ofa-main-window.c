@@ -142,6 +142,7 @@ static void on_properties            ( GSimpleAction *action, GVariant *paramete
 static void on_backup                ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_close                 ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_guided            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_guided_ex         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_entry_page        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_unsettled_page    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_unreconcil_page   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -174,6 +175,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "backup",                 on_backup,                 NULL, NULL, NULL },
 		{ "close",                  on_close,                  NULL, NULL, NULL },
 		{ "guided",                 on_ope_guided,             NULL, NULL, NULL },
+		{ "guidedex",               on_ope_guided_ex,          NULL, NULL, NULL },
 		{ "entries",                on_ope_entry_page,         NULL, NULL, NULL },
 		{ "unsentries",             on_ope_unsettled_page,     NULL, NULL, NULL },
 		{ "unrentries",             on_ope_unreconcil_page,    NULL, NULL, NULL },
@@ -1522,6 +1524,19 @@ on_ope_guided( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_OPE_TEMPLATE_PAGE );
+}
+
+static void
+on_ope_guided_ex( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ope_guided_ex";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_GUIDED_EX );
 }
 
 static void

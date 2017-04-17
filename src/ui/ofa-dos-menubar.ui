@@ -87,8 +87,13 @@
 				<attribute name="id">operations-10</attribute>
 				<item>
 					<attribute name="id">operations-10-guided</attribute>
-					<attribute name="label" translatable="yes">_Guided input...</attribute>
+					<attribute name="label" translatable="yes">_Guided input by operation template...</attribute>
 					<attribute name="action">win.guided</attribute>
+				</item>
+				<item>
+					<attribute name="id">operations-10-guided</attribute>
+					<attribute name="label" translatable="yes">_Guided input by ledger...</attribute>
+					<attribute name="action">win.guidedex</attribute>
 				</item>
 				<item>
 					<attribute name="id">operations-10-entries</attribute>
