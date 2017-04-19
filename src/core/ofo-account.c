@@ -791,7 +791,7 @@ ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *de
 {
 	static const gchar *thisfn = "ofo_account_get_solde_at_date";
 	ofxAmount solde;
-	gint idx;
+	gint idx, cmp;
 	const GDate *arc_date, *ent_deffect;
 	const gchar *acc_number;
 	GDate max_deffect;
@@ -799,6 +799,8 @@ ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *de
 	ofoEntry *entry;
 	ofeEntryStatus status;
 	ofeEntryPeriod period;
+	ofeAccountType arc_type;
+	ofeEntryRule rule;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
@@ -808,9 +810,11 @@ ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *de
 	if( idx == -1 ){
 		solde = 0;
 		arc_date = NULL;
+		arc_type = 0;
 		g_debug( "%s: no archive found", thisfn );
 	} else {
 		arc_date = ofo_account_archive_get_date( account, idx );
+		arc_type = ofo_account_archive_get_type( account, idx );
 		solde = ofo_account_archive_get_credit( account, idx ) - ofo_account_archive_get_debit( account, idx );
 		gchar *str = my_date_to_str( arc_date, MY_DATE_SQL );
 		g_debug( "%s: found archive date=%s, solde=%lf", thisfn, str, solde );
@@ -836,10 +840,22 @@ ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *de
 		}
 		ent_deffect = ofo_entry_get_deffect( entry );
 		/* must have ent_deffect > arc_date if set
+		 *   unless arc_type is 'opening' which means we should also consider this date
 		 * if arc_date is not set, then the entry is candidate */
-		if( arc_date && my_date_compare( ent_deffect, arc_date ) <= 0 ){
-			//g_debug( "%s: %lu is before or equal to arc_date", thisfn, ofo_entry_get_number( entry ));
-			continue;
+		if( arc_date ){
+			cmp = my_date_compare( ent_deffect, arc_date );
+			if( cmp < 0 ){
+				continue;
+			}
+			if( arc_type == ACC_TYPE_NORMAL && cmp == 0 ){
+				continue;
+			}
+			if( arc_type == ACC_TYPE_OPEN ){
+				rule = ofo_entry_get_rule( entry );
+				if( rule == ENT_RULE_FORWARD ){
+					continue;
+				}
+			}
 		}
 		/* only consider entries before or equal to the requested date (if set) */
 		if( my_date_is_valid( date ) && my_date_compare( ent_deffect, date ) > 0 ){

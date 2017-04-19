@@ -305,7 +305,19 @@
 
 1465 2017- 4-14 accounts balances: total soldes debits credits are zero
 
-1466
+1466 2017- 4-18 reconciliation page: have a pane in the status bar so
+                that the suer can roughly align amounts with the treeview
+                (idem entry page)
+
+1467 2017- 4-18 settlement page: idem
+
+1468 2017- 4-18 review delete entry user confirm dialog layout
+                have a horiz. separarator
+
+1469 2017- 4-18 entry page ext filter: when a row is moved up or down,
+                review sensitivity of and/or combobox
+
+1470
 
 -----------------------------------------------------------------------
  DONE
