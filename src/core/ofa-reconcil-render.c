@@ -353,7 +353,7 @@ render_page_v_get_dataset( ofaRenderPage *page )
 	}
 
 	/* compute the solde of the account from the last archived balance
-	 * up to the requested date - return the actual greated effect date
+	 * up to the requested date - return the actual greatest effect date
 	 */
 	priv->account_solde = ofo_account_get_solde_at_date( priv->account, &priv->arg_date, &priv->account_deffect );
 	str = my_date_to_str( &priv->account_deffect, MY_DATE_SQL );
