@@ -194,7 +194,9 @@ ofa_entry_page_delconf_run( ofaIGetter *getter, ofoEntry *entry, GList **entries
 
 	confirmed = ( my_idialog_run( MY_IDIALOG( self )) == GTK_RESPONSE_OK );
 
-	my_iwindow_close( MY_IWINDOW( self ));
+	if( confirmed ){
+		my_iwindow_close( MY_IWINDOW( self ));
+	}
 
 	g_debug( "%s: confirmed=%s", thisfn, confirmed ? "True":"False" );
 

@@ -311,9 +311,6 @@
 
 1467 2017- 4-18 settlement page: idem
 
-1468 2017- 4-18 review delete entry user confirm dialog layout
-                have a horiz. separarator
-
 1469 2017- 4-18 entry page ext filter: when a row is moved up or down,
                 review sensitivity of and/or combobox
 
@@ -1151,6 +1148,10 @@
                  only display the result of the current filter, which
                  is null the first time - for now, display all
      2017- 4-16 fixed
+
+1468 2017- 4-18 review delete entry user confirm dialog layout
+                have a horiz. separarator
+     2017- 4-21 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
