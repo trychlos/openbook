@@ -212,6 +212,7 @@ ofa_account_properties_init( ofaAccountProperties *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->account = NULL;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->is_new = FALSE;
 	priv->balances_displayed = TRUE;
 
