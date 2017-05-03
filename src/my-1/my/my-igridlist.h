@@ -57,8 +57,8 @@
  *
  * Signals
  * -------
- * my-row-changed: sent to the interface when a row is added or removed
- * by clicking on the corresponding button.
+ * - 'my-row-changed': sent to the interface when a row is added, moved
+ *   up or down, or removed by clicking on the corresponding button.
  */
 
 #include <gtk/gtk.h>

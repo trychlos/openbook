@@ -46,6 +46,7 @@
    - ofaAccountProperties: fix read/write user settings.
    - ofaAdminCredentialsBin: fix read/write in dossier settings (todo #1416).
    - ofaEntryPage: fix initial display of the extended filter (todo #1464).
+   - ofaEntryPage: fix operator sensitivity when moving rows (todo #1469).
    - ofaEntryPageDelconf: review dialog layout (todo #1468).
    - ofaEntryStore: fix ENT_TIERS column type.
    - ofaGuidedInputBin: do not override a user-set date when setting a template (todo #1456).

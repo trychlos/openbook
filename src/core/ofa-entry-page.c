@@ -335,7 +335,9 @@ static void       extfilter_on_field_changed( GtkComboBox *combo, ofaEntryPage *
 static void       extfilter_on_condition_changed( GtkComboBox *combo, ofaEntryPage *self );
 static void       extfilter_on_value_changed( GtkEntry *entry, ofaEntryPage *self );
 static void       extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, void *empty );
-static void       extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row );
+static void       extfilter_check_rows( ofaEntryPage *self, GtkGrid *grid );
+static gboolean   extfilter_get_row_valid( ofaEntryPage *self, GtkGrid *grid, guint row );
+static void       extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row, gboolean valid );
 static void       extfilter_on_init_from_clicked( GtkButton *button, ofaEntryPage *self );
 static void       extfilter_on_init_status( ofaEntryPage *self, GtkWidget *btn, ofeEntryStatus status, gboolean *first );
 static void       extfilter_on_init_period( ofaEntryPage *self, GtkWidget *btn, ofeEntryPeriod period, gboolean *first );
@@ -1665,59 +1667,52 @@ static void
 extfilter_on_operator_changed( GtkComboBox *combo, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
-	guint row;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	row = my_igridlist_get_row_index( GTK_WIDGET( combo ));
-	extfilter_set_valid_image( self, GTK_GRID( priv->ext_grid ), row );
+	extfilter_check_rows( self, GTK_GRID( priv->ext_grid ));
 }
 
 static void
 extfilter_on_field_changed( GtkComboBox *combo, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
-	guint row;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	row = my_igridlist_get_row_index( GTK_WIDGET( combo ));
-	extfilter_set_valid_image( self, GTK_GRID( priv->ext_grid ), row );
+	extfilter_check_rows( self, GTK_GRID( priv->ext_grid ));
 }
 
 static void
 extfilter_on_condition_changed( GtkComboBox *combo, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
-	guint row;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	row = my_igridlist_get_row_index( GTK_WIDGET( combo ));
-	extfilter_set_valid_image( self, GTK_GRID( priv->ext_grid ), row );
+	extfilter_check_rows( self, GTK_GRID( priv->ext_grid ));
 }
 
 static void
 extfilter_on_value_changed( GtkEntry *entry, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
-	guint row;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	row = my_igridlist_get_row_index( GTK_WIDGET( entry ));
-	extfilter_set_valid_image( self, GTK_GRID( priv->ext_grid ), row );
+	extfilter_check_rows( self, GTK_GRID( priv->ext_grid ));
 }
 
 /*
  * Adding an empty row does not require to enable the Apply button.
+ * Moving a row up or down may require to update some fields sensitivity.
  * Removing a row should enable the button as filters may have changed.
  */
 static void
 extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, void *empty )
 {
 	ofaEntryPagePrivate *priv;
-	guint rows_count, row;
+	guint rows_count;
 
 	priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( instance ));
 
@@ -1726,32 +1721,73 @@ extfilter_on_row_changed( myIGridlist *instance, GtkGrid *grid, void *empty )
 	gtk_widget_set_sensitive( priv->ext_init_btn, rows_count == 0 );
 	gtk_widget_set_sensitive( priv->ext_reset_btn, rows_count > 0 );
 
-	if( rows_count > 0 ){
-		row = rows_count - 1;	/* no header row here */
-		extfilter_set_valid_image( OFA_ENTRY_PAGE( instance ), GTK_GRID( priv->ext_grid ), row );
-
-	} else if( rows_count < priv->ext_rows ){
-		gtk_widget_set_sensitive( priv->ext_apply_btn, TRUE );
-	}
+	extfilter_check_rows( OFA_ENTRY_PAGE( instance ), grid );
 
 	priv->ext_rows = rows_count;
 }
 
+/*
+ * Has to check each row, only enabling the 'Apply' button if all are valid.
+ * On first row, make sure the 'Operator' combo box is empty and disabled.
+ * On other rows, make sure it is enabled.
+ */
 static void
-extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row )
+extfilter_check_rows( ofaEntryPage *self, GtkGrid *grid )
+{
+	ofaEntryPagePrivate *priv;
+	guint rows_count, row, invalid_count;
+	gboolean valid_row;
+	GtkWidget *oper_combo;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	invalid_count = 0;
+	rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), grid );
+
+	for( row=0 ; row<rows_count ; ++row ){
+
+		oper_combo = gtk_grid_get_child_at( grid, 1+XFIL_COL_OPERATOR, row );
+		g_return_if_fail( oper_combo && GTK_IS_COMBO_BOX( oper_combo ));
+		if( row == 0 ){
+			gtk_combo_box_set_active( GTK_COMBO_BOX( oper_combo ), -1 );
+			gtk_widget_set_sensitive( oper_combo, FALSE );
+		} else {
+			gtk_widget_set_sensitive( oper_combo, TRUE );
+		}
+
+		valid_row = extfilter_get_row_valid( self, grid, row );
+		extfilter_set_valid_image( self, grid, row, valid_row );
+		if( !valid_row ){
+			invalid_count += 1;
+		}
+	}
+
+	gtk_widget_set_sensitive( priv->ext_apply_btn, rows_count > 0 && invalid_count == 0 );
+}
+
+static gboolean
+extfilter_get_row_valid( ofaEntryPage *self, GtkGrid *grid, guint row )
+{
+	sExtend *crit;
+	gboolean valid;
+
+	crit = extfilter_get_criterium( self, row );
+	valid = extfilter_get_is_valid_criterium( self, crit, row );
+	extfilter_free_criterium( self, crit );
+
+	return( valid );
+}
+
+static void
+extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row, gboolean valid )
 {
 	static const gchar *thisfn = "ofa_entry_page_extfilter_set_valid_image";
 	ofaEntryPagePrivate *priv;
-	sExtend *crit;
-	gboolean valid;
 	GdkPixbuf *pixbuf;
 	GError *error;
 	GtkWidget *image;
 
 	priv = ofa_entry_page_get_instance_private( self );
-
-	crit = extfilter_get_criterium( self, row );
-	valid = extfilter_get_is_valid_criterium( self, crit, row );
 
 	error = NULL;
 	pixbuf = gdk_pixbuf_new_from_resource_at_scale(
@@ -1766,9 +1802,6 @@ extfilter_set_valid_image( ofaEntryPage *self, GtkGrid *grid, guint row )
 		g_object_unref( pixbuf );
 		my_igridlist_set_widget( MY_IGRIDLIST( self ), grid, image, 1+XFIL_COL_STATUS, row, 1, 1 );
 	}
-
-	extfilter_free_criterium( self, crit );
-	gtk_widget_set_sensitive( priv->ext_apply_btn, valid );
 }
 
 /*

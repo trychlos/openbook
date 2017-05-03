@@ -359,6 +359,8 @@ exchange_rows( sIGridList *sdata, gint row_a, gint row_b )
 		g_object_unref( w_b );
 	}
 
+	g_signal_emit_by_name(( gpointer ) sdata->instance, "my-row-changed", sdata->grid );
+
 	update_detail_buttons( sdata );
 }
 
