@@ -46,6 +46,7 @@
    - ofaMainWindow: better switch back from 'minimal' display mode.
    - Fix conversion to DBModel v37 of OFA_T_BAT table.
    - ofaReconcilPage: initialize the empty light in the footer.
+   - ofaReconcilPage: align header and footer amounts with selection balance.
    - ofaRecurrentRunTreeview: fix refresh bug when cancelling operations.
    - ofoEntry: fix export format for unset counters.
 

@@ -84,7 +84,9 @@ typedef struct {
 	GtkWidget           *acc_label;
 	GtkWidget           *acc_header_label;
 	GtkWidget           *acc_debit_label;
+	GtkWidget           *acc_debit_sens;
 	GtkWidget           *acc_credit_label;
+	GtkWidget           *acc_credit_sens;
 	ofoAccount          *account;
 	ofoCurrency         *acc_currency;
 	ofxAmount            acc_debit;
@@ -162,7 +164,9 @@ typedef struct {
 	GtkWidget           *select_light;
 	GtkWidget           *bal_footer_label;
 	GtkWidget           *bal_debit_label;
+	GtkWidget           *bal_debit_sens;
 	GtkWidget           *bal_credit_label;
+	GtkWidget           *bal_credit_sens;
 
 	/* internals
 	 */
@@ -480,8 +484,14 @@ setup_treeview_header( ofaReconcilPage *self, GtkContainer *parent )
 	priv->acc_debit_label = my_utils_container_get_child_by_name( parent, "header-debit" );
 	g_return_if_fail( priv->acc_debit_label && GTK_IS_LABEL( priv->acc_debit_label ));
 
+	priv->acc_debit_sens = my_utils_container_get_child_by_name( parent, "header-debit-sens" );
+	g_return_if_fail( priv->acc_debit_sens && GTK_IS_LABEL( priv->acc_debit_sens ));
+
 	priv->acc_credit_label = my_utils_container_get_child_by_name( parent, "header-credit" );
 	g_return_if_fail( priv->acc_credit_label && GTK_IS_LABEL( priv->acc_credit_label ));
+
+	priv->acc_credit_sens = my_utils_container_get_child_by_name( parent, "header-credit-sens" );
+	g_return_if_fail( priv->acc_credit_sens && GTK_IS_LABEL( priv->acc_credit_sens ));
 }
 
 /*
@@ -547,8 +557,14 @@ setup_treeview_footer( ofaReconcilPage *self, GtkContainer *parent )
 	priv->bal_debit_label = my_utils_container_get_child_by_name( parent, "footer-debit" );
 	g_return_if_fail( priv->bal_debit_label && GTK_IS_LABEL( priv->bal_debit_label ));
 
+	priv->bal_debit_sens = my_utils_container_get_child_by_name( parent, "footer-debit-sens" );
+	g_return_if_fail( priv->bal_debit_sens && GTK_IS_LABEL( priv->bal_debit_sens ));
+
 	priv->bal_credit_label = my_utils_container_get_child_by_name( parent, "footer-credit" );
 	g_return_if_fail( priv->bal_credit_label && GTK_IS_LABEL( priv->bal_credit_label ));
+
+	priv->bal_credit_sens = my_utils_container_get_child_by_name( parent, "footer-credit-sens" );
+	g_return_if_fail( priv->bal_credit_sens && GTK_IS_LABEL( priv->bal_credit_sens ));
 }
 
 /*
@@ -1587,14 +1603,18 @@ account_clear_content( ofaReconcilPage *self )
 	priv->acc_debit = 0;
 	priv->acc_credit = 0;
 	gtk_label_set_text( GTK_LABEL( priv->acc_debit_label ), "" );
+	gtk_label_set_text( GTK_LABEL( priv->acc_debit_sens ), "" );
 	gtk_label_set_text( GTK_LABEL( priv->acc_credit_label ), "" );
+	gtk_label_set_text( GTK_LABEL( priv->acc_credit_sens ), "" );
 
 	/* clear the store
 	 * be lazzy: rather than deleting the entries, just delete all and
 	 * reinsert bat lines */
 	gtk_tree_store_clear( GTK_TREE_STORE( priv->store ));
 	gtk_label_set_text( GTK_LABEL( priv->bal_debit_label ), "" );
+	gtk_label_set_text( GTK_LABEL( priv->bal_debit_sens ), "" );
 	gtk_label_set_text( GTK_LABEL( priv->bal_credit_label ), "" );
+	gtk_label_set_text( GTK_LABEL( priv->bal_credit_sens ), "" );
 }
 
 /*
@@ -1606,7 +1626,7 @@ static void
 account_set_header_balance( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
-	gchar *sdiff, *samount;
+	gchar *sdiff;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
@@ -1621,16 +1641,15 @@ account_set_header_balance( ofaReconcilPage *self )
 
 		if( priv->acc_credit >= priv->acc_debit ){
 			sdiff = ofa_amount_to_str( priv->acc_credit - priv->acc_debit, priv->acc_currency, priv->getter );
-			samount = g_strdup_printf( _( "%s CR" ), sdiff );
-			gtk_label_set_text( GTK_LABEL( priv->acc_credit_label ), samount );
+			gtk_label_set_text( GTK_LABEL( priv->acc_credit_label ), sdiff );
+			gtk_label_set_text( GTK_LABEL( priv->acc_credit_sens ), _( "CR" ));
 
 		} else {
 			sdiff = ofa_amount_to_str( priv->acc_debit - priv->acc_credit, priv->acc_currency, priv->getter );
-			samount = g_strdup_printf( _( "%s DB" ), sdiff );
-			gtk_label_set_text( GTK_LABEL( priv->acc_debit_label ), samount );
+			gtk_label_set_text( GTK_LABEL( priv->acc_debit_label ), sdiff );
+			gtk_label_set_text( GTK_LABEL( priv->acc_debit_sens ), _( "DB" ));
 		}
 		g_free( sdiff );
-		g_free( samount );
 	}
 }
 
@@ -2033,13 +2052,17 @@ check_for_enable_view( ofaReconcilPage *self )
 
 	gtk_widget_set_sensitive( priv->acc_header_label, enabled );
 	gtk_widget_set_sensitive( priv->acc_debit_label, enabled );
+	gtk_widget_set_sensitive( priv->acc_debit_sens, enabled );
 	gtk_widget_set_sensitive( priv->acc_credit_label, enabled );
+	gtk_widget_set_sensitive( priv->acc_credit_sens, enabled );
 
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->tview ), enabled );
 
 	gtk_widget_set_sensitive( priv->bal_footer_label, enabled );
 	gtk_widget_set_sensitive( priv->bal_debit_label, enabled );
+	gtk_widget_set_sensitive( priv->bal_debit_sens, enabled );
 	gtk_widget_set_sensitive( priv->bal_credit_label, enabled );
+	gtk_widget_set_sensitive( priv->bal_credit_sens, enabled );
 
 	gtk_widget_set_sensitive( priv->actions_frame, enabled );
 
@@ -2737,7 +2760,8 @@ set_reconciliated_balance( ofaReconcilPage *self )
 	GObject *object;
 	ofoConcil *concil;
 	gdouble amount;
-	gchar *str, *sdeb, *scre;
+	gchar *sdeb, *scre;
+	const gchar *csensdb, *csenscr;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
@@ -2793,19 +2817,22 @@ set_reconciliated_balance( ofaReconcilPage *self )
 
 	/*g_debug( "end: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/
 	if( debit > credit ){
-		str = ofa_amount_to_str( debit-credit, priv->acc_currency, priv->getter );
-		sdeb = g_strdup_printf( _( "%s DB" ), str );
+		sdeb = ofa_amount_to_str( debit-credit, priv->acc_currency, priv->getter );
+		csensdb = gettext( N_( "DB" ));
 		scre = g_strdup( "" );
+		csenscr = "";
 	} else {
 		sdeb = g_strdup( "" );
-		str = ofa_amount_to_str( credit-debit, priv->acc_currency, priv->getter );
-		scre = g_strdup_printf( _( "%s CR" ), str );
+		csensdb = "";
+		scre = ofa_amount_to_str( credit-debit, priv->acc_currency, priv->getter );
+		csenscr = gettext( N_( "CR" ));
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->bal_debit_label ), sdeb );
+	gtk_label_set_text( GTK_LABEL( priv->bal_debit_sens ), csensdb );
 	gtk_label_set_text( GTK_LABEL( priv->bal_credit_label ), scre );
+	gtk_label_set_text( GTK_LABEL( priv->bal_credit_sens ), csenscr );
 
-	g_free( str );
 	g_free( sdeb );
 	g_free( scre );
 }
