@@ -34,6 +34,7 @@
    - Recurrent operation validation is now said 'accounting' (todo #1460).
    - Restore assistant let the user display the metadata of the archive (todo #1450).
    - Settlement page: a footer paned let the user align footer amounts with the treeview (todo #1467).
+   - Settlement page: homogeneize footer display.
    - User may choose display at startup, and when a dossier is opened or closed.
 
  Bug fixes:

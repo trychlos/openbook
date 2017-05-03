@@ -102,12 +102,11 @@ typedef struct {
 
 	/* footer
 	 */
+	GtkWidget         *footer_msg;
 	GtkWidget         *footer_paned;
-	GtkWidget         *footer_label;
 	GtkWidget         *debit_balance;
 	GtkWidget         *credit_balance;
-	GtkWidget         *currency_balance;
-	const gchar       *last_style;
+	GtkWidget         *light_balance;
 
 	/* actions
 	 */
@@ -172,10 +171,16 @@ static const sSettlementPage st_settlements[] = {
 };
 
 #define COLOR_SETTLED                   "#e0e0e0"		/* light gray background */
+#define COLOR_ERROR                     "#ff0000"		/* red */
+#define COLOR_WARNING                   "#ff8000"		/* orange */
+#define COLOR_INFO                      "#0000ff"		/* blue */
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-settlement-page.ui";
-static const gchar *st_ui_name1         = "SettlementPageView1";
-static const gchar *st_ui_name2         = "SettlementPageView2";
+static const gchar *st_resource_ui           = "/org/trychlos/openbook/core/ofa-settlement-page.ui";
+static const gchar *st_resource_light_green  = "/org/trychlos/openbook/core/ofa-settlement-page-light-green-14.png";
+static const gchar *st_resource_light_yellow = "/org/trychlos/openbook/core/ofa-settlement-page-light-yellow-14.png";
+static const gchar *st_resource_light_empty  = "/org/trychlos/openbook/core/ofa-settlement-page-light-empty-14.png";
+static const gchar *st_ui_name1              = "SettlementPageView1";
+static const gchar *st_ui_name2              = "SettlementPageView2";
 
 static void       paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
 static GtkWidget *setup_view1( ofaSettlementPage *self );
@@ -208,6 +213,7 @@ static void       refresh_display( ofaSettlementPage *self );
 static void       action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
 static void       action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
 static void       action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
+static void       set_message( ofaSettlementPage *self, const gchar *msg, const gchar *color );
 static void       read_settings( ofaSettlementPage *self );
 static void       write_settings( ofaSettlementPage *self );
 static void       store_on_changed( ofaEntryStore *store, ofaSettlementPage *self );
@@ -284,7 +290,6 @@ ofa_settlement_page_init( ofaSettlementPage *self )
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->account_number = NULL;
 	priv->filter_id = g_strdup_printf( "%d", STLMT_FILTER_ALL );
-	priv->last_style = "labelinvalid";
 }
 
 static void
@@ -350,9 +355,9 @@ setup_footer( ofaSettlementPage *self, GtkContainer *parent )
 	g_return_if_fail( widget && GTK_IS_PANED( widget ));
 	priv->footer_paned = widget;
 
-	widget = my_utils_container_get_child_by_name( parent, "footer-label" );
+	widget = my_utils_container_get_child_by_name( parent, "footer-msg" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	priv->footer_label = widget;
+	priv->footer_msg = widget;
 
 	widget = my_utils_container_get_child_by_name( parent, "footer-debit" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
@@ -362,9 +367,10 @@ setup_footer( ofaSettlementPage *self, GtkContainer *parent )
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->credit_balance = widget;
 
-	widget = my_utils_container_get_child_by_name( parent, "footer-currency" );
-	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	priv->currency_balance = widget;
+	widget = my_utils_container_get_child_by_name( parent, "footer-light" );
+	g_return_if_fail( widget && GTK_IS_IMAGE( widget ));
+	priv->light_balance = widget;
+	gtk_image_set_from_resource( GTK_IMAGE( priv->light_balance ), st_resource_light_empty );
 }
 
 /*
@@ -760,30 +766,61 @@ on_account_changed( GtkEntry *entry, ofaSettlementPage *self )
 {
 	ofaSettlementPagePrivate *priv;
 	ofoAccount *account;
-	const gchar *cur_code;
+	const gchar *cnumber, *clabel, *cur_code, *ccolor;
+	gchar *msgerr, *str;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
-	priv->account_currency = NULL;
+	msgerr = NULL;
+	clabel = "";
+	ccolor = COLOR_ERROR;
 
 	g_free( priv->account_number );
-	priv->account_number = g_strdup( gtk_entry_get_text( entry ));
+	priv->account_number = NULL;
+	priv->account_currency = NULL;
 
-	account = ofo_account_get_by_number( priv->getter, priv->account_number );
+	cnumber = g_strdup( gtk_entry_get_text( entry ));
 
-	if( account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account )){
-		cur_code = ofo_account_get_currency( account );
+	if( my_strlen( cnumber )){
+		account = ofo_account_get_by_number( priv->getter, cnumber );
 
-		if( my_strlen( cur_code )){
-			priv->account_currency = ofo_currency_get_by_code( priv->getter, cur_code );
-			g_return_if_fail( priv->account_currency && OFO_IS_CURRENCY( priv->account_currency ));
+		if( account && OFO_IS_ACCOUNT( account )){
+			clabel = ofo_account_get_label( account );
+			ccolor = COLOR_WARNING;
+
+			if( ofo_account_is_root( account )){
+				msgerr = g_strdup_printf( _( "Account number '%s' is not a detail account" ), cnumber );
+
+			} else if( ofo_account_is_closed( account )){
+				msgerr = g_strdup_printf( _( "Account number '%s' is closed" ), cnumber );
+
+			} else if( ofo_account_is_settleable( account )){
+				priv->account_number = g_strdup( cnumber );
+				cur_code = ofo_account_get_currency( account );
+				g_return_if_fail( cur_code && my_strlen( cur_code ));
+				priv->account_currency = ofo_currency_get_by_code( priv->getter, cur_code );
+				g_return_if_fail( priv->account_currency && OFO_IS_CURRENCY( priv->account_currency ));
+
+			} else {
+				msgerr = g_strdup_printf( _( "Account number '%s' is not settleable" ), cnumber );
+			}
+		} else {
+			msgerr = g_strdup_printf( _( "Account number '%s' is unknown or invalid" ), cnumber );
 		}
-
-		gtk_label_set_text( GTK_LABEL( priv->account_label ), ofo_account_get_label( account ));
-
 	} else {
-		gtk_label_set_text( GTK_LABEL( priv->account_label ), "" );
+		msgerr = g_strdup( _( "Account number is not set" ));
 	}
+
+	if( my_strlen( msgerr )){
+		str = g_strdup_printf( "<span style=\"italic\" color=\"%s\">%s</span>", ccolor, clabel );
+	} else {
+		str = g_strdup_printf( "<span color=\"%s\">%s</span>", COLOR_INFO, clabel );
+	}
+	gtk_label_set_markup( GTK_LABEL( priv->account_label ), str );
+	g_free( str );
+
+	set_message( self, msgerr, ccolor );
+	g_free( msgerr );
 
 	refresh_display( self );
 }
@@ -1015,7 +1052,6 @@ refresh_selection_compute_with_selected( ofaSettlementPage *self, GList *selecte
 {
 	ofaSettlementPagePrivate *priv;
 	gchar *samount;
-	const gchar *code;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
@@ -1031,42 +1067,27 @@ refresh_selection_compute_with_selected( ofaSettlementPage *self, GList *selecte
 		g_simple_action_set_enabled( priv->settle_action, priv->ses.unsettled > 0 );
 		g_simple_action_set_enabled( priv->unsettle_action, priv->ses.settled > 0 );
 
-		if( priv->last_style ){
-			my_style_remove( priv->footer_label, priv->last_style );
-			my_style_remove( priv->debit_balance, priv->last_style );
-			my_style_remove( priv->credit_balance, priv->last_style );
-			my_style_remove( priv->currency_balance, priv->last_style );
-		}
-
-		samount = priv->account_currency
-				? ofa_amount_to_str( priv->ses.scur.debit, priv->account_currency, priv->getter )
-				: g_strdup( "" );
+		samount = priv->account_currency ?
+						ofa_amount_to_str( priv->ses.scur.debit, priv->account_currency, priv->getter ) :
+						g_strdup( "" );
 		gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
 		g_free( samount );
 
-		samount = priv->account_currency
-				? ofa_amount_to_str( priv->ses.scur.credit, priv->account_currency, priv->getter )
-				: g_strdup( "" );
+		samount = priv->account_currency ?
+						ofa_amount_to_str( priv->ses.scur.credit, priv->account_currency, priv->getter ) :
+						g_strdup( "" );
 		gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
 		g_free( samount );
 
-		code = priv->account_currency ? ofo_currency_get_code( priv->account_currency ) : "",
-		gtk_label_set_text( GTK_LABEL( priv->currency_balance ), code );
-
-		if( priv->ses.rows == 0 ){
-			priv->last_style = "labelinvalid";
-
-		} else if( ofs_currency_is_balanced( &priv->ses.scur )){
-			priv->last_style = "labelinfo";
-
+		if( priv->ses.rows > 0 ){
+			if( ofs_currency_is_balanced( &priv->ses.scur )){
+				gtk_image_set_from_resource( GTK_IMAGE( priv->light_balance ), st_resource_light_green );
+			} else {
+				gtk_image_set_from_resource( GTK_IMAGE( priv->light_balance ), st_resource_light_yellow );
+			}
 		} else {
-			priv->last_style = "labelwarning";
+			gtk_image_set_from_resource( GTK_IMAGE( priv->light_balance ), st_resource_light_empty );
 		}
-
-		my_style_add( priv->footer_label, priv->last_style );
-		my_style_add( priv->debit_balance, priv->last_style );
-		my_style_add( priv->credit_balance, priv->last_style );
-		my_style_add( priv->currency_balance, priv->last_style );
 	}
 }
 
@@ -1113,6 +1134,28 @@ action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaSettleme
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_settlement_group_run( priv->getter, toplevel, priv->sel_settle_id );
+}
+
+static void
+set_message( ofaSettlementPage *self, const gchar *msg, const gchar *color )
+{
+	ofaSettlementPagePrivate *priv;
+	gchar *str;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	if( my_strlen( msg )){
+		if( my_strlen( color )){
+			str = g_strdup_printf( "<span style=\"italic\" color=\"%s\">%s</span>", color, msg );
+		} else {
+			str = g_strdup( msg );
+		}
+	} else {
+		str = g_strdup( "" );
+	}
+
+	gtk_label_set_markup( GTK_LABEL( priv->footer_msg ), str );
+	g_free( str );
 }
 
 /*
