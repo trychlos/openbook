@@ -291,12 +291,12 @@ my_iwindow_set_geometry_settings( myIWindow *instance, myISettings *settings )
  * @instance: this #myIWindow instance.
  * @key: [allow-none]: the key prefix in geometry settings.
  *
- * Sets the key prefix.
+ * Sets the geometry key prefix.
  *
- * The identifier is primarily used to only display one window of every
- * distinct identifier.
+ * The geometry of the #myIWindow window is written in the settings
+ * with a '-pos' suffix.
  *
- * The identifier defaults to the class name of the @instance.
+ * The geometry key defaults to the class name of the @instance.
  */
 void
 my_iwindow_set_geometry_key( myIWindow *instance, const gchar *key )
