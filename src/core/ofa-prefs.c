@@ -1633,13 +1633,13 @@ mainbook_read_settings( ofaPrefs *self )
 		priv->mainbook_startup_mode = enum_code_to_enum( st_mainbook_startup_mode, cstr, priv->mainbook_startup_mode );
 	}
 
-	it = strlist;
+	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		priv->mainbook_open_mode = enum_code_to_enum( st_mainbook_open_mode, cstr, priv->mainbook_open_mode );
 	}
 
-	it = strlist;
+	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		priv->mainbook_tabs_mode = enum_code_to_enum( st_mainbook_tabs_mode, cstr, priv->mainbook_tabs_mode );
