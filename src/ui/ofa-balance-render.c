@@ -646,6 +646,7 @@ irenderable_draw_header_column_names( ofaIRenderable *instance )
 static gboolean
 irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *line, ofeIRenderableBreak *sep )
 {
+#if 0
 	ofaBalanceRenderPrivate *priv;
 	ofsAccountBalance *current_sbal, *prev_sbal;
 	gint current_class, prev_class;
@@ -674,17 +675,17 @@ irenderable_is_new_group( const ofaIRenderable *instance, GList *prev, GList *li
 
 		return( current_class != prev_class );
 	}
-
+#endif
 	return( FALSE );
 }
 
 /*
  * draw account header
- * Class x - xxx
  */
 static void
 irenderable_draw_group_header( ofaIRenderable *instance )
 {
+#if 0
 	ofaBalanceRenderPrivate *priv;
 	GList *line;
 	ofsAccountBalance *sbal;
@@ -718,6 +719,7 @@ irenderable_draw_group_header( ofaIRenderable *instance )
 			ofa_irenderable_set_last_y( instance, y );
 		}
 	}
+#endif
 }
 
 static void
@@ -742,6 +744,7 @@ irenderable_draw_top_report( ofaIRenderable *instance )
 static void
 irenderable_draw_line( ofaIRenderable *instance )
 {
+#if 0
 	ofaBalanceRenderPrivate *priv;
 	GList *line;
 	gdouble y;
@@ -820,6 +823,9 @@ irenderable_draw_line( ofaIRenderable *instance )
 							OFA_BALANCE_RENDER( instance ),
 							priv->gen_totals, sbal->currency, solde, sbal );
 	}
+#endif
+
+	add_account_balance( OFA_BALANCE_RENDER( instance ), NULL, NULL, 0, NULL );
 }
 
 static void

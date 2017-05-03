@@ -445,6 +445,7 @@ ofo_entry_get_dataset_account_balance( ofaIGetter *getter,
 	gchar *str;
 	GSList *result, *irow, *icol;
 	ofsAccountBalance *sbal;
+	const gchar *acc_number, *cur_code;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -495,15 +496,17 @@ ofo_entry_get_dataset_account_balance( ofaIGetter *getter,
 		for( irow=result ; irow ; irow=irow->next ){
 			sbal = g_new0( ofsAccountBalance, 1 );
 			icol = ( GSList * ) irow->data;
-			sbal->account = g_strdup(( const gchar * ) icol->data );
+			acc_number = ( const gchar * ) icol->data;
+			sbal->account = ofo_account_get_by_number( getter, acc_number );
 			icol = icol->next;
-			sbal->currency = g_strdup(( const gchar * ) icol->data );
+			cur_code = ( const gchar * ) icol->data;
+			sbal->currency = ofo_currency_get_by_code( getter, cur_code );
 			icol = icol->next;
 			sbal->debit = my_double_set_from_sql(( const gchar * ) icol->data );
 			icol = icol->next;
 			sbal->credit = my_double_set_from_sql(( const gchar * ) icol->data );
 			g_debug( "%s: account=%s, debit=%lf, credit=%lf",
-					thisfn, sbal->account, sbal->debit, sbal->credit );
+					thisfn, acc_number, sbal->debit, sbal->credit );
 			dataset = g_list_prepend( dataset, sbal );
 		}
 		ofa_idbconnect_free_results( result );

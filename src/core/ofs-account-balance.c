@@ -48,7 +48,5 @@ ofs_account_balance_list_free( GList **list )
 static void
 account_balance_free( ofsAccountBalance *balance )
 {
-	g_free( balance->account );
-	g_free( balance->currency );
 	g_free( balance );
 }

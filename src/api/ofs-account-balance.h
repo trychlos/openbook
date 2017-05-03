@@ -27,7 +27,7 @@
 
 /**
  * SECTION: ofs_account_balance
- * @short_description: #ofsAccountBalance structure definition.
+ * @short_description: #ofsAccountBalance0 structure definition.
  * @include: openbook/ofs-account-balance.h
  *
  * This structure holds the balance for an account.
@@ -41,10 +41,10 @@ G_BEGIN_DECLS
  * ofsAccountBalance
  */
 typedef struct {
-	gchar     *account;
-	ofxAmount  debit;
-	ofxAmount  credit;
-	gchar     *currency;
+	ofoAccount  *account;
+	ofoCurrency *currency;
+	ofxAmount    debit;
+	ofxAmount    credit;
 }
 	ofsAccountBalance;
 

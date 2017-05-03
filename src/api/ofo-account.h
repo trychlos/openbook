@@ -170,7 +170,6 @@ void            ofo_account_set_futur_val_credit      ( ofoAccount *account, ofx
 
 gboolean        ofo_account_archive_openings          ( ofaIGetter *getter, const GDate *exe_begin );
 gboolean        ofo_account_archive_balances          ( ofoAccount *account, const GDate *date );
-gboolean        ofo_account_archive_balances_ex       ( ofoAccount *account, const GDate *exe_begin, const GDate *date, ofeAccountType type );
 
 guint           ofo_account_archive_get_count         ( ofoAccount *account );
 const GDate    *ofo_account_archive_get_date          ( ofoAccount *account, guint idx );
