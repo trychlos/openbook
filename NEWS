@@ -42,6 +42,7 @@
 
    - configure.ac: display 'pwirender' plugin build status (todo #1453).
    - Fix conversion to DBModel v37 of OFA_T_BAT table.
+   - ofaAdminCredentialsBin: fix read/write in dossier settings (todo #1416).
    - ofaEntryPage: fix initial display of the extended filter (todo #1464).
    - ofaEntryPageDelconf: review dialog layout (todo #1468).
    - ofaEntryStore: fix ENT_TIERS column type.

@@ -414,7 +414,7 @@ ofa_admin_credentials_bin_get_credentials( ofaAdminCredentialsBin *bin, gchar **
  *
  * They are written in the dossier settings for the specifically set dossier.
  * So no settings are read while the
- *  #ofa_admin_credentials_bin_set_dossier_meta() function has not been called.
+ *  ofa_admin_credentials_bin_set_dossier_meta() function has not been called.
  */
 static void
 read_settings( ofaAdminCredentialsBin *self )
@@ -428,7 +428,7 @@ read_settings( ofaAdminCredentialsBin *self )
 
 	if( priv->dossier_meta ){
 
-		settings = ofa_igetter_get_user_settings( priv->getter );
+		settings = ofa_igetter_get_dossier_settings( priv->getter );
 		group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 		strlist = my_isettings_get_string_list( settings, group, st_settings_key );
 
@@ -466,7 +466,7 @@ write_settings( ofaAdminCredentialsBin *self )
 				priv->remember_account ? "True":"False",
 				priv->remember_account ? priv->account : "" );
 
-		settings = ofa_igetter_get_user_settings( priv->getter );
+		settings = ofa_igetter_get_dossier_settings( priv->getter );
 		group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
 
 		my_isettings_set_string( settings, group, st_settings_key, str );

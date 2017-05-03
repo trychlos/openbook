@@ -279,10 +279,6 @@
 1410 2017- 3-24 export fec should be a plugin (new ofaIExporter interface)
      2017- 4-13 for now is isolated in a separate file
 
-1416 2017- 3-24 dossier administrative credentials: does not remember the account
-     2017- 3-29 restore assistant:  fixed
-                recovery assistant:
-
 1417 2017- 3-24 ope_template: have a tiers id field depending of the template
      2017- 3-25 dbms is updated
 
@@ -997,6 +993,10 @@
 
 1415 2017- 3-24 rendering should use dossier label instead of dossier name
      2017- 3-29 done
+
+1416 2017- 3-24 dossier administrative credentials: does not remember the account
+     2017- 3-29 restore assistant:  fixed
+     2017- 5- 3 fixed in ofa-admin-credentials
 
 1419 2017- 3-24 account book summary: sort by dope or deffect
      2017- 3-28 done
