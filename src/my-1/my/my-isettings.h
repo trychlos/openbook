@@ -287,8 +287,8 @@ typedef struct {
 
 	/**
 	 * free_uint_list:
-	 * @value: a list of unsigned integers as returned by #get_uint_list()
-	 *  method.
+	 * @value: [allow-none]: a list of unsigned integers as returned by
+	 *  get_uint_list() method.
 	 *
 	 * Frees the provided @value.
 	 *
@@ -363,8 +363,8 @@ typedef struct {
 
 	/**
 	 * free_string_list:
-	 * @string_list: a list of strings as returned by #get_string_list()
-	 *  method.
+	 * @string_list: [allow-none]: a list of strings as returned by
+	 *  get_string_list() method.
 	 *
 	 * Frees the provided @string_list.
 	 *

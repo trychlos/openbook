@@ -589,7 +589,7 @@ my_isettings_set_uint_list( myISettings *instance, const gchar *group, const gch
 /**
  * my_isettings_free_uint_list:
  * @instance: this #myISettings instance.
- * @value: the list of unsigned integers to be freed, as returned by
+ * @value: [allow-none]: the list of unsigned integers to be freed, as returned by
  *  #my_isettings_get_uint_list().
  *
  * Frees the provided @key_list.
@@ -602,7 +602,6 @@ my_isettings_free_uint_list( myISettings *instance, GList *value )
 	g_debug( "%s: instance=%p, value=%p", thisfn, ( void * ) instance, ( void * ) value );
 
 	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
-	g_return_if_fail( value );
 
 	if( MY_ISETTINGS_GET_INTERFACE( instance )->free_uint_list ){
 		MY_ISETTINGS_GET_INTERFACE( instance )->free_uint_list( instance, value );
@@ -734,8 +733,8 @@ my_isettings_set_string_list( myISettings *instance, const gchar *group, const g
 /**
  * my_isettings_free_string_list:
  * @instance: this #myISettings instance.
- * @string_list: the list of keys to be freed, as returned by
- *  #my_isettings_get_keys().
+ * @string_list: [allow-none]: the list of keys to be freed, as returned
+ *  by my_isettings_get_string_list().
  *
  * Frees the provided @key_list.
  */
