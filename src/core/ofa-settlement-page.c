@@ -102,6 +102,7 @@ typedef struct {
 
 	/* footer
 	 */
+	GtkWidget         *footer_paned;
 	GtkWidget         *footer_label;
 	GtkWidget         *debit_balance;
 	GtkWidget         *credit_balance;
@@ -344,6 +345,10 @@ setup_footer( ofaSettlementPage *self, GtkContainer *parent )
 	GtkWidget *widget;
 
 	priv = ofa_settlement_page_get_instance_private( self );
+
+	widget = my_utils_container_get_child_by_name( parent, "footer-paned" );
+	g_return_if_fail( widget && GTK_IS_PANED( widget ));
+	priv->footer_paned = widget;
 
 	widget = my_utils_container_get_child_by_name( parent, "footer-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
@@ -1111,7 +1116,7 @@ action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaSettleme
 }
 
 /*
- * settings: mode;account;paned_position;
+ * settings: mode;account;paned_position;footer_paned_position;
  *
  * Order is not unimportant: account should be set after the filtering
  * mode; it is so easier to read it in second position.
@@ -1157,6 +1162,15 @@ read_settings( ofaSettlementPage *self )
 	}
 	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
 
+	/* footer paned position */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
+	if( pos < 150 ){
+		pos = 150;
+	}
+	gtk_paned_set_position( GTK_PANED( priv->footer_paned ), pos );
+
 	my_isettings_free_string_list( settings, strlist );
 	g_free( key );
 }
@@ -1170,10 +1184,11 @@ write_settings( ofaSettlementPage *self )
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
-	str = g_strdup_printf( "%s;%s;%d;",
+	str = g_strdup_printf( "%s;%s;%d;%d;",
 			priv->filter_id,
 			priv->account_number,
-			gtk_paned_get_position( GTK_PANED( priv->paned )));
+			gtk_paned_get_position( GTK_PANED( priv->paned )),
+			gtk_paned_get_position( GTK_PANED( priv->footer_paned )));
 
 	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
