@@ -539,6 +539,7 @@ setup_treeview_footer( ofaReconcilPage *self, GtkContainer *parent )
 
 	priv->select_light = my_utils_container_get_child_by_name( parent, "select-light" );
 	g_return_if_fail( priv->select_light && GTK_IS_IMAGE( priv->select_light ));
+	gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_empty );
 
 	priv->bal_footer_label = my_utils_container_get_child_by_name( parent, "footer-label" );
 	g_return_if_fail( priv->bal_footer_label && GTK_IS_LABEL( priv->bal_footer_label ));
