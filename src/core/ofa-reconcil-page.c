@@ -229,11 +229,15 @@ static const gchar *st_resource_light_empty  = "/org/trychlos/openbook/core/ofa-
 static const gchar *st_ui_name1              = "ReconciliationView1";
 static const gchar *st_ui_name2              = "ReconciliationView2";
 
-static const gchar *st_default_reconciliated_class = "5"; /* default account class to be reconciliated */
+static const gchar *st_default_reconciliated_class = "5";	/* default account class to be reconciliated */
 
 #define DEBUG_FILTER                         FALSE
 #define DEBUG_RECONCILIATE                   FALSE
 #define DEBUG_UNCONCILIATE                   FALSE
+
+#define COLOR_ERROR                         "#ff0000"		/* red */
+#define COLOR_WARNING                       "#ff8000"		/* orange */
+#define COLOR_INFO                          "#0000ff"		/* blue */
 
 static GtkWidget           *page_v_get_top_focusable_widget( const ofaPage *page );
 static void                 paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
@@ -312,7 +316,7 @@ static void                 action_on_vbat_activated( GSimpleAction *action, GVa
 static void                 action_on_vope_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
 static void                 action_on_vconcil_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
 static void                 action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
-static void                 set_message( ofaReconcilPage *page, const gchar *msg );
+static void                 set_message( ofaReconcilPage *page, const gchar *msg, const gchar *color );
 static void                 read_settings( ofaReconcilPage *self );
 static void                 write_settings( ofaReconcilPage *self );
 static void                 signaler_connect_to_signaling_system( ofaReconcilPage *self );
@@ -541,11 +545,9 @@ setup_treeview_footer( ofaReconcilPage *self, GtkContainer *parent )
 
 	priv->select_debit = my_utils_container_get_child_by_name( parent, "select-debit" );
 	g_return_if_fail( priv->select_debit && GTK_IS_LABEL( priv->select_debit ));
-	my_style_add( priv->select_debit, "labelhelp" );
 
 	priv->select_credit = my_utils_container_get_child_by_name( parent, "select-credit" );
 	g_return_if_fail( priv->select_credit && GTK_IS_LABEL( priv->select_credit ));
-	my_style_add( priv->select_credit, "labelhelp" );
 
 	priv->select_light = my_utils_container_get_child_by_name( parent, "select-light" );
 	g_return_if_fail( priv->select_light && GTK_IS_IMAGE( priv->select_light ));
@@ -834,7 +836,7 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 		memset( &scur, '\0', sizeof( ofsCurrency ));
 		scur.currency = priv->acc_currency;
 
-		selected = gtk_tree_selection_get_selected_rows( selection, NULL );
+		selected = selection ? gtk_tree_selection_get_selected_rows( selection, NULL ) : NULL;
 		count = g_list_length( selected );
 		tview_examine_selection( self, selected,
 				&scur, &concil_rows, &unconcil_rows, &is_child, &priv->sel_entry, &priv->sel_batline );
@@ -1508,6 +1510,12 @@ account_do_change( ofaReconcilPage *self )
 		ofa_reconcil_store_load_by_account( priv->store, acc_number );
 		ofa_reconcil_treeview_default_expand( priv->tview );
 		set_reconciliated_balance( self );
+		tview_on_selection_changed( OFA_TVBIN( priv->tview ), NULL, self );
+
+	} else {
+		gtk_label_set_text( GTK_LABEL( priv->select_debit ), "" );
+		gtk_label_set_text( GTK_LABEL( priv->select_credit ), "" );
+		gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_empty );
 	}
 
 	check_for_enable_view( self );
@@ -1522,40 +1530,45 @@ account_get_reconciliable( ofaReconcilPage *self, const gchar *number )
 	ofaReconcilPagePrivate *priv;
 	gboolean ok;
 	ofoAccount *account;
-	const gchar *label, *bat_account, *currency_code;
+	const gchar *clabel, *bat_account, *currency_code, *ccolor;
 	ofoBat *bat;
-	gchar *msgerr;
+	gchar *msgerr, *str;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	ok = TRUE;
+	ok = FALSE;
 	msgerr = NULL;
+	clabel = "";
+	ccolor = COLOR_ERROR;
 
-	account = ofo_account_get_by_number( priv->getter, number );
+	if( my_strlen( number )){
+		account = ofo_account_get_by_number( priv->getter, number );
 
-	if( !account ){
-		msgerr = g_strdup_printf( _( "Account number '%s' is unknown or invalid" ), number );
-		ok = FALSE;
+		if( account && OFO_IS_ACCOUNT( account )){
+			clabel = ofo_account_get_label( account );
+			ccolor = COLOR_WARNING;
 
-	} else {
-		g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
+			if( ofo_account_is_root( account )){
+				msgerr = g_strdup_printf( _( "Account number '%s' is not a detail account" ), number );
 
-		ok = !ofo_account_is_root( account ) &&
-				!ofo_account_is_closed( account ) &&
-				ofo_account_is_reconciliable( account );
+			} else if( ofo_account_is_closed( account )){
+				msgerr = g_strdup_printf( _( "Account number '%s' is closed" ), number );
 
-		if( !ok ){
-			msgerr = g_strdup( _( "Account is not a detail account, or closed, or not reconciliable" ));
+			} else if( ofo_account_is_reconciliable( account )){
+				currency_code = ofo_account_get_currency( account );
+				g_return_val_if_fail( my_strlen( currency_code ), NULL );
+				priv->acc_currency = ofo_currency_get_by_code( priv->getter, currency_code );
+				g_return_val_if_fail( priv->acc_currency && OFO_IS_CURRENCY( priv->acc_currency ), NULL );
+				ok = TRUE;
+
+			} else {
+				msgerr = g_strdup_printf( _( "Account number '%s' is not reconciliable" ), number );
+			}
+		} else {
+			msgerr = g_strdup_printf( _( "Account number '%s' is unknown or invalid" ), number );
 		}
-	}
-
-	/* setup account currency */
-	if( ok ){
-		currency_code = ofo_account_get_currency( account );
-		g_return_val_if_fail( my_strlen( currency_code ), NULL );
-		priv->acc_currency = ofo_currency_get_by_code( priv->getter, currency_code );
-		g_return_val_if_fail( priv->acc_currency && OFO_IS_CURRENCY( priv->acc_currency ), NULL );
-		g_debug( "account_get_reconciliable: set account_currency=%s", currency_code );
+	} else {
+		msgerr = g_strdup( _( "Account number is not set" ));
 	}
 
 	/* if at least one BAT file is loaded, check that this new account
@@ -1566,22 +1579,22 @@ account_get_reconciliable( ofaReconcilPage *self, const gchar *number )
 		bat_account = ofo_bat_get_account( bat );
 		if( my_strlen( bat_account ) && my_collate( bat_account, number )){
 			msgerr = g_strdup_printf(
-					_( "Selected account %s is not compatible with loaded BAT files which are associated to %s account" ),
+					_( "Selected account %s is not compatible with loaded BAT files which happen to be associated with %s account" ),
 					number, bat_account );
 			ok = FALSE;
 		}
 	}
 
-	/* init account label */
-	label = account ? ofo_account_get_label( account ) : "";
-	gtk_label_set_text( GTK_LABEL( priv->acc_label ), label );
+	/* display account label */
 	if( ok ){
-		my_style_remove( priv->acc_label, "labelerror" );
+		str = g_strdup_printf( "<span color=\"%s\">%s</span>", COLOR_INFO, clabel );
 	} else {
-		my_style_add( priv->acc_label, "labelerror" );
+		str = g_strdup_printf( "<span style=\"italic\" color=\"%s\">%s</span>", ccolor, clabel );
 	}
+	gtk_label_set_markup( GTK_LABEL( priv->acc_label ), str );
+	g_free( str );
 
-	set_message( self, msgerr );
+	set_message( self, msgerr, ccolor );
 	g_free( msgerr );
 
 	return( ok ? account : NULL );
@@ -3129,16 +3142,25 @@ action_on_vsettle_activated( GSimpleAction *action, GVariant *empty, ofaReconcil
 }
 
 static void
-set_message( ofaReconcilPage *page, const gchar *msg )
+set_message( ofaReconcilPage *page, const gchar *msg, const gchar *color )
 {
 	ofaReconcilPagePrivate *priv;
+	gchar *str;
 
 	priv = ofa_reconcil_page_get_instance_private( page );
 
-	if( priv->msg_label ){
-		my_style_add( priv->msg_label, "labelerror" );
-		gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
+	if( my_strlen( msg )){
+		if( my_strlen( color )){
+			str = g_strdup_printf( "<span style=\"italic\" color=\"%s\">%s</span>", color, msg );
+		} else {
+			str = g_strdup( msg );
+		}
+	} else {
+		str = g_strdup( "" );
 	}
+
+	gtk_label_set_markup( GTK_LABEL( priv->msg_label ), str );
+	g_free( str );
 }
 
 /*

@@ -95,6 +95,7 @@
         <child>
           <object class="GtkLabel" id="select-debit">
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can_focus">False</property>
             <property name="halign">end</property>
             <property name="width_chars">12</property>
@@ -109,6 +110,7 @@
         <child>
           <object class="GtkLabel" id="select-credit">
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can_focus">False</property>
             <property name="halign">end</property>
             <property name="width_chars">12</property>

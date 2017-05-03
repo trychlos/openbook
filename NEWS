@@ -30,6 +30,7 @@
    - Main window has a new 'minimal' display mode.
    - Operation template properties: fields are not masked by the scrollbar (todo #1457).
    - Plugins now advertize their DB model with their canonical name (todo #1461).
+   - Reconciliation page: homogeneize footer display.
    - Recurrent operation is not generated is its first amount is zero (todo #1459).
    - Recurrent operation validation is now said 'accounting' (todo #1460).
    - Restore assistant let the user display the metadata of the archive (todo #1450).
