@@ -66,15 +66,21 @@ typedef struct {
 }
 	ofaAccountBalanceArgsClass;
 
-GType                  ofa_account_balance_args_get_type       ( void ) G_GNUC_CONST;
+GType                  ofa_account_balance_args_get_type              ( void ) G_GNUC_CONST;
 
-ofaAccountBalanceArgs *ofa_account_balance_args_new            ( ofaIGetter *getter,
-																		const gchar *settings_prefix );
+ofaAccountBalanceArgs *ofa_account_balance_args_new                   ( ofaIGetter *getter,
+																			const gchar *settings_prefix );
 
-gboolean               ofa_account_balance_args_is_valid       ( ofaAccountBalanceArgs *bin,
-																		gchar **message );
+gboolean               ofa_account_balance_args_is_valid              ( ofaAccountBalanceArgs *bin,
+																			gchar **message );
 
-ofaIDateFilter        *ofa_account_balance_args_get_date_filter( ofaAccountBalanceArgs *bin );
+ofaIAccountFilter     *ofa_account_balance_args_get_account_filter    ( ofaAccountBalanceArgs *bin );
+
+ofaIDateFilter        *ofa_account_balance_args_get_date_filter       ( ofaAccountBalanceArgs *bin );
+
+gboolean               ofa_account_balance_args_get_subtotal_per_class( ofaAccountBalanceArgs *bin );
+
+gboolean               ofa_account_balance_args_get_new_page_per_class( ofaAccountBalanceArgs *bin );
 
 G_END_DECLS
 
