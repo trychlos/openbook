@@ -34,6 +34,7 @@
 #include "my/my-date.h"
 #include "my/my-dnd-book.h"
 #include "my/my-dnd-window.h"
+
 #include "my/my-iscope-map.h"
 #include "my/my-iwindow.h"
 #include "my/my-scope-mapper.h"
@@ -65,7 +66,6 @@
 #include "ui/ofa-account-page.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-backup-assistant.h"
-#include "ui/ofa-balance-render.h"
 #include "ui/ofa-bat-page.h"
 #include "ui/ofa-check-balances.h"
 #include "ui/ofa-check-integrity.h"
@@ -153,7 +153,6 @@ static void on_ope_period_close      ( GSimpleAction *action, GVariant *paramete
 static void on_ope_exercice_close    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_import            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_render_balances       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_render_account_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_render_accounts_book  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_render_ledgers_book   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -186,7 +185,6 @@ static const GActionEntry st_dos_entries[] = {
 		{ "execlosing",             on_ope_exercice_close,     NULL, NULL, NULL },
 		{ "import",                 on_ope_import,             NULL, NULL, NULL },
 		{ "export",                 on_ope_export,             NULL, NULL, NULL },
-		{ "render-balances",        on_render_balances,        NULL, NULL, NULL },
 		{ "render-accbal",          on_render_account_balance, NULL, NULL, NULL },
 		{ "render-books",           on_render_accounts_book,   NULL, NULL, NULL },
 		{ "render-ledgers-book",    on_render_ledgers_book,    NULL, NULL, NULL },
@@ -244,10 +242,9 @@ typedef struct {
 	sThemeInit;
 
 static sThemeInit st_theme_defs[] = {
-		{ N_( "Accounts balance" ),        ofa_account_balance_render_get_type, FALSE },
+		{ N_( "Accounts balance" ),        ofa_account_balance_render_get_type, TRUE },
 		{ N_( "Accounts book" ),           ofa_account_book_render_get_type,    FALSE },
 		{ N_( "Chart of accounts" ),       ofa_account_page_get_type,           FALSE },
-		{ N_( "Entries balance" ),         ofa_balance_render_get_type,         FALSE },
 		{ N_( "Imported BAT files" ),      ofa_bat_page_get_type,               FALSE },
 		{ N_( "Account classes" ),         ofa_class_page_get_type,             FALSE },
 		{ N_( "Currencies" ),              ofa_currency_page_get_type,          FALSE },
@@ -1683,19 +1680,6 @@ on_ope_export( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( user_data ));
 
 	ofa_export_assistant_run( priv->getter, NULL, FALSE );
-}
-
-static void
-on_render_balances( GSimpleAction *action, GVariant *parameter, gpointer user_data )
-{
-	static const gchar *thisfn = "ofa_main_window_on_render_balances";
-
-	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
-			thisfn, action, parameter, ( void * ) user_data );
-
-	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
-
-	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_BALANCE_RENDER );
 }
 
 static void

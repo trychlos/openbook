@@ -23,6 +23,8 @@
 
  New features and improvements:
 
+   - Accounts balance arguments are improved.
+   - Entries balance is removed.
    - Entry page is now able to export the content of its view (todo #1239).
    - Account balance render page is now able to export the content of its view.
    - Exportable standard class format is reviewed (todo #1351).

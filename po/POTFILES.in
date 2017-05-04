@@ -171,10 +171,7 @@ src/ui/ofa-app-menubar.ui
 src/ui/ofa-backup-assistant.c
 src/ui/ofa-backup-assistant.ui
 src/ui/ofa-backup-display.ui
-src/ui/ofa-balance-args.c
-src/ui/ofa-balance-args.ui
 src/ui/ofa-balance-grid-bin.c
-src/ui/ofa-balance-render.c
 src/ui/ofa-bat-page.c
 src/ui/ofa-check-balances-bin.c
 src/ui/ofa-check-balances-bin.ui
