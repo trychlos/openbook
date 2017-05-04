@@ -52,6 +52,7 @@
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
+#include "api/ofs-account-balance.h"
 
 G_BEGIN_DECLS
 
@@ -75,29 +76,21 @@ typedef struct {
 	ofaAccountBalanceClass;
 
 /**
- * ofsAccountBalanceCurrency:
+ * ofsAccountBalancePeriod:
  *
- * A structure to hold the sum of all accounts.
+ * An extension of #ofsAccountBalance structure to hold the solde of
+ * a period.
+ *
+ * This same extended structure is also used to provide subtotals
+ * (e.g. per class - with null account).
+ * Subtotals are always per currency.
  */
 typedef struct {
-	ofoCurrency *currency;
-	ofxAmount    begin_solde;
-	ofxAmount    debits;
-	ofxAmount    credits;
-	ofxAmount    end_solde;
+	ofsAccountBalance account_balance;
+	ofxAmount         begin_solde;
+	ofxAmount         end_solde;
 }
-	ofsAccountBalanceCurrency;
-
-/**
- * ofsAccountBalanceAccount:
- *
- * A structure to hold the line for an account.
- */
-typedef struct {
-	ofoAccount                *account;
-	ofsAccountBalanceCurrency *scur;
-}
-	ofsAccountBalanceAccount;
+	ofsAccountBalancePeriod;
 
 GType              ofa_account_balance_get_type  ( void ) G_GNUC_CONST;
 
