@@ -803,9 +803,8 @@ signaler_on_dossier_closed( ofaISignaler *signaler, ofaMainWindow *self )
 			my_utils_window_position_save( GTK_WINDOW( self ), settings, priv->settings_prefix );
 		}
 
-		write_settings( self );
-
 		pane_destroy( self );
+		write_settings( self );
 
 		application = gtk_window_get_application( GTK_WINDOW( self ));
 		menubar_setup( self, G_ACTION_MAP( application ));
@@ -1173,6 +1172,7 @@ reset_pages_count( ofaMainWindow *self )
 static void
 pane_destroy( ofaMainWindow *self )
 {
+	static const gchar *thisfn = "ofa_main_window_pane_destroy";
 	ofaMainWindowPrivate *priv;
 
 	priv = ofa_main_window_get_instance_private( self );
@@ -1181,6 +1181,7 @@ pane_destroy( ofaMainWindow *self )
 
 	if( priv->pane ){
 		priv->paned_position = gtk_paned_get_position( GTK_PANED( priv->pane ));
+		g_debug( "%s: recording paned position=%u", thisfn, priv->paned_position );
 		gtk_widget_destroy( priv->pane );
 		priv->pane = NULL;
 	}
