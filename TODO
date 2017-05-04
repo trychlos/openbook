@@ -299,8 +299,6 @@
 
 1462 2017- 4-13 PACK: check that each header can be compiled stand-alone
 
-1465 2017- 4-14 accounts balances: total soldes debits credits are zero
-
 1466 2017- 4-18 reconciliation page: have a pane in the status bar so
                 that the user can roughly align amounts with the treeview
                 (idem entry page)
@@ -1145,6 +1143,9 @@
                  only display the result of the current filter, which
                  is null the first time - for now, display all
      2017- 4-16 fixed
+
+1465 2017- 4-14 accounts balances: total soldes debits credits are zero
+     2017- 5- 4 this is normal as long as we consider all accounts
 
 1467 2017- 4-18 settlement page: idem
      2017- 5- 3 done

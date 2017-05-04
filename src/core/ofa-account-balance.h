@@ -97,8 +97,10 @@ GType              ofa_account_balance_get_type  ( void ) G_GNUC_CONST;
 ofaAccountBalance *ofa_account_balance_new       ( ofaIGetter *getter );
 
 GList             *ofa_account_balance_compute   ( ofaAccountBalance *balance,
-														const GDate *from,
-														const GDate *to );
+														const gchar *account_from,
+														const gchar *account_to,
+														const GDate *date_from,
+														const GDate *date_to );
 
 GList             *ofa_account_balance_get_totals( ofaAccountBalance *balance );
 

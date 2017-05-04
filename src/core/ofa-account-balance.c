@@ -56,6 +56,8 @@ typedef struct {
 
 	/* runtime
 	 */
+	gchar      *account_from;
+	gchar      *account_to;
 	GDate       from_date;
 	GDate       to_date;
 
@@ -106,6 +108,7 @@ static void
 account_balance_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_account_balance_finalize";
+	ofaAccountBalancePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -113,6 +116,11 @@ account_balance_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_BALANCE( instance ));
 
 	/* free data members here */
+	priv = ofa_account_balance_get_instance_private( OFA_ACCOUNT_BALANCE( instance ));
+
+	g_free( priv->account_from );
+	g_free( priv->account_to );
+
 	free_accounts( OFA_ACCOUNT_BALANCE( instance ));
 	free_totals( OFA_ACCOUNT_BALANCE( instance ));
 
@@ -208,6 +216,8 @@ ofa_account_balance_init( ofaAccountBalance *self )
 	priv = ofa_account_balance_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->account_from = NULL;
+	priv->account_to = NULL;
 	my_date_clear( &priv->from_date );
 	my_date_clear( &priv->to_date );
 	priv->accounts = NULL;
@@ -257,22 +267,24 @@ ofa_account_balance_new( ofaIGetter *getter )
 /**
  * ofa_account_balance_set_dates:
  * @balance: this #ofaAccountBalance object.
- * @from: the beginning effect date.
- * @to: the ending effect date.
+ * @account_from: [allow-none]: the start of the accounts.
+ * @account_to: [allow-none]: the end of the accounts.
+ * @date_from: the beginning effect date.
+ * @date_to: the ending effect date.
  *
- * Compute the accounts balances between @from and @to effect dates.
+ * Compute the accounts balances between @date_from and @date_to effect dates.
  *
- * Returns: the list of all the detail accounts to be used as the
+ * Returns: the list of all the detail accounts date_to be used as the
  * #ofaIRenderable dataset.
  */
 GList *
-ofa_account_balance_compute( ofaAccountBalance *balance, const GDate *from, const GDate *to )
+ofa_account_balance_compute( ofaAccountBalance *balance, const gchar *account_from, const gchar *account_to, const GDate *date_from, const GDate *date_to )
 {
 	static const gchar *thisfn = "ofa_account_balance_compute";
 	ofaAccountBalancePrivate *priv;
 
-	g_debug( "%s: balance=%p, from=%p, date=%p",
-			thisfn, ( void * ) balance, ( void * ) from, ( void * ) to );
+	g_debug( "%s: balance=%p, date_from=%p, date=%p",
+			thisfn, ( void * ) balance, ( void * ) date_from, ( void * ) date_to );
 
 	g_return_val_if_fail( balance && OFA_IS_ACCOUNT_BALANCE( balance ), NULL );
 
@@ -280,8 +292,13 @@ ofa_account_balance_compute( ofaAccountBalance *balance, const GDate *from, cons
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	my_date_set_from_date( &priv->from_date, from );
-	my_date_set_from_date( &priv->to_date, to );
+	g_free( priv->account_from );
+	priv->account_from = g_strdup( account_from );
+	g_free( priv->account_to );
+	priv->account_to = g_strdup( account_to );
+
+	my_date_set_from_date( &priv->from_date, date_from );
+	my_date_set_from_date( &priv->to_date, date_to );
 
 	compute_accounts_balance( balance );
 	complete_accounts_dataset( balance );
@@ -337,6 +354,13 @@ compute_accounts_balance( ofaAccountBalance *self )
 	for( it=sorted ; it ; it=it->next ){
 		entry = ( ofoEntry * ) it->data;
 		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+		acc_number = ofo_entry_get_account( entry );
+		if( my_strlen( priv->account_from ) && my_collate( priv->account_from, acc_number ) > 0 ){
+			continue;
+		}
+		if( my_strlen( priv->account_to ) && my_collate( priv->account_to, acc_number ) < 0 ){
+			continue;
+		}
 		status = ofo_entry_get_status( entry );
 		if( status == ENT_STATUS_DELETED ){
 			continue;
@@ -346,7 +370,6 @@ compute_accounts_balance( ofaAccountBalance *self )
 			continue;
 		}
 		/* on new account, initialize a new structure */
-		acc_number = ofo_entry_get_account( entry );
 		if( my_collate( acc_number, prev_number ) != 0 ){
 			g_free( prev_number );
 			prev_number = g_strdup( acc_number );
@@ -427,7 +450,8 @@ cmp_entries( ofoEntry *a, ofoEntry *b )
 }
 
 /*
- * Complete the ofsAccountBalancePeriod list with the rest of all detail accounts
+ * Complete the ofsAccountBalancePeriod list with the rest of all detail
+ * accounts between @account_from and @account_to.
  */
 static void
 complete_accounts_dataset( ofaAccountBalance *self )
@@ -435,6 +459,7 @@ complete_accounts_dataset( ofaAccountBalance *self )
 	ofaAccountBalancePrivate *priv;
 	GList *dataset, *it;
 	ofoAccount *account;
+	const gchar *acc_number;
 
 	priv = ofa_account_balance_get_instance_private( self );
 
@@ -444,6 +469,15 @@ complete_accounts_dataset( ofaAccountBalance *self )
 	for( it=dataset ; it ; it=it->next ){
 		account = ( ofoAccount * ) it->data;
 		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+
+		acc_number = ofo_account_get_number( account );
+		if( my_strlen( priv->account_from ) && my_collate( priv->account_from, acc_number ) > 0 ){
+			continue;
+		}
+		if( my_strlen( priv->account_to ) && my_collate( priv->account_to, acc_number ) < 0 ){
+			continue;
+		}
+
 		if( !ofo_account_is_root( account )){
 			find_account( self, account );
 		}
@@ -580,6 +614,11 @@ ofa_account_balance_clear( ofaAccountBalance *balance )
 	priv = ofa_account_balance_get_instance_private( balance );
 
 	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->account_from );
+	priv->account_from = NULL;
+	g_free( priv->account_to );
+	priv->account_to = NULL;
 
 	free_accounts( balance );
 	free_totals( balance );

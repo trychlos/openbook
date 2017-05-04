@@ -366,7 +366,11 @@ render_page_v_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
-	accounts = ofa_account_balance_compute( priv->account_balance, &priv->from_date, &priv->to_date );
+	accounts = ofa_account_balance_compute(
+					priv->account_balance,
+					priv->all_accounts ? NULL : priv->from_account,
+					priv->all_accounts ? NULL : priv->to_account,
+					&priv->from_date, &priv->to_date );
 	priv->count = g_list_length( accounts );
 
 	priv->class_subtotal = ofa_account_balance_args_get_subtotal_per_class( priv->args_bin );
