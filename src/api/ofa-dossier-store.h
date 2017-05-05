@@ -56,6 +56,8 @@
  *    +-----------+-------------------------+
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofa-dossier-store-def.h"
 #include "api/ofa-igetter-def.h"
 

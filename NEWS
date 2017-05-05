@@ -39,6 +39,7 @@
    - Settlement page: a footer paned let the user align footer amounts with the treeview (todo #1467).
    - Settlement page: homogeneize footer display.
    - User may choose display at startup, and when a dossier is opened or closed.
+   - Headers completeness is now checked at make distcheck time (todo #1462).
 
  Bug fixes:
 

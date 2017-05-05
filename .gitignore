@@ -8,4 +8,5 @@ _install/
 autom4te.cache/
 run-configure.sh
 config.h.in*
+maintainer/check-header.c
 trash/

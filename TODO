@@ -297,8 +297,6 @@
 1455 2017- 4-12 when importing the default accounts chart on new dossier:
                 review the source file (does not fit the new table format)
 
-1462 2017- 4-13 PACK: check that each header can be compiled stand-alone
-
 1466 2017- 4-18 reconciliation page: have a pane in the status bar so
                 that the user can roughly align amounts with the treeview
                 (idem entry page)
@@ -1132,6 +1130,9 @@
 
 1461 2017- 4-13 change the id of recurrent and vat dbmodels
      2017- 4-13 done
+
+1462 2017- 4-13 PACK: check that each header can be compiled stand-alone
+     2017- 5- 5 done and integrated in run-distcheck.sh
 
 1463 2017- 4-14 review main window positionning:
                 - on startup, the mini window is visibly shifted: hide it
