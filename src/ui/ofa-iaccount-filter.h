@@ -35,7 +35,7 @@
  * class. It implements all needed methods to manage the composite widget.
  */
 
-#include <glib-object.h>
+#include <gtk/gtk.h>
 
 #include "api/ofa-igetter-def.h"
 

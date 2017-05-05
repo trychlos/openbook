@@ -31,6 +31,8 @@
  * @include: openbook/ofa-page-prot.h
  */
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 /* protected instance data

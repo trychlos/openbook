@@ -30,6 +30,8 @@
  * @include: openbook/ofo-dossier-def.h
  */
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 typedef struct _ofoDossier              ofoDossier;

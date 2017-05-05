@@ -30,6 +30,8 @@
  * @include: openbook/ofo-account-def.h
  */
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 typedef struct _ofoAccount              ofoAccount;

@@ -30,6 +30,8 @@
  * @include: openbook/ofa-idbprovider-def.h
  */
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 typedef struct _ofaIDBProvider                    ofaIDBProvider;

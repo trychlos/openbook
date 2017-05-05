@@ -199,7 +199,7 @@
  *       - 'BASE()':
  */
 
-#include <glib.h>
+#include <glib-object.h>
 
 #include "api/ofa-igetter-def.h"
 

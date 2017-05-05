@@ -42,6 +42,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbprovider-def.h"
 #include "api/ofa-igetter-def.h"
 

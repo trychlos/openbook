@@ -25,6 +25,8 @@
 #ifndef __OPENBOOK_API_OFA_IGETTER_DEF_H__
 #define __OPENBOOK_API_OFA_IGETTER_DEF_H__
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 typedef struct _ofaIGetter              ofaIGetter;

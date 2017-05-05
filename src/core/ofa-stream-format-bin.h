@@ -41,6 +41,8 @@
  * - current:    no
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofa-stream-format.h"
 
 G_BEGIN_DECLS

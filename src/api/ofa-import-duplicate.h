@@ -34,6 +34,8 @@
  * Import mode manages the import behavior.
  */
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 /**

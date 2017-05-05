@@ -29,6 +29,8 @@
  * SECTION: ofocounters
  */
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 typedef struct _ofoCounters               ofoCounters;

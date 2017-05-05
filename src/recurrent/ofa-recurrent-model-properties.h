@@ -46,6 +46,8 @@
  * - current:            yes
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofa-igetter-def.h"
 
 #include "ofo-recurrent-model.h"

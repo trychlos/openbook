@@ -43,6 +43,8 @@
  * must be handled by themselves.
  */
 
+#include <glib-object.h>
+
 #include "api/ofa-idbconnect-def.h"
 
 G_BEGIN_DECLS

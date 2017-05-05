@@ -33,6 +33,7 @@
  * This file defines the #ofoRecurrentGen class behavior.
  */
 
+#include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 

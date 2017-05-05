@@ -41,6 +41,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-idbsuperuser-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 

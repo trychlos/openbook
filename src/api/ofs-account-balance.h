@@ -33,7 +33,9 @@
  * This structure holds the balance for an account.
  */
 
+#include "api/ofa-box.h"
 #include "api/ofo-account-def.h"
+#include "api/ofo-currency-def.h"
 
 G_BEGIN_DECLS
 

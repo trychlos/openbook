@@ -30,6 +30,8 @@
  * @include: ui/ofa-application-def.h
  */
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 typedef struct _ofaApplication          ofaApplication;

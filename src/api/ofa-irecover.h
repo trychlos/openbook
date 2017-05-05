@@ -37,6 +37,7 @@
 
 #include <glib-object.h>
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-stream-format.h"

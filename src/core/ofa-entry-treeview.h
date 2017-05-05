@@ -51,6 +51,7 @@
  * - 'amount': the DEBIT and CREDIT columns are defined as twins.
  */
 
+#include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
 

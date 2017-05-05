@@ -33,6 +33,8 @@
  * A #GtkComboBox -derived class which manages ledgers.
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS

@@ -48,6 +48,8 @@
  * - current:    no
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-igetter-def.h"
 

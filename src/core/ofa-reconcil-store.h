@@ -70,6 +70,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-tree-store.h"
 

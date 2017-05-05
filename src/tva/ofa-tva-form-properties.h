@@ -49,6 +49,8 @@
  * - current:            yes
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofa-igetter-def.h"
 
 #include "tva/ofo-tva-form.h"

@@ -41,6 +41,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS

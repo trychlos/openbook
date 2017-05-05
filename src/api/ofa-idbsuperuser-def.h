@@ -31,6 +31,8 @@
  * @include: openbook/ofa-idbsuperuser-def.h
  */
 
+#include <glib.h>
+
 G_BEGIN_DECLS
 
 typedef struct _ofaIDBSuperuser                    ofaIDBSuperuser;

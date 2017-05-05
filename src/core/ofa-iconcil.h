@@ -39,6 +39,9 @@
  * object).
  */
 
+#include <glib-object.h>
+
+#include "api/ofa-box.h"
 #include "api/ofo-concil-def.h"
 
 G_BEGIN_DECLS

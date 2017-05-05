@@ -39,6 +39,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-igetter-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_MISC_AUDIT_UI                ( ofa_misc_audit_ui_get_type())

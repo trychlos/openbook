@@ -33,7 +33,7 @@
  * This structure holds the balance per currency for a ledger.
  */
 
-#include "api/ofo-ledger-def.h"
+#include "api/ofa-box.h"
 
 G_BEGIN_DECLS
 

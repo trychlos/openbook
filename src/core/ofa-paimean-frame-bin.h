@@ -47,6 +47,7 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-igetter-def.h"
+#include "api/ofo-paimean.h"
 
 G_BEGIN_DECLS
 
