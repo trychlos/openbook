@@ -48,6 +48,7 @@ function distcheck_fn {
 	
 	${maintainer_dir}/run-autogen.sh &&
 		${maintainer_dir}/check-po.sh -nodummy &&
+		${maintainer_dir}/check-defs.sh -nodummy &&
 		${maintainer_dir}/check-headers.sh -nodummy &&
 		desktop-file-validate ${installdir}/share/applications/openbook.desktop &&
 		make -C ${builddir} distcheck
