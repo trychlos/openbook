@@ -42,7 +42,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-igetter-def.h"
-#include "api/ofo-account.h"
+#include "api/ofo-account-def.h"
 
 G_BEGIN_DECLS
 

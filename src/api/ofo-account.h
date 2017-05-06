@@ -65,26 +65,6 @@ typedef struct {
 	ofoAccountClass;
 
 /**
- * ofeAccountAllowed:
- * When editing/selecting an account, specify which type of account if
- * allowed to be selected
- * Note that this NOT a bitmask, but the set of selectionable properties:
- * @ACCOUNT_ALLOW_DETAIL: all non closed detail accounts.
- * @ACCOUNT_ALLOW_SETTLEABLE: all non closed settleable accounts.
- * @ACCOUNT_ALLOW_RECONCILIABLE: all non closed reconciliable accounts.
- * @ACCOUNT_ALLOW_FORWARDABLE: all non closed forwardable accounts.
- * @ACCOUNT_ALLOW_ALL: all non closed accounts.
- */
-typedef enum {
-	ACCOUNT_ALLOW_DETAIL = 1,
-	ACCOUNT_ALLOW_SETTLEABLE,
-	ACCOUNT_ALLOW_RECONCILIABLE,
-	ACCOUNT_ALLOW_FORWARDABLE,
-	ACCOUNT_ALLOW_ALL,
-}
-	ofeAccountAllowed;
-
-/**
  * ofeAccountType:
  *
  * This is a type attached to the archived account balance.

@@ -44,6 +44,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-isignalable.h"
 #include "api/ofa-isignaler.h"
 #include "api/ofa-openbook-props.h"

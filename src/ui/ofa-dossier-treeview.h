@@ -45,7 +45,7 @@
  *    +------------------+--------------+
  */
 
-#include "api/ofa-dossier-store.h"
+#include "api/ofa-dossier-store-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-igetter-def.h"

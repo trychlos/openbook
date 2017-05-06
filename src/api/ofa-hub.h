@@ -48,7 +48,7 @@
 #include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-iimporter.h"
-#include "api/ofa-ipage-manager.h"
+#include "api/ofa-ipage-manager-def.h"
 #include "api/ofo-counters-def.h"
 #include "api/ofo-dossier-def.h"
 

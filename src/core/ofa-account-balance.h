@@ -50,8 +50,8 @@
 
 #include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
-#include "api/ofo-account.h"
-#include "api/ofo-currency.h"
+#include "api/ofo-account-def.h"
+#include "api/ofo-currency-def.h"
 #include "api/ofs-account-balance.h"
 
 G_BEGIN_DECLS

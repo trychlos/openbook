@@ -32,7 +32,7 @@
  *
  * Display entering ope_templates.
  *
- * See api/ofo-ope-template.h for a full description of the model language.
+ * See ofo-ope-template.h for a full description of the model language.
  */
 
 #include "api/ofa-page-def.h"

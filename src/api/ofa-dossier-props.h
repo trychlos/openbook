@@ -38,7 +38,9 @@
  * can thus be exported as a JSON string.
  */
 
-#include "api/ofo-dossier.h"
+#include <glib-object.h>
+
+#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 

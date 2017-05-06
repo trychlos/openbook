@@ -30,6 +30,7 @@
 
 #include "api/ofa-account-editable.h"
 #include "api/ofa-igetter.h"
+#include "api/ofo-account.h"
 
 #include "core/ofa-account-select.h"
 

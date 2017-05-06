@@ -30,7 +30,8 @@
  * @short_description: #ofaMysql class definition.
  */
 
-#include "api/ofa-idbconnect.h"
+#include "api/ofa-hub-def.h"
+#include "api/ofa-idbconnect-def.h"
 #include "api/ofa-idbsuperuser-def.h"
 
 #include "mysql/ofa-mysql-connect.h"

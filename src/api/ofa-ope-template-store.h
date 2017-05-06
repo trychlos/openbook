@@ -43,7 +43,7 @@
  * The #ofaOpeTemplateStore takes advantage of the dossier signaling
  * system to maintain itself up to date.
  *
- * See api/ofo-ope-template.h for a full description of the model language.
+ * See ofo-ope-template.h for a full description of the model language.
  */
 
 #include "api/ofa-igetter-def.h"
