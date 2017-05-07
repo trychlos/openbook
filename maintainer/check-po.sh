@@ -36,7 +36,8 @@ my_tmproot="/tmp/$(echo ${me} | sed 's?\..*$??').$$"
 trap_exit()
 {
 	clear_tmpfiles
-	[ "${opt_verbose}" = "yes" -o ${errs} -gt 0 ] && msg "exiting with code ${errs}"
+	#[ "${opt_verbose}" = "yes" -o ${errs} -gt 0 ] && msg "exiting with code ${errs}"
+	msg "exiting with code ${errs}"
 	exit ${errs}
 }
 
@@ -312,15 +313,14 @@ fi
 
 totpass=5
 nbpass=0
+cd "${top_srcdir}"
 
 # first, check that all .ui are in po/POTFILE.in
 let nbpass+=1
-(
- cd "${top_srcdir}"
- nbfiles=0
- nberrs=0
- msg "pass ${nbpass}/${totpass}: checking that all .ui are in ${opt_potfile}..."
- for f in $(git ls-files *.ui); do
+nbfiles=0
+nberrs=0
+msg "pass ${nbpass}/${totpass}: checking that all .ui are in ${opt_potfile}..."
+for f in $(git ls-files *.ui); do
 	#if [ "$(grep -xe "\[type:\s*gettext/glade]\s*${f}" ${opt_potfile})" = "" ]; then
 	if [ "$(grep -xe "\s*${f}\s*$" ${opt_potfile})" = "" ]; then
 		msg "  ${f} should be added to ${opt_potfile}"
@@ -329,10 +329,9 @@ let nbpass+=1
 		msg "  ${f}: OK"
 	fi
 	let nbfiles+=1
- done
- msg "  nbfiles=${nbfiles} error(s)=${nberrs}"
- let errs+=${nberrs}
-)
+done
+msg "  nbfiles=${nbfiles} error(s)=${nberrs}"
+let errs+=${nberrs}
 
 # second, check that all .ui in PO exist
 let nbpass+=1
@@ -353,12 +352,10 @@ let errs+=${nberrs}
 
 # third, check that all files which use _( construct are in PO
 let nbpass+=1
-(
- cd "${top_srcdir}"
- nbfiles=0
- nberrs=0
- msg "pass ${nbpass}/${totpass}: checking that all translatable files are in ${opt_potfile}..."
- for f in $(git grep -I '_(' src | cut -d: -f1 | sort -u); do
+nbfiles=0
+nberrs=0
+msg "pass ${nbpass}/${totpass}: checking that all translatable files are in ${opt_potfile}..."
+for f in $(git grep -I '_(' src | cut -d: -f1 | sort -u); do
 	if [ "$(grep -x ${f} ${opt_potfile})" != "${f}" ]; then
 		msg "  ${f} should be added to ${opt_potfile}"
 		let nberrs+=1
@@ -366,10 +363,9 @@ let nbpass+=1
 		msg "  ${f}: OK"
 	fi
 	let nbfiles+=1
- done
- msg "  nbfiles=${nbfiles} error(s)=${nberrs}"
- let errs+=${nberrs}
-)
+done
+msg "  nbfiles=${nbfiles} error(s)=${nberrs}"
+let errs+=${nberrs}
 
 # fourth, check that all files in PO actually use the _( construct
 let nbpass+=1
@@ -391,12 +387,10 @@ let errs+=${nberrs}
 
 # last, check that all files which include gi18n.h are relevant
 let nbpass+=1
-(
- cd "${top_srcdir}"
- nbfiles=0
- nberrs=0
- msg "pass ${nbpass}/${totpass}: checking that all files have a good reason to include gi18n.h..."
- for f in $(git grep '#include <glib/gi18n.h>' src | cut -d: -f1 | sort -u); do
+nbfiles=0
+nberrs=0
+msg "pass ${nbpass}/${totpass}: checking that all files have a good reason to include gi18n.h..."
+for f in $(git grep '#include <glib/gi18n.h>' src | cut -d: -f1 | sort -u); do
 	grep '_(' ${f} 1>/dev/null 2>&1
 	if [ $? -ne 0 ]; then
 		msg "  ${f} should not include <glib/gi18n.h>"
@@ -405,11 +399,8 @@ let nbpass+=1
 		msg "  ${f}: OK"
 	fi
 	let nbfiles+=1
- done
- msg "  nbfiles=${nbfiles} error(s)=${nberrs}"
- let errs+=${nberrs}
-)
-
-msg "total: ${errs} error(s)."
+done
+msg "  nbfiles=${nbfiles} error(s)=${nberrs}"
+let errs+=${nberrs}
 
 exit
