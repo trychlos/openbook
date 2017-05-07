@@ -3,6 +3,7 @@ src/api/ofa-iactionable.h
 src/api/ofo-ledger.h
 src/cmdline/main.c
 src/core/ofa-account-arc-treeview.c
+src/core/ofa-account-balance.c
 src/core/ofa-account-frame-bin.c
 src/core/ofa-account-properties.c
 src/core/ofa-account-properties.ui
@@ -86,6 +87,7 @@ src/core/ofo-class.c
 src/core/ofo-currency.c
 src/core/ofo-dossier.c
 src/core/ofo-entry.c
+src/core/ofo-entry-fec.c
 src/core/ofo-ledger.c
 src/core/ofo-ope-template.c
 src/core/ofo-paimean.c
