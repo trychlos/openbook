@@ -20,22 +20,15 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
-AUTOMAKE_OPTIONS = no-dependencies
-
-noinst_PROGRAMS = \
-	check_header										\
-	$(NULL)
-
 AM_CPPFLAGS += \
 	-I $(top_srcdir)									\
 	-I $(top_srcdir)/src								\
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
 
-check_header_SOURCES = \
-	check-header.c										\
-	$(NULL)
-
-check_header_LDADD = \
+LDADD = \
 	$(OPENBOOK_LIBS)									\
 	$(NULL)
+
+check_header: $(builddir)/check_header.c
+	gcc -o $@ $(AM_CPPFLAGS) $<

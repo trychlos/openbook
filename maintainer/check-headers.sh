@@ -322,15 +322,17 @@ fi
 # ---------------------------------------------------------------------
 # MAIN CODE
 
+workdir="${opt_builddir}/${maintainer_dir##*/}"
+
 for f in $(git ls-files src | grep '\.h$'); do
 	msg "checking for $f..." " "
-	tmpc="${maintainer_dir}/check-header.c"
+	tmpc="${workdir}/check_header.c"
 	cat <<! >${tmpc}
 #include "${f}"
 int main( int argc, char **argv ){ return( 0 ); }
 !
-	make -C "${opt_builddir}/${maintainer_dir##*/}" check_header 1>/dev/null &&
-		"${opt_builddir}/${maintainer_dir##*/}/.libs/check_header" 1>/dev/null
+	make -C "${workdir}" check_header 1>/dev/null &&
+		"${workdir}/check_header" 1>/dev/null
 	[ $? -eq 0 ] && echo "OK" || { echo "NOT OK"; let errs+=1; }
 done
 
