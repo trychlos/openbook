@@ -3,6 +3,7 @@
  Summary
  =======
  
+   Version 0.71
    Version 0.70
    Version 0.69
    Version 0.68
@@ -12,6 +13,28 @@
    Version 0.64
 
 -----------------------------------------------------------------------
+ Version 0.71
+ ============
+
+ Released on 
+
+ Total files count: 
+ Total lines count: 
+ maintainer/run-distcheck.sh:
+
+ New features and improvements:
+
+   - 
+
+ Bug fixes:
+
+   - 
+
+ Other changes:
+
+   - 
+
+-----------------------------------------------------------------------
  Version 0.70
  ============
 
@@ -19,7 +42,7 @@
 
  Total files count:    845 files
  Total lines count: 576954 lines
- maintainer/run-distcheck.sh real	8m1.915s
+ maintainer/run-distcheck.sh: real	8m1.915s
 
  New features and improvements:
 
