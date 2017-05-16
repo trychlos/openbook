@@ -300,9 +300,6 @@
      2017- 5- 3 difficult as 1/ footer is aligned with header,
                 and 2/ expands on two lines
 
-1470 2017- 6-16 guide input: changing operation template let operation
-                date invalid though rightly displayed
-
 1474
 
 -----------------------------------------------------------------------
@@ -1162,6 +1159,10 @@
 1469 2017- 4-18 entry page ext filter: when a row is moved up or down,
                 review sensitivity of and/or combobox
      2017- 5- 3 fixed
+
+1470 2017- 6-16 guide input: changing operation template let operation
+                date invalid though rightly displayed
+     2017- 6-16 fixed
 
 1471 2017- 6-16 recurrent operations accounting: amount columns should be twins
      2017- 6-16 done

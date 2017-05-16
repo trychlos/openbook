@@ -590,16 +590,19 @@ init_model_data( ofaGuidedInputBin *self )
 	g_free( str );
 
 	/* initialize the new operation data */
+	/* operation date */
 	my_date_editable_get_date( GTK_EDITABLE( priv->dope_entry ), &valid );
 	if( !valid ){
 		my_date_editable_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
-		my_date_set_from_date( &priv->ope->dope, &st_last_dope );
 	}
+	my_date_set_from_date( &priv->ope->dope, &st_last_dope );
+
+	/* effect date */
 	my_date_editable_get_date( GTK_EDITABLE( priv->deffect_entry ), &valid );
 	if( !valid ){
 		my_date_editable_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
-		my_date_set_from_date( &priv->ope->deffect, &st_last_deff );
 	}
+	my_date_set_from_date( &priv->ope->deffect, &st_last_deff );
 
 	/* ledger */
 	ofa_ledger_combo_set_selected( priv->ledger_combo, ofo_ope_template_get_ledger( priv->model ));
@@ -853,6 +856,7 @@ on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *self )
 	/* setup the effect date if it has not been manually changed */
 	if( my_date_is_valid( &ope->dope )){
 		ope->dope_user_set = TRUE;
+		my_date_set_from_date( &st_last_dope, &priv->ope->dope );
 
 		if( !ope->deffect_user_set ){
 			if( my_date_is_valid( &priv->deffect_min ) &&
@@ -919,6 +923,10 @@ on_deffect_changed( GtkEntry *entry, ofaGuidedInputBin *self )
 		my_date_set_from_date( &ope->deffect,
 				my_date_editable_get_date( GTK_EDITABLE( priv->deffect_entry ), NULL ));
 		ope->deffect_user_set = TRUE;
+	}
+
+	if( my_date_is_valid( &ope->deffect )){
+		my_date_set_from_date( &st_last_deff, &priv->ope->deffect );
 	}
 
 	check_for_enable_dlg( self );
@@ -1794,9 +1802,6 @@ do_validate( ofaGuidedInputBin *self )
 		ok = ofa_idbconnect_transaction_cancel( connect, FALSE, NULL );
 		g_list_free_full( entries, g_object_unref );
 	}
-
-	my_date_set_from_date( &st_last_dope, &priv->ope->dope );
-	my_date_set_from_date( &st_last_deff, &priv->ope->deffect );
 
 	return( ok );
 }
