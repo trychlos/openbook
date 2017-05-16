@@ -3588,6 +3588,7 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage
 static void
 delete_row( ofaEntryPage *self, GtkTreeSelection *selection )
 {
+	static const gchar *thisfn = "ofa_entry_page_delete_row";
 	ofaEntryPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter sort_iter;
@@ -3611,6 +3612,7 @@ delete_row( ofaEntryPage *self, GtkTreeSelection *selection )
 			/* cleaning up settlement and conciliation is handled by
 			 *  #ofoEntry class itself  */
 			for( it=entries ; it ; it=it->next ){
+				g_debug( "%s: about to delete entry number %lu", thisfn, ofo_entry_get_number( it->data ));
 				ofo_entry_delete( OFO_ENTRY( it->data ));
 			}
 			balances_compute( self );

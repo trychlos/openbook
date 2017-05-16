@@ -167,7 +167,7 @@ ofa_entry_page_delconf_class_init( ofaEntryPageDelconfClass *klass )
  * - only for this single entry.
  *
  * Returns: %TRUE if the user has confirmed the deletion, and @entries
- * if filled up with the entries to delete, or %FALSE to cancel.
+ * is filled up with the entries to delete, or %FALSE to cancel.
  */
 gboolean
 ofa_entry_page_delconf_run( ofaIGetter *getter, ofoEntry *entry, GList **entries )
@@ -177,8 +177,9 @@ ofa_entry_page_delconf_run( ofaIGetter *getter, ofoEntry *entry, GList **entries
 	ofaEntryPageDelconfPrivate *priv;
 	gboolean confirmed;
 
-	g_debug( "%s: getter=%p, entry=%p, entries=%p",
-			thisfn, ( void * ) getter, ( void * ) entry, ( void * ) entries );
+	g_debug( "%s: getter=%p, entry=%p (number=%lu), entries=%p",
+			thisfn, ( void * ) getter,
+			( void * ) entry, ofo_entry_get_number( entry ), ( void * ) entries );
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
@@ -277,12 +278,6 @@ setup_ui( ofaEntryPageDelconf *self )
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), TRUE );
 	on_all_toggled( GTK_TOGGLE_BUTTON( btn ), self );
 
-	/*
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "single-btn" );
-	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
-	g_signal_connect( btn, "toggled", G_CALLBACK( on_single_toggled ), self );
-	*/
-
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "entry1-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->entry1_label = label;
@@ -357,26 +352,15 @@ setup_data( ofaEntryPageDelconf *self )
 static void
 on_all_toggled( GtkToggleButton *button, ofaEntryPageDelconf *self )
 {
+	static const gchar *thisfn = "ofa_entry_page_delconf_on_all_toggled";
 	ofaEntryPageDelconfPrivate *priv;
 
 	priv = ofa_entry_page_delconf_get_instance_private( self );
 
 	priv->all_entries = gtk_toggle_button_get_active( button );
 
-	g_debug( "setting all_entries to %s", priv->all_entries ? "True":"False" );
+	g_debug( "%s: setting all_entries to %s", thisfn, priv->all_entries ? "True":"False" );
 }
-
-/*
-static void
-on_single_toggled( GtkToggleButton *button, ofaEntryPageDelconf *self )
-{
-	ofaEntryPageDelconfPrivate *priv;
-
-	priv = ofa_entry_page_delconf_get_instance_private( self );
-
-	priv->all_entries = !gtk_toggle_button_get_active( button );
-}
-*/
 
 /*
  * Note that we cannot run a non-modal dialog from a modal one
@@ -396,6 +380,15 @@ on_vope_clicked( GtkButton *button, ofaEntryPageDelconf *self )
 static void
 on_ok_clicked( GtkButton *button, ofaEntryPageDelconf *self )
 {
+	ofaEntryPageDelconfPrivate *priv;
+
+	priv = ofa_entry_page_delconf_get_instance_private( self );
+
+	if( !priv->all_entries ){
+		g_list_free( *priv->entries );
+		*priv->entries = g_list_append( NULL, priv->entry );
+	}
+
 	manage_settle_concil( self );
 }
 
@@ -406,6 +399,7 @@ on_ok_clicked( GtkButton *button, ofaEntryPageDelconf *self )
 static void
 manage_settle_concil( ofaEntryPageDelconf *self )
 {
+	static const gchar *thisfn = "ofa_entry_page_delconf_manage_settle_concil";
 	ofaEntryPageDelconfPrivate *priv;
 	guint count, settle_count, concil_count;
 	ofoEntry *entry;
@@ -472,14 +466,14 @@ manage_settle_concil( ofaEntryPageDelconf *self )
 
 		gstr = g_string_append( gstr, _( "\nAre you sure ?" ));
 		toplevel = GTK_WINDOW( ofa_igetter_get_main_window( priv->getter ));
-		ok = my_utils_dialog_question( toplevel, gstr->str, _( "_Yes, go to delete" ));
+		ok = my_utils_dialog_question( toplevel, gstr->str, _( "Yes, g_o to delete" ));
 
 		g_string_free( gstr, TRUE );
 
 		if( !ok ){
 			g_list_free( *priv->entries );
 			*priv->entries = NULL;
-			g_debug( "sending cancel" );
+			g_debug( "%s: sending cancel", thisfn );
 			gtk_dialog_response( GTK_DIALOG( self ), GTK_RESPONSE_CANCEL );
 		}
 	}

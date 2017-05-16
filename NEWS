@@ -28,7 +28,8 @@
 
  Bug fixes:
 
-   - Fix solde computing when archiving accounts. 
+   - Fix solde computing when archiving accounts.
+   - Fix deletion of a single entry (todo #1473).
 
  Other changes:
 
