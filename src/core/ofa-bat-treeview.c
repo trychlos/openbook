@@ -251,9 +251,8 @@ ofa_bat_treeview_new( ofaIGetter *getter, const gchar *settings_prefix )
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	view = g_object_new( OFA_TYPE_BAT_TREEVIEW,
-					"ofa-tvbin-hpolicy", GTK_POLICY_NEVER,
-					"ofa-tvbin-getter",  getter,
-					"ofa-tvbin-shadow",  GTK_SHADOW_IN,
+					"ofa-tvbin-getter", getter,
+					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 
 	priv = ofa_bat_treeview_get_instance_private( view );
