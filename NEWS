@@ -24,7 +24,7 @@
 
  New features and improvements:
 
-   - 
+   - Recurrent operations: amount columns are defined as twins (todo #1471).
 
  Bug fixes:
 

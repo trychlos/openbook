@@ -358,6 +358,7 @@ setup_columns( ofaEntryTreeview *self )
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), ENTRY_COL_NOTES_PNG,        "",              _( "Notes indicator" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ENTRY_COL_LABEL );
+
 	ofa_itvcolumnable_twins_group_new( OFA_ITVCOLUMNABLE( self ), "amount", ENTRY_COL_DEBIT, ENTRY_COL_CREDIT, -1 );
 }
 

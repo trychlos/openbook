@@ -332,6 +332,9 @@ setup_columns( ofaRecurrentRunTreeview *self )
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT3,   _( "Amount n° 3" ),   NULL);
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), REC_RUN_COL_LABEL );
+
+	ofa_itvcolumnable_twins_group_new( OFA_ITVCOLUMNABLE( self ),
+			"amount", REC_RUN_COL_AMOUNT1, REC_RUN_COL_AMOUNT2, REC_RUN_COL_AMOUNT3, -1 );
 }
 
 /*
