@@ -300,7 +300,17 @@
      2017- 5- 3 difficult as 1/ footer is aligned with header,
                 and 2/ expands on two lines
 
-1470
+1470 2017- 6-16 guide input: changing operation template let operation
+                date invalid though rightly displayed
+
+1471 2017- 6-16 recurrent operations accounting: amount columns should be twins
+
+1472 2017- 6-16 imported bat treeview: enlarge the page when displayed
+                does it have an horiz scrollbar ?
+
+1473 2017- 6-16 deleting a single entry of an operation doesn't work ?
+
+1474
 
 -----------------------------------------------------------------------
  DONE

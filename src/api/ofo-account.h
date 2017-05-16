@@ -108,7 +108,7 @@ ofxAmount       ofo_account_get_futur_rough_debit     ( const ofoAccount *accoun
 ofxAmount       ofo_account_get_futur_rough_credit    ( const ofoAccount *account );
 ofxAmount       ofo_account_get_futur_val_debit       ( const ofoAccount *account );
 ofxAmount       ofo_account_get_futur_val_credit      ( const ofoAccount *account );
-ofxAmount       ofo_account_get_solde_at_date         ( ofoAccount *account, const GDate *date, GDate *deffect );
+ofxAmount       ofo_account_get_solde_at_date         ( ofoAccount *account, const GDate *date, GDate *deffect, ofxAmount *debit, ofxAmount *credit );
 
 gboolean        ofo_account_is_deletable              ( const ofoAccount *account );
 gboolean        ofo_account_is_root                   ( const ofoAccount *account );

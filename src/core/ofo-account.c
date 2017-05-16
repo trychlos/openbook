@@ -292,9 +292,8 @@ static void         account_get_children( const ofoAccount *account, sChildren *
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
-static gboolean     archive_balances_ex( ofoAccount *account, const GDate *exe_begin, const GDate *archive_date, ofeAccountType type );
 static gboolean     archive_do_add_dbms( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
-static void         archive_do_add_list( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
+static gboolean     archive_do_add_list( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
 static gint         archive_get_last_index( ofoAccount *account, const GDate *requested );
 static GList       *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
@@ -777,20 +776,21 @@ ofo_account_get_futur_val_credit( const ofoAccount *account )
  * @date: [allow-none]: the requested effect date;
  *  if unset, then all entries are taken into account (including future).
  * @deffect: [out][allow-none]: the actual greatest effect date found.
+ * @debit: [out][allow-none]: the total of the debits to be considered.
+ * @credit: [out][allow-none]: the total of the credits to be considered.
  *
  * Compute the actual solde of the @account at the requested @date.
  *
  * This take into account all rough+validated entries from current and
  * future effect dates, until the given @date.
  *
- * DB is -
- * CR is +
+ * Returns: the solde at @date as @credit - @debit.
  */
 ofxAmount
-ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *deffect )
+ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *deffect, ofxAmount *debit, ofxAmount *credit )
 {
 	static const gchar *thisfn = "ofo_account_get_solde_at_date";
-	ofxAmount solde;
+	ofxAmount sdebit, scredit;
 	gint idx, cmp;
 	const GDate *arc_date, *ent_deffect;
 	const gchar *acc_number;
@@ -805,19 +805,20 @@ ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *de
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
 
-	solde = 0;
+	sdebit = 0;
+	scredit = 0;
 	idx = archive_get_last_index( account, date );
 	if( idx == -1 ){
-		solde = 0;
 		arc_date = NULL;
 		arc_type = 0;
 		g_debug( "%s: no archive found", thisfn );
 	} else {
 		arc_date = ofo_account_archive_get_date( account, idx );
 		arc_type = ofo_account_archive_get_type( account, idx );
-		solde = ofo_account_archive_get_credit( account, idx ) - ofo_account_archive_get_debit( account, idx );
+		sdebit = ofo_account_archive_get_debit( account, idx );
+		scredit = ofo_account_archive_get_credit( account, idx );
 		gchar *str = my_date_to_str( arc_date, MY_DATE_SQL );
-		g_debug( "%s: found archive date=%s, solde=%lf", thisfn, str, solde );
+		g_debug( "%s: found archive date=%s, debit=%lf, credit=%lf", thisfn, str, sdebit, scredit );
 		g_free( str );
 	}
 
@@ -863,7 +864,8 @@ ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *de
 			continue;
 		}
 
-		solde += ofo_entry_get_credit( entry ) - ofo_entry_get_debit( entry );
+		sdebit += ofo_entry_get_debit( entry );
+		scredit += ofo_entry_get_credit( entry );
 		//g_debug( "%s: adding %lu entry, solde=%lf", thisfn, ofo_entry_get_number( entry ), solde );
 
 		/* compute the max deffect */
@@ -881,7 +883,14 @@ ofo_account_get_solde_at_date( ofoAccount *account, const GDate *date, GDate *de
 		}
 	}
 
-	return( solde );
+	if( debit ){
+		*debit = sdebit;
+	}
+	if( credit ){
+		*credit = scredit;
+	}
+
+	return( scredit-sdebit );
 }
 
 /**
@@ -1639,81 +1648,17 @@ ofo_account_archive_openings( ofaIGetter *getter, const GDate *exe_begin )
 gboolean
 ofo_account_archive_balances( ofoAccount *account, const GDate *archive_date )
 {
-	ofaIGetter *getter;
-	ofaHub *hub;
-	ofoDossier *dossier;
-	const GDate *exe_begin;
-
-	getter = ofo_base_get_getter( OFO_BASE( account ));
-	hub = ofa_igetter_get_hub( getter );
-	dossier = ofa_hub_get_dossier( hub );
-	exe_begin = ofo_dossier_get_exe_begin( dossier );
-
-	return( archive_balances_ex( account, exe_begin, archive_date, ACC_TYPE_NORMAL ));
-}
-
-/*
- * ofo_account_archive_balances_ex:
- * @account: this #ofoAccount object.
- * @exe_begin: the beginning of the exercice.
- * @archive_date: the archived date.
- *
- * Archive accounts balances.
- */
-static gboolean
-archive_balances_ex( ofoAccount *account, const GDate *exe_begin, const GDate *archive_date, ofeAccountType type )
-{
 	gboolean ok;
-	ofaIGetter *getter;
 	ofxAmount debit, credit;
-	gint last_index;
-	GDate from_date;
-	GList *list;
-	ofsAccountBalance *sbal;
-	const gchar *acc_id;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 	g_return_val_if_fail( !ofo_account_is_root( account ), FALSE );
 
-	ok = FALSE;
-	getter = ofo_base_get_getter( OFO_BASE( account ));
-	my_date_clear( &from_date );
-	last_index = archive_get_last_index( account, archive_date );
-	type = ACC_TYPE_NORMAL;
+	ofo_account_get_solde_at_date( account, archive_date, NULL, &debit, &credit );
 
-	if( last_index >= 0 ){
-		my_date_set_from_date( &from_date, ofo_account_archive_get_date( account, last_index ));
-		g_return_val_if_fail( my_date_is_valid( &from_date ), FALSE );
-		g_date_add_days( &from_date, 1 );
-
-	} else {
-		my_date_set_from_date( &from_date, exe_begin );
-		/* if beginning date of the exercice is not set, then we will
-		 * consider all found entries */
-	}
-
-	/* Get balance of entries between two dates
-	 * ofoEntry considers all rough+validated entries, and returns
-	 *   one line for this account
-	 * It is up to the caller to take care of having no rough entries left here */
-	acc_id = ofo_account_get_number( account );
-	list = ofo_entry_get_dataset_account_balance( getter, acc_id, acc_id, &from_date, archive_date );
-	sbal = list ? ( ofsAccountBalance * ) list->data : NULL;
-	debit = sbal ? sbal->debit : 0;
-	credit = sbal ? sbal->credit : 0;
-	ofs_account_balance_list_free( &list );
-
-	/* increment with last balance if any */
-	if( last_index >= 0 ){
-		debit += ofo_account_archive_get_debit( account, last_index );
-		credit += ofo_account_archive_get_credit( account, last_index );
-	}
-
-	if( archive_do_add_dbms( account, archive_date, type, debit, credit )){
-		archive_do_add_list( account, archive_date, type, debit, credit );
-		ok = TRUE;
-	}
+	ok = archive_do_add_dbms( account, archive_date, ACC_TYPE_NORMAL, debit, credit ) &&
+			archive_do_add_list( account, archive_date, ACC_TYPE_NORMAL, debit, credit );
 
 	return( ok );
 }
@@ -1759,7 +1704,7 @@ archive_do_add_dbms( ofoAccount *account, const GDate *date, ofeAccountType type
 	return( ok );
 }
 
-static void
+static gboolean
 archive_do_add_list( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit )
 {
 	ofoAccountPrivate *priv;
@@ -1775,6 +1720,8 @@ archive_do_add_list( ofoAccount *account, const GDate *date, ofeAccountType type
 	ofa_box_set_amount( fields, ACC_ARC_CREDIT, credit );
 
 	priv->archives = g_list_append( priv->archives, fields );
+
+	return( TRUE );
 }
 
 /**
