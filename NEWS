@@ -16,11 +16,11 @@
  Version 0.71
  ============
 
- Released on 
+ Released on 2017-06-28
 
- Total files count: 
- Total lines count: 
- maintainer/run-distcheck.sh:
+ Total files count:    845 files
+ Total lines count: 576856 lines 
+ maintainer/run-distcheck.sh: real	7m23.787s
 
  New features and improvements:
 
