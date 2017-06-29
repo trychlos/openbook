@@ -41,6 +41,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
+#include "api/ofa-idoc.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iexporter.h"
 #include "api/ofa-igetter.h"
@@ -162,6 +163,7 @@ static void      rate_set_upd_user( ofoRate *rate, const gchar *user );
 static void      rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp );
 static GList    *rate_val_new_detail( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
 static void      rate_val_add_detail( ofoRate *rate, GList *detail );
+static GList    *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean  rate_do_insert( ofoRate *rate, const ofaIDBConnect *connect );
 static gboolean  rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect );
 static gboolean  rate_delete_validities( ofoRate *rate, const ofaIDBConnect *connect );
@@ -175,6 +177,8 @@ static gint      rate_cmp_by_validity( const ofsRateValidity *a, const ofsRateVa
 static void      icollectionable_iface_init( myICollectionableInterface *iface );
 static guint     icollectionable_get_interface_version( void );
 static GList    *icollectionable_load_collection( void *user_data );
+static void      idoc_iface_init( ofaIDocInterface *iface );
+static guint     idoc_get_interface_version( void );
 static void      iexportable_iface_init( ofaIExportableInterface *iface );
 static guint     iexportable_get_interface_version( void );
 static gchar    *iexportable_get_label( const ofaIExportable *instance );
@@ -197,6 +201,7 @@ static void      isignalable_connect_to( ofaISignaler *signaler );
 G_DEFINE_TYPE_EXTENDED( ofoRate, ofo_rate, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRate )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
@@ -780,6 +785,22 @@ rate_val_add_detail( ofoRate *rate, GList *detail )
 }
 
 /**
+ * ofo_rate_valid_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown rates in OFA_T_RATES_VAL
+ * child table.
+ *
+ * The returned list should be ofo_rate_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_rate_valid_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_RATES_VAL" ));
+}
+
+/**
  * ofo_rate_doc_get_count:
  * @rate: this #ofoRate object.
  *
@@ -796,6 +817,54 @@ ofo_rate_doc_get_count( ofoRate *rate )
 	priv = ofo_rate_get_instance_private( rate );
 
 	return( g_list_length( priv->docs ));
+}
+
+/**
+ * ofo_rate_doc_get_orphans:
+ * @getter: a #ofaIGetter instance.
+ *
+ * Returns: the list of unknown rates in OFA_T_RATES_DOC
+ * child table.
+ *
+ * The returned list should be ofo_rate_free_orphans() by the
+ * caller.
+ */
+GList *
+ofo_rate_doc_get_orphans( ofaIGetter *getter )
+{
+	return( get_orphans( getter, "OFA_T_RATES_DOC" ));
+}
+
+static GList *
+get_orphans( ofaIGetter *getter, const gchar *table )
+{
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GList *orphans;
+	GSList *result, *irow, *icol;
+	gchar *query;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	orphans = NULL;
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf( "SELECT DISTINCT(RAT_MNEMO) FROM %s "
+			"	WHERE RAT_MNEMO NOT IN (SELECT RAT_MNEMO FROM OFA_T_RATES)", table );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			orphans = g_list_prepend( orphans, g_strdup(( const gchar * ) icol->data ));
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	return( orphans );
 }
 
 /**
@@ -1283,6 +1352,25 @@ icollectionable_load_collection( void *user_data )
 	}
 
 	return( dataset );
+}
+
+/*
+ * ofaIDoc interface management
+ */
+static void
+idoc_iface_init( ofaIDocInterface *iface )
+{
+	static const gchar *thisfn = "ofo_rate_idoc_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idoc_get_interface_version;
+}
+
+static guint
+idoc_get_interface_version( void )
+{
+	return( 1 );
 }
 
 /*

@@ -458,17 +458,16 @@ ofo_paimean_doc_get_count( ofoPaimean *paimean )
 }
 
 /**
- * ofo_paimean_get_doc_orphans:
+ * ofo_paimean_doc_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
  * Returns: the list of unknown means of paiement identifiers in
  * OFA_T_PAIMEANS_DOC child table.
  *
- * The returned list should be #ofo_paimean_free_doc_orphans() by the
- * caller.
+ * The returned list should be ofo_paimean_free_orphans() by the caller.
  */
 GList *
-ofo_paimean_get_doc_orphans( ofaIGetter *getter )
+ofo_paimean_doc_get_orphans( ofaIGetter *getter )
 {
 	return( get_orphans( getter, "OFA_T_PAIMEANS_DOC" ));
 }

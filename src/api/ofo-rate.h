@@ -78,7 +78,7 @@ typedef struct {
 GType           ofo_rate_get_type          ( void ) G_GNUC_CONST;
 
 GList          *ofo_rate_get_dataset       ( ofaIGetter *getter );
-#define         ofo_rate_free_dataset( L ) g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
+#define         ofo_rate_free_dataset( L ) ( g_list_free_full(( L ),( GDestroyNotify ) g_object_unref ))
 
 ofoRate        *ofo_rate_get_by_mnemo      ( ofaIGetter *getter, const gchar *mnemo );
 
@@ -109,7 +109,13 @@ const GDate    *ofo_rate_valid_get_max_date( ofoRate *rate );
 void            ofo_rate_valid_reset       ( ofoRate *rate );
 void            ofo_rate_valid_add         ( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
 
+GList          *ofo_rate_valid_get_orphans ( ofaIGetter *getter );
+
 guint           ofo_rate_doc_get_count     ( ofoRate *rate );
+
+GList          *ofo_rate_doc_get_orphans   ( ofaIGetter *getter );
+
+#define         ofo_rate_free_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
 gboolean        ofo_rate_insert            ( ofoRate *rate );
 gboolean        ofo_rate_update            ( ofoRate *rate, const gchar *prev_mnemo );

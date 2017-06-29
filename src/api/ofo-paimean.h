@@ -90,8 +90,8 @@ void            ofo_paimean_set_notes             ( ofoPaimean *paimean, const g
 
 guint           ofo_paimean_doc_get_count         ( ofoPaimean *paimean );
 
-GList          *ofo_paimean_get_doc_orphans       ( ofaIGetter *getter );
-#define         ofo_paimean_free_doc_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+GList          *ofo_paimean_doc_get_orphans       ( ofaIGetter *getter );
+#define         ofo_paimean_free_orphans( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
 gboolean        ofo_paimean_insert                ( ofoPaimean *paimean );
 gboolean        ofo_paimean_update                ( ofoPaimean *paimean, const gchar *prev_code );

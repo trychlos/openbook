@@ -539,7 +539,7 @@ ofo_currency_doc_get_count( ofoCurrency *currency )
  * ofo_currency_doc_get_orphans:
  * @getter: a #ofaIGetter instance.
  *
- * Returns: the list of unknown ledger mnemos in OFA_T_CURRENCIES_DOC
+ * Returns: the list of unknown currencies in OFA_T_CURRENCIES_DOC
  * child table.
  *
  * The returned list should be #ofo_currency_doc_free_orphans() by the
@@ -856,7 +856,7 @@ icollectionable_load_collection( void *user_data )
 static void
 idoc_iface_init( ofaIDocInterface *iface )
 {
-	static const gchar *thisfn = "ofo_ledger_idoc_iface_init";
+	static const gchar *thisfn = "ofo_currency_idoc_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 

@@ -52,6 +52,7 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-paimean.h"
+#include "api/ofo-rate.h"
 #include "api/ofs-currency.h"
 
 #include "ui/ofa-check-integrity-bin.h"
@@ -78,6 +79,7 @@ typedef struct {
 	gulong         ledgers_errs;
 	gulong         ope_templates_errs;
 	gulong         paimean_errs;
+	gulong         rate_errs;
 	gulong         entries_errs;
 	gulong         bat_lines_errs;
 	gulong         concil_errs;
@@ -133,6 +135,7 @@ static void     check_accounts_run( ofaCheckIntegrityBin *self );
 static void     check_ledgers_run( ofaCheckIntegrityBin *self );
 static void     check_ope_templates_run( ofaCheckIntegrityBin *self );
 static void     check_paimean_run( ofaCheckIntegrityBin *self );
+static void     check_rate_run( ofaCheckIntegrityBin *self );
 static void     check_entries_run( ofaCheckIntegrityBin *self );
 static void     check_bat_lines_run( ofaCheckIntegrityBin *self );
 static void     check_concil_run( ofaCheckIntegrityBin *self );
@@ -158,6 +161,7 @@ static checkfn st_fn[] = {
 		check_ledgers_run,
 		check_ope_templates_run,
 		check_paimean_run,
+		check_rate_run,
 		check_entries_run,
 		check_bat_lines_run,
 		check_concil_run,
@@ -754,7 +758,7 @@ check_class_run( ofaCheckIntegrityBin *self )
 		if( g_list_length( orphans ) > 0 ){
 			for( ito=orphans ; ito ; ito=ito->next ){
 				docid = ( ofxCounter ) ito->data;
-				str = g_strdup_printf( _( "Found orphan class document with DocId %lu" ), docid );
+				str = g_strdup_printf( _( "Found lost class document with DocId %lu" ), docid );
 				my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 				priv->class_errs += 1;
@@ -838,7 +842,7 @@ check_currency_run( ofaCheckIntegrityBin *self )
 		if( g_list_length( orphans ) > 0 ){
 			for( ito=orphans ; ito ; ito=ito->next ){
 				docid = ( ofxCounter ) ito->data;
-				str = g_strdup_printf( _( "Found orphan currency document with DocId %lu" ), docid );
+				str = g_strdup_printf( _( "Found lost currency document with DocId %lu" ), docid );
 				my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 				priv->currency_errs += 1;
@@ -970,7 +974,7 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 		if( g_list_length( orphans ) > 0 ){
 			for( ito=orphans ; ito ; ito=ito->next ){
 				docid = ( ofxCounter ) ito->data;
-				str = g_strdup_printf( _( "Found orphan account document with DocId %lu" ), docid );
+				str = g_strdup_printf( _( "Found lost account document with DocId %lu" ), docid );
 				my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 				priv->accounts_errs += 1;
@@ -1121,7 +1125,7 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 		if( g_list_length( orphans ) > 0 ){
 			for( ito=orphans ; ito ; ito=ito->next ){
 				docid = ( ofxCounter ) ito->data;
-				str = g_strdup_printf( _( "Found orphan ledger document with DocId %lu" ), docid );
+				str = g_strdup_printf( _( "Found lost ledger document with DocId %lu" ), docid );
 				my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 				priv->ledgers_errs += 1;
@@ -1257,7 +1261,7 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 		if( g_list_length( orphans ) > 0 ){
 			for( ito=orphans ; ito ; ito=ito->next ){
 				docid = ( ofxCounter ) ito->data;
-				str = g_strdup_printf( _( "Found orphan ledger document with DocId %lu" ), docid );
+				str = g_strdup_printf( _( "Found lost ledger document with DocId %lu" ), docid );
 				my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 				priv->ope_templates_errs += 1;
@@ -1348,7 +1352,7 @@ check_paimean_run( ofaCheckIntegrityBin *self )
 		if( g_list_length( orphans ) > 0 ){
 			for( ito=orphans ; ito ; ito=ito->next ){
 				docid = ( ofxCounter ) ito->data;
-				str = g_strdup_printf( _( "Found orphan mean of paiement document with DocId %lu" ), docid );
+				str = g_strdup_printf( _( "Found lost mean of paiement document with DocId %lu" ), docid );
 				my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 				priv->paimean_errs += 1;
@@ -1366,7 +1370,7 @@ check_paimean_run( ofaCheckIntegrityBin *self )
 	}
 
 	/* check for ofa_t_paimeans_doc orphans */
-	orphans = ofo_paimean_get_doc_orphans( priv->getter );
+	orphans = ofo_paimean_doc_get_orphans( priv->getter );
 	if( g_list_length( orphans ) > 0 ){
 		for( ito=orphans ; ito ; ito=ito->next ){
 			str = g_strdup_printf( _( "Found orphan mean of paiment document(s) with PmaCode %s" ), ( const gchar * ) ito->data );
@@ -1377,7 +1381,7 @@ check_paimean_run( ofaCheckIntegrityBin *self )
 	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan mean of paiement document found: OK" ));
 	}
-	ofo_paimean_free_doc_orphans( orphans );
+	ofo_paimean_free_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* progress end */
@@ -1385,6 +1389,105 @@ check_paimean_run( ofaCheckIntegrityBin *self )
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
 	}
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->paimean_errs );
+}
+
+/*
+ * check for rates integrity
+ */
+static void
+check_rate_run( ofaCheckIntegrityBin *self )
+{
+	ofaCheckIntegrityBinPrivate *priv;
+	const void *worker;
+	GtkWidget *label;
+	GList *rates, *it, *orphans, *ito;
+	gulong count, i, raterrs;
+	ofoRate *rate;
+	gchar *str;
+	const gchar *rat_mnemo;
+	ofxCounter docid;
+
+	priv = ofa_check_integrity_bin_get_instance_private( self );
+
+	worker = GUINT_TO_POINTER( OFO_TYPE_LEDGER );
+
+	if( priv->display ){
+		label = gtk_label_new( _( " Check for rates integrity " ));
+		my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
+		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	}
+
+	priv->rate_errs = 0;
+	rates = ofo_rate_get_dataset( priv->getter );
+	count = 2 + g_list_length( rates );
+	i = 0;
+
+	if( count == 0 ){
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
+	}
+
+	for( it=rates ; it ; it=it->next ){
+		rate = OFO_RATE( it->data );
+		rat_mnemo = ofo_rate_get_mnemo( rate );
+		raterrs = 0;
+
+		/* check for referenced documents which actually do not exist */
+		orphans = ofa_idoc_get_orphans( OFA_IDOC( rate ));
+		if( g_list_length( orphans ) > 0 ){
+			for( ito=orphans ; ito ; ito=ito->next ){
+				docid = ( ofxCounter ) ito->data;
+				str = g_strdup_printf( _( "Found orphan rate document with DocId %lu" ), docid );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
+				g_free( str );
+				priv->rate_errs += 1;
+				raterrs += 1;
+			}
+		}
+		ofa_idoc_free_orphans( orphans );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+		if( raterrs == 0 && priv->all_messages ){
+			str = g_strdup_printf( _( "Rate %s does not exhibit any error: OK" ), rat_mnemo );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
+			g_free( str );
+		}
+	}
+
+	/* check for ofa_t_rates_val orphans */
+	orphans = ofo_rate_valid_get_orphans( priv->getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( ito=orphans ; ito ; ito=ito->next ){
+			str = g_strdup_printf( _( "Found orphan rate validity(ies) with RatCode %s" ), ( const gchar * ) ito->data );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
+			g_free( str );
+			priv->rate_errs += 1;
+		}
+	} else if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan rate document found: OK" ));
+	}
+	ofo_rate_free_orphans( orphans );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+	/* check for ofa_t_rates_doc orphans */
+	orphans = ofo_rate_doc_get_orphans( priv->getter );
+	if( g_list_length( orphans ) > 0 ){
+		for( ito=orphans ; ito ; ito=ito->next ){
+			str = g_strdup_printf( _( "Found orphan rate docyment(s) with RatCode %s" ), ( const gchar * ) ito->data );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
+			g_free( str );
+			priv->rate_errs += 1;
+		}
+	} else if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan rate document found: OK" ));
+	}
+	ofo_rate_free_orphans( orphans );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+	/* progress end */
+	if( priv->all_messages ){
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
+	}
+	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->rate_errs );
 }
 
 /*

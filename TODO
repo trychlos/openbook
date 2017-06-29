@@ -289,8 +289,6 @@
                 (at least a second icon appears in the gnome status bar)
      2017- 4-11 nor are the nomodal pages, nor the mydndwindows
 
-1454 2017- 4-12 rate: have validity and doc orphans
-
 1455 2017- 4-12 when importing the default accounts chart on new dossier:
                 review the source file (does not fit the new table format)
 
@@ -1108,6 +1106,9 @@
 
 1453 2017- 4-11 configure.ac: does not display pwirenderer plugin infos
      2017- 4-11 fixed
+
+1454 2017- 4-12 rate: have validity and doc orphans
+     2017- 6-29 done
 
 1456 2017- 4-13 guided input: do not change the ope date when changing
                 the ope template if it is already valid
