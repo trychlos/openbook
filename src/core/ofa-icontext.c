@@ -51,7 +51,7 @@ static void       interface_base_init( ofaIContextInterface *klass );
 static void       interface_base_finalize( ofaIContextInterface *klass );
 static gboolean   on_popup_menu( ofaIContext *instance, sIContext *sdata );
 static gboolean   on_button_pressed( ofaIContext *instance, GdkEventButton *event, sIContext *sdata );
-static void       do_popup_menu( ofaIContext *instance, sIContext *sdata, guint button, guint32 time );
+static void       do_popup_menu( ofaIContext *instance, sIContext *sdata, GdkEvent *event );
 static void       enum_action_groups_cb( ofaIActionable *actionable, const gchar *group_name, GActionGroup *action_group, sIContext *sdata );
 static void       dump_menu_model( ofaIContext *instance, GMenuModel *model );
 static sIContext *get_instance_data( ofaIContext *instance );
@@ -298,7 +298,7 @@ on_popup_menu( ofaIContext *instance, sIContext *sdata )
 
 	g_debug( "%s: instance=%p, sdata=%p", thisfn, ( void * ) instance, ( void * ) sdata );
 
-	do_popup_menu( instance, sdata, 0, gtk_get_current_event_time());
+	do_popup_menu( instance, sdata, gtk_get_current_event());
 
 	return( TRUE );
 }
@@ -320,7 +320,7 @@ on_button_pressed( ofaIContext *instance, GdkEventButton *event, sIContext *sdat
 		g_debug( "%s: instance=%p, event=%p, sdata=%p",
 				thisfn, ( void * ) instance, ( void * ) event, ( void * ) sdata );
 
-		do_popup_menu( instance, sdata, event->button, event->time );
+		do_popup_menu( instance, sdata, ( GdkEvent * ) event );
 
 		stop = TRUE;
 	}
@@ -329,7 +329,7 @@ on_button_pressed( ofaIContext *instance, GdkEventButton *event, sIContext *sdat
 }
 
 static void
-do_popup_menu( ofaIContext *instance, sIContext *sdata, guint button, guint32 time )
+do_popup_menu( ofaIContext *instance, sIContext *sdata, GdkEvent *event )
 {
 	GList *it;
 	ofaIActionable *actionable;
@@ -346,7 +346,7 @@ do_popup_menu( ofaIContext *instance, sIContext *sdata, guint button, guint32 ti
 		}
 	}
 
-	gtk_menu_popup( GTK_MENU( sdata->popup ), NULL, NULL, NULL, NULL, button, time );
+	gtk_menu_popup_at_pointer( GTK_MENU( sdata->popup ), event );
 }
 
 static void
