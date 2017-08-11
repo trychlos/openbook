@@ -232,14 +232,21 @@ static void
 setup_target_window( myDndPopup *self )
 {
 	myDndPopupPrivate *priv;
-	GdkScreen *screen;
-	gint width, height;
+	GdkDisplay *display;
+	GdkWindow *window;
+	GdkMonitor *monitor;
+	GdkRectangle geometry;
+	int width, height;
 
 	priv = my_dnd_popup_get_instance_private( self );
 
-	screen = gtk_widget_get_screen( priv->source_widget );
-	width = gdk_screen_get_width( screen );
-	height = gdk_screen_get_height( screen );
+	/* from https://patchwork.kernel.org/patch/9397505/ */
+	display = gtk_widget_get_display( priv->source_widget );
+	window = gtk_widget_get_window( priv->source_widget );
+	monitor = gdk_display_get_monitor_at_window( display, window );
+	gdk_monitor_get_geometry( monitor, &geometry );
+	width = geometry.width;
+	height = geometry.height;
 
 	priv->target_window = gtk_window_new( GTK_WINDOW_POPUP );
 	gtk_window_move( GTK_WINDOW	( priv->target_window ), 0, 0 );
