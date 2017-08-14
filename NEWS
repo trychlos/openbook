@@ -29,7 +29,7 @@
 
  Bug fixes:
 
-   - 
+   - AccountProperties: don't try to get expander status for root accounts.
 
  Other changes:
 

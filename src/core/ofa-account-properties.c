@@ -68,6 +68,8 @@ typedef struct {
 	gboolean      number_ok;
 	gboolean      has_entries;
 	gboolean      balances_displayed;
+	gboolean      current_exp_status;
+	gboolean      archived_exp_status;
 
 	/* UI
 	 */
@@ -579,6 +581,7 @@ init_balances_page( ofaAccountProperties *self )
 	priv->p2_group2 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	priv->p2_group3 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	priv->p2_group4 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	g_debug( "init_balances_page: p2_group4=%p (%s)", priv->p2_group4, G_OBJECT_TYPE_NAME( priv->p2_group4 ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p21-rough-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -945,11 +948,17 @@ read_settings( ofaAccountProperties *self )
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	gtk_expander_set_expanded( GTK_EXPANDER( priv->p2_current_expander ), my_utils_boolean_from_str( cstr ));
+	priv->current_exp_status = my_utils_boolean_from_str( cstr );
+	if( !priv->root ){
+		gtk_expander_set_expanded( GTK_EXPANDER( priv->p2_current_expander ), priv->current_exp_status );
+	}
 
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	gtk_expander_set_expanded( GTK_EXPANDER( priv->p2_archived_expander ), my_utils_boolean_from_str( cstr ));
+	priv->archived_exp_status = my_utils_boolean_from_str( cstr );
+	if( !priv->root ){
+		gtk_expander_set_expanded( GTK_EXPANDER( priv->p2_archived_expander ), priv->archived_exp_status );
+	}
 
 	my_isettings_free_string_list( settings, strlist );
 	g_free( key );
@@ -968,8 +977,10 @@ write_settings( ofaAccountProperties *self )
 	priv = ofa_account_properties_get_instance_private( self );
 
 	str = g_strdup_printf( "%s;%s;",
-			gtk_expander_get_expanded( GTK_EXPANDER( priv->p2_current_expander )) ? "True":"False",
-			gtk_expander_get_expanded( GTK_EXPANDER( priv->p2_archived_expander )) ? "True":"False" );
+			( priv->root ? priv->current_exp_status : gtk_expander_get_expanded( GTK_EXPANDER( priv->p2_current_expander )))
+					? "True":"False",
+			( priv->root ? priv->archived_exp_status : gtk_expander_get_expanded( GTK_EXPANDER( priv->p2_archived_expander )))
+					? "True":"False" );
 
 	settings = ofa_igetter_get_user_settings( priv->getter );
 	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
