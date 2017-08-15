@@ -288,7 +288,7 @@ ofa_icontext_set_menu( ofaIContext *instance, ofaIActionable *actionable, GMenu 
 }
 
 /*
- * Opens a context menu.
+ * Opens a context menu via the keyboard.
  * cf. https://developer.gnome.org/gtk3/stable/gtk-migrating-checklist.html#checklist-popup-menu
  */
 static gboolean
@@ -304,7 +304,7 @@ on_popup_menu( ofaIContext *instance, sIContext *sdata )
 }
 
 /*
- * Opens a context menu.
+ * Opens a context menu with a mouse right click.
  * cf. https://developer.gnome.org/gtk3/stable/gtk-migrating-checklist.html#checklist-popup-menu
  */
 static gboolean
