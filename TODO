@@ -298,7 +298,20 @@
      2017- 5- 3 difficult as 1/ footer is aligned with header,
                 and 2/ expands on two lines
 
-1474
+1474 2017- 8-10 since Gtk 3.22 (F26), windows size and position are no
+                more restored (probably a Wayland/Mutter issue as X works
+                well)
+
+1475 2017- 8-14 generating recurrent operations no more activates recurrent
+                operations accounting page
+
+1476 2017- 8-14 reconciliation: clicking on 'print' no more activates
+                reconciliation summary page if it is already opened
+
+1477 2017- 8-15 icontext: better position the context menu, depending of
+                activated from the keyboard or by mouse
+
+1478
 
 -----------------------------------------------------------------------
  DONE
