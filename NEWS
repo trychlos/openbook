@@ -33,7 +33,9 @@
 
  Other changes:
 
-   - 
+   - Update to Fedora26 ecosystem.
+   - Replace Gtk 3.22-deprecated gtk_menu_popup().
+   - Replace Gtk 3.22-deprecated gdk_screen_get_width(), gdk_screen_get_height().
 
 -----------------------------------------------------------------------
  Version 0.71
