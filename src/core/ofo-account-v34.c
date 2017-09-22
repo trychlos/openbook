@@ -425,12 +425,14 @@ ofo_account_v34_archive_balances_ex( ofoAccountv34 *account, const GDate *exe_be
 	GList *list;
 	ofsAccountBalance *sbal;
 	const gchar *acc_id;
+	guint errs;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT_V34( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 	g_return_val_if_fail( !ofo_account_v34_is_root( account ), FALSE );
 
 	ok = FALSE;
+	errs = 0;
 	getter = ofo_base_get_getter( OFO_BASE( account ));
 	my_date_clear( &from_date );
 	last_index = archive_get_last_index( account, archive_date );
@@ -451,21 +453,23 @@ ofo_account_v34_archive_balances_ex( ofoAccountv34 *account, const GDate *exe_be
 	 *   one line for this account
 	 * It is up to the caller to take care of having no rough entries left here */
 	acc_id = ofo_account_v34_get_number( account );
-	list = ofo_entry_get_dataset_account_balance( getter, acc_id, acc_id, &from_date, archive_date );
-	sbal = list ? ( ofsAccountBalance * ) list->data : NULL;
+	list = ofo_entry_get_dataset_account_balance( getter, acc_id, acc_id, &from_date, archive_date, &errs );
+	sbal = list && errs == 0 ? ( ofsAccountBalance * ) list->data : NULL;
 	debit = sbal ? sbal->debit : 0;
 	credit = sbal ? sbal->credit : 0;
 	ofs_account_balance_list_free( &list );
 
 	/* increment with last balance if any */
-	if( last_index >= 0 ){
-		debit += ofo_account_v34_archive_get_debit( account, last_index );
-		credit += ofo_account_v34_archive_get_credit( account, last_index );
-	}
+	if( errs == 0 ){
+		if( last_index >= 0 ){
+			debit += ofo_account_v34_archive_get_debit( account, last_index );
+			credit += ofo_account_v34_archive_get_credit( account, last_index );
+		}
 
-	if( archive_do_add_dbms( account, archive_date, debit, credit )){
-		archive_do_add_list( account, archive_date, debit, credit );
-		ok = TRUE;
+		if( archive_do_add_dbms( account, archive_date, debit, credit )){
+			archive_do_add_list( account, archive_date, debit, credit );
+			ok = TRUE;
+		}
 	}
 
 	return( ok );

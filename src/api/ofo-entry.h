@@ -129,7 +129,8 @@ void            ofo_entry_dump                       ( const ofoEntry *entry );
 
 GList          *ofo_entry_get_dataset_account_balance( ofaIGetter *getter,
 															const gchar *from_account, const gchar *to_account,
-															const GDate *from_date, const GDate *to_date );
+															const GDate *from_date, const GDate *to_date,
+															guint *err_count );
 
 GList          *ofo_entry_get_dataset_ledger_balance ( ofaIGetter *getter,
 															const gchar *ledger,

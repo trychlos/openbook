@@ -424,6 +424,7 @@ ofo_entry_class_init( ofoEntryClass *klass )
  * @to_account: the ending account.
  * @from_date: the starting effect date.
  * @to_date: the ending effect date.
+ * @err_count: [allow-none][out]: error count placeholder.
  *
  * Returns the balances for non-deleted entries for the given
  * accounts, between the specified effect dates, as a GList of newly
@@ -435,7 +436,8 @@ ofo_entry_class_init( ofoEntryClass *klass )
 GList *
 ofo_entry_get_dataset_account_balance( ofaIGetter *getter,
 											const gchar *from_account, const gchar *to_account,
-											const GDate *from_date, const GDate *to_date )
+											const GDate *from_date, const GDate *to_date,
+											guint *err_count )
 {
 	static const gchar *thisfn = "ofo_entry_get_dataset_account_balance";
 	ofaHub *hub;
@@ -446,6 +448,7 @@ ofo_entry_get_dataset_account_balance( ofaIGetter *getter,
 	GSList *result, *irow, *icol;
 	ofsAccountBalance *sbal;
 	const gchar *acc_number, *cur_code;
+	guint errs;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -454,6 +457,7 @@ ofo_entry_get_dataset_account_balance( ofaIGetter *getter,
 				"FROM OFA_T_ENTRIES WHERE " );
 	first = FALSE;
 	dataset = NULL;
+	errs = 0;
 
 	if( my_strlen( from_account )){
 		g_string_append_printf( query, "ENT_ACCOUNT>='%s' ", from_account );
@@ -493,14 +497,22 @@ ofo_entry_get_dataset_account_balance( ofaIGetter *getter,
 	hub = ofa_igetter_get_hub( getter );
 
 	if( ofa_idbconnect_query_ex( ofa_hub_get_connect( hub ), query->str, &result, TRUE )){
-		for( irow=result ; irow ; irow=irow->next ){
+		for( irow=result ; irow && errs == 0 ; irow=irow->next ){
 			sbal = g_new0( ofsAccountBalance, 1 );
 			icol = ( GSList * ) irow->data;
 			acc_number = ( const gchar * ) icol->data;
 			sbal->account = ofo_account_get_by_number( getter, acc_number );
+			if( !sbal->account || !OFO_IS_ACCOUNT( sbal->account )){
+				errs += 1;
+				break;
+			}
 			icol = icol->next;
 			cur_code = ( const gchar * ) icol->data;
 			sbal->currency = ofo_currency_get_by_code( getter, cur_code );
+			if( !sbal->currency || !OFO_IS_CURRENCY( sbal->currency )){
+				errs += 1;
+				break;
+			}
 			icol = icol->next;
 			sbal->debit = my_double_set_from_sql(( const gchar * ) icol->data );
 			icol = icol->next;
@@ -510,8 +522,14 @@ ofo_entry_get_dataset_account_balance( ofaIGetter *getter,
 			dataset = g_list_prepend( dataset, sbal );
 		}
 		ofa_idbconnect_free_results( result );
+	} else {
+		errs += 1;
 	}
 	g_string_free( query, TRUE );
+
+	if( err_count ){
+		*err_count = errs;
+	}
 
 	return( g_list_reverse( dataset ));
 }

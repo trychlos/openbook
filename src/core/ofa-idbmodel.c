@@ -127,6 +127,7 @@ struct _ofaDBModelWindowPrivate {
 	GList         *plugins_list;
 	GList         *workers;
 	gboolean       work_started;
+	gboolean       run_ok;
 
 	/* UI
 	 */
@@ -375,7 +376,7 @@ ofa_idbmodel_update( ofaIGetter *getter, GtkWindow *parent )
 
 		ok = FALSE;
 		if( my_idialog_run( MY_IDIALOG( window )) == GTK_RESPONSE_OK ){
-			ok = TRUE;
+			ok = priv->run_ok;
 			my_iwindow_close( MY_IWINDOW( window ));
 		}
 	}
@@ -742,6 +743,7 @@ do_run( ofaDBModelWindow *self )
 	my_utils_msg_dialog( GTK_WINDOW( self ), type, str );
 	g_free( str );
 
+	priv->run_ok = ok;
 	gtk_widget_set_sensitive( priv->close_btn, TRUE );
 
 	/* do not continue and remove from idle callbacks list */

@@ -1831,6 +1831,7 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 	ofoAccountv34 *accountv34;
 	GDate begin, date;
 	gboolean ok;
+	gint errs;
 
 	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
@@ -1895,6 +1896,10 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 	/* for each account and date, recompute the soldes
 	 * but for the first day of the exercice */
 	dataset = ofo_account_v34_get_dataset( priv->getter );
+	if( !dataset ){
+		return( FALSE );
+	}
+	errs = 0;
 	for( ita=priv->v33_accounts ; ita ; ita=ita->next ){
 		cstr = ( const gchar * ) ita->data;
 		accountv34 = ofo_account_v34_get_by_number( dataset, cstr );
@@ -1907,7 +1912,9 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 					cstr = ( const gchar * ) itd->data;
 					my_date_set_from_sql( &date, cstr );
 					if( !my_date_is_valid( &begin ) || my_date_compare( &begin, &date ) != 0 ){
-						ofo_account_v34_archive_balances_ex( accountv34, &begin, &date );
+						if( !ofo_account_v34_archive_balances_ex( accountv34, &begin, &date )){
+							errs += 1;
+						}
 					}
 					priv->current += 1;
 					my_iprogress_pulse( priv->window, self, priv->current, priv->total );
@@ -1918,6 +1925,9 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 	ofo_account_v34_free_dataset( dataset );
 	g_list_free_full( priv->v33_accounts, ( GDestroyNotify ) g_free );
 	g_list_free_full( priv->v33_dates, ( GDestroyNotify ) g_free );
+	if( errs > 0 ){
+		return( FALSE );
+	}
 
 	/* 5 - create LedgersArc table */
 	if( !exec_query( self,

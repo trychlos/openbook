@@ -1741,6 +1741,9 @@ p6_do_open( ofaRestoreAssistant *self )
 	/* set the dossier meta to allow the settings to be saved */
 	ofa_admin_credentials_bin_set_dossier_meta( priv->p4_admin_credentials, priv->p6_dossier_meta );
 
+	/* in case of an error, do not allow this assistant to be closed */
+	my_iwindow_set_allow_close( MY_IWINDOW( self ), FALSE );
+
 	if( priv->p5_open ){
 		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 		if( !ofa_dossier_open_run_modal(
@@ -1754,6 +1757,7 @@ p6_do_open( ofaRestoreAssistant *self )
 		}
 	}
 
+	my_iwindow_set_allow_close( MY_IWINDOW( self ), TRUE );
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 
 	return( G_SOURCE_REMOVE );

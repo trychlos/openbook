@@ -1188,7 +1188,7 @@ eval_account( ofsFormulaHelper *helper )
 	DEBUG( "%s: begin=%s, end=%s", thisfn, cbegin, cend );
 
 	dataset = ofo_entry_get_dataset_account_balance(
-					priv->getter, cbegin, cend, &priv->begin_date, &priv->end_date );
+					priv->getter, cbegin, cend, &priv->begin_date, &priv->end_date, NULL );
 	amount = 0;
 	for( it=dataset ; it ; it=it->next ){
 		sbal = ( ofsAccountBalance * ) it->data;
