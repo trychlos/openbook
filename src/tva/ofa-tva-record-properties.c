@@ -1198,6 +1198,7 @@ eval_account( ofsFormulaHelper *helper )
 	}
 
 	res = ofa_amount_to_str( amount, NULL, priv->getter );
+	ofs_account_balance_list_free( &dataset );
 
 	DEBUG( "%s: ACCOUNT(%s[;%s])=%s", thisfn, cbegin, cend, res );
 
