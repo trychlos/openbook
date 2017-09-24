@@ -27,6 +27,7 @@
 #endif
 
 #include "my/my-date.h"
+#include "my/my-double.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -39,7 +40,6 @@
 #include "api/ofo-account-v34.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-entry.h"
-#include "api/ofs-account-balance.h"
 
 /* priv instance data
  */
@@ -186,6 +186,7 @@ typedef struct {
 static void           archives_list_free_detail( GList *fields );
 static void           archives_list_free( ofoAccountv34 *account );
 static ofoAccountv34 *account_find_by_number( GList *set, const gchar *number );
+static gboolean       entry_get_account_balance( ofoAccountv34 *account, const GDate *from_date, const GDate *to_date, ofxAmount *debit, ofxAmount *credit );
 static gboolean       archive_do_add_dbms( ofoAccountv34 *account, const GDate *date, ofxAmount debit, ofxAmount credit );
 static void           archive_do_add_list( ofoAccountv34 *account, const GDate *date, ofxAmount debit, ofxAmount credit );
 static gint           archive_get_last_index( ofoAccountv34 *account, const GDate *requested );
@@ -412,28 +413,21 @@ ofo_account_v34_is_root( const ofoAccountv34 *account )
  * @exe_begin: the beginning of the exercice.
  * @archive_date: the archived date.
  *
- * Archive accounts balances.
+ * Compute the account balance at @archive_date, and archive it into DBMS.
  */
 gboolean
 ofo_account_v34_archive_balances_ex( ofoAccountv34 *account, const GDate *exe_begin, const GDate *archive_date )
 {
 	gboolean ok;
-	ofaIGetter *getter;
 	ofxAmount debit, credit;
 	gint last_index;
 	GDate from_date;
-	GList *list;
-	ofsAccountBalance *sbal;
-	const gchar *acc_id;
-	guint errs;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT_V34( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 	g_return_val_if_fail( !ofo_account_v34_is_root( account ), FALSE );
 
 	ok = FALSE;
-	errs = 0;
-	getter = ofo_base_get_getter( OFO_BASE( account ));
 	my_date_clear( &from_date );
 	last_index = archive_get_last_index( account, archive_date );
 
@@ -452,25 +446,85 @@ ofo_account_v34_archive_balances_ex( ofoAccountv34 *account, const GDate *exe_be
 	 * ofoEntry considers all rough+validated entries, and returns
 	 *   one line for this account
 	 * It is up to the caller to take care of having no rough entries left here */
-	acc_id = ofo_account_v34_get_number( account );
-	list = ofo_entry_get_dataset_account_balance( getter, acc_id, acc_id, &from_date, archive_date, &errs );
-	sbal = list && errs == 0 ? ( ofsAccountBalance * ) list->data : NULL;
-	debit = sbal ? sbal->debit : 0;
-	credit = sbal ? sbal->credit : 0;
-	ofs_account_balance_list_free( &list );
-
-	/* increment with last balance if any */
-	if( errs == 0 ){
+	if( entry_get_account_balance( account, &from_date, archive_date, &debit, &credit )){
 		if( last_index >= 0 ){
 			debit += ofo_account_v34_archive_get_debit( account, last_index );
 			credit += ofo_account_v34_archive_get_credit( account, last_index );
 		}
-
 		if( archive_do_add_dbms( account, archive_date, debit, credit )){
 			archive_do_add_list( account, archive_date, debit, credit );
 			ok = TRUE;
 		}
 	}
+
+	return( ok );
+}
+
+/**
+ * @account: the considered account.
+ * @from_date: the starting effect date.
+ * @to_date: the ending effect date.
+ * @debit: [out]: debit placeholder.
+ * @credit: [out]: credit placeholder.
+ *
+ * Compute the balance for non-deleted entries for the @account, between
+ * the specified effect dates.
+ *
+ * Returns: %TRUE if no error happened.
+ */
+static gboolean
+entry_get_account_balance( ofoAccountv34 *account, const GDate *from_date, const GDate *to_date, ofxAmount *debit, ofxAmount *credit )
+{
+	static const gchar *thisfn = "ofo_account_v34_entry_get_account_balance";
+	ofaIGetter *getter;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GString *query;
+	gchar *str;
+	GSList *result, *irow, *icol;
+	const gchar *acc_number;
+	gboolean ok;
+
+	getter = ofo_base_get_getter( OFO_BASE( account ));
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	*debit = 0;
+	*credit = 0;
+	query = g_string_new( NULL );
+	acc_number = ofo_account_v34_get_number( account );
+
+	g_string_printf( query,
+			"SELECT SUM(ENT_DEBIT),SUM(ENT_CREDIT) FROM OFA_T_ENTRIES WHERE ENT_ACCOUNT='%s' ",
+			acc_number );
+
+	if( my_date_is_valid( from_date )){
+		str = my_date_to_str( from_date, MY_DATE_SQL );
+		g_string_append_printf( query, "AND ENT_DEFFECT>='%s' ", str );
+		g_free( str );
+	}
+	if( my_date_is_valid( to_date )){
+		str = my_date_to_str( to_date, MY_DATE_SQL );
+		g_string_append_printf( query, "AND ENT_DEFFECT<='%s' ", str );
+		g_free( str );
+	}
+
+	g_string_append_printf( query, "AND ENT_STATUS!='%s' ", ofo_entry_status_get_dbms( ENT_STATUS_DELETED ));
+
+	ok = ofa_idbconnect_query_ex( connect, query->str, &result, TRUE );
+
+	if( ok ){
+		irow =result;
+		icol = ( GSList * ) irow->data;
+		*debit = my_double_set_from_sql(( const gchar * ) icol->data );
+		icol = icol->next;
+		*credit = my_double_set_from_sql(( const gchar * ) icol->data );
+		g_debug( "%s: account=%s, debit=%lf, credit=%lf",
+					thisfn, acc_number, *debit, *credit );
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_string_free( query, TRUE );
 
 	return( ok );
 }

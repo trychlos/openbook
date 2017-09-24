@@ -30,6 +30,7 @@
  Bug fixes:
 
    - AccountProperties: don't try to get expander status for root accounts.
+   - DBMS upgrade: fix account archive remediation (todo #1482).
    - DBMS upgrade: better manage the possible errors (todo #1483).
 
  Other changes:
