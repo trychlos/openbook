@@ -27,6 +27,7 @@
 
    - Rate: check validity and document orphans (todo #1454).
    - Unreconciliated/Unsettled entries: center the status indicator.
+   - Unreconciliated/Unsettled entries: have a button per action (todo #1484).
 
  Bug fixes:
 

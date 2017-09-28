@@ -320,9 +320,6 @@
 
 1480 2017- 9-18 VAT declarations: have validation date in treeview
 
-1484 2017- 9-25 unsettled entries / unreconciliated entries : have a button
-                per action
-
 1486
 
 -----------------------------------------------------------------------
@@ -1212,6 +1209,10 @@
 1483 2017- 9-21 error occured during upgrade process but still display ok
                 and the upgrade process continue, but shouldn't
      2017- 9-22 fixed
+
+1484 2017- 9-25 unsettled entries / unreconciliated entries : have a button
+                per action
+     2017- 9-28 done
 
 1485 2017- 9-28 unsettled entries / unreconciliated entries : display amount
      2017- 9-28 already done

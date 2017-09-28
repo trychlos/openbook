@@ -163,6 +163,17 @@ unreconcil_page_dispose( GObject *instance )
 }
 
 static void
+store_on_need_refilter( ofaIStore *store, ofaUnreconcilPage *self )
+{
+	ofaUnreconcilPagePrivate *priv;
+
+	priv = ofa_unreconcil_page_get_instance_private( self );
+
+	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
+	ofa_accentry_treeview_expand_all( priv->tview );
+}
+
+static void
 ofa_unreconcil_page_init( ofaUnreconcilPage *self )
 {
 	static const gchar *thisfn = "ofa_unreconcil_page_init";
@@ -290,12 +301,19 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->reconcil_action ),
 					_( "_Reconciliate..." )));
 
+	ofa_buttons_box_add_spacer( buttons_box );
+
 	/* view account action */
 	priv->vaccount_action = g_simple_action_new( "vaccount", NULL );
 	g_signal_connect( priv->vaccount_action, "activate", G_CALLBACK( action_on_vaccount_activated ), page );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->vaccount_action ),
 			_( "View the account..." ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_new_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->vaccount_action ),
+					_( "_Account..." )));
 
 	/* view entry action */
 	priv->ventry_action = g_simple_action_new( "ventry", NULL );
@@ -303,6 +321,11 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->ventry_action ),
 			_( "View the entry..." ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_new_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->ventry_action ),
+					_( "_Entry..." )));
 
 	/* view operation action */
 	priv->vope_action = g_simple_action_new( "vope", NULL );
@@ -310,6 +333,11 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->vope_action ),
 			_( "View the operation..." ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_new_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->vope_action ),
+					_( "_Operation..." )));
 }
 
 static void
@@ -535,17 +563,6 @@ refresh_status_label_rec( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTree
 			break;
 		}
 	}
-}
-
-static void
-store_on_need_refilter( ofaIStore *store, ofaUnreconcilPage *self )
-{
-	ofaUnreconcilPagePrivate *priv;
-
-	priv = ofa_unreconcil_page_get_instance_private( self );
-
-	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
-	ofa_accentry_treeview_expand_all( priv->tview );
 }
 
 static void
