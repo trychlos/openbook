@@ -320,8 +320,6 @@
 
 1480 2017- 9-18 VAT declarations: have validation date in treeview
 
-1481 2017- 9-18 FLV billing doesn't appear in unsettled entries
-
 1484 2017- 9-25 unsettled entries / unreconciliated entries : have a button
                 per action
 
@@ -1203,6 +1201,9 @@
 
 1473 2017- 6-16 deleting a single entry of an operation doesn't work ?
      2017- 6-16 fixed
+
+1481 2017- 9-18 FLV billing doesn't appear in unsettled entries
+     2017- 9-28 fixed
 
 1482 2017- 9-21 when upgrading from v32 database to v33,
                 SELECT ACC_NUMBER,ACC_LABEL,ACC_CURRENCY,ACC_ROOT,ACC_SETTLEABLE,ACC_RECONCILIABLE,ACC_FORWARDABLE,ACC_CLOSED,ACC_NOTES,ACC_UPD_USER,ACC_UPD_STAMP,ACC_CR_DEBIT,ACC_CR_CREDIT,ACC_CV_DEBIT,ACC_CV_CREDIT,ACC_FR_DEBIT,ACC_FR_CREDIT,ACC_FV_DEBIT,ACC_FV_CREDIT,ACC_KEEP_UNSETTLED,ACC_KEEP_UNRECONCILIATED FROM OFA_T_ACCOUNTS

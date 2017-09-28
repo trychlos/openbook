@@ -33,9 +33,11 @@
    - DBMS upgrade: fix account archive remediation (todo #1482).
    - DBMS upgrade: better manage the possible errors (todo #1483).
    - TVARecordProperties: fix memory leak.
+   - Unsettled entries: take the view up to date (todo #1481).
 
  Other changes:
 
+   - ofaIStore: define new "ofa-istore-need-refilter" message.
    - Update to Fedora26 ecosystem.
    - Replace Gtk 3.22-deprecated gtk_menu_popup().
    - Replace Gtk 3.22-deprecated gdk_screen_get_width(), gdk_screen_get_height().
