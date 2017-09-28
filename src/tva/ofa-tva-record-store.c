@@ -59,6 +59,7 @@ static GType st_col_types[TVA_RECORD_N_COLUMNS] = {
 		G_TYPE_UINT,   G_TYPE_STRING,					/* status_i, dope */
 		G_TYPE_STRING, 0,								/* notes, notes_png */
 		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* status_user, status_stamp, status_closing */
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* the #ofoTVARecord itself, the #ofoTVAForm */
 };
 
@@ -188,6 +189,8 @@ ofa_tva_record_store_new( ofaIGetter *getter )
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), TVA_RECORD_N_COLUMNS, st_col_types );
 
+		load_dataset( store );
+
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 		gtk_tree_sortable_set_sort_column_id(
@@ -196,7 +199,6 @@ ofa_tva_record_store_new( ofaIGetter *getter )
 
 		my_icollector_single_set_object( collector, store );
 		signaler_connect_to_signaling_system( store );
-		load_dataset( store );
 	}
 
 	return( store );
@@ -264,7 +266,7 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 	static const gchar *thisfn = "ofa_tva_record_store_set_row_by_iter";
 	ofaTVARecordStorePrivate *priv;
 	ofeVatStatus status;
-	gchar *sbegin, *send, *sdope, *stamp;
+	gchar *sbegin, *send, *sdope, *stamp, *stamp_status, *closing;
 	const gchar *notes, *cstatus;
 	ofoTVAForm *form;
 	GError *error;
@@ -281,6 +283,8 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 
 	status = ofo_tva_record_get_status( record );
 	cstatus = ofo_tva_record_status_get_abr( status );
+	stamp_status = my_stamp_to_str( ofo_tva_record_get_status_stamp( record ), MY_STAMP_DMYYHM );
+	closing = my_date_to_str( ofo_tva_record_get_status_closing( record ), ofa_prefs_date_get_display_format( priv->getter ));
 
 	notes = ofo_tva_record_get_notes( record );
 	error = NULL;
@@ -307,10 +311,15 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 			TVA_RECORD_COL_NOTES_PNG,      notes_png,
 			TVA_RECORD_COL_UPD_USER,       ofo_tva_form_get_upd_user( form ),
 			TVA_RECORD_COL_UPD_STAMP,      stamp,
+			TVA_RECORD_COL_STATUS_USER,    ofo_tva_record_get_status_user( record ),
+			TVA_RECORD_COL_STATUS_STAMP,   stamp_status,
+			TVA_RECORD_COL_STATUS_CLOSING, closing,
 			TVA_RECORD_COL_OBJECT,         record,
 			TVA_RECORD_COL_FORM,           form,
 			-1 );
 
+	g_free( stamp_status );
+	g_free( closing );
 	g_free( sbegin );
 	g_free( send );
 	g_free( sdope );

@@ -28,6 +28,8 @@
    - Rate: check validity and document orphans (todo #1454).
    - Unreconciliated/Unsettled entries: center the status indicator.
    - Unreconciliated/Unsettled entries: have a button per action (todo #1484).
+   - VAT: record current date when the user validates a declaration.
+   - VAT: complete the ofaTVARecordStore with missing datas.
 
  Bug fixes:
 
@@ -37,7 +39,6 @@
    - TVARecordProperties: fix memory leak.
    - Unreconciliated entries: take the view up to date.
    - Unsettled entries: take the view up to date (todo #1481).
-   - VAT: record current date when the user validates a declaration.
 
  Other changes:
 

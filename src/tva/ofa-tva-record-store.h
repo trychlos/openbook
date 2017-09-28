@@ -87,6 +87,9 @@ typedef struct {
  * @TVA_RECORD_COL_NOTES_PNG     : notes indicator                           Pixbuf       Yes
  * @TVA_RECORD_COL_UPD_USER      : last update user                          String       Yes
  * @TVA_RECORD_COL_UPD_STAMP     : last update timestamp                     String       Yes
+ * @TVA_RECORD_COL_STATUS_USER   : user who last changes the status          String       Yes
+ * @TVA_RECORD_COL_STATUS_STAMP  : stamp of last status change               String       Yes
+ * @TVA_RECORD_COL_STATUS_CLOSING: date of closing at validation             String       Yes
  * @TVA_RECORD_COL_OBJECT        : #ofoTVARecord object                      GObject       No
  * @TVA_RECORD_COL_FORM          : the #ofoTVAForm object                    GObject       No
  */
@@ -103,6 +106,9 @@ enum {
 	TVA_RECORD_COL_NOTES_PNG,
 	TVA_RECORD_COL_UPD_USER,
 	TVA_RECORD_COL_UPD_STAMP,
+	TVA_RECORD_COL_STATUS_USER,
+	TVA_RECORD_COL_STATUS_STAMP,
+	TVA_RECORD_COL_STATUS_CLOSING,
 	TVA_RECORD_COL_OBJECT,
 	TVA_RECORD_COL_FORM,
 	TVA_RECORD_N_COLUMNS
