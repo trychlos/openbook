@@ -478,6 +478,7 @@ validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 	gchar *msg, *send;
 	gboolean ok;
 	GtkWindow *toplevel;
+	GDate today;
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
@@ -504,6 +505,7 @@ validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 	g_free( send );
 
 	if( ok ){
-		ofo_tva_record_validate( record, VAT_STATUS_USER, NULL );
+		my_date_set_now( &today );
+		ofo_tva_record_validate( record, VAT_STATUS_USER, &today );
 	}
 }
