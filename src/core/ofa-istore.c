@@ -52,6 +52,7 @@ typedef struct {
  */
 enum {
 	INSERT = 0,
+	NEED_REFILTER,
 	N_SIGNALS
 };
 
@@ -148,6 +149,28 @@ interface_base_init( ofaIStoreInterface *klass )
 					G_TYPE_NONE,
 					1,
 					G_TYPE_POINTER );
+
+		/**
+		 * ofaiStore::ofa-istore-need-refilter:
+		 *
+		 * The signal may be emitted on the store when it wants the
+		 * treeview to refilter itself.
+		 *
+		 * Handler is of type:
+		 * 		void user_handler( ofaIStore    *store,
+		 * 							gpointer     user_data );
+		 */
+		st_signals[ NEED_REFILTER ] = g_signal_new_class_handler(
+					"ofa-istore-need-refilter",
+					OFA_TYPE_ISTORE,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					0,
+					G_TYPE_NONE );
 	}
 
 	st_initializations += 1;
