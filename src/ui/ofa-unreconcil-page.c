@@ -35,6 +35,7 @@
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
+#include "api/ofa-istore.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-operation-group.h"
 #include "api/ofa-page.h"
@@ -97,6 +98,7 @@ static void       tview_on_accchanged( ofaAccentryTreeview *view, ofoBase *objec
 static void       tview_on_accactivated( ofaAccentryTreeview *view, ofoBase *object, ofaUnreconcilPage *self );
 static void       refresh_status_label( ofaUnreconcilPage *self );
 static void       refresh_status_label_rec( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, guint *account_count, guint *entry_count );
+static void       store_on_need_refilter( ofaIStore *store, ofaUnreconcilPage *self );
 static void       action_on_collapse_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
 static void       action_on_expand_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
 static void       action_on_reconcil_activated( GSimpleAction *action, GVariant *empty, ofaUnreconcilPage *self );
@@ -337,6 +339,7 @@ action_page_v_init_view( ofaActionPage *page )
 	 *  menus definition) */
 	priv->store = ofa_accentry_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
+	g_signal_connect( priv->store, "ofa-istore-need-refilter", G_CALLBACK( store_on_need_refilter ), page );
 
 	ofa_accentry_treeview_expand_all( priv->tview );
 	refresh_status_label( OFA_UNRECONCIL_PAGE( page ));
@@ -391,8 +394,14 @@ tview_is_visible_entry( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTreeIt
 	const gchar *acc_number;
 	ofoAccount *account;
 	ofoConcil *concil;
+	ofeEntryStatus status;
 
 	priv = ofa_unreconcil_page_get_instance_private( self );
+
+	status = ofo_entry_get_status( entry );
+	if( status == ENT_STATUS_DELETED ){
+		return( FALSE );
+	}
 
 	acc_number = ofo_entry_get_account( entry );
 	account = ofo_account_get_by_number( priv->getter, acc_number );
@@ -526,6 +535,17 @@ refresh_status_label_rec( ofaUnreconcilPage *self, GtkTreeModel *tmodel, GtkTree
 			break;
 		}
 	}
+}
+
+static void
+store_on_need_refilter( ofaIStore *store, ofaUnreconcilPage *self )
+{
+	ofaUnreconcilPagePrivate *priv;
+
+	priv = ofa_unreconcil_page_get_instance_private( self );
+
+	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
+	ofa_accentry_treeview_expand_all( priv->tview );
 }
 
 static void
