@@ -288,7 +288,7 @@ setup_columns( ofaAccentryTreeview *self )
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCENTRY_COL_CREDIT,               _( "Credit" ),          NULL );
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ACCENTRY_COL_OPE_NUMBER,           _( "Ope." ),        _( "Operation number" ));
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ACCENTRY_COL_ENT_NUMBER,           _( "Ent.num" ),     _( "Accentry number" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCENTRY_COL_STATUS,               _( "Status" ),          NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCENTRY_COL_STATUS,               _( "Status" ),          NULL );
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ACCENTRY_COL_LABEL );
 	ofa_itvcolumnable_twins_group_new( OFA_ITVCOLUMNABLE( self ), "amount", ACCENTRY_COL_DEBIT, ACCENTRY_COL_CREDIT, -1 );

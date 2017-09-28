@@ -26,6 +26,7 @@
  New features and improvements:
 
    - Rate: check validity and document orphans (todo #1454).
+   - Unreconciliated/Unsettled entries: center the status indicator.
 
  Bug fixes:
 
