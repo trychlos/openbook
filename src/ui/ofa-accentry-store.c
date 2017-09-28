@@ -75,7 +75,7 @@ static GType st_col_types[ACCENTRY_N_COLUMNS] = {
 	G_TYPE_STRING,										/* acc_keep_unreconciliated */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ent_dope, ent_deffect, ent_ref */
 	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ent_ledger, ent_ope_template, ent_debit */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ent_credit, ent_openum, ent_entnum,  */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ent_credit, ent_openum, ent_entnum */
 	G_TYPE_INT, G_TYPE_STRING, 							/* ent_entnum_i, ent_status */
 	G_TYPE_OBJECT										/* the #ofoEntry or #ofoAccount */
 };
@@ -97,6 +97,7 @@ static void     update_column_rec( ofaAccentryStore *self, const gchar *prev_id,
 static void     signaler_connect_to_signaling_system( ofaAccentryStore *self );
 static void     signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaAccentryStore *self );
 static void     signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, ofaAccentryStore *self );
+static void     signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaAccentryStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccentryStore, ofa_accentry_store, OFA_TYPE_TREE_STORE, 0,
 		G_ADD_PRIVATE( ofaAccentryStore ))
@@ -198,15 +199,16 @@ ofa_accentry_store_new( ofaIGetter *getter )
 	gtk_tree_store_set_column_types(
 			GTK_TREE_STORE( store ), ACCENTRY_N_COLUMNS, st_col_types );
 
+	// before setting default sort function to optimize the bulk insertion
+	load_store( store );
+
 	gtk_tree_sortable_set_default_sort_func(
 			GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 
 	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( store ),
-			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
+			GTK_TREE_SORTABLE( store ), GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 	signaler_connect_to_signaling_system( store );
-	load_store( store );
 
 	return( store );
 }
@@ -249,18 +251,19 @@ static void
 load_store( ofaAccentryStore *self )
 {
 	ofaAccentryStorePrivate *priv;
-	GList *account_dataset, *entry_dataset, *it;
+	GList *dataset, *it;
 
 	priv = ofa_accentry_store_get_instance_private( self );
 
-	account_dataset = ofo_account_get_dataset( priv->getter );
-	entry_dataset = ofo_entry_get_dataset( priv->getter );
+	dataset = ofo_account_get_dataset( priv->getter );
 
-	for( it=account_dataset ; it ; it=it->next ){
+	for( it=dataset ; it ; it=it->next ){
 		account_insert_row( self, OFO_ACCOUNT( it->data ));
 	}
 
-	for( it=entry_dataset ; it ; it=it->next ){
+	dataset = ofo_entry_get_dataset( priv->getter );
+
+	for( it=dataset ; it ; it=it->next ){
 		entry_insert_row( self, OFO_ENTRY( it->data ));
 	}
 }
@@ -418,6 +421,10 @@ ofa_accentry_store_is_empty( ofaAccentryStore *store )
 
 /*
  * Returns: %TRUE if the account has been found.
+ *
+ * NB: as of 2017-09-26 (Fedora 26), it happens that the GtkTreeStore
+ * doesn't resort itself when inserting a new row. So finding an account
+ * implies to look at each row.
  */
 static gboolean
 find_account_by_number( ofaAccentryStore *self, const gchar *account, GtkTreeIter *iter )
@@ -428,9 +435,11 @@ find_account_by_number( ofaAccentryStore *self, const gchar *account, GtkTreeIte
 	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
 		while( TRUE ){
 			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, ACCENTRY_COL_ACCOUNT, &row_account, -1 );
-			cmp = my_collate( account, row_account );
+			cmp = my_collate( row_account, account );
+			g_debug( "find_account_by_number: account=%s, row_account=%s", account, row_account );
 			g_free( row_account );
-			if( cmp <= 0 ){
+			//if( cmp >= 0 ){
+			if( cmp == 0 ){
 				return( cmp == 0 );
 			}
 			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
@@ -549,6 +558,9 @@ signaler_connect_to_signaling_system( ofaAccentryStore *self )
 
 	handler = g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), self );
 	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), self );
+	priv->signaler_handlers = g_list_prepend( priv->signaler_handlers, ( gpointer ) handler );
 }
 
 /*
@@ -567,9 +579,12 @@ signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, ofaAccentryStore 
 
 	if( OFO_IS_ACCOUNT( object )){
 		account_insert_row( self, OFO_ACCOUNT( object ));
+		g_signal_emit_by_name( self, "ofa-istore-need-refilter" );
 
 	} else if( OFO_IS_ENTRY( object )){
 		entry_insert_row( self, OFO_ENTRY( object ));
+		// fix #1481
+		g_signal_emit_by_name( self, "ofa-istore-need-refilter" );
 	}
 }
 
@@ -608,6 +623,44 @@ signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *
 
 		} else if( OFO_IS_OPE_TEMPLATE( object )){
 			set_ope_template_new_id( self, prev_id, ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object )));
+		}
+	}
+}
+
+/*
+ * SIGNALER_BASE_DELETED signal handler
+ */
+static void
+signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, ofaAccentryStore *self )
+{
+	static const gchar *thisfn = "ofa_accentry_store_signaler_on_deleted_base";
+	GtkTreeIter iter;
+	const gchar *acc_number;
+
+	g_debug( "%s: signaler=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) signaler,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_ACCOUNT( object )){
+		acc_number = ofo_account_get_number( OFO_ACCOUNT( object ));
+		if( find_account_by_number( self, acc_number, &iter )){
+			if( gtk_tree_model_iter_has_child( GTK_TREE_MODEL( self ), &iter )){
+				g_warning( "%s: deleted account %s has still at least one child", thisfn, acc_number );
+			} else {
+				gtk_tree_store_remove( GTK_TREE_STORE( self ), &iter );
+				g_debug( "%s: removing account %s from store", thisfn, acc_number );
+				g_signal_emit_by_name( self, "ofa-istore-need-refilter" );
+			}
+		} else {
+			g_warning( "%s: deleted account %s not found in store", thisfn, acc_number );
+		}
+
+	} else if( OFO_IS_ENTRY( object )){
+		if( find_entry_by_number( self, ofo_entry_get_number( OFO_ENTRY( object )), &iter )){
+			gtk_tree_store_remove( GTK_TREE_STORE( self ), &iter );
+			g_signal_emit_by_name( self, "ofa-istore-need-refilter" );
 		}
 	}
 }
