@@ -304,6 +304,9 @@ setup_columns( ofaTVARecordTreeview *self )
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), TVA_RECORD_COL_NOTES_PNG,         "",                 _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_UPD_USER,       _( "User" ),           _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_UPD_STAMP,          NULL,              _( "Last update timestamp" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STATUS_USER,        NULL,              _( "Status last change user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STATUS_STAMP,       NULL,              _( "Status last change timestamp" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STATUS_CLOSING, _( "Closed" ),         _( "Validation date" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), TVA_RECORD_COL_LABEL );
 }

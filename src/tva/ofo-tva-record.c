@@ -1489,12 +1489,13 @@ ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate 
 	g_string_append_printf( gstr, "TFO_STATUS_STAMP='%s',", stamp_str );
 	g_free( stamp_str );
 
-	if( status == VAT_STATUS_PCLOSE ){
+	if( status == VAT_STATUS_PCLOSE || status == VAT_STATUS_USER ){
 		g_return_val_if_fail( my_date_is_valid( closing ), FALSE );
 		tva_record_set_status_closing( record, closing );
 		sdate = my_date_to_str( closing, MY_DATE_SQL );
 		g_string_append_printf( gstr, "TFO_STATUS_CLOSING='%s'", sdate );
 		g_free( sdate );
+
 	} else {
 		tva_record_set_status_closing( record, NULL );
 		gstr = g_string_append( gstr, "TFO_STATUS_CLOSING=NULL" );

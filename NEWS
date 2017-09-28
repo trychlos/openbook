@@ -29,7 +29,7 @@
    - Unreconciliated/Unsettled entries: center the status indicator.
    - Unreconciliated/Unsettled entries: have a button per action (todo #1484).
    - VAT: record current date when the user validates a declaration.
-   - VAT: complete the ofaTVARecordStore with missing datas.
+   - VAT: complete the ofaTVARecordStore with missing datas (todo #1480).
 
  Bug fixes:
 
