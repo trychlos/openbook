@@ -2740,7 +2740,6 @@ do_unconciliate_iconcil( ofaReconcilPage *self, GList *store_refs, GList **obj_l
 
 		gtk_tree_model_get( tmodel, &iter, RECONCIL_COL_OBJECT, &object, -1 );
 		g_return_if_fail( object && OFA_IS_ICONCIL( object ));
-		ofa_iconcil_clear_data( OFA_ICONCIL( object ));
 
 		if( gtk_tree_path_get_depth( path ) == 1 ){
 			g_object_unref( object );

@@ -315,8 +315,6 @@
                 - dialog box is confirm (not validate)
                 - progress box is recording (not validating)
 
-1486 2017- 9-29 ofaIConcil: get rid of attached sdata
-
 1487
 
 -----------------------------------------------------------------------
@@ -1220,6 +1218,9 @@
 
 1485 2017- 9-28 unsettled entries / unreconciliated entries : display amount
      2017- 9-28 already done
+
+1486 2017- 9-29 ofaIConcil: get rid of attached sdata
+     2017- 9-29 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

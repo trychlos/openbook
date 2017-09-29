@@ -39,18 +39,7 @@
 
 #include "core/ofa-iconcil.h"
 
-/* this structure is held by the object
- * this is primarily thought to optimize the ofa_iconcil_get_concil()
- * method.
- */
-typedef struct {
-	ofoConcil  *concil;
-	gchar      *type;
-}
-	sIConcil;
-
 #define ICONCIL_LAST_VERSION            1
-#define ICONCIL_DATA                    "ofa-iconcil-data"
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
@@ -59,9 +48,6 @@ static void         interface_base_init( ofaIConcilInterface *klass );
 static void         interface_base_finalize( ofaIConcilInterface *klass );
 static const gchar *iconcil_get_type( const ofaIConcil *instance );
 static ofxCounter   iconcil_get_id( const ofaIConcil *instance );
-static ofoConcil   *get_concil_from_collection( GList *collection, const gchar *type, ofxCounter id );
-static sIConcil    *get_iconcil_data( const ofaIConcil *instance, gboolean search );
-static void         on_instance_finalized( sIConcil *sdata, GObject *finalized_instance );
 
 /**
  * ofa_iconcil_get_type:
@@ -260,18 +246,11 @@ ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval )
 void
 ofa_iconcil_new_concil_ex( ofaIConcil *instance, ofoConcil *concil )
 {
-	sIConcil *sdata;
-
 	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
 
-	sdata = get_iconcil_data( instance, FALSE );
-	g_return_if_fail( !sdata->concil );
-
 	ofo_concil_insert( concil );
 	ofo_concil_add_id( concil, iconcil_get_type( instance ), iconcil_get_id( instance ));
-
-	sdata->concil = concil;
 }
 
 /**
@@ -282,65 +261,10 @@ ofa_iconcil_new_concil_ex( ofaIConcil *instance, ofoConcil *concil )
 void
 ofa_iconcil_add_to_concil( ofaIConcil *instance, ofoConcil *concil )
 {
-	sIConcil *sdata;
-
 	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
 
-	sdata = get_iconcil_data( instance, FALSE );
-	g_return_if_fail( !sdata->concil );
-
 	ofo_concil_add_id( concil, iconcil_get_type( instance ), iconcil_get_id( instance ));
-
-	sdata->concil = concil;
-}
-
-/**
- * ofa_iconcil_clear_data:
- * @instance: this #ofaIConcil instance.
- *
- * Clear the data attached to the @instance.
- *
- * This method does not update the DBMS.
- *
- * When unconciliating a conciliation group, it is expected that this
- * method be called for each member of the group (the #ofaIConcil
- * instance), and that the #ofo_concil_delete() be then called once
- * for actualy deleting the conciliation group from the DBMS.
- */
-void
-ofa_iconcil_clear_data( ofaIConcil *instance )
-{
-	static const gchar *thisfn = "ofa_iconcil_clear_data";
-	sIConcil *sdata;
-
-	g_debug( "%s: type=%s, id=%ld", thisfn, iconcil_get_type( instance ), iconcil_get_id( instance ));
-
-	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
-
-	sdata = get_iconcil_data( instance, FALSE );
-	sdata->concil = NULL;
-}
-
-/**
- * ofa_iconcil_remove_concil:
- * @instance:
- * @concil: [allow-none]:
- *
- * Clear the data attached to the @instance, and delete the @concil from
- * the database.
- */
-void
-ofa_iconcil_remove_concil( ofaIConcil *instance, ofoConcil *concil )
-{
-	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
-
-	ofa_iconcil_clear_data( instance );
-
-	if( concil ){
-		g_return_if_fail( OFO_IS_CONCIL( concil ));
-		ofo_concil_delete( concil );
-	}
 }
 
 /**
@@ -391,65 +315,4 @@ iconcil_get_id( const ofaIConcil *instance )
 	id = OFA_ICONCIL_GET_INTERFACE( instance )->get_object_id( instance );
 
 	return( id );
-}
-
-static ofoConcil *
-get_concil_from_collection( GList *collection, const gchar *type, ofxCounter id )
-{
-	GList *it;
-	ofoConcil *concil;
-
-	for( it=collection ; it ; it=it->next ){
-		concil = ( ofoConcil * ) it->data;
-		g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), NULL );
-		if( ofo_concil_has_member( concil, type, id )){
-			return( concil );
-		}
-	}
-
-	return( NULL );
-}
-
-static sIConcil *
-get_iconcil_data( const ofaIConcil *instance, gboolean search )
-{
-	ofaIGetter *getter;
-	sIConcil *sdata;
-	GList *collection;
-	myICollector *collector;
-
-	sdata = ( sIConcil * ) g_object_get_data( G_OBJECT( instance ), ICONCIL_DATA );
-
-	if( !sdata ){
-		sdata = g_new0( sIConcil, 1 );
-		g_object_set_data( G_OBJECT( instance ), ICONCIL_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
-		sdata->type = g_strdup( iconcil_get_type( instance ));
-
-		if( search ){
-			getter = ofo_base_get_getter( OFO_BASE( instance ));
-			g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
-
-			collector = ofa_igetter_get_collector( getter );
-			collection = my_icollector_collection_get( collector, OFO_TYPE_CONCIL, getter );
-			sdata->concil = get_concil_from_collection( collection, sdata->type, iconcil_get_id( instance ));
-		}
-	}
-
-	return( sdata );
-}
-
-/*
- * ofaIConcil instance finalization
- */
-static void
-on_instance_finalized( sIConcil *sdata, GObject *finalized_instance )
-{
-	static const gchar *thisfn = "ofa_iconcil_on_instance_finalized";
-
-	g_debug( "%s: sdata=%p, finalized_instance=%p",
-			thisfn, ( void * ) sdata, ( void * ) finalized_instance );
-
-	g_free( sdata->type );
-	g_free( sdata );
 }

@@ -1462,7 +1462,6 @@ signaler_on_deleted_concil_cb( ofoConcil *concil, const gchar *type, ofxCounter 
 		gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, RECONCIL_COL_OBJECT, &row_object, -1 );
 		g_return_if_fail( row_object && OFA_IS_ICONCIL( row_object ));
 		g_object_unref( row_object );
-		ofa_iconcil_clear_data( OFA_ICONCIL( row_object ));
 		concil_set_row_with_data( self, 0, NULL, &iter );
 
 	} else {

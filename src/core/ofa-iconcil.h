@@ -129,11 +129,6 @@ void         ofa_iconcil_new_concil_ex             ( ofaIConcil *instance,
 void         ofa_iconcil_add_to_concil             ( ofaIConcil *instance,
 														ofoConcil *concil );
 
-void         ofa_iconcil_clear_data                ( ofaIConcil *instance );
-
-void         ofa_iconcil_remove_concil             ( ofaIConcil *instance,
-														ofoConcil *concil );
-
 const gchar *ofa_iconcil_get_instance_type         ( const ofaIConcil *instance );
 
 ofxCounter   ofa_iconcil_get_instance_id           ( const ofaIConcil *instance );

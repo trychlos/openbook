@@ -3996,7 +3996,6 @@ signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, void *empty )
 static void
 signaler_on_deleted_entry( ofaISignaler *signaler, ofoEntry *entry )
 {
-	static const gchar *thisfn = "ofo_entry_signaler_on_deleted_entry";
 	ofxCounter id;
 	ofoConcil *concil;
 	ofaIGetter *getter;
@@ -4012,9 +4011,7 @@ signaler_on_deleted_entry( ofaISignaler *signaler, ofoEntry *entry )
 	/* if entry was conciliated, then cleanup whole conciliation group */
 	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 	if( concil ){
-		ofa_iconcil_remove_concil( OFA_ICONCIL( entry ), concil );
-	} else {
-		g_debug( "%s: entry=%p: conciliation group is null", thisfn, ( void * ) entry );
+		ofo_concil_delete( concil );
 	}
 }
 

@@ -43,6 +43,7 @@
 
  Other changes:
 
+   - ofaIConcil: get rid of instance data (todo #1486).
    - ofaIStore: define new "ofa-istore-need-refilter" message.
    - Update to Fedora26 ecosystem.
    - Replace Gtk 3.22-deprecated gtk_menu_popup().
