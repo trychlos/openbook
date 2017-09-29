@@ -79,7 +79,7 @@ typedef struct {
 
 	GSimpleAction           *cancel_action;
 	GSimpleAction           *waiting_action;
-	GSimpleAction           *validate_action;
+	GSimpleAction           *accounting_action;
 
 	/* update status input
 	 */
@@ -119,7 +119,7 @@ static void       on_row_selected( ofaRecurrentRunTreeview *view, GList *list, o
 static void       tview_examine_selected( ofaRecurrentRunPage *self, GList *selected, guint *cancelled, guint *waiting, guint *validated );
 static void       action_on_cancel_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
 static void       action_on_wait_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
-static void       action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
+static void       action_on_accounting_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
 static gboolean   action_user_confirm( ofaRecurrentRunPage *self );
 static gboolean   action_update_status( ofaRecurrentRunPage *self );
 static gboolean   actualize_selection( ofaRecurrentRunPage *self );
@@ -171,7 +171,7 @@ recurrent_run_page_dispose( GObject *instance )
 
 		g_object_unref( priv->cancel_action );
 		g_object_unref( priv->waiting_action );
-		g_object_unref( priv->validate_action );
+		g_object_unref( priv->accounting_action );
 	}
 
 	/* chain up to the parent class */
@@ -362,16 +362,16 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 			OFA_IACTIONABLE( self ), btn, priv->settings_prefix, G_ACTION( priv->waiting_action ));
 	g_simple_action_set_enabled( priv->waiting_action, FALSE );
 
-	priv->validate_action = g_simple_action_new( "validate", NULL );
-	g_signal_connect( priv->validate_action, "activate", G_CALLBACK( action_on_validate_activated ), self );
+	priv->accounting_action = g_simple_action_new( "accounting", NULL );
+	g_signal_connect( priv->accounting_action, "activate", G_CALLBACK( action_on_accounting_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->validate_action ),
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->accounting_action ),
 			_( "Send to accounting..." ));
-	btn = my_utils_container_get_child_by_name( parent, "p2-validate-btn" );
+	btn = my_utils_container_get_child_by_name( parent, "p2-account-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	ofa_iactionable_set_button(
-			OFA_IACTIONABLE( self ), btn, priv->settings_prefix, G_ACTION( priv->validate_action ));
-	g_simple_action_set_enabled( priv->validate_action, FALSE );
+			OFA_IACTIONABLE( self ), btn, priv->settings_prefix, G_ACTION( priv->accounting_action ));
+	g_simple_action_set_enabled( priv->accounting_action, FALSE );
 }
 
 static void
@@ -491,7 +491,7 @@ on_row_selected( ofaRecurrentRunTreeview *view, GList *list, ofaRecurrentRunPage
 
 	g_simple_action_set_enabled( priv->cancel_action, waiting > 0 );
 	g_simple_action_set_enabled( priv->waiting_action, cancelled > 0 );
-	g_simple_action_set_enabled( priv->validate_action, waiting > 0 );
+	g_simple_action_set_enabled( priv->accounting_action, waiting > 0 );
 }
 
 static void
@@ -568,7 +568,7 @@ action_on_wait_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRu
 }
 
 static void
-action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self )
+action_on_accounting_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
 
@@ -581,7 +581,7 @@ action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaRecurre
 		priv->update_new_status = REC_STATUS_VALIDATED;
 		priv->update_cb = ( GSourceFunc ) action_on_object_validated;
 		priv->update_with_progress = TRUE;
-		priv->update_title = _( " Validating operations " );
+		priv->update_title = _( " Recording operations " );
 		priv->update_worker = GUINT_TO_POINTER( priv->update_new_status );
 		my_iprogress_start_work( MY_IPROGRESS( self ), priv->update_worker, NULL );
 
@@ -608,7 +608,7 @@ action_user_confirm( ofaRecurrentRunPage *self )
 	count = g_list_length( selected );
 	ofa_recurrent_run_treeview_free_selected( selected );
 
-	msg = g_strdup_printf( _( "About to validate %d waiting operation(s).\n"
+	msg = g_strdup_printf( _( "About to send to accounting %d waiting operation(s).\n"
 								"Are you sure ?" ),
 			count );
 
@@ -619,30 +619,6 @@ action_user_confirm( ofaRecurrentRunPage *self )
 
 	return( ok );
 }
-
-#if 0
-static void
-action_user_result( ofaRecurrentRunPage *self )
-{
-	ofaRecurrentRunPagePrivate *priv;
-	gchar *str;
-	GtkWindow *toplevel;
-
-	priv = ofa_recurrent_run_page_get_instance_private( self );
-
-	if( priv->update_ope_count == 0 ){
-		str = g_strdup( _( "No created operation" ));
-	} else {
-		str = g_strdup_printf( _( "%u generated operations (%u inserted entries)" ),
-				priv->update_ope_count, priv->update_entry_count );
-	}
-
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	my_utils_msg_dialog( toplevel, GTK_MESSAGE_INFO, str );
-
-	g_free( str );
-}
-#endif
 
 /*
  * if this a validation and concerns more than one waiting operation,

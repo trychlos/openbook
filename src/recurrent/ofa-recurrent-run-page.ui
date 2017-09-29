@@ -133,7 +133,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="p2-validate-btn">
+                  <object class="GtkButton" id="p2-account-btn">
                     <property name="label" translatable="yes">_Account</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>

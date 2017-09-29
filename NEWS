@@ -26,6 +26,7 @@
  New features and improvements:
 
    - Rate: check validity and document orphans (todo #1454).
+   - Recurrent: more comprehensive label when recording waiting operations (todo #1478).
    - Unreconciliated/Unsettled entries: center the status indicator.
    - Unreconciliated/Unsettled entries: have a button per action (todo #1484).
    - VAT: record current date when the user validates a declaration.

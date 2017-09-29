@@ -311,10 +311,6 @@
 1477 2017- 8-15 icontext: better position the context menu, depending of
                 activated from the keyboard or by mouse
 
-1478 2017- 9-18 when recording waiting recurrent operation:
-                - dialog box is confirm (not validate)
-                - progress box is recording (not validating)
-
 1487
 
 -----------------------------------------------------------------------
@@ -1191,6 +1187,11 @@
 
 1473 2017- 6-16 deleting a single entry of an operation doesn't work ?
      2017- 6-16 fixed
+
+1478 2017- 9-18 when recording waiting recurrent operation:
+                - dialog box is confirm (not validate)
+                - progress box is recording (not validating)
+     2017- 9-29 done
 
 1479 2017- 9-18 on view entries, conciliation group is updated in the treeview
                 but not in the reference to see the conciliation group
