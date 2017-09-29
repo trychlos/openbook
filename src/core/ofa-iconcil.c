@@ -193,26 +193,24 @@ ofa_iconcil_get_interface_version( GType type )
 
 /**
  * ofa_iconcil_get_concil:
- * @instance: a #ofaIConcil object.
+ * @instance: an #ofaIConcil instance.
  *
- * Returns: the reconciliation group this instance belongs to, or %NULL.
- *
- * The reconciliation group is first searched in the attached sIConcil
- * structure.
- * When first searching for this structure, the conciliation group is
- * searched for in the in-memory collection which is attached to the
- * ICollector, then only is requested from the database.
+ * Returns: the reconciliation group this @instance belongs to, or %NULL.
  */
 ofoConcil *
 ofa_iconcil_get_concil( const ofaIConcil *instance )
 {
-	sIConcil *sdata;
+	ofaIGetter *getter;
+	ofoConcil *concil;
 
 	g_return_val_if_fail( instance && OFA_IS_ICONCIL( instance ), NULL );
 
-	sdata = get_iconcil_data( instance, TRUE );
+	getter = ofo_base_get_getter( OFO_BASE( instance ));
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	return( sdata->concil );
+	concil = ofo_concil_get_by_other_id( getter, iconcil_get_type( instance ), iconcil_get_id( instance ));
+
+	return( concil );
 }
 
 /**

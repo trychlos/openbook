@@ -48,6 +48,7 @@
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignaler.h"
+#include "api/ofa-istore.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-operation-group.h"
 #include "api/ofa-page.h"
@@ -306,6 +307,7 @@ static void       setup_status_filter( ofaEntryPage *self );
 static void       setup_period_filter( ofaEntryPage *self );
 static void       setup_edit_switch( ofaEntryPage *self );
 static void       setup_treeview( ofaEntryPage *self );
+static void       store_on_need_refilter( ofaIStore *store, ofaEntryPage *self );
 static gboolean   tview_is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaEntryPage *self );
 static gboolean   tview_apply_stdfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean   tview_apply_extfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -741,10 +743,21 @@ setup_treeview( ofaEntryPage *self )
 
 	priv->store = ofa_entry_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
+	g_signal_connect( priv->store, "ofa-istore-need-refilter", G_CALLBACK( store_on_need_refilter ), self );
 	g_object_unref( priv->store );
 
 	handler = g_signal_connect( priv->store, "ofa-changed", G_CALLBACK( store_on_changed ), self );
 	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
+}
+
+static void
+store_on_need_refilter( ofaIStore *store, ofaEntryPage *self )
+{
+	static const gchar *thisfn = "ofa_entry_page_store_on_need_refilter";
+
+	g_debug( "%s: store=%p, self=%p", thisfn, ( void * ) store, ( void * ) self );
+
+	refresh_display( self );
 }
 
 /*
@@ -1278,6 +1291,7 @@ tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 static void
 tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self )
 {
+	static const gchar *thisfn = "ofa_entry_page_tview_on_row_selected";
 	ofaEntryPagePrivate *priv;
 	gboolean editable;
 	ofxCounter id;
@@ -1296,10 +1310,12 @@ tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage 
 		priv->sel_opes = id > 0 ? g_list_append( NULL, ( gpointer ) id ) : NULL;
 
 		id = row_get_concil_id( self, selection );
+		g_debug( "%s: concil_id=%lu", thisfn, id );
 		g_simple_action_set_enabled( priv->vconcil_action, id > 0 );
 		priv->sel_concil_id = id;
 
 		id = row_get_settlement_id( self, selection );
+		g_debug( "%s: settle_id=%lu", thisfn, id );
 		g_simple_action_set_enabled( priv->vsettle_action, id > 0 );
 		priv->sel_settle_id = id;
 
@@ -2649,11 +2665,19 @@ static void
 refresh_display( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
+	GtkTreeSelection *selection;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
+	// refresh treeview
 	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
+
+	// refresh balance
 	balances_compute( self );
+
+	// refresh selection
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( priv->tview ));
+	tview_on_row_selected( OFA_TVBIN( priv->tview ), selection, self );
 }
 
 /*

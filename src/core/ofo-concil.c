@@ -62,13 +62,11 @@ typedef struct {
 }
 	ofoConcilPrivate;
 
-static ofoConcil *concil_get_by_query( const gchar *query, ofaIGetter *getter );
 static void       concil_set_id( ofoConcil *concil, ofxCounter id );
 static void       concil_add_other_id( ofoConcil *concil, const gchar *type, ofxCounter id );
 static GList     *get_orphans( ofaIGetter *getter, const gchar *table );
 static GList     *get_other_orphans( ofaIGetter *getter, const gchar *type, const gchar *column, const gchar *table );
 static gboolean   concil_do_insert( ofoConcil *concil, const ofaIDBConnect *connect );
-static gint       concil_cmp_by_ptr( ofoConcil *a, ofoConcil *b );
 static gboolean   concil_do_insert_id( ofoConcil *concil, const gchar *type, ofxCounter id, const ofaIDBConnect *connect );
 static gboolean   concil_do_delete( ofoConcil *concil, const ofaIDBConnect *connect );
 static void       icollectionable_iface_init( myICollectionableInterface *iface );
@@ -163,27 +161,29 @@ ofo_concil_get_dataset( ofaIGetter *getter )
  * @getter: a #ofaIGetter instance.
  * @rec_id: the identifier of the requested conciliation group.
  *
- * Returns: a newly allocated object, or %NULL.
+ * Returns: the conciliation group, or %NULL.
  *
- * Only the group header is loaded. The list of individuals are not.
+ * The returned conciliation group is owned by the #myICollector instance,
+ * and should be released by the caller.
  */
 ofoConcil *
 ofo_concil_get_by_id( ofaIGetter *getter, ofxCounter rec_id )
 {
+	GList *dataset, *it;
 	ofoConcil *concil;
-	gchar *query;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	query = g_strdup_printf(
-				"SELECT REC_ID,REC_DVAL,REC_USER,REC_STAMP FROM OFA_T_CONCIL "
-				"	WHERE REC_ID=%ld", rec_id );
+	dataset = ofo_concil_get_dataset( getter );
 
-	concil = concil_get_by_query( query, getter );
+	for( it=dataset ; it ; it=it->next ){
+		concil = OFO_CONCIL( it->data );
+		if( ofo_concil_get_id( concil ) == rec_id ){
+			return( concil );
+		}
+	}
 
-	g_free( query );
-
-	return( concil );
+	return( NULL );
 }
 
 /**
@@ -192,95 +192,30 @@ ofo_concil_get_by_id( ofaIGetter *getter, ofxCounter rec_id )
  * @type: the seatched type, an entry or a BAT line.
  * @other_id: the identifier of the searched type.
  *
- * Returns: a newly allocated object which maintains the conciliations
- * list associated to the specified @other_id, or %NULL.
+ * Returns: the conciliation group, or %NULL.
+ *
+ * The returned conciliation group is owned by the #myICollector instance,
+ * and should be released by the caller.
  */
 ofoConcil *
 ofo_concil_get_by_other_id( ofaIGetter *getter, const gchar *type, ofxCounter other_id )
 {
+	GList *dataset, *it;
 	ofoConcil *concil;
-	gchar *query;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( my_strlen( type ), NULL );
 
-	query = g_strdup_printf(
-				"SELECT REC_ID,REC_DVAL,REC_USER,REC_STAMP FROM OFA_T_CONCIL "
-				"	WHERE REC_ID="
-				"		(SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL_IDS "
-				"		WHERE REC_IDS_TYPE='%s' AND REC_IDS_OTHER=%ld)", type, other_id );
+	dataset = ofo_concil_get_dataset( getter );
 
-	concil = concil_get_by_query( query, getter );
-
-	g_free( query );
-
-	return( concil );
-}
-
-/*
- */
-static ofoConcil *
-concil_get_by_query( const gchar *query, ofaIGetter *getter )
-{
-	ofaISignaler *signaler;
-	ofaHub *hub;
-	ofaIDBConnect *connect;
-	ofoConcil *concil;
-	GSList *result, *irow, *icol;
-	GDate date;
-	GTimeVal stamp;
-	gchar *query2;
-	gchar *type;
-	ofxCounter id;
-
-	concil = NULL;
-	signaler = ofa_igetter_get_signaler( getter );
-	hub = ofa_igetter_get_hub( getter );
-	connect = ofa_hub_get_connect( hub );
-
-	if( ofa_idbconnect_query_ex( connect, query, &result, TRUE )){
-		if( g_slist_length( result ) == 1 ){
-			irow=result;
-			concil = ofo_concil_new( getter );
-			icol = ( GSList * ) irow->data;
-			concil_set_id( concil, atol(( gchar * ) icol->data ));
-			icol = icol->next;
-			ofo_concil_set_dval( concil,
-					my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
-			icol = icol->next;
-			ofo_concil_set_upd_user( concil, ( const gchar * ) icol->data );
-			icol = icol->next;
-			ofo_concil_set_upd_stamp( concil,
-					my_stamp_set_from_sql( &stamp, ( const gchar * ) icol->data ));
+	for( it=dataset ; it ; it=it->next ){
+		concil = OFO_CONCIL( it->data );
+		if( ofo_concil_has_member( concil, type, other_id )){
+			return( concil );
 		}
-		ofa_idbconnect_free_results( result );
 	}
 
-	if( concil ){
-		query2 = g_strdup_printf(
-				"SELECT REC_IDS_TYPE,REC_IDS_OTHER FROM OFA_T_CONCIL_IDS "
-				"	WHERE REC_ID=%ld", ofo_concil_get_id( concil ));
-		if( ofa_idbconnect_query_ex( connect, query2, &result, TRUE )){
-			for( irow=result ; irow ; irow=irow->next ){
-				icol = ( GSList * ) irow->data;
-				type = g_strdup(( const gchar * ) icol->data );
-				icol = icol->next;
-				id = atol(( const gchar * ) icol->data );
-				concil_add_other_id( concil, type, id );
-				g_free( type );
-			}
-			ofa_idbconnect_free_results( result );
-		}
-		g_free( query2 );
-
-		my_icollector_collection_add_object(
-				ofa_igetter_get_collector( getter ),
-				MY_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr, getter );
-
-		g_signal_emit_by_name( signaler, SIGNALER_BASE_NEW, concil );
-	}
-
-	return( concil );
+	return( NULL );
 }
 
 /**
@@ -707,17 +642,6 @@ concil_do_insert( ofoConcil *concil, const ofaIDBConnect *connect )
 	g_free( query );
 
 	return( ok );
-}
-
-static gint
-concil_cmp_by_ptr( ofoConcil *a, ofoConcil *b )
-{
-	ofxCounter id_a, id_b;
-
-	id_a = ofo_concil_get_id( a );
-	id_b = ofo_concil_get_id( b );
-
-	return( id_a < id_b ? -1 : ( id_a > id_b ? 1 : 0 ));
 }
 
 /**

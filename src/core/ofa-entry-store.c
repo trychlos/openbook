@@ -238,6 +238,9 @@ ofa_entry_store_new( ofaIGetter *getter )
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), ENTRY_N_COLUMNS, st_col_types );
 
+		load_dataset( store );
+		my_icollector_single_set_object( collector, store );
+
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 
@@ -245,9 +248,7 @@ ofa_entry_store_new( ofaIGetter *getter )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		my_icollector_single_set_object( collector, store );
 		signaler_connect_to_signaling_system( store );
-		load_dataset( store );
 	}
 
 	return( g_object_ref( store ));
@@ -516,6 +517,8 @@ do_update_concil( ofaEntryStore *self, ofoConcil *concil, gboolean is_deleted )
 			set_row_concil( self, is_deleted ? NULL : concil, &iter );
 		}
 	}
+
+	g_signal_emit_by_name( self, "ofa-istore-need-refilter" );
 }
 
 static void

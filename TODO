@@ -315,10 +315,9 @@
                 - dialog box is confirm (not validate)
                 - progress box is recording (not validating)
 
-1479 2017- 9-18 on view entries, conciliation group is updated in the treeview
-                but not in the reference to see the conciliation group
+1486 2017- 9-29 ofaIConcil: get rid of attached sdata
 
-1486
+1487
 
 -----------------------------------------------------------------------
  DONE
@@ -1194,6 +1193,10 @@
 
 1473 2017- 6-16 deleting a single entry of an operation doesn't work ?
      2017- 6-16 fixed
+
+1479 2017- 9-18 on view entries, conciliation group is updated in the treeview
+                but not in the reference to see the conciliation group
+     2017- 9-29 fixed
 
 1480 2017- 9-18 VAT declarations: have validation date in treeview
      2017- 9-28 done

@@ -36,6 +36,7 @@
    - AccountProperties: don't try to get expander status for root accounts.
    - DBMS upgrade: fix account archive remediation (todo #1482).
    - DBMS upgrade: better manage the possible errors (todo #1483).
+   - EntryPage: better handle a reconciliation group deletion (todo #1479).
    - TVARecordProperties: fix memory leak.
    - Unreconciliated entries: take the view up to date.
    - Unsettled entries: take the view up to date (todo #1481).
