@@ -2293,8 +2293,8 @@ ipage_manager_activate( ofaIPageManager *instance, GType type )
 	sThemeDef *theme_def;
 	gboolean found;
 
-	g_debug( "%s: instance=%p (%s), type=%lu",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), type );
+	g_debug( "%s: instance=%p (%s), type=%lu (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), type, g_type_name( type ));
 
 	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
 
@@ -2309,25 +2309,26 @@ ipage_manager_activate( ofaIPageManager *instance, GType type )
 
 		if( !theme_def->multiple ){
 			found = my_dnd_window_present_by_type( type ) || ofa_nomodal_page_present_by_type( type );
+			g_debug( "%s: found=%s", thisfn, found ? "True":"False" );
 			if( !found && book ){
 				g_return_val_if_fail( GTK_IS_NOTEBOOK( book ), NULL );
 				page = notebook_get_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
 				found = ( page != NULL );
 			}
 		}
-		if( !found ){
-			if( book ){
+		if( book ){
+			if( !found ){
 				page = notebook_create_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
 				g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-				notebook_activate_page( OFA_MAIN_WINDOW( instance ), book, page );
-
-			} else {
-				nomodal_create( OFA_MAIN_WINDOW( instance ), theme_def );
 			}
+			notebook_activate_page( OFA_MAIN_WINDOW( instance ), book, page );
+
+		} else if( !found ){
+			nomodal_create( OFA_MAIN_WINDOW( instance ), theme_def );
 		}
 
 	} else {
-		g_warning( "%s: theme not found for type=%lu", thisfn, type );
+		g_warning( "%s: theme not found for type=%lu (%s)", thisfn, type, g_type_name( type ));
 	}
 
 	return( page );

@@ -305,9 +305,6 @@
 1475 2017- 8-14 generating recurrent operations no more activates recurrent
                 operations accounting page
 
-1476 2017- 8-14 reconciliation: clicking on 'print' no more activates
-                reconciliation summary page if it is already opened
-
 1477 2017- 8-15 icontext: better position the context menu, depending of
                 activated from the keyboard or by mouse
 
@@ -1187,6 +1184,10 @@
 
 1473 2017- 6-16 deleting a single entry of an operation doesn't work ?
      2017- 6-16 fixed
+
+1476 2017- 8-14 reconciliation: clicking on 'print' no more activates
+                reconciliation summary page if it is already opened
+     2017- 8-29 fixed
 
 1478 2017- 9-18 when recording waiting recurrent operation:
                 - dialog box is confirm (not validate)
