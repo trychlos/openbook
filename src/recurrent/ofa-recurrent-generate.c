@@ -39,6 +39,7 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-prefs.h"
 #include "api/ofo-base.h"
@@ -47,6 +48,7 @@
 
 #include "ofa-recurrent-generate.h"
 #include "ofa-recurrent-model-treeview.h"
+#include "ofa-recurrent-run-page.h"
 #include "ofa-recurrent-run-store.h"
 #include "ofa-recurrent-run-treeview.h"
 #include "ofo-rec-period.h"
@@ -853,6 +855,7 @@ on_ok_clicked( ofaRecurrentGenerate *self )
 	gint count, notgen;
 	gboolean ok;
 	ofxAmount amount;
+	ofaIPageManager *page_manager;
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
@@ -903,6 +906,9 @@ on_ok_clicked( ofaRecurrentGenerate *self )
 
 		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO, gstr->str );
 		g_string_free( gstr, TRUE );
+
+		page_manager = ofa_igetter_get_page_manager( priv->getter );
+		ofa_ipage_manager_activate( page_manager, OFA_TYPE_RECURRENT_RUN_PAGE );
 	}
 
 	my_iwindow_close( MY_IWINDOW( self ));
