@@ -63,7 +63,7 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIExportableInterface *klass );
 static void          interface_base_finalize( ofaIExportableInterface *klass );
-static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const gchar *format_id );
+static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, ofaIExporter *exporter, const gchar *format_id );
 static sIExportable *get_instance_data( const ofaIExportable *exportable );
 static void          on_instance_finalized( sIExportable *sdata, GObject *finalized_object );
 
@@ -334,7 +334,7 @@ ofa_iexportable_export_to_uri( ofaIExportable *exportable, const gchar *uri,
 	}
 	g_return_val_if_fail( G_IS_FILE_OUTPUT_STREAM( output_stream ), FALSE );
 
-	ok = iexportable_export_to_stream( exportable, output_stream, format_id );
+	ok = iexportable_export_to_stream( exportable, output_stream, exporter, format_id );
 
 	g_output_stream_close( output_stream, NULL, NULL );
 	g_object_unref( output_file );
@@ -343,10 +343,11 @@ ofa_iexportable_export_to_uri( ofaIExportable *exportable, const gchar *uri,
 }
 
 static gboolean
-iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const gchar *format_id )
+iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, ofaIExporter *exporter, const gchar *format_id )
 {
 	static const gchar *thisfn = "ofa_iexportable_export_to_stream";
 	sIExportable *sdata;
+	gboolean ok;
 
 	sdata = get_instance_data( exportable );
 	g_return_val_if_fail( sdata, FALSE );
@@ -355,13 +356,19 @@ iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream,
 
 	my_iprogress_start_work( sdata->instance, exportable, NULL );
 
-	if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export ){
-		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export( exportable, format_id ));
+	if( exporter ){
+		ok = ofa_iexporter_export( exporter, exportable, format_id );
+
+	} else if( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export ){
+		ok = OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export( exportable, format_id );
+
+	} else {
+		g_info( "%s: ofaIExportable's %s implementation does not provide 'export()' method",
+				thisfn, G_OBJECT_TYPE_NAME( exportable ));
+		ok = FALSE;
 	}
 
-	g_info( "%s: ofaIExportable's %s implementation does not provide 'export()' method",
-			thisfn, G_OBJECT_TYPE_NAME( exportable ));
-	return( FALSE );
+	return( ok );
 }
 
 /**

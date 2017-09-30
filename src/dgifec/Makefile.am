@@ -20,11 +20,9 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
-if HAVE_POSTGRE
+plugin_id = ofa-dgifec
 
-plugin_id = ofa-postgre
-
-pkglib_LTLIBRARIES = libofa-postgre.la
+pkglib_LTLIBRARIES = libofa-dgifec.la
 
 plugin_datadir = $(pkgdatadir)/$(plugin_id)
 
@@ -37,17 +35,19 @@ AM_CPPFLAGS += \
 	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
 	$(NULL)
 
-libofa_postgre_la_SOURCES = \
+libofa_dgifec_la_SOURCES = \
+	ofa-extension.c									\
+	ofa-fec-export.c								\
+	ofa-fec-export.h								\
 	ofa-fec-ident.c									\
 	ofa-fec-ident.h									\
-	ofa-extension.c									\
 	$(NULL)
 
-libofa_postgre_la_LIBADD = \
+libofa_dgifec_la_LIBADD = \
 	$(OPENBOOK_LIBS)								\
 	$(NULL)
 
-libofa_postgre_la_LDFLAGS = \
+libofa_dgifec_la_LDFLAGS = \
 	-module 										\
 	-no-undefined									\
 	-avoid-version									\
@@ -63,5 +63,3 @@ plugin_data_DATA = \
 EXTRA_DIST = \
 	$(plugin_data_DATA)								\
 	$(NULL)
-
-endif

@@ -22,35 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_FEC_EXPORT_H__
-#define __OFA_FEC_EXPORT_H__
+#ifndef __OPENBOOK_API_OFA_IEXPORTABLE_DEF_H__
+#define __OPENBOOK_API_OFA_IEXPORTABLE_DEF_H__
 
-/**
- * SECTION: ofo_entry_fec
- * @short_description: #ofoEntryFec functions definition.
- * @include: core/ofo-entry-fec.h
- *
- * This is the #ofaIExporter implementation provided by the #ofoEntry
- * class to generate the FEC (Fichier des Ecritures Comptables - DGI -
- * Article A47 A-1) export file.
- */
+#include <glib.h>
 
-#include "api/ofa-iexportable-def.h"
-#include "api/ofa-iexporter.h"
-#include "api/ofa-igetter-def.h"
-
-G_BEGIN_DECLS
-
-#define ENTRY_FEC_EXPORT_FORMAT         "FEC"
-
-ofsIExporterFormat *ofa_fec_export_get_formats( ofaIExporter *exporter,
-														GType exportable_type,
-														ofaIGetter *getter );
-
-gboolean            ofa_fec_export_export      ( ofaIExporter *exporter,
-														ofaIExportable *exportable,
-														const gchar *format_id );
+typedef struct _ofaIExportable                    ofaIExportable;
 
 G_END_DECLS
 
-#endif /* __OFA_FEC_EXPORT_H__ */
+#endif /* __OPENBOOK_API_OFA_IEXPORTABLE_DEF_H__ */

@@ -29,6 +29,9 @@
 #include "my/my-iident.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-iexporter.h"
+
+#include "dgifec/ofa-fec-export.h"
 #include "dgifec/ofa-fec-ident.h"
 
 /* private instance data
@@ -38,13 +41,18 @@ typedef struct {
 }
 	ofaFecIdentPrivate;
 
-static void   iident_iface_init( myIIdentInterface *iface );
-static gchar *iident_get_display_name( const myIIdent *instance, void *user_data );
-static gchar *iident_get_version( const myIIdent *instance, void *user_data );
+static void                iident_iface_init( myIIdentInterface *iface );
+static gchar              *iident_get_display_name( const myIIdent *instance, void *user_data );
+static gchar              *iident_get_version( const myIIdent *instance, void *user_data );
+static void                iexporter_iface_init( ofaIExporterInterface *iface );
+static guint               iexporter_get_interface_version( void );
+static ofsIExporterFormat *iexporter_get_formats( ofaIExporter *instance, GType type, ofaIGetter *getter );
+static gboolean            iexporter_export( ofaIExporter *instance, ofaIExportable *exportable, const gchar *format_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaFecIdent, ofa_fec_ident, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaFecIdent )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTER, iexporter_iface_init ))
 
 static void
 fec_ident_finalize( GObject *instance )
@@ -131,4 +139,37 @@ static gchar *
 iident_get_version( const myIIdent *instance, void *user_data )
 {
 	return( g_strdup( PACKAGE_VERSION ));
+}
+
+/*
+ * ofaIExporter interface management
+ */
+static void
+iexporter_iface_init( ofaIExporterInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_iexporter_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexporter_get_interface_version;
+	iface->get_formats = iexporter_get_formats;
+	iface->export = iexporter_export;
+}
+
+static guint
+iexporter_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static ofsIExporterFormat *
+iexporter_get_formats( ofaIExporter *instance, GType type, ofaIGetter *getter )
+{
+	return( ofa_fec_export_get_formats( instance, type, getter ));
+}
+
+static gboolean
+iexporter_export( ofaIExporter *instance, ofaIExportable *exportable, const gchar *format_id )
+{
+	return( ofa_fec_export_export( instance, exportable, format_id ));
 }

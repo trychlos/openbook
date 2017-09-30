@@ -126,6 +126,8 @@ AC_CONFIG_FILES([
 	data/icons/Makefile
 	data/init_utf8_comma_pipe_fr/Makefile
 	docs/Makefile
+	docs/DGI/Makefile
+	docs/DGI/FEC/Makefile
 	m4/Makefile
 	maintainer/Makefile
 	misc/Makefile
@@ -134,6 +136,7 @@ AC_CONFIG_FILES([
 	src/api/Makefile
 	src/cmdline/Makefile
 	src/core/Makefile
+	src/dgifec/Makefile
 	src/ebp-recovery/Makefile
 	src/importers/Makefile
 	src/my-1/Makefile

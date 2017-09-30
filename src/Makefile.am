@@ -26,6 +26,7 @@ SUBDIRS = \
 	my-1												\
 	api													\
 	core												\
+	dgifec												\
 	ebp-recovery										\
 	importers											\
 	mysql												\

@@ -50,8 +50,6 @@ ofa_extension_startup( GTypeModule *module, ofaIGetter *getter )
 
 	g_debug( "%s: module=%p, getter=%p", thisfn, ( void * ) module, ( void * ) getter );
 
-	ofa_recurrent_main_signal_connect( getter );
-
 	return( TRUE );
 }
 

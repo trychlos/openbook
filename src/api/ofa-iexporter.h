@@ -36,6 +36,7 @@
 
 #include <glib-object.h>
 
+#include "api/ofa-iexportable-def.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-stream-format.h"
 
@@ -84,11 +85,23 @@ typedef struct {
 	 * @getter: the #ofaIGetter of the application.
 	 *
 	 * Returns: a null-terminated array of specific #ofsIExporterFormat
-	 * structures managed by the target @type class.
+	 * structures managed by the target @instance class.
 	 */
 	ofsIExporterFormat * ( *get_formats )          ( ofaIExporter *instance,
 														GType type,
 														ofaIGetter *getter );
+
+	/**
+	 * export:
+	 * @instance: the #ofaIExporter provider.
+	 * @exportable: the #ofaIExportable to be exported.
+	 * @format_id: the name of the export format.
+	 *
+	 * Returns: %TRUE if the export has been successful.
+	 */
+	gboolean             ( *export )               ( ofaIExporter *instance,
+														ofaIExportable *exportable,
+														const gchar *format_id );
 }
 	ofaIExporterInterface;
 
@@ -129,6 +142,10 @@ guint               ofa_iexporter_get_interface_version     ( GType type );
 ofsIExporterFormat *ofa_iexporter_get_formats               ( ofaIExporter *exporter,
 																	GType type,
 																	ofaIGetter *getter );
+
+gboolean            ofa_iexporter_export                    ( ofaIExporter *exporter,
+																	ofaIExportable *exportable,
+																	const gchar *format_id );
 
 G_END_DECLS
 

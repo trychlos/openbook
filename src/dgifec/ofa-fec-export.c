@@ -35,6 +35,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-account.h"
@@ -63,7 +64,7 @@ typedef struct {
 #define FEC_DATA                        "ofo-entry-fec-data"
 
 static ofsIExporterFormat *get_fec_format( ofaIExporter *self, ofaIGetter *getter );
-static GList              *iexportable_export_fec_get_entries( ofaIGetter *getter );
+static GList              *fec_export_get_entries( ofaIGetter *getter );
 static gint                iexportable_export_fec_cmp_entries( ofoEntry *a, ofoEntry *b );
 static sFecData           *get_instance_data( const ofaIExporter *self );
 static void                on_instance_finalized( sFecData *sdata, GObject * finalized_instance );
@@ -79,7 +80,7 @@ static void                on_instance_finalized( sFecData *sdata, GObject * fin
  * This function is called because #ofoEntry is an #ofaIExporter.
  */
 ofsIExporterFormat *
-ofa_fec_export_get_exporter_formats( ofaIExporter *exporter, GType exportable_type, ofaIGetter *getter )
+ofa_fec_export_get_formats( ofaIExporter *exporter, GType exportable_type, ofaIGetter *getter )
 {
 	return( exportable_type == OFO_TYPE_ENTRY ? get_fec_format( exporter, getter ) : NULL );
 }
@@ -124,7 +125,9 @@ get_fec_format( ofaIExporter *self, ofaIGetter *getter )
 
 /**
  * ofa_fec_export_run:
- * @exportable: this #ofaIExportable instance.
+ * @exporter: this #ofaIExporter instance.
+ * @exportable: the #ofaIExportable instance to export.
+ * @format_id: the format identifier.
  *
  * Creates and exports the 'Fichier des Ecritures Comptables' (FEC)
  * cf. Article A47 A-1 du Livre des Procédures Fiscales de la DGI
@@ -152,9 +155,9 @@ get_fec_format( ofaIExporter *self, ofaIGetter *getter )
  * 'docs/DGI/FEC/FEC_Description.ods' sheet.
  */
 gboolean
-ofa_fec_export_run( ofaIExportable *exportable )
+ofa_fec_export_export( ofaIExporter *exporter, ofaIExportable *exportable, const gchar *format_id )
 {
-	static const gchar *thisfn = "ofa_fec_export_run";
+	static const gchar *thisfn = "ofa_fec_export_export";
 	ofaIGetter *getter;
 	ofaStreamFormat *stformat;
 	GList *sorted, *it;
@@ -177,12 +180,14 @@ ofa_fec_export_run( ofaIExportable *exportable )
 	ofeEntryRule rule;
 	ofeEntryPeriod period;
 
-	g_debug( "%s: exportable=%p", thisfn, ( void * ) exportable );
+	g_debug( "%s: exporter=%p, exportable=%p, format_id=%s",
+			thisfn, ( void * ) exporter, ( void * ) exportable, format_id );
 
+	g_return_val_if_fail( exporter && OFA_IS_IEXPORTER( exporter ), FALSE );
 	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), FALSE );
 
 	getter = ofa_iexportable_get_getter( exportable );
-	sorted = iexportable_export_fec_get_entries( getter );
+	sorted = fec_export_get_entries( getter );
 
 	stformat = ofa_iexportable_get_stream_format( exportable );
 	with_headers = TRUE;
@@ -366,7 +371,7 @@ ofa_fec_export_run( ofaIExportable *exportable )
  * The returned list should be g_list_free() by the caller.
  */
 static GList *
-iexportable_export_fec_get_entries( ofaIGetter *getter )
+fec_export_get_entries( ofaIGetter *getter )
 {
 	GList *dataset, *sorted, *it;
 	ofaHub *hub;

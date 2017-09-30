@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "api/ofa-iexportable.h"
 #include "api/ofa-iexporter.h"
 #include "api/ofa-igetter.h"
 
@@ -175,7 +176,7 @@ ofa_iexporter_get_interface_version( GType type )
 
 /**
  * ofa_iexporter_get_formats:
- * @exportable: this #ofaIExporter instance.
+ * @exporter: this #ofaIExporter instance.
  * @type: the target class to export;
  *  the corresponding class must implement #ofaIExportable interface.
  * @getter: the #ofaIGetter of the application.
@@ -198,4 +199,29 @@ ofa_iexporter_get_formats( ofaIExporter *exporter, GType type, ofaIGetter *gette
 	g_info( "%s: ofaIExporter's %s implementation does not provide 'get_formats()' method",
 			thisfn, G_OBJECT_TYPE_NAME( exporter ));
 	return( NULL );
+}
+
+/**
+ * ofa_iexporter_export:
+ * @exporter: this #ofaIExporter instance.
+ * @exportable: the #ofaIExportable instance to export.
+ * @format_id: the export format.
+ *
+ * Returns: %TRUE if the export has been successful.
+ */
+gboolean
+ofa_iexporter_export( ofaIExporter *exporter, ofaIExportable *exportable, const gchar *format_id )
+{
+	static const gchar *thisfn = "ofa_iexporter_export";
+
+	g_return_val_if_fail( exporter && OFA_IS_IEXPORTER( exporter ), FALSE );
+	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), FALSE );
+
+	if( OFA_IEXPORTER_GET_INTERFACE( exporter )->export ){
+		return( OFA_IEXPORTER_GET_INTERFACE( exporter )->export( exporter, exportable, format_id ));
+	}
+
+	g_info( "%s: ofaIExporter's %s implementation does not provide 'export()' method",
+			thisfn, G_OBJECT_TYPE_NAME( exporter ));
+	return( FALSE );
 }

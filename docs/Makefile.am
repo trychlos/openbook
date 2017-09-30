@@ -20,6 +20,10 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
+SUBDIRS = \
+	DGI												\
+	$(NULL)
+
 pkgdocdir = $(datarootdir)/doc/@PACKAGE@-@VERSION@
 
 appcodedir = $(pkgdocdir)/AppCode
@@ -34,10 +38,4 @@ dist_appcode_DATA = \
 	Signals.README									\
 	Styles.README									\
 	UserInterface.odg								\
-	$(NULL)
-
-dgidir = $(pkgdocdir)/DGI
-
-dist_dgi_DATA = \
-	DGI/Legifrance-LPF-Article_A47_A-1_FEC.pdf		\
 	$(NULL)

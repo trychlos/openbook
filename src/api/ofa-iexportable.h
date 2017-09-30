@@ -47,6 +47,7 @@
 #include "my/my-iprogress.h"
 
 #include "api/ofa-box.h"
+#include "api/ofa-iexportable-def.h"
 #include "api/ofa-iexporter.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-stream-format.h"
@@ -58,7 +59,7 @@ G_BEGIN_DECLS
 #define OFA_IS_IEXPORTABLE( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IEXPORTABLE ))
 #define OFA_IEXPORTABLE_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IEXPORTABLE, ofaIExportableInterface ))
 
-typedef struct _ofaIExportable                    ofaIExportable;
+//typedef struct _ofaIExportable                    ofaIExportable;
 
 /**
  * ofaIExportableInterface:

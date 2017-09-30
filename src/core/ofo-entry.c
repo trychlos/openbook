@@ -63,7 +63,7 @@
 #include "api/ofs-ledger-balance.h"
 
 #include "core/ofa-iconcil.h"
-#include "core/ofo-entry-fec.h"
+//#include "core/ofo-entry-fec.h"
 
 /* priv instance data
  */
@@ -322,9 +322,6 @@ static gchar              *iexportable_get_label( const ofaIExportable *instance
 static gboolean            iexportable_get_published( const ofaIExportable *instance );
 static gboolean            iexportable_export( ofaIExportable *exportable, const gchar *format_id );
 static gboolean            iexportable_export_default( ofaIExportable *exportable );
-static void                iexporter_iface_init( ofaIExporterInterface *iface );
-static guint               iexporter_get_interface_version( void );
-static ofsIExporterFormat *iexporter_get_formats( ofaIExporter *exporter, GType type, ofaIGetter *getter );
 static void                iimportable_iface_init( ofaIImportableInterface *iface );
 static guint               iimportable_get_interface_version( void );
 static gchar              *iimportable_get_label( const ofaIImportable *instance );
@@ -359,7 +356,6 @@ G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0,
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICONCIL, iconcil_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTER, iexporter_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
@@ -3069,10 +3065,6 @@ iexportable_export( ofaIExportable *exportable, const gchar *format_id )
 		return( iexportable_export_default( exportable ));
 	}
 
-	if( !my_collate( format_id, ENTRY_FEC_EXPORT_FORMAT )){
-		return( ofo_entry_fec_export( exportable ));
-	}
-
 	g_warning( "%s: format_id=%s unmanaged here", thisfn, format_id );
 
 	return( FALSE );
@@ -3187,32 +3179,6 @@ iexportable_export_default( ofaIExportable *exportable )
 	}
 
 	return( ok );
-}
-
-/*
- * ofaIExporter interface management
- */
-static void
-iexporter_iface_init( ofaIExporterInterface *iface )
-{
-	static const gchar *thisfn = "ofo_entry_iexporter_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iexporter_get_interface_version;
-	iface->get_formats = iexporter_get_formats;
-}
-
-static guint
-iexporter_get_interface_version( void )
-{
-	return( 1 );
-}
-
-static ofsIExporterFormat *
-iexporter_get_formats( ofaIExporter *instance, GType type, ofaIGetter *getter )
-{
-	return( ofo_entry_fec_get_exporter_formats( instance, type, getter ));
 }
 
 /*

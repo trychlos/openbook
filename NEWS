@@ -46,6 +46,7 @@
 
  Other changes:
 
+   - DGIFEC: new plugin which handles the FEC export (todo #1410).
    - ofaIConcil: get rid of instance data (todo #1486).
    - ofaIStore: define new "ofa-istore-need-refilter" message.
    - Update to Fedora26 ecosystem.
