@@ -302,9 +302,6 @@
 1477 2017- 8-15 icontext: better position the context menu, depending of
                 activated from the keyboard or by mouse
 
-1487 2017-10- 5 when dossier is read-only, guided input by ledger menu
-                item should be disabled
-
 1488
 
 -----------------------------------------------------------------------
@@ -1228,6 +1225,10 @@
 
 1486 2017- 9-29 ofaIConcil: get rid of attached sdata
      2017- 9-29 done
+
+1487 2017-10- 5 when dossier is read-only, guided input by ledger menu
+                item should be disabled
+     2017-10- 6 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

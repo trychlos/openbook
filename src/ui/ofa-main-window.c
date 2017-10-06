@@ -125,6 +125,7 @@ typedef struct {
 	gboolean         dossier_begin;		/* whether the exercice beginning date is valid */
 
 	GSimpleAction   *action_guided_input;
+	GSimpleAction   *action_guided_input_ex;
 	GSimpleAction   *action_settlement;
 	GSimpleAction   *action_reconciliation;
 	GSimpleAction   *action_close_ledger;
@@ -676,13 +677,14 @@ menubar_update_items( ofaMainWindow *self )
 	hub = ofa_igetter_get_hub( priv->getter );
 	is_writable = ofa_hub_is_writable_dossier( hub );
 
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_guided_input,   "guided",     is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_settlement,     "settlement", is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_reconciliation, "concil",     is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_ledger,   "ledclosing", is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_period,   "perclosing", is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_exercice, "execlosing", is_writable );
-	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_import,         "import",     is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_guided_input,    "guided",     is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_guided_input_ex, "guidedex",   is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_settlement,      "settlement", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_reconciliation,  "concil",     is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_ledger,    "ledclosing", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_period,    "perclosing", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_close_exercice,  "execlosing", is_writable );
+	my_utils_action_enable( G_ACTION_MAP( self ), &priv->action_import,          "import",     is_writable );
 }
 
 /*
