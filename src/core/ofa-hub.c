@@ -707,8 +707,9 @@ ofa_hub_is_opened_dossier( ofaHub *hub, ofaIDBExerciceMeta *exercice_meta )
 gboolean
 ofa_hub_is_writable_dossier( ofaHub *hub )
 {
+	static const gchar *thisfn = "ofa_hub_is_writable_dossier";
 	ofaHubPrivate *priv;
-	gboolean is_writable;
+	gboolean dossier_is_current, is_writable;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
@@ -716,10 +717,16 @@ ofa_hub_is_writable_dossier( ofaHub *hub )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
+	dossier_is_current = ofo_dossier_is_current( priv->dossier );
+
 	is_writable = priv->dossier &&
 			OFO_IS_DOSSIER( priv->dossier ) &&
-			ofo_dossier_is_current( priv->dossier ) &&
+			dossier_is_current &&
 			!priv->read_only;
+
+	g_debug( "%s: dossier_is_current=%s, opened_read_only=%s, is_writable=%s",
+			thisfn, dossier_is_current ? "True":"False",
+			priv->read_only ? "True":"False", is_writable ? "True":"False" );
 
 	return( is_writable );
 }
