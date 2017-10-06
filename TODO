@@ -302,7 +302,10 @@
 1477 2017- 8-15 icontext: better position the context menu, depending of
                 activated from the keyboard or by mouse
 
-1487
+1487 2017-10- 5 when dossier is read-only, guided input by ledger menu
+                item should be disabled
+
+1488
 
 -----------------------------------------------------------------------
  DONE
