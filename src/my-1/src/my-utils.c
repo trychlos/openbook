@@ -2184,7 +2184,7 @@ my_utils_uri_exists( const gchar *uri )
  * my_utils_uri_get_content:
  * @uri:
  * @from_codeset: [allow-none]: source codeset.
- * @errors: [allow-none][out]:
+ * @errors: [allow-none][out]: error count.
  * @msgerr: [allow-none][out]: error message placeholder;
  *  if %NULL, error messages are displayed in a warning dialog box.
  *
