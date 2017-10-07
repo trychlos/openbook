@@ -968,6 +968,8 @@ tview_apply_extfilter_by_row( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeI
 				case OFA_TYPE_TIMESTAMP:
 					crit_ok = tview_apply_extfilter_for_stamp( self, criterium, entry_value );
 					break;
+				default:
+					break;
 			}
 			g_free( entry_value );
 		}

@@ -47,6 +47,7 @@ typedef enum {
 	OFA_TYPE_DATE,
 	OFA_TYPE_STRING,
 	OFA_TYPE_TIMESTAMP,
+	OFA_TYPE_BINARY,
 }
 	ofeBoxType;
 
