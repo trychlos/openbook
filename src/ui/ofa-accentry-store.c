@@ -436,7 +436,9 @@ find_account_by_number( ofaAccentryStore *self, const gchar *account, GtkTreeIte
 		while( TRUE ){
 			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, ACCENTRY_COL_ACCOUNT, &row_account, -1 );
 			cmp = my_collate( row_account, account );
-			g_debug( "find_account_by_number: account=%s, row_account=%s", account, row_account );
+			if( 0 ){
+				g_debug( "find_account_by_number: account=%s, row_account=%s", account, row_account );
+			}
 			g_free( row_account );
 			//if( cmp >= 0 ){
 			if( cmp == 0 ){

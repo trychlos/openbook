@@ -455,8 +455,6 @@ Thread 1 "openbook" received signal SIGSEGV, Segmentation fault.
 #0  0x00007ffff4d04a36 in g_type_check_instance_cast () at /lib64/libgobject-2.0.so.0
 #1  0x000000000048246c in store_on_need_refilter (store=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-unsettled-page.c:561
 
-1497 2017-10-20 remove debug line 'find_account_by_number' above
-
 1499
 
 -----------------------------------------------------------------------
@@ -1387,6 +1385,9 @@ Thread 1 "openbook" received signal SIGSEGV, Segmentation fault.
 
 1493 2017-10-19 review #1478
      2017-10-20 fixed
+
+1497 2017-10-20 remove debug line 'find_account_by_number' above
+     2017-10-20 done
 
 1498 2017-10-20 ofa_hub_is_writable_dossier: is often called
                 if we cannot decrease the frequence, at least remove the
