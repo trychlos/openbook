@@ -50,6 +50,7 @@
    - DGIFEC: new plugin which handles the FEC export (todo #1410).
    - ofaIConcil: get rid of instance data (todo #1486).
    - ofaIStore: define new "ofa-istore-need-refilter" message.
+   - ofaRecurrentRunTreeview: cache the dossier writability flag (todo #1498).
    - Update to Fedora26 ecosystem.
    - Replace Gtk 3.22-deprecated gtk_menu_popup().
    - Replace Gtk 3.22-deprecated gdk_screen_get_width(), gdk_screen_get_height().

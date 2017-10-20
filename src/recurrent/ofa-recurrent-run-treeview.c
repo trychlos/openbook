@@ -60,6 +60,7 @@ typedef struct {
 	 */
 	GList       *signaler_handlers;
 	gint         visible;
+	gboolean     is_writable;
 	const GDate *from;
 	const GDate *to;
 }
@@ -271,6 +272,7 @@ ofa_recurrent_run_treeview_new( ofaIGetter *getter, const gchar *settings_prefix
 	ofaRecurrentRunTreeview *view;
 	ofaRecurrentRunTreeviewPrivate *priv;
 	gchar *str;
+	ofaHub *hub;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -293,6 +295,9 @@ ofa_recurrent_run_treeview_new( ofaIGetter *getter, const gchar *settings_prefix
 	ofa_tvbin_set_name( OFA_TVBIN( view ), priv->settings_prefix );
 	setup_columns( view );
 	signaler_connect_to_signaling_system( view );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->is_writable = ofa_hub_is_writable_dossier( hub );
 
 	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_func, view );
 	ofa_tvbin_set_cell_edited_func( OFA_TVBIN( view ), ( GCallback ) on_cell_edited, view );
@@ -417,7 +422,6 @@ cell_data_set_editable( ofaRecurrentRunTreeview *self, GtkCellRenderer *renderer
 	guint column_id;
 	const gchar *csdef;
 	gboolean editable;
-	ofaHub *hub;
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( self );
 
@@ -443,8 +447,7 @@ cell_data_set_editable( ofaRecurrentRunTreeview *self, GtkCellRenderer *renderer
 		case REC_RUN_COL_AMOUNT1:
 		case REC_RUN_COL_AMOUNT2:
 		case REC_RUN_COL_AMOUNT3:
-			hub = ofa_igetter_get_hub( priv->getter );
-			editable = ofa_hub_is_writable_dossier( hub );
+			editable = priv->is_writable;
 			editable &= ( my_strlen( csdef ) > 0 );
 			editable &= ( status == REC_STATUS_WAITING );
 			g_object_set( G_OBJECT( renderer ), "editable-set", TRUE, "editable", editable, NULL );

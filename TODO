@@ -457,10 +457,6 @@ Thread 1 "openbook" received signal SIGSEGV, Segmentation fault.
 
 1497 2017-10-20 remove debug line 'find_account_by_number' above
 
-1498 2017-10-20 ofa_hub_is_writable_dossier: is often called
-                if we cannot decrease the frequence, at least remove the
-                debug message
-
 1499
 
 -----------------------------------------------------------------------
@@ -1390,6 +1386,11 @@ Thread 1 "openbook" received signal SIGSEGV, Segmentation fault.
      2017-10- 6 fixed
 
 1493 2017-10-19 review #1478
+     2017-10-20 fixed
+
+1498 2017-10-20 ofa_hub_is_writable_dossier: is often called
+                if we cannot decrease the frequence, at least remove the
+                debug message
      2017-10-20 fixed
 
 -----------------------------------------------------------------------
