@@ -613,7 +613,7 @@ action_user_confirm( ofaRecurrentRunPage *self )
 			count );
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ok = my_utils_dialog_question( toplevel, msg, _( "_Validate" ));
+	ok = my_utils_dialog_question( toplevel, msg, _( "Send to acc_ounting" ));
 
 	g_free( msg );
 
