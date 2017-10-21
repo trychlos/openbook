@@ -312,43 +312,35 @@
                 during period close - so will able to close N+1/01,
                 N+1/02, etc. even if exercice N is not yet closed
 
-1490 2017-10-14 review ACCOUNT macro (VAT) to make sure it takes the
-                entries between two dates
-
 1491 2017-10-19 guided input: the ref field may be a combobox with an
                 input field
 
 1492 2017-10-19 have a nodejs server with a REST API:
                 - calculate VAT
 
-1494 2017-10-19 reconciliation: balance is not checked
-
-1495 2017-10-19 BUG when updating the amount of an entry
-(openbook:12473): OFA-DEBUG: ofa_idbconnect_query: connect=0x104b480, query='UPDATE OFA_T_ENTRIES 	SET ENT_DEFFECT='2017-09-05',ENT_DOPE='2017-09-05',ENT_LABEL='Caisse RSI des prof. libérales', ENT_REF='PREL',	ENT_ACCOUNT='51241',ENT_CURRENCY='EUR',ENT_LEDGER='ACH', ENT_OPE_TEMPLATE='CSRSI',ENT_RULE='N',ENT_TIERS=NULL,ENT_IPERIOD='C',ENT_NOTES=NULL,	ENT_DEBIT=0,ENT_CREDIT=227.00,ENT_UPD_USER='wieser',ENT_UPD_STAMP='2017-10-19 22:33:57' 	WHERE ENT_NUMBER=8764', display_error=True
-(openbook:12473): OFA-DEBUG: ofo_dossier_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
-(openbook:12473): OFA-DEBUG: ofo_account_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
-(openbook:12473): OFA-DEBUG: ofo_ledger_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
-(openbook:12473): OFA-DEBUG: ofo_ope_template_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
-(openbook:12473): OFA-DEBUG: ofo_entry_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
-(openbook:12473): OFA-DEBUG: ofo_account_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
-(openbook:12473): OFA-DEBUG: ofo_recurrent_run_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
-(openbook:12473): OFA-DEBUG: ofo_recurrent_model_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
-(openbook:12473): OFA-DEBUG: ofo_tva_record_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
-(openbook:12473): OFA-DEBUG: ofo_tva_form_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
-(openbook:12473): OFA-DEBUG: ofa_reconcil_store_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), self=0x1c6f740
-(openbook:12473): OFA-DEBUG: ofa_reconcil_store_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), self=0x1c6f5a0
-
-Thread 1 "openbook" received signal SIGSEGV, Segmentation fault.
-0x00007ffff7a4408b in ofa_amount_to_str (amount=227, currency=0xd41ee0, getter=0x9fe8e0) at ../../../src/core/ofa-amount.c:138
-138		digits = currency && OFO_IS_CURRENCY( currency ) ?
-Missing separate debuginfos, use: dnf debuginfo-install GConf2-3.2.6-17.fc26.x86_64 PackageKit-gtk3-module-1.1.6-2.fc26.x86_64 at-spi2-atk-2.24.1-1.fc26.x86_64 at-spi2-core-2.24.1-1.fc26.x86_64 atk-2.24.0-1.fc26.x86_64 avahi-libs-0.6.32-7.fc26.x86_64 bzip2-libs-1.0.6-22.fc26.x86_64 cairo-1.14.10-1.fc26.x86_64 cairo-gobject-1.14.10-1.fc26.x86_64 colord-libs-1.3.5-1.fc26.x86_64 cups-libs-2.2.2-7.fc26.x86_64 dbus-glib-0.108-2.fc26.x86_64 dbus-libs-1.11.18-1.fc26.x86_64 dconf-0.26.0-2.fc26.x86_64 expat-2.2.4-1.fc26.x86_64 fontconfig-2.12.5-1.fc26.x86_64 freetype-2.7.1-9.fc26.x86_64 gdk-pixbuf2-2.36.9-1.fc26.x86_64 glib2-2.52.3-1.fc26.x86_64 gmp-6.1.2-4.fc26.x86_64 gnutls-3.5.15-1.fc26.x86_64 graphite2-1.3.10-1.fc26.x86_64 gtk3-3.22.21-1.fc26.x86_64 gvfs-client-1.32.1-2.fc26.x86_64 harfbuzz-1.4.4-1.fc26.x86_64 jbigkit-libs-2.1-6.fc26.x86_64 json-glib-1.2.6-1.fc26.x86_64 keyutils-libs-1.5.10-1.fc26.x86_64 krb5-libs-1.15.1-28.fc26.x86_64 lcms2-2.8-3.fc26.x86_64 libX11-1.6.5-2.fc26.x86_64 libXau-1.0.8-7.fc26.x86_64 libXcomposite-0.4.4-9.fc26.x86_64 libXcursor-1.1.14-8.fc26.x86_64 libXdamage-1.1.4-9.fc26.x86_64 libXext-1.3.3-5.fc26.x86_64 libXfixes-5.0.3-2.fc26.x86_64 libXi-1.7.9-2.fc26.x86_64 libXinerama-1.1.3-7.fc26.x86_64 libXrandr-1.5.1-2.fc26.x86_64 libXrender-0.9.10-2.fc26.x86_64 libacl-2.2.52-15.fc26.x86_64 libarchive-3.2.2-4.fc26.x86_64 libattr-2.4.47-18.fc26.x86_64 libblkid-2.30.2-1.fc26.x86_64 libcanberra-0.30-13.fc26.x86_64 libcanberra-gtk3-0.30-13.fc26.x86_64 libcap-2.25-5.fc26.x86_64 libcom_err-1.43.4-2.fc26.x86_64 libcroco-0.6.12-1.fc26.x86_64 libcrypt-nss-2.25-10.fc26.x86_64 libdatrie-0.2.9-4.fc26.x86_64 libepoxy-1.4.3-1.fc26.x86_64 libffi-3.1-12.fc26.x86_64 libgcc-7.2.1-2.fc26.x86_64 libgcrypt-1.7.8-1.fc26.x86_64 libglvnd-0.2.999-24.20170818git8d4d03f.fc26.x86_64 libglvnd-egl-0.2.999-24.20170818git8d4d03f.fc26.x86_64 libglvnd-glx-0.2.999-24.20170818git8d4d03f.fc26.x86_64 libgpg-error-1.25-2.fc26.x86_64 libidn2-2.0.4-1.fc26.x86_64 libjpeg-turbo-1.5.1-0.fc26.x86_64 libmount-2.30.2-1.fc26.x86_64 libogg-1.3.2-6.fc26.x86_64 libpng-1.6.28-2.fc26.x86_64 librsvg2-2.40.18-1.fc26.x86_64 libselinux-2.6-7.fc26.x86_64 libsoup-2.58.2-1.fc26.x86_64 libstdc++-7.2.1-2.fc26.x86_64 libtasn1-4.12-1.fc26.x86_64 libtdb-1.3.13-1.fc26.x86_64 libthai-0.1.25-2.fc26.x86_64 libtiff-4.0.8-1.fc26.x86_64 libtool-ltdl-2.4.6-17.fc26.x86_64 libunistring-0.9.7-1.fc26.x86_64 libuuid-2.30.2-1.fc26.x86_64 libvorbis-1.3.5-2.fc26.x86_64 libwayland-client-1.13.0-1.fc26.x86_64 libwayland-cursor-1.13.0-1.fc26.x86_64 libxcb-1.12-3.fc26.x86_64 libxkbcommon-0.7.1-3.fc26.x86_64 libxml2-2.9.4-2.fc26.x86_64 lz4-libs-1.8.0-1.fc26.x86_64 lzo-2.08-9.fc26.x86_64 mariadb-libs-10.1.26-2.fc26.x86_64 mesa-libwayland-egl-17.2.2-2.fc26.x86_64 nettle-3.3-2.fc26.x86_64 nspr-4.17.0-1.fc26.x86_64 nss-3.33.0-1.0.fc26.x86_64 nss-softokn-freebl-3.33.0-1.0.fc26.x86_64 nss-util-3.33.0-1.0.fc26.x86_64 openjpeg2-2.2.0-3.fc26.x86_64 openssl-libs-1.1.0f-7.fc26.x86_64 p11-kit-0.23.8-1.fc26.x86_64 pango-1.40.12-1.fc26.x86_64 pcre-8.41-1.fc26.x86_64 pixman-0.34.0-3.fc26.x86_64 poppler-0.52.0-5.fc26.x86_64 poppler-glib-0.52.0-5.fc26.x86_64 rest-0.8.0-2.fc26.x86_64 sqlite-libs-3.20.1-1.fc26.x86_64 systemd-libs-233-6.fc26.x86_64 xz-libs-5.2.3-2.fc26.x86_64 zlib-1.2.11-2.fc26.x86_64
-(gdb) bt
-#0  0x00007ffff7a4408b in ofa_amount_to_str (amount=227, currency=0xd41ee0, getter=0x9fe8e0) at ../../../src/core/ofa-amount.c:138
-#1  0x00007ffff7aaec3d in entry_get_amount_strs (self=self@entry=0x1c6f5a0, entry=entry@entry=0x3260160, sdebit=sdebit@entry=0x7fffffffb700, scredit=scredit@entry=0x7fffffffb708)
-    at ../../../src/core/ofa-reconcil-store.c:499
-#2  0x00007ffff7aaedfc in entry_set_row_by_iter (self=self@entry=0x1c6f5a0, entry=entry@entry=0x3260160, iter=iter@entry=0x7fffffffb750) at ../../../src/core/ofa-reconcil-store.c:400
-#3  0x00007ffff7ab03de in signaler_on_updated_entry (entry=0x3260160, self=0x1c6f5a0) at ../../../src/core/ofa-reconcil-store.c:1415
-#4  0x00007ffff7ab03de in signaler_on_updated_base (signaler=<optimized out>, object=<optimized out>, prev_id=<optimized out>, self=0x1c6f5a0) at ../../../src/core/ofa-reconcil-store.c:1400
+1495 2017-10-19 BUG when updating the amount of an entry for the second time
+                (openbook:12473): OFA-DEBUG: ofa_idbconnect_query: connect=0x104b480, query='UPDATE OFA_T_ENTRIES 	SET ENT_DEFFECT='2017-09-05',ENT_DOPE='2017-09-05',ENT_LABEL='Caisse RSI des prof. libérales', ENT_REF='PREL',	ENT_ACCOUNT='51241',ENT_CURRENCY='EUR',ENT_LEDGER='ACH', ENT_OPE_TEMPLATE='CSRSI',ENT_RULE='N',ENT_TIERS=NULL,ENT_IPERIOD='C',ENT_NOTES=NULL,	ENT_DEBIT=0,ENT_CREDIT=227.00,ENT_UPD_USER='wieser',ENT_UPD_STAMP='2017-10-19 22:33:57' 	WHERE ENT_NUMBER=8764', display_error=True
+                (openbook:12473): OFA-DEBUG: ofo_dossier_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
+                (openbook:12473): OFA-DEBUG: ofo_account_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
+                (openbook:12473): OFA-DEBUG: ofo_ledger_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
+                (openbook:12473): OFA-DEBUG: ofo_ope_template_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
+                (openbook:12473): OFA-DEBUG: ofo_entry_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
+                (openbook:12473): OFA-DEBUG: ofo_account_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
+                (openbook:12473): OFA-DEBUG: ofo_recurrent_run_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
+                (openbook:12473): OFA-DEBUG: ofo_recurrent_model_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
+                (openbook:12473): OFA-DEBUG: ofo_tva_record_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
+                (openbook:12473): OFA-DEBUG: ofo_tva_form_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), empty=(nil)
+                (openbook:12473): OFA-DEBUG: ofa_reconcil_store_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), self=0x1c6f740
+                (openbook:12473): OFA-DEBUG: ofa_reconcil_store_signaler_on_updated_base: signaler=0x9fe8e0, object=0x3260160 (ofoEntry), prev_id=(null), self=0x1c6f5a0
+                Thread 1 "openbook" received signal SIGSEGV, Segmentation fault.
+                0x00007ffff7a4408b in ofa_amount_to_str (amount=227, currency=0xd41ee0, getter=0x9fe8e0) at ../../../src/core/ofa-amount.c:138
+                138		digits = currency && OFO_IS_CURRENCY( currency ) ?
+                #0  0x00007ffff7a4408b in ofa_amount_to_str (amount=227, currency=0xd41ee0, getter=0x9fe8e0) at ../../../src/core/ofa-amount.c:138
+                #1  0x00007ffff7aaec3d in entry_get_amount_strs (self=self@entry=0x1c6f5a0, entry=entry@entry=0x3260160, sdebit=sdebit@entry=0x7fffffffb700, scredit=scredit@entry=0x7fffffffb708)
+                    at ../../../src/core/ofa-reconcil-store.c:499
+                #2  0x00007ffff7aaedfc in entry_set_row_by_iter (self=self@entry=0x1c6f5a0, entry=entry@entry=0x3260160, iter=iter@entry=0x7fffffffb750) at ../../../src/core/ofa-reconcil-store.c:400
+                #3  0x00007ffff7ab03de in signaler_on_updated_entry (entry=0x3260160, self=0x1c6f5a0) at ../../../src/core/ofa-reconcil-store.c:1415
+                #4  0x00007ffff7ab03de in signaler_on_updated_base (signaler=<optimized out>, object=<optimized out>, prev_id=<optimized out>, self=0x1c6f5a0) at ../../../src/core/ofa-reconcil-store.c:1400
 
 1496 2017-10-19 BUG: when generating a VAT operation
                 (openbook:1902): OFA-DEBUG: ofa_accentry_store_signaler_on_new_base: signaler=0x95b0e0, object=0x19e6ba0 (ofoEntry), self=0x2aa12d0
@@ -1287,8 +1279,15 @@ Missing separate debuginfos, use: dnf debuginfo-install GConf2-3.2.6-17.fc26.x86
                 item should be disabled
      2017-10- 6 fixed
 
+1490 2017-10-14 review ACCOUNT macro (VAT) to make sure it takes the
+                entries between two dates
+     2017-10-20 no reason to have a doubt on that
+
 1493 2017-10-19 review #1478
      2017-10-20 fixed
+
+1494 2017-10-19 reconciliation: balance is not checked
+     2017-10-20 user preferences were lost - fixed
 
 1497 2017-10-20 remove debug line 'find_account_by_number' above
      2017-10-20 done
