@@ -558,6 +558,7 @@ store_on_need_refilter( ofaIStore *store, ofaUnsettledPage *self )
 
 	priv = ofa_unsettled_page_get_instance_private( self );
 
+	g_return_if_fail( priv->tview && OFA_IS_TVBIN( priv->tview ));
 	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 	ofa_accentry_treeview_expand_all( priv->tview );
 }

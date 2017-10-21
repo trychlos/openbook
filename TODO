@@ -351,109 +351,13 @@ Missing separate debuginfos, use: dnf debuginfo-install GConf2-3.2.6-17.fc26.x86
 #4  0x00007ffff7ab03de in signaler_on_updated_base (signaler=<optimized out>, object=<optimized out>, prev_id=<optimized out>, self=0x1c6f5a0) at ../../../src/core/ofa-reconcil-store.c:1400
 
 1496 2017-10-19 BUG: when generating a VAT operation
-(openbook:1902): OFA-DEBUG: ofa_accentry_store_signaler_on_new_base: signaler=0x95b0e0, object=0x19e6ba0 (ofoEntry), self=0x2aa12d0
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1082
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10821
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10822
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10823
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10824
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1083
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10831
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10832
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10833
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10834
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1084
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10841
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=108411
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=108414
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1084141
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1084143
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=108415
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1084151
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1084152
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1084153
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1084154
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1084155
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1084156
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1084158
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=108417
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=108418
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1084181
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1086
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10861
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10862
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10863
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10864
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10865
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10866
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10867
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10868
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10869
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1087
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10876
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10877
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10878
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=10879
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=1088
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=108811
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=108812
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=108819
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=121
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=121EUR
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=129
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=2141
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=2148
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=41123
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411231
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411232
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411235
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411236
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=41124
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411241
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411242
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411245
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411246
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=41125
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411251
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411252
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=4119
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=41191
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=41194
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=41195
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=41198
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=411DEB
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=44561
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445611
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445612
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445613
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=44562
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445621
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445622
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445623
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=44563
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445633
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445634
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=44567
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445670
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445671
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445672
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445673
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=44568
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445683
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=4457
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=44572
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445723
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=445724
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=4458
-(openbook:1902): OFA-DEBUG: find_account_by_number: account=44581, row_account=44581
-
-Thread 1 "openbook" received signal SIGSEGV, Segmentation fault.
-0x00007ffff4d04a36 in g_type_check_instance_cast () from /lib64/libgobject-2.0.so.0
-(gdb) bt
-#0  0x00007ffff4d04a36 in g_type_check_instance_cast () at /lib64/libgobject-2.0.so.0
-#1  0x000000000048246c in store_on_need_refilter (store=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-unsettled-page.c:561
+                (openbook:1902): OFA-DEBUG: ofa_accentry_store_signaler_on_new_base: signaler=0x95b0e0, object=0x19e6ba0 (ofoEntry), self=0x2aa12d0
+                Thread 1 "openbook" received signal SIGSEGV, Segmentation fault.
+                0x00007ffff4d04a36 in g_type_check_instance_cast () from /lib64/libgobject-2.0.so.0
+                (gdb) bt
+                #0  0x00007ffff4d04a36 in g_type_check_instance_cast () at /lib64/libgobject-2.0.so.0
+                #1  0x000000000048246c in store_on_need_refilter (store=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-unsettled-page.c:561
+     2017-10-20 ofaUnsettledPage: check that tview is a TVBIN 
 
 1499
 
