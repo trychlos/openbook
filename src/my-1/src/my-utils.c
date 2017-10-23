@@ -30,6 +30,7 @@
 #include <glib/gi18n.h>
 #include <time.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 #include "my/my-isettings.h"
 #include "my/my-stamp.h"
@@ -870,6 +871,65 @@ my_utils_str_replace( const gchar *string, const gchar *old, const gchar *new )
 	}
 
 	return( new_str );
+}
+
+/**
+ * my_utils_str_from_uint_list:
+ * @uint_list: a #GList of guint
+ * @sep: the character separator.
+ *
+ * Returns: a @sep-separated list of unsigned integers, as a newly
+ * allocated string which should be g_free() by the caller.
+ */
+gchar *
+my_utils_str_from_uint_list( GList *uint_list, const gchar *sep )
+{
+	GString *str;
+	GList *it;
+	guint data;
+
+	str = g_string_new( NULL );
+	for( it=uint_list ; it ; it=it->next ){
+		data = GPOINTER_TO_UINT( it->data );
+		if( str->len > 0 ){
+			g_string_append_printf( str, "%s", sep );
+		}
+		g_string_append_printf( str, "%u", data );
+	}
+
+	return( g_string_free( str, FALSE ));
+}
+
+/**
+ * my_utils_str_to_uint_list:
+ * @string: a @sep-separated list of unsigned integers.
+ * @sep: the character separator.
+ *
+ * Returns: list of unsigned integers, as a newly allocated #GList which
+ * should be g_list_free() by the caller.
+ */
+GList *
+my_utils_str_to_uint_list( const gchar *string, const gchar *sep )
+{
+	gchar **array, **iter;
+	GList *list;
+	guint data;
+
+	list = NULL;
+
+	if( my_strlen( string )){
+		array = g_strsplit( string, sep, -1 );
+		list = NULL;
+		iter = array;
+		while( *iter ){
+			data = atoi( *iter );
+			list = g_list_prepend( list, GUINT_TO_POINTER( data ));
+			iter++;
+		}
+		g_strfreev( array );
+	}
+
+	return( g_list_reverse( list ));
 }
 
 /**
