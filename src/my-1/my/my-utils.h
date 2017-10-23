@@ -64,6 +64,8 @@ gchar        *my_utils_str_remove_str_delim           ( const gchar *string, gch
 gchar        *my_utils_str_remove_suffix              ( const gchar *string, const gchar *suffix );
 gchar        *my_utils_str_remove_underlines          ( const gchar *string );
 gchar        *my_utils_str_replace                    ( const gchar *string, const gchar *old, const gchar *new );
+gchar        *my_utils_str_from_uint_list             ( GList *uint_list, const gchar *sep );
+GList        *my_utils_str_to_uint_list               ( const gchar *string, const gchar *sep );
 
 GtkWidget    *my_utils_builder_load_from_path         ( const gchar *path_xml, const gchar *widget_name );
 GtkWidget    *my_utils_builder_load_from_resource     ( const gchar *resource, const gchar *widget_name );
