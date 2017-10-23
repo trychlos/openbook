@@ -84,6 +84,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-iscope-map.c										\
 	my-isettings.c										\
 	my-iwindow.c										\
+	my-period.c											\
 	my-progress-bar.c									\
 	my-scope-mapper.c									\
 	my-settings.c										\

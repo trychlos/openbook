@@ -51,6 +51,7 @@
 #include <my/my-iscope-map.h>
 #include <my/my-isettings.h>
 #include <my/my-iwindow.h>
+#include <my/my-period.h>
 #include <my/my-progress-bar.h>
 #include <my/my-scope-mapper.h>
 #include <my/my-settings.h>
