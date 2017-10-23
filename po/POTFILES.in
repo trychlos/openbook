@@ -87,7 +87,6 @@ src/core/ofo-class.c
 src/core/ofo-currency.c
 src/core/ofo-dossier.c
 src/core/ofo-entry.c
-src/core/ofo-entry-fec.c
 src/core/ofo-ledger.c
 src/core/ofo-ope-template.c
 src/core/ofo-paimean.c
