@@ -107,7 +107,7 @@ G_DEFINE_TYPE_EXTENDED( myPeriod, my_period, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( myPeriod ))
 
 static void
-settings_monitor_finalize( GObject *object )
+period_finalize( GObject *object )
 {
 	static const gchar *thisfn = "my_period_finalize";
 	myPeriodPrivate *priv;
@@ -127,7 +127,7 @@ settings_monitor_finalize( GObject *object )
 }
 
 static void
-settings_monitor_dispose( GObject *object )
+period_dispose( GObject *object )
 {
 	myPeriodPrivate *priv;
 
@@ -173,8 +173,8 @@ my_period_class_init( myPeriodClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = settings_monitor_dispose;
-	G_OBJECT_CLASS( klass )->finalize = settings_monitor_finalize;
+	G_OBJECT_CLASS( klass )->dispose = period_dispose;
+	G_OBJECT_CLASS( klass )->finalize = period_finalize;
 }
 
 /**
