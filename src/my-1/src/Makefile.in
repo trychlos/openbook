@@ -191,7 +191,7 @@ am_liborgtrychlosmy1_la_OBJECTS = my-accel-group.lo my-char.lo \
 	my-file-monitor.lo my-iassistant.lo my-ibin.lo \
 	my-icollectionable.lo my-icollector.lo my-idialog.lo \
 	my-iident.lo my-igridlist.lo my-iprogress.lo my-iscope-map.lo \
-	my-isettings.lo my-iwindow.lo my-progress-bar.lo \
+	my-isettings.lo my-iwindow.lo my-period.lo my-progress-bar.lo \
 	my-scope-mapper.lo my-settings.lo my-signal.lo my-stamp.lo \
 	my-style.lo my-tab.lo my-thousand-combo.lo my-timeout.lo \
 	my-utils.lo
@@ -499,6 +499,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-iscope-map.c										\
 	my-isettings.c										\
 	my-iwindow.c										\
+	my-period.c											\
 	my-progress-bar.c									\
 	my-scope-mapper.c									\
 	my-settings.c										\
@@ -636,6 +637,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iscope-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-isettings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iwindow.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-period.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-progress-bar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-scope-mapper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-settings.Plo@am__quote@
