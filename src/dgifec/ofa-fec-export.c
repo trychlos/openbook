@@ -47,7 +47,6 @@
 #include "api/ofo-ope-template.h"
 
 #include "core/ofa-iconcil.h"
-#include "core/ofo-entry-fec.h"
 
 #include "dgifec/ofa-fec-export.h"
 
