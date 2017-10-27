@@ -30,6 +30,7 @@
 
 #include "my/my-iident.h"
 #include "my/my-iprogress.h"
+#include "my/my-period.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
@@ -66,6 +67,17 @@ typedef struct {
 
 #define DBMODEL_CANON_NAME               "REC"
 
+/**
+ * Periodicity identifier
+ * This is an invariant which identifies the periodicity object.
+ * This cannot be fully configurable as the #ofo_rec_period_enum_between()
+ * method must know how to deal with each periodicity.
+ * Used in v7-v10 models.
+ */
+#define REC_PERIOD_MONTHLY             "MONTHLY"
+#define REC_PERIOD_NEVER               "NEVER"
+#define REC_PERIOD_WEEKLY              "WEEKLY"
+
 /* the functions which update the DB model
  */
 static gboolean dbmodel_to_v1( ofaRecurrentDBModel *self, guint version );
@@ -86,6 +98,8 @@ static gboolean dbmodel_to_v8( ofaRecurrentDBModel *self, guint version );
 static gulong   count_v8( ofaRecurrentDBModel *self );
 static gboolean dbmodel_to_v9( ofaRecurrentDBModel *self, guint version );
 static gulong   count_v9( ofaRecurrentDBModel *self );
+static gboolean dbmodel_to_v10( ofaRecurrentDBModel *self, guint version );
+static gulong   count_v10( ofaRecurrentDBModel *self );
 
 typedef struct {
 	gint        ver_target;
@@ -104,6 +118,7 @@ static sMigration st_migrates[] = {
 		{ 7, dbmodel_to_v7, count_v7 },
 		{ 8, dbmodel_to_v8, count_v8 },
 		{ 9, dbmodel_to_v9, count_v9 },
+		{ 10, dbmodel_to_v10, count_v10 },
 		{ 0 }
 };
 
@@ -125,7 +140,6 @@ static gboolean   version_end( ofaRecurrentDBModel *self, gint version );
 static gulong     idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
 static gulong     check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
 static gulong     check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
-static gulong     check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentDBModel, ofa_recurrent_dbmodel, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaRecurrentDBModel )
@@ -463,6 +477,7 @@ dbmodel_to_v1( ofaRecurrentDBModel *self, guint version )
 	/* updated in v5 */
 	/* altered in v6 */
 	/* rec_period_detail modified in v8 */
+	/* creation and enabled user and timestamp added in v10 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_MODELS ("
 			"	REC_MNEMO          VARCHAR(64)  BINARY NOT NULL UNIQUE COMMENT 'Recurrent operation identifier',"
@@ -480,6 +495,7 @@ dbmodel_to_v1( ofaRecurrentDBModel *self, guint version )
 	/* updated in v2 */
 	/* updated in v3 */
 	/* updated in v4 */
+	/* creation and status user and timestamp added in v10 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_RUN ("
 			"	REC_MNEMO          VARCHAR(64)  BINARY NOT NULL        COMMENT 'Recurrent operation identifier',"
@@ -649,6 +665,7 @@ dbmodel_to_v6( ofaRecurrentDBModel *self, guint version )
 
 	/* 1 - create Periodicity table */
 	/* altered in v7 */
+	/* removed in v10 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_PERIODS ("
 			"	REC_PER_ID          VARCHAR(16)    BINARY NOT NULL   COMMENT 'Periodicity identifier',"
@@ -666,6 +683,7 @@ dbmodel_to_v6( ofaRecurrentDBModel *self, guint version )
 
 	/* 2 - create Periodicity Details table */
 	/* altered in v7 */
+	/* removed in v10 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_PERIODS_DET ("
 			"	REC_PER_ID          VARCHAR(16)    BINARY NOT NULL   COMMENT 'Periodicity identifier',"
@@ -1526,6 +1544,154 @@ count_v9( ofaRecurrentDBModel *self )
 	return( 1 );
 }
 
+/*
+ * - Disable TIMESTAMP auto-update by adding 'DEFAULT 0' option
+ *   cf. https://mariadb.com/kb/en/library/timestamp/
+ * - Add creation, status, amounts audit trace
+ */
+static gboolean
+dbmodel_to_v10( ofaRecurrentDBModel *self, guint version )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v10";
+	gchar *query;
+	gboolean ok;
+
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
+
+	/* 1 */
+	if( !exec_query( self,
+			"ALTER TABLE REC_T_MODELS "
+			"	ADD    COLUMN REC_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN REC_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	ADD    COLUMN REC_END           DATE                     COMMENT 'End of model usage',"
+			"	ADD    COLUMN REC_PERIOD_ID     CHAR(1)      DEFAULT 'U' COMMENT 'Periodicity identifier',"
+			"	ADD    COLUMN REC_PERIOD_N      INTEGER      DEFAULT 1   COMMENT 'Periodicity count',"
+			"	ADD    COLUMN REC_PERIOD_DET    VARCHAR(256)             COMMENT 'Periodicity details',"
+			"	MODIFY COLUMN REC_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Properties last update timestamp'" )){
+		return( FALSE );
+	}
+
+	/* 2 */
+	if( !exec_query( self,
+			"ALTER TABLE REC_T_RUN "
+			"	MODIFY COLUMN REC_STATUS        CHAR(1)      NOT NULL    COMMENT 'Operation status',"
+			"	ADD    COLUMN REC_LABEL         VARCHAR(256) NOT NULL    COMMENT 'Model label',"
+			"	ADD    COLUMN REC_OPE_TEMPLATE  VARCHAR(64)  NOT NULL    COMMENT 'Operation template',"
+			"	ADD    COLUMN REC_PERIOD_ID     CHAR(1)      NOT NULL    COMMENT 'Periodicity identifier',"
+			"	ADD    COLUMN REC_PERIOD_N      INTEGER      DEFAULT 1   COMMENT 'Periodicity count',"
+			"	ADD    COLUMN REC_PERIOD_DET    VARCHAR(256)             COMMENT 'Periodicity details',"
+			"	ADD    COLUMN REC_END           DATE                     COMMENT 'Creation user',"
+			"	ADD    COLUMN REC_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN REC_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	CHANGE COLUMN REC_UPD_USER "
+			"                 REC_STA_USER      VARCHAR(64)  NOT NULL    COMMENT 'Status last update user',"
+			"	CHANGE COLUMN REC_UPD_STAMP "
+			"                 REC_STA_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Status last update timestamp',"
+			"	ADD    COLUMN REC_EDI_USER      VARCHAR(64)  NOT NULL    COMMENT 'Editable amount last update user',"
+			"	ADD    COLUMN REC_EDI_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Editable amount last update timestamp'" )){
+		return( FALSE );
+	}
+
+	/* 3 */
+	query = g_strdup_printf(
+			"UPDATE REC_T_MODELS SET REC_PERIOD_ID='M' WHERE REC_PERIOD='%s'", REC_PERIOD_MONTHLY );
+	ok = exec_query( self, query );
+	g_free( query );
+	if( !ok){
+		return( FALSE );
+	}
+
+	/* 4 */
+	query = g_strdup_printf(
+			"UPDATE REC_T_MODELS SET REC_PERIOD_ID='W' WHERE REC_PERIOD='%s'", REC_PERIOD_WEEKLY );
+	ok = exec_query( self, query );
+	g_free( query );
+	if( !ok){
+		return( FALSE );
+	}
+
+	/* 5 */
+	if( !exec_query( self,
+			"UPDATE REC_T_MODELS SET REC_PERIOD_N=1 WHERE REC_ENABLED='Y'" )){
+		return( FALSE );
+	}
+
+	/* 6 */
+	if( !exec_query( self,
+			"UPDATE REC_T_MODELS SET REC_PERIOD_DET="
+			"   (SELECT REC_PER_DET_VALUE FROM REC_T_PERIODS_DET WHERE REC_PER_DET_ID=REC_PERIOD_DETAIL) "
+			"	WHERE REC_ENABLED='Y'" )){
+		return( FALSE );
+	}
+
+	/* 7 */
+	if( !exec_query( self,
+			"UPDATE REC_T_MODELS SET "
+			"	REC_CRE_USER=REC_UPD_USER,"
+			"	REC_CRE_STAMP=REC_UPD_STAMP" )){
+		return( FALSE );
+	}
+
+	/* 8 */
+	if( !exec_query( self,
+			"UPDATE REC_T_RUN a SET "
+			"	REC_LABEL=(SELECT REC_LABEL FROM REC_T_MODELS b WHERE a.REC_MNEMO=b.REC_MNEMO),"
+			"	REC_OPE_TEMPLATE=(SELECT REC_OPE_TEMPLATE FROM REC_T_MODELS b WHERE a.REC_MNEMO=b.REC_MNEMO),"
+			"	REC_PERIOD_ID=(SELECT REC_PERIOD_ID FROM REC_T_MODELS b WHERE a.REC_MNEMO=b.REC_MNEMO),"
+			"	REC_PERIOD_N=(SELECT REC_PERIOD_N FROM REC_T_MODELS b WHERE a.REC_MNEMO=b.REC_MNEMO),"
+			"	REC_PERIOD_DET=(SELECT REC_PERIOD_DET FROM REC_T_MODELS b WHERE a.REC_MNEMO=b.REC_MNEMO),"
+			"	REC_END=(SELECT REC_END FROM REC_T_MODELS b WHERE a.REC_MNEMO=b.REC_MNEMO),"
+			"	REC_CRE_USER=REC_STA_USER,"
+			"	REC_CRE_STAMP=REC_STA_STAMP,"
+			"	REC_EDI_USER=REC_STA_USER,"
+			"	REC_EDI_STAMP=REC_STA_STAMP" )){
+		return( FALSE );
+	}
+
+	/* 9 */
+	if( !exec_query( self, "DROP TABLE REC_T_PERIODS " )){
+		return( FALSE );
+	}
+
+	/* 10 */
+	if( !exec_query( self, "DROP TABLE REC_T_PERIODS_DET " )){
+		return( FALSE );
+	}
+
+	/* 11 */
+	if( !exec_query( self, "DELETE FROM OFA_T_DOCS WHERE DOC_ID=(SELECT REC_DOC_ID FROM REC_T_PERIODS_DOC" )){
+		return( FALSE );
+	}
+
+	/* 12 */
+	if( !exec_query( self, "DROP TABLE REC_T_PERIODS_DOC " )){
+		return( FALSE );
+	}
+
+	/* 13 */
+	if( !exec_query( self,
+			"ALTER TABLE REC_T_GEN "
+			"	DROP   COLUMN REC_LAST_PER_DET_IT" )){
+		return( FALSE );
+	}
+
+	/* 14 */
+	if( !exec_query( self,
+			"ALTER TABLE REC_T_MODELS "
+			"	DROP   COLUMN REC_PERIOD,"
+			"	DROP   COLUMN REC_PERIOD_DETAIL" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v10( ofaRecurrentDBModel *self )
+{
+	return( 14 );
+}
+
 static gulong
 idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
@@ -1534,7 +1700,6 @@ idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, 
 	errs = 0;
 	errs += check_model( instance, getter, progress );
 	errs += check_run( instance, getter, progress );
-	errs += check_period( instance, getter, progress );
 
 	return( errs );
 }
@@ -1549,12 +1714,11 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	gulong count, i;
 	ofoRecurrentModel *model;
 	gchar *str;
-	const gchar *mnemo, *ope_mnemo, *per_mnemo;
+	const gchar *mnemo, *ope_mnemo;
 	ofoOpeTemplate *ope_object;
-	ofoRecPeriod *period_obj;
-	ofxCounter detail_id, docid;
-	gint detail_idx;
+	ofxCounter docid;
 	gboolean all_messages;
+	myPeriod *period;
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_MODEL );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
@@ -1611,47 +1775,16 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 			}
 
 			/* periodicity */
-			period_obj = NULL;
-			per_mnemo = ofo_recurrent_model_get_periodicity( model );
-			if( !my_strlen( ope_mnemo )){
+			period = ofo_recurrent_model_get_period( model );
+			if( !period ){
 				if( progress ){
-					str = g_strdup_printf( _( "Recurrent model %s does not have a periodicity" ), mnemo );
+					str = g_strdup_printf(
+							_( "Recurrent model %s has invalid periodicity" ), mnemo );
 					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 					g_free( str );
 				}
 				errs += 1;
 				moderrs += 1;
-			} else {
-				period_obj = ofo_rec_period_get_by_id( getter, per_mnemo );
-				if( !period_obj || !OFO_IS_REC_PERIOD( period_obj )){
-					if( progress ){
-						str = g_strdup_printf(
-								_( "Recurrent model %s has periodicity '%s' which doesn't exist" ), mnemo, per_mnemo );
-						my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
-						g_free( str );
-					}
-					errs += 1;
-					moderrs += 1;
-				}
-			}
-			if( progress ){
-				my_iprogress_pulse( progress, worker, ++i, count );
-			}
-
-			/* periodicity detail - may be empty */
-			detail_id = ofo_recurrent_model_get_periodicity_detail( model );
-			if( detail_id > 0 && period_obj ){
-				detail_idx = ofo_rec_period_detail_get_by_id( period_obj, detail_id );
-				if( detail_idx < 0 ){
-					if( progress ){
-						str = g_strdup_printf(
-								_( "Recurrent model %s has periodicity detail %lu which doesn't exist" ), mnemo, detail_id );
-						my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
-						g_free( str );
-					}
-					errs += 1;
-					moderrs += 1;
-				}
 			}
 			if( progress ){
 				my_iprogress_pulse( progress, worker, ++i, count );
@@ -1717,6 +1850,8 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 static gulong
 check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
+	return( 0 );
+#if 0
 	gulong errs, runerrs;
 	void *worker;
 	GtkWidget *label;
@@ -1724,10 +1859,12 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 	gulong count, i;
 	ofoRecurrentRun *obj;
 	gchar *str;
-	const gchar *mnemo;
+	const gchar *mnemo, *ope_mnemo;
 	ofoRecurrentModel *model_object;
+	ofoOpeTemplate *ope_object;
 	ofxCounter numseq, docid;
 	gboolean all_messages;
+	//myPeriod period;
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_RUN );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
@@ -1740,7 +1877,7 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 
 	errs = 0;
 	records = ofo_recurrent_run_get_dataset( getter );
-	count = 1 + 2*g_list_length( records );
+	count = 1 + 3*g_list_length( records );
 	i = 0;
 
 	if( count == 0 ){
@@ -1753,6 +1890,7 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 		obj = OFO_RECURRENT_RUN( it->data );
 		numseq = ofo_recurrent_run_get_numseq( obj );
 		runerrs = 0;
+		model_object = NULL;
 
 		/* recurrent model is mandatory */
 		mnemo = ofo_recurrent_run_get_mnemo( obj );
@@ -1776,6 +1914,49 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 				errs += 1;
 				runerrs += 1;
 			}
+		}
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
+		}
+
+		/* operation template */
+		ope_mnemo = ofo_recurrent_run_get_ope_template( obj );
+		if( !my_strlen( ope_mnemo )){
+			if( progress ){
+				str = g_strdup_printf( _( "Recurrent model %s does not have an operation template" ), mnemo );
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
+				g_free( str );
+			}
+			errs += 1;
+			runerrs += 1;
+		} else {
+			ope_object = ofo_ope_template_get_by_mnemo( getter, ope_mnemo );
+			if( !ope_object || !OFO_IS_OPE_TEMPLATE( ope_object )){
+				if( progress ){
+					str = g_strdup_printf(
+							_( "Recurrent model %s has operation template '%s' which doesn't exist" ), mnemo, ope_mnemo );
+					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
+					g_free( str );
+				}
+				errs += 1;
+				runerrs += 1;
+			}
+		}
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
+		}
+
+		/* periodicity */
+		period = ofo_recurrent_run_get_period( obj );
+		if( !period ){
+			if( progress ){
+				str = g_strdup_printf(
+						_( "Recurrent model %s has invalid periodicity" ), mnemo );
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
+				g_free( str );
+			}
+			errs += 1;
+			runerrs += 1;
 		}
 		if( progress ){
 			my_iprogress_pulse( progress, worker, ++i, count );
@@ -1835,118 +2016,5 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 	}
 
 	return( errs );
-}
-
-static gulong
-check_period( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
-{
-	gulong errs, objerrs;
-	void *worker;
-	GtkWidget *label;
-	GList *records, *it, *orphans, *ito;
-	gulong count, i;
-	gchar *str;
-	const gchar *perid;
-	ofxCounter docid;
-	ofoRecPeriod *period_obj;
-	gboolean all_messages;
-
-	worker = GUINT_TO_POINTER( OFO_TYPE_REC_PERIOD );
-	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
-
-	if( progress ){
-		label = gtk_label_new( _( " Check for periodicities integrity " ));
-		my_iprogress_start_work( progress, worker, label );
-		my_iprogress_start_progress( progress, worker, NULL, TRUE );
-	}
-
-	errs = 0;
-	records = ofo_rec_period_get_dataset( getter );
-	count = 2 + g_list_length( records );
-	i = 0;
-
-	if( count == 0 ){
-		if( progress ){
-			my_iprogress_pulse( progress, worker, 0, 0 );
-		}
-	}
-
-	for( it=records ; it ; it=it->next ){
-		period_obj = OFO_REC_PERIOD( it->data );
-		perid = ofo_rec_period_get_id( period_obj );
-		objerrs = 0;
-
-		/* check for referenced documents which actually do not exist */
-		orphans = ofa_idoc_get_orphans( OFA_IDOC( period_obj ));
-		if( g_list_length( orphans ) > 0 ){
-			for( ito=orphans ; ito ; ito=ito->next ){
-				docid = ( ofxCounter ) ito->data;
-				if( progress ){
-					str = g_strdup_printf( _( "Found orphan document(s) with DocId %lu" ), docid );
-					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
-					g_free( str );
-				}
-				errs += 1;
-				objerrs += 1;
-			}
-		}
-		ofa_idoc_free_orphans( orphans );
-		if( progress ){
-			my_iprogress_pulse( progress, worker, ++i, count );
-		}
-
-		if( objerrs == 0 && progress && all_messages ){
-			str = g_strdup_printf( _( "Periodicity %s does not exhibit any error: OK" ), perid );
-			my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, str );
-			g_free( str );
-		}
-	}
-
-	/* check that all details have a model parent */
-	orphans = ofo_rec_period_detail_get_orphans( getter );
-	if( g_list_length( orphans ) > 0 ){
-		for( it=orphans ; it ; it=it->next ){
-			if( progress ){
-				str = g_strdup_printf( _( "Found orphan document(s) with RecNumseq %lu" ), ( ofxCounter ) it->data );
-				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
-				g_free( str );
-			}
-			errs += 1;
-		}
-	} else if( all_messages ){
-		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan periodicity detail found: OK" ));
-	}
-	ofo_rec_period_detail_free_orphans( orphans );
-	if( progress ){
-		my_iprogress_pulse( progress, worker, ++i, count );
-	}
-
-	/* check that all documents have a model parent */
-	orphans = ofo_rec_period_doc_get_orphans( getter );
-	if( g_list_length( orphans ) > 0 ){
-		for( it=orphans ; it ; it=it->next ){
-			if( progress ){
-				str = g_strdup_printf( _( "Found orphan document(s) with RecNumseq %lu" ), ( ofxCounter ) it->data );
-				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
-				g_free( str );
-			}
-			errs += 1;
-		}
-	} else if( all_messages ){
-		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan periodicity document found: OK" ));
-	}
-	ofo_rec_period_doc_free_orphans( orphans );
-	if( progress ){
-		my_iprogress_pulse( progress, worker, ++i, count );
-	}
-
-	/* progress end */
-	if( progress ){
-		if( all_messages ){
-			my_iprogress_set_text( progress, worker, MY_PROGRESS_NONE, "" );
-		}
-		my_iprogress_set_ok( progress, worker, NULL, errs );
-	}
-
-	return( errs );
+#endif
 }
