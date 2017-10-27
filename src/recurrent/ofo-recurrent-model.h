@@ -35,10 +35,10 @@
  * An #ofoRecurrentModel describes a recurrent operation template.
  */
 
+#include <my/my-period.h>
+
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
-
-#include "recurrent/ofo-rec-period.h"
 
 G_BEGIN_DECLS
 
@@ -73,34 +73,36 @@ ofoRecurrentModel *ofo_recurrent_model_get_by_mnemo           ( ofaIGetter *gett
 gboolean           ofo_recurrent_model_use_ope_template       ( ofaIGetter *getter, const gchar *ope_template );
 
 ofoRecurrentModel *ofo_recurrent_model_new                    ( ofaIGetter *getter );
-ofoRecurrentModel *ofo_recurrent_model_new_from_model         ( const ofoRecurrentModel *model );
+ofoRecurrentModel *ofo_recurrent_model_new_from_model         ( ofoRecurrentModel *model );
 
 const gchar       *ofo_recurrent_model_get_mnemo              ( const ofoRecurrentModel *model );
+const gchar       *ofo_recurrent_model_get_cre_user           ( const ofoRecurrentModel *model );
+const GTimeVal    *ofo_recurrent_model_get_cre_stamp          ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_label              ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_ope_template       ( const ofoRecurrentModel *model );
-const gchar       *ofo_recurrent_model_get_periodicity        ( const ofoRecurrentModel *model );
-ofxCounter         ofo_recurrent_model_get_periodicity_detail ( const ofoRecurrentModel *model );
-const gchar       *ofo_recurrent_model_get_notes              ( const ofoRecurrentModel *model );
-const gchar       *ofo_recurrent_model_get_upd_user           ( const ofoRecurrentModel *model );
-const GTimeVal    *ofo_recurrent_model_get_upd_stamp          ( const ofoRecurrentModel *model );
+myPeriod          *ofo_recurrent_model_get_period             ( ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_def_amount1        ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_def_amount2        ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_def_amount3        ( const ofoRecurrentModel *model );
 gboolean           ofo_recurrent_model_get_is_enabled         ( const ofoRecurrentModel *model );
+const GDate       *ofo_recurrent_model_get_end                ( const ofoRecurrentModel *model );
+const gchar       *ofo_recurrent_model_get_notes              ( const ofoRecurrentModel *model );
+const gchar       *ofo_recurrent_model_get_upd_user           ( const ofoRecurrentModel *model );
+const GTimeVal    *ofo_recurrent_model_get_upd_stamp          ( const ofoRecurrentModel *model );
 
 gboolean           ofo_recurrent_model_is_deletable           ( const ofoRecurrentModel *model );
-gboolean           ofo_recurrent_model_is_valid_data          ( const gchar *mnemo, const gchar *label, const gchar *ope_template, ofoRecPeriod *period, ofxCounter detail, gchar **msgerr );
+gboolean           ofo_recurrent_model_is_valid_data          ( const gchar *mnemo, const gchar *label, const gchar *ope_template, myPeriod *period, gchar **msgerr );
 
 void               ofo_recurrent_model_set_mnemo              ( ofoRecurrentModel *model, const gchar *mnemo );
 void               ofo_recurrent_model_set_label              ( ofoRecurrentModel *model, const gchar *label );
 void               ofo_recurrent_model_set_ope_template       ( ofoRecurrentModel *model, const gchar *ope_template );
-void               ofo_recurrent_model_set_periodicity        ( ofoRecurrentModel *model, const gchar *periodicity );
-void               ofo_recurrent_model_set_periodicity_detail ( ofoRecurrentModel *model, ofxCounter detail );
-void               ofo_recurrent_model_set_notes              ( ofoRecurrentModel *model, const gchar *notes );
+void               ofo_recurrent_model_set_period             ( ofoRecurrentModel *model, myPeriod *period );
 void               ofo_recurrent_model_set_def_amount1        ( ofoRecurrentModel *model, const gchar *def_amount );
 void               ofo_recurrent_model_set_def_amount2        ( ofoRecurrentModel *model, const gchar *def_amount );
 void               ofo_recurrent_model_set_def_amount3        ( ofoRecurrentModel *model, const gchar *def_amount );
 void               ofo_recurrent_model_set_is_enabled         ( ofoRecurrentModel *model, gboolean is_enabled );
+void               ofo_recurrent_model_set_end                ( ofoRecurrentModel *model, const GDate *end );
+void               ofo_recurrent_model_set_notes              ( ofoRecurrentModel *model, const gchar *notes );
 
 guint              ofo_recurrent_model_doc_get_count          ( ofoRecurrentModel *model );
 

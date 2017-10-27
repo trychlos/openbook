@@ -31,10 +31,12 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-double.h"
 #include "my/my-idialog.h"
 #include "my/my-igridlist.h"
 #include "my/my-iwindow.h"
+#include "my/my-period.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
@@ -42,13 +44,13 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignaler.h"
 #include "api/ofa-ope-template-editable.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
 #include "recurrent/ofa-rec-period-bin.h"
 #include "recurrent/ofa-recurrent-model-properties.h"
-#include "recurrent/ofo-rec-period.h"
 #include "recurrent/ofo-recurrent-model.h"
 
 /* private instance data
@@ -77,10 +79,11 @@ typedef struct {
 	GtkWidget         *label_entry;
 	GtkWidget         *ope_template_entry;
 	GtkWidget         *ope_template_label;
-	ofaRecPeriodBin   *periodicity_bin;
+	//myPeriodBin       *period_bin;
 	GtkWidget         *def1_entry;
 	GtkWidget         *def2_entry;
 	GtkWidget         *def3_entry;
+	GtkWidget         *end_entry;
 	GtkWidget         *enabled_btn;
 
 	/* data
@@ -89,8 +92,7 @@ typedef struct {
 	gchar             *label;
 	gchar             *ope_template;
 	ofoOpeTemplate    *template_obj;
-	ofoRecPeriod      *periodicity;
-	ofxCounter         periodicity_detail;
+	myPeriod          *period;
 	gboolean           enabled;
 }
 	ofaRecurrentModelPropertiesPrivate;
@@ -107,8 +109,8 @@ static void     setup_data( ofaRecurrentModelProperties *self );
 static void     on_mnemo_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
 static void     on_label_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
 static void     on_ope_template_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
-static void     on_periodicity_changed( ofaRecPeriodBin *bin, ofoRecPeriod *period, ofaRecurrentModelProperties *self );
-static void     on_periodicity_detail_changed( ofaRecPeriodBin *bin, ofoRecPeriod *period, ofxCounter detail_id, ofaRecurrentModelProperties *self );
+//static void     on_periodicity_changed( ofaRecPeriodBin *bin, ofoRecPeriod *period, ofaRecurrentModelProperties *self );
+//static void     on_periodicity_detail_changed( ofaRecPeriodBin *bin, ofoRecPeriod *period, ofxCounter detail_id, ofaRecurrentModelProperties *self );
 static void     on_enabled_toggled( GtkToggleButton *button, ofaRecurrentModelProperties *self );
 static void     check_for_enable_dlg( ofaRecurrentModelProperties *self );
 static gboolean is_dialog_validable( ofaRecurrentModelProperties *self );
@@ -348,7 +350,7 @@ static void
 init_page_properties( ofaRecurrentModelProperties *self )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
-	GtkWidget *entry, *prompt, *label, *parent, *combo, *btn;
+	GtkWidget *entry, *prompt, *label, *btn;
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
@@ -388,6 +390,7 @@ init_page_properties( ofaRecurrentModelProperties *self )
 	priv->ope_template_label = label;
 
 	/* periodicity */
+	/*
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-periodicity-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->periodicity_bin = ofa_rec_period_bin_new( priv->getter );
@@ -399,6 +402,7 @@ init_page_properties( ofaRecurrentModelProperties *self )
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-period-prompt" );
 	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), combo );
+	*/
 
 	/* amount definitions */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-def1" );
@@ -416,6 +420,22 @@ init_page_properties( ofaRecurrentModelProperties *self )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-def3" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->def3_entry = entry;
+
+	/* end date */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-date" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->end_entry = entry;
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	my_date_editable_init( GTK_EDITABLE( priv->end_entry ));
+	my_date_editable_set_entry_format( GTK_EDITABLE( priv->end_entry ), ofa_prefs_date_get_display_format( priv->getter ));
+	my_date_editable_set_label_format( GTK_EDITABLE( priv->end_entry ), label, ofa_prefs_date_get_check_format( priv->getter ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->end_entry ), ofa_prefs_date_get_overwrite( priv->getter ));
+
+	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-prompt" );
+	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-enabled" );
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
@@ -442,9 +462,11 @@ setup_data( ofaRecurrentModelProperties *self )
 	gtk_entry_set_text( GTK_ENTRY( priv->ope_template_entry ), cstr ? cstr : "" );
 	priv->orig_template = g_strdup( cstr );
 
+	/*
 	ofa_rec_period_bin_set_selected( priv->periodicity_bin,
 			ofo_recurrent_model_get_periodicity( priv->recurrent_model ),
 			ofo_recurrent_model_get_periodicity_detail( priv->recurrent_model ));
+			*/
 
 	cstr = ofo_recurrent_model_get_def_amount1( priv->recurrent_model );
 	gtk_entry_set_text( GTK_ENTRY( priv->def1_entry ), cstr ? cstr : "" );
@@ -454,6 +476,9 @@ setup_data( ofaRecurrentModelProperties *self )
 
 	cstr = ofo_recurrent_model_get_def_amount3( priv->recurrent_model );
 	gtk_entry_set_text( GTK_ENTRY( priv->def3_entry ), cstr ? cstr : "" );
+
+	my_date_editable_set_date( GTK_EDITABLE( priv->end_entry ),
+			ofo_recurrent_model_get_end( priv->recurrent_model ));
 
 	is_enabled = ofo_recurrent_model_get_is_enabled( priv->recurrent_model );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ), is_enabled );
@@ -504,6 +529,7 @@ on_ope_template_changed( GtkEntry *entry, ofaRecurrentModelProperties *self )
 	check_for_enable_dlg( self );
 }
 
+/*
 static void
 on_periodicity_changed( ofaRecPeriodBin *bin, ofoRecPeriod *period, ofaRecurrentModelProperties *self )
 {
@@ -529,6 +555,7 @@ on_periodicity_detail_changed( ofaRecPeriodBin *bin, ofoRecPeriod *period, ofxCo
 
 	check_for_enable_dlg( self );
 }
+*/
 
 static void
 on_enabled_toggled( GtkToggleButton *button, ofaRecurrentModelProperties *self )
@@ -578,8 +605,7 @@ is_dialog_validable( ofaRecurrentModelProperties *self )
 	/* other tests must only be satisfied if enabled */
 	if( ok && priv->enabled ){
 		ok = ofo_recurrent_model_is_valid_data(
-				priv->mnemo, priv->label, priv->ope_template,
-						priv->periodicity, priv->periodicity_detail, &msgerr );
+				priv->mnemo, priv->label, priv->ope_template, NULL, &msgerr );
 
 		if( ok && !priv->template_obj ){
 			ok = FALSE;
@@ -653,9 +679,10 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	ofaRecurrentModelPropertiesPrivate *priv;
 	ofaISignaler *signaler;
 	gchar *prev_mnemo;
-	gboolean ok, is_enabled;
+	gboolean ok, is_enabled, valid;
 	const gchar *cstr;
 	ofoOpeTemplate *template_obj;
+	const GDate *date;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
@@ -669,10 +696,12 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	ofo_recurrent_model_set_mnemo( priv->recurrent_model, priv->mnemo );
 	ofo_recurrent_model_set_label( priv->recurrent_model, priv->label );
 	ofo_recurrent_model_set_ope_template( priv->recurrent_model, priv->ope_template );
+	/*
 	if( priv->periodicity ){
 		ofo_recurrent_model_set_periodicity( priv->recurrent_model, ofo_rec_period_get_id( priv->periodicity ));
 		ofo_recurrent_model_set_periodicity_detail( priv->recurrent_model, priv->periodicity_detail );
 	}
+	*/
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( priv->def1_entry ));
 	ofo_recurrent_model_set_def_amount1( priv->recurrent_model, cstr );
@@ -682,6 +711,11 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( priv->def3_entry ));
 	ofo_recurrent_model_set_def_amount3( priv->recurrent_model, cstr );
+
+	date = my_date_editable_get_date( GTK_EDITABLE( priv->end_entry ), &valid );
+	if( valid ){
+		ofo_recurrent_model_set_end( priv->recurrent_model, date );
+	}
 
 	is_enabled = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ));
 	ofo_recurrent_model_set_is_enabled( priv->recurrent_model, is_enabled );

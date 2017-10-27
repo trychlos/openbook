@@ -28,15 +28,17 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-date.h"
+#include "my/my-period.h"
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignaler.h"
+#include "api/ofa-prefs.h"
 #include "api/ofo-ope-template.h"
 
 #include "recurrent/ofa-recurrent-model-store.h"
-#include "recurrent/ofo-rec-period.h"
 #include "recurrent/ofo-recurrent-model.h"
 
 /* private instance data
@@ -55,12 +57,15 @@ typedef struct {
 	ofaRecurrentModelStorePrivate;
 
 static GType st_col_types[REC_MODEL_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, ope_template */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_LONG,		/* periodicity, detail, detail_i */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* def_amount1,def_amount2,def_amount3 */
-		G_TYPE_STRING, G_TYPE_BOOLEAN,					/* enabled_str, enabled_bool */
-		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
-		G_TYPE_STRING,									/* upd_stamp */
+		G_TYPE_STRING, G_TYPE_STRING,  G_TYPE_STRING,	/* mnemo, cre_user, cre_stamp */
+		G_TYPE_STRING, G_TYPE_STRING,  G_TYPE_STRING,	/* label, ope_template, period_id */
+		G_TYPE_STRING,									/* period_id_s */
+		G_TYPE_STRING, G_TYPE_UINT,    G_TYPE_STRING,	/* period_every, every_i, details_i */
+		G_TYPE_STRING,									/* details_s */
+		G_TYPE_STRING, G_TYPE_STRING,  G_TYPE_STRING,	/* def_amount1,def_amount2,def_amount3 */
+		G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_STRING,	/* enabled_str, enabled_bool, end */
+		G_TYPE_STRING, 0,								/* notes, notes_png */
+		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoRecurrentModel itself */
 };
 
@@ -69,8 +74,8 @@ static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/recurrent/
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentModelStore *self );
 static void     load_dataset( ofaRecurrentModelStore *self );
-static void     insert_row( ofaRecurrentModelStore *self, const ofoRecurrentModel *model );
-static void     set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, GtkTreeIter *iter );
+static void     insert_row( ofaRecurrentModelStore *self, ofoRecurrentModel *model );
+static void     set_row_by_iter( ofaRecurrentModelStore *self, ofoRecurrentModel *model, GtkTreeIter *iter );
 static gboolean model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIter *iter );
 static void     remove_row_by_mnemo( ofaRecurrentModelStore *self, const gchar *mnemo );
 static void     set_ope_templat_new_id( ofaRecurrentModelStore *self, const gchar *prev_mnemo, const gchar *new_mnemo );
@@ -188,6 +193,8 @@ ofa_recurrent_model_store_new( ofaIGetter *getter )
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), REC_MODEL_N_COLUMNS, st_col_types );
 
+		load_dataset( store );
+
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 		gtk_tree_sortable_set_sort_column_id(
@@ -196,7 +203,6 @@ ofa_recurrent_model_store_new( ofaIGetter *getter )
 
 		my_icollector_single_set_object( collector, store );
 		signaler_connect_to_signaling_system( store );
-		load_dataset( store );
 	}
 
 	return( store );
@@ -240,7 +246,7 @@ load_dataset( ofaRecurrentModelStore *self )
 }
 
 static void
-insert_row( ofaRecurrentModelStore *self, const ofoRecurrentModel *model )
+insert_row( ofaRecurrentModelStore *self, ofoRecurrentModel *model )
 {
 	GtkTreeIter iter;
 
@@ -249,40 +255,45 @@ insert_row( ofaRecurrentModelStore *self, const ofoRecurrentModel *model )
 }
 
 static void
-set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, GtkTreeIter *iter )
+set_row_by_iter( ofaRecurrentModelStore *self, ofoRecurrentModel *model, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_store_set_row";
 	ofaRecurrentModelStorePrivate *priv;
-	gchar *stamp;
-	const gchar *csper, *csdet, *csdef1, *csdef2, *csdef3, *cenabled;
-	const gchar *notes;
+	gchar *cre_stamp, *upd_stamp, *spern, *sperdeti, *sperdets, *send;
+	const gchar *csperid, *csperids, *csdef1, *csdef2, *csdef3, *cenabled, *notes;
 	GError *error;
 	GdkPixbuf *notes_png;
 	gboolean is_enabled;
-	ofxCounter perdetid;
-	ofoRecPeriod *period;
-	gint idx;
+	guint pern;
+	myPeriod *period;
+	myPeriodEnum perenum;
+	const GDate *date;
 
 	priv = ofa_recurrent_model_store_get_instance_private( self );
 
-	stamp  = my_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
+	cre_stamp  = my_stamp_to_str( ofo_recurrent_model_get_cre_stamp( model ), MY_STAMP_DMYYHM );
+	upd_stamp  = my_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
 
-	csper = ofo_recurrent_model_get_periodicity( model );
-	period = ofo_rec_period_get_by_id( priv->getter, csper );
-
-	csdet = "";
-	perdetid = 0;
-	if( period && ofo_rec_period_detail_get_count( period ) > 0 ){
-		perdetid = ofo_recurrent_model_get_periodicity_detail( model );
-		idx = ofo_rec_period_detail_get_by_id( period, perdetid );
-		if( idx >= 0 ){
-			csdet = ofo_rec_period_detail_get_label( period, idx );
-		}
-	}
+	period = ofo_recurrent_model_get_period( model );
+	csperid = my_period_get_id( period );
+	perenum = my_period_get_enum( csperid );
+	csperids = my_period_enum_get_label( perenum );
+	pern = my_period_get_every( period );
+	spern = g_strdup_printf( "%u", pern );
+	sperdeti = my_period_get_details_str_i( period );
+	sperdets = my_period_get_details_str_s( period );
 
 	csdef1 = ofo_recurrent_model_get_def_amount1( model );
 	csdef2 = ofo_recurrent_model_get_def_amount2( model );
 	csdef3 = ofo_recurrent_model_get_def_amount3( model );
+
+	date = ofo_recurrent_model_get_end( model );
+	if( my_date_is_valid( date )){
+		send = my_date_to_str( date, ofa_prefs_date_get_display_format( priv->getter ));
+	} else {
+		send = g_strdup( "" );
+	}
+
 	is_enabled = ofo_recurrent_model_get_is_enabled( model );
 	cenabled = is_enabled ? _( "Yes" ) : _( "No" );
 
@@ -298,25 +309,36 @@ set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, G
 			GTK_LIST_STORE( self ),
 			iter,
 			REC_MODEL_COL_MNEMO,              ofo_recurrent_model_get_mnemo( model ),
+			REC_MODEL_COL_CRE_USER,           ofo_recurrent_model_get_cre_user( model ),
+			REC_MODEL_COL_CRE_STAMP,          cre_stamp,
 			REC_MODEL_COL_LABEL,              ofo_recurrent_model_get_label( model ),
 			REC_MODEL_COL_OPE_TEMPLATE,       ofo_recurrent_model_get_ope_template( model ),
-			REC_MODEL_COL_PERIODICITY,        csper,
-			REC_MODEL_COL_PERIODICITY_DETAIL, csdet,
-			REC_MODEL_COL_PERIOD_DETAIL_I,    perdetid,
+			REC_MODEL_COL_PERIOD_ID,          csperid,
+			REC_MODEL_COL_PERIOD_ID_S,        csperids,
+			REC_MODEL_COL_PERIOD_EVERY,       spern,
+			REC_MODEL_COL_PERIOD_EVERY_I,     pern,
+			REC_MODEL_COL_PERIOD_DET_I,       sperdeti,
+			REC_MODEL_COL_PERIOD_DET_S,       sperdets,
 			REC_MODEL_COL_DEF_AMOUNT1,        csdef1 ? csdef1 : "",
 			REC_MODEL_COL_DEF_AMOUNT2,        csdef2 ? csdef2 : "",
 			REC_MODEL_COL_DEF_AMOUNT3,        csdef3 ? csdef3 : "",
 			REC_MODEL_COL_ENABLED,            cenabled,
 			REC_MODEL_COL_ENABLED_B,          is_enabled,
+			REC_MODEL_COL_END,                send,
 			REC_MODEL_COL_NOTES,              notes,
 			REC_MODEL_COL_NOTES_PNG,          notes_png,
 			REC_MODEL_COL_UPD_USER,           ofo_recurrent_model_get_upd_user( model ),
-			REC_MODEL_COL_UPD_STAMP,          stamp,
+			REC_MODEL_COL_UPD_STAMP,          upd_stamp,
 			REC_MODEL_COL_OBJECT,             model,
 			-1 );
 
 	g_object_unref( notes_png );
-	g_free( stamp );
+	g_free( send );
+	g_free( sperdets );
+	g_free( sperdeti );
+	g_free( spern );
+	g_free( upd_stamp );
+	g_free( cre_stamp );
 }
 
 static gboolean

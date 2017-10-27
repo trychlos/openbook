@@ -33,6 +33,7 @@
 #include "my/my-icollector.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
+#include "my/my-period.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
@@ -51,7 +52,6 @@
 #include "ofa-recurrent-run-page.h"
 #include "ofa-recurrent-run-store.h"
 #include "ofa-recurrent-run-treeview.h"
-#include "ofo-rec-period.h"
 #include "ofo-recurrent-gen.h"
 #include "ofo-recurrent-model.h"
 #include "ofo-recurrent-run.h"
@@ -541,7 +541,7 @@ is_dialog_validable( ofaRecurrentGenerate *self )
 		valid = FALSE;
 
 	} else if( my_date_compare( &priv->begin_date, &priv->end_date ) > 0 ){
-		msgerr = g_strdup( _( "Beginning date is greater than ending date" ));
+		msgerr = g_strdup( _( "Ending date is earlier than beginning date" ));
 		valid = FALSE;
 	}
 
@@ -700,9 +700,7 @@ static GList *
 generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages )
 {
 	ofaRecurrentGeneratePrivate *priv;
-	const gchar *per_id;
-	ofxCounter perdetid;
-	ofoRecPeriod *period;
+	myPeriod *period;
 	sEnumBetween sdata;
 	gchar *str;
 
@@ -718,21 +716,19 @@ generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GD
 		sdata.model = model;
 		sdata.template = ofo_ope_template_get_by_mnemo( priv->getter, ofo_recurrent_model_get_ope_template( model ));
 
-		per_id = ofo_recurrent_model_get_periodicity( model );
-		period = ofo_rec_period_get_by_id( priv->getter, per_id );
+		period = ofo_recurrent_model_get_period( model );
 		if( period ){
-			perdetid = ofo_recurrent_model_get_periodicity_detail( model );
-			ofo_rec_period_enum_between(
-					period, perdetid, begin_date, end_date,
-					( RecPeriodEnumBetweenCb ) generate_enum_dates_cb, &sdata );
+			my_period_enum_between(
+					period, NULL, NULL, begin_date, end_date,
+					( myPeriodEnumBetweenCb ) generate_enum_dates_cb, &sdata );
 			if( g_list_length( sdata.messages )){
 				*messages = g_list_concat( *messages, sdata.messages );
 			}
 
 		} else {
 			str = g_strdup_printf(
-					_( "Model '%s': unknown periodicity identifier: %s" ),
-					ofo_recurrent_model_get_mnemo( model ), per_id );
+					_( "Model '%s': unknown periodicity" ),
+					ofo_recurrent_model_get_mnemo( model ));
 			*messages = g_list_prepend( *messages, str );
 		}
 	}

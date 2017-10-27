@@ -37,6 +37,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
+#include "api/ofa-prefs.h"
 
 #include "ofa-recurrent-model-store.h"
 #include "ofa-recurrent-model-treeview.h"
@@ -298,14 +299,20 @@ setup_columns( ofaRecurrentModelTreeview *self )
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_MNEMO,              _( "Mnemo" ),    _( "Mnemonic" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_CRE_USER,           _( "User" ),     _( "Creation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), REC_MODEL_COL_CRE_STAMP,              NULL,        _( "Creation timestamp" ));
 	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), REC_MODEL_COL_LABEL,              _( "Label" ),        NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_OPE_TEMPLATE,       _( "Template" ), _( "Operation template" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_PERIODICITY,        _( "Period." ),  _( "Periodicity" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_PERIODICITY_DETAIL, _( "Detail" ),   _( "Periodicity detail" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_PERIOD_ID,          _( "Period." ),  _( "Periodicity identifier" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_PERIOD_ID_S,        _( "Period." ),  _( "Periodicity label" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_PERIOD_EVERY,       _( "Every" ),    _( "Periodicity every" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_PERIOD_DET_I,       _( "Detail" ),   _( "Periodicity details (as integers)" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_PERIOD_DET_S,       _( "Detail" ),   _( "Periodicity details (as labels)" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_DEF_AMOUNT1,        _( "Amount 1" ), _( "Updatable amount n° 1" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_DEF_AMOUNT2,        _( "Amount 2" ), _( "Updatable amount n° 2" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_DEF_AMOUNT3,        _( "Amount 3" ), _( "Updatable amount n° 3" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_ENABLED,            _( "Enabled" ),      NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), REC_MODEL_COL_END,                _( "End" ),      _( "End date" ));
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), REC_MODEL_COL_NOTES,              _( "Notes" ),        NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), REC_MODEL_COL_NOTES_PNG,             "",           _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_UPD_USER,           _( "User" ),     _( "Last update user" ));
@@ -497,22 +504,33 @@ static gint
 tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_treeview_v_sort";
+	ofaRecurrentModelTreeviewPrivate *priv;
 	gint cmp;
-	gchar *mnemoa, *labela, *templa, *pera, *amount1a, *amount2a, *amount3a, *notesa, *updusera, *updstampa, *enaa;
-	gchar *mnemob, *labelb, *templb, *perb, *amount1b, *amount2b, *amount3b, *notesb, *upduserb, *updstampb, *enab;
+	gchar *mnemoa, *creusera, *crestampa, *labela, *templa, *perida, *peridsa, *perdetia, *perdetsa,
+			*amount1a, *amount2a, *amount3a, *enaa, *enda, *notesa, *updusera, *updstampa;
+	gchar *mnemob, *creuserb, *crestampb, *labelb, *templb, *peridb, *peridsb, *perdetib, *perdetsb,
+			*amount1b, *amount2b, *amount3b, *enab, *endb, *notesb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
-	ofxCounter perdeta, perdetb;
+	guint perna, pernb;
+
+	priv = ofa_recurrent_model_treeview_get_instance_private( OFA_RECURRENT_MODEL_TREEVIEW( tvbin ));
 
 	gtk_tree_model_get( tmodel, a,
 			REC_MODEL_COL_MNEMO,              &mnemoa,
+			REC_MODEL_COL_CRE_USER,           &creusera,
+			REC_MODEL_COL_CRE_STAMP,          &crestampa,
 			REC_MODEL_COL_LABEL,              &labela,
 			REC_MODEL_COL_OPE_TEMPLATE,       &templa,
-			REC_MODEL_COL_PERIODICITY,        &pera,
-			REC_MODEL_COL_PERIOD_DETAIL_I,    &perdeta,
+			REC_MODEL_COL_PERIOD_ID,          &perida,
+			REC_MODEL_COL_PERIOD_ID_S,        &peridsa,
+			REC_MODEL_COL_PERIOD_EVERY_I,     &perna,
+			REC_MODEL_COL_PERIOD_DET_I,       &perdetia,
+			REC_MODEL_COL_PERIOD_DET_S,       &perdetsa,
 			REC_MODEL_COL_DEF_AMOUNT1,        &amount1a,
 			REC_MODEL_COL_DEF_AMOUNT2,        &amount2a,
 			REC_MODEL_COL_DEF_AMOUNT3,        &amount3a,
 			REC_MODEL_COL_ENABLED,            &enaa,
+			REC_MODEL_COL_END,                &enda,
 			REC_MODEL_COL_NOTES,              &notesa,
 			REC_MODEL_COL_NOTES_PNG,          &pnga,
 			REC_MODEL_COL_UPD_USER,           &updusera,
@@ -521,14 +539,20 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 
 	gtk_tree_model_get( tmodel, b,
 			REC_MODEL_COL_MNEMO,              &mnemob,
+			REC_MODEL_COL_CRE_USER,           &creuserb,
+			REC_MODEL_COL_CRE_STAMP,          &crestampb,
 			REC_MODEL_COL_LABEL,              &labelb,
 			REC_MODEL_COL_OPE_TEMPLATE,       &templb,
-			REC_MODEL_COL_PERIODICITY,        &perb,
-			REC_MODEL_COL_PERIOD_DETAIL_I,    &perdetb,
+			REC_MODEL_COL_PERIOD_ID,          &peridb,
+			REC_MODEL_COL_PERIOD_ID_S,        &peridsb,
+			REC_MODEL_COL_PERIOD_EVERY_I,     &pernb,
+			REC_MODEL_COL_PERIOD_DET_I,       &perdetib,
+			REC_MODEL_COL_PERIOD_DET_S,       &perdetsb,
 			REC_MODEL_COL_DEF_AMOUNT1,        &amount1b,
 			REC_MODEL_COL_DEF_AMOUNT2,        &amount2b,
 			REC_MODEL_COL_DEF_AMOUNT3,        &amount3b,
 			REC_MODEL_COL_ENABLED,            &enab,
+			REC_MODEL_COL_END,                &endb,
 			REC_MODEL_COL_NOTES,              &notesb,
 			REC_MODEL_COL_NOTES_PNG,          &pngb,
 			REC_MODEL_COL_UPD_USER,           &upduserb,
@@ -541,17 +565,32 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 		case REC_MODEL_COL_MNEMO:
 			cmp = my_collate( mnemoa, mnemob );
 			break;
+		case REC_MODEL_COL_CRE_USER:
+			cmp = my_collate( creusera, creuserb );
+			break;
+		case REC_MODEL_COL_CRE_STAMP:
+			cmp = my_collate( crestampa, crestampb );
+			break;
 		case REC_MODEL_COL_LABEL:
 			cmp = my_collate( labela, labelb );
 			break;
 		case REC_MODEL_COL_OPE_TEMPLATE:
 			cmp = my_collate( templa, templb );
 			break;
-		case REC_MODEL_COL_PERIODICITY:
-			cmp = my_collate( pera, perb );
+		case REC_MODEL_COL_PERIOD_ID:
+			cmp = my_collate( perida, peridb );
 			break;
-		case REC_MODEL_COL_PERIODICITY_DETAIL:
-			cmp = perdeta < perdetb ? -1 : ( perdeta > perdetb ? 1 : 0 );
+		case REC_MODEL_COL_PERIOD_ID_S:
+			cmp = my_collate( peridsa, peridsb );
+			break;
+		case REC_MODEL_COL_PERIOD_EVERY:
+			cmp = perna < pernb ? -1 : ( perna > pernb ? 1 : 0 );
+			break;
+		case REC_MODEL_COL_PERIOD_DET_I:
+			cmp = my_collate( perdetia, perdetib );
+			break;
+		case REC_MODEL_COL_PERIOD_DET_S:
+			cmp = my_collate( perdetsa, perdetsb );
 			break;
 		case REC_MODEL_COL_DEF_AMOUNT1:
 			cmp = my_collate( amount1a, amount1b );
@@ -564,6 +603,9 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			break;
 		case REC_MODEL_COL_ENABLED:
 			cmp = my_collate( enaa, enab );
+			break;
+		case REC_MODEL_COL_END:
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case REC_MODEL_COL_NOTES:
 			cmp = my_collate( notesa, notesb );
@@ -583,26 +625,38 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	}
 
 	g_free( mnemoa );
+	g_free( creusera );
+	g_free( crestampa );
 	g_free( labela );
 	g_free( templa );
-	g_free( pera );
+	g_free( perida );
+	g_free( peridsa );
+	g_free( perdetia );
+	g_free( perdetsa );
 	g_free( amount1a );
 	g_free( amount2a );
 	g_free( amount3a );
 	g_free( enaa );
+	g_free( enda );
 	g_free( notesa );
 	g_free( updusera );
 	g_free( updstampa );
 	g_clear_object( &pnga );
 
 	g_free( mnemob );
+	g_free( creuserb );
+	g_free( crestampb );
 	g_free( labelb );
 	g_free( templb );
-	g_free( perb );
+	g_free( peridb );
+	g_free( peridsb );
+	g_free( perdetib );
+	g_free( perdetsb );
 	g_free( amount1b );
 	g_free( amount2b );
 	g_free( amount3b );
 	g_free( enab );
+	g_free( endb );
 	g_free( notesb );
 	g_free( upduserb );
 	g_free( updstampb );
