@@ -1659,7 +1659,7 @@ dbmodel_to_v10( ofaRecurrentDBModel *self, guint version )
 	}
 
 	/* 11 */
-	if( !exec_query( self, "DELETE FROM OFA_T_DOCS WHERE DOC_ID=(SELECT REC_DOC_ID FROM REC_T_PERIODS_DOC" )){
+	if( !exec_query( self, "DELETE FROM OFA_T_DOCS WHERE DOC_ID=(SELECT REC_DOC_ID FROM REC_T_PERIODS_DOC)" )){
 		return( FALSE );
 	}
 
@@ -1671,7 +1671,7 @@ dbmodel_to_v10( ofaRecurrentDBModel *self, guint version )
 	/* 13 */
 	if( !exec_query( self,
 			"ALTER TABLE REC_T_GEN "
-			"	DROP   COLUMN REC_LAST_PER_DET_IT" )){
+			"	DROP   COLUMN REC_LAST_PER_DET_ID" )){
 		return( FALSE );
 	}
 
@@ -1745,7 +1745,7 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 		mnemo = ofo_recurrent_model_get_mnemo( model );
 		moderrs = 0;
 
-		if( ofo_recurrent_model_get_is_enabled( model )){
+		if( ofo_recurrent_model_get_enabled( model )){
 
 			/* operation template */
 			ope_mnemo = ofo_recurrent_model_get_ope_template( model );

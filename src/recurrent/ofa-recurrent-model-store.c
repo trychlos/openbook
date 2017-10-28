@@ -266,7 +266,7 @@ set_row_by_iter( ofaRecurrentModelStore *self, ofoRecurrentModel *model, GtkTree
 	gboolean is_enabled;
 	guint pern;
 	myPeriod *period;
-	myPeriodEnum perenum;
+	myPeriodKey per_id;
 	const GDate *date;
 
 	priv = ofa_recurrent_model_store_get_instance_private( self );
@@ -275,9 +275,9 @@ set_row_by_iter( ofaRecurrentModelStore *self, ofoRecurrentModel *model, GtkTree
 	upd_stamp  = my_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
 
 	period = ofo_recurrent_model_get_period( model );
-	csperid = my_period_get_id( period );
-	perenum = my_period_get_enum( csperid );
-	csperids = my_period_enum_get_label( perenum );
+	per_id = my_period_get_key( period );
+	csperid = my_period_key_get_abr( per_id );
+	csperids = my_period_key_get_label( per_id );
 	pern = my_period_get_every( period );
 	spern = g_strdup_printf( "%u", pern );
 	sperdeti = my_period_get_details_str_i( period );
@@ -294,7 +294,7 @@ set_row_by_iter( ofaRecurrentModelStore *self, ofoRecurrentModel *model, GtkTree
 		send = g_strdup( "" );
 	}
 
-	is_enabled = ofo_recurrent_model_get_is_enabled( model );
+	is_enabled = ofo_recurrent_model_get_enabled( model );
 	cenabled = is_enabled ? _( "Yes" ) : _( "No" );
 
 	notes = ofo_recurrent_model_get_notes( model );

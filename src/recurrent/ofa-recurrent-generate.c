@@ -711,7 +711,7 @@ generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GD
 	sdata.already = 0;
 	sdata.messages = NULL;
 
-	if( ofo_recurrent_model_get_is_enabled( model )){
+	if( ofo_recurrent_model_get_enabled( model )){
 
 		sdata.model = model;
 		sdata.template = ofo_ope_template_get_by_mnemo( priv->getter, ofo_recurrent_model_get_ope_template( model ));
