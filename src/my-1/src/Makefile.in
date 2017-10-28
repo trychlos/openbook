@@ -191,11 +191,14 @@ am_liborgtrychlosmy1_la_OBJECTS = my-accel-group.lo my-char.lo \
 	my-file-monitor.lo my-iassistant.lo my-ibin.lo \
 	my-icollectionable.lo my-icollector.lo my-idialog.lo \
 	my-iident.lo my-igridlist.lo my-iprogress.lo my-iscope-map.lo \
-	my-isettings.lo my-iwindow.lo my-period.lo my-progress-bar.lo \
-	my-scope-mapper.lo my-settings.lo my-signal.lo my-stamp.lo \
-	my-style.lo my-tab.lo my-thousand-combo.lo my-timeout.lo \
-	my-utils.lo
-liborgtrychlosmy1_la_OBJECTS = $(am_liborgtrychlosmy1_la_OBJECTS)
+	my-isettings.lo my-iwindow.lo my-period.lo my-period-bin.lo \
+	my-progress-bar.lo my-scope-mapper.lo my-settings.lo \
+	my-signal.lo my-stamp.lo my-style.lo my-tab.lo \
+	my-thousand-combo.lo my-timeout.lo my-utils.lo
+am__objects_1 = resources.lo
+nodist_liborgtrychlosmy1_la_OBJECTS = $(am__objects_1)
+liborgtrychlosmy1_la_OBJECTS = $(am_liborgtrychlosmy1_la_OBJECTS) \
+	$(nodist_liborgtrychlosmy1_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -238,7 +241,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(liborgtrychlosmy1_la_SOURCES)
+SOURCES = $(liborgtrychlosmy1_la_SOURCES) \
+	$(nodist_liborgtrychlosmy1_la_SOURCES)
 DIST_SOURCES = $(liborgtrychlosmy1_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -468,7 +472,7 @@ BUILT_SOURCES = \
 	$(my_built_sources)									\
 	$(NULL)
 
-nodist_liborgtrychlosmy1_la_OURCES = \
+nodist_liborgtrychlosmy1_la_SOURCES = \
 	$(my_built_sources)									\
 	$(NULL)
 
@@ -500,6 +504,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-isettings.c										\
 	my-iwindow.c										\
 	my-period.c											\
+	my-period-bin.c										\
 	my-progress-bar.c									\
 	my-scope-mapper.c									\
 	my-settings.c										\
@@ -637,6 +642,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iscope-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-isettings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iwindow.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-period-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-period.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-progress-bar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-scope-mapper.Plo@am__quote@
@@ -648,6 +654,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-thousand-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-timeout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-utils.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resources.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

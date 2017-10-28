@@ -37,6 +37,7 @@
    - my_utils_str_from_uint_list(): new function.
    - my_utils_str_to_uint_list(): new function.
    - myPeriod: new class.
+   - myPeriodBin: new class.
 
 -----------------------------------------------------------------------
  Version 0.72

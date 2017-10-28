@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/trychlos/my">
+    <file>my-period-bin.ui</file>
   </gresource>
 </gresources>

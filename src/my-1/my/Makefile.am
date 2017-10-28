@@ -52,6 +52,7 @@ my_include_HEADERS = \
 	my-isettings.h										\
 	my-iwindow.h										\
 	my-period.h											\
+	my-period-bin.h										\
 	my-progress-bar.h									\
 	my-scope-mapper.h									\
 	my-settings.h										\

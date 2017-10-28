@@ -53,7 +53,7 @@ BUILT_SOURCES = \
 	$(my_built_sources)									\
 	$(NULL)
 
-nodist_liborgtrychlosmy1_la_OURCES = \
+nodist_liborgtrychlosmy1_la_SOURCES = \
 	$(my_built_sources)									\
 	$(NULL)
 
@@ -85,6 +85,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-isettings.c										\
 	my-iwindow.c										\
 	my-period.c											\
+	my-period-bin.c										\
 	my-progress-bar.c									\
 	my-scope-mapper.c									\
 	my-settings.c										\

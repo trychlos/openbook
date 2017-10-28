@@ -102,6 +102,8 @@ src/my-1/src/my-date.c
 src/my-1/src/my-date-editable.c
 src/my-1/src/my-idialog.c
 src/my-1/src/my-period.c
+src/my-1/src/my-period-bin.c
+src/my-1/src/my-period-bin.ui
 src/my-1/src/my-utils.c
 src/mysql/ofa-mysql-about.ui
 src/mysql/ofa-mysql-connect.c
