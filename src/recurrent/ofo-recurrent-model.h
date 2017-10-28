@@ -84,7 +84,7 @@ myPeriod          *ofo_recurrent_model_get_period             ( ofoRecurrentMode
 const gchar       *ofo_recurrent_model_get_def_amount1        ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_def_amount2        ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_def_amount3        ( const ofoRecurrentModel *model );
-gboolean           ofo_recurrent_model_get_is_enabled         ( const ofoRecurrentModel *model );
+gboolean           ofo_recurrent_model_get_enabled            ( const ofoRecurrentModel *model );
 const GDate       *ofo_recurrent_model_get_end                ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_notes              ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_upd_user           ( const ofoRecurrentModel *model );
@@ -100,7 +100,7 @@ void               ofo_recurrent_model_set_period             ( ofoRecurrentMode
 void               ofo_recurrent_model_set_def_amount1        ( ofoRecurrentModel *model, const gchar *def_amount );
 void               ofo_recurrent_model_set_def_amount2        ( ofoRecurrentModel *model, const gchar *def_amount );
 void               ofo_recurrent_model_set_def_amount3        ( ofoRecurrentModel *model, const gchar *def_amount );
-void               ofo_recurrent_model_set_is_enabled         ( ofoRecurrentModel *model, gboolean is_enabled );
+void               ofo_recurrent_model_set_enabled            ( ofoRecurrentModel *model, gboolean enabled );
 void               ofo_recurrent_model_set_end                ( ofoRecurrentModel *model, const GDate *end );
 void               ofo_recurrent_model_set_notes              ( ofoRecurrentModel *model, const gchar *notes );
 

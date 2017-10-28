@@ -370,7 +370,7 @@ on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentModel
 	count_enabled = 0;
 	for( it=list ; it ; it=it->next ){
 		model = ( ofoRecurrentModel * ) it->data;
-		if( ofo_recurrent_model_get_is_enabled( model )){
+		if( ofo_recurrent_model_get_enabled( model )){
 			count_enabled += 1;
 		}
 	}

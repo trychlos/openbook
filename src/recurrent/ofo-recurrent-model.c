@@ -385,7 +385,7 @@ ofo_recurrent_model_new( ofaIGetter *getter )
 	model = g_object_new( OFO_TYPE_RECURRENT_MODEL, "ofo-base-getter", getter, NULL );
 	OFO_BASE( model )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
-	ofo_recurrent_model_set_is_enabled( model, FALSE );
+	ofo_recurrent_model_set_enabled( model, FALSE );
 
 	return( model );
 }
@@ -568,11 +568,11 @@ ofo_recurrent_model_get_def_amount3( const ofoRecurrentModel *model )
 }
 
 /**
- * ofo_recurrent_model_get_is_enabled:
+ * ofo_recurrent_model_get_enabled:
  * @model: this #ofoRecurrentModel object.
  */
 gboolean
-ofo_recurrent_model_get_is_enabled( const ofoRecurrentModel *model )
+ofo_recurrent_model_get_enabled( const ofoRecurrentModel *model )
 {
 	const gchar *cstr;
 	gboolean value;
@@ -803,10 +803,10 @@ ofo_recurrent_model_set_def_amount3( ofoRecurrentModel *model, const gchar *def_
 }
 
 /**
- * ofo_recurrent_model_set_is_enabled:
+ * ofo_recurrent_model_set_enabled:
  */
 void
-ofo_recurrent_model_set_is_enabled( ofoRecurrentModel *model, gboolean is_enabled )
+ofo_recurrent_model_set_enabled( ofoRecurrentModel *model, gboolean is_enabled )
 {
 	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 	g_return_if_fail( !OFO_BASE( model )->prot->dispose_has_run );
@@ -967,6 +967,7 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	myPeriod *period;
 	GTimeVal stamp;
 	const GDate *dend;
+	myPeriodKey per_id;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_recurrent_model_get_label( model ));
@@ -1002,18 +1003,22 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 		query = g_string_append( query, ",NULL" );
 	}
 
+	period_str = NULL;
 	period = ofo_recurrent_model_get_period( model );
-	g_return_val_if_fail( period && MY_IS_PERIOD( period ), FALSE );
+	if( period ){
+		per_id = my_period_get_key( period );
+		g_string_append_printf( query, ",'%s',%d,",
+				my_period_key_get_dbms( per_id ),
+				my_period_get_every( period ));
 
-	g_string_append_printf( query, ",'%s',%d,",
-			my_period_get_id( period ),
-			my_period_get_every( period ));
-
-	period_str = my_period_get_details_str_i( period );
-	if( my_strlen( period_str )){
-		g_string_append_printf( query, ",'%s'", period_str );
+		period_str = my_period_get_details_str_i( period );
+		if( my_strlen( period_str )){
+			g_string_append_printf( query, ",'%s'", period_str );
+		} else {
+			query = g_string_append( query, ",NULL" );
+		}
 	} else {
-		query = g_string_append( query, ",NULL" );
+		query = g_string_append( query, ",NULL,NULL,NULL" );
 	}
 
 	if( my_strlen( def_amount1 )){
@@ -1034,7 +1039,7 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 		query = g_string_append( query, ",NULL" );
 	}
 
-	query = g_string_append( query, ofo_recurrent_model_get_is_enabled( model ) ? ",'Y'":",'N'" );
+	query = g_string_append( query, ofo_recurrent_model_get_enabled( model ) ? ",'Y'":",'N'" );
 
 	end_str = NULL;
 	dend = ofo_recurrent_model_get_end( model );
@@ -1120,6 +1125,7 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	GTimeVal stamp;
 	myPeriod *period;
 	const GDate *dend;
+	myPeriodKey per_id;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_recurrent_model_get_label( model ));
@@ -1147,14 +1153,20 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 		query = g_string_append( query, "REC_OPE_TEMPLATE=NULL," );
 	}
 
+	period_str = NULL;
 	period = ofo_recurrent_model_get_period( model );
-	g_string_append_printf( query, "REC_PERIOD_ID='%s',", my_period_get_id( period ));
-	g_string_append_printf( query, "REC_PERIOD_N=%d,", my_period_get_every( period ));
-	period_str = my_period_get_details_str_i( period );
-	if( my_strlen( period_str )){
-		g_string_append_printf( query, "REC_PERIOD_DET='%s',", period_str );
+	if( period ){
+		per_id = my_period_get_key( period );
+		g_string_append_printf( query, "REC_PERIOD_ID='%s',", my_period_key_get_dbms( per_id ));
+		g_string_append_printf( query, "REC_PERIOD_N=%d,", my_period_get_every( period ));
+		period_str = my_period_get_details_str_i( period );
+		if( my_strlen( period_str )){
+			g_string_append_printf( query, "REC_PERIOD_DET='%s',", period_str );
+		} else {
+			query = g_string_append( query, "REC_PERIOD_DET=NULL," );
+		}
 	} else {
-		query = g_string_append( query, "REC_PERIOD_DET=NULL," );
+		g_string_append( query, "REC_PERIOD_ID=NULL,REC_PERIOD_N=NULL,REC_PERIOD_DET=NULL," );
 	}
 
 	def_amount = ofo_recurrent_model_get_def_amount1( model );
@@ -1179,7 +1191,7 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	}
 
 	query = g_string_append( query, "REC_ENABLED=" );
-	query = g_string_append( query, ofo_recurrent_model_get_is_enabled( model ) ? "'Y',":"'N'," );
+	query = g_string_append( query, ofo_recurrent_model_get_enabled( model ) ? "'Y',":"'N'," );
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "REC_NOTES='%s',", notes );
@@ -1305,7 +1317,11 @@ icollectionable_get_interface_version( void )
 static GList *
 icollectionable_load_collection( void *user_data )
 {
-	GList *dataset;
+	GList *dataset, *it;
+	ofoRecurrentModel *model;
+	const gchar *ckey, *clist;
+	guint cn;
+	myPeriod *period;
 
 	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
@@ -1314,6 +1330,16 @@ icollectionable_load_collection( void *user_data )
 					"REC_T_MODELS",
 					OFO_TYPE_RECURRENT_MODEL,
 					OFA_IGETTER( user_data ));
+
+	for( it=dataset ; it ; it=it->next ){
+		model = OFO_RECURRENT_MODEL( it->data );
+		ckey = ofa_box_get_string( OFO_BASE( model )->prot->fields, REC_PERIOD_ID );
+		cn = ofa_box_get_int( OFO_BASE( model )->prot->fields, REC_PERIOD_N );
+		clist = ofa_box_get_string( OFO_BASE( model )->prot->fields, REC_PERIOD_DET );
+		period = my_period_new_with_data( ckey, cn, clist );
+		ofo_recurrent_model_set_period( model, period );
+		g_object_unref( period );
+	}
 
 	return( dataset );
 }

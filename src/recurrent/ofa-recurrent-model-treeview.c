@@ -341,7 +341,7 @@ on_cell_data_fn( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeMo
 				"foreground-set", FALSE,
 				NULL );
 
-		if( !ofo_recurrent_model_get_is_enabled( recmodel )){
+		if( !ofo_recurrent_model_get_enabled( recmodel )){
 			gdk_rgba_parse( &color, "#808080" );
 			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
 			g_object_set( G_OBJECT( renderer ), "style", PANGO_STYLE_ITALIC, NULL );
