@@ -107,6 +107,10 @@ void          my_utils_container_updstamp_setup_full  ( GtkContainer *container,
 																const GTimeVal *stamp,
 																const gchar *user );
 
+#define       my_utils_container_crestamp_init( C,T ) if( !priv->is_new ){ my_utils_container_updstamp_setup_full( \
+																GTK_CONTAINER(C), "px-creation", ofo_ ## T ## _get_cre_stamp( priv->T ), \
+																ofo_ ## T ## _get_cre_user( priv->T )); }
+
 #define       my_utils_container_updstamp_init( C,T ) if( !priv->is_new ){ my_utils_container_updstamp_setup_full( \
 																GTK_CONTAINER(C), "px-last-update", ofo_ ## T ## _get_upd_stamp( priv->T ), \
 																ofo_ ## T ## _get_upd_user( priv->T )); }
