@@ -32,6 +32,9 @@
  * @include: my/my-ibin.h
  *
  * Idea is that all composite widgets may share this same interface.
+ *
+ * Signals:
+ * - my-ibin-changed: emitted on the #myIBin instance when something changes.
  */
 
 #include <gtk/gtk.h>
