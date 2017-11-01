@@ -373,7 +373,10 @@
 
 1500 2017-10-22 AUDIT: add current user
 
-1501
+1501 2017-10-28 myIBin interface: should define a my-bin-changed signal
+                to be used in place of ofa-changed
+
+1502
 
 -----------------------------------------------------------------------
  DONE
