@@ -31,6 +31,15 @@
 
 #define IBIN_LAST_VERSION           1
 
+/* signals defined here
+ */
+enum {
+	BIN_CHANGED = 0,
+	N_SIGNALS
+};
+
+static gint st_signals[ N_SIGNALS ]     = { 0 };
+
 static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType register_type( void );
@@ -95,7 +104,26 @@ interface_base_init( myIBinInterface *klass )
 
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
-		/* declare here the default implementations */
+		/**
+		 * myIBin::my-ibin-changed:
+		 *
+		 * The signal is emitted on the #myIBin instance each time
+		 * something changes in the composite widget.
+		 *
+		 * Handler is of type:
+		 * 		void user_handler( myIBin   *bin,
+		 * 							gpointer user_data );
+		 */
+		st_signals[ BIN_CHANGED ] = g_signal_new_class_handler(
+					"my-ibin-changed",
+					MY_TYPE_IBIN,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					G_TYPE_NONE );
 	}
 
 	st_initializations += 1;
