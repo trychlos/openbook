@@ -183,8 +183,10 @@ my_style_add( GtkWidget *widget, const gchar *class )
 	myStylePrivate *priv;
 	GtkStyleContext *context;
 
-	g_debug( "%s: widget=%p (%s), class=%s",
-			thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ), class );
+	if( 0 ){
+		g_debug( "%s: widget=%p (%s), class=%s",
+				thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ), class );
+	}
 
 	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
 	g_return_if_fail( my_strlen( class ));
@@ -217,8 +219,10 @@ my_style_remove( GtkWidget *widget, const gchar *class )
 	myStylePrivate *priv;
 	GtkStyleContext *context;
 
-	g_debug( "%s: widget=%p (%s), class=%s",
-			thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ), class );
+	if( 0 ){
+		g_debug( "%s: widget=%p (%s), class=%s",
+				thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ), class );
+	}
 
 	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
 	g_return_if_fail( my_strlen( class ));

@@ -53,15 +53,25 @@
 /* priv instance data
  */
 enum {
-	REC_MNEMO = 1,
+	REC_NUMSEQ = 1,
+	REC_MNEMO,
 	REC_DATE,
+	REC_LABEL,
+	REC_OPE_TEMPLATE,
+	REC_PERIOD_ID,
+	REC_PERIOD_N,
+	REC_PERIOD_DET,
+	REC_END,
+	REC_CRE_USER,
+	REC_CRE_STAMP,
 	REC_STATUS,
-	REC_UPD_USER,
-	REC_UPD_STAMP,
+	REC_STA_USER,
+	REC_STA_STAMP,
 	REC_AMOUNT1,
 	REC_AMOUNT2,
 	REC_AMOUNT3,
-	REC_NUMSEQ
+	REC_EDI_USER,
+	REC_EDI_STAMP,
 };
 
 /*
@@ -72,6 +82,10 @@ enum {
  *    exported file
  */
 static const ofsBoxDef st_boxed_defs[] = {
+		{ OFA_BOX_CSV( REC_NUMSEQ ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( REC_MNEMO ),
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
@@ -80,15 +94,47 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_DATE,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( REC_LABEL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_OPE_TEMPLATE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_PERIOD_ID ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_PERIOD_N ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_PERIOD_DET ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_END ),
+				OFA_TYPE_DATE,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_CRE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
 		{ OFA_BOX_CSV( REC_STATUS ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( REC_UPD_USER ),
+		{ OFA_BOX_CSV( REC_STA_USER ),
 				OFA_TYPE_STRING,
 				FALSE,
 				FALSE },
-		{ OFA_BOX_CSV( REC_UPD_STAMP ),
+		{ OFA_BOX_CSV( REC_STA_STAMP ),
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				TRUE },
@@ -104,15 +150,19 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( REC_NUMSEQ ),
-				OFA_TYPE_COUNTER,
-				TRUE,
+		{ OFA_BOX_CSV( REC_EDI_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
 				FALSE },
+		{ OFA_BOX_CSV( REC_EDI_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
 		{ 0 }
 };
 
 typedef struct {
-	void *empty;						/* so that gcc -pedantic is happy */
+	myPeriod *period;
 }
 	ofoRecurrentRunPrivate;
 
@@ -138,13 +188,18 @@ static sStatus st_status[] = {
 };
 
 static void       recurrent_run_set_numseq( ofoRecurrentRun *model, ofxCounter numseq );
-static void       recurrent_run_set_upd_user( ofoRecurrentRun *model, const gchar *upd_user );
-static void       recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp );
+static void       recurrent_run_set_period( ofoRecurrentRun *run, myPeriod *period );
+static void       recurrent_run_set_cre_user( ofoRecurrentRun *model, const gchar *user );
+static void       recurrent_run_set_cre_stamp( ofoRecurrentRun *model, const GTimeVal *stamp );
+static void       recurrent_run_set_sta_user( ofoRecurrentRun *model, const gchar *user );
+static void       recurrent_run_set_sta_stamp( ofoRecurrentRun *model, const GTimeVal *stamp );
+static void       recurrent_run_set_edi_user( ofoRecurrentRun *model, const gchar *user );
+static void       recurrent_run_set_edi_stamp( ofoRecurrentRun *model, const GTimeVal *stamp );
 static GList     *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean   recurrent_run_do_insert( ofoRecurrentRun *model, ofaIGetter *getter );
 static gboolean   recurrent_run_insert_main( ofoRecurrentRun *model, ofaIGetter *getter );
-static gboolean   recurrent_run_do_update( ofoRecurrentRun *model, ofaIGetter *getter );
-static gboolean   recurrent_run_update_main( ofoRecurrentRun *model, ofaIGetter *getter );
+static gboolean   recurrent_run_do_update_status( ofoRecurrentRun *model, ofaIGetter *getter );
+static gboolean   recurrent_run_do_update_amounts( ofoRecurrentRun *model, ofaIGetter *getter );
 static gint       recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date, ofeRecurrentStatus status );
 static gint       recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 static void       icollectionable_iface_init( myICollectionableInterface *iface );
@@ -296,21 +351,43 @@ ofo_recurrent_run_get_by_id( ofaIGetter *getter, const gchar *mnemo, const GDate
 
 /**
  * ofo_recurrent_run_new:
- * @getter: a #ofaIGetter instance.
+ * @model: the #ofoRecurrentModel object which serves as a template.
  */
 ofoRecurrentRun *
-ofo_recurrent_run_new( ofaIGetter *getter )
+ofo_recurrent_run_new( ofoRecurrentModel *model )
 {
-	ofoRecurrentRun *model;
+	ofaIGetter *getter;
+	ofoRecurrentRun *run;
+	myPeriod *period;
 
+	g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), NULL );
+
+	getter = ofo_base_get_getter( OFO_BASE( model ));
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	model = g_object_new( OFO_TYPE_RECURRENT_RUN, "ofo-base-getter", getter, NULL );
-	OFO_BASE( model )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
+	run = g_object_new( OFO_TYPE_RECURRENT_RUN, "ofo-base-getter", getter, NULL );
+	OFO_BASE( run )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
-	ofo_recurrent_run_set_status( model, REC_STATUS_WAITING );
+	ofa_box_set_string( OFO_BASE( run )->prot->fields, REC_MNEMO, ofo_recurrent_model_get_mnemo( model ));
+	ofa_box_set_string( OFO_BASE( run )->prot->fields, REC_LABEL, ofo_recurrent_model_get_label( model ));
+	ofa_box_set_string( OFO_BASE( run )->prot->fields, REC_OPE_TEMPLATE, ofo_recurrent_model_get_ope_template( model ));
+	ofa_box_set_date( OFO_BASE( run )->prot->fields, REC_END, ofo_recurrent_model_get_end( model ));
 
-	return( model );
+	period = ofo_recurrent_model_get_period( model );
+	recurrent_run_set_period( run, period );
+
+	ofo_recurrent_run_set_status( run, REC_STATUS_WAITING );
+
+	return( run );
+}
+
+/**
+ * ofo_recurrent_run_get_numseq:
+ */
+ofxCounter
+ofo_recurrent_run_get_numseq( const ofoRecurrentRun *model )
+{
+	ofo_base_getter( RECURRENT_RUN, model, counter, 0, REC_NUMSEQ );
 }
 
 /**
@@ -330,6 +407,71 @@ const GDate *
 ofo_recurrent_run_get_date( const ofoRecurrentRun *model )
 {
 	ofo_base_getter( RECURRENT_RUN, model, date, NULL, REC_DATE );
+}
+
+/**
+ * ofo_recurrent_run_get_label:
+ * @model:
+ */
+const gchar *
+ofo_recurrent_run_get_label( const ofoRecurrentRun *model )
+{
+	ofo_base_getter( RECURRENT_RUN, model, string, NULL, REC_LABEL );
+}
+
+/**
+ * ofo_recurrent_run_get_ope_template:
+ * @model:
+ */
+const gchar *
+ofo_recurrent_run_get_ope_template( const ofoRecurrentRun *model )
+{
+	ofo_base_getter( RECURRENT_RUN, model, string, NULL, REC_OPE_TEMPLATE );
+}
+
+/**
+ * ofo_recurrent_run_get_period:
+ * @run:
+ */
+myPeriod *
+ofo_recurrent_run_get_period( ofoRecurrentRun *run )
+{
+	ofoRecurrentRunPrivate *priv;
+
+	g_return_val_if_fail( run && OFO_IS_RECURRENT_RUN( run ), NULL );
+	g_return_val_if_fail( !OFO_BASE( run )->prot->dispose_has_run, NULL );
+
+	priv = ofo_recurrent_run_get_instance_private( run );
+
+	return( priv->period );
+}
+
+/**
+ * ofo_recurrent_run_get_end:
+ * @model:
+ */
+const GDate *
+ofo_recurrent_run_get_end( const ofoRecurrentRun *model )
+{
+	ofo_base_getter( RECURRENT_RUN, model, date, NULL, REC_DATE );
+}
+
+/**
+ * ofo_recurrent_run_get_cre_user:
+ */
+const gchar *
+ofo_recurrent_run_get_cre_user( const ofoRecurrentRun *model )
+{
+	ofo_base_getter( RECURRENT_RUN, model, string, NULL, REC_CRE_USER );
+}
+
+/**
+ * ofo_recurrent_run_get_cre_stamp:
+ */
+const GTimeVal *
+ofo_recurrent_run_get_cre_stamp( const ofoRecurrentRun *model )
+{
+	ofo_base_getter( RECURRENT_RUN, model, timestamp, NULL, REC_CRE_STAMP );
 }
 
 /**
@@ -431,21 +573,21 @@ ofo_recurrent_run_status_get_label( ofeRecurrentStatus status )
 }
 
 /**
- * ofo_recurrent_run_get_upd_user:
+ * ofo_recurrent_run_get_sta_user:
  */
 const gchar *
-ofo_recurrent_run_get_upd_user( const ofoRecurrentRun *model )
+ofo_recurrent_run_get_sta_user( const ofoRecurrentRun *model )
 {
-	ofo_base_getter( RECURRENT_RUN, model, string, NULL, REC_UPD_USER );
+	ofo_base_getter( RECURRENT_RUN, model, string, NULL, REC_STA_USER );
 }
 
 /**
- * ofo_recurrent_run_get_upd_stamp:
+ * ofo_recurrent_run_get_sta_stamp:
  */
 const GTimeVal *
-ofo_recurrent_run_get_upd_stamp( const ofoRecurrentRun *model )
+ofo_recurrent_run_get_sta_stamp( const ofoRecurrentRun *model )
 {
-	ofo_base_getter( RECURRENT_RUN, model, timestamp, NULL, REC_UPD_STAMP );
+	ofo_base_getter( RECURRENT_RUN, model, timestamp, NULL, REC_STA_STAMP );
 }
 
 /**
@@ -485,12 +627,21 @@ ofo_recurrent_run_get_amount3( const ofoRecurrentRun *recope )
 }
 
 /**
- * ofo_recurrent_run_get_numseq:
+ * ofo_recurrent_run_get_edi_user:
  */
-ofxCounter
-ofo_recurrent_run_get_numseq( const ofoRecurrentRun *model )
+const gchar *
+ofo_recurrent_run_get_edi_user( const ofoRecurrentRun *model )
 {
-	ofo_base_getter( RECURRENT_RUN, model, counter, 0, REC_NUMSEQ );
+	ofo_base_getter( RECURRENT_RUN, model, string, NULL, REC_EDI_USER );
+}
+
+/**
+ * ofo_recurrent_run_get_edi_stamp:
+ */
+const GTimeVal *
+ofo_recurrent_run_get_edi_stamp( const ofoRecurrentRun *model )
+{
+	ofo_base_getter( RECURRENT_RUN, model, timestamp, NULL, REC_EDI_STAMP );
 }
 
 /**
@@ -507,6 +658,84 @@ ofo_recurrent_run_compare( const ofoRecurrentRun *a, const ofoRecurrentRun *b )
 	g_return_val_if_fail( b && OFO_IS_RECURRENT_RUN( b ), 0 );
 
 	return( recurrent_run_cmp_by_ptr( a, b ));
+}
+
+/**
+ * ofo_recurrent_run_get_last:
+ * @getter: a #ofaIGetter of the application.
+ * @dlast: [out]: a placeholder for the output date.
+ * @mnemo: the mnemonic identifier of a recurrent model.
+ * @status: [allow-none]: the OR-ed result of desired ofeRecurrentStatus.
+ *
+ * Returns: the @dlast date of last recurrent operation which satisfies
+ * the desired @status.
+ */
+const GDate *
+ofo_recurrent_run_get_last( ofaIGetter *getter, GDate *dlast, const gchar *mnemo, guint status )
+{
+	GString *query;
+	guint count;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GSList *result, *irow, *icol;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( dlast, NULL );
+	g_return_val_if_fail( my_strlen( mnemo ), NULL );
+
+	g_date_clear( dlast, 1 );
+
+	query = g_string_new( "SELECT MAX(REC_DATE) FROM REC_T_RUN WHERE " );
+	g_string_append_printf( query, "REC_MNEMO='%s'", mnemo );
+	count = 0;
+	if( status & REC_STATUS_CANCELLED ){
+		if( count == 0 ){
+			count += 1;
+			query = g_string_append( query, " AND (" );
+		}
+		g_string_append_printf( query, "REC_STATUS='%s'", ofo_recurrent_run_status_get_dbms( REC_STATUS_CANCELLED ));
+	}
+	if( status & REC_STATUS_WAITING ){
+		if( count == 0 ){
+			count += 1;
+			query = g_string_append( query, " AND (" );
+		} else if( count == 1 ){
+			count += 1;
+			query = g_string_append( query, " OR " );
+		}
+		g_string_append_printf( query, "REC_STATUS='%s'", ofo_recurrent_run_status_get_dbms( REC_STATUS_WAITING ));
+	}
+	if( status & REC_STATUS_VALIDATED ){
+		if( count == 0 ){
+			count += 1;
+			query = g_string_append( query, " AND (" );
+		} else if( count == 1 ){
+			count += 1;
+			query = g_string_append( query, " OR " );
+		}
+		g_string_append_printf( query, "REC_STATUS='%s'", ofo_recurrent_run_status_get_dbms( REC_STATUS_VALIDATED ));
+	}
+	if( count > 0 ){
+		query = g_string_append( query, ")" );
+	}
+
+	hub = ofa_igetter_get_hub( getter );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	connect = ofa_hub_get_connect( hub );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
+
+	if( ofa_idbconnect_query_ex( connect, query->str, &result, TRUE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			my_date_set_from_str( dlast, ( const gchar * ) icol->data, MY_DATE_SQL );
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_string_free( query, TRUE );
+
+	return( dlast );
 }
 
 /*
@@ -536,6 +765,49 @@ ofo_recurrent_run_set_date( ofoRecurrentRun *model, const GDate *date )
 	ofo_base_setter( RECURRENT_RUN, model, date, REC_DATE, date );
 }
 
+/*
+ * recurrent_run_set_period:
+ * @model: this #ofoRecurrentModel object.
+ * @period: a #myPeriod object.
+ *
+ * Set the @period periodicity.
+ *
+ * Please note that this method takes its own reference on the @period
+ * object. The provided @period instance may then be released by the
+ * caller.
+ */
+static void
+recurrent_run_set_period( ofoRecurrentRun *run, myPeriod *period )
+{
+	ofoRecurrentRunPrivate *priv;
+
+	g_return_if_fail( run && OFO_IS_RECURRENT_RUN( run ));
+	g_return_if_fail( !OFO_BASE( run )->prot->dispose_has_run );
+
+	priv = ofo_recurrent_run_get_instance_private( run );
+
+	g_clear_object( &priv->period );
+	priv->period = g_object_ref( period );
+}
+
+/*
+ * recurrent_run_set_cre_user:
+ */
+static void
+recurrent_run_set_cre_user( ofoRecurrentRun *model, const gchar *user )
+{
+	ofo_base_setter( RECURRENT_RUN, model, string, REC_CRE_USER, user );
+}
+
+/*
+ * recurrent_run_set_cre_stamp:
+ */
+static void
+recurrent_run_set_cre_stamp( ofoRecurrentRun *model, const GTimeVal *stamp )
+{
+	ofo_base_setter( RECURRENT_RUN, model, string, REC_CRE_STAMP, stamp );
+}
+
 /**
  * ofo_recurrent_run_set_status:
  * @recrun: this #ofoRecurrentRun object.
@@ -556,21 +828,21 @@ ofo_recurrent_run_set_status( ofoRecurrentRun *recrun, ofeRecurrentStatus status
 }
 
 /*
- * ofo_recurrent_run_set_upd_user:
+ * recurrent_run_set_sta_user:
  */
 static void
-recurrent_run_set_upd_user( ofoRecurrentRun *model, const gchar *upd_user )
+recurrent_run_set_sta_user( ofoRecurrentRun *model, const gchar *user )
 {
-	ofo_base_setter( RECURRENT_RUN, model, string, REC_UPD_USER, upd_user );
+	ofo_base_setter( RECURRENT_RUN, model, string, REC_STA_USER, user );
 }
 
 /*
- * ofo_recurrent_run_set_upd_stamp:
+ * recurrent_run_set_sta_stamp:
  */
 static void
-recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp )
+recurrent_run_set_sta_stamp( ofoRecurrentRun *model, const GTimeVal *stamp )
 {
-	ofo_base_setter( RECURRENT_RUN, model, string, REC_UPD_STAMP, upd_stamp );
+	ofo_base_setter( RECURRENT_RUN, model, string, REC_STA_STAMP, stamp );
 }
 
 /**
@@ -610,6 +882,24 @@ void
 ofo_recurrent_run_set_amount3( ofoRecurrentRun *recope, ofxAmount amount )
 {
 	ofo_base_setter( RECURRENT_RUN, recope, amount, REC_AMOUNT3, amount );
+}
+
+/*
+ * recurrent_run_set_edi_user:
+ */
+static void
+recurrent_run_set_edi_user( ofoRecurrentRun *model, const gchar *user )
+{
+	ofo_base_setter( RECURRENT_RUN, model, string, REC_EDI_USER, user );
+}
+
+/*
+ * recurrent_run_set_edi_stamp:
+ */
+static void
+recurrent_run_set_edi_stamp( ofoRecurrentRun *model, const GTimeVal *stamp )
+{
+	ofo_base_setter( RECURRENT_RUN, model, string, REC_EDI_STAMP, stamp );
 }
 
 /**
@@ -710,11 +1000,13 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	GString *query;
 	const GDate *date;
 	const gchar *mnemo, *csdef, *userid, *cdbms;
-	gchar *sdate, *stamp_str, *samount;
+	gchar *sdate, *stamp_str, *samount, *label, *template, *period_str;
 	GTimeVal stamp;
 	ofoRecurrentModel *model;
 	ofxCounter numseq;
 	ofeRecurrentStatus status;
+	myPeriod *period;
+	myPeriodKey perkey;
 
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
@@ -725,6 +1017,7 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 
 	mnemo = ofo_recurrent_run_get_mnemo( recrun );
 	model = ofo_recurrent_model_get_by_mnemo( getter, mnemo );
+	g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), FALSE );
 
 	numseq = ofo_recurrent_gen_get_next_numseq( getter );
 	recurrent_run_set_numseq( recrun, numseq );
@@ -732,10 +1025,14 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	query = g_string_new( "INSERT INTO REC_T_RUN " );
 
 	g_string_append_printf( query,
-			"	(REC_NUMSEQ,REC_MNEMO,REC_DATE,REC_STATUS,"
+			"	(REC_NUMSEQ,REC_MNEMO,REC_DATE,"
+			"	 REC_LABEL,REC_OPE_TEMPLATE,"
+			"	 REC_PERIOD_ID,REC_PERIOD_N,REC_PERIOD_DET,"
+			"	 REC_END,REC_CRE_USER,REC_CRE_STAMP,"
+			"	 REC_STATUS,REC_STA_USER,REC_STA_STAMP,"
 			"	 REC_AMOUNT1,REC_AMOUNT2,REC_AMOUNT3,"
-			"	 REC_UPD_USER, REC_UPD_STAMP) VALUES (%ld,'%s',",
-			numseq,mnemo );
+			"	 REC_EDI_USER, REC_EDI_STAMP) VALUES (%ld,'%s',",
+			numseq, mnemo );
 
 	date = ofo_recurrent_run_get_date( recrun );
 	g_return_val_if_fail( my_date_is_valid( date ), FALSE );
@@ -743,6 +1040,49 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	g_string_append_printf( query, "'%s',", sdate );
 	g_free( sdate );
 
+	label = my_utils_quote_sql( ofo_recurrent_run_get_label( recrun ));
+	g_string_append_printf( query, "'%s',", label );
+	g_free( label );
+
+	template = my_utils_quote_sql( ofo_recurrent_run_get_ope_template( recrun ));
+	g_string_append_printf( query, "'%s',", template );
+	g_free( template );
+
+	period_str = NULL;
+	period = ofo_recurrent_run_get_period( recrun );
+	if( period ){
+		perkey = my_period_get_key( period );
+		g_string_append_printf( query, "'%s',%d,",
+				my_period_key_get_dbms( perkey ),
+				my_period_get_every( period ));
+
+		period_str = my_period_get_details_str_i( period );
+		if( my_strlen( period_str )){
+			g_string_append_printf( query, "'%s',", period_str );
+		} else {
+			query = g_string_append( query, "NULL," );
+		}
+	} else {
+		query = g_string_append( query, "NULL,NULL,NULL," );
+	}
+
+	date = ofo_recurrent_run_get_end( recrun );
+	if( my_date_is_valid( date )){
+		sdate = my_date_to_str( date, MY_DATE_SQL );
+		g_string_append_printf( query, "'%s',", sdate );
+		g_free( sdate );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	/* creation user and timestamp */
+	g_string_append_printf( query, "'%s',", userid );
+	g_string_append_printf( query, "'%s',", stamp_str );
+
+	recurrent_run_set_cre_user( recrun, userid );
+	recurrent_run_set_cre_stamp( recrun, &stamp );
+
+	/* status */
 	status = ofo_recurrent_run_get_status( recrun );
 	cdbms = ofo_recurrent_run_status_get_dbms( status );
 	if( my_strlen( cdbms )){
@@ -750,6 +1090,13 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
+
+	/* status user and timestamp */
+	g_string_append_printf( query, "'%s',", userid );
+	g_string_append_printf( query, "'%s',", stamp_str );
+
+	recurrent_run_set_sta_user( recrun, userid );
+	recurrent_run_set_sta_stamp( recrun, &stamp );
 
 	csdef = ofo_recurrent_model_get_def_amount1( model );
 	if( my_strlen( csdef )){
@@ -778,13 +1125,14 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query,
-			"'%s','%s')", userid, stamp_str );
+	/* amounts edition user and timestamp */
+	g_string_append_printf( query, "'%s',", userid );
+	g_string_append_printf( query, "'%s')", stamp_str );
+
+	recurrent_run_set_edi_user( recrun, userid );
+	recurrent_run_set_edi_stamp( recrun, &stamp );
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
-
-	recurrent_run_set_upd_user( recrun, userid );
-	recurrent_run_set_upd_stamp( recrun, &stamp );
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
@@ -793,15 +1141,15 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 }
 
 /**
- * ofo_recurrent_run_update:
+ * ofo_recurrent_run_update_status:
  * @model:
  *
  * Update the status.
  */
 gboolean
-ofo_recurrent_run_update( ofoRecurrentRun *recurrent_run )
+ofo_recurrent_run_update_status( ofoRecurrentRun *recurrent_run )
 {
-	static const gchar *thisfn = "ofo_recurrent_run_update";
+	static const gchar *thisfn = "ofo_recurrent_run_update_status";
 	ofaIGetter *getter;
 	ofaISignaler *signaler;
 	gboolean ok;
@@ -816,7 +1164,7 @@ ofo_recurrent_run_update( ofoRecurrentRun *recurrent_run )
 	getter = ofo_base_get_getter( OFO_BASE( recurrent_run ));
 	signaler = ofa_igetter_get_signaler( getter );
 
-	if( recurrent_run_do_update( recurrent_run, getter )){
+	if( recurrent_run_do_update_status( recurrent_run, getter )){
 		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, recurrent_run, NULL );
 		ok = TRUE;
 	}
@@ -825,34 +1173,22 @@ ofo_recurrent_run_update( ofoRecurrentRun *recurrent_run )
 }
 
 static gboolean
-recurrent_run_do_update( ofoRecurrentRun *recrun, ofaIGetter *getter )
+recurrent_run_do_update_status( ofoRecurrentRun *recrun, ofaIGetter *getter )
 {
-	return( recurrent_run_update_main( recrun, getter ));
-}
-
-static gboolean
-recurrent_run_update_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
-{
-	static const gchar *thisfn = "ofo_recurrent_run_update_main";
+	static const gchar *thisfn = "ofo_recurrent_run_do_update_status";
 	gboolean ok;
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	GString *query;
-	gchar *samount;
-	const gchar *userid, *mnemo, *csdef, *cdbms;
+	const gchar *userid, *cdbms;
 	gchar *stamp_str;
 	GTimeVal stamp;
-	ofoRecurrentModel *model;
 	ofxCounter numseq;
 	ofeRecurrentStatus status;
 
-	mnemo = ofo_recurrent_run_get_mnemo( recrun );
-	model = ofo_recurrent_model_get_by_mnemo( getter, mnemo );
-
 	if( 0 ){
-		g_debug( "%s: recrun=%p (%s), model=%p (%s)", thisfn,
-				( void * ) recrun, G_OBJECT_TYPE_NAME( recrun ),
-				( void * ) model, G_OBJECT_TYPE_NAME( model ));
+		g_debug( "%s: recrun=%p (%s)", thisfn,
+				( void * ) recrun, G_OBJECT_TYPE_NAME( recrun ));
 	}
 
 	hub = ofa_igetter_get_hub( getter );
@@ -871,6 +1207,91 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	} else {
 		query = g_string_append( query, "REC_STATUS=NULL," );
 	}
+
+	numseq = ofo_recurrent_run_get_numseq( recrun );
+
+	g_string_append_printf( query,
+			"	REC_STA_USER='%s',REC_STA_STAMP='%s'"
+			"	WHERE REC_NUMSEQ=%ld",
+					userid,
+					stamp_str,
+					numseq );
+
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
+
+	recurrent_run_set_sta_user( recrun, userid );
+	recurrent_run_set_sta_stamp( recrun, &stamp );
+
+	g_string_free( query, TRUE );
+	g_free( stamp_str );
+
+	return( ok );
+}
+
+/**
+ * ofo_recurrent_run_update_amounts:
+ * @model:
+ *
+ * Update the amounts.
+ */
+gboolean
+ofo_recurrent_run_update_amounts( ofoRecurrentRun *recurrent_run )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_update_amounts";
+	ofaIGetter *getter;
+	ofaISignaler *signaler;
+	gboolean ok;
+
+	g_debug( "%s: model=%p",
+			thisfn, ( void * ) recurrent_run );
+
+	g_return_val_if_fail( recurrent_run && OFO_IS_RECURRENT_RUN( recurrent_run ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( recurrent_run )->prot->dispose_has_run, FALSE );
+
+	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( recurrent_run ));
+	signaler = ofa_igetter_get_signaler( getter );
+
+	if( recurrent_run_do_update_amounts( recurrent_run, getter )){
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, recurrent_run, NULL );
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+static gboolean
+recurrent_run_do_update_amounts( ofoRecurrentRun *recrun, ofaIGetter *getter )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_do_update_amounts";
+	gboolean ok;
+	ofaHub *hub;
+	const ofaIDBConnect *connect;
+	GString *query;
+	gchar *samount;
+	const gchar *userid, *csdef, *mnemo;
+	gchar *stamp_str;
+	GTimeVal stamp;
+	ofxCounter numseq;
+	ofoRecurrentModel *model;
+
+	mnemo = ofo_recurrent_run_get_mnemo( recrun );
+	model = ofo_recurrent_model_get_by_mnemo( getter, mnemo );
+
+	if( 0 ){
+		g_debug( "%s: recrun=%p (%s), model=%p (%s)", thisfn,
+				( void * ) recrun, G_OBJECT_TYPE_NAME( recrun ),
+				( void * ) model, G_OBJECT_TYPE_NAME( model ));
+	}
+
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	userid = ofa_idbconnect_get_account( connect );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+
+	query = g_string_new( "UPDATE REC_T_RUN SET " );
 
 	csdef = ofo_recurrent_model_get_def_amount1( model );
 	if( my_strlen( csdef )){
@@ -902,7 +1323,7 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	numseq = ofo_recurrent_run_get_numseq( recrun );
 
 	g_string_append_printf( query,
-			"	REC_UPD_USER='%s',REC_UPD_STAMP='%s'"
+			"	REC_EDI_USER='%s',REC_EDI_STAMP='%s'"
 			"	WHERE REC_NUMSEQ=%ld",
 					userid,
 					stamp_str,
@@ -910,8 +1331,8 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
-	recurrent_run_set_upd_user( recrun, userid );
-	recurrent_run_set_upd_stamp( recrun, &stamp );
+	recurrent_run_set_edi_user( recrun, userid );
+	recurrent_run_set_edi_stamp( recrun, &stamp );
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
@@ -971,7 +1392,11 @@ icollectionable_get_interface_version( void )
 static GList *
 icollectionable_load_collection( void *user_data )
 {
-	GList *dataset;
+	GList *dataset, *it;
+	ofoRecurrentRun *run;
+	const gchar *ckey, *clist;
+	guint cn;
+	myPeriod *period;
 
 	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
 
@@ -980,6 +1405,16 @@ icollectionable_load_collection( void *user_data )
 					"REC_T_RUN",
 					OFO_TYPE_RECURRENT_RUN,
 					OFA_IGETTER( user_data ));
+
+	for( it=dataset ; it ; it=it->next ){
+		run = OFO_RECURRENT_RUN( it->data );
+		ckey = ofa_box_get_string( OFO_BASE( run )->prot->fields, REC_PERIOD_ID );
+		cn = ofa_box_get_int( OFO_BASE( run )->prot->fields, REC_PERIOD_N );
+		clist = ofa_box_get_string( OFO_BASE( run )->prot->fields, REC_PERIOD_DET );
+		period = my_period_new_with_data( ckey, cn, clist );
+		recurrent_run_set_period( run, period );
+		g_object_unref( period );
+	}
 
 	return( dataset );
 }

@@ -95,6 +95,7 @@ typedef struct {
 	gchar             *label;
 	gchar             *ope_template;
 	ofoOpeTemplate    *template_obj;
+	myPeriod          *period;
 	gboolean           enabled;
 }
 	ofaRecurrentModelPropertiesPrivate;
@@ -111,15 +112,16 @@ static void     setup_data( ofaRecurrentModelProperties *self );
 static void     on_mnemo_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
 static void     on_label_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
 static void     on_ope_template_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
-//static void     on_periodicity_changed( ofaRecPeriodBin *bin, ofoRecPeriod *period, ofaRecurrentModelProperties *self );
-//static void     on_periodicity_detail_changed( ofaRecPeriodBin *bin, ofoRecPeriod *period, ofxCounter detail_id, ofaRecurrentModelProperties *self );
+static void     on_period_changed( myPeriodBin *bin, ofaRecurrentModelProperties *self );
 static void     on_enabled_toggled( GtkToggleButton *button, ofaRecurrentModelProperties *self );
+static void     set_enabled_toggled( ofaRecurrentModelProperties *self, gboolean enabled );
 static void     check_for_enable_dlg( ofaRecurrentModelProperties *self );
 static gboolean is_dialog_validable( ofaRecurrentModelProperties *self );
 static gboolean check_for_mnemo( ofaRecurrentModelProperties *self, gchar **msgerr );
 static void     on_ok_clicked( ofaRecurrentModelProperties *self );
 static gboolean do_update( ofaRecurrentModelProperties *self, gchar **msgerr );
 static void     set_msgerr( ofaRecurrentModelProperties *dialog, const gchar *msg );
+static void     set_msgwarn( ofaRecurrentModelProperties *dialog, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentModelProperties, ofa_recurrent_model_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaRecurrentModelProperties )
@@ -229,6 +231,9 @@ ofa_recurrent_model_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoRe
 	priv->parent = parent;
 	priv->recurrent_model = model;
 
+	my_iwindow_init( MY_IWINDOW( self ));
+	setup_data( self );
+
 	/* run modal or non-modal depending of the parent */
 	my_idialog_run_maybe_modal( MY_IDIALOG( self ));
 }
@@ -315,8 +320,6 @@ idialog_init( myIDialog *instance )
 	my_utils_container_crestamp_init( GTK_CONTAINER( instance ), recurrent_model );
 	my_utils_container_updstamp_init( GTK_CONTAINER( instance ), recurrent_model );
 
-	gtk_widget_show_all( GTK_WIDGET( instance ));
-
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
 
 	/* if not the current exercice, then only have a 'Close' button */
@@ -324,9 +327,6 @@ idialog_init( myIDialog *instance )
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
-
-	setup_data( OFA_RECURRENT_MODEL_PROPERTIES( instance ));
-	check_for_enable_dlg( OFA_RECURRENT_MODEL_PROPERTIES( instance ));
 }
 
 static void
@@ -408,6 +408,7 @@ init_page_properties( ofaRecurrentModelProperties *self )
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->period_bin ), 0 ))){
 		my_utils_size_group_add_size_group( group, group_bin );
 	}
+	g_signal_connect( priv->period_bin, "my-ibin-changed", G_CALLBACK( on_period_changed ), self );
 
 	/* amount definitions */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-def1" );
@@ -444,6 +445,7 @@ init_page_properties( ofaRecurrentModelProperties *self )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
 	gtk_size_group_add_widget( group, prompt );
 
+	/* enabled */
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-enabled" );
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
 	priv->enabled_btn = btn;
@@ -457,7 +459,7 @@ setup_data( ofaRecurrentModelProperties *self )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
 	const gchar *cstr;
-	gboolean is_enabled;
+	gboolean enabled;
 	myPeriod *period;
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
@@ -487,9 +489,10 @@ setup_data( ofaRecurrentModelProperties *self )
 	my_date_editable_set_date( GTK_EDITABLE( priv->end_entry ),
 			ofo_recurrent_model_get_end( priv->recurrent_model ));
 
-	is_enabled = ofo_recurrent_model_get_enabled( priv->recurrent_model );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ), is_enabled );
-	priv->enabled = is_enabled;
+	enabled = ofo_recurrent_model_get_enabled( priv->recurrent_model );
+	set_enabled_toggled( self, enabled );
+
+	check_for_enable_dlg( self );
 }
 
 static void
@@ -536,33 +539,13 @@ on_ope_template_changed( GtkEntry *entry, ofaRecurrentModelProperties *self )
 	check_for_enable_dlg( self );
 }
 
-/*
 static void
-on_periodicity_changed( ofaRecPeriodBin *bin, ofoRecPeriod *period, ofaRecurrentModelProperties *self )
+on_period_changed( myPeriodBin *bin, ofaRecurrentModelProperties *self )
 {
-	ofaRecurrentModelPropertiesPrivate *priv;
-
-	priv = ofa_recurrent_model_properties_get_instance_private( self );
-
-	priv->periodicity = period;
-	priv->periodicity_detail = -1;
+	//g_debug( "ofa_recurrent_model_on_period_changed" );
 
 	check_for_enable_dlg( self );
 }
-
-static void
-on_periodicity_detail_changed( ofaRecPeriodBin *bin, ofoRecPeriod *period, ofxCounter detail_id, ofaRecurrentModelProperties *self )
-{
-	ofaRecurrentModelPropertiesPrivate *priv;
-
-	priv = ofa_recurrent_model_properties_get_instance_private( self );
-
-	priv->periodicity = period;
-	priv->periodicity_detail = detail_id;
-
-	check_for_enable_dlg( self );
-}
-*/
 
 static void
 on_enabled_toggled( GtkToggleButton *button, ofaRecurrentModelProperties *self )
@@ -573,7 +556,19 @@ on_enabled_toggled( GtkToggleButton *button, ofaRecurrentModelProperties *self )
 
 	priv->enabled = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ));
 
+	//g_debug( "on_enabled_toggled: enabled=%s", priv->enabled ? "True":"False" );
+
 	check_for_enable_dlg( self );
+}
+
+static void
+set_enabled_toggled( ofaRecurrentModelProperties *self, gboolean enabled )
+{
+	ofaRecurrentModelPropertiesPrivate *priv;
+
+	priv = ofa_recurrent_model_properties_get_instance_private( self );
+
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ), enabled );
 }
 
 /*
@@ -603,27 +598,44 @@ static gboolean
 is_dialog_validable( ofaRecurrentModelProperties *self )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
-	gboolean ok;
+	gboolean ok, valid;
 	gchar *msgerr;
 	myPeriod *period;
 
+	//g_debug( "ofa_recurrent_model_is_dialog_validable" );
+
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
-	ok = check_for_mnemo( self, &msgerr );
+	ok = FALSE;
+	msgerr = NULL;
 
-	/* other tests must only be satisfied if enabled */
-	if( ok && priv->enabled ){
+	if( !check_for_mnemo( self, &msgerr )){
+		set_msgerr( self, msgerr );
+
+	} else if( !priv->template_obj ){
+		msgerr = g_strdup_printf( _( "Operation template '%s' is unknown" ), priv->ope_template );
+		set_msgerr( self, msgerr );
+
+	} else {
+		ok = TRUE;
+
+		/* other tests are only warnings which prevent the model to
+		 * be enabled */
 		period = my_period_bin_get_period( priv->period_bin );
-		ok = ofo_recurrent_model_is_valid_data(
-				priv->mnemo, priv->label, priv->ope_template, period, &msgerr );
+		valid = ofo_recurrent_model_is_valid_data( priv->mnemo, priv->label, priv->ope_template, period, &msgerr );
 
-		if( ok && !priv->template_obj ){
-			ok = FALSE;
-			msgerr = g_strdup_printf( _( "Operation template '%s' is unknown" ), priv->ope_template );
+		if( !valid ){
+			set_enabled_toggled( self, FALSE );
+
+		} else if( !priv->enabled && !my_strlen( msgerr )){
+			msgerr = g_strdup( _( "Model is valid but not enabled" ));
 		}
+
+		gtk_widget_set_sensitive( priv->enabled_btn, valid );
+
+		set_msgwarn( self, msgerr );
 	}
 
-	set_msgerr( self, msgerr );
 	g_free( msgerr );
 
 	return( ok );
@@ -772,8 +784,26 @@ set_msgerr( ofaRecurrentModelProperties *dialog, const gchar *msg )
 	if( !priv->msg_label ){
 		priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "px-msgerr" );
 		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
-		my_style_add( priv->msg_label, "labelerror");
 	}
 
+	my_style_remove( priv->msg_label, "labelwarning");
+	my_style_add( priv->msg_label, "labelerror");
+	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
+}
+
+static void
+set_msgwarn( ofaRecurrentModelProperties *dialog, const gchar *msg )
+{
+	ofaRecurrentModelPropertiesPrivate *priv;
+
+	priv = ofa_recurrent_model_properties_get_instance_private( dialog );
+
+	if( !priv->msg_label ){
+		priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "px-msgerr" );
+		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
+	}
+
+	my_style_remove( priv->msg_label, "labelerror");
+	my_style_add( priv->msg_label, "labelwarning");
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
 }

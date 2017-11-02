@@ -3,6 +3,7 @@
   <gresource prefix="/org/trychlos/openbook/recurrent">
     <file>ofa-rec-period-properties.ui</file>
     <file>ofa-recurrent-generate.ui</file>
+    <file>ofa-recurrent-generate-over.ui</file>
     <file>ofa-recurrent-model-properties.ui</file>
     <file>ofa-recurrent-run-page.ui</file>
 

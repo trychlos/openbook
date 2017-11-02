@@ -107,6 +107,10 @@ typedef struct {
 	 * This is called once, before the first presentation, when running
 	 * a modal dialog.
 	 *
+	 * Please note that the #myIDialog interface takes care of calling
+	 * gtk_widget_show_all() on the @instance after returned from this
+	 * method.
+	 *
 	 * Since: version 1.
 	 */
 	void     ( *init )                 ( myIDialog *instance );

@@ -48,6 +48,7 @@
 #include "api/ofs-ope.h"
 
 #include "ofa-recurrent-generate.h"
+#include "ofa-recurrent-generate-over.h"
 #include "ofa-recurrent-model-treeview.h"
 #include "ofa-recurrent-run-page.h"
 #include "ofa-recurrent-run-store.h"
@@ -121,8 +122,7 @@ static gboolean is_dialog_validable( ofaRecurrentGenerate *self );
 static void     action_on_reset_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentGenerate *self );
 static void     action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentGenerate *self );
 static gboolean generate_do( ofaRecurrentGenerate *self );
-static gboolean confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date );
-static GList   *generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages );
+static GList   *generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *last, const GDate *dbegin, const GDate *dend, GList **messages );
 static void     generate_enum_dates_cb( const GDate *date, sEnumBetween *data );
 static void     display_error_messages( ofaRecurrentGenerate *self, GList *messages );
 static void     on_ok_clicked( ofaRecurrentGenerate *self );
@@ -590,9 +590,12 @@ generate_do( ofaRecurrentGenerate *self )
 {
 	ofaRecurrentGeneratePrivate *priv;
 	GList *models_dataset, *it, *opes, *model_opes, *messages;
-	const GDate *last_date;
+	const GDate *last_gen_date, *model_dend;
 	gchar *str;
-	gint count;
+	gint count, add;
+	ofeRecurrentGenerateOver answer;
+	ofoRecurrentModel *model;
+	GDate model_dlast, dbegin, dend;
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
@@ -602,23 +605,78 @@ generate_do( ofaRecurrentGenerate *self )
 	count = 0;
 	opes = NULL;
 	messages = NULL;
-	last_date = ofo_recurrent_gen_get_last_run_date( priv->getter );
 
-	if( !my_date_is_valid( last_date ) ||
-			my_date_compare( &priv->begin_date, last_date ) > 0 ||
-			confirm_redo( self, last_date )){
+	/* check that the beginning date of this request does not overlap
+	 * with the end date of the last generation
+	 */
+	last_gen_date = ofo_recurrent_gen_get_last_run_date( priv->getter );
+	answer = ofa_recurrent_generate_over_run( priv->getter, last_gen_date, &priv->begin_date );
+	if( answer != OFA_RECURRENT_GENERATE_CANCEL ){
 
 		/* for each selected template,
-		 *   generate recurrent operations between provided dates */
+		 *   generate recurrent operations between provided dates;
+		 *   all operations (since @begin_date) or only new (since @last)
+		 *   depending of the @answer, which itself depends of the
+		 *   user choice above
+		 */
 		for( it=models_dataset ; it ; it=it->next ){
-			model_opes = generate_do_opes( self, OFO_RECURRENT_MODEL( it->data ), &priv->begin_date, &priv->end_date, &messages );
+
+			model = OFO_RECURRENT_MODEL( it->data );
+			g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), G_SOURCE_REMOVE );
+
+			ofo_recurrent_run_get_last( priv->getter, &model_dlast,
+							ofo_recurrent_model_get_mnemo( model ), REC_STATUS_WAITING | REC_STATUS_VALIDATED );
+
+			/* if the user has chosen to only generate new operations,
+			 * then the generation begins with the later of @begin_date
+			 * and @last_date for this model;
+			 */
+			my_date_set_from_date( &dbegin, &priv->begin_date );
+			if( answer == OFA_RECURRENT_GENERATE_NEW ){
+				if( my_date_is_valid( &model_dlast ) && my_date_compare( &model_dlast, &dbegin ) > 0 ){
+					my_date_set_from_date( &dbegin, &model_dlast );
+				}
+				if( my_date_is_valid( last_gen_date ) && my_date_compare( last_gen_date, &dbegin ) > 0 ){
+					my_date_set_from_date( &dbegin, last_gen_date );
+				}
+			} else {
+				add = 0;
+				if( my_date_is_valid( &model_dlast ) && my_date_compare( &model_dlast, &dbegin ) < 0 ){
+					my_date_set_from_date( &dbegin, &model_dlast );
+					add = 1;
+				}
+				if( my_date_is_valid( last_gen_date ) && my_date_compare( last_gen_date, &dbegin ) < 0 ){
+					my_date_set_from_date( &dbegin, last_gen_date );
+					add = 1;
+				}
+				g_date_add_days( &dbegin, add );
+			}
+
+			/* if this model has an ending date, then the generation ends
+			 * with the earlier of this model ending date and the requested
+			 * @end_date
+			 */
+			model_dend = ofo_recurrent_model_get_end( model );
+			my_date_set_from_date( &dend, &priv->end_date );
+			if( my_date_is_valid( model_dend ) && my_date_compare( model_dend, &priv->end_date ) < 0 ){
+				my_date_set_from_date( &dend, model_dend );
+			}
+
+			/* now generate the recurrent operations;
+			 * at this time, we do not manage editables amounts, nor whether
+			 * amounts are zero or not
+			 */
+			model_opes = generate_do_opes( self, OFO_RECURRENT_MODEL( it->data ), &model_dlast, &dbegin, &dend, &messages );
 			count += g_list_length( model_opes );
 			ofa_recurrent_run_store_set_from_list( priv->store, model_opes );
 			opes = g_list_concat( opes, model_opes );
 			ofa_recurrent_model_page_unselect( priv->model_page, OFO_RECURRENT_MODEL( it->data ));
+
 			/* let Gtk update the display */
 			/* pwi 2016-12-17 - this is supposed to be not recommended
-			 * and more advised against this - but only way I have found to update the display */
+			 * and, more, advised against this!
+			 * but this is the only way I have found to update the display
+			 */
 			while( gtk_events_pending()){
 				gtk_main_iteration();
 			}
@@ -661,43 +719,14 @@ generate_do( ofaRecurrentGenerate *self )
 }
 
 /*
- * Requests a user confirm when beginning date of the generation is less
- * or equal than last generation date
- */
-static gboolean
-confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date )
-{
-	ofaRecurrentGeneratePrivate *priv;
-	gchar *sbegin, *slast, *str;
-	gboolean ok;
-	GtkWindow *toplevel;
-
-	priv = ofa_recurrent_generate_get_instance_private( self );
-
-	sbegin = my_date_to_str( &priv->begin_date, ofa_prefs_date_get_display_format( priv->getter ));
-	slast = my_date_to_str( last_date, ofa_prefs_date_get_display_format( priv->getter ));
-
-	str = g_strdup_printf(
-			_( "Beginning date %s is less or equal to previous generation date %s.\n"
-				"Please note that already generated operations will not be re-generated.\n"
-				"If they have been cancelled, you might want cancel the cancellation instead.\n"
-				"Do you confirm this generation ?" ), sbegin, slast );
-
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ok = my_utils_dialog_question( toplevel, str, _( "C_onfirm" ));
-
-	g_free( sbegin );
-	g_free( slast );
-	g_free( str );
-
-	return( ok );
-}
-
-/*
- * generating new operations (mnemo+date) between the two dates (included)
+ * @begin_date: the requested beginning date
+ * @end_date: the requested ending date
+ *
+ * Generate new recurrent operations (mnemo+date) between the provided
+ * dates (included).
  */
 static GList *
-generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages )
+generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *last, const GDate *dbegin, const GDate *dend, GList **messages )
 {
 	ofaRecurrentGeneratePrivate *priv;
 	myPeriod *period;
@@ -718,9 +747,7 @@ generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GD
 
 		period = ofo_recurrent_model_get_period( model );
 		if( period ){
-			my_period_enum_between(
-					period, NULL, NULL, begin_date, end_date,
-					( myPeriodEnumBetweenCb ) generate_enum_dates_cb, &sdata );
+			my_period_enum_between( period, last, dbegin, dend, ( myPeriodEnumBetweenCb ) generate_enum_dates_cb, &sdata );
 			if( g_list_length( sdata.messages )){
 				*messages = g_list_concat( *messages, sdata.messages );
 			}
@@ -759,8 +786,7 @@ generate_enum_dates_cb( const GDate *date, sEnumBetween *data )
 		data->already += 1;
 
 	} else {
-		recrun = ofo_recurrent_run_new( priv->getter );
-		ofo_recurrent_run_set_mnemo( recrun, mnemo );
+		recrun = ofo_recurrent_run_new( data->model );
 		ofo_recurrent_run_set_date( recrun, date );
 
 		valid = TRUE;

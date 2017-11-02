@@ -60,6 +60,11 @@ static GType st_col_types[REC_RUN_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* label, date, status */
 		G_TYPE_INT,										/* status_i */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* amount1, amount2, amount3 */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ope_template, period_key, period_n */
+		G_TYPE_STRING, G_TYPE_STRING,					/* period_details, end */
+		G_TYPE_STRING, G_TYPE_STRING,					/* creation user+timestamp */
+		G_TYPE_STRING, G_TYPE_STRING,					/* status user+timestamp */
+		G_TYPE_STRING, G_TYPE_STRING,					/* amounts edition user+timestamp */
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* the #ofoRecurrentRun itself, the #ofoRecurrentModel */
 };
 
@@ -67,8 +72,8 @@ static ofaRecurrentRunStore *create_new_store( ofaIGetter *getter, gint mode );
 static void                  load_dataset( ofaRecurrentRunStore *self );
 static gint                  on_sort_run( GtkTreeModel *trun, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentRunStore *self );
 static void                  do_insert_dataset( ofaRecurrentRunStore *self, const GList *dataset );
-static void                  insert_row( ofaRecurrentRunStore *self, const ofoRecurrentRun *run );
-static void                  set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTreeIter *iter );
+static void                  insert_row( ofaRecurrentRunStore *self, ofoRecurrentRun *run );
+static void                  set_row_by_iter( ofaRecurrentRunStore *self, ofoRecurrentRun *run, GtkTreeIter *iter );
 static gboolean              find_row_by_object( ofaRecurrentRunStore *self, ofoRecurrentRun *run, GtkTreeIter *iter );
 static void                  set_recurrent_model_new_id( ofaRecurrentRunStore *self, const gchar *prev_mnemo, const gchar *new_mnemo );
 static void                  signaler_connect_to_signaling_system( ofaRecurrentRunStore *self );
@@ -287,7 +292,7 @@ do_insert_dataset( ofaRecurrentRunStore *self, const GList *dataset )
 }
 
 static void
-insert_row( ofaRecurrentRunStore *self, const ofoRecurrentRun *run )
+insert_row( ofaRecurrentRunStore *self, ofoRecurrentRun *run )
 {
 	GtkTreeIter iter;
 
@@ -296,15 +301,18 @@ insert_row( ofaRecurrentRunStore *self, const ofoRecurrentRun *run )
 }
 
 static void
-set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTreeIter *iter )
+set_row_by_iter( ofaRecurrentRunStore *self, ofoRecurrentRun *run, GtkTreeIter *iter )
 {
 	ofaRecurrentRunStorePrivate *priv;
 	ofoRecurrentModel *model;
-	gchar *sdate, *snum, *samount1, *samount2, *samount3;
-	const gchar *cmnemo, *cstr, *cstatus;
+	gchar *sdate, *snum, *samount1, *samount2, *samount3, *spern, *sperdet, *sdend, *screstamp, *sstastamp, *sedistamp;
+	const gchar *cmnemo, *cstr, *cstatus, *cperkey;
 	ofxAmount amount;
 	ofxCounter numseq;
 	ofeRecurrentStatus status;
+	myPeriod *period;
+	myPeriodKey key;
+	const GDate *dend;
 
 	priv = ofa_recurrent_run_store_get_instance_private( self );
 
@@ -345,23 +353,64 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 		samount3 = g_strdup( "" );
 	}
 
+	period = ofo_recurrent_run_get_period( run );
+
+	if( period ){
+		key = my_period_get_key( period );
+		cperkey = my_period_key_get_label( key );
+		spern = g_strdup_printf( "%u", my_period_get_every( period ));
+		sperdet = my_period_get_details_str_i( period );
+	} else {
+		cperkey = "";
+		spern = g_strdup( "" );
+		sperdet = g_strdup( "" );
+	}
+
+	dend = ofo_recurrent_run_get_end( run );
+	if( my_date_is_valid( dend )){
+		sdend = my_date_to_str( dend, ofa_prefs_date_get_display_format( priv->getter ));
+	} else {
+		sdend = g_strdup( "" );
+	}
+
+	screstamp = my_stamp_to_str( ofo_recurrent_run_get_cre_stamp( run ), MY_STAMP_YYMDHMS );
+	sstastamp = my_stamp_to_str( ofo_recurrent_run_get_sta_stamp( run ), MY_STAMP_YYMDHMS );
+	sedistamp = my_stamp_to_str( ofo_recurrent_run_get_edi_stamp( run ), MY_STAMP_YYMDHMS );
+
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
-			REC_RUN_COL_MNEMO,      cmnemo,
-			REC_RUN_COL_NUMSEQ,     snum,
-			REC_RUN_COL_NUMSEQ_INT, numseq,
-			REC_RUN_COL_LABEL,      ofo_recurrent_model_get_label( model ),
-			REC_RUN_COL_DATE,       sdate,
-			REC_RUN_COL_STATUS,     cstatus,
-			REC_RUN_COL_STATUS_I,   status,
-			REC_RUN_COL_AMOUNT1,    samount1,
-			REC_RUN_COL_AMOUNT2,    samount2,
-			REC_RUN_COL_AMOUNT3,    samount3,
-			REC_RUN_COL_OBJECT,     run,
-			REC_RUN_COL_MODEL,      model,
+			REC_RUN_COL_MNEMO,        cmnemo,
+			REC_RUN_COL_NUMSEQ,       snum,
+			REC_RUN_COL_NUMSEQ_INT,   numseq,
+			REC_RUN_COL_DATE,         sdate,
+			REC_RUN_COL_LABEL,        ofo_recurrent_run_get_label( run ),
+			REC_RUN_COL_OPE_TEMPLATE, ofo_recurrent_run_get_ope_template( run ),
+			REC_RUN_COL_PERIOD_ID,    cperkey,
+			REC_RUN_COL_PERIOD_N,     spern,
+			REC_RUN_COL_PERIOD_DET,   sperdet,
+			REC_RUN_COL_END,          sdend,
+			REC_RUN_COL_CRE_USER,     ofo_recurrent_run_get_cre_user( run ),
+			REC_RUN_COL_CRE_STAMP,    screstamp,
+			REC_RUN_COL_STATUS,       cstatus,
+			REC_RUN_COL_STATUS_I,     status,
+			REC_RUN_COL_STA_USER,     ofo_recurrent_run_get_sta_user( run ),
+			REC_RUN_COL_STA_STAMP,    sstastamp,
+			REC_RUN_COL_AMOUNT1,      samount1,
+			REC_RUN_COL_AMOUNT2,      samount2,
+			REC_RUN_COL_AMOUNT3,      samount3,
+			REC_RUN_COL_EDI_USER,     ofo_recurrent_run_get_edi_user( run ),
+			REC_RUN_COL_EDI_STAMP,    sedistamp,
+			REC_RUN_COL_OBJECT,       run,
+			REC_RUN_COL_MODEL,        model,
 			-1 );
 
+	g_free( screstamp );
+	g_free( sstastamp );
+	g_free( sedistamp );
+	g_free( sdend );
+	g_free( spern );
+	g_free( sperdet );
 	g_free( sdate );
 	g_free( snum );
 	g_free( samount1 );

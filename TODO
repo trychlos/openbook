@@ -355,9 +355,15 @@
 
 1501 2017-10-28 myIBin interface: should define a my-bin-changed signal
                 to be used in place of ofa-changed
-     2017-11- 1 myIBin: done
+     2017-11- 1 myIBin: signal defined
+     2017-11- 1 myPeriodBin: signal used
 
-1502
+1502 2017-11- 2 RecurrentModel: move editable amounts to a child table
+                + have a model-level boolean "accept zero": if set, then
+                the recurrent run is generated even if all editable amounts
+                are zero
+
+1503
 
 -----------------------------------------------------------------------
  DONE

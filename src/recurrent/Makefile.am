@@ -60,22 +60,14 @@ nodist_libofa_recurrent_la_SOURCES = \
 
 libofa_recurrent_la_SOURCES = \
 	ofa-extension.c										\
-	ofa-rec-period-bin.c								\
-	ofa-rec-period-bin.h								\
-	ofa-rec-period-page.c								\
-	ofa-rec-period-page.h								\
-	ofa-rec-period-properties.c							\
-	ofa-rec-period-properties.h							\
-	ofa-rec-period-store.c								\
-	ofa-rec-period-store.h								\
-	ofa-rec-period-treeview.c							\
-	ofa-rec-period-treeview.h							\
 	ofa-recurrent-dbmodel.c								\
 	ofa-recurrent-dbmodel.h								\
 	ofa-recurrent-execlose.c							\
 	ofa-recurrent-execlose.h							\
 	ofa-recurrent-generate.c							\
 	ofa-recurrent-generate.h							\
+	ofa-recurrent-generate-over.c						\
+	ofa-recurrent-generate-over.h						\
 	ofa-recurrent-ident.c								\
 	ofa-recurrent-ident.h								\
 	ofa-recurrent-main.c								\
@@ -96,8 +88,6 @@ libofa_recurrent_la_SOURCES = \
 	ofa-recurrent-run-treeview.h						\
 	ofa-recurrent-tree-adder.c							\
 	ofa-recurrent-tree-adder.h							\
-	ofo-rec-period.c									\
-	ofo-rec-period.h									\
 	ofo-recurrent-gen.c									\
 	ofo-recurrent-gen.h									\
 	ofo-recurrent-model.c								\

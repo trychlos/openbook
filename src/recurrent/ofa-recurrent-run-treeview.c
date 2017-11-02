@@ -327,14 +327,25 @@ setup_columns( ofaRecurrentRunTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_MNEMO,     _( "Mnemo" ),     _( "Mnemonic" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), REC_RUN_COL_NUMSEQ,    _( "Seq." ),      _( "Sequence number" ));
-	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), REC_RUN_COL_LABEL,     _( "Label" ),         NULL );
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), REC_RUN_COL_DATE,      _( "Operation" ), _( "Operation date" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_STATUS,    _( "Status" ),        NULL );
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT1,   _( "Amount n° 1" ),   NULL);
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT2,   _( "Amount n° 2" ),   NULL);
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT3,   _( "Amount n° 3" ),   NULL);
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_MNEMO,        _( "Mnemo" ),        _( "Mnemonic" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), REC_RUN_COL_NUMSEQ,       _( "Seq." ),         _( "Sequence number" ));
+	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), REC_RUN_COL_LABEL,        _( "Label" ),            NULL );
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), REC_RUN_COL_DATE,         _( "Ope.date" ),     _( "Operation date" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_OPE_TEMPLATE, _( "Ope.template" ), _( "Operation template" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), REC_RUN_COL_END,          _( "End" ),          _( "Model end date" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_PERIOD_ID,    _( "Period" ),       _( "Periodicity key" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), REC_RUN_COL_PERIOD_N,     _( "Every" ),        _( "Periodicity every" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_PERIOD_DET,   _( "Details" ),      _( "Periodicity details" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_CRE_USER,     _( "Cre.user" ),     _( "Creation user" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), REC_RUN_COL_CRE_STAMP,    _( "Cre.stamp" ),    _( "Creation timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_STATUS,       _( "Status" ),           NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_STA_USER,     _( "Sta.user" ),     _( "Status user" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), REC_RUN_COL_STA_STAMP,    _( "Sta.stamp" ),    _( "Status timestamp" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT1,      _( "Amount n° 1" ),      NULL);
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT2,      _( "Amount n° 2" ),      NULL);
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT3,      _( "Amount n° 3" ),      NULL);
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_EDI_USER,     _( "Edi.user" ),     _( "Amounts edition user" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), REC_RUN_COL_EDI_STAMP,    _( "Edi.stamp" ),    _( "Amounts edition timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), REC_RUN_COL_LABEL );
 
@@ -523,7 +534,7 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaRecu
 				case REC_RUN_COL_AMOUNT1:
 				case REC_RUN_COL_AMOUNT2:
 				case REC_RUN_COL_AMOUNT3:
-					ofo_recurrent_run_update( recrun );
+					ofo_recurrent_run_update_amounts( recrun );
 					break;
 				default:
 					break;
@@ -813,32 +824,56 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 {
 	static const gchar *thisfn = "ofa_recurrent_run_treeview_v_sort";
 	ofaRecurrentRunTreeviewPrivate *priv;
-	gchar *mnemoa, *labela, *seqa, *datea, *statusa, *amount1a, *amount2a, *amount3a;
-	gchar *mnemob, *labelb, *seqb, *dateb, *statusb, *amount1b, *amount2b, *amount3b;
+	gchar *mnemoa, *labela, *seqa, *datea, *statusa, *amount1a, *amount2a, *amount3a,
+			*stemplatea, *sperida, *sperna, *sperdeta, *sdenda, *screua, *scresa, *sstaua, *sstasa, *sediua, *sedisa;
+	gchar *mnemob, *labelb, *seqb, *dateb, *statusb, *amount1b, *amount2b, *amount3b,
+			*stemplateb, *speridb, *spernb, *sperdetb, *sdendb, *screub, *scresb, *sstaub, *sstasb, *sediub, *sedisb;
 	gint cmp;
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( OFA_RECURRENT_RUN_TREEVIEW( tvbin ));
 
 	gtk_tree_model_get( tmodel, a,
-			REC_RUN_COL_MNEMO,   &mnemoa,
-			REC_RUN_COL_NUMSEQ,  &seqa,
-			REC_RUN_COL_LABEL,   &labela,
-			REC_RUN_COL_DATE,    &datea,
-			REC_RUN_COL_STATUS,  &statusa,
-			REC_RUN_COL_AMOUNT1, &amount1a,
-			REC_RUN_COL_AMOUNT2, &amount2a,
-			REC_RUN_COL_AMOUNT3, &amount3a,
+			REC_RUN_COL_MNEMO,        &mnemoa,
+			REC_RUN_COL_NUMSEQ,       &seqa,
+			REC_RUN_COL_LABEL,        &labela,
+			REC_RUN_COL_DATE,         &datea,
+			REC_RUN_COL_OPE_TEMPLATE, &stemplatea,
+			REC_RUN_COL_PERIOD_ID,    &sperida,
+			REC_RUN_COL_PERIOD_N,     &sperna,
+			REC_RUN_COL_PERIOD_DET,   &sperdeta,
+			REC_RUN_COL_END,          &sdenda,
+			REC_RUN_COL_CRE_USER,     &screua,
+			REC_RUN_COL_CRE_STAMP,    &scresa,
+			REC_RUN_COL_STATUS,       &statusa,
+			REC_RUN_COL_STA_USER,     &sstaua,
+			REC_RUN_COL_STA_STAMP,    &sstasa,
+			REC_RUN_COL_AMOUNT1,      &amount1a,
+			REC_RUN_COL_AMOUNT2,      &amount2a,
+			REC_RUN_COL_AMOUNT3,      &amount3a,
+			REC_RUN_COL_EDI_USER,     &sediua,
+			REC_RUN_COL_EDI_STAMP,    &sedisa,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
-			REC_RUN_COL_MNEMO,   &mnemob,
-			REC_RUN_COL_NUMSEQ,  &seqb,
-			REC_RUN_COL_LABEL,   &labelb,
-			REC_RUN_COL_DATE,    &dateb,
-			REC_RUN_COL_STATUS,  &statusb,
-			REC_RUN_COL_AMOUNT1, &amount1b,
-			REC_RUN_COL_AMOUNT2, &amount2b,
-			REC_RUN_COL_AMOUNT3, &amount3b,
+			REC_RUN_COL_MNEMO,        &mnemob,
+			REC_RUN_COL_NUMSEQ,       &seqb,
+			REC_RUN_COL_LABEL,        &labelb,
+			REC_RUN_COL_DATE,         &dateb,
+			REC_RUN_COL_OPE_TEMPLATE, &stemplateb,
+			REC_RUN_COL_PERIOD_ID,    &speridb,
+			REC_RUN_COL_PERIOD_N,     &spernb,
+			REC_RUN_COL_PERIOD_DET,   &sperdetb,
+			REC_RUN_COL_END,          &sdendb,
+			REC_RUN_COL_CRE_USER,     &screub,
+			REC_RUN_COL_CRE_STAMP,    &scresb,
+			REC_RUN_COL_STATUS,       &statusb,
+			REC_RUN_COL_STA_USER,     &sstaub,
+			REC_RUN_COL_STA_STAMP,    &sstasb,
+			REC_RUN_COL_AMOUNT1,      &amount1b,
+			REC_RUN_COL_AMOUNT2,      &amount2b,
+			REC_RUN_COL_AMOUNT3,      &amount3b,
+			REC_RUN_COL_EDI_USER,     &sediub,
+			REC_RUN_COL_EDI_STAMP,    &sedisb,
 			-1 );
 
 	cmp = 0;
@@ -881,6 +916,17 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( amount1a );
 	g_free( amount2a );
 	g_free( amount3a );
+	g_free( stemplatea );
+	g_free( sperida );
+	g_free( sperna );
+	g_free( sperdeta );
+	g_free( sdenda );
+	g_free( screua );
+	g_free( scresa );
+	g_free( sstaua );
+	g_free( sstasa );
+	g_free( sediua );
+	g_free( sedisa );
 
 	g_free( mnemob );
 	g_free( seqb );
@@ -890,6 +936,17 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( amount1b );
 	g_free( amount2b );
 	g_free( amount3b );
+	g_free( stemplateb );
+	g_free( speridb );
+	g_free( spernb );
+	g_free( sperdetb );
+	g_free( sdendb );
+	g_free( screub );
+	g_free( scresb );
+	g_free( sstaub );
+	g_free( sstasb );
+	g_free( sediub );
+	g_free( sedisb );
 
 	return( cmp );
 }

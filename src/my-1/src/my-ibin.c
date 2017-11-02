@@ -123,6 +123,7 @@ interface_base_init( myIBinInterface *klass )
 					NULL,								/* accumulator data */
 					NULL,
 					G_TYPE_NONE,
+					0,
 					G_TYPE_NONE );
 	}
 

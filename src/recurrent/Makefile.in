@@ -163,16 +163,14 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_recurrent_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_recurrent_la_OBJECTS = ofa-extension.lo \
-	ofa-rec-period-bin.lo ofa-rec-period-page.lo \
-	ofa-rec-period-properties.lo ofa-rec-period-store.lo \
-	ofa-rec-period-treeview.lo ofa-recurrent-dbmodel.lo \
-	ofa-recurrent-execlose.lo ofa-recurrent-generate.lo \
+	ofa-recurrent-dbmodel.lo ofa-recurrent-execlose.lo \
+	ofa-recurrent-generate.lo ofa-recurrent-generate-over.lo \
 	ofa-recurrent-ident.lo ofa-recurrent-main.lo \
 	ofa-recurrent-model-page.lo ofa-recurrent-model-properties.lo \
 	ofa-recurrent-model-store.lo ofa-recurrent-model-treeview.lo \
 	ofa-recurrent-run-page.lo ofa-recurrent-run-store.lo \
 	ofa-recurrent-run-treeview.lo ofa-recurrent-tree-adder.lo \
-	ofo-rec-period.lo ofo-recurrent-gen.lo ofo-recurrent-model.lo \
+	ofo-recurrent-gen.lo ofo-recurrent-model.lo \
 	ofo-recurrent-run.lo
 am__objects_1 = resources.lo
 nodist_libofa_recurrent_la_OBJECTS = $(am__objects_1)
@@ -457,22 +455,14 @@ nodist_libofa_recurrent_la_SOURCES = \
 
 libofa_recurrent_la_SOURCES = \
 	ofa-extension.c										\
-	ofa-rec-period-bin.c								\
-	ofa-rec-period-bin.h								\
-	ofa-rec-period-page.c								\
-	ofa-rec-period-page.h								\
-	ofa-rec-period-properties.c							\
-	ofa-rec-period-properties.h							\
-	ofa-rec-period-store.c								\
-	ofa-rec-period-store.h								\
-	ofa-rec-period-treeview.c							\
-	ofa-rec-period-treeview.h							\
 	ofa-recurrent-dbmodel.c								\
 	ofa-recurrent-dbmodel.h								\
 	ofa-recurrent-execlose.c							\
 	ofa-recurrent-execlose.h							\
 	ofa-recurrent-generate.c							\
 	ofa-recurrent-generate.h							\
+	ofa-recurrent-generate-over.c						\
+	ofa-recurrent-generate-over.h						\
 	ofa-recurrent-ident.c								\
 	ofa-recurrent-ident.h								\
 	ofa-recurrent-main.c								\
@@ -493,8 +483,6 @@ libofa_recurrent_la_SOURCES = \
 	ofa-recurrent-run-treeview.h						\
 	ofa-recurrent-tree-adder.c							\
 	ofa-recurrent-tree-adder.h							\
-	ofo-rec-period.c									\
-	ofo-rec-period.h									\
 	ofo-recurrent-gen.c									\
 	ofo-recurrent-gen.h									\
 	ofo-recurrent-model.c								\
@@ -602,13 +590,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extension.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rec-period-bin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rec-period-page.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rec-period-properties.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rec-period-store.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rec-period-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-dbmodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-execlose.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-generate-over.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-generate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-ident.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-main.Plo@am__quote@
@@ -620,7 +604,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-run-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-run-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-tree-adder.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-rec-period.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-recurrent-gen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-recurrent-model.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-recurrent-run.Plo@am__quote@

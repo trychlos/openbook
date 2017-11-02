@@ -49,7 +49,7 @@ static guint    st_initializations      = 0;		/* interface initialization count 
 static GType      register_type( void );
 static void       interface_base_init( myIDialogInterface *klass );
 static void       interface_base_finalize( myIDialogInterface *klass );
-static void       idialog_init_application( myIDialog *instance );
+static void       idialog_init_instance( myIDialog *instance );
 static GtkWidget *button_connect( myIDialog *instance, const gchar *label, gint response_code, GCallback cb );
 static void       on_cancel_clicked( GtkButton *button, myIDialog *instance );
 static void       on_close_clicked( GtkButton *button, myIDialog *instance );
@@ -214,13 +214,14 @@ my_idialog_init( myIDialog *instance )
 	sdata = get_instance_data( instance );
 
 	if( !sdata->initialized ){
-		g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+		g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
 		sdata->initialized = TRUE;
 
 		/* must be called before having connected the cancel/close buttons
 		 * so that the application has a chance to do something before
 		 * default behavior */
-		idialog_init_application( instance );
+		idialog_init_instance( instance );
 
 		sdata->cancel_btn = button_connect(
 				instance, "Cancel", GTK_RESPONSE_CANCEL, G_CALLBACK( on_cancel_clicked ));
@@ -233,9 +234,9 @@ my_idialog_init( myIDialog *instance )
 }
 
 static void
-idialog_init_application( myIDialog *instance )
+idialog_init_instance( myIDialog *instance )
 {
-	static const gchar *thisfn = "my_idialog_init";
+	static const gchar *thisfn = "my_idialog_init_instance";
 
 	if( MY_IDIALOG_GET_INTERFACE( instance )->init ){
 		MY_IDIALOG_GET_INTERFACE( instance )->init( instance );
