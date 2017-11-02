@@ -646,7 +646,7 @@ action_update_status( ofaRecurrentRunPage *self )
 		cur_status = ofo_recurrent_run_get_status( run_obj );
 		if( cur_status == priv->update_old_status ){
 			ofo_recurrent_run_set_status( run_obj, priv->update_new_status );
-			if( ofo_recurrent_run_update( run_obj ) && priv->update_cb ){
+			if( ofo_recurrent_run_update_status( run_obj ) && priv->update_cb ){
 				priv->update_recrun = run_obj;
 				//g_idle_add(( GSourceFunc ) priv->update_cb, self );
 				( *priv->update_cb )( self );

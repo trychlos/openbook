@@ -34,7 +34,6 @@
 #include "ofa-recurrent-ident.h"
 #include "ofa-recurrent-main.h"
 #include "ofa-recurrent-tree-adder.h"
-#include "ofo-rec-period.h"
 #include "ofo-recurrent-gen.h"
 #include "ofo-recurrent-model.h"
 #include "ofo-recurrent-run.h"
@@ -78,7 +77,6 @@ ofa_extension_enum_types( GTypeModule *module, ofaExtensionEnumTypesCb cb, void 
 	cb( OFA_TYPE_RECURRENT_IDENT, user_data );
 	cb( OFA_TYPE_RECURRENT_DBMODEL, user_data );
 	cb( OFA_TYPE_RECURRENT_TREE_ADDER, user_data );
-	cb( OFO_TYPE_REC_PERIOD, user_data );
 	cb( OFO_TYPE_RECURRENT_GEN, user_data );
 	cb( OFO_TYPE_RECURRENT_MODEL, user_data );
 	cb( OFO_TYPE_RECURRENT_RUN, user_data );

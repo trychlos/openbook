@@ -87,6 +87,17 @@ typedef struct {
  * @REC_RUN_COL_AMOUNT1       : amount 1                     String       Yes
  * @REC_RUN_COL_AMOUNT2       : amount 2                     String       Yes
  * @REC_RUN_COL_AMOUNT3       : amount 3                     String       Yes
+ * @REC_RUN_COL_OPE_TEMPLATE  : operation template           String       Yes
+ * @REC_RUN_COL_PERIOD_ID     : period key                   String       Yes
+ * @REC_RUN_COL_PERIOD_N      : period every                 String       Yes
+ * @REC_RUN_COL_PERIOD_DET    : period details               String       Yes
+ * @REC_RUN_COL_END           : model end date               String       Yes
+ * @REC_RUN_COL_CRE_USER      : creation user                String       Yes
+ * @REC_RUN_COL_CRE_STAMP     : creation timestamp           String       Yes
+ * @REC_RUN_COL_STA_USER      : status user                  String       Yes
+ * @REC_RUN_COL_STA_STAMP     : status timestamp             String       Yes
+ * @REC_RUN_COL_EDI_USER      : amounts edition user         String       Yes
+ * @REC_RUN_COL_EDI_STAMP     : amounts edition timestamp    String       Yes
  * @REC_RUN_COL_OBJECT        : #ofoRecurrentRun object      GObject       No
  * @REC_RUN_COL_MODEL         : #ofoRecurrentModel object    GObject       No
  */
@@ -101,6 +112,17 @@ enum {
 	REC_RUN_COL_AMOUNT1,
 	REC_RUN_COL_AMOUNT2,
 	REC_RUN_COL_AMOUNT3,
+	REC_RUN_COL_OPE_TEMPLATE,
+	REC_RUN_COL_PERIOD_ID,
+	REC_RUN_COL_PERIOD_N,
+	REC_RUN_COL_PERIOD_DET,
+	REC_RUN_COL_END,
+	REC_RUN_COL_CRE_USER,
+	REC_RUN_COL_CRE_STAMP,
+	REC_RUN_COL_STA_USER,
+	REC_RUN_COL_STA_STAMP,
+	REC_RUN_COL_EDI_USER,
+	REC_RUN_COL_EDI_STAMP,
 	REC_RUN_COL_OBJECT,
 	REC_RUN_COL_MODEL,
 	REC_RUN_N_COLUMNS

@@ -501,6 +501,73 @@ my_period_details_remove( myPeriod *period, guint det )
 }
 
 /**
+ * my_period_details_is_valid:
+ * @period: this #myPeriod object.
+ * @msgerr: [out][allow-none]: a placeholder for an error message.
+ *
+ * Returns: %TRUE if the @period is valid so what something can be
+ * generated.
+ */
+gboolean
+my_period_is_valid( myPeriod *period, gchar **msgerr )
+{
+	myPeriodPrivate *priv;
+	gboolean ok;
+	myPeriodKey key;
+	guint every, first;
+	GList *details;
+
+	//g_debug( "my_period_is_valid" );
+
+	g_return_val_if_fail( period && MY_IS_PERIOD( period ), FALSE );
+
+	priv = my_period_get_instance_private( period );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	ok = FALSE;
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
+	key = my_period_get_key( period );
+	every = my_period_get_every( period );
+	switch( key ){
+		case MY_PERIOD_UNSET:
+			if( msgerr ){
+				*msgerr = g_strdup( _( "Periodicity is not set" ));
+			}
+			break;
+		case MY_PERIOD_DAILY:
+			if( every > 0 ){
+				ok = TRUE;
+			} else if( msgerr ){
+				*msgerr = g_strdup( _( "Periodicity repeat frequency is not set or invalid" ));
+			}
+			break;
+		case MY_PERIOD_WEEKLY:
+		case MY_PERIOD_MONTHLY:
+		case MY_PERIOD_YEARLY:
+			if( every <= 0 ){
+				if( msgerr ){
+					*msgerr = g_strdup( _( "Periodicity repeat frequency is not set or invalid" ));
+				}
+			} else {
+				details = my_period_get_details( period );
+				if( details ){
+					first = GPOINTER_TO_UINT( details->data );
+					ok = ( first > 0 );
+				}
+				if( !ok && msgerr ){
+					*msgerr = g_strdup( _( "Periodicity details are not set or invalid" ));
+				}
+			}
+			break;
+	}
+
+	return( ok );
+}
+
+/**
  * my_period_enum_key:
  * @cb: the user callback.
  * @user_data: a user data provided pointer.
@@ -520,23 +587,21 @@ my_period_enum_key( myPeriodEnumKeyCb cb, void *user_data )
 /**
  * my_period_enum_between:
  * @period: this #myPeriod instance.
- * @last: [allow-none]: the last generation date.
- * @max_end: [allow-none]: the max generation date.
+ * @last: [allow-none]: last generation date used for computing the periodicity.
  * @enum_begin: the beginning date.
  * @enum_end: the ending date.
  * @cb: the user callback.
  * @user_data: a user data provided pointer.
  *
- * Enumerates all valid dates between @per_begin and @per_end included dates.
- * No date is generated after @end.
+ * Enumerates all valid dates between @enum_begin and @enum_end included
+ * dates.
  */
 void
-my_period_enum_between( myPeriod *period, const GDate *last, const GDate *max_end,
+my_period_enum_between( myPeriod *period, const GDate *last,
 							const GDate *enum_begin, const GDate *enum_end, myPeriodEnumBetweenCb cb, void *user_data )
 {
 	myPeriodPrivate *priv;
 	myPeriodKey key;
-	GDate date_end;
 
 	g_return_if_fail( period && MY_IS_PERIOD( period ));
 
@@ -547,28 +612,20 @@ my_period_enum_between( myPeriod *period, const GDate *last, const GDate *max_en
 	g_return_if_fail( my_date_is_valid( enum_end ));
 	g_return_if_fail( cb != NULL );
 
-	/* last iteration date
-	 * first of max_end and enum_end */
-	if( !my_date_is_valid( max_end ) || my_date_compare( max_end, enum_end ) > 0 ){
-		my_date_set_from_date( &date_end, enum_end );
-	} else {
-		my_date_set_from_date( &date_end, max_end );
-	}
-
 	key = my_period_get_key( period );
 
 	switch( key ){
 		case MY_PERIOD_DAILY:
-			period_enum_daily( period, last, enum_begin, max_end, cb, user_data );
+			period_enum_daily( period, last, enum_begin, enum_end, cb, user_data );
 			break;
 		case MY_PERIOD_WEEKLY:
-			period_enum_weekly( period, last, enum_begin, max_end, cb, user_data );
+			period_enum_weekly( period, last, enum_begin, enum_end, cb, user_data );
 			break;
 		case MY_PERIOD_MONTHLY:
-			period_enum_monthly( period, last, enum_begin, max_end, cb, user_data );
+			period_enum_monthly( period, last, enum_begin, enum_end, cb, user_data );
 			break;
 		case MY_PERIOD_YEARLY:
-			period_enum_yearly( period, last, enum_begin, max_end, cb, user_data );
+			period_enum_yearly( period, last, enum_begin, enum_end, cb, user_data );
 			break;
 		default:
 			break;
@@ -669,7 +726,8 @@ period_enum_weekly( myPeriod *period, const GDate *last,
 }
 
 static void
-period_enum_monthly( myPeriod *period, const GDate *last, const GDate *enum_begin, const GDate *enum_end, myPeriodEnumBetweenCb cb, void *user_data )
+period_enum_monthly( myPeriod *period, const GDate *last,
+						const GDate *enum_begin, const GDate *enum_end, myPeriodEnumBetweenCb cb, void *user_data )
 {
 	GDate date;
 	guint every, dnum, ddate, month;
@@ -714,7 +772,8 @@ period_enum_monthly( myPeriod *period, const GDate *last, const GDate *enum_begi
 }
 
 static void
-period_enum_yearly( myPeriod *period, const GDate *last, const GDate *enum_begin, const GDate *enum_end, myPeriodEnumBetweenCb cb, void *user_data )
+period_enum_yearly( myPeriod *period, const GDate *last,
+						const GDate *enum_begin, const GDate *enum_end, myPeriodEnumBetweenCb cb, void *user_data )
 {
 	GDate date;
 	guint every, dnum, ddate, year;

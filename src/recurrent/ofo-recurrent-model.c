@@ -666,13 +666,13 @@ ofo_recurrent_model_is_deletable( const ofoRecurrentModel *model )
  * @msgerr: [allow-none][out]:
  *
  * Returns: %TRUE if provided datas are enough to make the future
- * #ofoRecurrentModel valid and and able to be enabled, %FALSE else.
+ * #ofoRecurrentModel valid and able to be enabled, %FALSE else.
  *
  * At creation time, only the mnemonic is mandatory.
  */
 gboolean
 ofo_recurrent_model_is_valid_data( const gchar *mnemo, const gchar *label,
-		const gchar *ope_template, myPeriod *period, gchar **msgerr )
+										const gchar *ope_template, myPeriod *period, gchar **msgerr )
 {
 	if( msgerr ){
 		*msgerr = NULL;
@@ -699,6 +699,9 @@ ofo_recurrent_model_is_valid_data( const gchar *mnemo, const gchar *label,
 		if( msgerr ){
 			*msgerr = g_strdup( _( "Periodicity is not set" ));
 		}
+		return( FALSE );
+	}
+	if( !my_period_is_valid( period, msgerr )){
 		return( FALSE );
 	}
 
@@ -984,7 +987,7 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	g_string_append_printf( query,
 			"	(REC_MNEMO,REC_CRE_USER, REC_CRE_STAMP,"
 			"	 REC_LABEL,REC_OPE_TEMPLATE,"
-			"	 REC_PERIOD_ID,REC_PERIOD_N, REC_PERIOD_DET,"
+			"	 REC_PERIOD_ID,REC_PERIOD_N,REC_PERIOD_DET,"
 			"	 REC_DEF_AMOUNT1,REC_DEF_AMOUNT2,REC_DEF_AMOUNT3,"
 			"	 REC_ENABLED,REC_END,REC_NOTES) "
 			"	VALUES ('%s','%s','%s'",
@@ -1007,7 +1010,7 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	period = ofo_recurrent_model_get_period( model );
 	if( period ){
 		per_id = my_period_get_key( period );
-		g_string_append_printf( query, ",'%s',%d,",
+		g_string_append_printf( query, ",'%s',%d",
 				my_period_key_get_dbms( per_id ),
 				my_period_get_every( period ));
 

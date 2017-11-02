@@ -60,15 +60,13 @@ typedef struct {
 
 #define RECURRENT_ROW_ID                1
 
-GType        ofo_recurrent_gen_get_type           ( void ) G_GNUC_CONST;
+GType        ofo_recurrent_gen_get_type         ( void ) G_GNUC_CONST;
 
-const GDate *ofo_recurrent_gen_get_last_run_date  ( ofaIGetter *getter );
+const GDate *ofo_recurrent_gen_get_last_run_date( ofaIGetter *getter );
 
-void         ofo_recurrent_gen_set_last_run_date  ( ofaIGetter *getter, const GDate *date );
+void         ofo_recurrent_gen_set_last_run_date( ofaIGetter *getter, const GDate *date );
 
-ofxCounter   ofo_recurrent_gen_get_next_numseq    ( ofaIGetter *getter );
-
-ofxCounter   ofo_recurrent_gen_get_next_per_det_id( ofaIGetter *getter );
+ofxCounter   ofo_recurrent_gen_get_next_numseq  ( ofaIGetter *getter );
 
 G_END_DECLS
 

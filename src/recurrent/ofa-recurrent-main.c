@@ -37,7 +37,6 @@
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-isignaler.h"
 
-#include "recurrent/ofa-rec-period-page.h"
 #include "recurrent/ofa-recurrent-main.h"
 #include "recurrent/ofa-recurrent-model-page.h"
 #include "recurrent/ofa-recurrent-run-page.h"
@@ -65,7 +64,6 @@ typedef struct {
 static void on_menu_available( ofaISignaler *signaler, const gchar *scope, GActionMap *map, ofaIGetter *getter );
 static void menu_add_section( GMenuModel *model, const gchar *scope, const sItemDef *sitems, const gchar *placeholder );
 static void on_page_manager_available( ofaISignaler *signaler, ofaIPageManager *manager, void *empty );
-static void on_rec_period( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_recurrent_run( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
@@ -73,7 +71,6 @@ static void on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpo
  * It happens that all these actions open pages when activated
  */
 static const GActionEntry st_win_entries[] = {
-		{ "rec-period",  on_rec_period,  NULL, NULL, NULL },
 		{ "recurrent-run",  on_recurrent_run,  NULL, NULL, NULL },
 		{ "recurrent-define",  on_recurrent_manage,  NULL, NULL, NULL },
 };
@@ -87,14 +84,12 @@ static const sItemDef st_items_ope2[] = {
 
 static const sItemDef st_items_ref[] = {
 		{ "recurrent-define", N_( "_Recurrent models management..." ) },
-		{ "rec-period",       N_( "Recurrent _periodicities..." ) },
 		{ 0 }
 };
 
 /* The themes which also define the tab titles
  */
 static sThemeDef st_theme_defs[] = {
-		{ "rec-period",       N_( "Recurrent periodicities" ),         ofa_rec_period_page_get_type,      FALSE },
 		{ "recurrent-run",    N_( "Recurrent operations accounting" ), ofa_recurrent_run_page_get_type,   FALSE },
 		{ "recurrent-define", N_( "Recurrent models management" ),     ofa_recurrent_model_page_get_type, FALSE },
 		{ 0 }
@@ -202,22 +197,6 @@ on_page_manager_available( ofaISignaler *signaler, ofaIPageManager *manager, voi
 		ofa_ipage_manager_define( manager,
 				( *st_theme_defs[i].fntype )(), gettext( st_theme_defs[i].theme_label ), st_theme_defs[i].multiple );
 	}
-}
-
-static void
-on_rec_period( GSimpleAction *action, GVariant *parameter, gpointer user_data )
-{
-	static const gchar *thisfn = "recurrent/ofa_recurrent_main_on_rec_period";
-	ofaIPageManager *manager;
-
-	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
-			thisfn, action, parameter, ( void * ) user_data );
-
-	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
-
-	manager = ofa_igetter_get_page_manager( OFA_IGETTER( user_data ));
-
-	ofa_ipage_manager_activate( manager, OFA_TYPE_REC_PERIOD_PAGE );
 }
 
 static void

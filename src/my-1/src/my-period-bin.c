@@ -82,18 +82,18 @@ static const gchar *st_item_data        = "my-period-bin-item";
 
 static void          setup_bin( myPeriodBin *bin );
 static void          setup_key_combo( myPeriodBin *self );
-static void          key_combo_cb( myPeriodKey type, myPeriodBin *self );
-static void          setup_every( myPeriodBin *self, const gchar *label );
+static void          setup_key_cb( myPeriodKey type, myPeriodBin *self );
 static void          setup_popup_menu( myPeriodBin *self, GtkWidget **popup, myPeriodKey key );
-static void          popup_menu_cb( guint idn, const gchar *ids, const gchar *abr, const gchar *label, myPeriodBin *self );
-static void          details_set_list( myPeriodBin *self, myPeriodKey key, const gchar *details );
-static void          on_key_changed( GtkComboBox *box, myPeriodBin *self );
-static void          init_popup_details( myPeriodBin *self, GtkWidget *popup );
-static void          on_each_clicked( GtkButton *button, GtkWidget *popup );
-static void          on_every_changed( GtkEntry *entry, myPeriodBin *self );
-static void          on_popup_item_activated( GtkMenuItem *item, myPeriodBin *self );
-static void          on_details_changed( GtkEntry *entry, myPeriodBin *self );
-static void          set_popup_item_from_period( myPeriodBin *self );
+static void          setup_popup_cb( guint idn, const gchar *ids, const gchar *abr, const gchar *label, myPeriodBin *self );
+static void          key_combo_on_changed( GtkComboBox *box, myPeriodBin *self );
+static void          popup_menu_init( myPeriodBin *self, GtkWidget *popup );
+static void          popup_on_each_clicked( GtkButton *button, GtkWidget *popup );
+static void          every_init( myPeriodBin *self, const gchar *label );
+static void          every_on_changed( GtkEntry *entry, myPeriodBin *self );
+static void          popup_set_from_period( myPeriodBin *self );
+static void          popup_on_item_activated( GtkMenuItem *item, myPeriodBin *self );
+static void          details_set_list( myPeriodBin *self );
+static void          details_on_changed( GtkEntry *entry, myPeriodBin *self );
 static void          on_bin_changed( myPeriodBin *self );
 static void          read_settings( myPeriodBin *self );
 static void          write_settings( myPeriodBin *self );
@@ -236,13 +236,13 @@ setup_bin( myPeriodBin *self )
 	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), priv->key_combo );
 
-	g_signal_connect( priv->key_combo, "changed", G_CALLBACK( on_key_changed ), self );
+	g_signal_connect( priv->key_combo, "changed", G_CALLBACK( key_combo_on_changed ), self );
 
 	/* every entry */
 	priv->every_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "every-entry" );
 	g_return_if_fail( priv->every_entry && GTK_IS_ENTRY( priv->every_entry ));
 
-	priv->every_handler = g_signal_connect( priv->every_entry, "changed", G_CALLBACK( on_every_changed ), self );
+	priv->every_handler = g_signal_connect( priv->every_entry, "changed", G_CALLBACK( every_on_changed ), self );
 
 	priv->every_prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "every-prompt" );
 	g_return_if_fail( priv->every_prompt && GTK_IS_LABEL( priv->every_prompt ));
@@ -261,7 +261,7 @@ setup_bin( myPeriodBin *self )
 	priv->det_details = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "det-details" );
 	g_return_if_fail( priv->det_details && GTK_IS_ENTRY( priv->det_details ));
 
-	priv->det_handler = g_signal_connect( priv->det_details, "changed", G_CALLBACK( on_details_changed ), self );
+	priv->det_handler = g_signal_connect( priv->det_details, "changed", G_CALLBACK( details_on_changed ), self );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -279,19 +279,19 @@ setup_key_combo( myPeriodBin *self )
 	gtk_combo_box_set_model( GTK_COMBO_BOX( priv->key_combo ), GTK_TREE_MODEL( priv->key_store ));
 	g_object_unref( priv->key_store );
 
-	my_period_enum_key(( myPeriodEnumKeyCb ) key_combo_cb, self );
+	my_period_enum_key(( myPeriodEnumKeyCb ) setup_key_cb, self );
 
 	cell = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->key_combo ), cell, FALSE );
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->key_combo ), cell, "text", COL_PER_LABEL );
 
-	g_signal_connect( priv->key_combo, "changed", G_CALLBACK( on_key_changed ), self );
+	g_signal_connect( priv->key_combo, "changed", G_CALLBACK( key_combo_on_changed ), self );
 
 	gtk_combo_box_set_id_column ( GTK_COMBO_BOX( priv->key_combo ), COL_PER_ID_S );
 }
 
 static void
-key_combo_cb( myPeriodKey type, myPeriodBin *self )
+setup_key_cb( myPeriodKey type, myPeriodBin *self )
 {
 	myPeriodBinPrivate *priv;
 	GtkTreeIter iter;
@@ -305,42 +305,6 @@ key_combo_cb( myPeriodKey type, myPeriodBin *self )
 			COL_PER_LABEL, my_period_key_get_label( type ),
 			COL_PER_ID_S,  my_period_key_get_dbms( type ),
 			-1 );
-}
-
-static void
-setup_every( myPeriodBin *self, const gchar *label )
-{
-	myPeriodBinPrivate *priv;
-	gchar *str;
-
-	priv = my_period_bin_get_instance_private( self );
-
-	if( my_strlen( label )){
-		gtk_widget_show( priv->every_prompt );
-
-		str = g_strdup_printf( "%u", my_period_get_every( priv->period ));
-		gtk_entry_set_text( GTK_ENTRY( priv->every_entry ), str );
-		g_free( str );
-		gtk_widget_show( priv->every_entry );
-
-		gtk_label_set_text( GTK_LABEL( priv->every_label ), label );
-		gtk_widget_show( priv->every_label );
-
-	} else {
-		gtk_widget_hide( priv->every_prompt );
-		gtk_widget_hide( priv->every_entry );
-		g_signal_handler_block( priv->every_entry, priv->every_handler );
-		gtk_entry_set_text( GTK_ENTRY( priv->every_entry ), "" );
-		g_signal_handler_unblock( priv->every_entry, priv->every_handler );
-		gtk_widget_hide( priv->every_label );
-		gtk_widget_hide( priv->det_prompt );
-		gtk_widget_hide( priv->det_details );
-		g_signal_handler_block( priv->det_details, priv->det_handler );
-		gtk_entry_set_text( GTK_ENTRY( priv->det_details ), "" );
-		g_signal_handler_unblock( priv->det_details, priv->det_handler );
-
-		gtk_container_foreach( GTK_CONTAINER( priv->det_parent ), ( GtkCallback ) gtk_widget_destroy, NULL );
-	}
 }
 
 /*
@@ -358,11 +322,11 @@ setup_popup_menu( myPeriodBin *self, GtkWidget **menu, myPeriodKey key )
 	*menu = gtk_menu_new();
 	priv->popup_menu = *menu;
 	priv->popup_attach = 0;
-	my_period_enum_details( key, ( myPeriodEnumDetailsCb ) popup_menu_cb, self );
+	my_period_enum_details( key, ( myPeriodEnumDetailsCb ) setup_popup_cb, self );
 }
 
 static void
-popup_menu_cb( guint idn, const gchar *ids, const gchar *abr, const gchar *label, myPeriodBin *self )
+setup_popup_cb( guint idn, const gchar *ids, const gchar *abr, const gchar *label, myPeriodBin *self )
 {
 	myPeriodBinPrivate *priv;
 	GtkWidget *item;
@@ -371,7 +335,7 @@ popup_menu_cb( guint idn, const gchar *ids, const gchar *abr, const gchar *label
 
 	item = gtk_check_menu_item_new_with_label( label );
 	g_object_set_data( G_OBJECT( item ), st_item_data, GUINT_TO_POINTER( idn ));
-	g_signal_connect( item, "activate", G_CALLBACK( on_popup_item_activated ), self );
+	g_signal_connect( item, "activate", G_CALLBACK( popup_on_item_activated ), self );
 	gtk_menu_attach( GTK_MENU( priv->popup_menu ), item, 0, 1, priv->popup_attach, priv->popup_attach+1 );
 	priv->popup_attach += 1;
 }
@@ -389,7 +353,6 @@ my_period_bin_set_period( myPeriodBin *bin, myPeriod *period )
 	static const gchar *thisfn = "my_period_bin_set_period";
 	myPeriodBinPrivate *priv;
 	myPeriodKey key;
-	gchar *str;
 
 	g_debug( "%s: bin=%p, period=%p", thisfn, ( void * ) bin, ( void * ) period );
 
@@ -409,36 +372,10 @@ my_period_bin_set_period( myPeriodBin *bin, myPeriod *period )
 
 	key = my_period_get_key( priv->period );
 	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->key_combo ), my_period_key_get_dbms( key ));
-
-	str = g_strdup_printf( "%u", my_period_get_every( priv->period ));
-	gtk_entry_set_text( GTK_ENTRY( priv->every_entry ), str );
-	g_free( str );
-
-	str = my_period_get_details_str_i( priv->period );
-	details_set_list( bin, key, str );
-	set_popup_item_from_period( bin );
 }
 
 static void
-details_set_list( myPeriodBin *self, myPeriodKey key, const gchar *details )
-{
-	myPeriodBinPrivate *priv;
-
-	priv = my_period_bin_get_instance_private( self );
-
-	g_signal_handler_block( priv->det_details, priv->det_handler );
-
-	if( my_strlen( details )){
-		gtk_entry_set_text( GTK_ENTRY( priv->det_details ), details );
-	} else {
-		gtk_entry_set_text( GTK_ENTRY( priv->det_details ), "" );
-	}
-
-	g_signal_handler_unblock( priv->det_details, priv->det_handler );
-}
-
-static void
-on_key_changed( GtkComboBox *box, myPeriodBin *self )
+key_combo_on_changed( GtkComboBox *box, myPeriodBin *self )
 {
 	myPeriodBinPrivate *priv;
 	const gchar *dbms;
@@ -453,26 +390,26 @@ on_key_changed( GtkComboBox *box, myPeriodBin *self )
 		my_period_set_key( priv->period, new_key );
 		priv->prev_key = new_key;
 
-		setup_every( self, NULL );
+		every_init( self, NULL );
 
 		switch( new_key ){
 			case MY_PERIOD_DAILY:
-				setup_every( self, _( "day(s)" ));
+				every_init( self, _( "day(s)" ));
 				break;
 
 			case MY_PERIOD_WEEKLY:
-				setup_every( self, _( "week(s)" ));
-				init_popup_details( self, priv->weekly_menu );
+				every_init( self, _( "week(s)" ));
+				popup_menu_init( self, priv->weekly_menu );
 				break;
 
 			case MY_PERIOD_MONTHLY:
-				setup_every( self, _( "month(s)" ));
-				init_popup_details( self, priv->monthly_menu );
+				every_init( self, _( "month(s)" ));
+				popup_menu_init( self, priv->monthly_menu );
 				break;
 
 			case MY_PERIOD_YEARLY:
-				setup_every( self, _( "year(s)" ));
-				init_popup_details( self, priv->yearly_menu );
+				every_init( self, _( "year(s)" ));
+				popup_menu_init( self, priv->yearly_menu );
 				break;
 
 			default:
@@ -484,32 +421,78 @@ on_key_changed( GtkComboBox *box, myPeriodBin *self )
 }
 
 static void
-init_popup_details( myPeriodBin *self, GtkWidget *popup )
+popup_menu_init( myPeriodBin *self, GtkWidget *popup )
 {
 	myPeriodBinPrivate *priv;
+
+	//g_debug( "popup_init" );
 
 	priv = my_period_bin_get_instance_private( self );
 
 	priv->popup_menu = popup;
 	priv->det_button = gtk_button_new_with_mnemonic( _( "On _each" ));
 	gtk_container_add( GTK_CONTAINER( priv->det_parent ), priv->det_button );
-	g_signal_connect( priv->det_button, "clicked", G_CALLBACK( on_each_clicked ), popup );
+	g_signal_connect( priv->det_button, "clicked", G_CALLBACK( popup_on_each_clicked ), popup );
 
 	gtk_widget_show_all( popup );
 	gtk_widget_show_all( priv->det_parent );
 	gtk_widget_show_all( priv->det_prompt );
 	gtk_widget_show_all( priv->det_details );
+
+	details_set_list( self );
+	popup_set_from_period( self );
 }
 
 static void
-on_each_clicked( GtkButton *button, GtkWidget *popup )
+popup_on_each_clicked( GtkButton *button, GtkWidget *popup )
 {
 	gtk_menu_popup_at_widget(
 			GTK_MENU( popup ), GTK_WIDGET( button ), GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, NULL );
 }
 
 static void
-on_every_changed( GtkEntry *entry, myPeriodBin *self )
+every_init( myPeriodBin *self, const gchar *label )
+{
+	myPeriodBinPrivate *priv;
+	gchar *str;
+
+	//g_debug( "every_init: label=%s", label );
+
+	priv = my_period_bin_get_instance_private( self );
+
+	if( my_strlen( label )){
+		gtk_widget_show( priv->every_prompt );
+
+		str = g_strdup_printf( "%u", my_period_get_every( priv->period ));
+		gtk_entry_set_text( GTK_ENTRY( priv->every_entry ), str );
+		g_free( str );
+		gtk_widget_show( priv->every_entry );
+
+		gtk_label_set_text( GTK_LABEL( priv->every_label ), label );
+		gtk_widget_show( priv->every_label );
+
+	} else {
+		/* reset and hide every and details widgets
+		 * but do not trigger handlers so that myPeriod is not updated */
+		gtk_widget_hide( priv->every_prompt );
+		g_signal_handler_block( priv->every_entry, priv->every_handler );
+		gtk_entry_set_text( GTK_ENTRY( priv->every_entry ), "" );
+		g_signal_handler_unblock( priv->every_entry, priv->every_handler );
+		gtk_widget_hide( priv->every_entry );
+		gtk_widget_hide( priv->every_label );
+
+		gtk_widget_hide( priv->det_prompt );
+		g_signal_handler_block( priv->det_details, priv->det_handler );
+		gtk_entry_set_text( GTK_ENTRY( priv->det_details ), "" );
+		g_signal_handler_unblock( priv->det_details, priv->det_handler );
+		gtk_widget_hide( priv->det_details );
+
+		gtk_container_foreach( GTK_CONTAINER( priv->det_parent ), ( GtkCallback ) gtk_widget_destroy, NULL );
+	}
+}
+
+static void
+every_on_changed( GtkEntry *entry, myPeriodBin *self )
 {
 	myPeriodBinPrivate *priv;
 	const gchar *cstr;
@@ -527,54 +510,7 @@ on_every_changed( GtkEntry *entry, myPeriodBin *self )
 }
 
 static void
-on_popup_item_activated( GtkMenuItem *item, myPeriodBin *self )
-{
-	myPeriodBinPrivate *priv;
-	guint idn;
-	myPeriodKey key;
-	gboolean active;
-	gchar *str;
-
-	priv = my_period_bin_get_instance_private( self );
-
-	key = my_period_get_key( priv->period );
-	idn = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( item ), st_item_data ));
-	active = gtk_check_menu_item_get_active( GTK_CHECK_MENU_ITEM( item ));
-
-	if( active ){
-		my_period_details_add( priv->period, idn );
-	} else {
-		my_period_details_remove( priv->period, idn );
-	}
-
-	str = my_period_get_details_str_i( priv->period );
-	details_set_list( self, key, str );
-
-	on_bin_changed( self );
-}
-
-static void
-on_details_changed( GtkEntry *entry, myPeriodBin *self )
-{
-	myPeriodBinPrivate *priv;
-	const gchar *cstr;
-
-	priv = my_period_bin_get_instance_private( self );
-
-	cstr = gtk_entry_get_text( entry );
-	if( my_strlen( cstr )){
-		my_period_set_details( priv->period, cstr );
-	} else {
-		my_period_set_details( priv->period, NULL );
-	}
-
-	set_popup_item_from_period( self );
-
-	on_bin_changed( self );
-}
-
-static void
-set_popup_item_from_period( myPeriodBin *self )
+popup_set_from_period( myPeriodBin *self )
 {
 	myPeriodBinPrivate *priv;
 	GList *details, *items_list, *it;
@@ -594,13 +530,83 @@ set_popup_item_from_period( myPeriodBin *self )
 	}
 }
 
+static void
+popup_on_item_activated( GtkMenuItem *item, myPeriodBin *self )
+{
+	myPeriodBinPrivate *priv;
+	guint idn;
+	gboolean active;
+
+	priv = my_period_bin_get_instance_private( self );
+
+	idn = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( item ), st_item_data ));
+	active = gtk_check_menu_item_get_active( GTK_CHECK_MENU_ITEM( item ));
+
+	if( active ){
+		my_period_details_add( priv->period, idn );
+	} else {
+		my_period_details_remove( priv->period, idn );
+	}
+
+	details_set_list( self );
+
+	on_bin_changed( self );
+}
+
+static void
+details_set_list( myPeriodBin *self )
+{
+	myPeriodBinPrivate *priv;
+	gchar *str;
+
+	priv = my_period_bin_get_instance_private( self );
+
+	g_signal_handler_block( priv->det_details, priv->det_handler );
+
+	str = my_period_get_details_str_i( priv->period );
+
+	if( my_strlen( str )){
+		gtk_entry_set_text( GTK_ENTRY( priv->det_details ), str );
+	} else {
+		gtk_entry_set_text( GTK_ENTRY( priv->det_details ), "" );
+	}
+
+	g_free( str );
+
+	g_signal_handler_unblock( priv->det_details, priv->det_handler );
+}
+
+static void
+details_on_changed( GtkEntry *entry, myPeriodBin *self )
+{
+	myPeriodBinPrivate *priv;
+	const gchar *cstr;
+
+	//g_debug( "my_period_bin_details_on_changed" );
+
+	priv = my_period_bin_get_instance_private( self );
+
+	cstr = gtk_entry_get_text( entry );
+	if( my_strlen( cstr )){
+		my_period_set_details( priv->period, cstr );
+	} else {
+		my_period_set_details( priv->period, NULL );
+	}
+
+	popup_set_from_period( self );
+
+	on_bin_changed( self );
+}
+
 /*
  * If something has changed, advise the parent container
  */
 static void
 on_bin_changed( myPeriodBin *self )
 {
-	//g_signal_emit_by_name( self, "ofa-changed" );
+	//g_debug( "my_period_bin_on_bin_changed" );
+
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 /**
@@ -629,78 +635,11 @@ my_period_bin_get_period( myPeriodBin *bin )
 static void
 read_settings( myPeriodBin *self )
 {
-#if 0
-	myPeriodBinPrivate *priv;
-	myISettings *settings;
-	const gchar *group, *cstr;
-	GList *strlist, *it;
-	gboolean remember;
-
-	priv = my_period_bin_get_instance_private( self );
-
-	if( priv->dossier_meta ){
-		settings = ofa_idbdossier_meta_get_settings_iface( priv->dossier_meta );
-		group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
-
-		if( settings && group ){
-			strlist = my_isettings_get_string_list( settings, group, st_settings_prefix );
-			remember = FALSE;
-
-			it = strlist;
-			cstr = it ? ( const gchar * ) it->data : NULL;
-			if( my_strlen( cstr )){
-				remember = my_utils_boolean_from_str( cstr );
-				if( priv->remember_btn ){
-					gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->remember_btn ), remember );
-				}
-			}
-
-			it = it ? it->next : NULL;
-			cstr = it ? ( const gchar * ) it->data : NULL;
-			if( my_strlen( cstr ) && remember ){
-				gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
-			}
-
-			my_isettings_free_string_list( settings, strlist );
-
-			ofa_mysql_dossier_meta_set_root_account(
-					OFA_MYSQL_DOSSIER_META( priv->dossier_meta ),
-					priv->remember ? priv->account : NULL );
-		}
-	}
-#endif
 }
 
 static void
 write_settings( myPeriodBin *self )
 {
-#if 0
-	myPeriodBinPrivate *priv;
-	myISettings *settings;
-	const gchar *group;
-	gchar *str;
-
-	priv = my_period_bin_get_instance_private( self );
-
-	if( priv->dossier_meta && priv->with_remember ){
-		settings = ofa_idbdossier_meta_get_settings_iface( priv->dossier_meta );
-		group = ofa_idbdossier_meta_get_settings_group( priv->dossier_meta );
-
-		if( settings && group ){
-			str = g_strdup_printf( "%s;%s;",
-						priv->remember ? "True":"False",
-						priv->remember ? ( priv->account ? priv->account : "" ) : "" );
-
-			my_isettings_set_string( settings, group, st_settings_prefix, str );
-
-			g_free( str );
-		}
-
-		ofa_mysql_dossier_meta_set_root_account(
-				OFA_MYSQL_DOSSIER_META( priv->dossier_meta ),
-				priv->remember ? priv->account : NULL );
-	}
-#endif
 }
 
 /*
@@ -763,51 +702,19 @@ ibin_is_valid( const myIBin *instance, gchar **msgerr )
 {
 	myPeriod *period;
 	gboolean valid;
-	myPeriodKey key;
-	guint every, first;
-	GList *details;
+
+	//g_debug( "my_period_bin_ibin_is_valid" );
 
 	valid = FALSE;
 	if( msgerr ){
 		*msgerr = NULL;
 	}
+
 	period = my_period_bin_get_period( MY_PERIOD_BIN( instance ));
 
 	if( period ){
-		key = my_period_get_key( period );
-		every = my_period_get_every( period );
-		switch( key ){
-			case MY_PERIOD_UNSET:
-				if( msgerr ){
-					*msgerr = g_strdup( _( "Periodicity is not set" ));
-				}
-				break;
-			case MY_PERIOD_DAILY:
-				if( every > 0 ){
-					valid = TRUE;
-				} else if( msgerr ){
-					*msgerr = g_strdup( _( "Periodicity repeat frequency is not set or invalid" ));
-				}
-				break;
-			case MY_PERIOD_WEEKLY:
-			case MY_PERIOD_MONTHLY:
-			case MY_PERIOD_YEARLY:
-				if( every <= 0 ){
-					if( msgerr ){
-						*msgerr = g_strdup( _( "Periodicity repeat frequency is not set or invalid" ));
-					}
-				} else {
-					details = my_period_get_details( period );
-					if( details ){
-						first = GPOINTER_TO_UINT( details->data );
-						valid = ( first > 0 );
-					}
-					if( !valid && msgerr ){
-						*msgerr = g_strdup( _( "Periodicity details are not set or invalid" ));
-					}
-				}
-				break;
-		}
+		valid = my_period_is_valid( period, msgerr );
+
 	} else if( msgerr ){
 		*msgerr = g_strdup( _( "Period is not set" ));
 	}

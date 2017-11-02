@@ -36,9 +36,13 @@
  * operation template.
  */
 
+#include "my/my-period.h"
+
 #include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
+
+#include "recurrent/ofo-recurrent-model.h"
 
 G_BEGIN_DECLS
 
@@ -73,9 +77,9 @@ typedef struct {
  * @REC_STATUS_VALIDATED: the operation has been sent to the accounting.
  */
 typedef enum {
-	REC_STATUS_CANCELLED = 1,
-	REC_STATUS_WAITING,
-	REC_STATUS_VALIDATED
+	REC_STATUS_CANCELLED = 1 << 1,
+	REC_STATUS_WAITING   = 1 << 2,
+	REC_STATUS_VALIDATED = 1 << 3
 }
 	ofeRecurrentStatus;
 
@@ -85,22 +89,32 @@ GList             *ofo_recurrent_run_get_dataset           ( ofaIGetter *getter 
 
 ofoRecurrentRun   *ofo_recurrent_run_get_by_id             ( ofaIGetter *getter, const gchar *mnemo, const GDate *date );
 
-ofoRecurrentRun   *ofo_recurrent_run_new                   ( ofaIGetter *getter );
+ofoRecurrentRun   *ofo_recurrent_run_new                   ( ofoRecurrentModel *model );
 
+ofxCounter         ofo_recurrent_run_get_numseq            ( const ofoRecurrentRun *model );
 const gchar       *ofo_recurrent_run_get_mnemo             ( const ofoRecurrentRun *model );
 const GDate       *ofo_recurrent_run_get_date              ( const ofoRecurrentRun *model );
+const gchar       *ofo_recurrent_run_get_label             ( const ofoRecurrentRun *model );
+const gchar       *ofo_recurrent_run_get_ope_template      ( const ofoRecurrentRun *model );
+myPeriod          *ofo_recurrent_run_get_period            ( ofoRecurrentRun *model );
+const GDate       *ofo_recurrent_run_get_end               ( const ofoRecurrentRun *model );
+const gchar       *ofo_recurrent_run_get_cre_user          ( const ofoRecurrentRun *model );
+const GTimeVal    *ofo_recurrent_run_get_cre_stamp         ( const ofoRecurrentRun *model );
 ofeRecurrentStatus ofo_recurrent_run_get_status            ( const ofoRecurrentRun *model );
 const gchar       *ofo_recurrent_run_status_get_dbms       ( ofeRecurrentStatus status );
 const gchar       *ofo_recurrent_run_status_get_abr        ( ofeRecurrentStatus status );
 const gchar       *ofo_recurrent_run_status_get_label      ( ofeRecurrentStatus status );
-const gchar       *ofo_recurrent_run_get_upd_user          ( const ofoRecurrentRun *model );
-const GTimeVal    *ofo_recurrent_run_get_upd_stamp         ( const ofoRecurrentRun *model );
+const gchar       *ofo_recurrent_run_get_sta_user          ( const ofoRecurrentRun *model );
+const GTimeVal    *ofo_recurrent_run_get_sta_stamp         ( const ofoRecurrentRun *model );
 ofxAmount          ofo_recurrent_run_get_amount1           ( const ofoRecurrentRun *model );
 ofxAmount          ofo_recurrent_run_get_amount2           ( const ofoRecurrentRun *model );
 ofxAmount          ofo_recurrent_run_get_amount3           ( const ofoRecurrentRun *model );
-ofxCounter         ofo_recurrent_run_get_numseq            ( const ofoRecurrentRun *model );
+const gchar       *ofo_recurrent_run_get_edi_user          ( const ofoRecurrentRun *model );
+const GTimeVal    *ofo_recurrent_run_get_edi_stamp         ( const ofoRecurrentRun *model );
 
 gint               ofo_recurrent_run_compare               ( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
+
+const GDate       *ofo_recurrent_run_get_last              ( ofaIGetter *getter, GDate *dlast, const gchar *mnemo, guint status );
 
 void               ofo_recurrent_run_set_mnemo             ( ofoRecurrentRun *model, const gchar *mnemo );
 void               ofo_recurrent_run_set_date              ( ofoRecurrentRun *model, const GDate *date );
@@ -113,7 +127,8 @@ GList             *ofo_recurrent_run_get_doc_orphans       ( ofaIGetter *getter 
 #define            ofo_recurrent_run_free_doc_orphans( L ) ( g_list_free( L ))
 
 gboolean           ofo_recurrent_run_insert                ( ofoRecurrentRun *model );
-gboolean           ofo_recurrent_run_update                ( ofoRecurrentRun *model );
+gboolean           ofo_recurrent_run_update_status         ( ofoRecurrentRun *model );
+gboolean           ofo_recurrent_run_update_amounts        ( ofoRecurrentRun *model );
 
 G_END_DECLS
 
