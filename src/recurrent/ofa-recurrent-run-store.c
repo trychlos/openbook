@@ -306,7 +306,7 @@ set_row_by_iter( ofaRecurrentRunStore *self, ofoRecurrentRun *run, GtkTreeIter *
 	ofaRecurrentRunStorePrivate *priv;
 	ofoRecurrentModel *model;
 	gchar *sdate, *snum, *samount1, *samount2, *samount3, *spern, *sperdet, *sdend, *screstamp, *sstastamp, *sedistamp;
-	const gchar *cmnemo, *cstr, *cstatus, *cperkey;
+	const gchar *cmnemo, *cstatus, *cperkey;
 	ofxAmount amount;
 	ofxCounter numseq;
 	ofeRecurrentStatus status;
@@ -329,25 +329,22 @@ set_row_by_iter( ofaRecurrentRunStore *self, ofoRecurrentRun *run, GtkTreeIter *
 	numseq = ofo_recurrent_run_get_numseq( run );
 	snum = ofa_counter_to_str( numseq, priv->getter );
 
-	cstr = ofo_recurrent_model_get_def_amount1( model );
-	if( my_strlen( cstr )){
-		amount = ofo_recurrent_run_get_amount1( run );
+	amount = ofo_recurrent_run_get_amount1( run );
+	if( amount > 0 ){
 		samount1 = ofa_amount_to_str( amount, NULL, priv->getter );
 	} else {
 		samount1 = g_strdup( "" );
 	}
 
-	cstr = ofo_recurrent_model_get_def_amount2( model );
-	if( my_strlen( cstr )){
-		amount = ofo_recurrent_run_get_amount2( run );
+	amount = ofo_recurrent_run_get_amount2( run );
+	if( amount > 0 ){
 		samount2 = ofa_amount_to_str( amount, NULL, priv->getter );
 	} else {
 		samount2 = g_strdup( "" );
 	}
 
-	cstr = ofo_recurrent_model_get_def_amount3( model );
-	if( my_strlen( cstr )){
-		amount = ofo_recurrent_run_get_amount3( run );
+	amount = ofo_recurrent_run_get_amount3( run );
+	if( amount > 0 ){
 		samount3 = ofa_amount_to_str( amount, NULL, priv->getter );
 	} else {
 		samount3 = g_strdup( "" );

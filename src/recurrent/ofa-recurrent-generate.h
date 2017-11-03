@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_RECURRENT_GENERATE_H__
-#define __OFA_RECURRENT_GENERATE_H__
+#ifndef __REC_GENERATE_H__
+#define __REC_GENERATE_H__
 
 /**
  * SECTION: ofa_recurrent_generate
@@ -55,10 +55,10 @@ G_BEGIN_DECLS
 
 #define OFA_TYPE_RECURRENT_GENERATE                ( ofa_recurrent_generate_get_type())
 #define OFA_RECURRENT_GENERATE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RECURRENT_GENERATE, ofaRecurrentGenerate ))
-#define OFA_RECURRENT_GENERATE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RECURRENT_GENERATE, ofaRecurrentGenerateClass ))
+#define REC_GENERATE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RECURRENT_GENERATE, ofaRecurrentGenerateClass ))
 #define OFA_IS_RECURRENT_GENERATE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RECURRENT_GENERATE ))
 #define OFA_IS_RECURRENT_GENERATE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RECURRENT_GENERATE ))
-#define OFA_RECURRENT_GENERATE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECURRENT_GENERATE, ofaRecurrentGenerateClass ))
+#define REC_GENERATE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECURRENT_GENERATE, ofaRecurrentGenerateClass ))
 
 typedef struct {
 	/*< public members >*/
@@ -80,4 +80,4 @@ void  ofa_recurrent_generate_run     ( ofaIGetter *getter,
 
 G_END_DECLS
 
-#endif /* __OFA_RECURRENT_GENERATE_H__ */
+#endif /* __REC_GENERATE_H__ */

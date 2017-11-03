@@ -99,27 +99,29 @@ typedef enum {
 }
 	ofeOpeColumns;
 
-ofsOpe   *ofs_ope_new             ( ofoOpeTemplate *template );
+ofsOpe   *ofs_ope_new                      ( ofoOpeTemplate *template );
 
-void      ofs_ope_apply_template  ( ofsOpe *ope );
+void      ofs_ope_apply_template           ( ofsOpe *ope );
 
-gboolean  ofs_ope_is_valid        ( const ofsOpe *ope,
-										gchar **message,
-										GList **currencies );
+gboolean  ofs_ope_is_valid                 ( const ofsOpe *ope,
+												gchar **message,
+												GList **currencies );
 
-ofxAmount ofs_ope_get_amount      ( const ofsOpe *ope,
-										const gchar *cell_def,
-										gchar **message );
+ofxAmount ofs_ope_get_amount               ( const ofsOpe *ope,
+												const gchar *cell_def,
+												gchar **message );
 
-void      ofs_ope_set_amount      ( ofsOpe *ope,
-										const gchar *cell_def,
-										ofxAmount amount );
+void      ofs_ope_set_amount               ( ofsOpe *ope,
+												const gchar *cell_def,
+												ofxAmount amount );
 
-GList    *ofs_ope_generate_entries( const ofsOpe *ope );
+ofxAmount ofs_ope_get_first_non_zero_amount( const ofsOpe *ope );
 
-void      ofs_ope_dump            ( const ofsOpe *ope );
+GList    *ofs_ope_generate_entries         ( const ofsOpe *ope );
 
-void      ofs_ope_free            ( ofsOpe *ope );
+void      ofs_ope_dump                     ( const ofsOpe *ope );
+
+void      ofs_ope_free                     ( ofsOpe *ope );
 
 G_END_DECLS
 

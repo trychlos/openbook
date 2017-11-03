@@ -594,14 +594,19 @@ my_period_enum_key( myPeriodEnumKeyCb cb, void *user_data )
  * @user_data: a user data provided pointer.
  *
  * Enumerates all valid dates between @enum_begin and @enum_end included
- * dates.
+ * dates. Align on @last if possible.
+ *
+ * Note that #myPeriod class does not take care of trying to prevent
+ * possible duplicates. It enumerates from @enum_begin to @enum_end. Dot.
  */
 void
 my_period_enum_between( myPeriod *period, const GDate *last,
 							const GDate *enum_begin, const GDate *enum_end, myPeriodEnumBetweenCb cb, void *user_data )
 {
+	static const gchar *thisfn = "my_period_enum_between";
 	myPeriodPrivate *priv;
 	myPeriodKey key;
+	gchar *slast, *sbegin, *send;
 
 	g_return_if_fail( period && MY_IS_PERIOD( period ));
 
@@ -613,6 +618,20 @@ my_period_enum_between( myPeriod *period, const GDate *last,
 	g_return_if_fail( cb != NULL );
 
 	key = my_period_get_key( period );
+
+	if( my_date_is_valid( last )){
+		slast = my_date_to_str( last, MY_DATE_SQL );
+	} else {
+		slast = g_strdup( "" );
+	}
+	sbegin = my_date_to_str( enum_begin, MY_DATE_SQL );
+	send = my_date_to_str( enum_end, MY_DATE_SQL );
+	g_debug( "%s: period=%p, key=%s, last=%s, enum_begin=%s, enum_end=%s, cb=%p, user_data=%p",
+			thisfn, ( void * ) period, my_period_key_get_dbms( key ),
+			slast, sbegin, send, ( void * ) cb, user_data );
+	g_free( send );
+	g_free( sbegin );
+	g_free( slast );
 
 	switch( key ){
 		case MY_PERIOD_DAILY:
@@ -639,21 +658,27 @@ period_enum_daily( myPeriod *period, const GDate *last,
 	GDate date;
 	guint every;
 
+	/* every day */
 	every = my_period_get_every( period );
 	g_return_if_fail( every >= 1 );
 
 	/* first iteration date:
-	 * may be far earlier than enum_begin */
+	 * may be far earlier than @enum_begin */
 	if( my_date_is_valid( last )){
 		my_date_set_from_date( &date, last );
-		g_date_add_days( &date, every );
-
 	} else {
 		my_date_set_from_date( &date, enum_begin );
 	}
 
+	/* if @date is later than @enum_begin, go backward */
+	while( my_date_compare( &date, enum_begin ) > 0 ){
+		g_date_subtract_days( &date, every );
+	}
+
 	while( my_date_compare( &date, enum_end ) <= 0 ){
-		( *cb )( &date, user_data );
+		if( my_date_compare( &date, enum_begin ) >= 0 ){
+			( *cb )( &date, user_data );
+		}
 		g_date_add_days( &date, every );
 	}
 }
@@ -679,14 +704,21 @@ period_enum_weekly( myPeriod *period, const GDate *last,
 	GList *details, *it;
 	GDateWeekday wday, wtarget;
 
+	/* every week */
+	every = my_period_get_every( period );
+	g_return_if_fail( every >= 1 );
+
 	/* first iteration date:
-	 * may be far earlier than enum_begin */
+	 * may be far earlier than @enum_begin */
 	if( my_date_is_valid( last )){
 		my_date_set_from_date( &date, last );
-		g_date_add_days( &date, 1 );
-
 	} else {
 		my_date_set_from_date( &date, enum_begin );
+	}
+
+	/* if @date is later than @enum_begin, go backward */
+	while( my_date_compare( &date, enum_begin ) > 0 ){
+		g_date_subtract_days( &date, 7*every );
 	}
 
 	/* examine the beginning date,
@@ -696,9 +728,6 @@ period_enum_weekly( myPeriod *period, const GDate *last,
 	wday = g_date_get_weekday( &date );
 	my_date_set_from_date( &wmonday, &date );
 	g_date_subtract_days( &wmonday, wday-G_DATE_MONDAY ); /* monday is our first day of week */
-
-	every = my_period_get_every( period );
-	g_return_if_fail( every >= 1 );
 
 	details = my_period_get_details( period );
 
@@ -733,18 +762,24 @@ period_enum_monthly( myPeriod *period, const GDate *last,
 	guint every, dnum, ddate, month;
 	GList *details, *it;
 
+	/* every month */
+	every = my_period_get_every( period );
+	g_return_if_fail( every >= 1 );
+
 	/* first iteration date:
 	 * may be far earlier than enum_begin */
 	if( my_date_is_valid( last )){
 		my_date_set_from_date( &date, last );
-		g_date_add_days( &date, 1 );
-
 	} else {
 		my_date_set_from_date( &date, enum_begin );
 	}
 
-	every = my_period_get_every( period );
-	g_return_if_fail( every >= 1 );
+	/* if @date is later than @enum_begin, go backward */
+	while( my_date_compare( &date, enum_begin ) > 0 ){
+		month = g_date_get_month( &date );
+		month -= every;
+		g_date_set_month( &date, month );
+	}
 
 	details = my_period_get_details( period );
 
@@ -779,18 +814,24 @@ period_enum_yearly( myPeriod *period, const GDate *last,
 	guint every, dnum, ddate, year;
 	GList *details, *it;
 
+	/* every year */
+	every = my_period_get_every( period );
+	g_return_if_fail( every >= 1 );
+
 	/* first iteration date:
 	 * may be far earlier than enum_begin */
 	if( my_date_is_valid( last )){
 		my_date_set_from_date( &date, last );
-		g_date_add_days( &date, 1 );
-
 	} else {
 		my_date_set_from_date( &date, enum_begin );
 	}
 
-	every = my_period_get_every( period );
-	g_return_if_fail( every >= 1 );
+	/* if @date is later than @enum_begin, go backward */
+	while( my_date_compare( &date, enum_begin ) > 0 ){
+		year = g_date_get_year( &date );
+		year -= every;
+		g_date_set_year( &date, year );
+	}
 
 	details = my_period_get_details( period );
 

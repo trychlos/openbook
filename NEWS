@@ -29,7 +29,9 @@
    RECURRENT DB Model v10
 
    - Recurrent model: have creation user and timestamp (todo #1488).
+   - Recurrent generation: let the user choose the generation mode.
    - Recurrent run: take a copy of model data at creation time.
+   - Recurrent run: editable cells are now marked with a blue font color.
 
  Bug fixes:
 
@@ -43,7 +45,6 @@
    - myIBin: define new "my-ibin-changed" signal (todo #1501).
    - myPeriod: new class.
    - myPeriodBin: new class.
-   - ofaRecurrentGenerateOver: new class.
 
 -----------------------------------------------------------------------
  Version 0.72
