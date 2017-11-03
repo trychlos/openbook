@@ -128,7 +128,6 @@ src/recurrent/ofa-recurrent-dbmodel.c
 src/recurrent/ofa-recurrent-execlose.c
 src/recurrent/ofa-recurrent-generate.c
 src/recurrent/ofa-recurrent-generate.ui
-src/recurrent/ofa-recurrent-generate-over.ui
 src/recurrent/ofa-recurrent-main.c
 src/recurrent/ofa-recurrent-model-page.c
 src/recurrent/ofa-recurrent-model-properties.c

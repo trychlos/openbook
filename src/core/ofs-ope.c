@@ -174,6 +174,15 @@ static const sEvalDef st_formula_fns[] = {
 
 /**
  * ofs_ope_new:
+ * @template: the #ofoOpeTemplate to be used.
+ *
+ * After creation, the caller may set desired values, and then call
+ * ofs_ope_apply_template().
+ *
+ * Returns: a new #ofsOpe operation structure, based on the provided
+ * @template.
+ *
+ * The returned #ofsOpe should be ofs_ope_free() by the caller.
  */
 ofsOpe *
 ofs_ope_new( ofoOpeTemplate *template )
@@ -1540,6 +1549,34 @@ get_detail_from_cell_def( const ofsOpe *ope, const gchar *cell_def, gboolean *is
 	}
 
 	return( detail );
+}
+
+/**
+ * ofs_ope_get_first_non_zero_amount:
+ * @ope: this #ofsOpe instance.
+ *
+ * Returns: the first non-zero amount found.
+ *
+ * This function should only be called after operation template has been
+ * applied with ofs_ope_apply_template().
+ */
+ofxAmount
+ofs_ope_get_first_non_zero_amount( const ofsOpe *ope )
+{
+	ofsOpeDetail *detail;
+	GList *it;
+
+	for( it=ope->detail ; it ; it=it->next ){
+		detail = ( ofsOpeDetail * ) it->data;
+		if( detail->debit > 0 ){
+			return( detail->debit );
+		}
+		if( detail->credit > 0 ){
+			return( detail->credit );
+		}
+	}
+
+	return( 0 );
 }
 
 /**

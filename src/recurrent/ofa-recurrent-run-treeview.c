@@ -66,8 +66,14 @@ typedef struct {
 }
 	ofaRecurrentRunTreeviewPrivate;
 
+/* apart from the strict content of the cells, the treeview holds two
+ * more informations:
+ * - the validation status of the recurrent run operation (waiting/cancelled/validated)
+ * - whether a cell is editable and the status is waiting
+ */
 #define RGBA_VALIDATED                  "#ffe8a8"		/* pale gold background */
 #define RGBA_DELETED                    "#808080"		/* light gray foreground */
+#define RGBA_EDITABLE                   "#0000ff"		/* plain blue */
 
 /* signals defined here
  */
@@ -356,6 +362,8 @@ setup_columns( ofaRecurrentRunTreeview *self )
 /*
  * make amount cells editable on waiting operations
  * (and dossier is writable)
+ *
+ * These cells are written with a blue foreground.
  */
 static void
 on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self )
@@ -433,6 +441,7 @@ cell_data_set_editable( ofaRecurrentRunTreeview *self, GtkCellRenderer *renderer
 	guint column_id;
 	const gchar *csdef;
 	gboolean editable;
+	GdkRGBA color;
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( self );
 
@@ -462,7 +471,11 @@ cell_data_set_editable( ofaRecurrentRunTreeview *self, GtkCellRenderer *renderer
 			editable &= ( my_strlen( csdef ) > 0 );
 			editable &= ( status == REC_STATUS_WAITING );
 			g_object_set( G_OBJECT( renderer ), "editable-set", TRUE, "editable", editable, NULL );
-			break;
+			if( editable ){
+				gdk_rgba_parse( &color, RGBA_EDITABLE );
+				g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+			}
+		break;
 		default:
 			break;
 	}
@@ -891,8 +904,35 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 		case REC_RUN_COL_DATE:
 			cmp = my_date_compare_by_str( datea, dateb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
+		case REC_RUN_COL_OPE_TEMPLATE:
+			cmp = my_collate( stemplatea, stemplateb );
+			break;
+		case REC_RUN_COL_PERIOD_ID:
+			cmp = my_collate( sperida, speridb );
+			break;
+		case REC_RUN_COL_PERIOD_N:
+			cmp = ofa_itvsortable_sort_str_int( sperna, spernb );
+			break;
+		case REC_RUN_COL_PERIOD_DET:
+			cmp = my_collate( sperdeta, sperdetb );
+			break;
+		case REC_RUN_COL_END:
+			cmp = my_date_compare_by_str( sdenda, sdendb, ofa_prefs_date_get_display_format( priv->getter ));
+			break;
+		case REC_RUN_COL_CRE_USER:
+			cmp = my_collate( screua, screub );
+			break;
+		case REC_RUN_COL_CRE_STAMP:
+			cmp = my_collate( scresa, scresb );
+			break;
 		case REC_RUN_COL_STATUS:
 			cmp = my_collate( statusa, statusb );
+			break;
+		case REC_RUN_COL_STA_USER:
+			cmp = my_collate( sstaua, sstaub );
+			break;
+		case REC_RUN_COL_STA_STAMP:
+			cmp = my_collate( sstasa, sstasb );
 			break;
 		case REC_RUN_COL_AMOUNT1:
 			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), amount1a, amount1b );
@@ -902,6 +942,12 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			break;
 		case REC_RUN_COL_AMOUNT3:
 			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), amount3a, amount3b );
+			break;
+		case REC_RUN_COL_EDI_USER:
+			cmp = my_collate( sediua, sediub );
+			break;
+		case REC_RUN_COL_EDI_STAMP:
+			cmp = my_collate( sedisa, sedisb );
 			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, column_id );

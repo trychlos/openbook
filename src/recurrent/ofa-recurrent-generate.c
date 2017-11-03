@@ -48,7 +48,6 @@
 #include "api/ofs-ope.h"
 
 #include "ofa-recurrent-generate.h"
-#include "ofa-recurrent-generate-over.h"
 #include "ofa-recurrent-model-treeview.h"
 #include "ofa-recurrent-run-page.h"
 #include "ofa-recurrent-run-store.h"
@@ -76,6 +75,7 @@ typedef struct {
 	GDate                    end_date;
 	GList                   *dataset;
 	ofaRecurrentRunStore    *store;
+	guint                    over;
 
 	/* UI
 	 */
@@ -83,6 +83,7 @@ typedef struct {
 	ofaRecurrentRunTreeview *tview;
 	GtkWidget               *begin_entry;
 	GtkWidget               *end_entry;
+	GtkWidget               *gen_btn;
 	GtkWidget               *ok_btn;
 	GtkWidget               *msg_label;
 
@@ -105,7 +106,16 @@ typedef struct {
 }
 	sEnumBetween;
 
+/* an enum to handle the user choice
+ */
+enum {
+	REC_GENERATE_ALL = 1,
+	REC_GENERATE_MODEL,
+	REC_GENERATE_GEN,
+};
+
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-generate.ui";
+static const gchar *st_mode_data        = "ofa-recurrent-generate-mode-data";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
@@ -113,11 +123,13 @@ static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     init_treeview( ofaRecurrentGenerate *self );
 static void     init_dates( ofaRecurrentGenerate *self );
+static void     init_mode( ofaRecurrentGenerate *self );
 static void     init_actions( ofaRecurrentGenerate *self );
 static void     init_data( ofaRecurrentGenerate *self );
 static void     on_begin_date_changed( GtkEditable *editable, ofaRecurrentGenerate *self );
 static void     on_end_date_changed( GtkEditable *editable, ofaRecurrentGenerate *self );
 static void     on_date_changed( ofaRecurrentGenerate *self, GtkEditable *editable, GDate *date );
+static void     on_mode_toggled( GtkToggleButton *button, ofaRecurrentGenerate *self );
 static gboolean is_dialog_validable( ofaRecurrentGenerate *self );
 static void     action_on_reset_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentGenerate *self );
 static void     action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentGenerate *self );
@@ -335,6 +347,7 @@ idialog_init( myIDialog *instance )
 
 	init_treeview( OFA_RECURRENT_GENERATE( instance ));
 	init_dates( OFA_RECURRENT_GENERATE( instance ));
+	init_mode( OFA_RECURRENT_GENERATE( instance ));
 	init_actions( OFA_RECURRENT_GENERATE( instance ));
 	init_data( OFA_RECURRENT_GENERATE( instance ));
 
@@ -436,6 +449,34 @@ init_dates( ofaRecurrentGenerate *self )
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_date_changed ), self );
 }
 
+/*
+ *
+ */
+static void
+init_mode( ofaRecurrentGenerate *self )
+{
+	ofaRecurrentGeneratePrivate *priv;
+	GtkWidget *btn;
+
+	priv = ofa_recurrent_generate_get_instance_private( self );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "all-btn" );
+	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
+	g_object_set_data( G_OBJECT( btn ), st_mode_data, GUINT_TO_POINTER( REC_GENERATE_ALL ));
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_mode_toggled ), self );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "model-btn" );
+	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
+	g_object_set_data( G_OBJECT( btn ), st_mode_data, GUINT_TO_POINTER( REC_GENERATE_MODEL ));
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_mode_toggled ), self );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "gen-btn" );
+	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
+	g_object_set_data( G_OBJECT( btn ), st_mode_data, GUINT_TO_POINTER( REC_GENERATE_GEN ));
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_mode_toggled ), self );
+	priv->gen_btn = btn;
+}
+
 static void
 init_actions( ofaRecurrentGenerate *self )
 {
@@ -489,6 +530,9 @@ init_data( ofaRecurrentGenerate *self )
 	priv->store = ofa_recurrent_run_store_new( priv->getter, REC_MODE_FROM_LIST );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
+
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->gen_btn ), TRUE );
+	on_mode_toggled( GTK_TOGGLE_BUTTON( priv->gen_btn ), self );
 }
 
 static void
@@ -515,6 +559,20 @@ static void
 on_date_changed( ofaRecurrentGenerate *self, GtkEditable *editable, GDate *date )
 {
 	my_date_set_from_date( date, my_date_editable_get_date( editable, NULL ));
+	is_dialog_validable( self );
+}
+
+static void
+on_mode_toggled( GtkToggleButton *button, ofaRecurrentGenerate *self )
+{
+	ofaRecurrentGeneratePrivate *priv;
+
+	priv = ofa_recurrent_generate_get_instance_private( self );
+
+	if( gtk_toggle_button_get_active( button )){
+		priv->over = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), st_mode_data ));
+	}
+
 	is_dialog_validable( self );
 }
 
@@ -562,6 +620,7 @@ action_on_reset_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentG
 
 	gtk_list_store_clear( GTK_LIST_STORE( priv->store ));
 	g_list_free_full( priv->dataset, ( GDestroyNotify ) g_object_unref );
+	priv->dataset = NULL;
 
 	gtk_widget_set_sensitive( priv->begin_entry, TRUE );
 	gtk_widget_set_sensitive( priv->end_entry, TRUE );
@@ -592,8 +651,7 @@ generate_do( ofaRecurrentGenerate *self )
 	GList *models_dataset, *it, *opes, *model_opes, *messages;
 	const GDate *last_gen_date, *model_dend;
 	gchar *str;
-	gint count, add;
-	ofeRecurrentGenerateOver answer;
+	gint count;
 	ofoRecurrentModel *model;
 	GDate model_dlast, dbegin, dend;
 
@@ -605,98 +663,90 @@ generate_do( ofaRecurrentGenerate *self )
 	count = 0;
 	opes = NULL;
 	messages = NULL;
-
-	/* check that the beginning date of this request does not overlap
-	 * with the end date of the last generation
-	 */
 	last_gen_date = ofo_recurrent_gen_get_last_run_date( priv->getter );
-	answer = ofa_recurrent_generate_over_run( priv->getter, last_gen_date, &priv->begin_date );
-	if( answer != OFA_RECURRENT_GENERATE_CANCEL ){
 
-		/* for each selected template,
-		 *   generate recurrent operations between provided dates;
-		 *   all operations (since @begin_date) or only new (since @last)
-		 *   depending of the @answer, which itself depends of the
-		 *   user choice above
+	/* for each selected template,
+	 *   generate recurrent operations between provided dates depending
+	 *   of the mode chosen by the user.
+	 */
+	for( it=models_dataset ; it ; it=it->next ){
+
+		model = OFO_RECURRENT_MODEL( it->data );
+		g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), G_SOURCE_REMOVE );
+
+		ofo_recurrent_run_get_last( priv->getter, &model_dlast,
+						ofo_recurrent_model_get_mnemo( model ), REC_STATUS_WAITING | REC_STATUS_VALIDATED );
+
+		/* if the user has chosen to generate all operations from the
+		 * beginning date, regarding the previously generation dates,
+		 * then @begin_date is fine;
+		 * in all cases, this stays a good start point
 		 */
-		for( it=models_dataset ; it ; it=it->next ){
+		my_date_set_from_date( &dbegin, &priv->begin_date );
 
-			model = OFO_RECURRENT_MODEL( it->data );
-			g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), G_SOURCE_REMOVE );
-
-			ofo_recurrent_run_get_last( priv->getter, &model_dlast,
-							ofo_recurrent_model_get_mnemo( model ), REC_STATUS_WAITING | REC_STATUS_VALIDATED );
-
-			/* if the user has chosen to only generate new operations,
-			 * then the generation begins with the later of @begin_date
-			 * and @last_date for this model;
-			 */
-			my_date_set_from_date( &dbegin, &priv->begin_date );
-			if( answer == OFA_RECURRENT_GENERATE_NEW ){
-				if( my_date_is_valid( &model_dlast ) && my_date_compare( &model_dlast, &dbegin ) > 0 ){
-					my_date_set_from_date( &dbegin, &model_dlast );
-				}
-				if( my_date_is_valid( last_gen_date ) && my_date_compare( last_gen_date, &dbegin ) > 0 ){
-					my_date_set_from_date( &dbegin, last_gen_date );
-				}
-			} else {
-				add = 0;
-				if( my_date_is_valid( &model_dlast ) && my_date_compare( &model_dlast, &dbegin ) < 0 ){
-					my_date_set_from_date( &dbegin, &model_dlast );
-					add = 1;
-				}
-				if( my_date_is_valid( last_gen_date ) && my_date_compare( last_gen_date, &dbegin ) < 0 ){
-					my_date_set_from_date( &dbegin, last_gen_date );
-					add = 1;
-				}
-				g_date_add_days( &dbegin, add );
-			}
-
-			/* if this model has an ending date, then the generation ends
-			 * with the earlier of this model ending date and the requested
-			 * @end_date
-			 */
-			model_dend = ofo_recurrent_model_get_end( model );
-			my_date_set_from_date( &dend, &priv->end_date );
-			if( my_date_is_valid( model_dend ) && my_date_compare( model_dend, &priv->end_date ) < 0 ){
-				my_date_set_from_date( &dend, model_dend );
-			}
-
-			/* now generate the recurrent operations;
-			 * at this time, we do not manage editables amounts, nor whether
-			 * amounts are zero or not
-			 */
-			model_opes = generate_do_opes( self, OFO_RECURRENT_MODEL( it->data ), &model_dlast, &dbegin, &dend, &messages );
-			count += g_list_length( model_opes );
-			ofa_recurrent_run_store_set_from_list( priv->store, model_opes );
-			opes = g_list_concat( opes, model_opes );
-			ofa_recurrent_model_page_unselect( priv->model_page, OFO_RECURRENT_MODEL( it->data ));
-
-			/* let Gtk update the display */
-			/* pwi 2016-12-17 - this is supposed to be not recommended
-			 * and, more, advised against this!
-			 * but this is the only way I have found to update the display
-			 */
-			while( gtk_events_pending()){
-				gtk_main_iteration();
+		/* if the user has chosen to generate operations from the
+		 * beginning date, but not before the last generated for this
+		 * model
+		 */
+		if( priv->over == REC_GENERATE_MODEL ){
+			if( my_date_is_valid( &model_dlast ) && my_date_compare( &model_dlast, &dbegin ) > 0 ){
+				my_date_set_from_date( &dbegin, &model_dlast );
 			}
 		}
 
-		if( g_list_length( messages )){
-			display_error_messages( self, messages );
-			g_list_free_full( messages, ( GDestroyNotify ) g_free );
+		/* if the user has chosen to generate operations from the
+		 * beginning date, but not before the last generation date
+		 */
+		if( priv->over == REC_GENERATE_GEN ){
+			if( my_date_is_valid( last_gen_date ) && my_date_compare( last_gen_date, &dbegin ) > 0 ){
+				my_date_set_from_date( &dbegin, last_gen_date );
+			}
 		}
 
-		if( count == 0 ){
-			str = g_strdup( _( "No generated operation" ));
-		} else if( count == 1 ){
-			str = g_strdup( _( "One generated operation" ));
-		} else {
-			str = g_strdup_printf( _( "%d generated operations" ), count );
+		/* if this model has an ending date, then the generation ends
+		 * with the earlier of this model ending date and the requested
+		 * @end_date
+		 */
+		model_dend = ofo_recurrent_model_get_end( model );
+		my_date_set_from_date( &dend, &priv->end_date );
+		if( my_date_is_valid( model_dend ) && my_date_compare( model_dend, &priv->end_date ) < 0 ){
+			my_date_set_from_date( &dend, model_dend );
 		}
-		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO, str );
-		g_free( str );
+
+		/* now generate the recurrent operations;
+		 * at this time, we do not manage editables amounts, nor whether
+		 * amounts are zero or not
+		 */
+		model_opes = generate_do_opes( self, OFO_RECURRENT_MODEL( it->data ), &model_dlast, &dbegin, &dend, &messages );
+		count += g_list_length( model_opes );
+		ofa_recurrent_run_store_set_from_list( priv->store, model_opes );
+		opes = g_list_concat( opes, model_opes );
+		ofa_recurrent_model_page_unselect( priv->model_page, OFO_RECURRENT_MODEL( it->data ));
+
+		/* let Gtk update the display */
+		/* pwi 2016-12-17 - this is supposed to be not recommended
+		 * and, more, advised against this!
+		 * but this is the only way I have found to update the display
+		 */
+		while( gtk_events_pending()){
+			gtk_main_iteration();
+		}
 	}
+
+	if( g_list_length( messages )){
+		display_error_messages( self, messages );
+		g_list_free_full( messages, ( GDestroyNotify ) g_free );
+	}
+
+	if( count == 0 ){
+		str = g_strdup( _( "No generated operation" ));
+	} else if( count == 1 ){
+		str = g_strdup( _( "One generated operation" ));
+	} else {
+		str = g_strdup_printf( _( "%d generated operations" ), count );
+	}
+	my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO, str );
+	g_free( str );
 
 	priv->dataset = opes;
 
@@ -764,80 +814,96 @@ generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GD
 }
 
 /*
- * Takes care of having at most one Waiting|Validated operation for a
- * given mnemo+date couple.
+ * Generates a new recurrent run operation for each enumerated date
  */
 static void
 generate_enum_dates_cb( const GDate *date, sEnumBetween *data )
 {
-	ofaRecurrentGeneratePrivate *priv;
 	ofoRecurrentRun *recrun;
 	const gchar *mnemo, *csdef;
 	ofsOpe *ope;
 	gchar *msg, *str;
 	gboolean valid;
-
-	priv = ofa_recurrent_generate_get_instance_private( data->self );
+	guint count;
+	ofxAmount amount;
 
 	mnemo = ofo_recurrent_model_get_mnemo( data->model );
+	recrun = ofo_recurrent_run_new( data->model );
+	ofo_recurrent_run_set_date( recrun, date );
 
-	recrun = ofo_recurrent_run_get_by_id( priv->getter, mnemo, date );
-	if( recrun ){
-		data->already += 1;
+	count = 0;
+	valid = TRUE;
+	ope = ofs_ope_new( data->template );
+	my_date_set_from_date( &ope->dope, date );
+	ope->dope_user_set = TRUE;
+	ofs_ope_apply_template( ope );
 
-	} else {
-		recrun = ofo_recurrent_run_new( data->model );
-		ofo_recurrent_run_set_date( recrun, date );
-
-		valid = TRUE;
-		ope = ofs_ope_new( data->template );
-		my_date_set_from_date( &ope->dope, date );
-		ope->dope_user_set = TRUE;
-		ofs_ope_apply_template( ope );
-
-		csdef = ofo_recurrent_model_get_def_amount1( data->model );
-		if( my_strlen( csdef )){
-			ofo_recurrent_run_set_amount1( recrun, ofs_ope_get_amount( ope, csdef, &msg ));
-			if( my_strlen( msg )){
-				str = g_strdup_printf(
-						_( "Model='%s', specification='%s': %s" ), mnemo, csdef, msg );
-				data->messages = g_list_append( data->messages, str );
-				valid = FALSE;
-			}
-			g_free( msg );
-		}
-
-		csdef = ofo_recurrent_model_get_def_amount2( data->model );
-		if( my_strlen( csdef )){
-			ofo_recurrent_run_set_amount2( recrun, ofs_ope_get_amount( ope, csdef, &msg ));
-			if( my_strlen( msg )){
-				str = g_strdup_printf(
-						_( "Model='%s', specification='%s': %s" ), mnemo, csdef, msg );
-				data->messages = g_list_append( data->messages, str );
-				valid = FALSE;
-			}
-			g_free( msg );
-		}
-
-		csdef = ofo_recurrent_model_get_def_amount3( data->model );
-		if( my_strlen( csdef )){
-			ofo_recurrent_run_set_amount3( recrun, ofs_ope_get_amount( ope, csdef, &msg ));
-			if( my_strlen( msg )){
-				str = g_strdup_printf(
-						_( "Model='%s', specification='%s': %s" ), mnemo, csdef, msg );
-				data->messages = g_list_append( data->messages, str );
-				valid = FALSE;
-			}
-			g_free( msg );
-		}
-
-		if( valid ){
-			data->opes = g_list_prepend( data->opes, recrun );
-
+	csdef = ofo_recurrent_model_get_def_amount1( data->model );
+	if( my_strlen( csdef )){
+		ofo_recurrent_run_set_amount1( recrun, ofs_ope_get_amount( ope, csdef, &msg ));
+		if( my_strlen( msg )){
+			str = g_strdup_printf(
+					_( "Model='%s', specification='%s': %s" ), mnemo, csdef, msg );
+			data->messages = g_list_append( data->messages, str );
+			valid = FALSE;
 		} else {
-			g_object_unref( recrun );
+			count += 1;
+		}
+		g_free( msg );
+	}
+
+	csdef = ofo_recurrent_model_get_def_amount2( data->model );
+	if( my_strlen( csdef )){
+		ofo_recurrent_run_set_amount2( recrun, ofs_ope_get_amount( ope, csdef, &msg ));
+		if( my_strlen( msg )){
+			str = g_strdup_printf(
+					_( "Model='%s', specification='%s': %s" ), mnemo, csdef, msg );
+			data->messages = g_list_append( data->messages, str );
+			valid = FALSE;
+		} else {
+			count += 1;
+		}
+		g_free( msg );
+	}
+
+	csdef = ofo_recurrent_model_get_def_amount3( data->model );
+	if( my_strlen( csdef )){
+		ofo_recurrent_run_set_amount3( recrun, ofs_ope_get_amount( ope, csdef, &msg ));
+		if( my_strlen( msg )){
+			str = g_strdup_printf(
+					_( "Model='%s', specification='%s': %s" ), mnemo, csdef, msg );
+			data->messages = g_list_append( data->messages, str );
+			valid = FALSE;
+		} else {
+			count += 1;
+		}
+		g_free( msg );
+	}
+
+	/* if there is no editable amount, then verify that we have at
+	 * least one non zero amount
+	 */
+	if( count == 0 ){
+		amount = ofs_ope_get_first_non_zero_amount( ope );
+		if( amount == 0 ){
+			valid = FALSE;
+			str = g_strdup_printf(
+					_( "Model='%s', template='%s': all amounts are found equal to zero, and none is editable" ),
+					mnemo, ofo_ope_template_get_mnemo( data->template ));
+			data->messages = g_list_append( data->messages, str );
+		} else {
+			ofo_recurrent_run_set_amount1( recrun, amount );
 		}
 	}
+
+	if( valid ){
+		data->opes = g_list_prepend( data->opes, recrun );
+
+	} else {
+		g_object_unref( recrun );
+	}
+
+	ofs_ope_free( ope );
 }
 
 static void
@@ -874,25 +940,19 @@ on_ok_clicked( ofaRecurrentGenerate *self )
 	ofoRecurrentRun *object;
 	GList *it;
 	GString *gstr;
-	gint count, notgen;
+	gint count;
 	gboolean ok;
-	ofxAmount amount;
 	ofaIPageManager *page_manager;
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	ok = TRUE;
 	count = 0;
-	notgen = 0;
 
 	for( it=priv->dataset ; it ; it=it->next ){
 		object = OFO_RECURRENT_RUN( it->data );
-		amount = ofo_recurrent_run_get_amount1( object );
 
-		if( amount == 0 ){
-			notgen += 1;
-
-		} else if( !ofo_recurrent_run_insert( object )){
+		if( !ofo_recurrent_run_insert( object )){
 			ok = FALSE;
 			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, _( "Unable to insert a new recurrent operation" ));
 			break;
@@ -913,17 +973,6 @@ on_ok_clicked( ofaRecurrentGenerate *self )
 			g_string_printf( gstr, _( "One successfully inserted operation." ));
 		} else {
 			g_string_printf( gstr, _( "%d successfully inserted operations." ), count );
-		}
-
-		if( notgen > 0 ){
-			gstr = g_string_append( gstr, "\n" );
-			if( notgen == 1 ){
-				gstr = g_string_append( gstr,
-						_( "One operation has not been recorded as its first amount was zero." ));
-			} else {
-				g_string_append_printf( gstr,
-						_( "%u operations have not been recorded as their first amount was zero." ), notgen );
-			}
 		}
 
 		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_INFO, gstr->str );

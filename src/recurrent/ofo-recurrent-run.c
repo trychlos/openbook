@@ -999,7 +999,7 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	const ofaIDBConnect *connect;
 	GString *query;
 	const GDate *date;
-	const gchar *mnemo, *csdef, *userid, *cdbms;
+	const gchar *mnemo, *userid, *cdbms;
 	gchar *sdate, *stamp_str, *samount, *label, *template, *period_str;
 	GTimeVal stamp;
 	ofoRecurrentModel *model;
@@ -1007,6 +1007,7 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	ofeRecurrentStatus status;
 	myPeriod *period;
 	myPeriodKey perkey;
+	ofxAmount amount;
 
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
@@ -1098,27 +1099,27 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	recurrent_run_set_sta_user( recrun, userid );
 	recurrent_run_set_sta_stamp( recrun, &stamp );
 
-	csdef = ofo_recurrent_model_get_def_amount1( model );
-	if( my_strlen( csdef )){
-		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount1( recrun ), NULL );
+	amount = ofo_recurrent_run_get_amount1( recrun );
+	if( amount > 0 ){
+		samount = ofa_amount_to_sql( amount, NULL );
 		g_string_append_printf( query, "%s,", samount );
 		g_free( samount );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
-	csdef = ofo_recurrent_model_get_def_amount2( model );
-	if( my_strlen( csdef )){
-		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount2( recrun ), NULL );
+	amount = ofo_recurrent_run_get_amount2( recrun );
+	if( amount > 0 ){
+		samount = ofa_amount_to_sql( amount, NULL );
 		g_string_append_printf( query, "%s,", samount );
 		g_free( samount );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
-	csdef = ofo_recurrent_model_get_def_amount3( model );
-	if( my_strlen( csdef )){
-		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount3( recrun ), NULL );
+	amount = ofo_recurrent_run_get_amount3( recrun );
+	if( amount > 0 ){
+		samount = ofa_amount_to_sql( amount, NULL );
 		g_string_append_printf( query, "%s,", samount );
 		g_free( samount );
 	} else {
@@ -1269,11 +1270,12 @@ recurrent_run_do_update_amounts( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	const ofaIDBConnect *connect;
 	GString *query;
 	gchar *samount;
-	const gchar *userid, *csdef, *mnemo;
+	const gchar *userid, *mnemo;
 	gchar *stamp_str;
 	GTimeVal stamp;
 	ofxCounter numseq;
 	ofoRecurrentModel *model;
+	ofxAmount amount;
 
 	mnemo = ofo_recurrent_run_get_mnemo( recrun );
 	model = ofo_recurrent_model_get_by_mnemo( getter, mnemo );
@@ -1293,27 +1295,27 @@ recurrent_run_do_update_amounts( ofoRecurrentRun *recrun, ofaIGetter *getter )
 
 	query = g_string_new( "UPDATE REC_T_RUN SET " );
 
-	csdef = ofo_recurrent_model_get_def_amount1( model );
-	if( my_strlen( csdef )){
-		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount1( recrun ), NULL );
+	amount = ofo_recurrent_run_get_amount1( recrun );
+	if( amount > 0 ){
+		samount = ofa_amount_to_sql( amount, NULL );
 		g_string_append_printf( query, "REC_AMOUNT1=%s,", samount );
 		g_free( samount );
 	} else {
 		query = g_string_append( query, "REC_AMOUNT1=NULL," );
 	}
 
-	csdef = ofo_recurrent_model_get_def_amount2( model );
-	if( my_strlen( csdef )){
-		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount2( recrun ), NULL );
+	amount = ofo_recurrent_run_get_amount2( recrun );
+	if( amount > 0 ){
+		samount = ofa_amount_to_sql( amount, NULL );
 		g_string_append_printf( query, "REC_AMOUNT2=%s,", samount );
 		g_free( samount );
 	} else {
 		query = g_string_append( query, "REC_AMOUNT2=NULL," );
 	}
 
-	csdef = ofo_recurrent_model_get_def_amount3( model );
-	if( my_strlen( csdef )){
-		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount3( recrun ), NULL );
+	amount = ofo_recurrent_run_get_amount3( recrun );
+	if( amount > 0 ){
+		samount = ofa_amount_to_sql( amount, NULL );
 		g_string_append_printf( query, "REC_AMOUNT3=%s,", samount );
 		g_free( samount );
 	} else {
