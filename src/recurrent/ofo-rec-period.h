@@ -32,10 +32,44 @@
  *
  * This file defines the #ofoRecPeriod class behavior.
  *
- * An #ofoRecPeriod describes a periodicity.
+ * An #ofoRecPeriod identifies a periodicity.
  *
- * Id         : a free alpha-numeric identifier
- * Order      : the display order (e.g. in combobox or in treeview)
+ * - Daily:
+ *   may be every <n> days;
+ *     n <= 0 is invalid
+ *     n > 0 means new_date = prev_date + n
+ *     n mini = 1, which means every day
+ *     default = 1
+ *   configuration as <daily> + <n>
+ *
+ * - Weekly:
+ *   may be every <n> weeks (zero to 7 times by week)
+ *   may select 0 to all between monday, tuesday, wednesday, thursday, friday, saturday, sunday
+ *     new_week = week_of_prev_date + n
+ *     during this week (monday to sunday), we will generate one record
+ *     foreach selected day of the week
+ *   configuration as <weekly> + <n> + <list_of_days_of_week>
+ *
+ * - Monthly:
+ *   may be every <n> months (zero to 31 times by month)
+ *   may add a comma-separated list of numbers 0..31
+ *     new_month = month_of_prev_date + n
+ *     during this week (monday to sunday), we will generate one record
+ *     foreach selected day of the week
+ *   configuration as <monthly> + <n> + <list_of_days_of_month>
+ *
+ * - Yearly:
+ *   may be every <n> years (zero to 365 times by month)
+ *   may add a comma-separated list of numbers 0..365
+ *     new_year = year_of_prev_date + n
+ *     new_date = prev_date + <n>*7*days which determines a week number
+ *     during this year (1 to 365), we will generate one record
+ *     foreach quantieme of the list
+ *   configuration as <yearly> + <n> + <list_of_quantieme>
+ *
+ * This definition file has to be kept even after class has been removed
+ * from the project because of the need to be able to upgrade DBMS models,
+ * including the intermediate versions which might use these definitions.
  */
 
 #include "api/ofa-box.h"
