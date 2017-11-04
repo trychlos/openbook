@@ -362,7 +362,16 @@
 
 1503 2017-11- 2 RecurrentRun: move amounts to a child table
 
-1504
+1504 2017-11- 4 VAT form property: OK should only be enabled is minimal
+                data (mnemo+label) are set
+
+1505 2017-11- 4 VAT form property: mnemonic should be checked before label
+                (more consistent with dialog layout)
+
+1506 2017-11- 4 VAT form page: generate from selected button should only
+                be enabled when currently selected form is enabled
+
+1507
 
 -----------------------------------------------------------------------
  DONE
