@@ -1584,9 +1584,9 @@ dbmodel_to_v10( ofaRecurrentDBModel *self, guint version )
 			"	ADD    COLUMN REC_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
 			"	ADD    COLUMN REC_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
 			"	CHANGE COLUMN REC_UPD_USER "
-			"                 REC_STA_USER      VARCHAR(64)  NOT NULL    COMMENT 'Status last update user',"
+			"                     REC_STA_USER      VARCHAR(64)  NOT NULL    COMMENT 'Status last update user',"
 			"	CHANGE COLUMN REC_UPD_STAMP "
-			"                 REC_STA_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Status last update timestamp',"
+			"                     REC_STA_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Status last update timestamp',"
 			"	ADD    COLUMN REC_EDI_USER      VARCHAR(64)  NOT NULL    COMMENT 'Editable amount last update user',"
 			"	ADD    COLUMN REC_EDI_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Editable amount last update timestamp'" )){
 		return( FALSE );
