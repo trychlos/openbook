@@ -120,10 +120,6 @@ src/mysql/ofa-mysql-ident.c
 src/mysql/ofa-mysql-prefs-bin.ui
 src/mysql/ofa-mysql-root-bin.c
 src/mysql/ofa-mysql-root-bin.ui
-src/recurrent/ofa-rec-period-page.c
-src/recurrent/ofa-rec-period-properties.c
-src/recurrent/ofa-rec-period-properties.ui
-src/recurrent/ofa-rec-period-treeview.c
 src/recurrent/ofa-recurrent-dbmodel.c
 src/recurrent/ofa-recurrent-execlose.c
 src/recurrent/ofa-recurrent-generate.c
@@ -138,7 +134,6 @@ src/recurrent/ofa-recurrent-run-page.c
 src/recurrent/ofa-recurrent-run-page.ui
 src/recurrent/ofa-recurrent-run-treeview.c
 src/recurrent/ofa-recurrent-tree-adder.c
-src/recurrent/ofo-rec-period.c
 src/recurrent/ofo-recurrent-model.c
 src/recurrent/ofo-recurrent-run.c
 src/tva/ofa-tva-dbmodel.c

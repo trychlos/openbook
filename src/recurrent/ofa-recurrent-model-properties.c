@@ -52,7 +52,6 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
-#include "recurrent/ofa-rec-period-bin.h"
 #include "recurrent/ofa-recurrent-model-properties.h"
 #include "recurrent/ofo-recurrent-model.h"
 
