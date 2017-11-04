@@ -349,7 +349,7 @@
                 (gdb) bt
                 #0  0x00007ffff4d04a36 in g_type_check_instance_cast () at /lib64/libgobject-2.0.so.0
                 #1  0x000000000048246c in store_on_need_refilter (store=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-unsettled-page.c:561
-     2017-10-20 ofaUnsettledPage: tview is a TVBIN: check added 
+     2017-10-20 ofaUnsettledPage: tview is a TVBIN: check added
 
 1500 2017-10-22 AUDIT: add current user
 
@@ -1313,7 +1313,7 @@
                 (openbook:28078): OFA-DEBUG: ofa_rec_period_properties_idialog_init: instance=0xf006f0
                 (openbook:28078): OFA-DEBUG: ofa_hub_is_writable_dossier: dossier_is_current=True, opened_read_only=False, is_writable=True
                 (openbook:28078): MY-DEBUG: my_igridlist_init: instance=0xf006f0, grid=0xeff2b0, has_header=True, writable=True, columns_count=3
-                
+
                 (openbook:28078): Gtk-CRITICAL **: gtk_entry_set_text: assertion 'text != NULL' failed
                 Thread 1 "openbook" received signal SIGTRAP, Trace/breakpoint trap.
                 (gdb) bt
