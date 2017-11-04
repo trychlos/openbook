@@ -33,6 +33,13 @@
    - Recurrent run: take a copy of model data at creation time.
    - Recurrent run: editable cells are now marked with a blue font color.
 
+   VAT DB Model v10
+
+   - VAT form: have creation user and timestamp (todo #1488).
+   - VAT record: have creation user and timestamp (todo #1488).
+   - VAT record: have operation generation user and timestamp.
+   - VAT record: take a copy of form data at creation time.
+
  Bug fixes:
 
    - 
