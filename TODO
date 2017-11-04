@@ -359,11 +359,10 @@
      2017-11- 1 myPeriodBin: signal used
 
 1502 2017-11- 2 RecurrentModel: move editable amounts to a child table
-                + have a model-level boolean "accept zero": if set, then
-                the recurrent run is generated even if all editable amounts
-                are zero
 
-1503
+1503 2017-11- 2 RecurrentRun: move amounts to a child table
+
+1504
 
 -----------------------------------------------------------------------
  DONE

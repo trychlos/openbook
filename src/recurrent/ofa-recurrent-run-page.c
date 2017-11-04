@@ -322,7 +322,7 @@ setup_date_filter( ofaRecurrentRunPage *self, GtkContainer *container )
 
 	/* instead of "effect dates filter" */
 	label = ofa_idate_filter_get_frame_label( OFA_IDATE_FILTER( filter ));
-	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
+	gtk_label_set_markup( GTK_LABEL( label ), _( " Operation date selection " ));
 
 	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_date_filter_changed ), self );
 
