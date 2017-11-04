@@ -383,6 +383,7 @@ idialog_init( myIDialog *instance )
 	g_signal_connect( priv->enabled_btn, "toggled", G_CALLBACK( on_enabled_toggled ), instance );
 
 	my_utils_container_notes_init( GTK_CONTAINER( instance ), tva_form );
+	my_utils_container_crestamp_init( GTK_CONTAINER( instance ), tva_form );
 	my_utils_container_updstamp_init( GTK_CONTAINER( instance ), tva_form );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
