@@ -295,14 +295,16 @@ setup_columns( ofaTVAFormTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_MNEMO,              _( "Mnemo" ),    _( "Mnemonic" ));
-	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), TVA_FORM_COL_LABEL,              _( "Label" ),        NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_HAS_CORRESPONDENCE,    "",           _( "Has correspondence" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_ENABLED,            _( "Enabled" ),      NULL );
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), TVA_FORM_COL_NOTES,              _( "Notes" ),        NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), TVA_FORM_COL_NOTES_PNG,             "",           _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_UPD_USER,           _( "User" ),     _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_FORM_COL_UPD_STAMP,              NULL,        _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_MNEMO,              _( "Mnemo" ),     _( "Mnemonic" ));
+	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), TVA_FORM_COL_LABEL,              _( "Label" ),         NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_CRE_USER,           _( "Cre.user" ),  _( "Creation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_FORM_COL_CRE_STAMP,          _( "Cre.stamp" ), _( "Creation timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_ENABLED,            _( "Enabled" ),       NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_HAS_CORRESPONDENCE, _( "Corresp." ),  _( "Has correspondence" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), TVA_FORM_COL_NOTES,              _( "Notes" ),         NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), TVA_FORM_COL_NOTES_PNG,             "",            _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_FORM_COL_UPD_USER,           _( "Upd.user" ),  _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_FORM_COL_UPD_STAMP,          _( "Upd.stamp" ), _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), TVA_FORM_COL_LABEL );
 }
@@ -444,13 +446,16 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 {
 	static const gchar *thisfn = "ofa_tva_form_treeview_v_sort";
 	gint cmp;
-	gchar *mnemoa, *labela, *hascorrespa, *notesa, *updusera, *updstampa;
-	gchar *mnemob, *labelb, *hascorrespb, *notesb, *upduserb, *updstampb;
+	gchar *mnemoa, *labela, *creusera, *crestampa, *enaa, *hascorrespa, *notesa, *updusera, *updstampa;
+	gchar *mnemob, *labelb, *creuserb, *crestampb, *enab, *hascorrespb, *notesb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
 
 	gtk_tree_model_get( tmodel, a,
 			TVA_FORM_COL_MNEMO,              &mnemoa,
 			TVA_FORM_COL_LABEL,              &labela,
+			TVA_FORM_COL_CRE_USER,           &creusera,
+			TVA_FORM_COL_CRE_STAMP,          &crestampa,
+			TVA_FORM_COL_ENABLED,            &enaa,
 			TVA_FORM_COL_HAS_CORRESPONDENCE, &hascorrespa,
 			TVA_FORM_COL_NOTES,              &notesa,
 			TVA_FORM_COL_NOTES_PNG,          &pnga,
@@ -461,6 +466,9 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	gtk_tree_model_get( tmodel, b,
 			TVA_FORM_COL_MNEMO,              &mnemob,
 			TVA_FORM_COL_LABEL,              &labelb,
+			TVA_FORM_COL_CRE_USER,           &creuserb,
+			TVA_FORM_COL_CRE_STAMP,          &crestampb,
+			TVA_FORM_COL_ENABLED,            &enab,
 			TVA_FORM_COL_HAS_CORRESPONDENCE, &hascorrespb,
 			TVA_FORM_COL_NOTES,              &notesb,
 			TVA_FORM_COL_NOTES_PNG,          &pngb,
@@ -476,6 +484,15 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			break;
 		case TVA_FORM_COL_LABEL:
 			cmp = my_collate( labela, labelb );
+			break;
+		case TVA_FORM_COL_CRE_USER:
+			cmp = my_collate( creusera, creuserb );
+			break;
+		case TVA_FORM_COL_CRE_STAMP:
+			cmp = my_collate( crestampa, crestampb );
+			break;
+		case TVA_FORM_COL_ENABLED:
+			cmp = my_collate( enaa, enab );
 			break;
 		case TVA_FORM_COL_HAS_CORRESPONDENCE:
 			cmp = my_collate( hascorrespa, hascorrespb );
@@ -499,6 +516,9 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 
 	g_free( mnemoa );
 	g_free( labela );
+	g_free( creusera );
+	g_free( crestampa );
+	g_free( enaa );
 	g_free( hascorrespa );
 	g_free( notesa );
 	g_free( updusera );
@@ -507,6 +527,9 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 
 	g_free( mnemob );
 	g_free( labelb );
+	g_free( creuserb );
+	g_free( crestampb );
+	g_free( enab );
 	g_free( hascorrespb );
 	g_free( notesb );
 	g_free( upduserb );

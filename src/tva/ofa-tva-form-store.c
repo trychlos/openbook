@@ -55,10 +55,11 @@ typedef struct {
 	ofaTVAFormStorePrivate;
 
 static GType st_col_types[TVA_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, has_corresp. */
+		G_TYPE_STRING, G_TYPE_STRING,					/* mnemo, label */
+		G_TYPE_STRING, G_TYPE_STRING,					/* cre_user, cre_stamp */
+		G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_STRING,	/* enabled, enabled_b, has_corresp. */
 		G_TYPE_STRING, 0,								/* notes, notes_png */
 		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
-		G_TYPE_STRING, G_TYPE_BOOLEAN,					/* enabled, enabled_b */
 		G_TYPE_OBJECT									/* the #ofoTVAForm itself */
 };
 
@@ -188,6 +189,8 @@ ofa_tva_form_store_new( ofaIGetter *getter )
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), TVA_N_COLUMNS, st_col_types );
 
+		load_dataset( store );
+
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 		gtk_tree_sortable_set_sort_column_id(
@@ -196,7 +199,6 @@ ofa_tva_form_store_new( ofaIGetter *getter )
 
 		my_icollector_single_set_object( collector, store );
 		signaler_connect_to_signaling_system( store );
-		load_dataset( store );
 	}
 
 	return( store );
@@ -252,15 +254,16 @@ static void
 set_row_by_iter( ofaTVAFormStore *self, const ofoTVAForm *form, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_tva_form_store_set_row";
-	gchar *stamp;
+	gchar *screstamp, *supdstamp;
 	gboolean is_enabled;
 	const gchar *notes, *chascorresp, *cenabled;
 	GError *error;
 	GdkPixbuf *notes_png;
 
-	stamp  = my_stamp_to_str( ofo_tva_form_get_upd_stamp( form ), MY_STAMP_DMYYHM );
+	screstamp  = my_stamp_to_str( ofo_tva_form_get_cre_stamp( form ), MY_STAMP_DMYYHM );
+	supdstamp  = my_stamp_to_str( ofo_tva_form_get_upd_stamp( form ), MY_STAMP_DMYYHM );
 
-	chascorresp = ofo_tva_form_get_has_correspondence( form ) ? _( "C" ) : "";
+	chascorresp = ofo_tva_form_get_has_correspondence( form ) ? _( "Yes" ) : _( "No" );
 
 	is_enabled = ofo_tva_form_get_is_enabled( form );
 	cenabled = is_enabled ? _( "Yes" ) : _( "No" );
@@ -278,18 +281,21 @@ set_row_by_iter( ofaTVAFormStore *self, const ofoTVAForm *form, GtkTreeIter *ite
 			iter,
 			TVA_FORM_COL_MNEMO,              ofo_tva_form_get_mnemo( form ),
 			TVA_FORM_COL_LABEL,              ofo_tva_form_get_label( form ),
+			TVA_FORM_COL_CRE_USER,           ofo_tva_form_get_cre_user( form ),
+			TVA_FORM_COL_CRE_STAMP,          screstamp,
+			TVA_FORM_COL_ENABLED,            cenabled,
+			TVA_FORM_COL_ENABLED_B,          is_enabled,
 			TVA_FORM_COL_HAS_CORRESPONDENCE, chascorresp,
 			TVA_FORM_COL_NOTES,              notes,
 			TVA_FORM_COL_NOTES_PNG,          notes_png,
 			TVA_FORM_COL_UPD_USER,           ofo_tva_form_get_upd_user( form ),
-			TVA_FORM_COL_UPD_STAMP,          stamp,
-			TVA_FORM_COL_ENABLED,            cenabled,
-			TVA_FORM_COL_ENABLED_B,          is_enabled,
+			TVA_FORM_COL_UPD_STAMP,          supdstamp,
 			TVA_FORM_COL_OBJECT,             form,
 			-1 );
 
 	g_object_unref( notes_png );
-	g_free( stamp );
+	g_free( supdstamp );
+	g_free( screstamp );
 }
 
 static gboolean

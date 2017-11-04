@@ -105,6 +105,8 @@ ofoTVAForm     *ofo_tva_form_new_from_form             ( ofoTVAForm *form );
 const gchar    *ofo_tva_form_get_mnemo                 ( const ofoTVAForm *form );
 gchar          *ofo_tva_form_get_mnemo_new_from        ( const ofoTVAForm *form );
 const gchar    *ofo_tva_form_get_label                 ( const ofoTVAForm *form );
+const gchar    *ofo_tva_form_get_cre_user              ( const ofoTVAForm *form );
+const GTimeVal *ofo_tva_form_get_cre_stamp             ( const ofoTVAForm *form );
 gboolean        ofo_tva_form_get_has_correspondence    ( const ofoTVAForm *form );
 gboolean        ofo_tva_form_get_is_enabled            ( const ofoTVAForm *form );
 const gchar    *ofo_tva_form_get_notes                 ( const ofoTVAForm *form );
