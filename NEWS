@@ -39,6 +39,7 @@
    - VAT record: have creation user and timestamp (todo #1488).
    - VAT record: have operation generation user and timestamp.
    - VAT record: take a copy of form data at creation time.
+   - VAT record treeview: have a correspondence indicator.
 
  Bug fixes:
 
