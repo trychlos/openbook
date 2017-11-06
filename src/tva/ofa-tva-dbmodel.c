@@ -84,6 +84,8 @@ static gboolean dbmodel_to_v8( ofaTvaDBModel *self, guint version );
 static gulong   count_v8( ofaTvaDBModel *self );
 static gboolean dbmodel_to_v9( ofaTvaDBModel *self, guint version );
 static gulong   count_v9( ofaTvaDBModel *self );
+static gboolean dbmodel_to_v10( ofaTvaDBModel *self, guint version );
+static gulong   count_v10( ofaTvaDBModel *self );
 
 typedef struct {
 	gint        ver_target;
@@ -102,6 +104,7 @@ static sMigration st_migrates[] = {
 		{ 7, dbmodel_to_v7, count_v7 },
 		{ 8, dbmodel_to_v8, count_v8 },
 		{ 9, dbmodel_to_v9, count_v9 },
+		{ 10, dbmodel_to_v10, count_v10 },
 		{ 0 }
 };
 
@@ -442,6 +445,7 @@ dbmodel_to_v1( ofaTvaDBModel *self, guint version )
 	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
 	/* add tfo_enabled in v7 */
+	/* add creation user and timestamp in v10 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS ("
 			"	TFO_MNEMO          VARCHAR(10)  NOT NULL UNIQUE COMMENT 'Form mnemonic',"
@@ -893,6 +897,123 @@ static gulong
 count_v9( ofaTvaDBModel *self )
 {
 	return( 2 );
+}
+
+/*
+ * - Disable TIMESTAMP auto-update
+ * Add creation user and timestamp
+ */
+static gboolean
+dbmodel_to_v10( ofaTvaDBModel *self, guint version )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_to_v10";
+
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
+
+	/* 1 */
+	if( !exec_query( self,
+			"ALTER TABLE TVA_T_FORMS "
+			"	ADD    COLUMN TFO_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN TFO_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN TFO_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Properties last update timestamp'" )){
+		return( FALSE );
+	}
+
+	/* 2 */
+	if( !exec_query( self,
+			"ALTER TABLE TVA_T_RECORDS "
+			"	ADD    COLUMN TFO_HAS_CORRESPONDENCE CHAR(1)      NOT NULL    COMMENT 'Whether the VAT declaration has a correspondence block',"
+			"	ADD    COLUMN TFO_CRE_USER           VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN TFO_CRE_STAMP          TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN TFO_UPD_STAMP          TIMESTAMP    DEFAULT 0   COMMENT 'Properties last update timestamp',"
+			"	ADD    COLUMN TFO_OPE_USER           VARCHAR(64)              COMMENT 'Operation generation user',"
+			"	ADD    COLUMN TFO_OPE_STAMP          TIMESTAMP    DEFAULT 0   COMMENT 'Operation generation timestamp',"
+			"	CHANGE COLUMN TFO_STATUS_CLOSING "
+			"                 TFO_STA_CLOSING        DATE                     COMMENT 'Status last update user',"
+			"	CHANGE COLUMN TFO_STATUS_USER "
+			"                 TFO_STA_USER           VARCHAR(64)              COMMENT 'Status last update user',"
+			"	CHANGE COLUMN TFO_STATUS_STAMP "
+			"                 TFO_STA_STAMP          TIMESTAMP    DEFAULT 0   COMMENT 'Status last update timestamp'" )){
+		return( FALSE );
+	}
+
+	/* 3 */
+	if( !exec_query( self,
+			"ALTER TABLE TVA_T_RECORDS_BOOL "
+			"	ADD    COLUMN TFO_BOOL_LABEL    VARCHAR(256) NOT NULL    COMMENT 'Boolean detail label'" )){
+		return( FALSE );
+	}
+
+	/* 4 */
+	if( !exec_query( self,
+			"ALTER TABLE TVA_T_RECORDS_DET "
+			"	ADD    COLUMN TFO_DET_CODE         VARCHAR(64)              COMMENT 'Detail line code',"
+			"	ADD    COLUMN TFO_DET_LABEL        VARCHAR(256)             COMMENT 'Detail line label',"
+			"	ADD    COLUMN TFO_DET_LEVEL        INTEGER                  COMMENT 'Detail line level',"
+			"	ADD    COLUMN TFO_DET_HAS_BASE     CHAR(1)      NOT NULL    COMMENT 'Whether this detail line has a base formula',"
+			"	ADD    COLUMN TFO_DET_BASEF        VARCHAR(256)             COMMENT 'Detail line base formula',"
+			"	ADD    COLUMN TFO_DET_HAS_AMOUNT   CHAR(1)      NOT NULL    COMMENT 'Whether this detail line has an amount formula',"
+			"	ADD    COLUMN TFO_DET_AMOUNTF      VARCHAR(256)             COMMENT 'Detail line amount formula',"
+			"	ADD    COLUMN TFO_DET_HAS_TEMPLATE CHAR(1)      NOT NULL    COMMENT 'Whether this detail line addresses an operation template',"
+			"	ADD    COLUMN TFO_DET_TEMPLATE     VARCHAR(64)              COMMENT 'Detail line operation template'" )){
+		return( FALSE );
+	}
+
+	/* 5 */
+	if( !exec_query( self,
+			"UPDATE TVA_T_FORMS SET "
+			"	TFO_CRE_USER=TFO_UPD_USER,"
+			"	TFO_CRE_STAMP=TFO_UPD_STAMP" )){
+		return( FALSE );
+	}
+
+	/* 6 */
+	if( !exec_query( self,
+			"UPDATE TVA_T_RECORDS a SET "
+			"	TFO_CRE_USER=TFO_UPD_USER,"
+			"	TFO_CRE_STAMP=TFO_UPD_STAMP,"
+			"	TFO_HAS_CORRESPONDENCE=(SELECT TFO_HAS_CORRESPONDENCE FROM TVA_T_FORMS b WHERE a.TFO_MNEMO=b.TFO_MNEMO)" )){
+		return( FALSE );
+	}
+
+	/* 7 */
+	if( !exec_query( self,
+			"UPDATE TVA_T_RECORDS a SET "
+			"	TFO_OPE_USER=TFO_UPD_USER,"
+			"	TFO_OPE_STAMP=TFO_UPD_STAMP "
+			"		WHERE TFO_DOPE IS NOT NULL" )){
+		return( FALSE );
+	}
+
+	/* 8 */
+	if( !exec_query( self,
+			"UPDATE TVA_T_RECORDS_BOOL a SET "
+			"	TFO_BOOL_LABEL=(SELECT TFO_BOOL_LABEL FROM TVA_T_FORMS_BOOL b WHERE a.TFO_MNEMO=b.TFO_MNEMO AND a.TFO_BOOL_ROW=b.TFO_BOOL_ROW)" )){
+		return( FALSE );
+	}
+
+	/* 9 */
+	if( !exec_query( self,
+			"UPDATE TVA_T_RECORDS_DET a SET "
+			"	TFO_DET_CODE=(SELECT TFO_DET_CODE FROM TVA_T_FORMS_DET b WHERE a.TFO_MNEMO=b.TFO_MNEMO AND a.TFO_DET_ROW=b.TFO_DET_ROW),"
+			"	TFO_DET_LABEL=(SELECT TFO_DET_LABEL FROM TVA_T_FORMS_DET b WHERE a.TFO_MNEMO=b.TFO_MNEMO AND a.TFO_DET_ROW=b.TFO_DET_ROW),"
+			"	TFO_DET_LEVEL=(SELECT TFO_DET_LEVEL FROM TVA_T_FORMS_DET b WHERE a.TFO_MNEMO=b.TFO_MNEMO AND a.TFO_DET_ROW=b.TFO_DET_ROW),"
+			"	TFO_DET_HAS_BASE=(SELECT TFO_DET_HAS_BASE FROM TVA_T_FORMS_DET b WHERE a.TFO_MNEMO=b.TFO_MNEMO AND a.TFO_DET_ROW=b.TFO_DET_ROW),"
+			"	TFO_DET_BASEF=(SELECT TFO_DET_BASE FROM TVA_T_FORMS_DET b WHERE a.TFO_MNEMO=b.TFO_MNEMO AND a.TFO_DET_ROW=b.TFO_DET_ROW),"
+			"	TFO_DET_HAS_AMOUNT=(SELECT TFO_DET_HAS_AMOUNT FROM TVA_T_FORMS_DET b WHERE a.TFO_MNEMO=b.TFO_MNEMO AND a.TFO_DET_ROW=b.TFO_DET_ROW),"
+			"	TFO_DET_AMOUNTF=(SELECT TFO_DET_AMOUNT FROM TVA_T_FORMS_DET b WHERE a.TFO_MNEMO=b.TFO_MNEMO AND a.TFO_DET_ROW=b.TFO_DET_ROW),"
+			"	TFO_DET_HAS_TEMPLATE=(SELECT TFO_DET_HAS_TEMPLATE FROM TVA_T_FORMS_DET b WHERE a.TFO_MNEMO=b.TFO_MNEMO AND a.TFO_DET_ROW=b.TFO_DET_ROW),"
+			"	TFO_DET_TEMPLATE=(SELECT TFO_DET_TEMPLATE FROM TVA_T_FORMS_DET b WHERE a.TFO_MNEMO=b.TFO_MNEMO AND a.TFO_DET_ROW=b.TFO_DET_ROW)" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v10( ofaTvaDBModel *self )
+{
+	return( 9 );
 }
 
 /*

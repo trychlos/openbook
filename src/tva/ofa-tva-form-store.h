@@ -77,25 +77,29 @@ typedef struct {
  *                                                                                -------  -----------
  * @TVA_FORM_COL_MNEMO             : mnemonic identifier                          String       Yes
  * @TVA_FORM_COL_LABEL             : label                                        String       Yes
+ * @TVA_FORM_COL_CRE_USER          : creation user                                String       Yes
+ * @TVA_FORM_COL_CRE_STAMP         : creation timestamp                           String       Yes
+ * @TVA_FORM_COL_ENABLED           : whether the form is enabled                  String       Yes
+ * @TVA_FORM_COL_ENABLED_B         : whether the form is enabled                  Bool          No
  * @TVA_FORM_COL_HAS_CORRESPONDENCE: whether the form has a correspondence block  String       Yes
  * @TVA_FORM_COL_NOTES             : notes                                        String       Yes
  * @TVA_FORM_COL_NOTES_PNG         : notes indicator                              Pixbuf       Yes
  * @TVA_FORM_COL_UPD_USER          : last update user                             String       Yes
  * @TVA_FORM_COL_UPD_STAMP         : last update timestamp                        String       Yes
- * @TVA_FORM_COL_ENABLED           : whether the form is enabled                  String       Yes
- * @TVA_FORM_COL_ENABLED_B         : whether the form is enabled                  Bool          No
  * @TVA_FORM_COL_OBJECT            : #ofoTVAForm object                           GObject       No
  */
 enum {
 	TVA_FORM_COL_MNEMO = 0,
 	TVA_FORM_COL_LABEL,
+	TVA_FORM_COL_CRE_USER,
+	TVA_FORM_COL_CRE_STAMP,
+	TVA_FORM_COL_ENABLED,
+	TVA_FORM_COL_ENABLED_B,
 	TVA_FORM_COL_HAS_CORRESPONDENCE,
 	TVA_FORM_COL_NOTES,
 	TVA_FORM_COL_NOTES_PNG,
 	TVA_FORM_COL_UPD_USER,
 	TVA_FORM_COL_UPD_STAMP,
-	TVA_FORM_COL_ENABLED,
-	TVA_FORM_COL_ENABLED_B,
 	TVA_FORM_COL_OBJECT,
 	TVA_N_COLUMNS
 };

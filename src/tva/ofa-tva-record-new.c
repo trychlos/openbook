@@ -71,7 +71,7 @@ typedef struct {
 }
 	ofaTVARecordNewPrivate;
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/tva/ofa-tva-record-new.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/vat/ofa-tva-record-new.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );

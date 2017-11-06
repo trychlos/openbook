@@ -73,44 +73,54 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
- *                                                                           Type     Displayable
- *                                                                           -------  -----------
- * @TVA_RECORD_COL_MNEMO         : form mnemonic identifier                  String       Yes
- * @TVA_RECORD_COL_LABEL         : form label                                String       Yes
- * @TVA_RECORD_COL_CORRESPONDENCE: correspondence                            String       Yes
- * @TVA_RECORD_COL_BEGIN         : declaration beginning                     String       Yes
- * @TVA_RECORD_COL_END           : declaration end                           String       Yes
- * @TVA_RECORD_COL_STATUS        : the validation status of the declaration  String       Yes
- * @TVA_RECORD_COL_STATUS_I      : the validation status of the declaration  Int           No
- * @TVA_RECORD_COL_DOPE          : validation operation date                 String       Yes
- * @TVA_RECORD_COL_NOTES         : notes                                     String       Yes
- * @TVA_RECORD_COL_NOTES_PNG     : notes indicator                           Pixbuf       Yes
- * @TVA_RECORD_COL_UPD_USER      : last update user                          String       Yes
- * @TVA_RECORD_COL_UPD_STAMP     : last update timestamp                     String       Yes
- * @TVA_RECORD_COL_STATUS_USER   : user who last changes the status          String       Yes
- * @TVA_RECORD_COL_STATUS_STAMP  : stamp of last status change               String       Yes
- * @TVA_RECORD_COL_STATUS_CLOSING: date of closing at validation             String       Yes
- * @TVA_RECORD_COL_OBJECT        : #ofoTVARecord object                      GObject       No
- * @TVA_RECORD_COL_FORM          : the #ofoTVAForm object                    GObject       No
+ *                                                                               Type     Displayable
+ *                                                                               -------  -----------
+ * @TVA_RECORD_COL_MNEMO             : form mnemonic identifier                  String       Yes
+ * @TVA_RECORD_COL_END               : declaration end                           String       Yes
+ * @TVA_RECORD_COL_HAS_CORRESPONDENCE: has correspondence                        String       Yes
+ * @TVA_RECORD_COL_CRE_USER          : creation user                             String       Yes
+ * @TVA_RECORD_COL_CRE_STAMP         : creation timestamp                        String       Yes
+ * @TVA_RECORD_COL_LABEL             : form label                                String       Yes
+ * @TVA_RECORD_COL_CORRESPONDENCE    : correspondence                            String       Yes
+ * @TVA_RECORD_COL_CORRESPONDENCE_PNG: correspondence indicator                  Pixbuf       Yes
+ * @TVA_RECORD_COL_BEGIN             : declaration beginning                     String       Yes
+ * @TVA_RECORD_COL_NOTES             : notes                                     String       Yes
+ * @TVA_RECORD_COL_NOTES_PNG         : notes indicator                           Pixbuf       Yes
+ * @TVA_RECORD_COL_UPD_USER          : last update user                          String       Yes
+ * @TVA_RECORD_COL_UPD_STAMP         : last update timestamp                     String       Yes
+ * @TVA_RECORD_COL_DOPE              : validation operation date                 String       Yes
+ * @TVA_RECORD_COL_OPE_USER          : operation user                            String       Yes
+ * @TVA_RECORD_COL_OPE_STAMP         : operation timestamp                       String       Yes
+ * @TVA_RECORD_COL_STATUS            : the validation status of the declaration  String       Yes
+ * @TVA_RECORD_COL_STATUS_I          : the validation status of the declaration  Int           No
+ * @TVA_RECORD_COL_STA_CLOSING       : date of closing at validation             String       Yes
+ * @TVA_RECORD_COL_STA_USER          : user who last changes the status          String       Yes
+ * @TVA_RECORD_COL_STA_STAMP         : stamp of last status change               String       Yes
+ * @TVA_RECORD_COL_OBJECT            : #ofoTVARecord object                      GObject       No
  */
 enum {
 	TVA_RECORD_COL_MNEMO = 0,
+	TVA_RECORD_COL_END,
+	TVA_RECORD_COL_HAS_CORRESPONDENCE,
+	TVA_RECORD_COL_CRE_USER,
+	TVA_RECORD_COL_CRE_STAMP,
 	TVA_RECORD_COL_LABEL,
 	TVA_RECORD_COL_CORRESPONDENCE,
+	TVA_RECORD_COL_CORRESPONDENCE_PNG,
 	TVA_RECORD_COL_BEGIN,
-	TVA_RECORD_COL_END,
-	TVA_RECORD_COL_STATUS,
-	TVA_RECORD_COL_STATUS_I,
-	TVA_RECORD_COL_DOPE,
 	TVA_RECORD_COL_NOTES,
 	TVA_RECORD_COL_NOTES_PNG,
 	TVA_RECORD_COL_UPD_USER,
 	TVA_RECORD_COL_UPD_STAMP,
-	TVA_RECORD_COL_STATUS_USER,
-	TVA_RECORD_COL_STATUS_STAMP,
-	TVA_RECORD_COL_STATUS_CLOSING,
+	TVA_RECORD_COL_DOPE,
+	TVA_RECORD_COL_OPE_USER,
+	TVA_RECORD_COL_OPE_STAMP,
+	TVA_RECORD_COL_STATUS,
+	TVA_RECORD_COL_STATUS_I,
+	TVA_RECORD_COL_STA_CLOSING,
+	TVA_RECORD_COL_STA_USER,
+	TVA_RECORD_COL_STA_STAMP,
 	TVA_RECORD_COL_OBJECT,
-	TVA_RECORD_COL_FORM,
 	TVA_RECORD_N_COLUMNS
 };
 

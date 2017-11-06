@@ -1678,11 +1678,9 @@ my_utils_widget_set_editable( GtkWidget *widget, gboolean editable )
 		}
 
 	} else if( GTK_IS_TEXT_VIEW( widget )){
+		gtk_text_view_set_editable( GTK_TEXT_VIEW( widget ), editable );
 		if( !editable ){
-			gtk_text_view_set_editable( GTK_TEXT_VIEW( widget ), editable );
-			if( !editable ){
-				my_style_add( widget, "textviewinsensitive" );
-			}
+			my_style_add( widget, "textviewinsensitive" );
 		}
 
 	} else if( GTK_IS_TREE_VIEW( widget )){

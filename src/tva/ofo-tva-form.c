@@ -58,8 +58,10 @@
 enum {
 	TFO_MNEMO = 1,
 	TFO_LABEL,
-	TFO_HAS_CORRESPONDENCE,
+	TFO_CRE_USER,
+	TFO_CRE_STAMP,
 	TFO_ENABLED,
+	TFO_HAS_CORRESPONDENCE,
 	TFO_NOTES,
 	TFO_UPD_USER,
 	TFO_UPD_STAMP,
@@ -96,6 +98,18 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( TFO_CRE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
+		{ OFA_BOX_CSV( TFO_ENABLED ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( TFO_HAS_CORRESPONDENCE ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -112,10 +126,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				TRUE },
-		{ OFA_BOX_CSV( TFO_ENABLED ),
-				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
 		{ 0 }
 };
 
@@ -196,7 +206,7 @@ static const ofsBoxDef st_doc_defs[] = {
 };
 
 #define FORM_TABLES_COUNT               4
-#define FORM_EXPORT_VERSION             1
+#define FORM_EXPORT_VERSION             2
 
 typedef struct {
 	GList *bools;						/* the details of the form as a GList of GList fields */
@@ -206,8 +216,10 @@ typedef struct {
 	ofoTVAFormPrivate;
 
 static ofoTVAForm *form_find_by_mnemo( GList *set, const gchar *mnemo );
-static void        tva_form_set_upd_user( ofoTVAForm *form, const gchar *upd_user );
-static void        tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *upd_stamp );
+static void        tva_form_set_cre_user( ofoTVAForm *form, const gchar *user );
+static void        tva_form_set_cre_stamp( ofoTVAForm *form, const GTimeVal *stamp );
+static void        tva_form_set_upd_user( ofoTVAForm *form, const gchar *user );
+static void        tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *stamp );
 static GList      *form_detail_new( ofoTVAForm *form, guint level, const gchar *code, const gchar *label, gboolean has_base, const gchar *base, gboolean has_amount, const gchar *amount, gboolean has_template, const gchar *template );
 static void        form_detail_add( ofoTVAForm *form, GList *fields );
 static GList      *form_boolean_new( ofoTVAForm *form, const gchar *label );
@@ -549,6 +561,24 @@ ofo_tva_form_get_label( const ofoTVAForm *form )
 }
 
 /**
+ * ofo_tva_form_get_cre_user:
+ */
+const gchar *
+ofo_tva_form_get_cre_user( const ofoTVAForm *form )
+{
+	ofo_base_getter( TVA_FORM, form, string, NULL, TFO_CRE_USER );
+}
+
+/**
+ * ofo_tva_form_get_cre_stamp:
+ */
+const GTimeVal *
+ofo_tva_form_get_cre_stamp( const ofoTVAForm *form )
+{
+	ofo_base_getter( TVA_FORM, form, timestamp, NULL, TFO_CRE_STAMP );
+}
+
+/**
  * ofo_tva_form_get_has_correspondence:
  */
 gboolean
@@ -557,7 +587,6 @@ ofo_tva_form_get_has_correspondence( const ofoTVAForm *form )
 	const gchar *cstr;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
-
 	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, FALSE );
 
 	cstr = ofa_box_get_string( OFO_BASE( form )->prot->fields, TFO_HAS_CORRESPONDENCE );
@@ -574,7 +603,6 @@ ofo_tva_form_get_is_enabled( const ofoTVAForm *form )
 	const gchar *cstr;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
-
 	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, FALSE );
 
 	cstr = ofa_box_get_string( OFO_BASE( form )->prot->fields, TFO_ENABLED );
@@ -716,6 +744,24 @@ ofo_tva_form_set_label( ofoTVAForm *form, const gchar *label )
 	ofo_base_setter( TVA_FORM, form, string, TFO_LABEL, label );
 }
 
+/*
+ * ofo_tva_form_set_cre_user:
+ */
+static void
+tva_form_set_cre_user( ofoTVAForm *form, const gchar *user )
+{
+	ofo_base_setter( TVA_FORM, form, string, TFO_CRE_USER, user );
+}
+
+/*
+ * ofo_tva_form_set_cre_stamp:
+ */
+static void
+tva_form_set_cre_stamp( ofoTVAForm *form, const GTimeVal *stamp )
+{
+	ofo_base_setter( TVA_FORM, form, string, TFO_CRE_STAMP, stamp );
+}
+
 /**
  * ofo_tva_form_set_has_correspondence:
  */
@@ -747,18 +793,18 @@ ofo_tva_form_set_notes( ofoTVAForm *form, const gchar *notes )
  * ofo_tva_form_set_upd_user:
  */
 static void
-tva_form_set_upd_user( ofoTVAForm *form, const gchar *upd_user )
+tva_form_set_upd_user( ofoTVAForm *form, const gchar *user )
 {
-	ofo_base_setter( TVA_FORM, form, string, TFO_UPD_USER, upd_user );
+	ofo_base_setter( TVA_FORM, form, string, TFO_UPD_USER, user );
 }
 
 /*
  * ofo_tva_form_set_upd_stamp:
  */
 static void
-tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *upd_stamp )
+tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *stamp )
 {
-	ofo_base_setter( TVA_FORM, form, string, TFO_UPD_STAMP, upd_stamp );
+	ofo_base_setter( TVA_FORM, form, string, TFO_UPD_STAMP, stamp );
 }
 
 /**
@@ -884,28 +930,6 @@ ofo_tva_form_detail_get_count( ofoTVAForm *form )
 }
 
 /**
- * ofo_tva_form_detail_get_level:
- * @idx is the index in the details list, starting with zero
- */
-guint
-ofo_tva_form_detail_get_level( ofoTVAForm *form, guint idx )
-{
-	ofoTVAFormPrivate *priv;
-	GList *nth;
-	guint value;
-
-	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), 0 );
-	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, 0 );
-
-	priv = ofo_tva_form_get_instance_private( form );
-
-	nth = g_list_nth( priv->details, idx );
-	value = nth ? ofa_box_get_int( nth->data, TFO_DET_LEVEL ) : 0;
-
-	return( value );
-}
-
-/**
  * ofo_tva_form_detail_get_code:
  * @idx is the index in the details list, starting with zero
  */
@@ -947,6 +971,28 @@ ofo_tva_form_detail_get_label( ofoTVAForm *form, guint idx )
 	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_LABEL ) : NULL;
 
 	return( cstr );
+}
+
+/**
+ * ofo_tva_form_detail_get_level:
+ * @idx is the index in the details list, starting with zero
+ */
+guint
+ofo_tva_form_detail_get_level( ofoTVAForm *form, guint idx )
+{
+	ofoTVAFormPrivate *priv;
+	GList *nth;
+	guint value;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), 0 );
+	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, 0 );
+
+	priv = ofo_tva_form_get_instance_private( form );
+
+	nth = g_list_nth( priv->details, idx );
+	value = nth ? ofa_box_get_int( nth->data, TFO_DET_LEVEL ) : 0;
+
+	return( value );
 }
 
 /**
@@ -1330,7 +1376,7 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 
 	g_string_append_printf( query,
 			"	(TFO_MNEMO,TFO_LABEL,TFO_HAS_CORRESPONDENCE,TFO_ENABLED,"
-			"	 TFO_NOTES,TFO_UPD_USER, TFO_UPD_STAMP) VALUES ('%s',",
+			"	 TFO_NOTES,TFO_CRE_USER, TFO_CRE_STAMP) VALUES ('%s',",
 			ofo_tva_form_get_mnemo( form ));
 
 	if( my_strlen( label )){
@@ -1354,8 +1400,8 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
-	tva_form_set_upd_user( form, userid );
-	tva_form_set_upd_stamp( form, &stamp );
+	tva_form_set_cre_user( form, userid );
+	tva_form_set_cre_stamp( form, &stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
@@ -1951,12 +1997,17 @@ iimportable_get_label( const ofaIImportable *instance )
  * ofo_tva_form_iimportable_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
- * Fields must be:
+ * As of v2, fields must be:
  * - 1:
  * - form mnemo
  * - label
+ * - creation user (ignored)
+ * - creation timestamp (ignored)
+ * - enabled
  * - has correspondence
  * - notes (opt)
+ * - last update user (ignored)
+ * - last update timestamp (ignored)
  *
  * - 2:
  * - form mnemo
@@ -2127,6 +2178,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	return( dataset );
 }
 
+#if 0
 static ofoTVAForm *
 iimportable_import_parse_form( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields )
 {
@@ -2186,6 +2238,79 @@ iimportable_import_parse_form( ofaIImporter *importer, ofsImporterParms *parms, 
 	} else {
 		ofo_tva_form_set_is_enabled( form, TRUE );
 	}
+
+	return( form );
+}
+#endif
+
+/*
+ * import v2 format
+ */
+static ofoTVAForm *
+iimportable_import_parse_form( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields )
+{
+	ofoTVAForm *form;
+	const gchar *cstr;
+	GSList *itf;
+	gchar *splitted;
+
+	form = ofo_tva_form_new( parms->getter );
+
+	/* mnemo */
+	itf = fields ? fields->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !my_strlen( cstr )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty form mnemonic" ));
+		parms->parse_errs += 1;
+		g_object_unref( form );
+		return( NULL );
+	}
+	ofo_tva_form_set_mnemo( form, cstr );
+
+	/* label */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !my_strlen( cstr )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty form label" ));
+		parms->parse_errs += 1;
+		g_object_unref( form );
+		return( NULL );
+	}
+	ofo_tva_form_set_label( form, cstr );
+
+	/* creation user - not imported */
+	itf = itf ? itf->next : NULL;
+
+	/* creation stamp - not imported */
+	itf = itf ? itf->next : NULL;
+
+	/* enabled
+	 * default is TRUE */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_tva_form_set_is_enabled( form, my_utils_boolean_from_str( cstr ));
+	} else {
+		ofo_tva_form_set_is_enabled( form, TRUE );
+	}
+
+	/* has correspondence */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofo_tva_form_set_has_correspondence( form, my_utils_boolean_from_str( cstr ));
+
+	/* notes */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	splitted = my_utils_import_multi_lines( cstr );
+	ofo_tva_form_set_notes( form, splitted );
+	g_free( splitted );
+
+	/* update user - not imported */
+	itf = itf ? itf->next : NULL;
+
+	/* update stamp - not imported */
+	itf = itf ? itf->next : NULL;
 
 	return( form );
 }

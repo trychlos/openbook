@@ -112,7 +112,7 @@ enum {
 	N_BOOL_COLUMNS
 };
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/tva/ofa-tva-form-properties.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/vat/ofa-tva-form-properties.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
@@ -383,6 +383,7 @@ idialog_init( myIDialog *instance )
 	g_signal_connect( priv->enabled_btn, "toggled", G_CALLBACK( on_enabled_toggled ), instance );
 
 	my_utils_container_notes_init( GTK_CONTAINER( instance ), tva_form );
+	my_utils_container_crestamp_init( GTK_CONTAINER( instance ), tva_form );
 	my_utils_container_updstamp_init( GTK_CONTAINER( instance ), tva_form );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
