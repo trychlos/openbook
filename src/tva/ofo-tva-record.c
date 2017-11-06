@@ -55,23 +55,38 @@
  */
 enum {
 	TFO_MNEMO = 1,
+	TFO_END,
+	TFO_HAS_CORRESPONDENCE,
+	TFO_CRE_USER,
+	TFO_CRE_STAMP,
 	TFO_LABEL,
 	TFO_CORRESPONDENCE,
-	TFO_NOTES,
-	TFO_STATUS,
-	TFO_STATUS_USER,
-	TFO_STATUS_STAMP,
-	TFO_STATUS_CLOSING,
 	TFO_BEGIN,
-	TFO_END,
-	TFO_DOPE,
+	TFO_NOTES,
 	TFO_UPD_USER,
 	TFO_UPD_STAMP,
+	TFO_DOPE,
+	TFO_OPE_USER,
+	TFO_OPE_STAMP,
+	TFO_STATUS,
+	TFO_STA_CLOSING,
+	TFO_STA_USER,
+	TFO_STA_STAMP,
 	TFO_BOOL_ROW,
+	TFO_BOOL_LABEL,
 	TFO_BOOL_TRUE,
 	TFO_DET_ROW,
+	TFO_DET_CODE,
+	TFO_DET_LABEL,
+	TFO_DET_LEVEL,
+	TFO_DET_HAS_BASE,
+	TFO_DET_BASEF,
 	TFO_DET_BASE,
+	TFO_DET_HAS_AMOUNT,
+	TFO_DET_AMOUNTF,
 	TFO_DET_AMOUNT,
+	TFO_DET_HAS_TEMPLATE,
+	TFO_DET_TEMPLATE,
 	TFO_DET_OPE_NUMBER,
 };
 
@@ -87,6 +102,22 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
 				FALSE },				/* export zero as empty */
+		{ OFA_BOX_CSV( TFO_END ),
+				OFA_TYPE_DATE,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_HAS_CORRESPONDENCE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_CRE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
 		{ OFA_BOX_CSV( TFO_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -95,36 +126,12 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( TFO_NOTES ),
-				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
-		{ OFA_BOX_CSV( TFO_STATUS ),
-				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
-		{ OFA_BOX_CSV( TFO_STATUS_USER ),
-				OFA_TYPE_STRING,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( TFO_STATUS_STAMP ),
-				OFA_TYPE_TIMESTAMP,
-				FALSE,
-				TRUE },
-		{ OFA_BOX_CSV( TFO_STATUS_CLOSING ),
-				OFA_TYPE_DATE,
-				TRUE,
-				FALSE },
 		{ OFA_BOX_CSV( TFO_BEGIN ),
 				OFA_TYPE_DATE,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( TFO_END ),
-				OFA_TYPE_DATE,
-				TRUE,
-				FALSE },
-		{ OFA_BOX_CSV( TFO_DOPE ),
-				OFA_TYPE_DATE,
+		{ OFA_BOX_CSV( TFO_NOTES ),
+				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( TFO_UPD_USER ),
@@ -135,34 +142,34 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				TRUE },
-		{ 0 }
-};
-
-static const ofsBoxDef st_details_defs[] = {
-		{ OFA_BOX_CSV( TFO_MNEMO ),
-				OFA_TYPE_STRING,
-				TRUE,					/* importable */
-				FALSE },				/* export zero as empty */
-		{ OFA_BOX_CSV( TFO_END ),
+		{ OFA_BOX_CSV( TFO_DOPE ),
 				OFA_TYPE_DATE,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( TFO_DET_ROW ),
-				OFA_TYPE_INTEGER,
+		{ OFA_BOX_CSV( TFO_OPE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_OPE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
+		{ OFA_BOX_CSV( TFO_STATUS ),
+				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( TFO_DET_BASE ),
-				OFA_TYPE_AMOUNT,
+		{ OFA_BOX_CSV( TFO_STA_CLOSING ),
+				OFA_TYPE_DATE,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( TFO_DET_AMOUNT ),
-				OFA_TYPE_AMOUNT,
-				TRUE,
+		{ OFA_BOX_CSV( TFO_STA_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
 				FALSE },
-		{ OFA_BOX_CSV( TFO_DET_OPE_NUMBER ),
-				OFA_TYPE_COUNTER,
-				TRUE,
-				FALSE },
+		{ OFA_BOX_CSV( TFO_STA_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
 		{ 0 }
 };
 
@@ -179,8 +186,76 @@ static const ofsBoxDef st_bools_defs[] = {
 				OFA_TYPE_INTEGER,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( TFO_BOOL_LABEL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( TFO_BOOL_TRUE ),
 				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
+
+static const ofsBoxDef st_details_defs[] = {
+		{ OFA_BOX_CSV( TFO_MNEMO ),
+				OFA_TYPE_STRING,
+				TRUE,					/* importable */
+				FALSE },				/* export zero as empty */
+		{ OFA_BOX_CSV( TFO_END ),
+				OFA_TYPE_DATE,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_ROW ),
+				OFA_TYPE_INTEGER,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_CODE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_LABEL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_LEVEL ),
+				OFA_TYPE_INTEGER,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_HAS_BASE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_BASEF ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_BASE ),
+				OFA_TYPE_AMOUNT,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_HAS_AMOUNT ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_AMOUNTF ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_AMOUNT ),
+				OFA_TYPE_AMOUNT,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_HAS_TEMPLATE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_TEMPLATE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_OPE_NUMBER ),
+				OFA_TYPE_COUNTER,
 				TRUE,
 				FALSE },
 		{ 0 }
@@ -216,23 +291,40 @@ static sValid st_valid[] = {
 		{ 0 },
 };
 
-static void      record_set_mnemo( ofoTVARecord *record, const gchar *mnemo );
-static void      tva_record_set_status( ofoTVARecord *record, ofeVatStatus status );
-static void      tva_record_set_status_user( ofoTVARecord *record, const gchar *user );
-static void      tva_record_set_status_stamp( ofoTVARecord *record, const GTimeVal *stamp );
-static void      tva_record_set_status_closing( ofoTVARecord *record, const GDate *date );
-static void      tva_record_set_upd_user( ofoTVARecord *record, const gchar *upd_user );
-static void      tva_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *upd_stamp );
+static void      vat_record_set_mnemo( ofoTVARecord *record, const gchar *mnemo );
+static void      vat_record_set_has_correspondence( ofoTVARecord *record, gboolean has_correspondence );
+static void      vat_record_set_cre_user( ofoTVARecord *record, const gchar *user );
+static void      vat_record_set_cre_stamp( ofoTVARecord *record, const GTimeVal *stamp );
+static void      vat_record_set_ope_date( ofoTVARecord *record, const GDate *date );
+static void      vat_record_set_ope_user( ofoTVARecord *record, const gchar *user );
+static void      vat_record_set_ope_stamp( ofoTVARecord *record, const GTimeVal *stamp );
+static void      vat_record_set_status( ofoTVARecord *record, ofeVatStatus status );
+static void      vat_record_set_sta_closing( ofoTVARecord *record, const GDate *date );
+static void      vat_record_set_sta_user( ofoTVARecord *record, const gchar *user );
+static void      vat_record_set_sta_stamp( ofoTVARecord *record, const GTimeVal *stamp );
+static void      vat_record_set_upd_user( ofoTVARecord *record, const gchar *user );
+static void      vat_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *stamp );
+static void      vat_record_boolean_set_label( ofoTVARecord *record, guint idx, const gchar *label );
+static void      vat_record_detail_set_code( ofoTVARecord *record, guint idx, const gchar *code );
+static void      vat_record_detail_set_label( ofoTVARecord *record, guint idx, const gchar *label );
+static void      vat_record_detail_set_level( ofoTVARecord *record, guint idx, guint level );
+static void      vat_record_detail_set_has_base( ofoTVARecord *record, guint idx, gboolean has_base );
+static void      vat_record_detail_set_base_formula( ofoTVARecord *record, guint idx, const gchar *formula );
+static void      vat_record_detail_set_has_amount( ofoTVARecord *record, guint idx, gboolean has_amount );
+static void      vat_record_detail_set_amount_formula( ofoTVARecord *record, guint idx, const gchar *formula );
+static void      vat_record_detail_set_has_template( ofoTVARecord *record, guint idx, gboolean has_template );
+static void      vat_record_detail_set_template( ofoTVARecord *record, guint idx, const gchar *template );
 static GList    *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean  record_do_insert( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean  record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gboolean  record_delete_details( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean  record_delete_bools( ofoTVARecord *record, const ofaIDBConnect *connect );
+static gboolean  record_delete_details( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean  record_insert_details_ex( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gboolean  record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details );
 static gboolean  record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details );
+static gboolean  record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details );
 static gboolean  record_do_update( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean  record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect );
+static gboolean  record_do_update_dope( ofoTVARecord *record, ofaIDBConnect *connect, const GDate *dope );
 static gboolean  record_do_delete( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gint      record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar *mnemo, const GDate *end );
 static void      icollectionable_iface_init( myICollectionableInterface *iface );
@@ -513,58 +605,54 @@ ofo_tva_record_get_overlap( ofaIGetter *getter, const gchar *mnemo, const GDate 
 
 /**
  * ofo_tva_record_new:
- * @getter: a #ofaIGetter instance.
- */
-ofoTVARecord *
-ofo_tva_record_new( ofaIGetter *getter )
-{
-	ofoTVARecord *record;
-
-	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
-
-	record = g_object_new( OFO_TYPE_TVA_RECORD, "ofo-base-getter", getter, NULL );
-
-	OFO_BASE( record )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
-
-	tva_record_set_status( record, VAT_STATUS_NO );
-
-	return( record );
-}
-
-/**
- * ofo_tva_record_new_from_record:
- * @form: the source #ofoTVAForm to be initiallized from.
+ * @form: the source #ofoTVAForm to be initialized from.
  *
- * Allocates a new #ofoTVARecords object, initializing it with data
- * from @form #ofoTVAForm source.
+ * Returns: a new #ofoTVARecords object, initializing it with data
+ * from #ofoTVAForm @form source.
  */
 ofoTVARecord *
-ofo_tva_record_new_from_form( ofoTVAForm *form )
+ofo_tva_record_new( ofoTVAForm *form )
 {
-	ofoTVARecord *dest;
 	ofaIGetter *getter;
+	ofoTVARecord *record;
 	gint count, i;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
 	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, NULL );
 
 	getter = ofo_base_get_getter( OFO_BASE( form ));
-	dest = ofo_tva_record_new( getter );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	record_set_mnemo( dest, ofo_tva_form_get_mnemo( form ));
-	ofo_tva_record_set_label( dest, ofo_tva_form_get_label( form ));
+	record = g_object_new( OFO_TYPE_TVA_RECORD, "ofo-base-getter", getter, NULL );
 
-	count = ofo_tva_form_detail_get_count( form );
-	for( i=0 ; i<count ; ++i ){
-		ofo_tva_record_detail_add( dest, 0, 0 );
-	}
+	OFO_BASE( record )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
+
+	vat_record_set_mnemo( record, ofo_tva_form_get_mnemo( form ));
+	vat_record_set_has_correspondence( record, ofo_tva_form_get_has_correspondence( form ));
+	ofo_tva_record_set_label( record, ofo_tva_form_get_label( form ));
+	vat_record_set_status( record, VAT_STATUS_NO );
 
 	count = ofo_tva_form_boolean_get_count( form );
 	for( i=0 ; i<count ; ++i ){
-		ofo_tva_record_boolean_add( dest, FALSE );
+		ofo_tva_record_boolean_add( record, FALSE );
+		vat_record_boolean_set_label( record, i, ofo_tva_form_boolean_get_label( form, i ));
 	}
 
-	return( dest );
+	count = ofo_tva_form_detail_get_count( form );
+	for( i=0 ; i<count ; ++i ){
+		ofo_tva_record_detail_add( record, 0, 0 );
+		vat_record_detail_set_code( record, i, ofo_tva_form_detail_get_code( form, i ));
+		vat_record_detail_set_label( record, i, ofo_tva_form_detail_get_label( form, i ));
+		vat_record_detail_set_level( record, i, ofo_tva_form_detail_get_level( form, i ));
+		vat_record_detail_set_has_base( record, i, ofo_tva_form_detail_get_has_base( form, i ));
+		vat_record_detail_set_base_formula( record, i, ofo_tva_form_detail_get_base( form, i ));
+		vat_record_detail_set_has_amount( record, i, ofo_tva_form_detail_get_has_amount( form, i ));
+		vat_record_detail_set_amount_formula( record, i, ofo_tva_form_detail_get_amount( form, i ));
+		vat_record_detail_set_has_template( record, i, ofo_tva_form_detail_get_has_template( form, i ));
+		vat_record_detail_set_template( record, i, ofo_tva_form_detail_get_template( form, i ));
+	}
+
+	return( record );
 }
 
 /**
@@ -589,6 +677,49 @@ ofo_tva_record_get_mnemo( const ofoTVARecord *record )
 }
 
 /**
+ * ofo_tva_record_get_end:
+ */
+const GDate *
+ofo_tva_record_get_end( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, date, NULL, TFO_END );
+}
+
+/**
+ * ofo_tva_record_get_has_correspondence:
+ */
+gboolean
+ofo_tva_record_get_has_correspondence( const ofoTVARecord *record )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
+
+	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_HAS_CORRESPONDENCE );
+
+	return( my_utils_boolean_from_str( cstr ));
+}
+
+/**
+ * ofo_tva_record_get_cre_user:
+ */
+const gchar *
+ofo_tva_record_get_cre_user( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, string, NULL, TFO_CRE_USER );
+}
+
+/**
+ * ofo_tva_record_get_cre_stamp:
+ */
+const GTimeVal *
+ofo_tva_record_get_cre_stamp( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, timestamp, NULL, TFO_CRE_STAMP );
+}
+
+/**
  * ofo_tva_record_get_label:
  */
 const gchar *
@@ -607,12 +738,66 @@ ofo_tva_record_get_correspondence( const ofoTVARecord *record )
 }
 
 /**
+ * ofo_tva_record_get_begin:
+ */
+const GDate *
+ofo_tva_record_get_begin( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, date, NULL, TFO_BEGIN );
+}
+
+/**
  * ofo_tva_record_get_notes:
  */
 const gchar *
 ofo_tva_record_get_notes( const ofoTVARecord *record )
 {
 	ofo_base_getter( TVA_RECORD, record, string, NULL, TFO_NOTES );
+}
+
+/**
+ * ofo_tva_record_get_upd_user:
+ */
+const gchar *
+ofo_tva_record_get_upd_user( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, string, NULL, TFO_UPD_USER );
+}
+
+/**
+ * ofo_tva_record_get_upd_stamp:
+ */
+const GTimeVal *
+ofo_tva_record_get_upd_stamp( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, timestamp, NULL, TFO_UPD_STAMP );
+}
+
+/**
+ * ofo_tva_record_get_dope:
+ */
+const GDate *
+ofo_tva_record_get_dope( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, date, NULL, TFO_DOPE );
+}
+
+/**
+ * ofo_tva_record_get_ope_user:
+ */
+const gchar *
+ofo_tva_record_get_ope_user( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, string, NULL, TFO_OPE_USER );
+}
+
+/**
+ * ofo_tva_record_get_ope_stamp:
+ */
+const GTimeVal *
+ofo_tva_record_get_ope_stamp( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, timestamp, NULL, TFO_OPE_STAMP );
 }
 
 /**
@@ -711,31 +896,7 @@ ofo_tva_record_status_get_label( ofeVatStatus status )
 }
 
 /**
- * ofo_tva_record_get_status_user:
- * @record: this #ofoTVARecord object.
- *
- * Returns: the user responsible of the validation.
- */
-const gchar *
-ofo_tva_record_get_status_user( const ofoTVARecord *record )
-{
-	ofo_base_getter( TVA_RECORD, record, string, NULL, TFO_STATUS_USER );
-}
-
-/**
- * ofo_tva_record_get_status_stamp:
- * @record: this #ofoTVARecord object.
- *
- * Returns: the validation timestamp.
- */
-const GTimeVal *
-ofo_tva_record_get_status_stamp( const ofoTVARecord *record )
-{
-	ofo_base_getter( TVA_RECORD, record, timestamp, NULL, TFO_STATUS_STAMP );
-}
-
-/**
- * ofo_tva_record_get_status_closing:
+ * ofo_tva_record_get_sta_closing:
  * @record: this #ofoTVARecord object.
  *
  * Returns: the closing date of the validation if the record has been
@@ -744,54 +905,33 @@ ofo_tva_record_get_status_stamp( const ofoTVARecord *record )
  * Validation status must be VAT_STATUS_PCLOSE.
  */
 const GDate *
-ofo_tva_record_get_status_closing( const ofoTVARecord *record )
+ofo_tva_record_get_sta_closing( const ofoTVARecord *record )
 {
-	ofo_base_getter( TVA_RECORD, record, date, NULL, TFO_STATUS_CLOSING );
+	ofo_base_getter( TVA_RECORD, record, date, NULL, TFO_STA_CLOSING );
 }
 
 /**
- * ofo_tva_record_get_begin:
- */
-const GDate *
-ofo_tva_record_get_begin( const ofoTVARecord *record )
-{
-	ofo_base_getter( TVA_RECORD, record, date, NULL, TFO_BEGIN );
-}
-
-/**
- * ofo_tva_record_get_end:
- */
-const GDate *
-ofo_tva_record_get_end( const ofoTVARecord *record )
-{
-	ofo_base_getter( TVA_RECORD, record, date, NULL, TFO_END );
-}
-
-/**
- * ofo_tva_record_get_dope:
- */
-const GDate *
-ofo_tva_record_get_dope( const ofoTVARecord *record )
-{
-	ofo_base_getter( TVA_RECORD, record, date, NULL, TFO_DOPE );
-}
-
-/**
- * ofo_tva_record_get_upd_user:
+ * ofo_tva_record_get_sta_user:
+ * @record: this #ofoTVARecord object.
+ *
+ * Returns: the user responsible of the validation.
  */
 const gchar *
-ofo_tva_record_get_upd_user( const ofoTVARecord *record )
+ofo_tva_record_get_sta_user( const ofoTVARecord *record )
 {
-	ofo_base_getter( TVA_RECORD, record, string, NULL, TFO_UPD_USER );
+	ofo_base_getter( TVA_RECORD, record, string, NULL, TFO_STA_USER );
 }
 
 /**
- * ofo_tva_record_get_upd_stamp:
+ * ofo_tva_record_get_sta_stamp:
+ * @record: this #ofoTVARecord object.
+ *
+ * Returns: the validation timestamp.
  */
 const GTimeVal *
-ofo_tva_record_get_upd_stamp( const ofoTVARecord *record )
+ofo_tva_record_get_sta_stamp( const ofoTVARecord *record )
 {
-	ofo_base_getter( TVA_RECORD, record, timestamp, NULL, TFO_UPD_STAMP );
+	ofo_base_getter( TVA_RECORD, record, timestamp, NULL, TFO_STA_STAMP );
 }
 
 /**
@@ -877,6 +1017,28 @@ ofo_tva_record_boolean_get_count( ofoTVARecord *record )
 }
 
 /**
+ * ofo_tva_record_boolean_get_label:
+ * @idx is the index in the booleans list, starting with zero
+ */
+const gchar *
+ofo_tva_record_boolean_get_label( ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->bools, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_BOOL_LABEL ) : NULL;
+
+	return( cstr );
+}
+
+/**
  * ofo_tva_record_boolean_get_is_true:
  * @idx is the index in the booleans list, starting with zero
  */
@@ -917,6 +1079,118 @@ ofo_tva_record_detail_get_count( ofoTVARecord *record )
 }
 
 /**
+ * ofo_tva_record_detail_get_code:
+ * @idx is the index in the details list, starting with zero
+ */
+const gchar *
+ofo_tva_record_detail_get_code( ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), NULL );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, NULL );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_CODE ) : NULL;
+
+	return( cstr );
+}
+
+/**
+ * ofo_tva_record_detail_get_label:
+ * @idx is the index in the details list, starting with zero
+ */
+const gchar *
+ofo_tva_record_detail_get_label( ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), NULL );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, NULL );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_LABEL ) : NULL;
+
+	return( cstr );
+}
+
+/**
+ * ofo_tva_record_detail_get_level:
+ * @idx is the index in the details list, starting with zero
+ */
+guint
+ofo_tva_record_detail_get_level( ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	guint level;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), 0 );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, 0 );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	level = nth ? ofa_box_get_int( nth->data, TFO_DET_LEVEL ) : 0;
+
+	return( level );
+}
+
+/**
+ * ofo_tva_record_detail_get_has_base:
+ * @idx is the index in the details list, starting with zero
+ */
+gboolean
+ofo_tva_record_detail_get_has_base( ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+	gboolean value;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_HAS_BASE ) : NULL;
+	value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
+
+	return( value );
+}
+
+/**
+ * ofo_tva_record_detail_get_base_formula:
+ * @idx is the index in the details list, starting with zero
+ */
+const gchar *
+ofo_tva_record_detail_get_base_formula( ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), NULL );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, NULL );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_BASEF ) : NULL;
+
+	return( cstr );
+}
+
+/**
  * ofo_tva_record_detail_get_base:
  * @idx is the index in the details list, starting with zero
  */
@@ -939,6 +1213,52 @@ ofo_tva_record_detail_get_base( ofoTVARecord *record, guint idx )
 }
 
 /**
+ * ofo_tva_record_detail_get_has_amount:
+ * @idx is the index in the details list, starting with zero
+ */
+gboolean
+ofo_tva_record_detail_get_has_amount( ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+	gboolean value;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_HAS_AMOUNT ) : NULL;
+	value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
+
+	return( value );
+}
+
+/**
+ * ofo_tva_record_detail_get_amount_formula:
+ * @idx is the index in the details list, starting with zero
+ */
+const gchar *
+ofo_tva_record_detail_get_amount_formula( ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), NULL );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, NULL );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_AMOUNTF ) : NULL;
+
+	return( cstr );
+}
+
+/**
  * ofo_tva_record_detail_get_amount:
  * @idx is the index in the details list, starting with zero
  */
@@ -958,6 +1278,52 @@ ofo_tva_record_detail_get_amount( ofoTVARecord *record, guint idx )
 	amount = nth ? ofa_box_get_amount( nth->data, TFO_DET_AMOUNT ) : 0;
 
 	return( amount );
+}
+
+/**
+ * ofo_tva_record_detail_get_has_template:
+ * @idx is the index in the details list, starting with zero
+ */
+gboolean
+ofo_tva_record_detail_get_has_template( ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+	gboolean value;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_HAS_TEMPLATE ) : NULL;
+	value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
+
+	return( value );
+}
+
+/**
+ * ofo_tva_record_detail_get_template:
+ * @idx is the index in the details list, starting with zero
+ */
+const gchar *
+ofo_tva_record_detail_get_template( ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), 0 );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, 0 );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_TEMPLATE ) : NULL;
+
+	return( cstr );
 }
 
 /**
@@ -1097,12 +1463,48 @@ gint cmp;
 }
 
 /*
- * ofo_tva_record_set_mnemo:
+ * ofo_tva_vat_record_set_mnemo:
  */
 static void
-record_set_mnemo( ofoTVARecord *record, const gchar *mnemo )
+vat_record_set_mnemo( ofoTVARecord *record, const gchar *mnemo )
 {
 	ofo_base_setter( TVA_RECORD, record, string, TFO_MNEMO, mnemo );
+}
+
+/**
+ * ofo_tva_record_set_end:
+ */
+void
+ofo_tva_record_set_end( ofoTVARecord *record, const GDate *date )
+{
+	ofo_base_setter( TVA_RECORD, record, date, TFO_END, date );
+}
+
+/*
+ * vat_record_set_has_correspondence:
+ */
+static void
+vat_record_set_has_correspondence( ofoTVARecord *record, gboolean has_correspondence )
+{
+	ofo_base_setter( TVA_RECORD, record, string, TFO_HAS_CORRESPONDENCE, has_correspondence ? "Y":"N" );
+}
+
+/*
+ * ofo_tva_record_set_cre_user:
+ */
+static void
+vat_record_set_cre_user( ofoTVARecord *record, const gchar *user )
+{
+	ofo_base_setter( TVA_RECORD, record, string, TFO_CRE_USER, user );
+}
+
+/*
+ * ofo_tva_record_set_cre_stamp:
+ */
+static void
+vat_record_set_cre_stamp( ofoTVARecord *record, const GTimeVal *stamp )
+{
+	ofo_base_setter( TVA_RECORD, record, string, TFO_CRE_STAMP, stamp );
 }
 
 /**
@@ -1124,12 +1526,66 @@ ofo_tva_record_set_correspondence( ofoTVARecord *record, const gchar *correspond
 }
 
 /**
+ * ofo_tva_record_set_begin:
+ */
+void
+ofo_tva_record_set_begin( ofoTVARecord *record, const GDate *date )
+{
+	ofo_base_setter( TVA_RECORD, record, date, TFO_BEGIN, date );
+}
+
+/**
  * ofo_tva_record_set_notes:
  */
 void
 ofo_tva_record_set_notes( ofoTVARecord *record, const gchar *notes )
 {
 	ofo_base_setter( TVA_RECORD, record, string, TFO_NOTES, notes );
+}
+
+/*
+ * ofo_tva_record_set_upd_user:
+ */
+static void
+vat_record_set_upd_user( ofoTVARecord *record, const gchar *user )
+{
+	ofo_base_setter( TVA_RECORD, record, string, TFO_UPD_USER, user );
+}
+
+/*
+ * ofo_tva_record_set_upd_stamp:
+ */
+static void
+vat_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *stamp )
+{
+	ofo_base_setter( TVA_RECORD, record, string, TFO_UPD_STAMP, stamp );
+}
+
+/*
+ * ofo_tva_record_set_ope_date:
+ */
+static void
+vat_record_set_ope_date( ofoTVARecord *record, const GDate *date )
+{
+	ofo_base_setter( TVA_RECORD, record, date, TFO_DOPE, date );
+}
+
+/*
+ * ofo_tva_record_set_ope_user:
+ */
+static void
+vat_record_set_ope_user( ofoTVARecord *record, const gchar *user )
+{
+	ofo_base_setter( TVA_RECORD, record, string, TFO_OPE_USER, user );
+}
+
+/*
+ * ofo_tva_record_set_ope_stamp:
+ */
+static void
+vat_record_set_ope_stamp( ofoTVARecord *record, const GTimeVal *stamp )
+{
+	ofo_base_setter( TVA_RECORD, record, string, TFO_OPE_STAMP, stamp );
 }
 
 /*
@@ -1140,7 +1596,7 @@ ofo_tva_record_set_notes( ofoTVARecord *record, const gchar *notes )
  * Set @status.
  */
 static void
-tva_record_set_status( ofoTVARecord *record, ofeVatStatus status )
+vat_record_set_status( ofoTVARecord *record, ofeVatStatus status )
 {
 	const gchar *cstr;
 
@@ -1152,77 +1608,32 @@ tva_record_set_status( ofoTVARecord *record, ofeVatStatus status )
 }
 
 /*
- * ofo_tva_record_set_status_user:
- */
-static void
-tva_record_set_status_user( ofoTVARecord *record, const gchar *user )
-{
-	ofo_base_setter( TVA_RECORD, record, string, TFO_STATUS_USER, user );
-}
-
-/*
- * ofo_tva_record_set_status_stamp:
- */
-static void
-tva_record_set_status_stamp( ofoTVARecord *record, const GTimeVal *stamp )
-{
-	ofo_base_setter( TVA_RECORD, record, timestamp, TFO_STATUS_STAMP, stamp );
-}
-
-/*
- * ofo_tva_record_set_status_closing:
+ * ofo_tva_record_set_sta_closing:
  * @record: this #ofoTVARecord object.
  * @status: the validations status of @record.
  */
 static void
-tva_record_set_status_closing( ofoTVARecord *record, const GDate *date )
+vat_record_set_sta_closing( ofoTVARecord *record, const GDate *date )
 {
-	ofo_base_setter( TVA_RECORD, record, date, TFO_STATUS_CLOSING, date );
-}
-
-/**
- * ofo_tva_record_set_begin:
- */
-void
-ofo_tva_record_set_begin( ofoTVARecord *record, const GDate *date )
-{
-	ofo_base_setter( TVA_RECORD, record, date, TFO_BEGIN, date );
-}
-
-/**
- * ofo_tva_record_set_end:
- */
-void
-ofo_tva_record_set_end( ofoTVARecord *record, const GDate *date )
-{
-	ofo_base_setter( TVA_RECORD, record, date, TFO_END, date );
-}
-
-/**
- * ofo_tva_record_set_dope:
- */
-void
-ofo_tva_record_set_dope( ofoTVARecord *record, const GDate *date )
-{
-	ofo_base_setter( TVA_RECORD, record, date, TFO_DOPE, date );
+	ofo_base_setter( TVA_RECORD, record, date, TFO_STA_CLOSING, date );
 }
 
 /*
- * ofo_tva_record_set_upd_user:
+ * ofo_tva_record_set_sta_user:
  */
 static void
-tva_record_set_upd_user( ofoTVARecord *record, const gchar *upd_user )
+vat_record_set_sta_user( ofoTVARecord *record, const gchar *user )
 {
-	ofo_base_setter( TVA_RECORD, record, string, TFO_UPD_USER, upd_user );
+	ofo_base_setter( TVA_RECORD, record, string, TFO_STA_USER, user );
 }
 
 /*
- * ofo_tva_record_set_upd_stamp:
+ * ofo_tva_record_set_sta_stamp:
  */
 static void
-tva_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *upd_stamp )
+vat_record_set_sta_stamp( ofoTVARecord *record, const GTimeVal *stamp )
 {
-	ofo_base_setter( TVA_RECORD, record, string, TFO_UPD_STAMP, upd_stamp );
+	ofo_base_setter( TVA_RECORD, record, timestamp, TFO_STA_STAMP, stamp );
 }
 
 /**
@@ -1262,6 +1673,26 @@ ofo_tva_record_boolean_add( ofoTVARecord *record, gboolean is_true )
 	priv->bools = g_list_append( priv->bools, fields );
 }
 
+/*
+ * vat_record_boolean_set_label:
+ * @idx is the index in the details list, starting with zero
+ */
+static void
+vat_record_boolean_set_label( ofoTVARecord *record, guint idx, const gchar *label )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->bools, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_string( nth->data, TFO_BOOL_LABEL, label );
+}
+
 /**
  * ofo_tva_record_detail_free_all:
  */
@@ -1295,6 +1726,106 @@ ofo_tva_record_detail_add( ofoTVARecord *record, ofxAmount base, ofxAmount amoun
 	priv->details = g_list_append( priv->details, fields );
 }
 
+/*
+ * vat_record_detail_set_code:
+ * @idx is the index in the details list, starting with zero
+ */
+static void
+vat_record_detail_set_code( ofoTVARecord *record, guint idx, const gchar *code )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_string( nth->data, TFO_DET_CODE, code );
+}
+
+/*
+ * vat_record_detail_set_label:
+ * @idx is the index in the details list, starting with zero
+ */
+static void
+vat_record_detail_set_label( ofoTVARecord *record, guint idx, const gchar *label )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_string( nth->data, TFO_DET_LABEL, label );
+}
+
+/*
+ * vat_record_detail_set_level:
+ * @idx is the index in the details list, starting with zero
+ */
+static void
+vat_record_detail_set_level( ofoTVARecord *record, guint idx, guint level )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_int( nth->data, TFO_DET_LEVEL, level );
+}
+
+/*
+ * vat_record_detail_set_has_base:
+ * @idx is the index in the details list, starting with zero
+ */
+static void
+vat_record_detail_set_has_base( ofoTVARecord *record, guint idx, gboolean has_base )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_string( nth->data, TFO_DET_HAS_BASE, has_base ? "Y":"N" );
+}
+
+/*
+ * vat_record_detail_set_base_formula:
+ * @idx is the index in the details list, starting with zero
+ */
+static void
+vat_record_detail_set_base_formula( ofoTVARecord *record, guint idx, const gchar *formula )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_string( nth->data, TFO_DET_BASEF, formula );
+}
+
 /**
  * ofo_tva_record_detail_set_base:
  * @idx is the index in the details list, starting with zero
@@ -1315,6 +1846,46 @@ ofo_tva_record_detail_set_base( ofoTVARecord *record, guint idx, ofxAmount base 
 	ofa_box_set_amount( nth->data, TFO_DET_BASE, base );
 }
 
+/*
+ * vat_record_detail_set_has_amount:
+ * @idx is the index in the details list, starting with zero
+ */
+static void
+vat_record_detail_set_has_amount( ofoTVARecord *record, guint idx, gboolean has_amount )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_string( nth->data, TFO_DET_HAS_AMOUNT, has_amount ? "Y":"N" );
+}
+
+/*
+ * vat_record_detail_set_amount_formula:
+ * @idx is the index in the details list, starting with zero
+ */
+static void
+vat_record_detail_set_amount_formula( ofoTVARecord *record, guint idx, const gchar *formula )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_string( nth->data, TFO_DET_AMOUNTF, formula );
+}
+
 /**
  * ofo_tva_record_detail_set_amount:
  * @idx is the index in the details list, starting with zero
@@ -1333,6 +1904,46 @@ ofo_tva_record_detail_set_amount( ofoTVARecord *record, guint idx, ofxAmount amo
 	nth = g_list_nth( priv->details, idx );
 	g_return_if_fail( nth );
 	ofa_box_set_amount( nth->data, TFO_DET_AMOUNT, amount );
+}
+
+/*
+ * vat_record_detail_set_has_template:
+ * @idx is the index in the details list, starting with zero
+ */
+static void
+vat_record_detail_set_has_template( ofoTVARecord *record, guint idx, gboolean has_template )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_string( nth->data, TFO_DET_HAS_TEMPLATE, has_template ? "Y":"N" );
+}
+
+/*
+ * vat_record_detail_set_template:
+ * @idx is the index in the details list, starting with zero
+ */
+static void
+vat_record_detail_set_template( ofoTVARecord *record, guint idx, const gchar *template )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_string( nth->data, TFO_DET_TEMPLATE, template );
 }
 
 /**
@@ -1475,30 +2086,30 @@ ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate 
 
 	gstr = g_string_new( "UPDATE TVA_T_RECORDS SET " );
 
-	tva_record_set_status( record, status );
+	vat_record_set_status( record, status );
 	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_STATUS );
 	g_string_append_printf( gstr, "TFO_STATUS='%s',", cstr );
 
 	user = ofa_idbconnect_get_account( connect );
-	tva_record_set_status_user( record, user );
-	g_string_append_printf( gstr, "TFO_STATUS_USER='%s',", user );
+	vat_record_set_sta_user( record, user );
+	g_string_append_printf( gstr, "TFO_STA_USER='%s',", user );
 
 	my_stamp_set_now( &stamp );
-	tva_record_set_status_stamp( record, &stamp );
+	vat_record_set_sta_stamp( record, &stamp );
 	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
-	g_string_append_printf( gstr, "TFO_STATUS_STAMP='%s',", stamp_str );
+	g_string_append_printf( gstr, "TFO_STA_STAMP='%s',", stamp_str );
 	g_free( stamp_str );
 
 	if( status == VAT_STATUS_PCLOSE || status == VAT_STATUS_USER ){
 		g_return_val_if_fail( my_date_is_valid( closing ), FALSE );
-		tva_record_set_status_closing( record, closing );
+		vat_record_set_sta_closing( record, closing );
 		sdate = my_date_to_str( closing, MY_DATE_SQL );
-		g_string_append_printf( gstr, "TFO_STATUS_CLOSING='%s'", sdate );
+		g_string_append_printf( gstr, "TFO_STA_CLOSING='%s'", sdate );
 		g_free( sdate );
 
 	} else {
-		tva_record_set_status_closing( record, NULL );
-		gstr = g_string_append( gstr, "TFO_STATUS_CLOSING=NULL" );
+		vat_record_set_sta_closing( record, NULL );
+		gstr = g_string_append( gstr, "TFO_STA_CLOSING=NULL" );
 	}
 
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
@@ -1620,7 +2231,7 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *notes, *label, *corresp, *sbegin, *send, *sdope, *stamp_str;
+	gchar *notes, *label, *corresp, *sbegin, *send, *stamp_str;
 	GTimeVal stamp;
 	const gchar *userid, *cstr;
 
@@ -1630,18 +2241,21 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	notes = my_utils_quote_sql( ofo_tva_record_get_notes( record ));
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), MY_DATE_SQL );
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
-	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), MY_DATE_SQL );
 	my_stamp_set_now( &stamp );
 	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO TVA_T_RECORDS" );
 
 	g_string_append_printf( query,
-			"	(TFO_MNEMO,TFO_LABEL,TFO_CORRESPONDENCE,"
-			"	 TFO_NOTES,TFO_STATUS,"
-			"	 TFO_BEGIN,TFO_END,TFO_DOPE,"
-			"	 TFO_UPD_USER, TFO_UPD_STAMP) VALUES ('%s'",
-			ofo_tva_record_get_mnemo( record ));
+			"	(TFO_MNEMO,TFO_END,TFO_HAS_CORRESPONDENCE,TFO_CRE_USER,TFO_CRE_STAMP,"
+			"	 TFO_LABEL,TFO_CORRESPONDENCE,TFO_BEGIN,TFO_NOTES,"
+			"	 TFO_UPD_USER,TFO_UPD_STAMP,"
+			"	 TFO_STATUS,TFO_STA_USER,TFO_STA_STAMP)"
+			"	VALUES ('%s','%s','%s','%s','%s'",
+			ofo_tva_record_get_mnemo( record ),
+			send,
+			ofo_tva_record_get_has_correspondence( record ) ? "Y":"N",
+			userid, stamp_str );
 
 	if( my_strlen( label )){
 		g_string_append_printf( query, ",'%s'", label );
@@ -1655,67 +2269,43 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 		query = g_string_append( query, ",NULL" );
 	}
 
-	if( my_strlen( notes )){
-		g_string_append_printf( query, ",'%s'", notes );
-	} else {
-		query = g_string_append( query, ",NULL" );
-	}
-
-	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_STATUS );
-	g_string_append_printf( query, ",'%s'", cstr );
-
 	if( my_strlen( sbegin )){
 		g_string_append_printf( query, ",'%s'", sbegin );
 	} else {
 		query = g_string_append( query, ",NULL" );
 	}
 
-	if( my_strlen( send )){
-		g_string_append_printf( query, ",'%s'", send );
+	if( my_strlen( notes )){
+		g_string_append_printf( query, ",'%s'", notes );
 	} else {
 		query = g_string_append( query, ",NULL" );
 	}
 
-	if( my_strlen( sdope )){
-		g_string_append_printf( query, ",'%s'", sdope );
-	} else {
-		query = g_string_append( query, ",NULL" );
-	}
+	/* last update user and timestamp */
+	g_string_append_printf( query, ",'%s','%s'", userid, stamp_str );
 
-	g_string_append_printf( query,
-			",'%s','%s')", userid, stamp_str );
+	/* status group */
+	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_STATUS );
+	g_string_append_printf( query, ",'%s','%s','%s')", cstr, userid, stamp_str );
+	vat_record_set_sta_user( record, userid );
+	vat_record_set_sta_stamp( record, &stamp );
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
-	tva_record_set_upd_user( record, userid );
-	tva_record_set_upd_stamp( record, &stamp );
+	vat_record_set_cre_user( record, userid );
+	vat_record_set_cre_stamp( record, &stamp );
 
-	g_free( sdope );
+	vat_record_set_upd_user( record, userid );
+	vat_record_set_upd_stamp( record, &stamp );
+
 	g_free( send );
 	g_free( sbegin );
-	g_string_free( query, TRUE );
 	g_free( notes );
+	g_free( label );
+	g_free( corresp );
 	g_free( stamp_str );
 
-	return( ok );
-}
-
-static gboolean
-record_delete_details( ofoTVARecord *record, const ofaIDBConnect *connect )
-{
-	gchar *query, *send;
-	gboolean ok;
-
-	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
-
-	query = g_strdup_printf(
-			"DELETE FROM TVA_T_RECORDS_DET WHERE TFO_MNEMO='%s' AND TFO_END='%s'",
-			ofo_tva_record_get_mnemo( record ), send );
-
-	ok = ofa_idbconnect_query( connect, query, TRUE );
-
-	g_free( query );
-	g_free( send );
+	g_string_free( query, TRUE );
 
 	return( ok );
 }
@@ -1730,6 +2320,26 @@ record_delete_bools( ofoTVARecord *record, const ofaIDBConnect *connect )
 
 	query = g_strdup_printf(
 			"DELETE FROM TVA_T_RECORDS_BOOL WHERE TFO_MNEMO='%s' AND TFO_END='%s'",
+			ofo_tva_record_get_mnemo( record ), send );
+
+	ok = ofa_idbconnect_query( connect, query, TRUE );
+
+	g_free( query );
+	g_free( send );
+
+	return( ok );
+}
+
+static gboolean
+record_delete_details( ofoTVARecord *record, const ofaIDBConnect *connect )
+{
+	gchar *query, *send;
+	gboolean ok;
+
+	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
+
+	query = g_strdup_printf(
+			"DELETE FROM TVA_T_RECORDS_DET WHERE TFO_MNEMO='%s' AND TFO_END='%s'",
 			ofo_tva_record_get_mnemo( record ), send );
 
 	ok = ofa_idbconnect_query( connect, query, TRUE );
@@ -1772,63 +2382,22 @@ record_insert_details_ex( ofoTVARecord *record, const ofaIDBConnect *connect )
 }
 
 static gboolean
-record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details )
-{
-	GString *query;
-	gboolean ok;
-	gchar *send, *base, *amount;
-	ofxCounter number;
-
-	query = g_string_new( "INSERT INTO TVA_T_RECORDS_DET " );
-	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
-
-	g_string_append_printf( query,
-			"	(TFO_MNEMO,TFO_END,TFO_DET_ROW,"
-			"	 TFO_DET_BASE,TFO_DET_AMOUNT,TFO_DET_OPE_NUMBER) "
-			"	VALUES('%s','%s',%d",
-			ofo_tva_record_get_mnemo( record ), send, rang );
-
-	base = my_double_to_sql( ofa_box_get_amount( details, TFO_DET_BASE ));
-	g_string_append_printf( query, ",%s", base );
-	g_free( base );
-
-	amount = my_double_to_sql( ofa_box_get_amount( details, TFO_DET_AMOUNT ));
-	g_string_append_printf( query, ",%s", amount );
-	g_free( amount );
-
-	number = ofa_box_get_counter( details, TFO_DET_OPE_NUMBER );
-	if( number > 0 ){
-		g_string_append_printf( query, ",%lu", number );
-	} else {
-		query = g_string_append( query, ",NULL" );
-	}
-
-	query = g_string_append( query, ")" );
-
-	ok = ofa_idbconnect_query( connect, query->str, TRUE );
-
-	g_string_free( query, TRUE );
-	g_free( send );
-
-	return( ok );
-}
-
-static gboolean
 record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *fields )
 {
 	GString *query;
 	gboolean ok;
-	gchar *send;
+	gchar *send, *label;
 	const gchar *cstr;
 
 	query = g_string_new( "INSERT INTO TVA_T_RECORDS_BOOL " );
+
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
+	label = my_utils_quote_sql( ofo_tva_record_boolean_get_label( record, rang ));
 
 	g_string_append_printf( query,
-			"	(TFO_MNEMO,TFO_END,TFO_BOOL_ROW,"
-			"	 TFO_BOOL_TRUE) "
-			"	VALUES('%s','%s',%d",
-			ofo_tva_record_get_mnemo( record ), send, rang );
+			"	(TFO_MNEMO,TFO_END,TFO_BOOL_ROW,TFO_BOOL_LABEL,TFO_BOOL_TRUE) "
+			"	VALUES('%s','%s',%d,'%s'",
+			ofo_tva_record_get_mnemo( record ), send, rang, label );
 
 	cstr = ofa_box_get_string( fields, TFO_BOOL_TRUE );
 	g_string_append_printf( query, ",'%s'", cstr );
@@ -1837,8 +2406,82 @@ record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint r
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
-	g_string_free( query, TRUE );
+	g_free( label );
 	g_free( send );
+
+	g_string_free( query, TRUE );
+
+	return( ok );
+}
+
+static gboolean
+record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details )
+{
+	GString *query;
+	gboolean ok;
+	gchar *send, *formula, *samount, *code, *label, *template;
+	ofxCounter number;
+
+	query = g_string_new( "INSERT INTO TVA_T_RECORDS_DET " );
+
+	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
+	code = my_utils_quote_sql( ofo_tva_record_detail_get_code( record, rang ));
+	label = my_utils_quote_sql( ofo_tva_record_detail_get_label( record, rang ));
+
+	g_string_append_printf( query,
+			"	(TFO_MNEMO,TFO_END,TFO_DET_ROW,"
+			"	 TFO_DET_CODE,TFO_DET_LABEL,TFO_DET_LEVEL,"
+			"	 TFO_DET_HAS_BASE,TFO_DET_BASEF,TFO_DET_BASE,"
+			"	 TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNTF,TFO_DET_AMOUNT,"
+			"	 TFO_DET_HAS_TEMPLATE,TFO_DET_TEMPLATE,TFO_DET_OPE_NUMBER) "
+			"	VALUES('%s','%s',%d,'%s','%s',%u",
+			ofo_tva_record_get_mnemo( record ),
+			send, rang, code, label,
+			ofo_tva_record_detail_get_level( record, rang ));
+
+	if( ofo_tva_record_detail_get_has_base( record, rang )){
+		formula = my_utils_quote_sql( ofo_tva_record_detail_get_base_formula( record, rang ));
+		samount = my_double_to_sql( ofo_tva_record_detail_get_base( record, rang ));
+		g_string_append_printf( query, ",'Y','%s',%s", formula, samount );
+		g_free( samount );
+		g_free( formula );
+	} else {
+		query = g_string_append( query, ",'N',NULL,NULL" );
+	}
+
+	if( ofo_tva_record_detail_get_has_amount( record, rang )){
+		formula = my_utils_quote_sql( ofo_tva_record_detail_get_amount_formula( record, rang ));
+		samount = my_double_to_sql( ofo_tva_record_detail_get_amount( record, rang ));
+		g_string_append_printf( query, ",'Y','%s',%s", formula, samount );
+		g_free( samount );
+		g_free( formula );
+	} else {
+		query = g_string_append( query, ",'N',NULL,NULL" );
+	}
+
+	if( ofo_tva_record_detail_get_has_template( record, rang )){
+		template = my_utils_quote_sql( ofo_tva_record_detail_get_amount_formula( record, rang ));
+		g_string_append_printf( query, ",'Y','%s'", template );
+		number = ofo_tva_record_detail_get_ope_number( record, rang );
+		if( number > 0 ){
+			g_string_append_printf( query, ",%lu", number );
+		} else {
+			query = g_string_append( query, ",NULL" );
+		}
+		g_free( template );
+	} else {
+		query = g_string_append( query, ",'N',NULL,NULL" );
+	}
+
+	query = g_string_append( query, ")" );
+
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
+
+	g_free( send );
+	g_free( code );
+	g_free( label );
+
+	g_string_free( query, TRUE );
 
 	return( ok );
 }
@@ -1854,8 +2497,8 @@ record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint r
  *
  * Notes are still updatable even after the declaration has been validated.
  *
- * Validation status is not updated here.
- * See ofo_tva_record_validate().
+ * Neither validation status nor operation date are updated here.
+ * See ofo_tva_record_validate() and ofo_tva_record_update_dope().
  */
 gboolean
 ofo_tva_record_update( ofoTVARecord *record )
@@ -1896,7 +2539,7 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *notes, *label, *corresp, *sbegin, *send, *sdope, *stamp_str;
+	gchar *notes, *label, *corresp, *sbegin, *send, *stamp_str;
 	const gchar *mnemo, *userid;
 	GTimeVal stamp;
 
@@ -1909,7 +2552,6 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), MY_DATE_SQL );
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
-	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), MY_DATE_SQL );
 
 	query = g_string_new( "UPDATE TVA_T_RECORDS SET " );
 
@@ -1925,22 +2567,16 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 		query = g_string_append( query, ",TFO_CORRESPONDENCE=NULL" );
 	}
 
-	if( my_strlen( notes )){
-		g_string_append_printf( query, ",TFO_NOTES='%s'", notes );
-	} else {
-		query = g_string_append( query, ",TFO_NOTES=NULL" );
-	}
-
 	if( my_strlen( sbegin )){
 		g_string_append_printf( query, ",TFO_BEGIN='%s'", sbegin );
 	} else {
 		query = g_string_append( query, ",TFO_BEGIN=NULL" );
 	}
 
-	if( my_strlen( sdope )){
-		g_string_append_printf( query, ",TFO_DOPE='%s'", sdope );
+	if( my_strlen( notes )){
+		g_string_append_printf( query, ",TFO_NOTES='%s'", notes );
 	} else {
-		query = g_string_append( query, ",TFO_DOPE=NULL" );
+		query = g_string_append( query, ",TFO_NOTES=NULL" );
 	}
 
 	g_string_append_printf( query,
@@ -1952,8 +2588,8 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
-	tva_record_set_upd_user( record, userid );
-	tva_record_set_upd_stamp( record, &stamp );
+	vat_record_set_upd_user( record, userid );
+	vat_record_set_upd_stamp( record, &stamp );
 
 	g_string_free( query, TRUE );
 	g_free( label );
@@ -1962,7 +2598,93 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	g_free( stamp_str );
 	g_free( sbegin );
 	g_free( send );
-	g_free( sdope );
+
+	return( ok );
+}
+
+/**
+ * ofo_tva_record_update_dope:
+ * @record: this #ofoTVARecord object.
+ * @dope: the operation date.
+ *
+ * Update the operation date in DBMS.
+ *
+ * This method is expected to be called on operation date update, and
+ * when actually generating the operations.
+ */
+gboolean
+ofo_tva_record_update_dope( ofoTVARecord *record, const GDate *dope )
+{
+	static const gchar *thisfn = "ofo_record_update_dope";
+	ofaIGetter *getter;
+	ofaISignaler *signaler;
+	ofaHub *hub;
+	gboolean ok;
+
+	g_debug( "%s: record=%p, dope=%p", thisfn, ( void * ) record, ( void * ) dope );
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
+
+	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( record ));
+	signaler = ofa_igetter_get_signaler( getter );
+	hub = ofa_igetter_get_hub( getter );
+
+	if( record_do_update_dope( record, ofa_hub_get_connect( hub ), dope )){
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, record, NULL );
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+static gboolean
+record_do_update_dope( ofoTVARecord *record, ofaIDBConnect *connect, const GDate *dope )
+{
+	gboolean ok;
+	GString *query;
+	gchar *sdend, *sstamp, *sdope;
+	const gchar *mnemo, *userid;
+	GTimeVal stamp;
+
+	mnemo = ofo_tva_record_get_mnemo( record );
+	sdend = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
+
+	query = g_string_new( "UPDATE TVA_T_RECORDS SET " );
+
+	if( my_date_is_valid( dope )){
+		sdope = my_date_to_str( dope, MY_DATE_SQL );
+		userid = ofa_idbconnect_get_account( connect );
+		my_stamp_set_now( &stamp );
+		sstamp = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+
+		g_string_append_printf( query, "TFO_DOPE='%s',TFO_OPE_USER='%s',TFO_OPE_STAMP='%s'",
+				sdope, userid, sstamp );
+
+		g_free( sstamp );
+		g_free( sdope );
+
+		vat_record_set_ope_date( record, dope );
+		vat_record_set_ope_user( record, userid );
+		vat_record_set_ope_stamp( record, &stamp );
+
+	} else {
+		query = g_string_append( query, "TFO_DOPE=NULL,TFO_OPE_USER=NULL,TFO_OPE_STAMP=NULL" );
+
+		vat_record_set_ope_date( record, dope );
+		vat_record_set_ope_user( record, NULL );
+		vat_record_set_ope_stamp( record, NULL );
+	}
+
+	g_string_append_printf( query, " WHERE TFO_MNEMO='%s' AND TFO_END='%s'",
+			mnemo, sdend );
+
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
+
+	g_free( sdend );
+
+	g_string_free( query, TRUE );
 
 	return( ok );
 }
