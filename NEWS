@@ -36,6 +36,7 @@
    VAT DB Model v10
 
    - VAT form: have creation user and timestamp (todo #1488).
+   - VAT form properties: improve the responsiveness of the dialog (todo #1504).
    - VAT record: have creation user and timestamp (todo #1488).
    - VAT record: have operation generation user and timestamp.
    - VAT record: take a copy of form data at creation time.
