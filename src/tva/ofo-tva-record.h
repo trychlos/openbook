@@ -94,37 +94,51 @@ GDate          *ofo_tva_record_get_last_end             ( ofaIGetter *getter, co
 ofoTVARecord   *ofo_tva_record_get_by_key               ( ofaIGetter *getter, const gchar *mnemo, const GDate *candidate_end );
 ofoTVARecord   *ofo_tva_record_get_overlap              ( ofaIGetter *getter, const gchar *mnemo, const GDate *candidate_begin, const GDate *candidate_end );
 
-ofoTVARecord   *ofo_tva_record_new                      ( ofaIGetter *getter );
-ofoTVARecord   *ofo_tva_record_new_from_form            ( ofoTVAForm *form );
+ofoTVARecord   *ofo_tva_record_new                      ( ofoTVAForm *form );
 
 void            ofo_tva_record_dump                     ( const ofoTVARecord *record );
 
 const gchar    *ofo_tva_record_get_mnemo                ( const ofoTVARecord *record );
+const GDate    *ofo_tva_record_get_end                  ( const ofoTVARecord *record );
+gboolean        ofo_tva_record_get_has_correspondence   ( const ofoTVARecord *record );
+const gchar    *ofo_tva_record_get_cre_user             ( const ofoTVARecord *record );
+const GTimeVal *ofo_tva_record_get_cre_stamp            ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_get_label                ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_get_correspondence       ( const ofoTVARecord *record );
+const GDate    *ofo_tva_record_get_begin                ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_get_notes                ( const ofoTVARecord *record );
+const gchar    *ofo_tva_record_get_upd_user             ( const ofoTVARecord *record );
+const GTimeVal *ofo_tva_record_get_upd_stamp            ( const ofoTVARecord *record );
+const GDate    *ofo_tva_record_get_dope                 ( const ofoTVARecord *record );
+const gchar    *ofo_tva_record_get_ope_user             ( const ofoTVARecord *record );
+const GTimeVal *ofo_tva_record_get_ope_stamp            ( const ofoTVARecord *record );
 ofeVatStatus    ofo_tva_record_get_status               ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_status_get_dbms          ( ofeVatStatus valid );
 const gchar    *ofo_tva_record_status_get_abr           ( ofeVatStatus valid );
 const gchar    *ofo_tva_record_status_get_label         ( ofeVatStatus valid );
-const gchar    *ofo_tva_record_get_status_user          ( const ofoTVARecord *record );
-const GTimeVal *ofo_tva_record_get_status_stamp         ( const ofoTVARecord *record );
-const GDate    *ofo_tva_record_get_status_closing       ( const ofoTVARecord *record );
-const GDate    *ofo_tva_record_get_begin                ( const ofoTVARecord *record );
-const GDate    *ofo_tva_record_get_end                  ( const ofoTVARecord *record );
-const GDate    *ofo_tva_record_get_dope                 ( const ofoTVARecord *record );
-const gchar    *ofo_tva_record_get_upd_user             ( const ofoTVARecord *record );
-const GTimeVal *ofo_tva_record_get_upd_stamp            ( const ofoTVARecord *record );
+const GDate    *ofo_tva_record_get_sta_closing          ( const ofoTVARecord *record );
+const gchar    *ofo_tva_record_get_sta_user             ( const ofoTVARecord *record );
+const GTimeVal *ofo_tva_record_get_sta_stamp            ( const ofoTVARecord *record );
 
 GList          *ofo_tva_record_get_accounting_opes      ( ofoTVARecord *record );
 void            ofo_tva_record_delete_accounting_entries( ofoTVARecord *record, GList *opes );
 
 guint           ofo_tva_record_boolean_get_count        ( ofoTVARecord *record );
+const gchar    *ofo_tva_record_boolean_get_label        ( ofoTVARecord *record, guint idx );
 gboolean        ofo_tva_record_boolean_get_is_true      ( ofoTVARecord *record, guint idx );
 
 guint           ofo_tva_record_detail_get_count         ( ofoTVARecord *record );
+const gchar    *ofo_tva_record_detail_get_code          ( ofoTVARecord *record, guint idx );
+const gchar    *ofo_tva_record_detail_get_label         ( ofoTVARecord *record, guint idx );
+guint           ofo_tva_record_detail_get_level         ( ofoTVARecord *record, guint idx );
+gboolean        ofo_tva_record_detail_get_has_base      ( ofoTVARecord *record, guint idx );
+const gchar    *ofo_tva_record_detail_get_base_formula  ( ofoTVARecord *record, guint idx );
 ofxAmount       ofo_tva_record_detail_get_base          ( ofoTVARecord *record, guint idx );
+gboolean        ofo_tva_record_detail_get_has_amount    ( ofoTVARecord *record, guint idx );
+const gchar    *ofo_tva_record_detail_get_amount_formula( ofoTVARecord *record, guint idx );
 ofxAmount       ofo_tva_record_detail_get_amount        ( ofoTVARecord *record, guint idx );
+gboolean        ofo_tva_record_detail_get_has_template  ( ofoTVARecord *record, guint idx );
+const gchar    *ofo_tva_record_detail_get_template      ( ofoTVARecord *record, guint idx );
 ofxCounter      ofo_tva_record_detail_get_ope_number    ( ofoTVARecord *record, guint idx );
 
 gboolean        ofo_tva_record_is_deletable             ( const ofoTVARecord *record, GList *gen_opes );
@@ -132,12 +146,11 @@ gboolean        ofo_tva_record_is_valid_data            ( const gchar *mnemo, co
 
 gint            ofo_tva_record_compare_by_key           ( const ofoTVARecord *record, const gchar *mnemo, const GDate *end );
 
+void            ofo_tva_record_set_end                  ( ofoTVARecord *record, const GDate *date );
 void            ofo_tva_record_set_label                ( ofoTVARecord *record, const gchar *label );
 void            ofo_tva_record_set_correspondence       ( ofoTVARecord *record, const gchar *correspondence );
-void            ofo_tva_record_set_notes                ( ofoTVARecord *record, const gchar *notes );
 void            ofo_tva_record_set_begin                ( ofoTVARecord *record, const GDate *date );
-void            ofo_tva_record_set_end                  ( ofoTVARecord *record, const GDate *date );
-void            ofo_tva_record_set_dope                 ( ofoTVARecord *record, const GDate *date );
+void            ofo_tva_record_set_notes                ( ofoTVARecord *record, const gchar *notes );
 
 void            ofo_tva_record_boolean_free_all         ( ofoTVARecord *record );
 
@@ -161,11 +174,13 @@ GList          *ofo_tva_record_get_doc_orphans          ( ofaIGetter *getter );
 #define         ofo_tva_record_free_doc_orphans( L )    ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
 gboolean        ofo_tva_record_validate                 ( ofoTVARecord *record, ofeVatStatus status, const GDate *closing );
-
 guint           ofo_tva_record_validate_all             ( ofaIGetter *getter, const GDate *closing );
 
 gboolean        ofo_tva_record_insert                   ( ofoTVARecord *record );
+
 gboolean        ofo_tva_record_update                   ( ofoTVARecord *record );
+gboolean        ofo_tva_record_update_dope              ( ofoTVARecord *record, const GDate *date );
+
 gboolean        ofo_tva_record_delete                   ( ofoTVARecord *record );
 
 G_END_DECLS
