@@ -43,7 +43,7 @@
 
  Bug fixes:
 
-   - 
+   - VAT record: notes is editable even if the declaration has been validated.
 
  Other changes:
 
