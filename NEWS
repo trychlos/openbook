@@ -43,7 +43,8 @@
 
  Bug fixes:
 
-   - VAT record: notes is editable even if the declaration has been validated.
+   - ofaTVAFormPage: unselect all when running the properties (todo #1506).
+   - ofaTVARecordProperties: notes is editable even if the declaration has been validated.
 
  Other changes:
 

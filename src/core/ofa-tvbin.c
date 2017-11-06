@@ -1624,7 +1624,8 @@ ofa_tvbin_select_first_row( ofaTVBin *bin )
 /*
  * ofa_tvbin_select_row:
  * @bin: this #ofaTVBin instance.
- * @iter: a #GtkTreeIter on the #GtkTreeView's model.
+ * @iter: [allow-none]: a #GtkTreeIter on the #GtkTreeView's model.
+ *  On %NULL, then unselect all.
  *
  * Select the specified row.
  */
@@ -1646,17 +1647,21 @@ ofa_tvbin_select_row( ofaTVBin *bin, GtkTreeIter *treeview_iter )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	/* select the specified row */
 	selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
-	gtk_tree_selection_select_iter( selection, treeview_iter );
+	gtk_tree_selection_unselect_all( selection );
 
-	/* move the cursor so that it is visible */
-	model = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
-	path = gtk_tree_model_get_path( model, treeview_iter );
-	gtk_tree_view_expand_to_path( GTK_TREE_VIEW( priv->treeview ), path );
-	gtk_tree_view_scroll_to_cell( GTK_TREE_VIEW( priv->treeview ), path, NULL, FALSE, 0, 0 );
-	gtk_tree_view_set_cursor( GTK_TREE_VIEW( priv->treeview ), path, NULL, FALSE );
-	gtk_tree_path_free( path );
+	if( treeview_iter ){
+		/* then select the specified row */
+		gtk_tree_selection_select_iter( selection, treeview_iter );
+
+		/* move the cursor so that it is visible */
+		model = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
+		path = gtk_tree_model_get_path( model, treeview_iter );
+		gtk_tree_view_expand_to_path( GTK_TREE_VIEW( priv->treeview ), path );
+		gtk_tree_view_scroll_to_cell( GTK_TREE_VIEW( priv->treeview ), path, NULL, FALSE, 0, 0 );
+		gtk_tree_view_set_cursor( GTK_TREE_VIEW( priv->treeview ), path, NULL, FALSE );
+		gtk_tree_path_free( path );
+	}
 }
 
 /**

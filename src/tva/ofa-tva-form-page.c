@@ -391,6 +391,8 @@ action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPage 
 	form = ofo_tva_form_new( priv->getter );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_tva_form_properties_run( priv->getter, toplevel, form );
+
+	ofa_tvbin_select_row( OFA_TVBIN( priv->tview ), NULL );
 }
 
 static void
@@ -407,6 +409,8 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPa
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_tva_form_properties_run( priv->getter, toplevel, form );
+
+	ofa_tvbin_select_row( OFA_TVBIN( priv->tview ), NULL );
 }
 
 static void

@@ -368,9 +368,6 @@
 1505 2017-11- 4 VAT form property: mnemonic should be checked before label
                 (more consistent with dialog layout)
 
-1506 2017-11- 4 VAT form page: generate from selected button should only
-                be enabled when currently selected form is enabled
-
 1507
 
 -----------------------------------------------------------------------
@@ -1337,6 +1334,10 @@
                 #8  0x00007ffff77eae1b in my_iwindow_init (instance=0xf006f0) at ../../../../src/my-1/src/my-iwindow.c:447
                 #9  0x00007ffff77e611c in my_idialog_run_maybe_modal (instance=0xf006f0) at ../../../../src/my-1/src/my-idialog.c:396
      2017-11- 1 obsoleted by new myPeriod class.
+
+1506 2017-11- 4 VAT form page: generate from selected button should only
+                be enabled when currently selected form is enabled
+     2017-11- 6 fixed by unselecting all when running the properties
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
