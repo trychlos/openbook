@@ -474,7 +474,7 @@ action_on_declare_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormP
 	form = ofa_tva_form_treeview_get_selected( priv->tview );
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
-	record = ofo_tva_record_new_from_form( form );
+	record = ofo_tva_record_new( form );
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ) && ofo_tva_form_get_is_enabled( form ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));

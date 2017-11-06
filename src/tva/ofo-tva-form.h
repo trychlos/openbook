@@ -136,9 +136,9 @@ GList          *ofo_tva_form_boolean_get_orphans       ( ofaIGetter *getter );
 #define         ofo_tva_form_boolean_free_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
 guint           ofo_tva_form_detail_get_count          ( ofoTVAForm *form );
-guint           ofo_tva_form_detail_get_level          ( ofoTVAForm *form, guint idx );
 const gchar    *ofo_tva_form_detail_get_code           ( ofoTVAForm *form, guint idx );
 const gchar    *ofo_tva_form_detail_get_label          ( ofoTVAForm *form, guint idx );
+guint           ofo_tva_form_detail_get_level          ( ofoTVAForm *form, guint idx );
 gboolean        ofo_tva_form_detail_get_has_base       ( ofoTVAForm *form, guint idx );
 const gchar    *ofo_tva_form_detail_get_base           ( ofoTVAForm *form, guint idx );
 gboolean        ofo_tva_form_detail_get_has_amount     ( ofoTVAForm *form, guint idx );

@@ -587,7 +587,6 @@ ofo_tva_form_get_has_correspondence( const ofoTVAForm *form )
 	const gchar *cstr;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
-
 	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, FALSE );
 
 	cstr = ofa_box_get_string( OFO_BASE( form )->prot->fields, TFO_HAS_CORRESPONDENCE );
@@ -604,7 +603,6 @@ ofo_tva_form_get_is_enabled( const ofoTVAForm *form )
 	const gchar *cstr;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
-
 	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, FALSE );
 
 	cstr = ofa_box_get_string( OFO_BASE( form )->prot->fields, TFO_ENABLED );
@@ -932,28 +930,6 @@ ofo_tva_form_detail_get_count( ofoTVAForm *form )
 }
 
 /**
- * ofo_tva_form_detail_get_level:
- * @idx is the index in the details list, starting with zero
- */
-guint
-ofo_tva_form_detail_get_level( ofoTVAForm *form, guint idx )
-{
-	ofoTVAFormPrivate *priv;
-	GList *nth;
-	guint value;
-
-	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), 0 );
-	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, 0 );
-
-	priv = ofo_tva_form_get_instance_private( form );
-
-	nth = g_list_nth( priv->details, idx );
-	value = nth ? ofa_box_get_int( nth->data, TFO_DET_LEVEL ) : 0;
-
-	return( value );
-}
-
-/**
  * ofo_tva_form_detail_get_code:
  * @idx is the index in the details list, starting with zero
  */
@@ -995,6 +971,28 @@ ofo_tva_form_detail_get_label( ofoTVAForm *form, guint idx )
 	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_LABEL ) : NULL;
 
 	return( cstr );
+}
+
+/**
+ * ofo_tva_form_detail_get_level:
+ * @idx is the index in the details list, starting with zero
+ */
+guint
+ofo_tva_form_detail_get_level( ofoTVAForm *form, guint idx )
+{
+	ofoTVAFormPrivate *priv;
+	GList *nth;
+	guint value;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), 0 );
+	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, 0 );
+
+	priv = ofo_tva_form_get_instance_private( form );
+
+	nth = g_list_nth( priv->details, idx );
+	value = nth ? ofa_box_get_int( nth->data, TFO_DET_LEVEL ) : 0;
+
+	return( value );
 }
 
 /**
