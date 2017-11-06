@@ -69,8 +69,8 @@ static GType st_ope_template_store_types[VAT_OPE_TEMPLATE_N_COLUMNS] = {
 		0										/* gdk_type_pixbuf */
 };
 
-static const gchar *st_resource_filler_png = "/org/trychlos/openbook/tva/filler.png";
-static const gchar *st_resource_vat_png    = "/org/trychlos/openbook/tva/ofa-vat-icon-16x16.png";
+static const gchar *st_resource_filler_png = "/org/trychlos/openbook/vat/filler.png";
+static const gchar *st_resource_vat_png    = "/org/trychlos/openbook/vat/ofa-vat-icon-16x16.png";
 
 static void     itree_adder_iface_init( ofaITreeAdderInterface *iface );
 static GType   *itree_adder_get_column_types( ofaITreeAdder *instance, ofaIStore *store, guint orig_cols_count, guint *add_cols );

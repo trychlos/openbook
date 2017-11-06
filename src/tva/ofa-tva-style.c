@@ -43,7 +43,7 @@ typedef struct {
 }
 	ofaTVAStylePrivate;
 
-static const gchar *st_style_css        = "/org/trychlos/openbook/tva/ofa-tva.css";
+static const gchar *st_style_css        = "/org/trychlos/openbook/vat/ofa-tva.css";
 
 G_DEFINE_TYPE_EXTENDED( ofaTVAStyle, ofa_tva_style, GTK_TYPE_CSS_PROVIDER, 0,
 		G_ADD_PRIVATE( ofaTVAStyle ))
