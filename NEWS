@@ -45,6 +45,7 @@
 
    - ofaTVAFormPage: unselect all when running the properties (todo #1506).
    - ofaTVARecordProperties: notes is editable even if the declaration has been validated.
+   - ofoTVAForm: only check label if mnemonic is ok (todo #1505).
 
  Other changes:
 
