@@ -293,20 +293,26 @@ setup_columns( ofaTVARecordTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_MNEMO,          _( "Mnemo" ),          _( "Mnemonic" ));
-	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), TVA_RECORD_COL_LABEL,          _( "Label" ),              NULL );
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), TVA_RECORD_COL_CORRESPONDENCE, _( "Correspondence" ),     NULL );
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_BEGIN,          _( "Begin" ),          _( "Beginning date" ));
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_END,            _( "End" ),            _( "Ending date" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_STATUS,         _( "Status" ),         _( "Validation status" ));
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_DOPE,           _( "Ope" ),            _( "Operation date" ));
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), TVA_RECORD_COL_NOTES,          _( "Notes" ),              NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), TVA_RECORD_COL_NOTES_PNG,         "",                 _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_UPD_USER,       _( "User" ),           _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_UPD_STAMP,          NULL,              _( "Last update timestamp" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STATUS_USER,        NULL,              _( "Status last change user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STATUS_STAMP,       NULL,              _( "Status last change timestamp" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STATUS_CLOSING, _( "Closed" ),         _( "Validation date" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_MNEMO,              _( "Mnemo" ),        _( "Mnemonic" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_END,                _( "End" ),          _( "Ending date" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), TVA_RECORD_COL_HAS_CORRESPONDENCE, _( "Has.corresp." ), _( "Has correspondence" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_CRE_USER,           _( "Cre.user" ),     _( "Creation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_CRE_STAMP,          _( "Cre.stamp" ),    _( "Creation timestamp" ));
+	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), TVA_RECORD_COL_LABEL,              _( "Label" ),            NULL );
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), TVA_RECORD_COL_CORRESPONDENCE,     _( "Corresp." ),     _( "Correspondence" ));
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), TVA_RECORD_COL_CORRESPONDENCE_PNG,    "",               _( "Correspondence indicator" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_BEGIN,              _( "Begin" ),        _( "Beginning date" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), TVA_RECORD_COL_NOTES,              _( "Notes" ),            NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), TVA_RECORD_COL_NOTES_PNG,             "",               _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_UPD_USER,           _( "Upd.user" ),     _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_UPD_STAMP,          _( "Upd.stamp" ),    _( "Last update timestamp" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_DOPE,               _( "Ope" ),          _( "Operation date" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_OPE_USER,           _( "Ope.user" ),     _( "Operation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_OPE_STAMP,          _( "Ope.stamp" ),    _( "Operation timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_STATUS,             _( "Status" ),       _( "Validation status" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STA_CLOSING,        _( "Closing" ),      _( "Validation date" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STA_USER,           _( "Sta.user" ),     _( "Status last change user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STA_STAMP,          _( "Sta.stamp" ),    _( "Status last change timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), TVA_RECORD_COL_LABEL );
 }
@@ -421,38 +427,58 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	static const gchar *thisfn = "ofa_tva_record_treeview_v_sort";
 	ofaTVARecordTreeviewPrivate *priv;
 	gint cmp;
-	gchar *mnemoa, *labela, *correspa, *begina, *enda, *stata, *dopea, *notesa, *updusera, *updstampa;
-	gchar *mnemob, *labelb, *correspb, *beginb, *endb, *statb, *dopeb, *notesb, *upduserb, *updstampb;
-	GdkPixbuf *pnga, *pngb;
+	gchar *mnemoa, *enda, *hascora, *screua, *scresa, *labela, *correspa, *begina, *notesa, *supdua, *supdsa,
+			*dopea, *sopeua, *sopesa, *stata, *closa, *sstaua, *sstasa;
+	gchar *mnemob, *endb, *hascorb, *screub, *scresb, *labelb, *correspb, *beginb, *notesb, *supdub, *supdsb,
+			*dopeb, *sopeub, *sopesb, *statb, *closb, *sstaub, *sstasb;
+	GdkPixbuf *corinda, *pnga, *corindb, *pngb;
 
 	priv = ofa_tva_record_treeview_get_instance_private( OFA_TVA_RECORD_TREEVIEW( bin ));
 
 	gtk_tree_model_get( tmodel, a,
-			TVA_RECORD_COL_MNEMO,          &mnemoa,
-			TVA_RECORD_COL_LABEL,          &labela,
-			TVA_RECORD_COL_CORRESPONDENCE, &correspa,
-			TVA_RECORD_COL_BEGIN,          &begina,
-			TVA_RECORD_COL_END,            &enda,
-			TVA_RECORD_COL_STATUS,         &stata,
-			TVA_RECORD_COL_DOPE,           &dopea,
-			TVA_RECORD_COL_NOTES,          &notesa,
-			TVA_RECORD_COL_NOTES_PNG,      &pnga,
-			TVA_RECORD_COL_UPD_USER,       &updusera,
-			TVA_RECORD_COL_UPD_STAMP,      &updstampa,
+			TVA_RECORD_COL_MNEMO,              &mnemoa,
+			TVA_RECORD_COL_END,                &enda,
+			TVA_RECORD_COL_HAS_CORRESPONDENCE, &hascora,
+			TVA_RECORD_COL_CRE_USER,           &screua,
+			TVA_RECORD_COL_CRE_STAMP,          &scresa,
+			TVA_RECORD_COL_LABEL,              &labela,
+			TVA_RECORD_COL_CORRESPONDENCE,     &correspa,
+			TVA_RECORD_COL_CORRESPONDENCE_PNG, &corinda,
+			TVA_RECORD_COL_BEGIN,              &begina,
+			TVA_RECORD_COL_NOTES,              &notesa,
+			TVA_RECORD_COL_NOTES_PNG,          &pnga,
+			TVA_RECORD_COL_UPD_USER,           &supdua,
+			TVA_RECORD_COL_UPD_STAMP,          &supdsa,
+			TVA_RECORD_COL_DOPE,               &dopea,
+			TVA_RECORD_COL_OPE_USER,           &sopeua,
+			TVA_RECORD_COL_OPE_STAMP,          &sopesa,
+			TVA_RECORD_COL_STATUS,             &stata,
+			TVA_RECORD_COL_STA_CLOSING,        &closa,
+			TVA_RECORD_COL_STA_USER,           &sstaua,
+			TVA_RECORD_COL_STA_STAMP,          &sstasa,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
-			TVA_RECORD_COL_MNEMO,          &mnemob,
-			TVA_RECORD_COL_LABEL,          &labelb,
-			TVA_RECORD_COL_CORRESPONDENCE, &correspb,
-			TVA_RECORD_COL_BEGIN,          &beginb,
-			TVA_RECORD_COL_END,            &endb,
-			TVA_RECORD_COL_STATUS,         &statb,
-			TVA_RECORD_COL_DOPE,           &dopeb,
-			TVA_RECORD_COL_NOTES,          &notesb,
-			TVA_RECORD_COL_NOTES_PNG,      &pngb,
-			TVA_RECORD_COL_UPD_USER,       &upduserb,
-			TVA_RECORD_COL_UPD_STAMP,      &updstampb,
+			TVA_RECORD_COL_MNEMO,              &mnemob,
+			TVA_RECORD_COL_END,                &endb,
+			TVA_RECORD_COL_HAS_CORRESPONDENCE, &hascorb,
+			TVA_RECORD_COL_CRE_USER,           &screub,
+			TVA_RECORD_COL_CRE_STAMP,          &scresb,
+			TVA_RECORD_COL_LABEL,              &labelb,
+			TVA_RECORD_COL_CORRESPONDENCE,     &correspb,
+			TVA_RECORD_COL_CORRESPONDENCE_PNG, &corindb,
+			TVA_RECORD_COL_BEGIN,              &beginb,
+			TVA_RECORD_COL_NOTES,              &notesb,
+			TVA_RECORD_COL_NOTES_PNG,          &pngb,
+			TVA_RECORD_COL_UPD_USER,           &supdub,
+			TVA_RECORD_COL_UPD_STAMP,          &supdsb,
+			TVA_RECORD_COL_DOPE,               &dopeb,
+			TVA_RECORD_COL_OPE_USER,           &sopeub,
+			TVA_RECORD_COL_OPE_STAMP,          &sopesb,
+			TVA_RECORD_COL_STATUS,             &statb,
+			TVA_RECORD_COL_STA_CLOSING,        &closb,
+			TVA_RECORD_COL_STA_USER,           &sstaub,
+			TVA_RECORD_COL_STA_STAMP,          &sstasb,
 			-1 );
 
 	cmp = 0;
@@ -461,23 +487,29 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 		case TVA_RECORD_COL_MNEMO:
 			cmp = my_collate( mnemoa, mnemob );
 			break;
+		case TVA_RECORD_COL_END:
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_get_display_format( priv->getter ));
+			break;
+		case TVA_RECORD_COL_HAS_CORRESPONDENCE:
+			cmp = my_collate( hascora, hascorb );
+			break;
+		case TVA_RECORD_COL_CRE_USER:
+			cmp = my_collate( screua, screub );
+			break;
+		case TVA_RECORD_COL_CRE_STAMP:
+			cmp = my_collate( scresa, scresb );
+			break;
 		case TVA_RECORD_COL_LABEL:
 			cmp = my_collate( labela, labelb );
 			break;
 		case TVA_RECORD_COL_CORRESPONDENCE:
 			cmp = my_collate( correspa, correspb );
 			break;
+		case TVA_RECORD_COL_CORRESPONDENCE_PNG:
+			cmp = ofa_itvsortable_sort_png( corinda, corindb );
+			break;
 		case TVA_RECORD_COL_BEGIN:
 			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_get_display_format( priv->getter ));
-			break;
-		case TVA_RECORD_COL_END:
-			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_get_display_format( priv->getter ));
-			break;
-		case TVA_RECORD_COL_STATUS:
-			cmp = my_collate( stata, statb );
-			break;
-		case TVA_RECORD_COL_DOPE:
-			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
 		case TVA_RECORD_COL_NOTES:
 			cmp = my_collate( notesa, notesb );
@@ -486,10 +518,31 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = ofa_itvsortable_sort_png( pnga, pngb );
 			break;
 		case TVA_RECORD_COL_UPD_USER:
-			cmp = my_collate( updusera, upduserb );
+			cmp = my_collate( supdua, supdub );
 			break;
 		case TVA_RECORD_COL_UPD_STAMP:
-			cmp = my_collate( updstampa, updstampb );
+			cmp = my_collate( supdsa, supdsb );
+			break;
+		case TVA_RECORD_COL_DOPE:
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_get_display_format( priv->getter ));
+			break;
+		case TVA_RECORD_COL_OPE_USER:
+			cmp = my_collate( sopeua, sopeub );
+			break;
+		case TVA_RECORD_COL_OPE_STAMP:
+			cmp = my_collate( sopesa, sopesb );
+			break;
+		case TVA_RECORD_COL_STATUS:
+			cmp = my_collate( stata, statb );
+			break;
+		case TVA_RECORD_COL_STA_CLOSING:
+			cmp = my_date_compare_by_str( closa, closb, ofa_prefs_date_get_display_format( priv->getter ));
+			break;
+		case TVA_RECORD_COL_STA_USER:
+			cmp = my_collate( sstaua, sstaub );
+			break;
+		case TVA_RECORD_COL_STA_STAMP:
+			cmp = my_collate( sstasa, sstasb );
 			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, column_id );
@@ -497,27 +550,45 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	}
 
 	g_free( mnemoa );
+	g_free( enda );
+	g_free( hascora );
+	g_free( screua );
+	g_free( scresa );
 	g_free( labela );
 	g_free( correspa );
 	g_free( begina );
-	g_free( enda );
-	g_free( stata );
-	g_free( dopea );
 	g_free( notesa );
-	g_free( updusera );
-	g_free( updstampa );
+	g_free( supdua );
+	g_free( supdsa );
+	g_free( dopea );
+	g_free( sopeua );
+	g_free( sopesa );
+	g_free( stata );
+	g_free( closa );
+	g_free( sstaua );
+	g_free( sstasa );
+	g_clear_object( &corinda );
 	g_clear_object( &pnga );
 
 	g_free( mnemob );
+	g_free( endb );
+	g_free( hascorb );
+	g_free( screub );
+	g_free( scresb );
 	g_free( labelb );
 	g_free( correspb );
 	g_free( beginb );
-	g_free( endb );
-	g_free( statb );
-	g_free( dopeb );
 	g_free( notesb );
-	g_free( upduserb );
-	g_free( updstampb );
+	g_free( supdub );
+	g_free( supdsb );
+	g_free( dopeb );
+	g_free( sopeub );
+	g_free( sopesb );
+	g_free( statb );
+	g_free( closb );
+	g_free( sstaub );
+	g_free( sstasb );
+	g_clear_object( &corindb );
 	g_clear_object( &pngb );
 
 	return( cmp );

@@ -141,7 +141,7 @@ typedef struct {
 
 static ofaFormulaEngine *st_engine      = NULL;
 
-static const gchar      *st_resource_ui = "/org/trychlos/openbook/tva/ofa-tva-record-properties.ui";
+static const gchar      *st_resource_ui = "/org/trychlos/openbook/vat/ofa-tva-record-properties.ui";
 
 static void             iwindow_iface_init( myIWindowInterface *iface );
 static void             iwindow_init( myIWindow *instance );
@@ -153,10 +153,13 @@ static void             init_booleans( ofaTVARecordProperties *self );
 static void             init_taxes( ofaTVARecordProperties *self );
 static void             init_correspondence( ofaTVARecordProperties *self );
 static void             init_editability( ofaTVARecordProperties *self );
+static void             init_notes( ofaTVARecordProperties *self );
 static void             on_label_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void             on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void             on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void             on_dope_changed( GtkEditable *entry, ofaTVARecordProperties *self );
+static void             on_corresp_changed( GtkTextBuffer *buffer, ofaTVARecordProperties *self );
+static void             on_notes_changed( GtkTextBuffer *buffer, ofaTVARecordProperties *self );
 static void             on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self );
 static void             on_detail_base_changed( GtkEntry *entry, ofaTVARecordProperties *self );
 static void             on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self );
@@ -384,6 +387,7 @@ idialog_init( myIDialog *instance )
 	init_taxes( OFA_TVA_RECORD_PROPERTIES( instance ));
 	init_correspondence( OFA_TVA_RECORD_PROPERTIES( instance ));
 	init_editability( OFA_TVA_RECORD_PROPERTIES( instance ));
+	init_notes( OFA_TVA_RECORD_PROPERTIES( instance ));
 
 	priv->generated_opes = ofo_tva_record_get_accounting_opes( priv->tva_record );
 	priv->generated_entries = get_accounting_entries( OFA_TVA_RECORD_PROPERTIES( instance ));
@@ -713,6 +717,7 @@ init_correspondence( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 	GtkWidget *book, *label, *scrolled;
+	GtkTextBuffer *buffer;
 	const gchar *cstr;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
@@ -732,6 +737,9 @@ init_correspondence( ofaTVARecordProperties *self )
 		cstr = ofo_tva_record_get_correspondence( priv->tva_record );
 		my_utils_container_notes_setup_ex( GTK_TEXT_VIEW( priv->corresp_textview ), cstr, TRUE );
 		gtk_widget_set_sensitive( priv->corresp_textview, priv->is_writable && !priv->is_validated );
+
+		buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( priv->corresp_textview ));
+		g_signal_connect( buffer, "changed", G_CALLBACK( on_corresp_changed ), self );
 	}
 }
 
@@ -748,6 +756,21 @@ init_editability( ofaTVARecordProperties *self )
 	/* notes may be edited even after the declaration has been validated */
 	my_utils_container_notes_setup_full( GTK_CONTAINER( self ),
 			"pn-notes", ofo_tva_record_get_notes( priv->tva_record ), priv->is_writable );
+}
+
+static void
+init_notes( ofaTVARecordProperties *self )
+{
+	GtkWidget *view;
+	GtkTextBuffer *buffer;
+
+	view = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "pn-notes" );
+	g_return_if_fail( view && GTK_IS_TEXT_VIEW( view ));
+
+	buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( view ));
+	g_return_if_fail( buffer && GTK_IS_TEXT_BUFFER( buffer ));
+
+	g_signal_connect( buffer, "changed", G_CALLBACK( on_notes_changed ), self );
 }
 
 static void
@@ -810,6 +833,20 @@ on_dope_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 }
 
 static void
+on_corresp_changed( GtkTextBuffer *buffer, ofaTVARecordProperties *self )
+{
+	check_for_enable_dlg( self );
+	set_dirty( self, TRUE );
+}
+
+static void
+on_notes_changed( GtkTextBuffer *buffer, ofaTVARecordProperties *self )
+{
+	check_for_enable_dlg( self );
+	set_dirty( self, TRUE );
+}
+
+static void
 on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self )
 {
 	check_for_enable_dlg( self );
@@ -833,7 +870,7 @@ on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self )
 /*
  * - must have both begin and end dates to be able to compute the declaration
  * - must have an operation date to generate the operations
- * - is validable at any time
+ * - is saveable at any time
  */
 static void
 check_for_enable_dlg( ofaTVARecordProperties *self )
@@ -1419,6 +1456,8 @@ on_generate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 
 	if( do_generate_opes( self, &msgerr, &ope_count, &ent_count ) &&
 			do_update_dope( self, TRUE, &msgerr )){
+
+		my_date_set_from_date( &priv->dope_init, &priv->dope_date );
 
 		msg = g_strdup_printf(
 				_( "%u operations successfully generated (%u entries)" ), ope_count, ent_count );

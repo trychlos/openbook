@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <gresource prefix="/org/trychlos/openbook/tva">
+  <gresource prefix="/org/trychlos/openbook/vat">
     <file>ofa-tva-form-properties.ui</file>
     <file>ofa-tva-record-new.ui</file>
     <file>ofa-tva-record-properties.ui</file>
     <file>ofa-tva.css</file>
     <file>ofa-vat-icon-16x16.png</file>
+    <file>corresp.png</file>
     <file>filler.png</file>
+    <file>notes.png</file>
   </gresource>
 </gresources>

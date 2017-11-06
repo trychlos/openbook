@@ -112,7 +112,7 @@ enum {
 	N_BOOL_COLUMNS
 };
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/tva/ofa-tva-form-properties.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/vat/ofa-tva-form-properties.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );

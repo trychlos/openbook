@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "my/my-date.h"
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
@@ -54,17 +56,20 @@ typedef struct {
 	ofaTVARecordStorePrivate;
 
 static GType st_col_types[TVA_RECORD_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, correspondence */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* begin, end, status */
-		G_TYPE_UINT,   G_TYPE_STRING,					/* status_i, dope */
-		G_TYPE_STRING, 0,								/* notes, notes_png */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, end, has_corresp. */
+		G_TYPE_STRING, G_TYPE_STRING,					/* cre_user, cre_timestamp */
+		G_TYPE_STRING, G_TYPE_STRING, 0,				/* label, correspondence, corresp_png */
+		G_TYPE_STRING, G_TYPE_STRING, 0,				/* begin, notes, notes_png */
 		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* status_user, status_stamp, status_closing */
-		G_TYPE_OBJECT, G_TYPE_OBJECT					/* the #ofoTVARecord itself, the #ofoTVAForm */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* dope, ope_user, ope_stamp */
+		G_TYPE_STRING, G_TYPE_UINT,   G_TYPE_STRING,	/* status, status_i, sta_closing */
+		G_TYPE_STRING, G_TYPE_STRING,					/* sta_user, sta_stamp */
+		G_TYPE_OBJECT									/* the #ofoTVARecord itself */
 };
 
-static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
-static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/vat/filler.png";
+static const gchar *st_resource_corresp_png = "/org/trychlos/openbook/vat/corresp.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/vat/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVARecordStore *self );
 static void     load_dataset( ofaTVARecordStore *self );
@@ -185,6 +190,7 @@ ofa_tva_record_store_new( ofaIGetter *getter )
 
 		priv->getter = getter;
 
+		st_col_types[TVA_RECORD_COL_CORRESPONDENCE_PNG] = GDK_TYPE_PIXBUF;
 		st_col_types[TVA_RECORD_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), TVA_RECORD_N_COLUMNS, st_col_types );
@@ -266,25 +272,34 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 	static const gchar *thisfn = "ofa_tva_record_store_set_row_by_iter";
 	ofaTVARecordStorePrivate *priv;
 	ofeVatStatus status;
-	gchar *sbegin, *send, *sdope, *stamp, *stamp_status, *closing;
-	const gchar *notes, *cstatus;
-	ofoTVAForm *form;
+	gchar *sbegin, *send, *sdope, *screstamp, *supdstamp, *sopestamp, *sstastamp, *closing;
+	const gchar *corresp, *notes, *cstatus;
 	GError *error;
-	GdkPixbuf *notes_png;
+	GdkPixbuf *corresp_png, *notes_png;
 
 	priv = ofa_tva_record_store_get_instance_private( self );
 
-	form = ofo_tva_form_get_by_mnemo( priv->getter, ofo_tva_record_get_mnemo( record ));
-	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
-
-	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), ofa_prefs_date_get_display_format( priv->getter ));
 	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_get_display_format( priv->getter ));
+	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), ofa_prefs_date_get_display_format( priv->getter ));
+
+	screstamp  = my_stamp_to_str( ofo_tva_record_get_cre_stamp( record ), MY_STAMP_DMYYHM );
+	supdstamp  = my_stamp_to_str( ofo_tva_record_get_upd_stamp( record ), MY_STAMP_DMYYHM );
+
 	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), ofa_prefs_date_get_display_format( priv->getter ));
+	sopestamp  = my_stamp_to_str( ofo_tva_record_get_ope_stamp( record ), MY_STAMP_DMYYHM );
 
 	status = ofo_tva_record_get_status( record );
 	cstatus = ofo_tva_record_status_get_abr( status );
-	stamp_status = my_stamp_to_str( ofo_tva_record_get_status_stamp( record ), MY_STAMP_DMYYHM );
-	closing = my_date_to_str( ofo_tva_record_get_status_closing( record ), ofa_prefs_date_get_display_format( priv->getter ));
+	closing = my_date_to_str( ofo_tva_record_get_sta_closing( record ), ofa_prefs_date_get_display_format( priv->getter ));
+	sstastamp = my_stamp_to_str( ofo_tva_record_get_sta_stamp( record ), MY_STAMP_DMYYHM );
+
+	corresp = ofo_tva_record_get_correspondence( record );
+	error = NULL;
+	corresp_png = gdk_pixbuf_new_from_resource( my_strlen( corresp ) ? st_resource_corresp_png : st_resource_filler_png, &error );
+	if( error ){
+		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
+		g_error_free( error );
+	}
 
 	notes = ofo_tva_record_get_notes( record );
 	error = NULL;
@@ -294,36 +309,44 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 		g_error_free( error );
 	}
 
-	stamp  = my_stamp_to_str( ofo_tva_form_get_upd_stamp( form ), MY_STAMP_DMYYHM );
-
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
-			TVA_RECORD_COL_MNEMO,          ofo_tva_record_get_mnemo( record ),
-			TVA_RECORD_COL_LABEL,          ofo_tva_record_get_label( record ),
-			TVA_RECORD_COL_CORRESPONDENCE, ofo_tva_record_get_correspondence( record ),
-			TVA_RECORD_COL_BEGIN,          sbegin,
-			TVA_RECORD_COL_END,            send,
-			TVA_RECORD_COL_STATUS,         cstatus,
-			TVA_RECORD_COL_STATUS_I,       status,
-			TVA_RECORD_COL_DOPE,           sdope,
-			TVA_RECORD_COL_NOTES,          notes,
-			TVA_RECORD_COL_NOTES_PNG,      notes_png,
-			TVA_RECORD_COL_UPD_USER,       ofo_tva_form_get_upd_user( form ),
-			TVA_RECORD_COL_UPD_STAMP,      stamp,
-			TVA_RECORD_COL_STATUS_USER,    ofo_tva_record_get_status_user( record ),
-			TVA_RECORD_COL_STATUS_STAMP,   stamp_status,
-			TVA_RECORD_COL_STATUS_CLOSING, closing,
-			TVA_RECORD_COL_OBJECT,         record,
-			TVA_RECORD_COL_FORM,           form,
+			TVA_RECORD_COL_MNEMO,              ofo_tva_record_get_mnemo( record ),
+			TVA_RECORD_COL_END,                send,
+			TVA_RECORD_COL_HAS_CORRESPONDENCE, ofo_tva_record_get_has_correspondence( record ) ? _( "Yes" ):_( "No" ),
+			TVA_RECORD_COL_CRE_USER,           ofo_tva_record_get_cre_user( record ),
+			TVA_RECORD_COL_CRE_STAMP,          screstamp,
+			TVA_RECORD_COL_LABEL,              ofo_tva_record_get_label( record ),
+			TVA_RECORD_COL_CORRESPONDENCE,     corresp,
+			TVA_RECORD_COL_CORRESPONDENCE_PNG, corresp_png,
+			TVA_RECORD_COL_BEGIN,              sbegin,
+			TVA_RECORD_COL_NOTES,              notes,
+			TVA_RECORD_COL_NOTES_PNG,          notes_png,
+			TVA_RECORD_COL_UPD_USER,           ofo_tva_record_get_upd_user( record ),
+			TVA_RECORD_COL_UPD_STAMP,          supdstamp,
+			TVA_RECORD_COL_DOPE,               sdope,
+			TVA_RECORD_COL_UPD_USER,           ofo_tva_record_get_ope_user( record ),
+			TVA_RECORD_COL_UPD_STAMP,          sopestamp,
+			TVA_RECORD_COL_STATUS,             cstatus,
+			TVA_RECORD_COL_STATUS_I,           status,
+			TVA_RECORD_COL_STA_CLOSING,        closing,
+			TVA_RECORD_COL_STA_USER,           ofo_tva_record_get_sta_user( record ),
+			TVA_RECORD_COL_STA_STAMP,          sstastamp,
+			TVA_RECORD_COL_OBJECT,             record,
 			-1 );
 
-	g_free( stamp_status );
+	g_free( screstamp );
+	g_free( supdstamp );
+	g_free( sopestamp );
+	g_free( sstastamp );
 	g_free( closing );
 	g_free( sbegin );
 	g_free( send );
 	g_free( sdope );
-	g_free( stamp );
+
+	g_object_unref( corresp_png );
+	g_object_unref( notes_png );
 }
 
 static gboolean

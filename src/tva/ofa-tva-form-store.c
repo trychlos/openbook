@@ -63,8 +63,8 @@ static GType st_col_types[TVA_N_COLUMNS] = {
 		G_TYPE_OBJECT									/* the #ofoTVAForm itself */
 };
 
-static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
-static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/vat/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/vat/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVAFormStore *self );
 static void     load_dataset( ofaTVAFormStore *self );
