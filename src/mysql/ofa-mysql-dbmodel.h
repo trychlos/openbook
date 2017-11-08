@@ -33,6 +33,16 @@
  *
  * The class is instanciated once when loading the module.
  * It implements the #ofaIDBModel and the #myIIdent interfaces.
+ *
+ * Notes about data types definitions
+ * ==================================
+ * TIMESTAMP:
+ * cf. https://mariadb.com/kb/en/library/timestamp/
+ * In order to keep an auditable audit trace, the timestamp MUST NOT
+ * be auto-updated by the DBMS server, but must instead be totally
+ * controlled by Openbook software.
+ * To obtain that, a DEFAULT 0 is be specified
+ * (and because we have chosen to not accept NULL timestamps).
  */
 
 #include <glib-object.h>

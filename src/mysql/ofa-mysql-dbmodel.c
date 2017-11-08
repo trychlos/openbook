@@ -136,6 +136,8 @@ static gboolean dbmodel_v36( ofaMysqlDBModel *self, gint version );
 static gulong   count_v36( ofaMysqlDBModel *self );
 static gboolean dbmodel_v37( ofaMysqlDBModel *self, gint version );
 static gulong   count_v37( ofaMysqlDBModel *self );
+static gboolean dbmodel_v38( ofaMysqlDBModel *self, gint version );
+static gulong   count_v38( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -156,6 +158,7 @@ static sMigration st_migrates[] = {
 		{ 35, dbmodel_v35, count_v35 },
 		{ 36, dbmodel_v36, count_v36 },
 		{ 37, dbmodel_v37, count_v37 },
+		{ 38, dbmodel_v38, count_v38 },
 		{ 0 }
 };
 
@@ -1052,8 +1055,8 @@ dbmodel_v25( ofaMysqlDBModel *self, gint version )
 			"CREATE TABLE IF NOT EXISTS OFA_T_CONCIL ("
 			"	REC_ID        BIGINT PRIMARY KEY NOT NULL            COMMENT 'Reconciliation identifier',"
 			"	REC_DVAL      DATE               NOT NULL            COMMENT 'Bank value date',"
-			"	REC_USER  VARCHAR(20)                                COMMENT 'User responsible of the reconciliation',"
-			"	REC_STAMP TIMESTAMP                                  COMMENT 'Reconciliation timestamp'"
+			"	REC_USER      VARCHAR(20)                            COMMENT 'User responsible of the reconciliation',"
+			"	REC_STAMP     TIMESTAMP                              COMMENT 'Reconciliation timestamp'"
 			") CHARACTER SET utf8" )){
 		return( FALSE );
 	}
@@ -2699,4 +2702,154 @@ static gulong
 count_v37( ofaMysqlDBModel *self )
 {
 	return( 31 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v38:
+ *
+ * - Disable TIMESTAMP auto-update
+ */
+static gboolean
+dbmodel_v38( ofaMysqlDBModel *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v38";
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	/* 1 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_ACCOUNTS "
+			"	MODIFY COLUMN ACC_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	/* 3 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_BAT "
+			"	MODIFY COLUMN BAT_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Import timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	/* 5 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_CLASSES "
+			"	MODIFY COLUMN CLA_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Last update timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	/* 7 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_CONCIL "
+			"	MODIFY COLUMN REC_STAMP         TIMESTAMP DEFAULT 0 COMMENT 'Reconciliation timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	/* 9 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_CURRENCIES "
+			"	MODIFY COLUMN CUR_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Last update timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	/* 11 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_DOCS "
+			"	MODIFY COLUMN DOC_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Last update timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	/* 13 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	MODIFY COLUMN DOS_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	/* 15 */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_ENTRIES "
+			"	ADD    COLUMN ENT_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN ENT_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN ENT_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Last update timestamp'" )){
+		return( FALSE );
+	}
+
+	/* 16 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_ENTRIES SET "
+			"	ENT_CRE_USER=ENT_UPD_USER,"
+			"	ENT_CRE_STAMP=ENT_UPD_STAMP" )){
+		return( FALSE );
+	}
+
+	/* 17 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_LEDGERS "
+			"	MODIFY COLUMN LED_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	/* 19 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_OPE_TEMPLATES "
+			"	MODIFY COLUMN OTE_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	/* 21 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_PAIMEANS "
+			"	MODIFY COLUMN PAM_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	/* 23 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_RATES "
+			"	MODIFY COLUMN RAT_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	/* 25 */
+	/*
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_TIERS "
+			"	MODIFY COLUMN TRS_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+		return( FALSE );
+	}
+	*/
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v38( ofaMysqlDBModel *self )
+{
+	return( 25 );
 }
