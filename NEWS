@@ -42,6 +42,10 @@
    - VAT record: take a copy of form data at creation time.
    - VAT record treeview: have a correspondence indicator.
 
+   CORE DB Model v38
+
+   - ofoEntry: have creation user and timestamp (todo #1488).
+
  Bug fixes:
 
    - ofaTVAFormPage: unselect all when running the properties (todo #1506).

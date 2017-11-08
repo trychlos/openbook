@@ -340,6 +340,7 @@ idialog_init( myIDialog *instance )
 	setup_ui_properties( OFA_ENTRY_PROPERTIES( instance ));
 	setup_data( OFA_ENTRY_PROPERTIES( instance ));
 
+	my_utils_container_crestamp_init( instance, entry );
 	my_utils_container_updstamp_init( instance, entry );
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->editable );
 
@@ -359,6 +360,29 @@ setup_ui_properties( ofaEntryProperties *self )
 	static const gint st_ledger_cols[] = { LEDGER_COL_MNEMO, -1 };
 
 	priv = ofa_entry_properties_get_instance_private( self );
+
+	/* entry number */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-entnum-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->entnum_entry = entry;
+
+	/* operation template */
+	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-template-prompt" );
+	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-template-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-template-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	ofa_ope_template_editable_init( GTK_EDITABLE( entry ), priv->getter );
+	priv->template_entry = entry;
+	priv->template_label = label;
+	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_template_changed ), self );
+
+	/* operation number */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-openum-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->openum_entry = entry;
 
 	/* operation date */
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-prompt" );
@@ -390,6 +414,23 @@ setup_ui_properties( ofaEntryProperties *self )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_deffect_changed ), self );
 
+	/* label */
+	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-prompt" );
+	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->label_entry = entry;
+	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), self );
+
+	/* piece reference */
+	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ref-prompt" );
+	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ref-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->ref_entry = entry;
+	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
+
 	/* account */
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-account-prompt" );
 	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
@@ -418,36 +459,6 @@ setup_ui_properties( ofaEntryProperties *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->ledger_label = label;
 
-	/* label */
-	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-prompt" );
-	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	priv->label_entry = entry;
-	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), self );
-
-	/* piece reference */
-	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ref-prompt" );
-	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ref-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	priv->ref_entry = entry;
-	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
-
-	/* operation template */
-	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-template-prompt" );
-	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-template-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-template-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	ofa_ope_template_editable_init( GTK_EDITABLE( entry ), priv->getter );
-	priv->template_entry = entry;
-	priv->template_label = label;
-	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_template_changed ), self );
-
 	/* debit/credit amount and currency */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-sens-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -469,35 +480,25 @@ setup_ui_properties( ofaEntryProperties *self )
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->currency_entry = entry;
 
-	/* status */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-status-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	priv->status_label = label;
+	/* tiers identifier */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-tiers-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->tiers_entry = entry;
 
 	/* period */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-period-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->period_label = label;
 
+	/* status */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-status-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv->status_label = label;
+
 	/* rule */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-rule-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->rule_label = label;
-
-	/* entry number */
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-entnum-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	priv->entnum_entry = entry;
-
-	/* operation number */
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-openum-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	priv->openum_entry = entry;
-
-	/* tiers identifier */
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-tiers-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	priv->tiers_entry = entry;
 
 	/* conciliation number */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-concil-entry" );
@@ -568,6 +569,25 @@ setup_data( ofaEntryProperties *self )
 
 	priv = ofa_entry_properties_get_instance_private( self );
 
+	/* entry number */
+	str = ofa_counter_to_str( ofo_entry_get_number( priv->entry ), priv->getter );
+	gtk_entry_set_text( GTK_ENTRY( priv->entnum_entry ), str );
+	g_free( str );
+
+	/* template */
+	cstr = ofo_entry_get_ope_template( priv->entry );
+	if( my_strlen( cstr )){
+		gtk_entry_set_text( GTK_ENTRY( priv->template_entry ), cstr );
+	}
+
+	/* operation number */
+	counter = ofo_entry_get_ope_number( priv->entry );
+	if( counter > 0 ){
+		str = ofa_counter_to_str( counter, priv->getter );
+		gtk_entry_set_text( GTK_ENTRY( priv->openum_entry ), str );
+		g_free( str );
+	}
+
 	/* operation date */
 	cdate = ofo_entry_get_dope( priv->entry );
 	if( my_date_is_valid( cdate )){
@@ -578,18 +598,6 @@ setup_data( ofaEntryProperties *self )
 	cdate = ofo_entry_get_deffect( priv->entry );
 	if( my_date_is_valid( cdate )){
 		my_date_editable_set_date( GTK_EDITABLE( priv->deffect_entry ), cdate );
-	}
-
-	/* account */
-	cstr = ofo_entry_get_account( priv->entry );
-	if( my_strlen( cstr )){
-		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
-	}
-
-	/* ledger */
-	cstr = ofo_entry_get_ledger( priv->entry );
-	if( my_strlen( cstr )){
-		ofa_ledger_combo_set_selected( priv->ledger_combo, cstr );
 	}
 
 	/* label */
@@ -604,10 +612,16 @@ setup_data( ofaEntryProperties *self )
 		gtk_entry_set_text( GTK_ENTRY( priv->ref_entry ), cstr );
 	}
 
-	/* template */
-	cstr = ofo_entry_get_ope_template( priv->entry );
+	/* account */
+	cstr = ofo_entry_get_account( priv->entry );
 	if( my_strlen( cstr )){
-		gtk_entry_set_text( GTK_ENTRY( priv->template_entry ), cstr );
+		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
+	}
+
+	/* ledger */
+	cstr = ofo_entry_get_ledger( priv->entry );
+	if( my_strlen( cstr )){
+		ofa_ledger_combo_set_selected( priv->ledger_combo, cstr );
 	}
 
 	/* sens / amount */
@@ -620,34 +634,6 @@ setup_data( ofaEntryProperties *self )
 	}
 	my_double_editable_set_amount( GTK_EDITABLE( priv->amount_entry ), amount );
 
-	/* status */
-	status = ofo_entry_get_status( priv->entry );
-	cstr = ofo_entry_status_get_label( status );
-	gtk_label_set_text( GTK_LABEL( priv->status_label ), cstr );
-
-	/* period */
-	period = ofo_entry_get_period( priv->entry );
-	cstr = ofo_entry_period_get_label( period );
-	gtk_label_set_text( GTK_LABEL( priv->period_label ), cstr );
-
-	/* rule */
-	rule = ofo_entry_get_rule( priv->entry );
-	cstr = ofo_entry_rule_get_label( rule );
-	gtk_label_set_text( GTK_LABEL( priv->rule_label ), cstr );
-
-	/* entry number */
-	str = ofa_counter_to_str( ofo_entry_get_number( priv->entry ), priv->getter );
-	gtk_entry_set_text( GTK_ENTRY( priv->entnum_entry ), str );
-	g_free( str );
-
-	/* operation number */
-	counter = ofo_entry_get_ope_number( priv->entry );
-	if( counter > 0 ){
-		str = ofa_counter_to_str( counter, priv->getter );
-		gtk_entry_set_text( GTK_ENTRY( priv->openum_entry ), str );
-		g_free( str );
-	}
-
 	/* tiers identifier */
 	counter = ofo_entry_get_tiers( priv->entry );
 	if( counter > 0 ){
@@ -655,6 +641,21 @@ setup_data( ofaEntryProperties *self )
 		gtk_entry_set_text( GTK_ENTRY( priv->tiers_entry ), str );
 		g_free( str );
 	}
+
+	/* period */
+	period = ofo_entry_get_period( priv->entry );
+	cstr = ofo_entry_period_get_label( period );
+	gtk_label_set_text( GTK_LABEL( priv->period_label ), cstr );
+
+	/* status */
+	status = ofo_entry_get_status( priv->entry );
+	cstr = ofo_entry_status_get_label( status );
+	gtk_label_set_text( GTK_LABEL( priv->status_label ), cstr );
+
+	/* rule */
+	rule = ofo_entry_get_rule( priv->entry );
+	cstr = ofo_entry_rule_get_label( rule );
+	gtk_label_set_text( GTK_LABEL( priv->rule_label ), cstr );
 
 	/* conciliation number */
 	concil = ofa_iconcil_get_concil( OFA_ICONCIL( priv->entry ));

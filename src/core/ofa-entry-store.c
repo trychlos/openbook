@@ -63,20 +63,20 @@ typedef struct {
 /* store data types
  */
 static GType st_col_types[ENTRY_N_COLUMNS] = {
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* dope, deffect, label */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* ref, currency, ledger */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* ope_template, account, debit */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_ULONG,		/* credit, ope_number, ope_number_i */
-	G_TYPE_STRING,  G_TYPE_ULONG,						/* stlmt_number, stlmt_number_i */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* stlmt_user, stlmt_stamp, ent_number */
-	G_TYPE_ULONG,   G_TYPE_STRING,						/* ent_number_i, tiers */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,		/* upd_user, upd_stamp, concil_number */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_UINT,			/* concil_date, status, status_i */
+	G_TYPE_STRING,  G_TYPE_ULONG,   G_TYPE_STRING,		/* ent_number, ent_number_i, cre_user */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* cre_stamp, ope_template, ope_number */
+	G_TYPE_ULONG,   G_TYPE_STRING,  G_TYPE_STRING,		/* ope_number_i, dope, deffect */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* label, ref, account */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* currency, ledger, debit */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* credit, tiers, notes */
+	0,              G_TYPE_STRING,  G_TYPE_STRING,		/* notes_png, upd_user, upd_stamp */
+	G_TYPE_STRING,  G_TYPE_UINT,    G_TYPE_STRING,		/* period, period_i, status */
+	G_TYPE_UINT,    G_TYPE_STRING,  G_TYPE_UINT,		/* status_i, rule, rule_i */
+	G_TYPE_STRING,  G_TYPE_ULONG,   G_TYPE_STRING,		/* stlmt_number, stlmt_number_i, stlmt_user */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* stlmt_stamp, concil_number, concil_date */
 	G_TYPE_OBJECT,										/* the #ofoEntry itself */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_BOOLEAN, 		/* msgerr, msgwarn, dope_set */
-	G_TYPE_BOOLEAN, G_TYPE_BOOLEAN,						/* deffect_set, currency_set */
-	G_TYPE_UINT,    G_TYPE_STRING, G_TYPE_STRING, 0,	/* rule_i, rule, notes, notes_png */
-	G_TYPE_STRING,  G_TYPE_UINT							/* period, period_i */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_BOOLEAN, 	/* msgerr, msgwarn, dope_set */
+	G_TYPE_BOOLEAN, G_TYPE_BOOLEAN 						/* deffect_set, currency_set */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
@@ -312,8 +312,8 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_entry_store_set_row_by_iter";
 	ofaEntryStorePrivate *priv;
-	gchar *sdope, *sdeff, *sdeb, *scre, *sopenum, *ssetnum, *ssetstamp, *sentnum, *supdstamp, *stiers;
-	const gchar *cstr, *cref, *cur_code, *csetuser, *cupduser, *notes;
+	gchar *sdope, *sdeff, *sdeb, *scre, *sopenum, *ssetnum, *ssetstamp, *sentnum, *screstamp, *supdstamp, *stiers;
+	const gchar *cstr, *cref, *cur_code, *csetuser, *ccreuser, *cupduser, *notes;
 	ofoCurrency *cur_obj;
 	ofxAmount amount;
 	ofxCounter counter, setnum, openum, entnum;
@@ -325,6 +325,16 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	ofeEntryPeriod period;
 
 	priv = ofa_entry_store_get_instance_private( self );
+
+	entnum = ofo_entry_get_number( entry );
+	sentnum = g_strdup_printf( "%lu", entnum );
+
+	cstr = ofo_entry_get_cre_user( entry );
+	ccreuser = cstr ? cstr : "";
+	screstamp = my_stamp_to_str( ofo_entry_get_cre_stamp( entry ), MY_STAMP_DMYYHM );
+
+	openum = ofo_entry_get_ope_number( entry );
+	sopenum = openum > 0 ? g_strdup_printf( "%lu", openum ) : g_strdup( "" );
 
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_get_display_format( priv->getter ));
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_get_display_format( priv->getter ));
@@ -345,27 +355,6 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	counter = ofo_entry_get_tiers( entry );
 	stiers = counter > 0 ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
 
-	openum = ofo_entry_get_ope_number( entry );
-	sopenum = openum > 0 ? g_strdup_printf( "%lu", openum ) : g_strdup( "" );
-
-	setnum = ofo_entry_get_settlement_number( entry );
-	ssetnum = setnum > 0 ? g_strdup_printf( "%lu", setnum ) : g_strdup( "" );
-
-	cstr = ofo_entry_get_settlement_user( entry );
-	csetuser = cstr ? cstr : "";
-	ssetstamp = my_stamp_to_str( ofo_entry_get_settlement_stamp( entry ), MY_STAMP_DMYYHM );
-
-	entnum = ofo_entry_get_number( entry );
-	sentnum = g_strdup_printf( "%lu", entnum );
-
-	cstr = ofo_entry_get_upd_user( entry );
-	cupduser = cstr ? cstr : "";
-	supdstamp = my_stamp_to_str( ofo_entry_get_upd_stamp( entry ), MY_STAMP_DMYYHM );
-
-	status = ofo_entry_get_status( entry );
-	rule = ofo_entry_get_rule( entry );
-	period = ofo_entry_get_period( entry );
-
 	error = NULL;
 	notes = ofo_entry_get_notes( entry );
 	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
@@ -374,46 +363,63 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 		g_error_free( error );
 	}
 
+	period = ofo_entry_get_period( entry );
+	status = ofo_entry_get_status( entry );
+	rule = ofo_entry_get_rule( entry );
+
+	setnum = ofo_entry_get_settlement_number( entry );
+	ssetnum = setnum > 0 ? g_strdup_printf( "%lu", setnum ) : g_strdup( "" );
+
+	cstr = ofo_entry_get_settlement_user( entry );
+	csetuser = cstr ? cstr : "";
+	ssetstamp = my_stamp_to_str( ofo_entry_get_settlement_stamp( entry ), MY_STAMP_DMYYHM );
+
+	cstr = ofo_entry_get_upd_user( entry );
+	cupduser = cstr ? cstr : "";
+	supdstamp = my_stamp_to_str( ofo_entry_get_upd_stamp( entry ), MY_STAMP_DMYYHM );
+
 	gtk_list_store_set(
 				GTK_LIST_STORE( self ),
 				iter,
+				ENTRY_COL_ENT_NUMBER,     sentnum,
+				ENTRY_COL_ENT_NUMBER_I,   entnum,
+				ENTRY_COL_CRE_USER,       ccreuser,
+				ENTRY_COL_CRE_STAMP,      screstamp,
+				ENTRY_COL_OPE_TEMPLATE,   ofo_entry_get_ope_template( entry ),
+				ENTRY_COL_OPE_NUMBER,     sopenum,
+				ENTRY_COL_OPE_NUMBER_I,   openum,
 				ENTRY_COL_DOPE,           sdope,
 				ENTRY_COL_DEFFECT,        sdeff,
 				ENTRY_COL_LABEL,          ofo_entry_get_label( entry ),
 				ENTRY_COL_REF,            cref,
+				ENTRY_COL_ACCOUNT,        ofo_entry_get_account( entry ),
 				ENTRY_COL_CURRENCY,       cur_code,
 				ENTRY_COL_LEDGER,         ofo_entry_get_ledger( entry ),
-				ENTRY_COL_OPE_TEMPLATE,   ofo_entry_get_ope_template( entry ),
-				ENTRY_COL_ACCOUNT,        ofo_entry_get_account( entry ),
 				ENTRY_COL_DEBIT,          sdeb,
 				ENTRY_COL_CREDIT,         scre,
-				ENTRY_COL_OPE_NUMBER,     sopenum,
-				ENTRY_COL_OPE_NUMBER_I,   openum,
+				ENTRY_COL_TIERS,          stiers,
+				ENTRY_COL_NOTES,          notes,
+				ENTRY_COL_NOTES_PNG,      notes_png,
+				ENTRY_COL_UPD_USER,       cupduser,
+				ENTRY_COL_UPD_STAMP,      supdstamp,
+				ENTRY_COL_IPERIOD,        ofo_entry_period_get_abr( period ),
+				ENTRY_COL_IPERIOD_I,      period,
+				ENTRY_COL_STATUS,         ofo_entry_status_get_abr( status ),
+				ENTRY_COL_STATUS_I,       status,
+				ENTRY_COL_RULE,           ofo_entry_rule_get_abr( rule ),
+				ENTRY_COL_RULE_I,         rule,
 				ENTRY_COL_STLMT_NUMBER,   ssetnum,
 				ENTRY_COL_STLMT_NUMBER_I, setnum,
 				ENTRY_COL_STLMT_USER,     csetuser,
 				ENTRY_COL_STLMT_STAMP,    ssetstamp,
-				ENTRY_COL_ENT_NUMBER,     sentnum,
-				ENTRY_COL_ENT_NUMBER_I,   entnum,
-				ENTRY_COL_TIERS,          stiers,
-				ENTRY_COL_UPD_USER,       cupduser,
-				ENTRY_COL_UPD_STAMP,      supdstamp,
 				ENTRY_COL_CONCIL_NUMBER,  "",
 				ENTRY_COL_CONCIL_DATE,    "",
-				ENTRY_COL_STATUS,         ofo_entry_status_get_abr( status ),
-				ENTRY_COL_STATUS_I,       status,
 				ENTRY_COL_OBJECT,         entry,
 				ENTRY_COL_MSGERR,         "",
 				ENTRY_COL_MSGWARN,        "",
 				ENTRY_COL_DOPE_SET,       FALSE,
 				ENTRY_COL_DEFFECT_SET,    FALSE,
 				ENTRY_COL_CURRENCY_SET,   FALSE,
-				ENTRY_COL_RULE_I,         rule,
-				ENTRY_COL_RULE,           ofo_entry_rule_get_abr( rule ),
-				ENTRY_COL_NOTES,          notes,
-				ENTRY_COL_NOTES_PNG,      notes_png,
-				ENTRY_COL_IPERIOD,        ofo_entry_period_get_abr( period ),
-				ENTRY_COL_IPERIOD_I,      period,
 				-1 );
 
 	g_free( stiers );

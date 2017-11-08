@@ -165,16 +165,23 @@ gboolean        ofo_entry_use_account                ( ofaIGetter *getter, const
 gboolean        ofo_entry_use_ledger                 ( ofaIGetter *getter, const gchar *ledger );
 
 ofxCounter      ofo_entry_get_number                 ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_label                  ( const ofoEntry *entry );
-const GDate    *ofo_entry_get_deffect                ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_cre_user               ( const ofoEntry *entry );
+const GTimeVal *ofo_entry_get_cre_stamp              ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_ope_template           ( const ofoEntry *entry );
+ofxCounter      ofo_entry_get_ope_number             ( const ofoEntry *entry );
 const GDate    *ofo_entry_get_dope                   ( const ofoEntry *entry );
+const GDate    *ofo_entry_get_deffect                ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_label                  ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_ref                    ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_account                ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_currency               ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_ledger                 ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_ope_template           ( const ofoEntry *entry );
 ofxAmount       ofo_entry_get_debit                  ( const ofoEntry *entry );
 ofxAmount       ofo_entry_get_credit                 ( const ofoEntry *entry );
+ofxCounter      ofo_entry_get_tiers                  ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_notes                  ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_upd_user               ( const ofoEntry *entry );
+const GTimeVal *ofo_entry_get_upd_stamp              ( const ofoEntry *entry );
 
 ofeEntryPeriod  ofo_entry_get_period                 ( const ofoEntry *entry );
 const gchar    *ofo_entry_period_get_dbms            ( ofeEntryPeriod period );
@@ -192,14 +199,9 @@ const gchar    *ofo_entry_rule_get_abr               ( ofeEntryRule rule );
 const gchar    *ofo_entry_rule_get_label             ( ofeEntryRule rule );
 const gchar    *ofo_entry_get_rule_label             ( const ofoEntry *entry );
 
-ofxCounter      ofo_entry_get_ope_number             ( const ofoEntry *entry );
 ofxCounter      ofo_entry_get_settlement_number      ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_settlement_user        ( const ofoEntry *entry );
 const GTimeVal *ofo_entry_get_settlement_stamp       ( const ofoEntry *entry );
-ofxCounter      ofo_entry_get_tiers                  ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_notes                  ( const ofoEntry *entry );
-const gchar    *ofo_entry_get_upd_user               ( const ofoEntry *entry );
-const GTimeVal *ofo_entry_get_upd_stamp              ( const ofoEntry *entry );
 
 gint            ofo_entry_get_exe_changed_count      ( ofaIGetter *getter,
 															const GDate *prev_begin, const GDate *prev_end,
@@ -210,21 +212,21 @@ GSList         *ofo_entry_get_currencies             ( ofaIGetter *getter );
 
 gboolean        ofo_entry_is_editable                ( const ofoEntry *entry );
 
-void            ofo_entry_set_label                  ( ofoEntry *entry, const gchar *label );
-void            ofo_entry_set_deffect                ( ofoEntry *entry, const GDate *date );
+void            ofo_entry_set_ope_template           ( ofoEntry *entry, const gchar *model );
+void            ofo_entry_set_ope_number             ( ofoEntry *entry, ofxCounter counter );
 void            ofo_entry_set_dope                   ( ofoEntry *entry, const GDate *date );
+void            ofo_entry_set_deffect                ( ofoEntry *entry, const GDate *date );
+void            ofo_entry_set_label                  ( ofoEntry *entry, const gchar *label );
 void            ofo_entry_set_ref                    ( ofoEntry *entry, const gchar *ref );
 void            ofo_entry_set_account                ( ofoEntry *entry, const gchar *number );
 void            ofo_entry_set_currency               ( ofoEntry *entry, const gchar *currency );
 void            ofo_entry_set_ledger                 ( ofoEntry *entry, const gchar *journal );
-void            ofo_entry_set_ope_template           ( ofoEntry *entry, const gchar *model );
 void            ofo_entry_set_debit                  ( ofoEntry *entry, ofxAmount amount );
 void            ofo_entry_set_credit                 ( ofoEntry *entry, ofxAmount amount );
-void            ofo_entry_set_ope_number             ( ofoEntry *entry, ofxCounter counter );
-void            ofo_entry_set_settlement_number      ( ofoEntry *entry, ofxCounter counter );
-void            ofo_entry_set_rule                   ( ofoEntry *entry, ofeEntryRule rule );
 void            ofo_entry_set_tiers                  ( ofoEntry *entry, ofxCounter tiers );
 void            ofo_entry_set_notes                  ( ofoEntry *entry, const gchar *notes );
+void            ofo_entry_set_rule                   ( ofoEntry *entry, ofeEntryRule rule );
+void            ofo_entry_set_settlement_number      ( ofoEntry *entry, ofxCounter counter );
 
 gboolean        ofo_entry_is_valid_data              ( ofaIGetter *getter,
 															const GDate *deffect, const GDate *dope,

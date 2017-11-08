@@ -331,31 +331,33 @@ setup_columns( ofaEntryTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_ENT_NUMBER,    _( "Ent.num" ),     _( "Entry number" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_CRE_USER,      _( "Cre.user" ),    _( "Creation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ENTRY_COL_CRE_STAMP,     _( "Cre.stamp" ),   _( "Creation timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_OPE_TEMPLATE,  _( "Template" ),    _( "Operation template" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_OPE_NUMBER,    _( "Ope." ),        _( "Operation number" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), ENTRY_COL_DOPE,          _( "Ope." ),        _( "Operation date" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), ENTRY_COL_DEFFECT,       _( "Effect" ),      _( "Effect date" ));
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), ENTRY_COL_LABEL,         _( "Label" ),           NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_REF,           _( "Ref." ),        _( "Piece reference" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_ACCOUNT,       _( "Account" ),         NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_CURRENCY,      _( "Currency" ),        NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_LEDGER,        _( "Ledger" ),          NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_OPE_TEMPLATE,  _( "Template" ),    _( "Operation template" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_ACCOUNT,       _( "Account" ),         NULL );
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ENTRY_COL_DEBIT,         _( "Debit" ),           NULL );
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ENTRY_COL_CREDIT,        _( "Credit" ),          NULL );
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_TIERS,         _( "Tiers" ),           NULL );
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_OPE_NUMBER,    _( "Ope." ),        _( "Operation number" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_NOTES,         _( "Notes" ),           NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), ENTRY_COL_NOTES_PNG,        "",              _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_UPD_USER,      _( "Upd.user" ),    _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ENTRY_COL_UPD_STAMP,     _( "Upd.stamp" ),   _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ENTRY_COL_IPERIOD,       _( "Period" ),      _( "Period indicator" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ENTRY_COL_STATUS,        _( "Status" ),      _( "Status" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ENTRY_COL_RULE,          _( "Rule" ),            NULL );
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_STLMT_NUMBER,  _( "Stlmt.num" ),   _( "Settlement number" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_STLMT_USER,    _( "Stlmt.user" ),  _( "Settlement user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ENTRY_COL_STLMT_STAMP,   _( "Stlmt.stamp" ), _( "Settlement timestamp" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_ENT_NUMBER,    _( "Ent.num" ),     _( "Entry number" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_UPD_USER,      _( "Ent.user" ),    _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ENTRY_COL_UPD_STAMP,     _( "Ent.stamp" ),   _( "Last update timestamp" ));
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_CONCIL_NUMBER, _( "Concil.num" ),  _( "Conciliation number" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), ENTRY_COL_CONCIL_DATE,   _( "Concil.date" ), _( "Conciliation date" ));
-	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ENTRY_COL_STATUS,        _( "Status" ),      _( "Status" ));
-	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ENTRY_COL_RULE,          _( "Rule" ),            NULL );
-	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ENTRY_COL_IPERIOD,       _( "Period" ),      _( "Period indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_NOTES,         _( "Notes" ),           NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), ENTRY_COL_NOTES_PNG,        "",              _( "Notes indicator" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ENTRY_COL_LABEL );
 
@@ -719,71 +721,92 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	gint cmp;
 	gchar *dopea, *deffa, *labela, *refa, *cura, *ledgera, *templatea, *accounta, *debita, *credita, *openuma,
 			*stlmtnuma, *stlmtusera, *stlmtstampa, *entnuma, *updusera, *updstampa, *concilnuma, *concildatea,
-			*statusa, *rulea, *notesa, *perioda;
+			*statusa, *rulea, *notesa, *perioda, *creusera, *crestampa, *tiersa;
 	gchar *dopeb, *deffb, *labelb, *refb, *curb, *ledgerb, *templateb, *accountb, *debitb, *creditb, *openumb,
 			*stlmtnumb, *stlmtuserb, *stlmtstampb, *entnumb, *upduserb, *updstampb, *concilnumb, *concildateb,
-			*statusb, *ruleb, *notesb, *periodb;
+			*statusb, *ruleb, *notesb, *periodb, *creuserb, *crestampb, *tiersb;
 	GdkPixbuf *pnga, *pngb;
 
 	priv = ofa_entry_treeview_get_instance_private( OFA_ENTRY_TREEVIEW( tvbin ));
 
 	gtk_tree_model_get( tmodel, a,
+			ENTRY_COL_ENT_NUMBER,    &entnuma,
+			ENTRY_COL_CRE_USER,      &creusera,
+			ENTRY_COL_CRE_STAMP,     &crestampa,
+			ENTRY_COL_OPE_TEMPLATE,  &templatea,
+			ENTRY_COL_OPE_NUMBER,    &openuma,
 			ENTRY_COL_DOPE,          &dopea,
 			ENTRY_COL_DEFFECT,       &deffa,
 			ENTRY_COL_LABEL,         &labela,
 			ENTRY_COL_REF,           &refa,
+			ENTRY_COL_ACCOUNT,       &accounta,
 			ENTRY_COL_CURRENCY,      &cura,
 			ENTRY_COL_LEDGER,        &ledgera,
-			ENTRY_COL_OPE_TEMPLATE,  &templatea,
-			ENTRY_COL_ACCOUNT,       &accounta,
 			ENTRY_COL_DEBIT,         &debita,
 			ENTRY_COL_CREDIT,        &credita,
-			ENTRY_COL_OPE_NUMBER,    &openuma,
+			ENTRY_COL_TIERS,         &tiersa,
+			ENTRY_COL_NOTES,         &notesa,
+			ENTRY_COL_NOTES_PNG,     &pnga,
+			ENTRY_COL_UPD_USER,      &updusera,
+			ENTRY_COL_UPD_STAMP,     &updstampa,
+			ENTRY_COL_IPERIOD,       &perioda,
+			ENTRY_COL_STATUS,        &statusa,
+			ENTRY_COL_RULE,          &rulea,
 			ENTRY_COL_STLMT_NUMBER,  &stlmtnuma,
 			ENTRY_COL_STLMT_USER,    &stlmtusera,
 			ENTRY_COL_STLMT_STAMP,   &stlmtstampa,
-			ENTRY_COL_ENT_NUMBER,    &entnuma,
-			ENTRY_COL_UPD_USER,      &updusera,
-			ENTRY_COL_UPD_STAMP,     &updstampa,
 			ENTRY_COL_CONCIL_NUMBER, &concilnuma,
 			ENTRY_COL_CONCIL_DATE,   &concildatea,
-			ENTRY_COL_STATUS,        &statusa,
-			ENTRY_COL_RULE,          &rulea,
-			ENTRY_COL_NOTES,         &notesa,
-			ENTRY_COL_NOTES_PNG,     &pnga,
-			ENTRY_COL_IPERIOD,       &perioda,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
+			ENTRY_COL_ENT_NUMBER,    &entnumb,
+			ENTRY_COL_CRE_USER,      &creuserb,
+			ENTRY_COL_CRE_STAMP,     &crestampb,
+			ENTRY_COL_OPE_TEMPLATE,  &templateb,
+			ENTRY_COL_OPE_NUMBER,    &openumb,
 			ENTRY_COL_DOPE,          &dopeb,
 			ENTRY_COL_DEFFECT,       &deffb,
 			ENTRY_COL_LABEL,         &labelb,
 			ENTRY_COL_REF,           &refb,
+			ENTRY_COL_ACCOUNT,       &accountb,
 			ENTRY_COL_CURRENCY,      &curb,
 			ENTRY_COL_LEDGER,        &ledgerb,
-			ENTRY_COL_OPE_TEMPLATE,  &templateb,
-			ENTRY_COL_ACCOUNT,       &accountb,
 			ENTRY_COL_DEBIT,         &debitb,
 			ENTRY_COL_CREDIT,        &creditb,
-			ENTRY_COL_OPE_NUMBER,    &openumb,
+			ENTRY_COL_TIERS,         &tiersb,
+			ENTRY_COL_NOTES,         &notesb,
+			ENTRY_COL_NOTES_PNG,     &pngb,
+			ENTRY_COL_UPD_USER,      &upduserb,
+			ENTRY_COL_UPD_STAMP,     &updstampb,
+			ENTRY_COL_IPERIOD,       &periodb,
+			ENTRY_COL_STATUS,        &statusb,
+			ENTRY_COL_RULE,          &ruleb,
 			ENTRY_COL_STLMT_NUMBER,  &stlmtnumb,
 			ENTRY_COL_STLMT_USER,    &stlmtuserb,
 			ENTRY_COL_STLMT_STAMP,   &stlmtstampb,
-			ENTRY_COL_ENT_NUMBER,    &entnumb,
-			ENTRY_COL_UPD_USER,      &upduserb,
-			ENTRY_COL_UPD_STAMP,     &updstampb,
 			ENTRY_COL_CONCIL_NUMBER, &concilnumb,
 			ENTRY_COL_CONCIL_DATE,   &concildateb,
-			ENTRY_COL_STATUS,        &statusb,
-			ENTRY_COL_RULE,          &ruleb,
-			ENTRY_COL_NOTES,         &notesb,
-			ENTRY_COL_NOTES_PNG,     &pngb,
-			ENTRY_COL_IPERIOD,       &periodb,
 			-1 );
 
 	cmp = 0;
 
 	switch( column_id ){
+		case ENTRY_COL_ENT_NUMBER:
+			cmp = ofa_itvsortable_sort_str_int( entnuma, entnumb );
+			break;
+		case ENTRY_COL_CRE_USER:
+			cmp = my_collate( creusera, creuserb );
+			break;
+		case ENTRY_COL_CRE_STAMP:
+			cmp = my_collate( crestampa, crestampb );
+			break;
+		case ENTRY_COL_OPE_TEMPLATE:
+			cmp = my_collate( templatea, templateb );
+			break;
+		case ENTRY_COL_OPE_NUMBER:
+			cmp = ofa_itvsortable_sort_str_int( openuma, openumb );
+			break;
 		case ENTRY_COL_DOPE:
 			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
@@ -796,17 +819,14 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 		case ENTRY_COL_REF:
 			cmp = my_collate( refa, refb );
 			break;
+		case ENTRY_COL_ACCOUNT:
+			cmp = my_collate( accounta, accountb );
+			break;
 		case ENTRY_COL_CURRENCY:
 			cmp = my_collate( cura, curb );
 			break;
 		case ENTRY_COL_LEDGER:
 			cmp = my_collate( ledgera, ledgerb );
-			break;
-		case ENTRY_COL_OPE_TEMPLATE:
-			cmp = my_collate( templatea, templateb );
-			break;
-		case ENTRY_COL_ACCOUNT:
-			cmp = my_collate( accounta, accountb );
 			break;
 		case ENTRY_COL_DEBIT:
 			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), debita, debitb );
@@ -814,8 +834,29 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 		case ENTRY_COL_CREDIT:
 			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), credita, creditb );
 			break;
-		case ENTRY_COL_OPE_NUMBER:
-			cmp = ofa_itvsortable_sort_str_int( openuma, openumb );
+		case ENTRY_COL_TIERS:
+			cmp = my_collate( tiersa, tiersb );
+			break;
+		case ENTRY_COL_NOTES:
+			cmp = my_collate( notesa, notesb );
+			break;
+		case ENTRY_COL_NOTES_PNG:
+			cmp = ofa_itvsortable_sort_png( pnga, pngb );
+			break;
+		case ENTRY_COL_UPD_USER:
+			cmp = my_collate( updusera, upduserb );
+			break;
+		case ENTRY_COL_UPD_STAMP:
+			cmp = my_collate( updstampa, updstampb );
+			break;
+		case ENTRY_COL_IPERIOD:
+			cmp = my_collate( perioda, periodb );
+			break;
+		case ENTRY_COL_STATUS:
+			cmp = ofa_itvsortable_sort_str_int( statusa, statusb );
+			break;
+		case ENTRY_COL_RULE:
+			cmp = my_collate( rulea, ruleb );
 			break;
 		case ENTRY_COL_STLMT_NUMBER:
 			cmp = ofa_itvsortable_sort_str_int( stlmtnuma, stlmtnumb );
@@ -826,89 +867,71 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 		case ENTRY_COL_STLMT_STAMP:
 			cmp = my_collate( stlmtstampa, stlmtstampb );
 			break;
-		case ENTRY_COL_ENT_NUMBER:
-			cmp = ofa_itvsortable_sort_str_int( entnuma, entnumb );
-			break;
-		case ENTRY_COL_UPD_USER:
-			cmp = my_collate( updusera, upduserb );
-			break;
-		case ENTRY_COL_UPD_STAMP:
-			cmp = my_collate( updstampa, updstampb );
-			break;
 		case ENTRY_COL_CONCIL_NUMBER:
 			cmp = ofa_itvsortable_sort_str_int( concilnuma, concilnumb );
 			break;
 		case ENTRY_COL_CONCIL_DATE:
 			cmp = my_date_compare_by_str( concildatea, concildateb, ofa_prefs_date_get_display_format( priv->getter ));
 			break;
-		case ENTRY_COL_STATUS:
-			cmp = ofa_itvsortable_sort_str_int( statusa, statusb );
-			break;
-		case ENTRY_COL_RULE:
-			cmp = my_collate( rulea, ruleb );
-			break;
-		case ENTRY_COL_NOTES:
-			cmp = my_collate( notesa, notesb );
-			break;
-		case ENTRY_COL_NOTES_PNG:
-			cmp = ofa_itvsortable_sort_png( pnga, pngb );
-			break;
-		case ENTRY_COL_IPERIOD:
-			cmp = my_collate( perioda, periodb );
-			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, column_id );
 			break;
 	}
 
+	g_free( entnuma );
+	g_free( creusera );
+	g_free( crestampa );
+	g_free( templatea );
+	g_free( openuma );
 	g_free( dopea );
 	g_free( deffa );
 	g_free( labela );
 	g_free( refa );
 	g_free( cura );
 	g_free( ledgera );
-	g_free( templatea );
 	g_free( accounta );
 	g_free( debita );
 	g_free( credita );
-	g_free( openuma );
+	g_free( tiersa );
+	g_free( notesa );
+	g_free( updusera );
+	g_free( updstampa );
+	g_free( perioda );
+	g_free( statusa );
+	g_free( rulea );
 	g_free( stlmtnuma );
 	g_free( stlmtusera );
 	g_free( stlmtstampa );
-	g_free( entnuma );
-	g_free( updusera );
-	g_free( updstampa );
 	g_free( concilnuma );
 	g_free( concildatea );
-	g_free( statusa );
-	g_free( rulea );
-	g_free( notesa );
-	g_free( perioda );
 	g_clear_object( &pnga );
 
+	g_free( entnumb );
+	g_free( creuserb );
+	g_free( crestampb );
+	g_free( templateb );
+	g_free( openumb );
 	g_free( dopeb );
 	g_free( deffb );
 	g_free( labelb );
 	g_free( refb );
 	g_free( curb );
 	g_free( ledgerb );
-	g_free( templateb );
 	g_free( accountb );
 	g_free( debitb );
 	g_free( creditb );
-	g_free( openumb );
+	g_free( tiersb );
+	g_free( notesb );
+	g_free( upduserb );
+	g_free( updstampb );
+	g_free( periodb );
+	g_free( statusb );
+	g_free( ruleb );
 	g_free( stlmtnumb );
 	g_free( stlmtuserb );
 	g_free( stlmtstampb );
-	g_free( entnumb );
-	g_free( upduserb );
-	g_free( updstampb );
 	g_free( concilnumb );
 	g_free( concildateb );
-	g_free( statusb );
-	g_free( ruleb );
-	g_free( notesb );
-	g_free( periodb );
 	g_clear_object( &pngb );
 
 	return( cmp );
