@@ -429,6 +429,7 @@ idialog_init( myIDialog *instance )
 	}
 
 	my_utils_container_notes_init( GTK_CONTAINER( instance ), account );
+	my_utils_container_crestamp_init( GTK_CONTAINER( instance ), account );
 	my_utils_container_updstamp_init( GTK_CONTAINER( instance ), account );
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
 

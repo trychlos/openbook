@@ -69,17 +69,16 @@ typedef struct {
  * GDK_PIXBUF is not a constant, and has thus to be set at runtime
  */
 static GType st_col_types[ACCOUNT_N_COLUMNS] = {
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* number, label, currency */
-	G_TYPE_BOOLEAN, G_TYPE_STRING, 0,				/* root, notes, notes_png */
-	G_TYPE_STRING,									/* upd_user */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* upd_stamp, val_debit, val_credit */
-	G_TYPE_STRING,  G_TYPE_STRING,					/* rough_debit, rough_credit */
-	G_TYPE_STRING,  G_TYPE_STRING,					/* fut_debit, fut_credit */
-	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,	/* settleable, keep_unsettled, reconciliable */
-	G_TYPE_STRING,  G_TYPE_STRING,					/* keep_unreconciliated, forwardable */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING, 	/* closed, exe_debit, exe_credit */
-	G_TYPE_STRING,  								/* exe_solde */
-	G_TYPE_OBJECT									/* the #ofoAccount itself */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* number, cre_user, cre_stamp */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_BOOLEAN,		/* label, currency, root */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* settleable, keep_unsettled, reconciliable */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* keep_unreconciliated, forwardable, closed */
+	G_TYPE_STRING,  0,              G_TYPE_STRING,		/* notes, notes_png, upd_user */
+	G_TYPE_STRING,										/* upd_stamp */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* val_debit, val_credit, rough_debit */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* rough_credit, fut_debit, fut_credit */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING, 		/* exe_debit, exe_credit, exe_solde */
+	G_TYPE_OBJECT										/* the #ofoAccount itself */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
@@ -319,7 +318,7 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 	ofaAccountStorePrivate *priv;
 	const gchar *currency_code, *notes;
 	ofoCurrency *currency_obj;
-	gchar *stamp;
+	gchar *crestamp, *updstamp;
 	gchar *svdeb, *svcre, *srdeb, *srcre, *sfdeb, *sfcre, *sedeb, *secre, *sesol;
 	gchar *str;
 	ofxAmount val_debit, val_credit, rough_debit, rough_credit, fut_debit, fut_credit, exe_solde;
@@ -372,7 +371,8 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 		sesol = g_strdup( "" );
 	}
 
-	stamp = my_stamp_to_str( ofo_account_get_upd_stamp( account ), MY_STAMP_DMYYHM );
+	crestamp = my_stamp_to_str( ofo_account_get_cre_stamp( account ), MY_STAMP_DMYYHM );
+	updstamp = my_stamp_to_str( ofo_account_get_upd_stamp( account ), MY_STAMP_DMYYHM );
 	notes = ofo_account_get_notes( account );
 	error = NULL;
 	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
@@ -384,25 +384,27 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 	gtk_tree_store_set(
 			GTK_TREE_STORE( self ),
 			iter,
+			ACCOUNT_COL_CRE_USER,             ofo_account_get_cre_user( account ),
+			ACCOUNT_COL_CRE_STAMP,            crestamp,
 			ACCOUNT_COL_LABEL,                ofo_account_get_label( account ),
 			ACCOUNT_COL_CURRENCY,             currency_code,
 			ACCOUNT_COL_ROOT,                 ofo_account_is_root( account ),
-			ACCOUNT_COL_NOTES,                notes,
-			ACCOUNT_COL_NOTES_PNG,            notes_png,
-			ACCOUNT_COL_UPD_USER,             ofo_account_get_upd_user( account ),
-			ACCOUNT_COL_UPD_STAMP,            stamp,
-			ACCOUNT_COL_VAL_DEBIT,            svdeb,
-			ACCOUNT_COL_VAL_CREDIT,           svcre,
-			ACCOUNT_COL_ROUGH_DEBIT,          srdeb,
-			ACCOUNT_COL_ROUGH_CREDIT,         srcre,
-			ACCOUNT_COL_FUT_DEBIT,            sfdeb,
-			ACCOUNT_COL_FUT_CREDIT,           sfcre,
 			ACCOUNT_COL_SETTLEABLE,           ofo_account_is_settleable( account ) ? ACCOUNT_SETTLEABLE_STR : "",
 			ACCOUNT_COL_KEEP_UNSETTLED,       ofo_account_get_keep_unsettled( account ) ? ACCOUNT_KEEP_UNSETTLED_STR : "",
 			ACCOUNT_COL_RECONCILIABLE,        ofo_account_is_reconciliable( account ) ? ACCOUNT_RECONCILIABLE_STR : "",
 			ACCOUNT_COL_KEEP_UNRECONCILIATED, ofo_account_get_keep_unreconciliated( account ) ? ACCOUNT_KEEP_UNRECONCILIATED_STR : "",
 			ACCOUNT_COL_FORWARDABLE,          ofo_account_is_forwardable( account ) ? ACCOUNT_FORWARDABLE_STR : "",
 			ACCOUNT_COL_CLOSED,               ofo_account_is_closed( account ) ? ACCOUNT_CLOSED_STR : "",
+			ACCOUNT_COL_NOTES,                notes,
+			ACCOUNT_COL_NOTES_PNG,            notes_png,
+			ACCOUNT_COL_UPD_USER,             ofo_account_get_upd_user( account ),
+			ACCOUNT_COL_UPD_STAMP,            updstamp,
+			ACCOUNT_COL_VAL_DEBIT,            svdeb,
+			ACCOUNT_COL_VAL_CREDIT,           svcre,
+			ACCOUNT_COL_ROUGH_DEBIT,          srdeb,
+			ACCOUNT_COL_ROUGH_CREDIT,         srcre,
+			ACCOUNT_COL_FUT_DEBIT,            sfdeb,
+			ACCOUNT_COL_FUT_CREDIT,           sfcre,
 			ACCOUNT_COL_EXE_DEBIT,            sedeb,
 			ACCOUNT_COL_EXE_CREDIT,           secre,
 			ACCOUNT_COL_EXE_SOLDE,            sesol,
@@ -418,7 +420,8 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 	g_free( sedeb );
 	g_free( secre );
 	g_free( sesol );
-	g_free( stamp );
+	g_free( updstamp );
+	g_free( crestamp );
 
 	ofa_istore_set_values( OFA_ISTORE( self ), iter, ( void * ) account );
 }

@@ -80,9 +80,17 @@ typedef struct {
  *                                                                             Type      in chart
  *                                                                             -------  -----------
  * @ACCOUNT_COL_NUMBER              : identifier                               String      Yes
+ * @ACCOUNT_COL_CRE_USER            : creation user                            String      Yes
+ * @ACCOUNT_COL_CRE_STAMP           : creation timestamp                       String      Yes
  * @ACCOUNT_COL_LABEL               : label                                    String      Yes
  * @ACCOUNT_COL_CURRENCY            : currency identifier                      String      Yes
  * @ACCOUNT_COL_ROOT                : whether is root                          Bool         No
+ * @ACCOUNT_COL_SETTLEABLE          : whether is settleable                    String      Yes
+ * @ACCOUNT_COL_KEEP_UNSETTLED      : whether to keep unsettled entries        String      Yes
+ * @ACCOUNT_COL_RECONCILIABLE       : whether is reconciliable                 String      Yes
+ * @ACCOUNT_COL_KEEP_UNRECONCILIATED: whether to keep unreconciliated entries  String      Yes
+ * @ACCOUNT_COL_FORWARDABLE         : whether is forwardable                   String      Yes
+ * @ACCOUNT_COL_CLOSED              : whether is closed                        String      Yes
  * @ACCOUNT_COL_NOTES               : notes                                    String      Yes
  * @ACCOUNT_COL_NOTES_PNG           : notes indicator                          Pixbuf      Yes
  * @ACCOUNT_COL_UPD_USER            : last update user                         String      Yes
@@ -93,24 +101,26 @@ typedef struct {
  * @ACCOUNT_COL_ROUGH_CREDIT        : rough credit                             String      Yes
  * @ACCOUNT_COL_FUT_DEBIT           : future debit                             String      Yes
  * @ACCOUNT_COL_FUT_CREDIT          : future credit                            String      Yes
- * @ACCOUNT_COL_SETTLEABLE          : whether is settleable                    String      Yes
- * @ACCOUNT_COL_RECONCILIABLE       : whether is reconciliable                 String      Yes
- * @ACCOUNT_COL_FORWARDABLE         : whether is forwardable                   String      Yes
- * @ACCOUNT_COL_CLOSED              : whether is closed                        String      Yes
  * @ACCOUNT_COL_EXE_DEBIT           : current (validated+rough) debit          String      Yes
  * @ACCOUNT_COL_EXE_CREDIT          : current (validated+rough) credit         String      Yes
  * @ACCOUNT_COL_EXE_SOLDE           : current solde                            String      Yes
- * @ACCOUNT_COL_KEEP_UNSETTLED      : whether to keep unsettled entries        String      Yes
- * @ACCOUNT_COL_KEEP_UNRECONCILIATED: whether to keep unreconciliated entries  String      Yes
  * @ACCOUNT_COL_OBJECT              : #ofoAccount object                       GObject      No
  *
  * NB: accounts chart is not sortable (is always sorted by account number in the store).
  */
 enum {
 	ACCOUNT_COL_NUMBER = 0,
+	ACCOUNT_COL_CRE_USER,
+	ACCOUNT_COL_CRE_STAMP,
 	ACCOUNT_COL_LABEL,
 	ACCOUNT_COL_CURRENCY,
 	ACCOUNT_COL_ROOT,
+	ACCOUNT_COL_SETTLEABLE,
+	ACCOUNT_COL_KEEP_UNSETTLED,
+	ACCOUNT_COL_RECONCILIABLE,
+	ACCOUNT_COL_KEEP_UNRECONCILIATED,
+	ACCOUNT_COL_FORWARDABLE,
+	ACCOUNT_COL_CLOSED,
 	ACCOUNT_COL_NOTES,
 	ACCOUNT_COL_NOTES_PNG,
 	ACCOUNT_COL_UPD_USER,
@@ -121,15 +131,9 @@ enum {
 	ACCOUNT_COL_ROUGH_CREDIT,
 	ACCOUNT_COL_FUT_DEBIT,
 	ACCOUNT_COL_FUT_CREDIT,
-	ACCOUNT_COL_SETTLEABLE,
-	ACCOUNT_COL_RECONCILIABLE,
-	ACCOUNT_COL_FORWARDABLE,
-	ACCOUNT_COL_CLOSED,
 	ACCOUNT_COL_EXE_DEBIT,
 	ACCOUNT_COL_EXE_CREDIT,
 	ACCOUNT_COL_EXE_SOLDE,
-	ACCOUNT_COL_KEEP_UNSETTLED,
-	ACCOUNT_COL_KEEP_UNRECONCILIATED,
 	ACCOUNT_COL_OBJECT,
 	ACCOUNT_N_COLUMNS
 };
