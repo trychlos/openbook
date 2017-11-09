@@ -2249,7 +2249,6 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	g_string_append_printf( query,
 			"	(TFO_MNEMO,TFO_END,TFO_HAS_CORRESPONDENCE,TFO_CRE_USER,TFO_CRE_STAMP,"
 			"	 TFO_LABEL,TFO_CORRESPONDENCE,TFO_BEGIN,TFO_NOTES,"
-			"	 TFO_UPD_USER,TFO_UPD_STAMP,"
 			"	 TFO_STATUS,TFO_STA_USER,TFO_STA_STAMP)"
 			"	VALUES ('%s','%s','%s','%s','%s'",
 			ofo_tva_record_get_mnemo( record ),
@@ -2281,9 +2280,6 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 		query = g_string_append( query, ",NULL" );
 	}
 
-	/* last update user and timestamp */
-	g_string_append_printf( query, ",'%s','%s'", userid, stamp_str );
-
 	/* status group */
 	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_STATUS );
 	g_string_append_printf( query, ",'%s','%s','%s')", cstr, userid, stamp_str );
@@ -2294,9 +2290,6 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 
 	vat_record_set_cre_user( record, userid );
 	vat_record_set_cre_stamp( record, &stamp );
-
-	vat_record_set_upd_user( record, userid );
-	vat_record_set_upd_stamp( record, &stamp );
 
 	g_free( send );
 	g_free( sbegin );
