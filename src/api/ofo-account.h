@@ -94,9 +94,17 @@ ofoAccount     *ofo_account_new                       ( ofaIGetter *getter );
 
 gint            ofo_account_get_class                 ( const ofoAccount *account );
 const gchar    *ofo_account_get_number                ( const ofoAccount *account );
+const gchar    *ofo_account_get_cre_user              ( const ofoAccount *account );
+const GTimeVal *ofo_account_get_cre_stamp             ( const ofoAccount *account );
 const gchar    *ofo_account_get_label                 ( const ofoAccount *account );
-const gchar    *ofo_account_get_closed                ( const ofoAccount *account );
 const gchar    *ofo_account_get_currency              ( const ofoAccount *account );
+gboolean        ofo_account_is_root                   ( const ofoAccount *account );
+gboolean        ofo_account_is_settleable             ( const ofoAccount *account );
+gboolean        ofo_account_get_keep_unsettled        ( const ofoAccount *account );
+gboolean        ofo_account_is_reconciliable          ( const ofoAccount *account );
+gboolean        ofo_account_get_keep_unreconciliated  ( const ofoAccount *account );
+gboolean        ofo_account_is_forwardable            ( const ofoAccount *account );
+gboolean        ofo_account_is_closed                 ( const ofoAccount *account );
 const gchar    *ofo_account_get_notes                 ( const ofoAccount *account );
 const gchar    *ofo_account_get_upd_user              ( const ofoAccount *account );
 const GTimeVal *ofo_account_get_upd_stamp             ( const ofoAccount *account );
@@ -111,13 +119,6 @@ ofxAmount       ofo_account_get_futur_val_credit      ( const ofoAccount *accoun
 ofxAmount       ofo_account_get_solde_at_date         ( ofoAccount *account, const GDate *date, GDate *deffect, ofxAmount *debit, ofxAmount *credit );
 
 gboolean        ofo_account_is_deletable              ( const ofoAccount *account );
-gboolean        ofo_account_is_root                   ( const ofoAccount *account );
-gboolean        ofo_account_is_closed                 ( const ofoAccount *account );
-gboolean        ofo_account_is_settleable             ( const ofoAccount *account );
-gboolean        ofo_account_get_keep_unsettled        ( const ofoAccount *account );
-gboolean        ofo_account_is_reconciliable          ( const ofoAccount *account );
-gboolean        ofo_account_get_keep_unreconciliated  ( const ofoAccount *account );
-gboolean        ofo_account_is_forwardable            ( const ofoAccount *account );
 gboolean        ofo_account_is_valid_data             ( const gchar *number, const gchar *label, const gchar *devise, gboolean root, gchar **msgerr );
 gint            ofo_account_get_class_from_number     ( const gchar *number );
 gint            ofo_account_get_level_from_number     ( const gchar *number );
@@ -131,7 +132,6 @@ const gchar    *ofo_account_get_balance_type_short    ( ofeAccountType type );
 void            ofo_account_set_number                ( ofoAccount *account, const gchar *number );
 void            ofo_account_set_label                 ( ofoAccount *account, const gchar *label );
 void            ofo_account_set_currency              ( ofoAccount *account, const gchar *devise );
-void            ofo_account_set_notes                 ( ofoAccount *account, const gchar *notes );
 void            ofo_account_set_root                  ( ofoAccount *account, gboolean root );
 void            ofo_account_set_settleable            ( ofoAccount *account, gboolean settleable );
 void            ofo_account_set_keep_unsettled        ( ofoAccount *account, gboolean keep );
@@ -139,6 +139,7 @@ void            ofo_account_set_reconciliable         ( ofoAccount *account, gbo
 void            ofo_account_set_keep_unreconciliated  ( ofoAccount *account, gboolean keep );
 void            ofo_account_set_forwardable           ( ofoAccount *account, gboolean forwardable );
 void            ofo_account_set_closed                ( ofoAccount *account, gboolean closed );
+void            ofo_account_set_notes                 ( ofoAccount *account, const gchar *notes );
 void            ofo_account_set_current_rough_debit   ( ofoAccount *account, ofxAmount amount );
 void            ofo_account_set_current_rough_credit  ( ofoAccount *account, ofxAmount amount );
 void            ofo_account_set_current_val_debit     ( ofoAccount *account, ofxAmount amount );

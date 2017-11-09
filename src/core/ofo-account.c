@@ -66,6 +66,8 @@
  */
 enum {
 	ACC_NUMBER = 1,
+	ACC_CRE_USER,
+	ACC_CRE_STAMP,
 	ACC_LABEL,
 	ACC_CURRENCY,
 	ACC_ROOT,
@@ -107,6 +109,14 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
 				FALSE },				/* amount, counter: export zero as empty */
+		{ OFA_BOX_CSV( ACC_CRE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				FALSE },
 		{ OFA_BOX_CSV( ACC_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -123,7 +133,15 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( ACC_KEEP_UNSETTLED ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( ACC_RECONCILIABLE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_KEEP_UNRECONCILIATED ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -179,14 +197,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOX_CSV( ACC_KEEP_UNSETTLED ),
-				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
-		{ OFA_BOX_CSV( ACC_KEEP_UNRECONCILIATED ),
-				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
 		{ 0 }
 };
 
@@ -227,7 +237,7 @@ static const ofsBoxDef st_doc_defs[] = {
 };
 
 #define ACCOUNT_TABLES_COUNT            3
-#define ACCOUNT_EXPORT_VERSION          1
+#define ACCOUNT_EXPORT_VERSION          2
 
 typedef struct {
 	GList *archives;					/* archived balances of the account */
@@ -290,6 +300,8 @@ static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
+static void         account_set_cre_user( ofoAccount *account, const gchar *user );
+static void         account_set_cre_stamp( ofoAccount *account, const GTimeVal *stamp );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static gboolean     archive_do_add_dbms( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
@@ -603,6 +615,30 @@ ofo_account_get_number( const ofoAccount *account )
 }
 
 /**
+ * ofo_account_get_cre_user:
+ * @account: the #ofoAccount account
+ *
+ * Returns: the user name responsible of the last properties update.
+ */
+const gchar *
+ofo_account_get_cre_user( const ofoAccount *account )
+{
+	account_get_string( ACC_CRE_USER );
+}
+
+/**
+ * ofo_account_get_cre_stamp:
+ * @account: the #ofoAccount account
+ *
+ * Returns: the timestamp of the last properties update.
+ */
+const GTimeVal *
+ofo_account_get_cre_stamp( const ofoAccount *account )
+{
+	account_get_timestamp( ACC_CRE_STAMP );
+}
+
+/**
  * ofo_account_get_label:
  * @account: the #ofoAccount account
  *
@@ -615,18 +651,6 @@ ofo_account_get_label( const ofoAccount *account )
 }
 
 /**
- * ofo_account_get_closed:
- * @account: the #ofoAccount account
- *
- * Returns: the 'Closed' code or %NULL.
- */
-const gchar *
-ofo_account_get_closed( const ofoAccount *account )
-{
-	account_get_string( ACC_CLOSED );
-}
-
-/**
  * ofo_account_get_currency:
  * @account: the #ofoAccount account
  *
@@ -636,6 +660,148 @@ const gchar *
 ofo_account_get_currency( const ofoAccount *account )
 {
 	account_get_string( ACC_CURRENCY );
+}
+
+/**
+ * ofo_account_is_root:
+ * @account: the #ofoAccount account.
+ *
+ * Returns: %TRUE if the @account is a root account, %FALSE if this is
+ * a detail account.
+ */
+gboolean
+ofo_account_is_root( const ofoAccount *account )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+
+	cstr = account_get_string_ex( account, ACC_ROOT );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_account_is_settleable:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if the account is settleable.
+ */
+gboolean
+ofo_account_is_settleable( const ofoAccount *account )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+
+	cstr = account_get_string_ex( account, ACC_SETTLEABLE );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_account_get_keep_unsettled:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if unsettled entries on this account should be kept
+ * on exercice closing.
+ *
+ * Only unsettled entries written on settleable accounts whith this
+ * flag set will be reported on next exercice at closing time.
+ */
+gboolean
+ofo_account_get_keep_unsettled( const ofoAccount *account )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+
+	cstr = account_get_string_ex( account, ACC_KEEP_UNSETTLED );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_account_is_reconciliable:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if the account is reconciliable.
+ */
+gboolean
+ofo_account_is_reconciliable( const ofoAccount *account )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+
+	cstr = account_get_string_ex( account, ACC_RECONCILIABLE );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_account_get_keep_unreconciliated:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if unreconciliated entries on this account should be
+ * kept on exercice closing.
+ *
+ * Only unreconciliated entries written on reconciliable accounts whith
+ * this flag set will be reported on next exercice at closing time.
+ */
+gboolean
+ofo_account_get_keep_unreconciliated( const ofoAccount *account )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+
+	cstr = account_get_string_ex( account, ACC_KEEP_UNRECONCILIATED );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_account_is_forwardable:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if the account supports carried forward entries.
+ */
+gboolean
+ofo_account_is_forwardable( const ofoAccount *account )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+
+	cstr = account_get_string_ex( account, ACC_FORWARDABLE );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_account_is_closed:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if the account is closed.
+ */
+gboolean
+ofo_account_is_closed( const ofoAccount *account )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+
+	cstr = account_get_string_ex( account, ACC_CLOSED );
+
+	return( !my_collate( cstr, "Y" ));
 }
 
 /**
@@ -938,148 +1104,6 @@ ofo_account_is_deletable( const ofoAccount *account )
 	return( deletable );
 }
 
-/**
- * ofo_account_is_root:
- * @account: the #ofoAccount account.
- *
- * Returns: %TRUE if the @account is a root account, %FALSE if this is
- * a detail account.
- */
-gboolean
-ofo_account_is_root( const ofoAccount *account )
-{
-	const gchar *cstr;
-
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
-
-	cstr = account_get_string_ex( account, ACC_ROOT );
-
-	return( !my_collate( cstr, "Y" ));
-}
-
-/**
- * ofo_account_is_settleable:
- * @account: the #ofoAccount account
- *
- * Returns: %TRUE if the account is settleable.
- */
-gboolean
-ofo_account_is_settleable( const ofoAccount *account )
-{
-	const gchar *cstr;
-
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
-
-	cstr = account_get_string_ex( account, ACC_SETTLEABLE );
-
-	return( !my_collate( cstr, "Y" ));
-}
-
-/**
- * ofo_account_get_keep_unsettled:
- * @account: the #ofoAccount account
- *
- * Returns: %TRUE if unsettled entries on this account should be kept
- * on exercice closing.
- *
- * Only unsettled entries written on settleable accounts whith this
- * flag set will be reported on next exercice at closing time.
- */
-gboolean
-ofo_account_get_keep_unsettled( const ofoAccount *account )
-{
-	const gchar *cstr;
-
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
-
-	cstr = account_get_string_ex( account, ACC_KEEP_UNSETTLED );
-
-	return( !my_collate( cstr, "Y" ));
-}
-
-/**
- * ofo_account_is_reconciliable:
- * @account: the #ofoAccount account
- *
- * Returns: %TRUE if the account is reconciliable.
- */
-gboolean
-ofo_account_is_reconciliable( const ofoAccount *account )
-{
-	const gchar *cstr;
-
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
-
-	cstr = account_get_string_ex( account, ACC_RECONCILIABLE );
-
-	return( !my_collate( cstr, "Y" ));
-}
-
-/**
- * ofo_account_get_keep_unreconciliated:
- * @account: the #ofoAccount account
- *
- * Returns: %TRUE if unreconciliated entries on this account should be
- * kept on exercice closing.
- *
- * Only unreconciliated entries written on reconciliable accounts whith
- * this flag set will be reported on next exercice at closing time.
- */
-gboolean
-ofo_account_get_keep_unreconciliated( const ofoAccount *account )
-{
-	const gchar *cstr;
-
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
-
-	cstr = account_get_string_ex( account, ACC_KEEP_UNRECONCILIATED );
-
-	return( !my_collate( cstr, "Y" ));
-}
-
-/**
- * ofo_account_is_forwardable:
- * @account: the #ofoAccount account
- *
- * Returns: %TRUE if the account supports carried forward entries.
- */
-gboolean
-ofo_account_is_forwardable( const ofoAccount *account )
-{
-	const gchar *cstr;
-
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
-
-	cstr = account_get_string_ex( account, ACC_FORWARDABLE );
-
-	return( !my_collate( cstr, "Y" ));
-}
-
-/**
- * ofo_account_is_closed:
- * @account: the #ofoAccount account
- *
- * Returns: %TRUE if the account is closed.
- */
-gboolean
-ofo_account_is_closed( const ofoAccount *account )
-{
-	const gchar *cstr;
-
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
-
-	cstr = account_get_string_ex( account, ACC_CLOSED );
-
-	return( !my_collate( cstr, "Y" ));
-}
-
 static const gchar *
 account_get_string_ex( const ofoAccount *account, gint data_id )
 {
@@ -1354,6 +1378,26 @@ ofo_account_set_number( ofoAccount *account, const gchar *number )
 	account_set_string( ACC_NUMBER, number );
 }
 
+/*
+ * account_set_cre_user:
+ * @account: the #ofoAccount account
+ */
+static void
+account_set_cre_user( ofoAccount *account, const gchar *user )
+{
+	account_set_string( ACC_CRE_USER, user );
+}
+
+/*
+ * account_set_cre_stamp:
+ * @account: the #ofoAccount account
+ */
+static void
+account_set_cre_stamp( ofoAccount *account, const GTimeVal *stamp )
+{
+	account_set_timestamp( ACC_CRE_STAMP, stamp );
+}
+
 /**
  * ofo_account_set_label:
  * @account: the #ofoAccount account
@@ -1372,16 +1416,6 @@ void
 ofo_account_set_currency( ofoAccount *account, const gchar *currency )
 {
 	account_set_string( ACC_CURRENCY, currency );
-}
-
-/**
- * ofo_account_set_notes:
- * @account: the #ofoAccount account
- */
-void
-ofo_account_set_notes( ofoAccount *account, const gchar *notes )
-{
-	account_set_string( ACC_NOTES, notes );
 }
 
 /**
@@ -1460,6 +1494,16 @@ void
 ofo_account_set_closed( ofoAccount *account, gboolean closed )
 {
 	account_set_string( ACC_CLOSED, closed ? "Y":"N" );
+}
+
+/**
+ * ofo_account_set_notes:
+ * @account: the #ofoAccount account
+ */
+void
+ofo_account_set_notes( ofoAccount *account, const gchar *notes )
+{
+	account_set_string( ACC_NOTES, notes );
 }
 
 /*
@@ -2030,24 +2074,20 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 	query = g_string_new( "INSERT INTO OFA_T_ACCOUNTS" );
 
 	g_string_append_printf( query,
-			"	(ACC_NUMBER,ACC_LABEL,ACC_CURRENCY,ACC_NOTES,ACC_ROOT,"
-			"	 ACC_SETTLEABLE,ACC_KEEP_UNSETTLED,ACC_RECONCILIABLE,ACC_KEEP_UNRECONCILIATED,"
-			"	 ACC_FORWARDABLE,ACC_CLOSED,"
-			"	 ACC_UPD_USER, ACC_UPD_STAMP)"
-			"	VALUES ('%s','%s',",
+			"	(ACC_NUMBER,ACC_UPD_USER, ACC_UPD_STAMP,ACC_LABEL,ACC_CURRENCY,"
+			"	 ACC_ROOT,ACC_SETTLEABLE,ACC_KEEP_UNSETTLED,ACC_RECONCILIABLE,"
+			"	 ACC_KEEP_UNRECONCILIATED,ACC_FORWARDABLE,ACC_CLOSED,"
+			"	 ACC_NOTES) "
+			"	VALUES ('%s','%s','%s','%s',",
 					ofo_account_get_number( account ),
+					userid,
+					stamp_str,
 					label );
 
 	if( ofo_account_is_root( account )){
 		query = g_string_append( query, "NULL," );
 	} else {
 		g_string_append_printf( query, "'%s',", ofo_account_get_currency( account ));
-	}
-
-	if( my_strlen( notes )){
-		g_string_append_printf( query, "'%s',", notes );
-	} else {
-		query = g_string_append( query, "NULL," );
 	}
 
 	g_string_append_printf( query, "'%s',", ofo_account_is_root( account ) ? "Y":"N" );
@@ -2058,11 +2098,15 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 	g_string_append_printf( query, "'%s',", ofo_account_is_forwardable( account ) ? "Y":"N" );
 	g_string_append_printf( query, "'%s',", ofo_account_is_closed( account ) ? "Y":"N" );
 
-	g_string_append_printf( query, "'%s','%s')", userid, stamp_str );
+	if( my_strlen( notes )){
+		g_string_append_printf( query, "'%s',", notes );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
-		account_set_upd_user( account, userid );
-		account_set_upd_stamp( account, &stamp );
+		account_set_cre_user( account, userid );
+		account_set_cre_stamp( account, &stamp );
 		ok = TRUE;
 	}
 
@@ -2150,12 +2194,6 @@ account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gcha
 		g_string_append_printf( query, "ACC_CURRENCY='%s',", ofo_account_get_currency( account ));
 	}
 
-	if( my_strlen( notes )){
-		g_string_append_printf( query, "ACC_NOTES='%s',", notes );
-	} else {
-		query = g_string_append( query, "ACC_NOTES=NULL," );
-	}
-
 	g_string_append_printf( query,
 			"	ACC_ROOT='%s',", ofo_account_is_root( account ) ? "Y":"N" );
 
@@ -2176,6 +2214,12 @@ account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gcha
 
 	g_string_append_printf( query,
 			"	ACC_CLOSED='%s',", ofo_account_is_closed( account ) ? "Y":"N" );
+
+	if( my_strlen( notes )){
+		g_string_append_printf( query, "ACC_NOTES='%s',", notes );
+	} else {
+		query = g_string_append( query, "ACC_NOTES=NULL," );
+	}
 
 	g_string_append_printf( query,
 			"	ACC_UPD_USER='%s',ACC_UPD_STAMP='%s'"
@@ -2771,6 +2815,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 	return( parms->parse_errs+parms->insert_errs );
 }
 
+#if 0
 static GList *
 iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
@@ -3022,6 +3067,283 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				ofo_account_set_keep_unreconciliated( account, !my_collate( cstr, "Y" ));
 			}
 		}
+
+		dataset = g_list_prepend( dataset, account );
+		parms->parsed_count += 1;
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->parsed_count, ( gulong ) total );
+	}
+
+	return( dataset );
+}
+#endif
+
+static GList *
+iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	ofaHub *hub;
+	GList *dataset;
+	guint class_num, numline, total;
+	ofoDossier *dossier;
+	const gchar *def_dev_code, *cstr, *dev_code;
+	GSList *itl, *fields, *itf;
+	ofoAccount *account;
+	gchar *str, *splitted;
+	ofoCurrency *currency;
+	ofoClass *class_obj;
+	gboolean is_root;
+	GTimeVal stamp;
+
+	numline = 0;
+	dataset = NULL;
+	total = g_slist_length( lines );
+	hub = ofa_igetter_get_hub( parms->getter );
+
+	/* may be NULL
+	 * eg. when importing accounts on dossier creation */
+	dossier = ofa_hub_get_dossier( hub );
+	def_dev_code = dossier ? ofo_dossier_get_default_currency( dossier ) : NULL;
+
+	ofa_iimporter_progress_start( importer, parms );
+
+	for( itl=lines ; itl ; itl=itl->next ){
+
+		if( parms->stop && parms->parse_errs > 0 ){
+			break;
+		}
+
+		numline += 1;
+		fields = ( GSList * ) itl->data;
+		account = ofo_account_new( parms->getter );
+
+		/* account number */
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty account number" ));
+			parms->parse_errs += 1;
+			continue;
+		}
+		class_num = ofo_account_get_class_from_number( cstr );
+		class_obj = ofo_class_get_by_number( parms->getter, class_num );
+		if( !class_obj && !OFO_IS_CLASS( class_obj )){
+			str = g_strdup_printf( _( "invalid class number for account %s" ), cstr );
+			ofa_iimporter_progress_num_text( importer, parms, numline, str );
+			g_free( str );
+			parms->parse_errs += 1;
+			continue;
+		}
+		ofo_account_set_number( account, cstr );
+
+		/* creation user */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			account_set_cre_user( account, cstr );
+		}
+
+		/* creation timestamp */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			my_stamp_set_from_sql( &stamp, cstr );
+			account_set_cre_stamp( account, &stamp );
+		}
+
+		/* account label */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty account label" ));
+			parms->parse_errs += 1;
+			continue;
+		}
+		ofo_account_set_label( account, cstr );
+
+		/* currency code */
+		itf = itf ? itf->next : NULL;
+		dev_code = itf ? ( const gchar * ) itf->data : NULL;
+
+		/* root account
+		 * previous to DB model v27, root/detail accounts were marked with R/D
+		 * starting with v27, root accounts are marked with Y/N */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			cstr = "N";
+		} else if( my_collate( cstr, EXPORTED_TYPE_DETAIL ) &&
+					my_collate( cstr, EXPORTED_TYPE_ROOT ) &&
+					my_collate( cstr, "Y" ) &&
+					my_collate( cstr, "N" )){
+			str = g_strdup_printf( _( "invalid account type: %s" ), cstr );
+			ofa_iimporter_progress_num_text( importer, parms, numline, str );
+			g_free( str );
+			parms->parse_errs += 1;
+			continue;
+		}
+		is_root = !my_collate( cstr, EXPORTED_TYPE_ROOT ) || !my_collate( cstr, "Y" );
+		ofo_account_set_root( account, is_root );
+
+		/* check the currency code if a detail account */
+		if( !is_root ){
+			if( !my_strlen( dev_code )){
+				dev_code = def_dev_code;
+			}
+			if( !my_strlen( dev_code )){
+				ofa_iimporter_progress_num_text( importer, parms, numline, _( "no currency set, and unable to get a default currency" ));
+				parms->parse_errs += 1;
+				continue;
+			}
+			currency = ofo_currency_get_by_code( parms->getter, dev_code );
+			if( !currency ){
+				str = g_strdup_printf( _( "invalid account currency: %s" ), dev_code );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
+				continue;
+			}
+			ofo_account_set_currency( account, dev_code );
+		}
+
+		/* settleable ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, EXPORTED_SETTLEABLE ) &&
+					my_collate( cstr, "Y" ) &&
+					my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid settleable account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_settleable( account,
+						!my_collate( cstr, EXPORTED_SETTLEABLE ) || !my_collate( cstr, "Y" ));
+			}
+		}
+
+		/* keep unsettled entries ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, "Y" ) && my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid keep_unsettled account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_keep_unsettled( account, !my_collate( cstr, "Y" ));
+			}
+		}
+
+		/* reconciliable ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, EXPORTED_RECONCILIABLE ) &&
+					my_collate( cstr, "Y" ) &&
+					my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid reconciliable account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_reconciliable( account,
+						!my_collate( cstr, EXPORTED_RECONCILIABLE ) || !my_collate( cstr, "Y" ));
+			}
+		}
+
+		/* keep unreconciliated entries ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, "Y" ) && my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid keep_unreconciliated account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_keep_unreconciliated( account, !my_collate( cstr, "Y" ));
+			}
+		}
+
+		/* carried forwardable ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, EXPORTED_FORWARDABLE ) &&
+					my_collate( cstr, "Y" ) &&
+					my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid forwardable account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_forwardable( account,
+						!my_collate( cstr, EXPORTED_FORWARDABLE ) || !my_collate( cstr, "Y" ));
+			}
+		}
+
+		/* closed ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, EXPORTED_CLOSED ) &&
+					my_collate( cstr, "Y" ) &&
+					my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid closed account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_closed( account,
+						!my_collate( cstr, EXPORTED_CLOSED ) || !my_collate( cstr, "Y" ));
+			}
+		}
+
+		/* notes */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		splitted = my_utils_import_multi_lines( cstr );
+		ofo_account_set_notes( account, splitted );
+		g_free( splitted );
+
+		/* last update user
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* last update timestamp
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* validated debit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* validated credit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* rough debit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* rough credit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* future debit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
+
+		/* future credit
+		 * do not import */
+		itf = itf ? itf->next : NULL;
 
 		dataset = g_list_prepend( dataset, account );
 		parms->parsed_count += 1;

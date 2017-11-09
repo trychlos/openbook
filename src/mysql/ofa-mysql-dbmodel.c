@@ -2717,13 +2717,21 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
 	/* 1 */
-	/*
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_ACCOUNTS "
-			"	MODIFY COLUMN ACC_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+			"	ADD    COLUMN ACC_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN ACC_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN ACC_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Properties last update timestamp'" )){
 		return( FALSE );
 	}
-	*/
+
+	/* 2 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_ACCOUNTS SET "
+			"	ACC_CRE_USER=ACC_UPD_USER,"
+			"	ACC_CRE_STAMP=ACC_UPD_STAMP" )){
+		return( FALSE );
+	}
 
 	/* 3 */
 	/*
