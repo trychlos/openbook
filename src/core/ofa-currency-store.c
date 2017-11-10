@@ -51,11 +51,11 @@ typedef struct {
 	ofaCurrencyStorePrivate;
 
 static GType st_col_types[CURRENCY_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* code, label, symbol */
-		G_TYPE_STRING, G_TYPE_STRING, 0,				/* digits, notes, notes_png */
-		G_TYPE_STRING,									/* upd_user */
-		G_TYPE_STRING,									/* upd_stamp */
-		G_TYPE_OBJECT									/* the #ofoCurrency itself */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* code, cre_user, cre_stamp */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* label, symbol, digits */
+		G_TYPE_STRING,  0,              G_TYPE_STRING,		/* notes, notes_png, upd_user */
+		G_TYPE_STRING,										/* upd_stamp */
+		G_TYPE_OBJECT										/* the #ofoCurrency itself */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
@@ -187,6 +187,8 @@ ofa_currency_store_new( ofaIGetter *getter )
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), CURRENCY_N_COLUMNS, st_col_types );
 
+		load_dataset( store );
+
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 		gtk_tree_sortable_set_sort_column_id(
@@ -195,7 +197,6 @@ ofa_currency_store_new( ofaIGetter *getter )
 
 		my_icollector_single_set_object( collector, store );
 		signaler_connect_to_signaling_system( store );
-		load_dataset( store );
 	}
 
 	return( g_object_ref( store ));
@@ -251,13 +252,14 @@ static void
 set_row_by_iter( ofaCurrencyStore *self, const ofoCurrency *currency, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_currency_store_set_row_by_iter";
-	gchar *str, *stamp;
+	gchar *str, *crestamp, *updstamp;
 	const gchar *notes;
 	GError *error;
 	GdkPixbuf *notes_png;
 
 	str = g_strdup_printf( "%d", ofo_currency_get_digits( currency ));
-	stamp  = my_stamp_to_str( ofo_currency_get_upd_stamp( currency ), MY_STAMP_DMYYHM );
+	crestamp  = my_stamp_to_str( ofo_currency_get_cre_stamp( currency ), MY_STAMP_DMYYHM );
+	updstamp  = my_stamp_to_str( ofo_currency_get_upd_stamp( currency ), MY_STAMP_DMYYHM );
 
 	notes = ofo_currency_get_notes( currency );
 	error = NULL;
@@ -271,18 +273,21 @@ set_row_by_iter( ofaCurrencyStore *self, const ofoCurrency *currency, GtkTreeIte
 			GTK_LIST_STORE( self ),
 			iter,
 			CURRENCY_COL_CODE,      ofo_currency_get_code( currency ),
+			CURRENCY_COL_CRE_USER,  ofo_currency_get_cre_user( currency ),
+			CURRENCY_COL_CRE_STAMP, crestamp,
 			CURRENCY_COL_LABEL,     ofo_currency_get_label( currency ),
 			CURRENCY_COL_SYMBOL,    ofo_currency_get_symbol( currency ),
 			CURRENCY_COL_DIGITS,    str,
 			CURRENCY_COL_NOTES,     notes,
 			CURRENCY_COL_NOTES_PNG, notes_png,
 			CURRENCY_COL_UPD_USER,  ofo_currency_get_upd_user( currency ),
-			CURRENCY_COL_UPD_STAMP, stamp,
+			CURRENCY_COL_UPD_STAMP, updstamp,
 			CURRENCY_COL_OBJECT,    currency,
 			-1 );
 
 	g_object_unref( notes_png );
-	g_free( stamp );
+	g_free( crestamp );
+	g_free( updstamp );
 	g_free( str );
 }
 

@@ -342,6 +342,7 @@ idialog_init( myIDialog *instance )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
 
 	my_utils_container_notes_init( instance, currency );
+	my_utils_container_crestamp_init( instance, currency );
 	my_utils_container_updstamp_init( instance, currency );
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
 

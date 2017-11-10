@@ -61,6 +61,8 @@
  */
 enum {
 	CUR_CODE = 1,
+	CUR_CRE_USER,
+	CUR_CRE_STAMP,
 	CUR_LABEL,
 	CUR_SYMBOL,
 	CUR_DIGITS,
@@ -84,6 +86,14 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
 				FALSE },				/* amount, counter: export zero as empty */
+		{ OFA_BOX_CSV( CUR_CRE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( CUR_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				FALSE },
 		{ OFA_BOX_CSV( CUR_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -124,7 +134,7 @@ static const ofsBoxDef st_doc_defs[] = {
 };
 
 #define CURRENCY_TABLES_COUNT           2
-#define CURRENCY_EXPORT_VERSION         1
+#define CURRENCY_EXPORT_VERSION         2
 
 typedef struct {
 	GList *docs;
@@ -133,6 +143,8 @@ typedef struct {
 
 static ofoCurrency *currency_find_by_code( GList *set, const gchar *code );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
+static void         currency_set_cre_user( ofoCurrency *currency, const gchar *user );
+static void         currency_set_cre_stamp( ofoCurrency *currency, const GTimeVal *stamp );
 static void         currency_set_upd_user( ofoCurrency *currency, const gchar *user );
 static void         currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp );
 static GList       *get_orphans( ofaIGetter *getter, const gchar *table );
@@ -313,6 +325,24 @@ ofo_currency_get_code( const ofoCurrency *currency )
 }
 
 /**
+ * ofo_currency_get_cre_user:
+ */
+const gchar *
+ofo_currency_get_cre_user( const ofoCurrency *currency )
+{
+	ofo_base_getter( CURRENCY, currency, string, NULL, CUR_CRE_USER );
+}
+
+/**
+ * ofo_currency_get_cre_stamp:
+ */
+const GTimeVal *
+ofo_currency_get_cre_stamp( const ofoCurrency *currency )
+{
+	ofo_base_getter( CURRENCY, currency, timestamp, NULL, CUR_CRE_STAMP );
+}
+
+/**
  * ofo_currency_get_label:
  */
 const gchar *
@@ -460,6 +490,24 @@ void
 ofo_currency_set_code( ofoCurrency *currency, const gchar *code )
 {
 	ofo_base_setter( CURRENCY, currency, string, CUR_CODE, code );
+}
+
+/*
+ * currency_set_cre_user:
+ */
+static void
+currency_set_cre_user( ofoCurrency *currency, const gchar *user )
+{
+	ofo_base_setter( CURRENCY, currency, string, CUR_CRE_USER, user );
+}
+
+/*
+ * currency_set_cre_stamp:
+ */
+static void
+currency_set_cre_stamp( ofoCurrency *currency, const GTimeVal *stamp )
+{
+	ofo_base_setter( CURRENCY, currency, timestamp, CUR_CRE_STAMP, stamp );
 }
 
 /**
@@ -644,10 +692,11 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect )
 	query = g_string_new( "" );
 	g_string_append_printf( query,
 			"INSERT INTO OFA_T_CURRENCIES "
-			"	(CUR_CODE,CUR_LABEL,CUR_SYMBOL,CUR_DIGITS,"
-			"	CUR_NOTES,CUR_UPD_USER,CUR_UPD_STAMP)"
-			"	VALUES ('%s','%s','%s',%d,",
+			"	(CUR_CODE,CUR_CRE_USER,CUR_CRE_STAMP,CUR_LABEL,CUR_SYMBOL,CUR_DIGITS,CUR_NOTES)"
+			"	VALUES ('%s','%s','%s','%s','%s',%d,",
 			ofo_currency_get_code( currency ),
+			userid,
+			stamp_str,
 			label,
 			symbol,
 			ofo_currency_get_digits( currency ));
@@ -658,13 +707,9 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query,
-			"'%s','%s')",
-			userid, stamp_str );
-
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
-		currency_set_upd_user( currency, userid );
-		currency_set_upd_stamp( currency, &stamp );
+		currency_set_cre_user( currency, userid );
+		currency_set_cre_stamp( currency, &stamp );
 		ok = TRUE;
 	}
 
@@ -1085,6 +1130,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	const gchar *cstr;
 	gchar *splitted;
 	ofoCurrency *currency;
+	GTimeVal stamp;
 
 	numline = 0;
 	dataset = NULL;
@@ -1111,6 +1157,21 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			continue;
 		}
 		ofo_currency_set_code( currency, cstr );
+
+		/* creation user */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			currency_set_cre_user( currency, cstr );
+		}
+
+		/* creation timestamp */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			my_stamp_set_from_sql( &stamp, cstr );
+			currency_set_cre_stamp( currency, &stamp );
+		}
 
 		/* currency label */
 		itf = itf ? itf->next : NULL;
