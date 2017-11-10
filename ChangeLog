@@ -58,7 +58,7 @@
 
 	* src/api/ofo-bat.h,
 	* src/core/ofo-bat.c:
-	- ofo_bat_get_account(), ofo_bat_set_account(): new methods.
+	- ofo_bat_get_account(), ofo_bat_update_account(): new methods.
 
 	* src/ui/ofa-bat-properties-bin.c,
 	* src/ui/ofa-bat-properties-bin.ui: display account number.

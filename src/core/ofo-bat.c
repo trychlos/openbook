@@ -72,10 +72,14 @@ enum {
 	BAT_SOLDE_BEGIN_SET,
 	BAT_SOLDE_END,
 	BAT_SOLDE_END_SET,
-	BAT_ACCOUNT,
+	BAT_CRE_USER,
+	BAT_CRE_STAMP,
 	BAT_NOTES,
 	BAT_UPD_USER,
 	BAT_UPD_STAMP,
+	BAT_ACCOUNT,
+	BAT_ACC_USER,
+	BAT_ACC_STAMP,
 	BAT_DOC_ID,
 };
 
@@ -133,9 +137,13 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOX_CSV( BAT_ACCOUNT ),
+		{ OFA_BOX_CSV( BAT_CRE_USER ),
 				OFA_TYPE_STRING,
-				TRUE,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
 				FALSE },
 		{ OFA_BOX_CSV( BAT_NOTES ),
 				OFA_TYPE_STRING,
@@ -146,6 +154,18 @@ static const ofsBoxDef st_boxed_defs[] = {
 				FALSE,
 				FALSE },
 		{ OFA_BOX_CSV( BAT_UPD_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_ACCOUNT ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_ACC_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( BAT_ACC_STAMP ),
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				FALSE },
@@ -176,12 +196,19 @@ typedef struct {
 
 static ofoBat     *bat_find_by_id( GList *set, ofxCounter id );
 static void        bat_set_id( ofoBat *bat, ofxCounter id );
-static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
-static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
+static void        bat_set_cre_user( ofoBat *bat, const gchar *user );
+static void        bat_set_cre_stamp( ofoBat *bat, const GTimeVal *stamp );
+static void        bat_set_notes( ofoBat *bat, const gchar *account );
+static void        bat_set_upd_user( ofoBat *bat, const gchar *user );
+static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *stamp );
+static void        bat_set_account( ofoBat *bat, const gchar *account );
+static void        bat_set_acc_user( ofoBat *bat, const gchar *user );
+static void        bat_set_acc_stamp( ofoBat *bat, const GTimeVal *stamp );
 static GList      *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean    bat_do_insert( ofoBat *bat, ofaIGetter *getter );
 static gboolean    bat_insert_main( ofoBat *bat, ofaIGetter *getter );
-static gboolean    bat_do_update( ofoBat *bat, const ofaIDBConnect *connect );
+static gboolean    bat_do_update_notes( ofoBat *bat );
+static gboolean    bat_do_update_account( ofoBat *bat );
 static gboolean    bat_do_delete_by_where( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect, ofxCounter bat_id );
 static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect, ofxCounter bat_id );
@@ -505,6 +532,30 @@ ofo_bat_get_currency( ofoBat *bat )
 }
 
 /**
+ * ofo_bat_get_cre_user:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the importer user.
+ */
+const gchar *
+ofo_bat_get_cre_user( ofoBat *bat )
+{
+	ofo_base_getter( BAT, bat, string, NULL, BAT_CRE_USER );
+}
+
+/**
+ * ofo_bat_get_cre_stamp:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the import timestamp.
+ */
+const GTimeVal *
+ofo_bat_get_cre_stamp( ofoBat *bat )
+{
+	ofo_base_getter( BAT, bat, timestamp, NULL, BAT_CRE_STAMP );
+}
+
+/**
  * ofo_bat_get_notes:
  * @bat: this #ofoBat object.
  *
@@ -514,18 +565,6 @@ const gchar *
 ofo_bat_get_notes( ofoBat *bat )
 {
 	ofo_base_getter( BAT, bat, string, NULL, BAT_NOTES );
-}
-
-/**
- * ofo_bat_get_account:
- * @bat: this #ofoBat object.
- *
- * Returns: the Openbook account associated to the @bat.
- */
-const gchar *
-ofo_bat_get_account( ofoBat *bat )
-{
-	ofo_base_getter( BAT, bat, string, NULL, BAT_ACCOUNT );
 }
 
 /**
@@ -550,6 +589,42 @@ const GTimeVal *
 ofo_bat_get_upd_stamp( ofoBat *bat )
 {
 	ofo_base_getter( BAT, bat, timestamp, NULL, BAT_UPD_STAMP );
+}
+
+/**
+ * ofo_bat_get_account:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the Openbook account associated to the @bat.
+ */
+const gchar *
+ofo_bat_get_account( ofoBat *bat )
+{
+	ofo_base_getter( BAT, bat, string, NULL, BAT_ACCOUNT );
+}
+
+/**
+ * ofo_bat_get_acc_user:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the importer user.
+ */
+const gchar *
+ofo_bat_get_acc_user( ofoBat *bat )
+{
+	ofo_base_getter( BAT, bat, string, NULL, BAT_ACC_USER );
+}
+
+/**
+ * ofo_bat_get_acc_stamp:
+ * @bat: this #ofoBat object.
+ *
+ * Returns: the import timestamp.
+ */
+const GTimeVal *
+ofo_bat_get_acc_stamp( ofoBat *bat )
+{
+	ofo_base_getter( BAT, bat, timestamp, NULL, BAT_ACC_STAMP );
 }
 
 /**
@@ -847,56 +922,100 @@ ofo_bat_set_currency( ofoBat *bat, const gchar *currency )
 	ofo_base_setter( BAT, bat, string, BAT_CURRENCY, currency );
 }
 
-/**
- * ofo_bat_set_notes:
+/*
+ * bat_set_cre_user:
  * @bat: this #ofoBat object.
- * @notes: the associated notes.
+ * @user: the user.
  *
- * Set @notes.
+ * Set @cre_user.
  */
-void
-ofo_bat_set_notes( ofoBat *bat, const gchar *notes )
+static void
+bat_set_cre_user( ofoBat *bat, const gchar *user )
+{
+	ofo_base_setter( BAT, bat, string, BAT_CRE_USER, user );
+}
+
+/*
+ * bat_set_cre_stamp:
+ * @bat: this #ofoBat object.
+ * @stamp: the timestamp.
+ *
+ * Set @cre_stamp.
+ */
+static void
+bat_set_cre_stamp( ofoBat *bat, const GTimeVal *stamp )
+{
+	ofo_base_setter( BAT, bat, timestamp, BAT_CRE_STAMP, stamp );
+}
+
+/*
+ * bat_set_notes:
+ */
+static void
+bat_set_notes( ofoBat *bat, const gchar *notes )
 {
 	ofo_base_setter( BAT, bat, string, BAT_NOTES, notes );
 }
 
-/**
- * ofo_bat_set_account:
+/*
+ * bat_set_upd_user:
  * @bat: this #ofoBat object.
- * @account: the account associated to @bat in Openbook.
+ * @user: the user.
  *
- * Set @account.
+ * Set @upd_user.
  */
-void
-ofo_bat_set_account( ofoBat *bat, const gchar *account )
+static void
+bat_set_upd_user( ofoBat *bat, const gchar *user )
+{
+	ofo_base_setter( BAT, bat, string, BAT_UPD_USER, user );
+}
+
+/*
+ * bat_set_upd_stamp:
+ * @bat: this #ofoBat object.
+ * @stamp: the timestamp.
+ *
+ * Set @upd_stamp.
+ */
+static void
+bat_set_upd_stamp( ofoBat *bat, const GTimeVal *stamp )
+{
+	ofo_base_setter( BAT, bat, timestamp, BAT_UPD_STAMP, stamp );
+}
+
+/*
+ * bat_set_account:
+ */
+static void
+bat_set_account( ofoBat *bat, const gchar *account )
 {
 	ofo_base_setter( BAT, bat, string, BAT_ACCOUNT, account );
 }
 
 /*
- * ofo_bat_set_upd_user:
+ * bat_set_acc_user:
  * @bat: this #ofoBat object.
- * @upd_user: the importer user.
+ * @user: the user.
  *
- * Set @upd_user.
+ * Set @acc_user.
  */
 static void
-bat_set_upd_user( ofoBat *bat, const gchar *upd_user )
+bat_set_acc_user( ofoBat *bat, const gchar *user )
 {
-	ofo_base_setter( BAT, bat, string, BAT_UPD_USER, upd_user );
+	ofo_base_setter( BAT, bat, string, BAT_ACC_USER, user );
 }
 
 /*
- * ofo_bat_set_upd_stamp:
+ * bat_set_acc_stamp:
  * @bat: this #ofoBat object.
- * @upd_stamp: the import timestamp.
+ * @stamp: the timestamp.
  *
- * Set @upd_stamp.
+ * Set @acc_stamp.
  */
 static void
-bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
+bat_set_acc_stamp( ofoBat *bat, const GTimeVal *stamp )
 {
-	ofo_base_setter( BAT, bat, timestamp, BAT_UPD_STAMP, upd_stamp );
+	ofo_base_setter( BAT, bat, timestamp, BAT_ACC_STAMP, stamp );
 }
 
 /**
@@ -1045,11 +1164,13 @@ bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 	query = g_string_new( "INSERT INTO OFA_T_BAT" );
 
 	g_string_append_printf( query,
-			"	(BAT_ID,BAT_URI,BAT_FORMAT,BAT_BEGIN,BAT_END,"
+			"	(BAT_ID,BAT_CRE_USER,BAT_CRE_STAMP,BAT_URI,BAT_FORMAT,BAT_BEGIN,BAT_END,"
 			"	 BAT_RIB,BAT_CURRENCY,"
-			"	BAT_SOLDE_BEGIN,BAT_SOLDE_BEGIN_SET,BAT_SOLDE_END,BAT_SOLDE_END_SET,"
-			"	 BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP) VALUES (%ld,'%s',",
+			"	 BAT_SOLDE_BEGIN,BAT_SOLDE_BEGIN_SET,BAT_SOLDE_END,BAT_SOLDE_END_SET) "
+			"	VALUES (%ld,'%s','%s','%s',",
 					ofo_bat_get_id( bat ),
+					userid,
+					stamp_str,
 					suri );
 
 	g_free( suri );
@@ -1111,19 +1232,9 @@ bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 		query = g_string_append( query, "NULL,'N'," );
 	}
 
-	str = my_utils_quote_sql( ofo_bat_get_notes( bat ));
-	if( my_strlen( str )){
-		g_string_append_printf( query, "'%s',", str );
-	} else {
-		query = g_string_append( query, "NULL," );
-	}
-	g_free( str );
-
-	g_string_append_printf( query, "'%s','%s')", userid, stamp_str );
-
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
-		bat_set_upd_user( bat, userid );
-		bat_set_upd_stamp( bat, &stamp );
+		bat_set_cre_user( bat, userid );
+		bat_set_cre_stamp( bat, &stamp );
 		ok = TRUE;
 	}
 
@@ -1134,48 +1245,42 @@ bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 }
 
 /**
- * ofo_bat_update:
+ * ofo_bat_update_notes:
+ * @bat: this #ofoBat object.
+ * @notes: the associated notes.
+ *
+ * Set @notes, and update the DBMS.
+ *
+ * Returns: %TRUE if the DBMS update has been successful.
  */
 gboolean
-ofo_bat_update( ofoBat *bat )
+ofo_bat_update_notes( ofoBat *bat, const gchar *notes )
 {
-	static const gchar *thisfn = "ofo_bat_update";
+	bat_set_notes( bat, notes );
+
+	return( bat_do_update_notes( bat ));
+}
+
+static gboolean
+bat_do_update_notes( ofoBat *bat )
+{
 	ofaIGetter *getter;
 	ofaISignaler *signaler;
 	ofaHub *hub;
-	gboolean ok;
-
-	g_debug( "%s: bat=%p", thisfn, ( void * ) bat );
-
-	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, FALSE );
-
-	ok = FALSE;
-	getter = ofo_base_get_getter( OFO_BASE( bat ));
-	signaler = ofa_igetter_get_signaler( getter );
-	hub = ofa_igetter_get_hub( getter );
-
-	if( bat_do_update( bat, ofa_hub_get_connect( hub ))){
-		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, bat, NULL );
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-/*
- * only notes may be updated
- */
-static gboolean
-bat_do_update( ofoBat *bat, const ofaIDBConnect *connect )
-{
+	ofaIDBConnect *connect;
 	GString *query;
 	gchar *notes, *stamp_str;
 	gboolean ok;
 	GTimeVal stamp;
-	const gchar *userid, *caccount;
+	const gchar *userid;
 
 	ok = FALSE;
+
+	getter = ofo_base_get_getter( OFO_BASE( bat ));
+	signaler = ofa_igetter_get_signaler( getter );
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
 	notes = my_utils_quote_sql( ofo_bat_get_notes( bat ));
 	my_stamp_set_now( &stamp );
 	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
@@ -1189,6 +1294,69 @@ bat_do_update( ofoBat *bat, const ofaIDBConnect *connect )
 		query = g_string_append( query, "BAT_NOTES=NULL," );
 	}
 
+	g_string_append_printf( query,
+			"	BAT_UPD_USER='%s',BAT_UPD_STAMP='%s'"
+			"	WHERE BAT_ID=%ld", userid, stamp_str, ofo_bat_get_id( bat ));
+
+	if( ofa_idbconnect_query( connect, query->str, TRUE )){
+		bat_set_upd_user( bat, userid );
+		bat_set_upd_stamp( bat, &stamp );
+
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, bat, NULL );
+
+		ok = TRUE;
+	}
+
+	g_string_free( query, TRUE );
+	g_free( notes );
+	g_free( stamp_str );
+
+	return( ok );
+}
+
+/**
+ * ofo_bat_update_account:
+ * @bat: this #ofoBat object.
+ * @account: the account associated to @bat in Openbook.
+ *
+ * Set @account, and update the DBMS.
+ *
+ * Returns: %TRUE if the DBMS update has been successful.
+ */
+gboolean
+ofo_bat_update_account( ofoBat *bat, const gchar *account )
+{
+	bat_set_account( bat, account );
+
+	return( bat_do_update_account( bat ));
+}
+
+static gboolean
+bat_do_update_account( ofoBat *bat )
+{
+	ofaIGetter *getter;
+	ofaISignaler *signaler;
+	ofaHub *hub;
+	ofaIDBConnect *connect;
+	GString *query;
+	gchar *stamp_str;
+	gboolean ok;
+	GTimeVal stamp;
+	const gchar *userid, *caccount;
+
+	ok = FALSE;
+
+	getter = ofo_base_get_getter( OFO_BASE( bat ));
+	signaler = ofa_igetter_get_signaler( getter );
+	hub = ofa_igetter_get_hub( getter );
+	connect = ofa_hub_get_connect( hub );
+
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	userid = ofa_idbconnect_get_account( connect );
+
+	query = g_string_new( "UPDATE OFA_T_BAT SET " );
+
 	caccount = ofo_bat_get_account( bat );
 	if( my_strlen( caccount )){
 		g_string_append_printf( query, "BAT_ACCOUNT='%s',", caccount );
@@ -1197,17 +1365,19 @@ bat_do_update( ofoBat *bat, const ofaIDBConnect *connect )
 	}
 
 	g_string_append_printf( query,
-			"	BAT_UPD_USER='%s',BAT_UPD_STAMP='%s'"
+			"	BAT_ACC_USER='%s',BAT_ACC_STAMP='%s'"
 			"	WHERE BAT_ID=%ld", userid, stamp_str, ofo_bat_get_id( bat ));
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
-		bat_set_upd_user( bat, userid );
-		bat_set_upd_stamp( bat, &stamp );
+		bat_set_acc_user( bat, userid );
+		bat_set_acc_stamp( bat, &stamp );
+
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, bat, NULL );
+
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
-	g_free( notes );
 	g_free( stamp_str );
 
 	return( ok );

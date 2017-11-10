@@ -371,6 +371,12 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	my_utils_container_notes_setup_full(
 				GTK_CONTAINER( self ),
 				"pn-notes", ofo_bat_get_notes( bat ), ofa_hub_is_writable_dossier( hub ));
+
+	my_utils_container_updstamp_setup_full(
+			GTK_CONTAINER( self ),
+			"px-reconcil", ofo_bat_get_acc_stamp( bat ), ofo_bat_get_acc_user( bat ));
+
+	my_utils_container_crestamp_init( self, bat );
 	my_utils_container_updstamp_init( self, bat );
 }
 

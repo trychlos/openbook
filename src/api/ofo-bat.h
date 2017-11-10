@@ -136,10 +136,14 @@ ofxAmount       ofo_bat_get_end_solde              ( ofoBat *bat );
 gboolean        ofo_bat_get_end_solde_set          ( ofoBat *bat );
 const gchar    *ofo_bat_get_rib                    ( ofoBat *bat );
 const gchar    *ofo_bat_get_currency               ( ofoBat *bat );
+const gchar    *ofo_bat_get_cre_user               ( ofoBat *bat );
+const GTimeVal *ofo_bat_get_cre_stamp              ( ofoBat *bat );
 const gchar    *ofo_bat_get_notes                  ( ofoBat *bat );
-const gchar    *ofo_bat_get_account                ( ofoBat *bat );
 const gchar    *ofo_bat_get_upd_user               ( ofoBat *bat );
 const GTimeVal *ofo_bat_get_upd_stamp              ( ofoBat *bat );
+const gchar    *ofo_bat_get_account                ( ofoBat *bat );
+const gchar    *ofo_bat_get_acc_user               ( ofoBat *bat );
+const GTimeVal *ofo_bat_get_acc_stamp              ( ofoBat *bat );
 
 gboolean        ofo_bat_exists                     ( ofaIGetter *getter, const gchar *rib, const GDate *begin, const GDate *end );
 gboolean        ofo_bat_is_deletable               ( ofoBat *bat );
@@ -156,8 +160,6 @@ void            ofo_bat_set_end_solde              ( ofoBat *bat, ofxAmount sold
 void            ofo_bat_set_end_solde_set          ( ofoBat *bat, gboolean set );
 void            ofo_bat_set_rib                    ( ofoBat *bat, const gchar *rib );
 void            ofo_bat_set_currency               ( ofoBat *bat, const gchar *currency );
-void            ofo_bat_set_notes                  ( ofoBat *bat, const gchar *notes );
-void            ofo_bat_set_account                ( ofoBat *bat, const gchar *account );
 
 guint           ofo_bat_doc_get_count              ( ofoBat *bat );
 
@@ -165,7 +167,8 @@ GList          *ofo_bat_doc_get_orphans            ( ofaIGetter *getter );
 #define         ofo_bat_doc_free_orphans( L )      ( g_list_free( L ))
 
 gboolean        ofo_bat_insert                     ( ofoBat *bat );
-gboolean        ofo_bat_update                     ( ofoBat *bat );
+gboolean        ofo_bat_update_notes               ( ofoBat *bat, const gchar *notes );
+gboolean        ofo_bat_update_account             ( ofoBat *bat, const gchar *account );
 gboolean        ofo_bat_delete                     ( ofoBat *bat );
 
 G_END_DECLS

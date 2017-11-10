@@ -1984,8 +1984,7 @@ bat_display_counts( ofaReconcilPage *self )
 		used += bat_used;
 		bat_account = ofo_bat_get_account( bat );
 		if( bat_used == 0 && my_strlen( bat_account )){
-			ofo_bat_set_account( bat, NULL );
-			ofo_bat_update( bat );
+			ofo_bat_update_account( bat, NULL );
 		}
 	}
 	unused = total-used;
@@ -2037,8 +2036,7 @@ bat_associates_account( ofaReconcilPage *self, ofoBatLine *batline, const gchar 
 	/*g_debug( "%s: account=%s, bat_id=%ld, bat_account=%s", thisfn, account, bat_id, bat_account );*/
 
 	if( !my_strlen( bat_account )){
-		ofo_bat_set_account( bat, account );
-		ofo_bat_update( bat );
+		ofo_bat_update_account( bat, account );
 
 	} else if( my_collate( bat_account, account )){
 		g_warning( "%s: trying to associate BAT id=%ld to account %s, while already associated to account=%s",
