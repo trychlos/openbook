@@ -55,10 +55,10 @@ typedef struct {
 	ofaClassStorePrivate;
 
 static GType st_col_types[CLASS_N_COLUMNS] = {
-	G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING,		/* num_id, string_id, label */
-	G_TYPE_STRING, 0,								/* notes, notes_png */
-	G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
-	G_TYPE_OBJECT									/* the #ofoClass object */
+	G_TYPE_STRING,  G_TYPE_INT,     G_TYPE_STRING,		/* class, class_i, cre_user */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* cre_stamp, label, notes */
+	0,              G_TYPE_STRING,  G_TYPE_STRING,		/* notes_png, upd_user, upd_stamp */
+	G_TYPE_OBJECT										/* the #ofoClass object */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
@@ -191,6 +191,8 @@ ofa_class_store_new( ofaIGetter *getter )
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), CLASS_N_COLUMNS, st_col_types );
 
+		load_dataset( store );
+
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 		gtk_tree_sortable_set_sort_column_id(
@@ -199,7 +201,6 @@ ofa_class_store_new( ofaIGetter *getter )
 
 		my_icollector_single_set_object( collector, store );
 		signaler_connect_to_signaling_system( store );
-		load_dataset( store );
 	}
 
 	return( g_object_ref( store ));
@@ -214,8 +215,8 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassSto
 {
 	gint cmp, ida, idb;
 
-	gtk_tree_model_get( tmodel, a, CLASS_COL_ID, &ida, -1 );
-	gtk_tree_model_get( tmodel, b, CLASS_COL_ID, &idb, -1 );
+	gtk_tree_model_get( tmodel, a, CLASS_COL_CLASS_I, &ida, -1 );
+	gtk_tree_model_get( tmodel, b, CLASS_COL_CLASS_I, &idb, -1 );
 
 	cmp = ( ida < idb ? -1 : ( ida > idb ? 1 : 0 ));
 
@@ -252,13 +253,14 @@ static void
 set_row_by_iter( ofaClassStore *self, GtkTreeIter *iter, ofoClass *class )
 {
 	static const gchar *thisfn = "ofa_class_store_set_row_by_iter";
-	gchar *sid, *stamp;
+	gchar *sid, *crestamp, *updstamp;
 	const gchar *notes;
 	GError *error;
 	GdkPixbuf *notes_png;
 
 	sid = g_strdup_printf( "%u", ofo_class_get_number( class ));
-	stamp  = my_stamp_to_str( ofo_class_get_upd_stamp( class ), MY_STAMP_DMYYHM );
+	crestamp  = my_stamp_to_str( ofo_class_get_cre_stamp( class ), MY_STAMP_DMYYHM );
+	updstamp  = my_stamp_to_str( ofo_class_get_upd_stamp( class ), MY_STAMP_DMYYHM );
 
 	error = NULL;
 	notes = ofo_class_get_notes( class );
@@ -271,18 +273,21 @@ set_row_by_iter( ofaClassStore *self, GtkTreeIter *iter, ofoClass *class )
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
-			CLASS_COL_ID,              ofo_class_get_number( class ),
-			CLASS_COL_NUMBER,          sid,
+			CLASS_COL_CLASS,           sid,
+			CLASS_COL_CLASS_I,         ofo_class_get_number( class ),
+			CLASS_COL_CRE_USER,        ofo_class_get_cre_user( class ),
+			CLASS_COL_CRE_STAMP,       crestamp,
 			CLASS_COL_LABEL,           ofo_class_get_label( class ),
 			CLASS_COL_NOTES,           notes,
 			CLASS_COL_NOTES_PNG,       notes_png,
 			CLASS_COL_UPD_USER,        ofo_class_get_upd_user( class ),
-			CLASS_COL_UPD_STAMP,       stamp,
+			CLASS_COL_UPD_STAMP,       updstamp,
 			CLASS_COL_OBJECT,          class,
 			-1 );
 
 	g_object_unref( notes_png );
-	g_free( stamp );
+	g_free( crestamp );
+	g_free( updstamp );
 	g_free( sid );
 }
 
@@ -296,7 +301,7 @@ find_row_by_id( ofaClassStore *self, gint id, GtkTreeIter *iter )
 
 	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, CLASS_COL_ID, &row_id, -1 );
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, CLASS_COL_CLASS_I, &row_id, -1 );
 			if( row_id == id ){
 				return( TRUE );
 			}

@@ -75,8 +75,10 @@ typedef struct {
  *                                                                      Displayable
  *                                                             Type     in Class page
  *                                                             -------  -------------
- * @CLASS_COL_ID           : numeric id                        Int            No
- * @CLASS_COL_NUMBER       : string id                         String        Yes
+ * @CLASS_COL_CLASS        : class number                      String        Yes
+ * @CLASS_COL_CLASS_I      : class number                      Int            No
+ * @CLASS_COL_CRE_USER     : creation user                     String        Yes
+ * @CLASS_COL_CRE_STAMP    : creation stamp                    String        Yes
  * @CLASS_COL_LABEL        : label                             String        Yes
  * @CLASS_COL_NOTES        : notes                             String        Yes
  * @CLASS_COL_NOTES_PNG    : notes indicator                   GdkPixbuf     Yes
@@ -85,8 +87,10 @@ typedef struct {
  * @CLASS_COL_OBJECT       : the #ofoClass object              GObject        No
  */
 enum {
-	CLASS_COL_ID = 0,
-	CLASS_COL_NUMBER,
+	CLASS_COL_CLASS = 0,
+	CLASS_COL_CLASS_I,
+	CLASS_COL_CRE_USER,
+	CLASS_COL_CRE_STAMP,
 	CLASS_COL_LABEL,
 	CLASS_COL_NOTES,
 	CLASS_COL_NOTES_PNG,

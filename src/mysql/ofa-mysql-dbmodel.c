@@ -2768,14 +2768,22 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
-	/* 5 */
-	/*
+	/* 7 */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_CLASSES "
-			"	MODIFY COLUMN CLA_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Last update timestamp'" )){
+			"	ADD    COLUMN CLA_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN CLA_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN CLA_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Last update timestamp'" )){
 		return( FALSE );
 	}
-	*/
+
+	/* 8 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_CLASSES SET "
+			"	CLA_CRE_USER=CLA_UPD_USER,"
+			"	CLA_CRE_STAMP=CLA_UPD_STAMP" )){
+		return( FALSE );
+	}
 
 	/* 7 */
 	/*

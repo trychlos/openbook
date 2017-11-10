@@ -56,6 +56,8 @@
  */
 enum {
 	CLA_NUMBER = 1,
+	CLA_CRE_USER,
+	CLA_CRE_STAMP,
 	CLA_LABEL,
 	CLA_NOTES,
 	CLA_UPD_USER,
@@ -77,6 +79,14 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_INTEGER,
 				TRUE,					/* importable */
 				FALSE },				/* amount, counter: export zero as empty */
+		{ OFA_BOX_CSV( CLA_CRE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( CLA_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				FALSE },
 		{ OFA_BOX_CSV( CLA_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -109,7 +119,7 @@ static const ofsBoxDef st_doc_defs[] = {
 };
 
 #define CLASS_TABLES_COUNT              2
-#define CLASS_EXPORT_VERSION            1
+#define CLASS_EXPORT_VERSION            2
 
 /* priv instance data
  */
@@ -119,6 +129,8 @@ typedef struct {
 	ofoClassPrivate;
 
 static ofoClass  *class_find_by_number( GList *set, gint number );
+static void       class_set_cre_user( ofoClass *class, const gchar *user );
+static void       class_set_cre_stamp( ofoClass *class, const GTimeVal *stamp );
 static void       class_set_upd_user( ofoClass *class, const gchar *user );
 static void       class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp );
 static GList     *get_orphans( ofaIGetter *getter, const gchar *table );
@@ -297,6 +309,24 @@ ofo_class_get_number( const ofoClass *class )
 }
 
 /**
+ * ofo_class_get_cre_user:
+ */
+const gchar *
+ofo_class_get_cre_user( const ofoClass *class )
+{
+	ofo_base_getter( CLASS, class , string, NULL, CLA_CRE_USER );
+}
+
+/**
+ * ofo_class_get_cre_stamp:
+ */
+const GTimeVal *
+ofo_class_get_cre_stamp( const ofoClass *class )
+{
+	ofo_base_getter( CLASS, class, timestamp, NULL, CLA_CRE_STAMP );
+}
+
+/**
  * ofo_class_get_label:
  */
 const gchar *
@@ -425,6 +455,24 @@ ofo_class_set_number( ofoClass *class, gint number )
 	ofo_base_setter( CLASS, class, int, CLA_NUMBER, number );
 }
 
+/*
+ * class_set_cre_user:
+ */
+static void
+class_set_cre_user( ofoClass *class, const gchar *user )
+{
+	ofo_base_setter( CLASS, class, string, CLA_CRE_USER, user );
+}
+
+/*
+ * class_set_cre_stamp:
+ */
+static void
+class_set_cre_stamp( ofoClass *class, const GTimeVal *stamp )
+{
+	ofo_base_setter( CLASS, class, timestamp, CLA_CRE_STAMP, stamp );
+}
+
 /**
  * ofo_class_set_label:
  */
@@ -446,7 +494,7 @@ ofo_class_set_notes( ofoClass *class, const gchar *notes )
 }
 
 /*
- * ofo_class_set_upd_user:
+ * class_set_upd_user:
  */
 static void
 class_set_upd_user( ofoClass *class, const gchar *user )
@@ -455,7 +503,7 @@ class_set_upd_user( ofoClass *class, const gchar *user )
 }
 
 /*
- * ofo_class_set_upd_stamp:
+ * class_set_upd_stamp:
  */
 static void
 class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp )
@@ -580,14 +628,19 @@ class_do_insert( ofoClass *class, const ofaIDBConnect *connect )
 	query = g_string_new( "INSERT INTO OFA_T_CLASSES " );
 
 	userid = ofa_idbconnect_get_account( connect );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+
 	label = my_utils_quote_sql( ofo_class_get_label( class ));
 	notes = my_utils_quote_sql( ofo_class_get_notes( class ));
 
 	g_string_append_printf( query,
-			"	(CLA_NUMBER,CLA_LABEL,CLA_NOTES,"
-			"	 CLA_UPD_USER,CLA_UPD_STAMP) VALUES "
-			"	(%d,'%s',",
+			"	(CLA_NUMBER,CLA_CRE_USER,CLA_CRE_STAMP,CLA_LABEL,CLA_NOTES)"
+			"	VALUES "
+			"	(%d,'%s','%s','%s',",
 					ofo_class_get_number( class ),
+					userid,
+					stamp_str,
 					label );
 
 	if( my_strlen( notes )){
@@ -596,15 +649,11 @@ class_do_insert( ofoClass *class, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
-	g_string_append_printf( query, "'%s','%s')", userid, stamp_str );
-
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	if( ok ){
-		class_set_upd_user( class, userid );
-		class_set_upd_stamp( class, &stamp );
+		class_set_cre_user( class, userid );
+		class_set_cre_stamp( class, &stamp );
 	}
 
 	g_free( label );
@@ -1020,6 +1069,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 	return( parms->parse_errs+parms->insert_errs );
 }
 
+#if 0
 static GList *
 iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
@@ -1061,6 +1111,91 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			continue;
 		}
 		ofo_class_set_number( class, number );
+
+		/* class label */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty class label" ));
+			parms->parse_errs += 1;
+			continue;
+		} else {
+			ofo_class_set_label( class, cstr );
+		}
+
+		/* notes */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		splitted = my_utils_import_multi_lines( cstr );
+		ofo_class_set_notes( class, splitted );
+		g_free( splitted );
+
+		dataset = g_list_prepend( dataset, class );
+		parms->parsed_count += 1;
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->parsed_count, ( gulong ) total );
+	}
+
+	return( dataset );
+}
+#endif
+
+static GList *
+iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	GList *dataset;
+	guint numline, total, number;
+	const gchar *cstr;
+	ofoClass *class;
+	gchar *str, *splitted;
+	GSList *itl, *fields, *itf;
+	GTimeVal stamp;
+
+	numline = 0;
+	dataset = NULL;
+	total = g_slist_length( lines );
+
+	ofa_iimporter_progress_start( importer, parms );
+
+	for( itl=lines ; itl ; itl=itl->next ){
+
+		if( parms->stop && parms->parse_errs > 0 ){
+			break;
+		}
+
+		numline += 1;
+		fields = ( GSList * ) itl->data;
+		class = ofo_class_new( parms->getter );
+
+		/* class number */
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		number = 0;
+		if( my_strlen( cstr )){
+			number = atoi( cstr );
+		}
+		if( number < 1 || number > 9 ){
+			str = g_strdup_printf( _( "invalid class number: %s" ), cstr );
+			ofa_iimporter_progress_num_text( importer, parms, numline, str );
+			g_free( str );
+			parms->parse_errs += 1;
+			continue;
+		}
+		ofo_class_set_number( class, number );
+
+		/* creation user */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			class_set_cre_user( class, cstr );
+		}
+
+		/* creation timestamp */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			my_stamp_set_from_sql( &stamp, cstr );
+			class_set_cre_stamp( class, &stamp );
+		}
 
 		/* class label */
 		itf = itf ? itf->next : NULL;

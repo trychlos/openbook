@@ -292,12 +292,14 @@ setup_columns( ofaClassTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), CLASS_COL_NUMBER,    _( "Number" ), _( "Class number" ));
-	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), CLASS_COL_LABEL,     _( "Label" ),      NULL );
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), CLASS_COL_NOTES,     _( "Notes" ),      NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), CLASS_COL_NOTES_PNG,    "",         _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CLASS_COL_UPD_USER,  _( "User" ),   _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), CLASS_COL_UPD_STAMP,     NULL,      _( "Last update timestamp" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), CLASS_COL_CLASS,     _( "Number" ),    _( "Class number" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CLASS_COL_CRE_USER,  _( "Cre.user" ),  _( "Creation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), CLASS_COL_CRE_STAMP, _( "Cre.stamp" ), _( "Creation timestamp" ));
+	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), CLASS_COL_LABEL,     _( "Label" ),          NULL );
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), CLASS_COL_NOTES,     _( "Notes" ),          NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), CLASS_COL_NOTES_PNG,    "",            _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CLASS_COL_UPD_USER,  _( "Upd.user" ),  _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), CLASS_COL_UPD_STAMP, _( "Upd.stamp" ), _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), CLASS_COL_LABEL );
 }
@@ -328,7 +330,7 @@ ofa_class_treeview_setup_store( ofaClassTreeview *view )
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 
-	ofa_itvsortable_set_default_sort( OFA_ITVSORTABLE( view ), CLASS_COL_NUMBER, GTK_SORT_ASCENDING );
+	ofa_itvsortable_set_default_sort( OFA_ITVSORTABLE( view ), CLASS_COL_CLASS, GTK_SORT_ASCENDING );
 }
 
 static void
@@ -423,14 +425,15 @@ static gint
 tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_class_treeview_v_sort";
-	gint cmp, ida, idb;
-	gchar *numa, *labela, *notesa, *updusera, *updstampa;
-	gchar *numb, *labelb, *notesb, *upduserb, *updstampb;
+	gint cmp;
+	gchar *numa, *labela, *notesa, *creusera, *crestampa, *updusera, *updstampa;
+	gchar *numb, *labelb, *notesb, *creuserb, *crestampb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
 
 	gtk_tree_model_get( tmodel, a,
-			CLASS_COL_ID,        &ida,
-			CLASS_COL_NUMBER,    &numa,
+			CLASS_COL_CLASS,     &numa,
+			CLASS_COL_CRE_USER,  &creusera,
+			CLASS_COL_CRE_STAMP, &crestampa,
 			CLASS_COL_LABEL,     &labela,
 			CLASS_COL_NOTES,     &notesa,
 			CLASS_COL_NOTES_PNG, &pnga,
@@ -439,8 +442,9 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
-			CLASS_COL_ID,        &idb,
-			CLASS_COL_NUMBER,    &numb,
+			CLASS_COL_CLASS,     &numb,
+			CLASS_COL_CRE_USER,  &creuserb,
+			CLASS_COL_CRE_STAMP, &crestampb,
 			CLASS_COL_LABEL,     &labelb,
 			CLASS_COL_NOTES,     &notesb,
 			CLASS_COL_NOTES_PNG, &pngb,
@@ -451,11 +455,14 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	cmp = 0;
 
 	switch( column_id ){
-		case CLASS_COL_ID:
-			cmp = ( ida < idb ? -1 : ( ida > idb ? 1 : 0 ));
-			break;
-		case CLASS_COL_NUMBER:
+		case CLASS_COL_CLASS:
 			cmp = ofa_itvsortable_sort_str_int( numa, numb );
+			break;
+		case CLASS_COL_CRE_USER:
+			cmp = my_collate( creusera, creuserb );
+			break;
+		case CLASS_COL_CRE_STAMP:
+			cmp = my_collate( crestampa, crestampb );
 			break;
 		case CLASS_COL_LABEL:
 			cmp = my_collate( labela, labelb );
@@ -480,6 +487,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( numa );
 	g_free( labela );
 	g_free( notesa );
+	g_free( creusera );
+	g_free( crestampa );
 	g_free( updusera );
 	g_free( updstampa );
 	g_clear_object( &pnga );
@@ -487,6 +496,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( numb );
 	g_free( labelb );
 	g_free( notesb );
+	g_free( creuserb );
+	g_free( crestampb );
 	g_free( upduserb );
 	g_free( updstampb );
 	g_clear_object( &pngb );
