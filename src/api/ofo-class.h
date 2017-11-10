@@ -77,6 +77,8 @@ ofoClass       *ofo_class_get_by_number         ( ofaIGetter *getter, gint numbe
 ofoClass       *ofo_class_new                   ( ofaIGetter *getter );
 
 gint            ofo_class_get_number            ( const ofoClass *class );
+const gchar    *ofo_class_get_cre_user          ( const ofoClass *class );
+const GTimeVal *ofo_class_get_cre_stamp         ( const ofoClass *class );
 const gchar    *ofo_class_get_label             ( const ofoClass *class );
 const gchar    *ofo_class_get_notes             ( const ofoClass *class );
 const gchar    *ofo_class_get_upd_user          ( const ofoClass *class );
