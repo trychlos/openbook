@@ -73,28 +73,32 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
- *                                                                      Displayable
- *                                                             Type     in treeview
- *                                                             -------  -----------
- * @BAT_COL_ID             : identifier                        String       Yes
- * @BAT_COL_URI            : source uri                        String       Yes
- * @BAT_COL_FORMAT         : format                            String       Yes
- * @BAT_COL_BEGIN          : begin date                        String       Yes
- * @BAT_COL_END            : end date                          String       Yes
- * @BAT_COL_RIB            : rib                               String       Yes
- * @BAT_COL_CURRENCY       : currency iso 3a                   String       Yes
- * @BAT_COL_BEGIN_SOLDE    : beginning solde                   String       Yes
- * @BAT_COL_BEGIN_SOLDE_SET: whether begin solde is set        Bool          No
- * @BAT_COL_END_SOLDE      : ending solde                      String       Yes
- * @BAT_COL_END_SOLDE_SET  : whether end solde is set          Bool          No
- * @BAT_COL_NOTES          : notes                             String       Yes
- * @BAT_COL_NOTES_PNG      : notes indicator                   Pixbuf       Yes
- * @BAT_COL_COUNT          : total lines count                 String       Yes
- * @BAT_COL_UNUSED         : unused lines count                String       Yes
- * @BAT_COL_ACCOUNT        : Openbook account                  String       Yes
- * @BAT_COL_UPD_USER       : last update user                  String       Yes
- * @BAT_COL_UPD_STAMP      : last update timestamp             String       Yes
- * @BAT_COL_OBJECT         : #ofoBat object                    GObject       No
+ *                                                                          Displayable
+ *                                                                 Type     in treeview
+ *                                                                 -------  -----------
+ * @BAT_COL_ID             : identifier                            String       Yes
+ * @BAT_COL_URI            : source uri                            String       Yes
+ * @BAT_COL_FORMAT         : format                                String       Yes
+ * @BAT_COL_BEGIN          : begin date                            String       Yes
+ * @BAT_COL_END            : end date                              String       Yes
+ * @BAT_COL_RIB            : rib                                   String       Yes
+ * @BAT_COL_CURRENCY       : currency iso 3a                       String       Yes
+ * @BAT_COL_BEGIN_SOLDE    : beginning solde                       String       Yes
+ * @BAT_COL_BEGIN_SOLDE_SET: whether begin solde is set            Bool          No
+ * @BAT_COL_END_SOLDE      : ending solde                          String       Yes
+ * @BAT_COL_END_SOLDE_SET  : whether end solde is set              Bool          No
+ * @BAT_COL_CRE_USER       : creation user                         String       Yes
+ * @BAT_COL_CRE_STAMP      : creation timestamp                    String       Yes
+ * @BAT_COL_NOTES          : notes                                 String       Yes
+ * @BAT_COL_NOTES_PNG      : notes indicator                       Pixbuf       Yes
+ * @BAT_COL_UPD_USER       : last update user                      String       Yes
+ * @BAT_COL_UPD_STAMP      : last update timestamp                 String       Yes
+ * @BAT_COL_ACCOUNT        : Openbook account                      String       Yes
+ * @BAT_COL_ACC_USER       : account reconciliation user           String       Yes
+ * @BAT_COL_ACC_STAMP      : account reconciliation timestamp      String       Yes
+ * @BAT_COL_COUNT          : total lines count                     String       Yes
+ * @BAT_COL_UNUSED         : unused lines count                    String       Yes
+ * @BAT_COL_OBJECT         : #ofoBat object                        GObject       No
  */
 enum {
 	BAT_COL_ID = 0,
@@ -108,13 +112,17 @@ enum {
 	BAT_COL_BEGIN_SOLDE_SET,
 	BAT_COL_END_SOLDE,
 	BAT_COL_END_SOLDE_SET,
+	BAT_COL_CRE_USER,
+	BAT_COL_CRE_STAMP,
 	BAT_COL_NOTES,
 	BAT_COL_NOTES_PNG,
-	BAT_COL_COUNT,
-	BAT_COL_UNUSED,
-	BAT_COL_ACCOUNT,
 	BAT_COL_UPD_USER,
 	BAT_COL_UPD_STAMP,
+	BAT_COL_ACCOUNT,
+	BAT_COL_ACC_USER,
+	BAT_COL_ACC_STAMP,
+	BAT_COL_COUNT,
+	BAT_COL_UNUSED,
 	BAT_COL_OBJECT,
 	BAT_N_COLUMNS
 };

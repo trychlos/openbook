@@ -62,14 +62,15 @@ typedef struct {
 	ofaBatStorePrivate;
 
 static GType st_col_types[BAT_N_COLUMNS] = {
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* id, uri, format */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* begin, end, rib */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN,	/* currency, begin_solde, begin_solde_set */
-	G_TYPE_STRING, G_TYPE_BOOLEAN,					/* end_solde, end_solde_set */
-	G_TYPE_STRING, 0,								/* notes, notes_png */
-	G_TYPE_STRING, G_TYPE_STRING,					/* count, unused */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* acccount, upd_user, upd_stamp */
-	G_TYPE_OBJECT									/* the #ofoBat itself */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* id, uri, format*/
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* begin, end, rib */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_BOOLEAN,		/* currency, begin_solde, begin_solde_set */
+	G_TYPE_STRING,  G_TYPE_BOOLEAN, G_TYPE_STRING,		/* end_solde, end_solde_set, cre_user */
+	G_TYPE_STRING,  G_TYPE_STRING,  0,					/* cre_stamp, notes, notes_png */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* upd_user, upd_stamp, acccount */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* acc_user, acc_stamp, count */
+	G_TYPE_STRING,										/* unused  */
+	G_TYPE_OBJECT										/* the #ofoBat itself */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
@@ -276,7 +277,7 @@ set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat )
 {
 	static const gchar *thisfn = "ofa_bat_store_set_row";
 	ofaBatStorePrivate *priv;
-	gchar *sid, *sbegin, *send, *sbeginsolde, *sendsolde, *scount, *stamp, *sunused;
+	gchar *sid, *sbegin, *send, *sbeginsolde, *sendsolde, *scount, *crestamp, *updstamp, *accstamp, *sunused;
 	const GDate *date;
 	const gchar *cscurrency, *caccount, *notes;
 	gint count, used;
@@ -319,11 +320,10 @@ set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat )
 	if( !caccount ){
 		caccount = "";
 	}
-	count = ofo_bat_get_lines_count( bat );
-	scount = g_strdup_printf( "%u", count );
-	used = ofo_bat_get_used_count( bat );
-	sunused = g_strdup_printf( "%u", count-used );
-	stamp  = my_stamp_to_str( ofo_bat_get_upd_stamp( bat ), MY_STAMP_DMYYHM );
+
+	crestamp  = my_stamp_to_str( ofo_bat_get_cre_stamp( bat ), MY_STAMP_DMYYHM );
+	updstamp  = my_stamp_to_str( ofo_bat_get_upd_stamp( bat ), MY_STAMP_DMYYHM );
+	accstamp  = my_stamp_to_str( ofo_bat_get_acc_stamp( bat ), MY_STAMP_DMYYHM );
 
 	error = NULL;
 	notes = ofo_bat_get_notes( bat );
@@ -332,6 +332,11 @@ set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat )
 		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
 		g_error_free( error );
 	}
+
+	count = ofo_bat_get_lines_count( bat );
+	scount = g_strdup_printf( "%u", count );
+	used = ofo_bat_get_used_count( bat );
+	sunused = g_strdup_printf( "%u", count-used );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
@@ -347,20 +352,26 @@ set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat )
 			BAT_COL_BEGIN_SOLDE_SET, ofo_bat_get_begin_solde_set( bat ),
 			BAT_COL_END_SOLDE,       sendsolde,
 			BAT_COL_END_SOLDE_SET,   ofo_bat_get_end_solde_set( bat ),
+			BAT_COL_CRE_USER,        ofo_bat_get_cre_user( bat ),
+			BAT_COL_CRE_STAMP,       crestamp,
 			BAT_COL_NOTES,           notes,
 			BAT_COL_NOTES_PNG,       notes_png,
+			BAT_COL_UPD_USER,        ofo_bat_get_upd_user( bat ),
+			BAT_COL_UPD_STAMP,       updstamp,
+			BAT_COL_ACCOUNT,         caccount,
+			BAT_COL_ACC_USER,        ofo_bat_get_acc_user( bat ),
+			BAT_COL_ACC_STAMP,       accstamp,
 			BAT_COL_COUNT,           scount,
 			BAT_COL_UNUSED,          sunused,
-			BAT_COL_ACCOUNT,         caccount,
-			BAT_COL_UPD_USER,        ofo_bat_get_upd_user( bat ),
-			BAT_COL_UPD_STAMP,       stamp,
 			BAT_COL_OBJECT,          bat,
 			-1 );
 
 	g_debug( "%s: count=%s, unused=%s", thisfn, scount, sunused );
 
 	g_object_unref( notes_png );
-	g_free( stamp );
+	g_free( crestamp );
+	g_free( updstamp );
+	g_free( accstamp );
 	g_free( scount );
 	g_free( sunused );
 	g_free( sbeginsolde );
@@ -416,7 +427,7 @@ set_account_new_id( ofaBatStore *self, const gchar *prev_id, const gchar *new_id
 				g_free( row_account );
 
 				if( cmp == 0 ){
-					ofo_bat_set_account( bat, new_id );
+					ofo_bat_update_account( bat, new_id );
 					gtk_list_store_set( GTK_LIST_STORE( self ), &iter, BAT_COL_ACCOUNT, new_id, -1 );
 				}
 			}

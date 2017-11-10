@@ -294,22 +294,26 @@ setup_columns( ofaBatTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_ID,          _( "Id." ),      _( "BAT Id." ));
-	ofa_tvbin_add_column_text_lx( OFA_TVBIN( self ), BAT_COL_URI,         _( "URI" ),          NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_FORMAT,      _( "Format" ),       NULL );
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_BEGIN,       _( "Begin" ),    _( "Begin date" ));
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_END,         _( "End" ),      _( "End date" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_COUNT,       _( "Count" ),    _( "Lines count" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_UNUSED,      _( "Unused" ),   _( "Unused lines" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_RIB,         _( "RIB" ),          NULL );
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_BEGIN_SOLDE, _( "Begin" ),    _( "Begin solde" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_END_SOLDE,   _( "End" ),      _( "End solde" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_ID,          _( "Id." ),       _( "BAT Id." ));
+	ofa_tvbin_add_column_text_lx( OFA_TVBIN( self ), BAT_COL_URI,         _( "URI" ),           NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_FORMAT,      _( "Format" ),        NULL );
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_BEGIN,       _( "Begin" ),     _( "Begin date" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_END,         _( "End" ),       _( "End date" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_RIB,         _( "RIB" ),           NULL );
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_BEGIN_SOLDE, _( "Begin" ),     _( "Begin solde" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_END_SOLDE,   _( "End" ),       _( "End solde" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_CURRENCY,    _( "Currency" ),     NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_ACCOUNT,     _( "Account" ),  _( "Openbook account" ));
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), BAT_COL_NOTES,       _( "Notes" ),        NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), BAT_COL_NOTES_PNG,      "",           _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_UPD_USER,    _( "User" ),     _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAT_COL_UPD_STAMP,       NULL,        _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_CRE_USER,    _( "Cre.user" ),  _( "Creation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAT_COL_CRE_STAMP,   _( "Cre.stamp" ), _( "Creation timestamp" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), BAT_COL_NOTES,       _( "Notes" ),         NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), BAT_COL_NOTES_PNG,      "",            _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_UPD_USER,    _( "Upd.user" ),  _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAT_COL_UPD_STAMP,   _( "Upd.stamp" ), _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_ACCOUNT,     _( "Account" ),   _( "Openbook account" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_ACC_USER,    _( "Acc.user" ),  _( "Account association user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAT_COL_ACC_STAMP,   _( "Acc.stamp" ), _( "Account association timestamp" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_COUNT,       _( "Count" ),     _( "Lines count" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_UNUSED,      _( "Unused" ),    _( "Unused lines" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), BAT_COL_URI );
 }
@@ -483,8 +487,10 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	static const gchar *thisfn = "ofa_bat_treeview_v_sort";
 	ofaBatTreeviewPrivate *priv;
 	gint cmp;
-	gchar *ida, *uria, *formata, *begina, *enda, *riba, *cura, *bsoldea, *esoldea, *notesa, *counta, *unuseda, *accounta, *updusera, *updstampa;
-	gchar *idb, *urib, *formatb, *beginb, *endb, *ribb, *curb, *bsoldeb, *esoldeb, *notesb, *countb, *unusedb, *accountb, *upduserb, *updstampb;
+	gchar *ida, *uria, *formata, *begina, *enda, *riba, *cura, *bsoldea, *esoldea, *notesa, *counta, *unuseda,
+			*accounta, *updusera, *updstampa, *creusera, *crestampa, *accusera, *accstampa;
+	gchar *idb, *urib, *formatb, *beginb, *endb, *ribb, *curb, *bsoldeb, *esoldeb, *notesb, *countb, *unusedb,
+			*accountb, *upduserb, *updstampb, *creuserb, *crestampb, *accuserb, *accstampb;
 	GdkPixbuf *pnga, *pngb;
 
 	priv = ofa_bat_treeview_get_instance_private( OFA_BAT_TREEVIEW( tvbin ));
@@ -499,13 +505,17 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			BAT_COL_CURRENCY,       &cura,
 			BAT_COL_BEGIN_SOLDE,    &bsoldea,
 			BAT_COL_END_SOLDE,      &esoldea,
+			BAT_COL_CRE_USER,       &creusera,
+			BAT_COL_CRE_STAMP,      &crestampa,
 			BAT_COL_NOTES,          &notesa,
 			BAT_COL_NOTES_PNG,      &pnga,
-			BAT_COL_COUNT,          &counta,
-			BAT_COL_UNUSED,         &unuseda,
-			BAT_COL_ACCOUNT,        &accounta,
 			BAT_COL_UPD_USER,       &updusera,
 			BAT_COL_UPD_STAMP,      &updstampa,
+			BAT_COL_ACCOUNT,        &accounta,
+			BAT_COL_ACC_USER,       &accusera,
+			BAT_COL_ACC_STAMP,      &accstampa,
+			BAT_COL_COUNT,          &counta,
+			BAT_COL_UNUSED,         &unuseda,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
@@ -518,13 +528,17 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			BAT_COL_CURRENCY,       &curb,
 			BAT_COL_BEGIN_SOLDE,    &bsoldeb,
 			BAT_COL_END_SOLDE,      &esoldeb,
+			BAT_COL_CRE_USER,       &creuserb,
+			BAT_COL_CRE_STAMP,      &crestampb,
 			BAT_COL_NOTES,          &notesb,
 			BAT_COL_NOTES_PNG,      &pngb,
-			BAT_COL_COUNT,          &countb,
-			BAT_COL_UNUSED,         &unusedb,
-			BAT_COL_ACCOUNT,        &accountb,
 			BAT_COL_UPD_USER,       &upduserb,
 			BAT_COL_UPD_STAMP,      &updstampb,
+			BAT_COL_ACCOUNT,        &accountb,
+			BAT_COL_ACC_USER,       &accuserb,
+			BAT_COL_ACC_STAMP,      &accstampb,
+			BAT_COL_COUNT,          &countb,
+			BAT_COL_UNUSED,         &unusedb,
 			-1 );
 
 	cmp = 0;
@@ -557,26 +571,38 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 		case BAT_COL_END_SOLDE:
 			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), esoldea, esoldeb );
 			break;
+		case BAT_COL_CRE_USER:
+			cmp = my_collate( creusera, creuserb );
+			break;
+		case BAT_COL_CRE_STAMP:
+			cmp = my_collate( crestampa, crestampb );
+			break;
 		case BAT_COL_NOTES:
 			cmp = my_collate( notesa, notesb );
 			break;
 		case BAT_COL_NOTES_PNG:
 			cmp = ofa_itvsortable_sort_png( pnga, pngb );
 			break;
-		case BAT_COL_COUNT:
-			cmp = ofa_itvsortable_sort_str_int( counta, countb );
-			break;
-		case BAT_COL_UNUSED:
-			cmp = ofa_itvsortable_sort_str_int( unuseda, unusedb );
-			break;
-		case BAT_COL_ACCOUNT:
-			cmp = my_collate( accounta, accountb );
-			break;
 		case BAT_COL_UPD_USER:
 			cmp = my_collate( updusera, upduserb );
 			break;
 		case BAT_COL_UPD_STAMP:
 			cmp = my_collate( updstampa, updstampb );
+			break;
+		case BAT_COL_ACCOUNT:
+			cmp = my_collate( accounta, accountb );
+			break;
+		case BAT_COL_ACC_USER:
+			cmp = my_collate( accusera, accuserb );
+			break;
+		case BAT_COL_ACC_STAMP:
+			cmp = my_collate( accstampa, accstampb );
+			break;
+		case BAT_COL_COUNT:
+			cmp = ofa_itvsortable_sort_str_int( counta, countb );
+			break;
+		case BAT_COL_UNUSED:
+			cmp = ofa_itvsortable_sort_str_int( unuseda, unusedb );
 			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, column_id );
@@ -598,6 +624,10 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( accounta );
 	g_free( updusera );
 	g_free( updstampa );
+	g_free( creusera );
+	g_free( crestampa );
+	g_free( accusera );
+	g_free( accstampa );
 	g_clear_object( &pnga );
 
 	g_free( idb );
@@ -615,6 +645,10 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 	g_free( accountb );
 	g_free( upduserb );
 	g_free( updstampb );
+	g_free( creuserb );
+	g_free( crestampb );
+	g_free( accuserb );
+	g_free( accstampb );
 	g_clear_object( &pngb );
 
 	return( cmp );

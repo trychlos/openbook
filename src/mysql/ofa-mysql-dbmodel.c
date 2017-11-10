@@ -2734,13 +2734,39 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 	}
 
 	/* 3 */
-	/*
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_BAT "
-			"	MODIFY COLUMN BAT_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Import timestamp'" )){
+			"	ADD    COLUMN BAT_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN BAT_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	ADD    COLUMN BAT_ACC_USER      VARCHAR(64)  NOT NULL    COMMENT 'Account association user',"
+			"	ADD    COLUMN BAT_ACC_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Account association timestamp',"
+			"	MODIFY COLUMN BAT_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Last update timestamp'" )){
 		return( FALSE );
 	}
-	*/
+
+	/* 4 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_BAT SET "
+			"	BAT_CRE_USER=BAT_UPD_USER,"
+			"	BAT_CRE_STAMP=BAT_UPD_STAMP" )){
+		return( FALSE );
+	}
+
+	/* 5 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_BAT SET "
+			"	BAT_ACC_USER=BAT_UPD_USER,"
+			"	BAT_ACC_STAMP=BAT_UPD_STAMP WHERE BAT_ACCOUNT IS NOT NULL" )){
+		return( FALSE );
+	}
+
+	/* 6 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_BAT SET "
+			"	BAT_UPD_USER=NULL,"
+			"	BAT_UPD_STAMP=NULL WHERE BAT_NOTES IS NULL" )){
+		return( FALSE );
+	}
 
 	/* 5 */
 	/*
@@ -2787,7 +2813,7 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 	}
 	*/
 
-	/* 15 */
+	/* 17 */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_ENTRIES "
 			"	ADD    COLUMN ENT_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
@@ -2796,7 +2822,7 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
-	/* 16 */
+	/* 18 */
 	if( !exec_query( self,
 			"UPDATE OFA_T_ENTRIES SET "
 			"	ENT_CRE_USER=ENT_UPD_USER,"
@@ -2859,5 +2885,5 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v38( ofaMysqlDBModel *self )
 {
-	return( 25 );
+	return( 27 );
 }

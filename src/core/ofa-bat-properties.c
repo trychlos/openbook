@@ -319,11 +319,18 @@ on_ok_clicked( ofaBatProperties *self )
 	my_iwindow_close( MY_IWINDOW( self ));
 }
 
+/*
+ * Only notes are updatable here
+ */
 static gboolean
 do_update( ofaBatProperties *self, gchar **msgerr )
 {
 	ofaBatPropertiesPrivate *priv;
 	gboolean ok;
+	GtkWidget *text;
+	GtkTextBuffer *buffer;
+	GtkTextIter start, end;
+	gchar *notes;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
@@ -331,12 +338,20 @@ do_update( ofaBatProperties *self, gchar **msgerr )
 
 	g_return_val_if_fail( !priv->is_new, FALSE );
 
-	my_utils_container_notes_get( GTK_WINDOW( self ), bat );
+	//my_utils_container_notes_get( GTK_WINDOW( self ), bat );
 
-	ok = ofo_bat_update( priv->bat );
+	text = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "pn-notes" );
+	buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( text ));
+	gtk_text_buffer_get_start_iter( buffer, &start );
+	gtk_text_buffer_get_end_iter( buffer, &end );
+	notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
+
+	ok = ofo_bat_update_notes( priv->bat, notes );
 	if( !ok ){
 		*msgerr = g_strdup( _( "Unable to update this BAT record" ));
 	}
+
+	g_free( notes );
 
 	return( ok );
 }

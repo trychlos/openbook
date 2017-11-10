@@ -1178,7 +1178,7 @@
    - ofa_idbms_get_provider_from_dossier(): new function.
    - ofa_idbms_restore(): now use a filename uri (todo #865).
    - ofo_bat_get_account(): new method.
-   - ofo_bat_set_account(): new method.
+   - ofo_bat_update_account(): new method.
    - ofo_dossier_get_last_closing_date(): new method.
    - ofo_dossier_set_last_closing_date(): new method.
    - ofo_dossier_get_prev_exe_last_entry(): new method.
