@@ -76,6 +76,8 @@ typedef struct {
  *                                                             Type     Displayable
  *                                                             -------  -----------
  * @CURRENCY_COL_CODE      : identifier                        String       Yes
+ * @CURRENCY_COL_CRE_USER  : creation user                     String       Yes
+ * @CURRENCY_COL_CRE_STAMP : creation timestamp                String       Yes
  * @CURRENCY_COL_LABEL     : label                             String       Yes
  * @CURRENCY_COL_SYMBOL    : symbol                            String       Yes
  * @CURRENCY_COL_DIGITS    : decimal digits count              String       Yes
@@ -87,6 +89,8 @@ typedef struct {
  */
 enum {
 	CURRENCY_COL_CODE = 0,
+	CURRENCY_COL_CRE_USER,
+	CURRENCY_COL_CRE_STAMP,
 	CURRENCY_COL_LABEL,
 	CURRENCY_COL_SYMBOL,
 	CURRENCY_COL_DIGITS,

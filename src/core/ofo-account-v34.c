@@ -38,7 +38,6 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account-v34.h"
-#include "api/ofo-currency.h"
 #include "api/ofo-entry.h"
 
 /* priv instance data
@@ -534,24 +533,17 @@ archive_do_add_dbms( ofoAccountv34 *account, const GDate *date, ofxAmount debit,
 {
 	ofaIGetter *getter;
 	ofaHub *hub;
-	const gchar *cur_code;
-	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
 	gchar *query, *sdate, *sdebit, *scredit;
 	gboolean ok;
 
 	getter = ofo_base_get_getter( OFO_BASE( account ));
-
-	cur_code = ofo_account_v34_get_currency( account );
-	cur_obj = ofo_currency_get_by_code( getter, cur_code );
-	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
-
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
 	sdate = my_date_to_str( date, MY_DATE_SQL );
-	sdebit = ofa_amount_to_sql( debit, cur_obj );
-	scredit = ofa_amount_to_sql( credit, cur_obj );
+	sdebit = ofa_amount_to_sql( debit, NULL );
+	scredit = ofa_amount_to_sql( credit, NULL );
 
 	query = g_strdup_printf(
 				"INSERT INTO OFA_T_ACCOUNTS_ARC "

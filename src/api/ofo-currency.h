@@ -73,6 +73,8 @@ ofoCurrency    *ofo_currency_get_by_code           ( ofaIGetter *getter, const g
 ofoCurrency    *ofo_currency_new                   ( ofaIGetter *getter );
 
 const gchar    *ofo_currency_get_code              ( const ofoCurrency *currency );
+const gchar    *ofo_currency_get_cre_user          ( const ofoCurrency *currency );
+const GTimeVal *ofo_currency_get_cre_stamp         ( const ofoCurrency *currency );
 const gchar    *ofo_currency_get_label             ( const ofoCurrency *currency );
 const gchar    *ofo_currency_get_symbol            ( const ofoCurrency *currency );
 gint            ofo_currency_get_digits            ( const ofoCurrency *currency );

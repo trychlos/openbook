@@ -2785,23 +2785,29 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
-	/* 7 */
-	/*
+	/* 9 */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_CONCIL "
-			"	MODIFY COLUMN REC_STAMP         TIMESTAMP DEFAULT 0 COMMENT 'Reconciliation timestamp'" )){
+			"	MODIFY COLUMN REC_STAMP         TIMESTAMP    DEFAULT 0   COMMENT 'Reconciliation timestamp'" )){
 		return( FALSE );
 	}
-	*/
 
-	/* 9 */
-	/*
+	/* 10 */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_CURRENCIES "
-			"	MODIFY COLUMN CUR_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Last update timestamp'" )){
+			"	ADD    COLUMN CUR_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN CUR_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN CUR_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Last update timestamp'" )){
 		return( FALSE );
 	}
-	*/
+
+	/* 11 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_CURRENCIES SET "
+			"	CUR_CRE_USER=CUR_UPD_USER,"
+			"	CUR_CRE_STAMP=CUR_UPD_STAMP" )){
+		return( FALSE );
+	}
 
 	/* 11 */
 	/*
@@ -2893,5 +2899,5 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v38( ofaMysqlDBModel *self )
 {
-	return( 27 );
+	return( 26 );
 }

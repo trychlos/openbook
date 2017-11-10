@@ -289,14 +289,16 @@ setup_columns( ofaCurrencyTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CURRENCY_COL_CODE,      _( "Code" ),   _( "ISO 3A code" ));
-	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), CURRENCY_COL_LABEL,     _( "Label" ),      NULL );
-	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), CURRENCY_COL_SYMBOL,    _( "Symbol" ),     NULL );
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), CURRENCY_COL_DIGITS,    _( "Digits" ), _( "Digits count" ));
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), CURRENCY_COL_NOTES,     _( "Notes" ),      NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), CURRENCY_COL_NOTES_PNG,    "",         _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CURRENCY_COL_UPD_USER,  _( "User" ),   _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), CURRENCY_COL_UPD_STAMP,     NULL,      _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CURRENCY_COL_CODE,      _( "Code" ),      _( "ISO 3A code" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CURRENCY_COL_CRE_USER,  _( "Cre.user" ),  _( "Creation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), CURRENCY_COL_CRE_STAMP, _( "Cre.stamp" ), _( "Creation timestamp" ));
+	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), CURRENCY_COL_LABEL,     _( "Label" ),         NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), CURRENCY_COL_SYMBOL,    _( "Symbol" ),        NULL );
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), CURRENCY_COL_DIGITS,    _( "Digits" ),    _( "Digits count" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), CURRENCY_COL_NOTES,     _( "Notes" ),         NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), CURRENCY_COL_NOTES_PNG,    "",            _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CURRENCY_COL_UPD_USER,  _( "Upd.user" ),  _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), CURRENCY_COL_UPD_STAMP, _( "Upd.stamp" ), _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), CURRENCY_COL_LABEL );
 }
@@ -423,12 +425,14 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 {
 	static const gchar *thisfn = "ofa_currency_treeview_v_sort";
 	gint cmp;
-	gchar *codea, *labela, *symba, *digita, *notesa, *updusera, *updstampa;
-	gchar *codeb, *labelb, *symbb, *digitb, *notesb, *upduserb, *updstampb;
+	gchar *codea, *labela, *symba, *digita, *notesa, *creusera, *crestampa, *updusera, *updstampa;
+	gchar *codeb, *labelb, *symbb, *digitb, *notesb, *creuserb, *crestampb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
 
 	gtk_tree_model_get( tmodel, a,
 			CURRENCY_COL_CODE,      &codea,
+			CURRENCY_COL_CRE_USER,  &creusera,
+			CURRENCY_COL_CRE_STAMP, &crestampa,
 			CURRENCY_COL_LABEL,     &labela,
 			CURRENCY_COL_SYMBOL,    &symba,
 			CURRENCY_COL_DIGITS,    &digita,
@@ -440,6 +444,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 
 	gtk_tree_model_get( tmodel, b,
 			CURRENCY_COL_CODE,      &codeb,
+			CURRENCY_COL_CRE_USER,  &creuserb,
+			CURRENCY_COL_CRE_STAMP, &crestampb,
 			CURRENCY_COL_LABEL,     &labelb,
 			CURRENCY_COL_SYMBOL,    &symbb,
 			CURRENCY_COL_DIGITS,    &digitb,
@@ -454,6 +460,12 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	switch( column_id ){
 		case CURRENCY_COL_CODE:
 			cmp = my_collate( codea, codeb );
+			break;
+		case CURRENCY_COL_CRE_USER:
+			cmp = my_collate( creusera, creuserb );
+			break;
+		case CURRENCY_COL_CRE_STAMP:
+			cmp = my_collate( crestampa, crestampb );
 			break;
 		case CURRENCY_COL_LABEL:
 			cmp = my_collate( labela, labelb );
@@ -482,6 +494,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	}
 
 	g_free( codea );
+	g_free( creusera );
+	g_free( crestampa );
 	g_free( labela );
 	g_free( symba );
 	g_free( digita );
@@ -491,6 +505,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_clear_object( &pnga );
 
 	g_free( codeb );
+	g_free( creuserb );
+	g_free( crestampb );
 	g_free( labelb );
 	g_free( symbb );
 	g_free( digitb );
