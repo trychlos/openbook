@@ -2891,14 +2891,22 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
-	/* 17 */
-	/*
+	/* 19 */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_LEDGERS "
-			"	MODIFY COLUMN LED_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+			"	ADD    COLUMN LED_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN LED_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN LED_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Properties last update timestamp'" )){
 		return( FALSE );
 	}
-	*/
+
+	/* 20 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_LEDGERS SET "
+			"	LED_CRE_USER=LED_UPD_USER,"
+			"	LED_CRE_STAMP=LED_UPD_STAMP" )){
+		return( FALSE );
+	}
 
 	/* 19 */
 	/*
@@ -2946,5 +2954,5 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v38( ofaMysqlDBModel *self )
 {
-	return( 26 );
+	return( 28 );
 }

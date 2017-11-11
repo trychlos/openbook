@@ -296,13 +296,15 @@ setup_columns( ofaLedgerTreeview *self )
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), LEDGER_COL_MNEMO,      _( "Mnemo" ),      _( "Mnemonic" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), LEDGER_COL_CRE_USER,   _( "Cre.user" ),   _( "Creation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), LEDGER_COL_CRE_STAMP,  _( "Cre.stamp" ),  _( "Creation timestamp" ));
 	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), LEDGER_COL_LABEL,      _( "Label" ),          NULL );
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), LEDGER_COL_LAST_ENTRY, _( "Last entry" ), _( "Last entry effect date" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), LEDGER_COL_LAST_CLOSE, _( "Last close" ), _( "Last close date" ));
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), LEDGER_COL_NOTES,      _( "Notes" ),          NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), LEDGER_COL_NOTES_PNG,     "",             _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), LEDGER_COL_UPD_USER,   _( "User" ),       _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), LEDGER_COL_UPD_STAMP,      NULL,          _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), LEDGER_COL_UPD_USER,   _( "Upd.user" ),   _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), LEDGER_COL_UPD_STAMP,  _( "Upd.stamp" ),  _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), LEDGER_COL_LABEL );
 }
@@ -484,14 +486,16 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	static const gchar *thisfn = "ofa_ledger_treeview_v_sort";
 	ofaLedgerTreeviewPrivate *priv;
 	gint cmp;
-	gchar *mnemoa, *labela, *entrya, *closea, *notesa, *updusera, *updstampa;
-	gchar *mnemob, *labelb, *entryb, *closeb, *notesb, *upduserb, *updstampb;
+	gchar *mnemoa, *labela, *entrya, *closea, *notesa, *creusera, *crestampa, *updusera, *updstampa;
+	gchar *mnemob, *labelb, *entryb, *closeb, *notesb, *creuserb, *crestampb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
 
 	priv = ofa_ledger_treeview_get_instance_private( OFA_LEDGER_TREEVIEW( bin ));
 
 	gtk_tree_model_get( tmodel, a,
 			LEDGER_COL_MNEMO,      &mnemoa,
+			LEDGER_COL_CRE_USER,   &creusera,
+			LEDGER_COL_CRE_STAMP,  &crestampa,
 			LEDGER_COL_LABEL,      &labela,
 			LEDGER_COL_LAST_ENTRY, &entrya,
 			LEDGER_COL_LAST_CLOSE, &closea,
@@ -503,6 +507,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 
 	gtk_tree_model_get( tmodel, b,
 			LEDGER_COL_MNEMO,      &mnemob,
+			LEDGER_COL_CRE_USER,   &creuserb,
+			LEDGER_COL_CRE_STAMP,  &crestampb,
 			LEDGER_COL_LABEL,      &labelb,
 			LEDGER_COL_LAST_ENTRY, &entryb,
 			LEDGER_COL_LAST_CLOSE, &closeb,
@@ -517,6 +523,12 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	switch( column_id ){
 		case LEDGER_COL_MNEMO:
 			cmp = my_collate( mnemoa, mnemob );
+			break;
+		case LEDGER_COL_CRE_USER:
+			cmp = my_collate( creusera, creuserb );
+			break;
+		case LEDGER_COL_CRE_STAMP:
+			cmp = my_collate( crestampa, crestampb );
 			break;
 		case LEDGER_COL_LABEL:
 			cmp = my_collate( labela, labelb );
@@ -549,6 +561,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( entrya );
 	g_free( closea );
 	g_free( notesa );
+	g_free( creusera );
+	g_free( crestampa );
 	g_free( updusera );
 	g_free( updstampa );
 	g_clear_object( &pnga );
@@ -558,6 +572,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( entryb );
 	g_free( closeb );
 	g_free( notesb );
+	g_free( creuserb );
+	g_free( crestampb );
 	g_free( upduserb );
 	g_free( updstampb );
 	g_clear_object( &pngb );

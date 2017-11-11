@@ -347,6 +347,7 @@ idialog_init( myIDialog *instance )
 	init_balances_page( OFA_LEDGER_PROPERTIES( instance ));
 
 	my_utils_container_notes_init( instance, ledger );
+	my_utils_container_crestamp_init( instance, ledger );
 	my_utils_container_updstamp_init( instance, ledger );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));

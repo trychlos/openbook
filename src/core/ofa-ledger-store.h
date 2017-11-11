@@ -77,6 +77,8 @@ typedef struct {
  *                                                             Type     in treeview    in combo
  *                                                             -------  -----------  -----------
  * @LEDGER_COL_MNEMO       : identifier                        String       Yes          Yes
+ * @LEDGER_COL_CRE_USER    : creation user                     String       Yes           No
+ * @LEDGER_COL_CRE_STAMP   : creation timestamp                String       Yes           No
  * @LEDGER_COL_LABEL       : label                             String       Yes          Yes
  * @LEDGER_COL_LAST_ENTRY  : last entry number                 String       Yes          Yes
  * @LEDGER_COL_LAST_CLOSE  : last closing date                 String       Yes          Yes
@@ -88,6 +90,8 @@ typedef struct {
  */
 enum {
 	LEDGER_COL_MNEMO = 0,
+	LEDGER_COL_CRE_USER,
+	LEDGER_COL_CRE_STAMP,
 	LEDGER_COL_LABEL,
 	LEDGER_COL_LAST_ENTRY,
 	LEDGER_COL_LAST_CLOSE,
