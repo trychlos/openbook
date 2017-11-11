@@ -381,6 +381,7 @@ idialog_init( myIDialog *instance )
 
 	/* these are main notes of the dossier */
 	my_utils_container_notes_init( instance, dossier );
+	my_utils_container_crestamp_init( instance, dossier );
 	my_utils_container_updstamp_init( instance, dossier );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
