@@ -79,6 +79,8 @@ ofoLedger      *ofo_ledger_get_by_mnemo               ( ofaIGetter *getter, cons
 ofoLedger      *ofo_ledger_new                        ( ofaIGetter *getter );
 
 const gchar    *ofo_ledger_get_mnemo                  ( const ofoLedger *ledger );
+const gchar    *ofo_ledger_get_cre_user               ( const ofoLedger *ledger );
+const GTimeVal *ofo_ledger_get_cre_stamp              ( const ofoLedger *ledger );
 const gchar    *ofo_ledger_get_label                  ( const ofoLedger *ledger );
 const gchar    *ofo_ledger_get_notes                  ( const ofoLedger *ledger );
 const gchar    *ofo_ledger_get_upd_user               ( const ofoLedger *ledger );

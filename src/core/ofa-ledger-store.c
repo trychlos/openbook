@@ -55,10 +55,11 @@ typedef struct {
 	ofaLedgerStorePrivate;
 
 static GType st_col_types[LEDGER_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, last_entry */
-		G_TYPE_STRING, G_TYPE_STRING, 0,				/* last_close, notes, notes_png */
-		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
-		G_TYPE_OBJECT									/* the #ofoLedger itself */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* mnemo, cre_user, cre_stamp */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* label, last_entry, last_close */
+		G_TYPE_STRING,  0,									/* notes, notes_png */
+		G_TYPE_STRING, G_TYPE_STRING,						/* upd_user, upd_stamp */
+		G_TYPE_OBJECT										/* the #ofoLedger itself */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
@@ -191,6 +192,8 @@ ofa_ledger_store_new( ofaIGetter *getter )
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), LEDGER_N_COLUMNS, st_col_types );
 
+		load_dataset( store );
+
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 		gtk_tree_sortable_set_sort_column_id(
@@ -199,7 +202,6 @@ ofa_ledger_store_new( ofaIGetter *getter )
 
 		my_icollector_single_set_object( collector, store );
 		signaler_connect_to_signaling_system( store );
-		load_dataset( store );
 	}
 
 	return( g_object_ref( store ));
@@ -256,7 +258,7 @@ set_row_by_iter( ofaLedgerStore *self, const ofoLedger *ledger, GtkTreeIter *ite
 {
 	ofaLedgerStorePrivate *priv;
 	static const gchar *thisfn = "ofa_ledger_store_set_row";
-	gchar *sdentry, *sdclose, *stamp;
+	gchar *sdentry, *sdclose, *crestamp, *updstamp;
 	const gchar *notes;
 	const GDate *dclose;
 	GDate dentry;
@@ -269,7 +271,8 @@ set_row_by_iter( ofaLedgerStore *self, const ofoLedger *ledger, GtkTreeIter *ite
 	sdentry = my_date_to_str( &dentry, ofa_prefs_date_get_display_format( priv->getter ));
 	dclose = ofo_ledger_get_last_close( ledger );
 	sdclose = my_date_to_str( dclose, ofa_prefs_date_get_display_format( priv->getter ));
-	stamp  = my_stamp_to_str( ofo_ledger_get_upd_stamp( ledger ), MY_STAMP_DMYYHM );
+	crestamp  = my_stamp_to_str( ofo_ledger_get_cre_stamp( ledger ), MY_STAMP_DMYYHM );
+	updstamp  = my_stamp_to_str( ofo_ledger_get_upd_stamp( ledger ), MY_STAMP_DMYYHM );
 
 	notes = ofo_ledger_get_notes( ledger );
 	error = NULL;
@@ -283,18 +286,21 @@ set_row_by_iter( ofaLedgerStore *self, const ofoLedger *ledger, GtkTreeIter *ite
 			GTK_LIST_STORE( self ),
 			iter,
 			LEDGER_COL_MNEMO,      ofo_ledger_get_mnemo( ledger ),
+			LEDGER_COL_CRE_USER,   ofo_ledger_get_cre_user( ledger ),
+			LEDGER_COL_CRE_STAMP,  crestamp,
 			LEDGER_COL_LABEL,      ofo_ledger_get_label( ledger ),
 			LEDGER_COL_LAST_ENTRY, sdentry,
 			LEDGER_COL_LAST_CLOSE, sdclose,
 			LEDGER_COL_NOTES,      notes,
 			LEDGER_COL_NOTES_PNG,  notes_png,
 			LEDGER_COL_UPD_USER,   ofo_ledger_get_upd_user( ledger ),
-			LEDGER_COL_UPD_STAMP,  stamp,
+			LEDGER_COL_UPD_STAMP,  updstamp,
 			LEDGER_COL_OBJECT,     ledger,
 			-1 );
 
 	g_object_unref( notes_png );
-	g_free( stamp );
+	g_free( crestamp );
+	g_free( updstamp );
 	g_free( sdclose );
 	g_free( sdentry );
 }

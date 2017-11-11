@@ -63,6 +63,8 @@
  */
 enum {
 	LED_MNEMO = 1,
+	LED_CRE_USER,
+	LED_CRE_STAMP,
 	LED_LABEL,
 	LED_NOTES,
 	LED_UPD_USER,
@@ -98,6 +100,14 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
 				FALSE },				/* amount, counter: export zero as empty */
+		{ OFA_BOX_CSV( LED_CRE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( LED_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				FALSE },
 		{ OFA_BOX_CSV( LED_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -222,7 +232,7 @@ static const ofsBoxDef st_doc_defs[] = {
 };
 
 #define LEDGER_TABLES_COUNT             4
-#define LEDGER_EXPORT_VERSION           1
+#define LEDGER_EXPORT_VERSION           2
 
 typedef struct {
 	GList *balances;					/* the balances per currency as a GList of GList fields */
@@ -232,8 +242,10 @@ typedef struct {
 	ofoLedgerPrivate;
 
 static ofoLedger *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
-static void       ledger_set_upd_user( ofoLedger *ledger, const gchar *upd_user );
-static void       ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp );
+static void       ledger_set_cre_user( ofoLedger *ledger, const gchar *user );
+static void       ledger_set_cre_stamp( ofoLedger *ledger, const GTimeVal *stamp );
+static void       ledger_set_upd_user( ofoLedger *ledger, const gchar *user );
+static void       ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *stamp );
 static void       ledger_set_last_clo( ofoLedger *ledger, const GDate *date );
 static gint       cmp_currencies( const gchar *a_currency, const gchar *b_currency );
 static GList     *ledger_find_balance_by_code( ofoLedger *ledger, const gchar *currency );
@@ -443,6 +455,24 @@ ofo_ledger_new( ofaIGetter *getter )
 	OFO_BASE( ledger )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( ledger );
+}
+
+/**
+ * ofo_ledger_get_cre_user:
+ */
+const gchar *
+ofo_ledger_get_cre_user( const ofoLedger *ledger )
+{
+	ofo_base_getter( LEDGER, ledger, string, NULL, LED_CRE_USER );
+}
+
+/**
+ * ofo_ledger_get_cre_stamp:
+ */
+const GTimeVal *
+ofo_ledger_get_cre_stamp( const ofoLedger *ledger )
+{
+	ofo_base_getter( LEDGER, ledger, timestamp, NULL, LED_CRE_STAMP );
 }
 
 /**
@@ -659,6 +689,24 @@ ofo_ledger_is_valid_data( const gchar *mnemo, const gchar *label, gchar **msgerr
 	return( TRUE );
 }
 
+/*
+ * ledger_set_cre_user:
+ */
+static void
+ledger_set_cre_user( ofoLedger *ledger, const gchar *user )
+{
+	ofo_base_setter( LEDGER, ledger, string, LED_CRE_USER, user );
+}
+
+/*
+ * ledger_set_cre_stamp:
+ */
+static void
+ledger_set_cre_stamp( ofoLedger *ledger, const GTimeVal *stamp )
+{
+	ofo_base_setter( LEDGER, ledger, timestamp, LED_CRE_STAMP, stamp );
+}
+
 /**
  * ofo_ledger_set_mnemo:
  */
@@ -690,18 +738,18 @@ ofo_ledger_set_notes( ofoLedger *ledger, const gchar *notes )
  * ledger_set_upd_user:
  */
 static void
-ledger_set_upd_user( ofoLedger *ledger, const gchar *upd_user )
+ledger_set_upd_user( ofoLedger *ledger, const gchar *user )
 {
-	ofo_base_setter( LEDGER, ledger, string, LED_UPD_USER, upd_user );
+	ofo_base_setter( LEDGER, ledger, string, LED_UPD_USER, user );
 }
 
 /*
  * ledger_set_upd_stamp:
  */
 static void
-ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp )
+ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *stamp )
 {
-	ofo_base_setter( LEDGER, ledger, timestamp, LED_UPD_STAMP, upd_stamp );
+	ofo_base_setter( LEDGER, ledger, timestamp, LED_UPD_STAMP, stamp );
 }
 
 /*
@@ -1741,9 +1789,11 @@ ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect )
 	query = g_string_new( "INSERT INTO OFA_T_LEDGERS" );
 
 	g_string_append_printf( query,
-			"	(LED_MNEMO,LED_LABEL,LED_NOTES,"
-			"	LED_UPD_USER, LED_UPD_STAMP) VALUES ('%s','%s',",
+			"	(LED_MNEMO,LED_CRE_USER,LED_CRE_STAMP,LED_LABEL,LED_NOTES)"
+			"	VALUES ('%s','%s','%s','%s',",
 			ofo_ledger_get_mnemo( ledger ),
+			userid,
+			stamp_str,
 			label );
 
 	if( my_strlen( notes )){
@@ -1752,13 +1802,9 @@ ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query,
-			"'%s','%s')",
-			userid, stamp_str );
-
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
-		ledger_set_upd_user( ledger, userid );
-		ledger_set_upd_stamp( ledger, &stamp );
+		ledger_set_cre_user( ledger, userid );
+		ledger_set_cre_stamp( ledger, &stamp );
 		ok = TRUE;
 	}
 
@@ -2375,6 +2421,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	gchar *splitted, *str;
 	gboolean have_prefix;
 	ofoLedger *ledger;
+	GTimeVal stamp;
 
 	numline = 0;
 	dataset = NULL;
@@ -2417,6 +2464,21 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			continue;
 		}
 		ofo_ledger_set_mnemo( ledger, cstr );
+
+		/* creation user */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			ledger_set_cre_user( ledger, cstr );
+		}
+
+		/* creation timestamp */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			my_stamp_set_from_sql( &stamp, cstr );
+			ledger_set_cre_stamp( ledger, &stamp );
+		}
 
 		/* ledger label */
 		itf = itf ? itf->next : NULL;
