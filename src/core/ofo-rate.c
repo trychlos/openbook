@@ -59,6 +59,8 @@
  */
 enum {
 	RAT_MNEMO = 1,
+	RAT_CRE_USER,
+	RAT_CRE_STAMP,
 	RAT_LABEL,
 	RAT_NOTES,
 	RAT_UPD_USER,
@@ -84,6 +86,14 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
 				FALSE },				/* export zero as empty */
+		{ OFA_BOX_CSV( RAT_CRE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( RAT_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
 		{ OFA_BOX_CSV( RAT_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -150,7 +160,7 @@ static const ofsBoxDef st_doc_defs[] = {
 };
 
 #define RATE_TABLES_COUNT               3
-#define RATE_EXPORT_VERSION             1
+#define RATE_EXPORT_VERSION             2
 
 typedef struct {
 	GList *validities;					/* the validities of the rate as a GList of GList fields */
@@ -159,6 +169,8 @@ typedef struct {
 	ofoRatePrivate;
 
 static ofoRate  *rate_find_by_mnemo( GList *set, const gchar *mnemo );
+static void      rate_set_cre_user( ofoRate *rate, const gchar *user );
+static void      rate_set_cre_stamp( ofoRate *rate, const GTimeVal *stamp );
 static void      rate_set_upd_user( ofoRate *rate, const gchar *user );
 static void      rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp );
 static GList    *rate_val_new_detail( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
@@ -367,6 +379,24 @@ ofo_rate_get_mnemo( const ofoRate *rate )
 }
 
 /**
+ * ofo_rate_get_cre_user:
+ */
+const gchar *
+ofo_rate_get_cre_user( const ofoRate *rate )
+{
+	ofo_base_getter( RATE, rate, string, NULL, RAT_CRE_USER );
+}
+
+/**
+ * ofo_rate_get_cre_stamp:
+ */
+const GTimeVal *
+ofo_rate_get_cre_stamp( const ofoRate *rate )
+{
+	ofo_base_getter( RATE, rate, timestamp, NULL, RAT_CRE_STAMP );
+}
+
+/**
  * ofo_rate_get_label:
  */
 const gchar *
@@ -538,6 +568,24 @@ ofo_rate_set_mnemo( ofoRate *rate, const gchar *mnemo )
 	ofo_base_setter( RATE, rate, string, RAT_MNEMO, mnemo );
 }
 
+/*
+ * rate_set_cre_user:
+ */
+static void
+rate_set_cre_user( ofoRate *rate, const gchar *user )
+{
+	ofo_base_setter( RATE, rate, string, RAT_CRE_USER, user );
+}
+
+/*
+ * rate_set_cre_stamp:
+ */
+static void
+rate_set_cre_stamp( ofoRate *rate, const GTimeVal *stamp )
+{
+	ofo_base_setter( RATE, rate, timestamp, RAT_CRE_STAMP, stamp );
+}
+
 /**
  * ofo_rate_set_label:
  */
@@ -557,21 +605,21 @@ ofo_rate_set_notes( ofoRate *rate, const gchar *notes )
 }
 
 /*
- * ofo_rate_set_upd_user:
+ * rate_set_upd_user:
  */
 static void
-rate_set_upd_user( ofoRate *rate, const gchar *upd_user )
+rate_set_upd_user( ofoRate *rate, const gchar *user )
 {
-	ofo_base_setter( RATE, rate, string, RAT_UPD_USER, upd_user );
+	ofo_base_setter( RATE, rate, string, RAT_UPD_USER, user );
 }
 
 /*
- * ofo_rate_set_upd_stamp:
+ * rate_set_upd_stamp:
  */
 static void
-rate_set_upd_stamp( ofoRate *rate, const GTimeVal *upd_stamp )
+rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp )
 {
-	ofo_base_setter( RATE, rate, timestamp, RAT_UPD_STAMP, upd_stamp );
+	ofo_base_setter( RATE, rate, timestamp, RAT_UPD_STAMP, stamp );
 }
 
 /**
@@ -936,9 +984,11 @@ rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect )
 	query = g_string_new( "INSERT INTO OFA_T_RATES" );
 
 	g_string_append_printf( query,
-			"	(RAT_MNEMO,RAT_LABEL,RAT_NOTES,"
-			"	RAT_UPD_USER, RAT_UPD_STAMP) VALUES ('%s','%s',",
+			"	(RAT_MNEMO,RAT_CRE_USER,RAT_CRE_STAMP,RAT_LABEL,RAT_NOTES) "
+			"	VALUES ('%s','%s','%s','%s',",
 			ofo_rate_get_mnemo( rate ),
+			userid,
+			stamp_str,
 			label );
 
 	if( my_strlen( notes )){
@@ -947,12 +997,10 @@ rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query, "'%s','%s')", userid, stamp_str );
-
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 
-		rate_set_upd_user( rate, userid );
-		rate_set_upd_stamp( rate, &stamp );
+		rate_set_cre_user( rate, userid );
+		rate_set_cre_stamp( rate, &stamp );
 		ok = TRUE;
 	}
 
@@ -1679,6 +1727,7 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	GSList *itf;
 	gchar *splitted;
 	ofoRate *rate;
+	GTimeVal stamp;
 
 	rate = ofo_rate_new( parms->getter );
 
@@ -1692,6 +1741,20 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 		return( NULL );
 	}
 	ofo_rate_set_mnemo( rate, cstr );
+
+	/* creation user */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		rate_set_cre_user( rate, cstr );
+	}
+
+	/* creation timestamp */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		rate_set_cre_stamp( rate, my_stamp_set_from_sql( &stamp, cstr ));
+	}
 
 	/* rate label */
 	itf = itf ? itf->next : NULL;

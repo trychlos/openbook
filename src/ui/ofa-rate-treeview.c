@@ -289,12 +289,14 @@ setup_columns( ofaRateTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RATE_COL_MNEMO,     _( "Mnemo" ),  _( "Mnemonic" ));
-	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), RATE_COL_LABEL,     _( "Label" ),      NULL );
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), RATE_COL_NOTES,     _( "Notes" ),      NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), RATE_COL_NOTES_PNG,    "",         _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RATE_COL_UPD_USER,  _( "User" ),   _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), RATE_COL_UPD_STAMP,     NULL,      _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RATE_COL_MNEMO,     _( "Mnemo" ),     _( "Mnemonic" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RATE_COL_CRE_USER,  _( "Cre.user" ),  _( "Creation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), RATE_COL_CRE_STAMP, _( "Cre.stamp" ), _( "Creation timestamp" ));
+	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), RATE_COL_LABEL,     _( "Label" ),         NULL );
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), RATE_COL_NOTES,     _( "Notes" ),         NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), RATE_COL_NOTES_PNG,    "",            _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), RATE_COL_UPD_USER,  _( "Upd.user" ),  _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), RATE_COL_UPD_STAMP, _( "Upd.stamp" ), _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), RATE_COL_LABEL );
 }
@@ -421,12 +423,14 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 {
 	static const gchar *thisfn = "ofa_rate_treeview_v_sort";
 	gint cmp;
-	gchar *mnemoa, *labela, *notesa, *updusera, *updstampa;
-	gchar *mnemob, *labelb, *notesb, *upduserb, *updstampb;
+	gchar *mnemoa, *labela, *notesa, *creusera, *crestampa, *updusera, *updstampa;
+	gchar *mnemob, *labelb, *notesb, *creuserb, *crestampb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
 
 	gtk_tree_model_get( tmodel, a,
 			RATE_COL_MNEMO,     &mnemoa,
+			RATE_COL_CRE_USER,  &creusera,
+			RATE_COL_CRE_STAMP, &crestampa,
 			RATE_COL_LABEL,     &labela,
 			RATE_COL_NOTES,     &notesa,
 			RATE_COL_NOTES_PNG, &pnga,
@@ -436,6 +440,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 
 	gtk_tree_model_get( tmodel, b,
 			RATE_COL_MNEMO,     &mnemob,
+			RATE_COL_CRE_USER,  &creuserb,
+			RATE_COL_CRE_STAMP, &crestampb,
 			RATE_COL_LABEL,     &labelb,
 			RATE_COL_NOTES,     &notesb,
 			RATE_COL_NOTES_PNG, &pngb,
@@ -448,6 +454,12 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	switch( column_id ){
 		case RATE_COL_MNEMO:
 			cmp = my_collate( mnemoa, mnemob );
+			break;
+		case RATE_COL_CRE_USER:
+			cmp = my_collate( creusera, creuserb );
+			break;
+		case RATE_COL_CRE_STAMP:
+			cmp = my_collate( crestampa, crestampb );
 			break;
 		case RATE_COL_LABEL:
 			cmp = my_collate( labela, labelb );
@@ -470,6 +482,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	}
 
 	g_free( mnemoa );
+	g_free( creusera );
+	g_free( crestampa );
 	g_free( labela );
 	g_free( notesa );
 	g_free( updusera );
@@ -477,6 +491,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_clear_object( &pnga );
 
 	g_free( mnemob );
+	g_free( creuserb );
+	g_free( crestampb );
 	g_free( labelb );
 	g_free( notesb );
 	g_free( upduserb );

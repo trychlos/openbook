@@ -2943,14 +2943,22 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
-	/* 23 */
-	/*
+	/* 25 */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_RATES "
-			"	MODIFY COLUMN RAT_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+			"	ADD    COLUMN RAT_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN RAT_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN RAT_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Properties last update timestamp'" )){
 		return( FALSE );
 	}
-	*/
+
+	/* 26 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_RATES SET "
+			"	RAT_CRE_USER=RAT_UPD_USER,"
+			"	RAT_CRE_STAMP=RAT_UPD_STAMP" )){
+		return( FALSE );
+	}
 
 	/* 25 */
 	/*
