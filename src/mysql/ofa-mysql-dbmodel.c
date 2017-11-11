@@ -32,6 +32,7 @@
 
 #include "my/my-iident.h"
 #include "my/my-iprogress.h"
+#include "my/my-stamp.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
@@ -492,6 +493,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* ACC_OPEN_DEBIT and ACC_OPEN_CREDIT dropped in v31 */
 	/* keep_unsettled and keep_unreconciliated added in v35 */
 	/* add ACC_FV_DEBIT/CREDIT and rename fields in v37 */
+	/* creation user and timestamp added in v38 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS ("
 			"	ACC_NUMBER          VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
@@ -560,6 +562,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* Labels are resized in v28 */
 	/* URI is resized in v35 */
 	/* add SOLDE_BEGIN_SET and SOLDE_END_SET in v37 */
+	/* creation user and timestamp added in v38 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
 			"	BAT_ID        BIGINT      NOT NULL UNIQUE            COMMENT 'Intern import identifier',"
@@ -600,6 +603,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 
 	/* n° 4 */
 	/* Identifiers and labels are resized in v28 */
+	/* creation user and timestamp added in v38 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CLASSES ("
 			"	CLA_NUMBER       INTEGER     NOT NULL UNIQUE         COMMENT 'Class number',"
@@ -613,6 +617,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 
 	/* n° 5 */
 	/* Identifiers and labels are resized in v28 */
+	/* creation user and timestamp added in v38 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CURRENCIES ("
 			"	CUR_CODE      VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
@@ -637,6 +642,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* DOS_LAST_DOC added in v35 */
 	/* Last identifiers are splitted to ofa_t_dossier_ids in v37 */
 	/* Add DOS_TVAIC, DOS_NAF, DOS_LABEL2 in v37 */
+	/* creation user and timestamp added in v38 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
 			"	DOS_ID               INTEGER   NOT NULL UNIQUE       COMMENT 'Row identifier',"
@@ -695,6 +701,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* ope number is added in v32 */
 	/* rule, notes are added in v35 */
 	/* status changed to x(1), ENT_IPERIOD, ENT_TIERS added in v37 */
+	/* creation user and timestamp added in v38 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
 			"	ENT_DEFFECT      DATE NOT NULL                       COMMENT 'Imputation effect date',"
@@ -1897,11 +1904,9 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 	}
 
 	/* for each account and date, recompute the soldes
-	 * but for the first day of the exercice */
+	 * but for the first day of the exercice
+	 * note: empty dataset is not an error as the db may have juste been created */
 	dataset = ofo_account_v34_get_dataset( priv->getter );
-	if( !dataset ){
-		return( FALSE );
-	}
 	errs = 0;
 	for( ita=priv->v33_accounts ; ita ; ita=ita->next ){
 		cstr = ( const gchar * ) ita->data;
@@ -2713,8 +2718,19 @@ static gboolean
 dbmodel_v38( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v38";
+	ofaMysqlDBModelPrivate *priv;
+	const gchar *userid;
+	gchar *stamp_str;
+	GTimeVal stamp;
+	GString *query;
+	gboolean ok;
 
 	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	priv = ofa_mysql_dbmodel_get_instance_private( self );
+
+	userid = ofa_idbconnect_get_account( priv->connect );
+	my_stamp_set_now( &stamp );
 
 	/* 1 */
 	if( !exec_query( self,
@@ -2809,23 +2825,54 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
-	/* 11 */
-	/*
+	/* 12 */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_DOCS "
-			"	MODIFY COLUMN DOC_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Last update timestamp'" )){
+			"	ADD    COLUMN DOC_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN DOC_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN DOC_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Last update timestamp'" )){
 		return( FALSE );
 	}
-	*/
 
 	/* 13 */
-	/*
 	if( !exec_query( self,
-			"ALTER TABLE OFA_T_DOSSIER "
-			"	MODIFY COLUMN DOS_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+			"UPDATE OFA_T_DOCS SET "
+			"	DOC_CRE_USER=DOC_UPD_USER,"
+			"	DOC_CRE_STAMP=DOC_UPD_STAMP" )){
 		return( FALSE );
 	}
-	*/
+
+	/* 14 */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	ADD    COLUMN DOS_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN DOS_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN DOS_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Properties last update timestamp'" )){
+		return( FALSE );
+	}
+
+	/* 15 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_DOSSIER SET "
+			"	DOS_CRE_USER=DOS_UPD_USER,"
+			"	DOS_CRE_STAMP=DOS_UPD_STAMP" )){
+		return( FALSE );
+	}
+
+	/* 16
+	 * if the dossier has never been updated (just created) */
+	query = g_string_new( NULL );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	g_string_append_printf( query,
+			"UPDATE OFA_T_DOSSIER SET "
+			"	DOS_CRE_USER='%s',"
+			"	DOS_CRE_STAMP='%s' WHERE DOS_UPD_USER IS NULL", userid, stamp_str );
+	ok = exec_query( self, query->str );
+	g_free( stamp_str );
+	g_string_free( query, TRUE );
+	if( !ok ){
+		return( FALSE );
+	}
 
 	/* 17 */
 	if( !exec_query( self,

@@ -85,6 +85,8 @@ GType                ofo_dossier_get_type                   ( void ) G_GNUC_CONS
 
 ofoDossier          *ofo_dossier_new                        ( ofaIGetter *getter );
 
+const gchar         *ofo_dossier_get_cre_user               ( const ofoDossier *dossier );
+const GTimeVal      *ofo_dossier_get_cre_stamp              ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_default_currency       ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_exe_begin              ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_exe_end                ( const ofoDossier *dossier );

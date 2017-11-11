@@ -44,6 +44,10 @@
 
    CORE DB Model v38
 
+   - ofoAccount: have creation user and timestamp (todo #1488).
+   - ofoBat: have creation user and timestamp (todo #1488).
+   - ofoClass: have creation user and timestamp (todo #1488).
+   - ofoCurrency: have creation user and timestamp (todo #1488).
    - ofoEntry: have creation user and timestamp (todo #1488).
 
  Bug fixes:

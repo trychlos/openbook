@@ -59,6 +59,8 @@
  */
 enum {
 	DOS_ID = 1,
+	DOS_CRE_USER,
+	DOS_CRE_STAMP,
 	DOS_DEF_CURRENCY,
 	DOS_EXE_BEGIN,
 	DOS_EXE_END,
@@ -104,6 +106,14 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_INTEGER,
 				TRUE,					/* importable */
 				FALSE },				/* amount, counter: export zero as empty */
+		{ OFA_BOX_CSV( DOS_CRE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				FALSE },
 		{ OFA_BOX_CSV( DOS_DEF_CURRENCY ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -256,7 +266,7 @@ static const ofsBoxDef st_id_defs[] = {
 };
 
 #define DOSSIER_TABLES_COUNT            5
-#define DOSSIER_EXPORT_VERSION          1
+#define DOSSIER_EXPORT_VERSION          2
 
 typedef struct {
 	GList *cur_details;					/* a list of solde accounts per currency */
@@ -388,6 +398,32 @@ ofo_dossier_new( ofaIGetter *getter )
 	dossier = dossier_do_read( getter );
 
 	return( dossier );
+}
+
+/**
+ * ofo_dossier_get_cre_user:
+ * @dossier: this #ofoDossier instance.
+ *
+ * Returns: the identifier of the user who has last updated the
+ * properties of the dossier.
+ */
+const gchar *
+ofo_dossier_get_cre_user( const ofoDossier *dossier )
+{
+	ofo_base_getter( DOSSIER, dossier, string, NULL, DOS_CRE_USER );
+}
+
+/**
+ * ofo_dossier_get_cre_stamp:
+ * @dossier: this #ofoDossier instance.
+ *
+ * Returns: the timestamp when a user has last updated the properties
+ * of the dossier.
+ */
+const GTimeVal *
+ofo_dossier_get_cre_stamp( const ofoDossier *dossier )
+{
+	ofo_base_getter( DOSSIER, dossier, timestamp, NULL, DOS_CRE_STAMP );
 }
 
 /**
@@ -586,7 +622,7 @@ ofo_dossier_get_upd_user( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_stamp:
+ * ofo_dossier_get_upd_stamp:
  * @dossier: this #ofoDossier instance.
  *
  * Returns: the timestamp when a user has last updated the properties

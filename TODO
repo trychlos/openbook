@@ -288,6 +288,7 @@
 
 1455 2017- 4-12 when importing the default accounts chart on new dossier:
                 review the source file (does not fit the new table format)
+     2017-11-11 idem for all imported files
 
 1466 2017- 4-18 reconciliation page: have a pane in the status bar so
                 that the user can roughly align amounts with the treeview
@@ -351,16 +352,16 @@
                 #1  0x000000000048246c in store_on_need_refilter (store=<optimized out>, self=<optimized out>) at ../../../src/ui/ofa-unsettled-page.c:561
      2017-10-20 ofaUnsettledPage: tview is a TVBIN: check added
 
-1500 2017-10-22 AUDIT: add current user
+1500 2017-10-22 DBMS AUDIT: add current user
 
 1501 2017-10-28 myIBin interface: should define a my-bin-changed signal
                 to be used in place of ofa-changed
      2017-11- 1 myIBin: signal defined
      2017-11- 1 myPeriodBin: signal used
 
-1502 2017-11- 2 RecurrentModel: move editable amounts to a child table
+1502 2017-11- 2 DBMS RecurrentModel: move editable amounts to a child table
 
-1503 2017-11- 2 RecurrentRun: move amounts to a child table
+1503 2017-11- 2 DBMS RecurrentRun: move amounts to a child table
 
 1507
 
