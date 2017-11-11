@@ -51,10 +51,10 @@ typedef struct {
 	ofaPaimeanStorePrivate;
 
 static GType st_col_types[PAM_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING,					/* code, label */
-		G_TYPE_STRING, G_TYPE_STRING,					/* account, notes */
-		0, G_TYPE_STRING, G_TYPE_STRING,				/* notes_png, upd_user, upd_stamp */
-		G_TYPE_OBJECT									/* the #ofoPaimean itself */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* code, cre_user, cre_stamp */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* label, account, notes */
+		0,              G_TYPE_STRING,  G_TYPE_STRING,		/* notes_png, upd_user, upd_stamp */
+		G_TYPE_OBJECT										/* the #ofoPaimean itself */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
@@ -179,6 +179,8 @@ ofa_paimean_store_new( ofaIGetter *getter )
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), PAM_N_COLUMNS, st_col_types );
 
+		load_dataset( store );
+
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 		gtk_tree_sortable_set_sort_column_id(
@@ -187,7 +189,6 @@ ofa_paimean_store_new( ofaIGetter *getter )
 
 		my_icollector_single_set_object( collector, store );
 		signaler_connect_to_signaling_system( store );
-		load_dataset( store );
 	}
 
 	return( g_object_ref( store ));
@@ -243,12 +244,13 @@ static void
 set_row_by_iter( ofaPaimeanStore *self, const ofoPaimean *paimean, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_paimean_store_set_row";
-	gchar *stamp;
+	gchar *crestamp, *updstamp;
 	const gchar *notes, *label, *account;
 	GError *error;
 	GdkPixbuf *notes_png;
 
-	stamp  = my_stamp_to_str( ofo_paimean_get_upd_stamp( paimean ), MY_STAMP_DMYYHM );
+	crestamp  = my_stamp_to_str( ofo_paimean_get_cre_stamp( paimean ), MY_STAMP_DMYYHM );
+	updstamp  = my_stamp_to_str( ofo_paimean_get_upd_stamp( paimean ), MY_STAMP_DMYYHM );
 	label = ofo_paimean_get_label( paimean );
 	account = ofo_paimean_get_account( paimean );
 
@@ -264,17 +266,20 @@ set_row_by_iter( ofaPaimeanStore *self, const ofoPaimean *paimean, GtkTreeIter *
 			GTK_LIST_STORE( self ),
 			iter,
 			PAM_COL_CODE,       ofo_paimean_get_code( paimean ),
+			PAM_COL_CRE_USER,   ofo_paimean_get_cre_user( paimean ),
+			PAM_COL_CRE_STAMP,  crestamp,
 			PAM_COL_LABEL,      label ? label : "",
 			PAM_COL_ACCOUNT,    account ? account : "",
 			PAM_COL_NOTES,      notes,
 			PAM_COL_NOTES_PNG,  notes_png,
 			PAM_COL_UPD_USER,   ofo_paimean_get_upd_user( paimean ),
-			PAM_COL_UPD_STAMP,  stamp,
+			PAM_COL_UPD_STAMP,  updstamp,
 			PAM_COL_OBJECT,     paimean,
 			-1 );
 
 	g_object_unref( notes_png );
-	g_free( stamp );
+	g_free( crestamp );
+	g_free( updstamp );
 }
 
 static gboolean

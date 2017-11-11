@@ -308,6 +308,7 @@ init_dialog( ofaPaimeanProperties *self )
 	gtk_window_set_title( GTK_WINDOW( self ), title );
 
 	my_utils_container_notes_init( self, paimean );
+	my_utils_container_crestamp_init( self, paimean );
 	my_utils_container_updstamp_init( self, paimean );
 }
 

@@ -75,6 +75,8 @@ typedef struct {
  *                                                         Type     Displayable
  *                                                         -------  -----------
  * @PAM_COL_CODE       : mnemonic identifier               String       Yes
+ * @PAM_COL_CRE_USER   : creation user                     String       Yes
+ * @PAM_COL_CRE_STAMP  : creation timestamp                String       Yes
  * @PAM_COL_LABEL      : label                             String       Yes
  * @PAM_COL_ACCOUNT    : account                           String       Yes
  * @PAM_COL_NOTES      : notes                             String       Yes
@@ -85,6 +87,8 @@ typedef struct {
  */
 enum {
 	PAM_COL_CODE = 0,
+	PAM_COL_CRE_USER,
+	PAM_COL_CRE_STAMP,
 	PAM_COL_LABEL,
 	PAM_COL_ACCOUNT,
 	PAM_COL_NOTES,
