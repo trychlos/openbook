@@ -2926,14 +2926,22 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
-	/* 21 */
-	/*
+	/* 23 */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_PAIMEANS "
-			"	MODIFY COLUMN PAM_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+			"	ADD    COLUMN PAM_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN PAM_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN PAM_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Properties last update timestamp'" )){
 		return( FALSE );
 	}
-	*/
+
+	/* 24 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_PAIMEANS SET "
+			"	PAM_CRE_USER=PAM_UPD_USER,"
+			"	PAM_CRE_STAMP=PAM_UPD_STAMP" )){
+		return( FALSE );
+	}
 
 	/* 23 */
 	/*

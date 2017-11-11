@@ -74,6 +74,8 @@ ofoPaimean     *ofo_paimean_get_by_code           ( ofaIGetter *getter, const gc
 ofoPaimean     *ofo_paimean_new                   ( ofaIGetter *getter );
 
 const gchar    *ofo_paimean_get_code              ( const ofoPaimean *paimean );
+const gchar    *ofo_paimean_get_cre_user          ( const ofoPaimean *paimean );
+const GTimeVal *ofo_paimean_get_cre_stamp         ( const ofoPaimean *paimean );
 const gchar    *ofo_paimean_get_label             ( const ofoPaimean *paimean );
 const gchar    *ofo_paimean_get_account           ( const ofoPaimean *paimean );
 const gchar    *ofo_paimean_get_notes             ( const ofoPaimean *paimean );

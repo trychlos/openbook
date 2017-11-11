@@ -290,13 +290,15 @@ setup_columns( ofaPaimeanTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PAM_COL_CODE,       _( "Code" ),        NULL );
-	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), PAM_COL_LABEL,      _( "Label" ),       NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PAM_COL_ACCOUNT,    _( "Account" ),     NULL );
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), PAM_COL_NOTES,      _( "Notes" ),       NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), PAM_COL_NOTES_PNG,     "",          _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PAM_COL_UPD_USER,   _( "User" ),    _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), PAM_COL_UPD_STAMP,      NULL,       _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PAM_COL_CODE,       _( "Code" ),          NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PAM_COL_CRE_USER,   _( "Cre.user" ),  _( "Creation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), PAM_COL_CRE_STAMP,  _( "Cre.stamp" ), _( "Creation timestamp" ));
+	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), PAM_COL_LABEL,      _( "Label" ),         NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PAM_COL_ACCOUNT,    _( "Account" ),       NULL );
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), PAM_COL_NOTES,      _( "Notes" ),         NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), PAM_COL_NOTES_PNG,     "",            _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PAM_COL_UPD_USER,   _( "Upd.user" ),  _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), PAM_COL_UPD_STAMP,  _( "Upd.stamp" ), _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), PAM_COL_LABEL );
 }
@@ -464,12 +466,14 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 {
 	static const gchar *thisfn = "ofa_paimean_treeview_v_sort";
 	gint cmp;
-	gchar *codea, *labela, *accounta, *notesa, *updusera, *updstampa;
-	gchar *codeb, *labelb, *accountb, *notesb, *upduserb, *updstampb;
+	gchar *codea, *labela, *accounta, *notesa, *creusera, *crestampa, *updusera, *updstampa;
+	gchar *codeb, *labelb, *accountb, *notesb, *creuserb, *crestampb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
 
 	gtk_tree_model_get( tmodel, a,
 			PAM_COL_CODE,       &codea,
+			PAM_COL_CRE_USER,   &creusera,
+			PAM_COL_CRE_STAMP,  &crestampa,
 			PAM_COL_LABEL,      &labela,
 			PAM_COL_ACCOUNT,    &accounta,
 			PAM_COL_NOTES,      &notesa,
@@ -480,6 +484,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 
 	gtk_tree_model_get( tmodel, b,
 			PAM_COL_CODE,       &codeb,
+			PAM_COL_CRE_USER,   &creuserb,
+			PAM_COL_CRE_STAMP,  &crestampb,
 			PAM_COL_LABEL,      &labelb,
 			PAM_COL_ACCOUNT,    &accountb,
 			PAM_COL_NOTES,      &notesb,
@@ -493,6 +499,12 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	switch( column_id ){
 		case PAM_COL_CODE:
 			cmp = my_collate( codea, codeb );
+			break;
+		case PAM_COL_CRE_USER:
+			cmp = my_collate( creusera, creuserb );
+			break;
+		case PAM_COL_CRE_STAMP:
+			cmp = my_collate( crestampa, crestampb );
 			break;
 		case PAM_COL_LABEL:
 			cmp = my_collate( labela, labelb );
@@ -521,6 +533,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( labela );
 	g_free( accounta );
 	g_free( notesa );
+	g_free( creusera );
+	g_free( crestampa );
 	g_free( updusera );
 	g_free( updstampa );
 	g_clear_object( &pnga );
@@ -529,6 +543,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( labelb );
 	g_free( accountb );
 	g_free( notesb );
+	g_free( creuserb );
+	g_free( crestampb );
 	g_free( upduserb );
 	g_free( updstampb );
 	g_clear_object( &pngb );

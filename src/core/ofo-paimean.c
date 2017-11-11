@@ -55,6 +55,8 @@
  */
 enum {
 	PAM_CODE = 1,
+	PAM_CRE_USER,
+	PAM_CRE_STAMP,
 	PAM_LABEL,
 	PAM_ACCOUNT,
 	PAM_NOTES,
@@ -77,6 +79,14 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
 				FALSE },				/* export zero as empty */
+		{ OFA_BOX_CSV( PAM_CRE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( PAM_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
 		{ OFA_BOX_CSV( PAM_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -113,7 +123,7 @@ static const ofsBoxDef st_doc_defs[] = {
 };
 
 #define PAIMEAN_TABLES_COUNT            2
-#define PAIMEAN_EXPORT_VERSION          1
+#define PAIMEAN_EXPORT_VERSION          2
 
 typedef struct {
 	GList *docs;
@@ -121,6 +131,8 @@ typedef struct {
 	ofoPaimeanPrivate;
 
 static ofoPaimean *paimean_find_by_code( GList *set, const gchar *code );
+static void        paimean_set_cre_user( ofoPaimean *paimean, const gchar *user );
+static void        paimean_set_cre_stamp( ofoPaimean *paimean, const GTimeVal *stamp );
 static void        paimean_set_upd_user( ofoPaimean *paimean, const gchar *user );
 static void        paimean_set_upd_stamp( ofoPaimean *paimean, const GTimeVal *stamp );
 static GList      *get_orphans( ofaIGetter *getter, const gchar *table );
@@ -302,6 +314,24 @@ ofo_paimean_get_code( const ofoPaimean *paimean )
 }
 
 /**
+ * ofo_paimean_get_cre_user:
+ */
+const gchar *
+ofo_paimean_get_cre_user( const ofoPaimean *paimean )
+{
+	ofo_base_getter( PAIMEAN, paimean, string, NULL, PAM_CRE_USER );
+}
+
+/**
+ * ofo_paimean_get_cre_stamp:
+ */
+const GTimeVal *
+ofo_paimean_get_cre_stamp( const ofoPaimean *paimean )
+{
+	ofo_base_getter( PAIMEAN, paimean, timestamp, NULL, PAM_CRE_STAMP );
+}
+
+/**
  * ofo_paimean_get_label:
  */
 const gchar *
@@ -393,6 +423,24 @@ ofo_paimean_set_code( ofoPaimean *paimean, const gchar *code )
 	ofo_base_setter( PAIMEAN, paimean, string, PAM_CODE, code );
 }
 
+/*
+ * paimean_set_cre_user:
+ */
+static void
+paimean_set_cre_user( ofoPaimean *paimean, const gchar *user )
+{
+	ofo_base_setter( PAIMEAN, paimean, string, PAM_CRE_USER, user );
+}
+
+/*
+ * paimean_set_cre_stamp:
+ */
+static void
+paimean_set_cre_stamp( ofoPaimean *paimean, const GTimeVal *stamp )
+{
+	ofo_base_setter( PAIMEAN, paimean, timestamp, PAM_CRE_STAMP, stamp );
+}
+
 /**
  * ofo_paimean_set_label:
  */
@@ -421,21 +469,21 @@ ofo_paimean_set_notes( ofoPaimean *paimean, const gchar *notes )
 }
 
 /*
- * ofo_paimean_set_upd_user:
+ * paimean_set_upd_user:
  */
 static void
-paimean_set_upd_user( ofoPaimean *paimean, const gchar *upd_user )
+paimean_set_upd_user( ofoPaimean *paimean, const gchar *user )
 {
-	ofo_base_setter( PAIMEAN, paimean, string, PAM_UPD_USER, upd_user );
+	ofo_base_setter( PAIMEAN, paimean, string, PAM_UPD_USER, user );
 }
 
 /*
- * ofo_paimean_set_upd_stamp:
+ * paimean_set_upd_stamp:
  */
 static void
-paimean_set_upd_stamp( ofoPaimean *paimean, const GTimeVal *upd_stamp )
+paimean_set_upd_stamp( ofoPaimean *paimean, const GTimeVal *stamp )
 {
-	ofo_base_setter( PAIMEAN, paimean, timestamp, PAM_UPD_STAMP, upd_stamp );
+	ofo_base_setter( PAIMEAN, paimean, timestamp, PAM_UPD_STAMP, stamp );
 }
 
 /**
@@ -569,10 +617,11 @@ paimean_insert_main( ofoPaimean *paimean, const ofaIDBConnect *connect )
 	query = g_string_new( "INSERT INTO OFA_T_PAIMEANS" );
 
 	g_string_append_printf( query,
-			"	(PAM_CODE,PAM_LABEL,PAM_ACCOUNT,"
-			"	PAM_NOTES,PAM_UPD_USER, PAM_UPD_STAMP)"
-			"	VALUES ('%s','%s','%s',",
+			"	(PAM_CODE,PAM_CRE_USER, PAM_CRE_STAMP,PAM_LABEL,PAM_ACCOUNT,PAM_NOTES)"
+			"	VALUES ('%s','%s','%s','%s','%s',",
 			ofo_paimean_get_code( paimean ),
+			userid,
+			stamp_str,
 			label,
 			ofo_paimean_get_account( paimean ));
 
@@ -582,12 +631,10 @@ paimean_insert_main( ofoPaimean *paimean, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query, "'%s','%s')", userid, stamp_str );
-
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 
-		paimean_set_upd_user( paimean, userid );
-		paimean_set_upd_stamp( paimean, &stamp );
+		paimean_set_cre_user( paimean, userid );
+		paimean_set_cre_stamp( paimean, &stamp );
 		ok = TRUE;
 	}
 
@@ -1059,6 +1106,7 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	GSList *itf;
 	gchar *splitted;
 	ofoPaimean *paimean;
+	GTimeVal stamp;
 
 	paimean = ofo_paimean_new( parms->getter );
 
@@ -1072,6 +1120,20 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 		return( NULL );
 	}
 	ofo_paimean_set_code( paimean, cstr );
+
+	/* creation user */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		paimean_set_cre_user( paimean, cstr );
+	}
+
+	/* creation timestamp */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		paimean_set_cre_stamp( paimean, my_stamp_set_from_sql( &stamp, cstr ));
+	}
 
 	/* paimean label */
 	itf = itf ? itf->next : NULL;
