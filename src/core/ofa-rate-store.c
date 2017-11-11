@@ -51,9 +51,10 @@ typedef struct {
 	ofaRateStorePrivate;
 
 static GType st_col_types[RATE_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, notes */
-		0, G_TYPE_STRING, G_TYPE_STRING,				/* notes_png, upd_user, upd_stamp */
-		G_TYPE_OBJECT									/* the #ofoRate itself */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* mnemo, cre_user, cre_stamp */
+		G_TYPE_STRING,  G_TYPE_STRING,  0,					/* label, notes, notes_png */
+		G_TYPE_STRING,  G_TYPE_STRING,						/* upd_user, upd_stamp */
+		G_TYPE_OBJECT										/* the #ofoRate itself */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
@@ -178,6 +179,8 @@ ofa_rate_store_new( ofaIGetter *getter )
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), RATE_N_COLUMNS, st_col_types );
 
+		load_dataset( store );
+
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 		gtk_tree_sortable_set_sort_column_id(
@@ -186,7 +189,6 @@ ofa_rate_store_new( ofaIGetter *getter )
 
 		my_icollector_single_set_object( collector, store );
 		signaler_connect_to_signaling_system( store );
-		load_dataset( store );
 	}
 
 	return( g_object_ref( store ));
@@ -242,12 +244,13 @@ static void
 set_row_by_iter( ofaRateStore *self, const ofoRate *rate, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_rate_store_set_row";
-	gchar *stamp;
+	gchar *crestamp, *updstamp;
 	const gchar *notes;
 	GError *error;
 	GdkPixbuf *notes_png;
 
-	stamp  = my_stamp_to_str( ofo_rate_get_upd_stamp( rate ), MY_STAMP_DMYYHM );
+	crestamp  = my_stamp_to_str( ofo_rate_get_cre_stamp( rate ), MY_STAMP_DMYYHM );
+	updstamp  = my_stamp_to_str( ofo_rate_get_upd_stamp( rate ), MY_STAMP_DMYYHM );
 
 	notes = ofo_rate_get_notes( rate );
 	error = NULL;
@@ -261,16 +264,19 @@ set_row_by_iter( ofaRateStore *self, const ofoRate *rate, GtkTreeIter *iter )
 			GTK_LIST_STORE( self ),
 			iter,
 			RATE_COL_MNEMO,     ofo_rate_get_mnemo( rate ),
+			RATE_COL_CRE_USER,  ofo_rate_get_cre_user( rate ),
+			RATE_COL_CRE_STAMP, crestamp,
 			RATE_COL_LABEL,     ofo_rate_get_label( rate ),
 			RATE_COL_NOTES,     notes,
 			RATE_COL_NOTES_PNG, notes_png,
 			RATE_COL_UPD_USER,  ofo_rate_get_upd_user( rate ),
-			RATE_COL_UPD_STAMP, stamp,
+			RATE_COL_UPD_STAMP, updstamp,
 			RATE_COL_OBJECT,    rate,
 			-1 );
 
 	g_object_unref( notes_png );
-	g_free( stamp );
+	g_free( crestamp );
+	g_free( updstamp );
 }
 
 static gboolean

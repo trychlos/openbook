@@ -85,6 +85,8 @@ ofoRate        *ofo_rate_get_by_mnemo      ( ofaIGetter *getter, const gchar *mn
 ofoRate        *ofo_rate_new               ( ofaIGetter *getter );
 
 const gchar    *ofo_rate_get_mnemo         ( const ofoRate *rate );
+const gchar    *ofo_rate_get_cre_user      ( const ofoRate *rate );
+const GTimeVal *ofo_rate_get_cre_stamp     ( const ofoRate *rate );
 const gchar    *ofo_rate_get_label         ( const ofoRate *rate );
 const gchar    *ofo_rate_get_notes         ( const ofoRate *rate );
 const gchar    *ofo_rate_get_upd_user      ( const ofoRate *rate );

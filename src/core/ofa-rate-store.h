@@ -76,6 +76,8 @@ typedef struct {
  *                                                         Type     Displayable
  *                                                         -------  -----------
  * @RATE_COL_MNEMO     : mnemonic identifier               String       Yes
+ * @RATE_COL_CRE_USER  : creation user                     String       Yes
+ * @RATE_COL_CRE_STAMP : creation timestamp                String       Yes
  * @RATE_COL_LABEL     : label                             String       Yes
  * @RATE_COL_NOTES     : notes                             String       Yes
  * @RATE_COL_NOTES_PNG : notes indicator                   Pixbuf       Yes
@@ -85,6 +87,8 @@ typedef struct {
  */
 enum {
 	RATE_COL_MNEMO = 0,
+	RATE_COL_CRE_USER,
+	RATE_COL_CRE_STAMP,
 	RATE_COL_LABEL,
 	RATE_COL_NOTES,
 	RATE_COL_NOTES_PNG,
