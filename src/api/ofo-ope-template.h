@@ -165,12 +165,24 @@ ofoOpeTemplate *ofo_ope_template_new                      ( ofaIGetter *getter )
 ofoOpeTemplate *ofo_ope_template_new_from_template        ( ofoOpeTemplate *model );
 
 const gchar    *ofo_ope_template_get_mnemo                ( const ofoOpeTemplate *model );
+const gchar    *ofo_ope_template_get_cre_user             ( const ofoOpeTemplate *model );
+const GTimeVal *ofo_ope_template_get_cre_stamp            ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_label                ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_ledger               ( const ofoOpeTemplate *model );
 gboolean        ofo_ope_template_get_ledger_locked        ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_ref                  ( const ofoOpeTemplate *model );
 gboolean        ofo_ope_template_get_ref_locked           ( const ofoOpeTemplate *model );
+gboolean        ofo_ope_template_get_ref_mandatory        ( const ofoOpeTemplate *model );
 gint            ofo_ope_template_get_pam_row              ( const ofoOpeTemplate *model );
+gboolean        ofo_ope_template_get_have_tiers           ( const ofoOpeTemplate *model );
+const gchar    *ofo_ope_template_get_tiers                ( const ofoOpeTemplate *model );
+gboolean        ofo_ope_template_get_tiers_locked         ( const ofoOpeTemplate *model );
+gboolean        ofo_ope_template_get_have_qppro           ( const ofoOpeTemplate *model );
+const gchar    *ofo_ope_template_get_qppro                ( const ofoOpeTemplate *model );
+gboolean        ofo_ope_template_get_qppro_locked         ( const ofoOpeTemplate *model );
+gboolean        ofo_ope_template_get_have_rule            ( const ofoOpeTemplate *model );
+const gchar    *ofo_ope_template_get_rule                 ( const ofoOpeTemplate *model );
+gboolean        ofo_ope_template_get_rule_locked          ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_notes                ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_upd_user             ( const ofoOpeTemplate *model );
 const GTimeVal *ofo_ope_template_get_upd_stamp            ( const ofoOpeTemplate *model );
@@ -184,7 +196,17 @@ void            ofo_ope_template_set_ledger               ( ofoOpeTemplate *mode
 void            ofo_ope_template_set_ledger_locked        ( ofoOpeTemplate *model, gboolean ledger_locked );
 void            ofo_ope_template_set_ref                  ( ofoOpeTemplate *model, const gchar *ref );
 void            ofo_ope_template_set_ref_locked           ( ofoOpeTemplate *model, gboolean ref_locked );
+void            ofo_ope_template_set_ref_mandatory        ( ofoOpeTemplate *model, gboolean ref_mandatory );
 void            ofo_ope_template_set_pam_row              ( ofoOpeTemplate *model, gint row );
+void            ofo_ope_template_set_have_tiers           ( ofoOpeTemplate *model, gboolean have_tiers );
+void            ofo_ope_template_set_tiers                ( ofoOpeTemplate *model, const gchar *tiers );
+void            ofo_ope_template_set_tiers_locked         ( ofoOpeTemplate *model, gboolean tiers_locked );
+void            ofo_ope_template_set_have_qppro           ( ofoOpeTemplate *model, gboolean have_qppro );
+void            ofo_ope_template_set_qppro                ( ofoOpeTemplate *model, const gchar *qppro );
+void            ofo_ope_template_set_qppro_locked         ( ofoOpeTemplate *model, gboolean qppro_locked );
+void            ofo_ope_template_set_have_rule            ( ofoOpeTemplate *model, gboolean have_rule );
+void            ofo_ope_template_set_rule                 ( ofoOpeTemplate *model, const gchar *rule );
+void            ofo_ope_template_set_rule_locked          ( ofoOpeTemplate *model, gboolean rule_locked );
 void            ofo_ope_template_set_notes                ( ofoOpeTemplate *model, const gchar *notes );
 
 gint            ofo_ope_template_detail_get_count         ( ofoOpeTemplate *model );

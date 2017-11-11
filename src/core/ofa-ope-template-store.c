@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
 
@@ -55,12 +57,16 @@ typedef struct {
 	ofaOpeTemplateStorePrivate;
 
 static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, ledger */
-		G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_BOOLEAN,	/* ledger_locked, ref, ref_locked */
-		G_TYPE_STRING,									/* pam_row */
-		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
-		G_TYPE_STRING,									/* upd_stamp */
-		G_TYPE_OBJECT									/* the #ofoOpeTemplate itself */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* mnemo, cre_user, cre_stamp */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* label, ledger, ledger_locked */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* ref, ref_locked, ref_mandatory */
+		G_TYPE_STRING,										/* pam_row */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* have_tiers, tiers, tiers_locked */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* have_qppro, qppro, qppro_locked */
+		G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* have_rule, rule, rule_locked */
+		G_TYPE_STRING,  0,              G_TYPE_STRING,		/* notes, notes_png, upd_user */
+		G_TYPE_STRING,										/* upd_stamp */
+		G_TYPE_OBJECT										/* the #ofoOpeTemplate itself */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
@@ -280,12 +286,13 @@ set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIt
 {
 	static const gchar *thisfn = "ofa_ope_template_store_set_row";
 	gint pamrow;
-	gchar *stamp, *spamrow;
+	gchar *crestamp, *updstamp, *spamrow;
 	const gchar *notes;
 	GError *error;
 	GdkPixbuf *notes_png;
 
-	stamp  = my_stamp_to_str( ofo_ope_template_get_upd_stamp( ope ), MY_STAMP_DMYYHM );
+	crestamp  = my_stamp_to_str( ofo_ope_template_get_cre_stamp( ope ), MY_STAMP_DMYYHM );
+	updstamp  = my_stamp_to_str( ofo_ope_template_get_upd_stamp( ope ), MY_STAMP_DMYYHM );
 
 	pamrow = ofo_ope_template_get_pam_row( ope );
 	spamrow = pamrow >= 0 ? g_strdup_printf( "%d", pamrow ) : g_strdup( "" );
@@ -301,21 +308,34 @@ set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIt
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
+			OPE_TEMPLATE_COL_CRE_USER,      ofo_ope_template_get_cre_user( ope ),
+			OPE_TEMPLATE_COL_CRE_STAMP,     crestamp,
 			OPE_TEMPLATE_COL_LABEL,         ofo_ope_template_get_label( ope ),
 			OPE_TEMPLATE_COL_LEDGER,        ofo_ope_template_get_ledger( ope ),
-			OPE_TEMPLATE_COL_LEDGER_LOCKED, ofo_ope_template_get_ledger_locked( ope ),
+			OPE_TEMPLATE_COL_LEDGER_LOCKED, ofo_ope_template_get_ledger_locked( ope ) ? _( "Yes" ):_( "No" ),
 			OPE_TEMPLATE_COL_REF,           ofo_ope_template_get_ref( ope ),
-			OPE_TEMPLATE_COL_REF_LOCKED,    ofo_ope_template_get_ref_locked( ope ),
+			OPE_TEMPLATE_COL_REF_LOCKED,    ofo_ope_template_get_ref_locked( ope ) ? _( "Yes" ):_( "No" ),
+			OPE_TEMPLATE_COL_REF_MANDATORY, ofo_ope_template_get_ref_mandatory( ope ) ? _( "Yes" ):_( "No" ),
 			OPE_TEMPLATE_COL_PAM_ROW,       spamrow,
+			OPE_TEMPLATE_COL_HAVE_TIERS,    ofo_ope_template_get_have_tiers( ope ) ? _( "Yes" ):_( "No" ),
+			OPE_TEMPLATE_COL_TIERS,         ofo_ope_template_get_tiers( ope ),
+			OPE_TEMPLATE_COL_TIERS_LOCKED,  ofo_ope_template_get_tiers_locked( ope ) ? _( "Yes" ):_( "No" ),
+			OPE_TEMPLATE_COL_HAVE_QPPRO,    ofo_ope_template_get_have_qppro( ope ) ? _( "Yes" ):_( "No" ),
+			OPE_TEMPLATE_COL_QPPRO,         ofo_ope_template_get_qppro( ope ),
+			OPE_TEMPLATE_COL_QPPRO_LOCKED,  ofo_ope_template_get_qppro_locked( ope ) ? _( "Yes" ):_( "No" ),
+			OPE_TEMPLATE_COL_HAVE_RULE,     ofo_ope_template_get_have_rule( ope ) ? _( "Yes" ):_( "No" ),
+			OPE_TEMPLATE_COL_RULE,          ofo_ope_template_get_rule( ope ),
+			OPE_TEMPLATE_COL_RULE_LOCKED,   ofo_ope_template_get_rule_locked( ope ) ? _( "Yes" ):_( "No" ),
 			OPE_TEMPLATE_COL_NOTES,         notes,
 			OPE_TEMPLATE_COL_NOTES_PNG,     notes_png,
 			OPE_TEMPLATE_COL_UPD_USER,      ofo_ope_template_get_upd_user( ope ),
-			OPE_TEMPLATE_COL_UPD_STAMP,     stamp,
+			OPE_TEMPLATE_COL_UPD_STAMP,     updstamp,
 			-1 );
 
 	g_object_unref( notes_png );
 	g_free( spamrow );
-	g_free( stamp );
+	g_free( crestamp );
+	g_free( updstamp );
 
 	ofa_istore_set_values( OFA_ISTORE( self ), iter, ( void * ) ope );
 }
