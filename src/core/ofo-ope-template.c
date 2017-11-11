@@ -60,12 +60,24 @@
  */
 enum {
 	OTE_MNEMO = 1,
+	OTE_CRE_USER,
+	OTE_CRE_STAMP,
 	OTE_LABEL,
 	OTE_LED_MNEMO,
 	OTE_LED_LOCKED,
 	OTE_REF,
 	OTE_REF_LOCKED,
+	OTE_REF_MANDATORY,
 	OTE_PAM_ROW,
+	OTE_HAVE_TIERS,
+	OTE_TIERS,
+	OTE_TIERS_LOCKED,
+	OTE_HAVE_QPPRO,
+	OTE_QPPRO,
+	OTE_QPPRO_LOCKED,
+	OTE_HAVE_RULE,
+	OTE_RULE,
+	OTE_RULE_LOCKED,
 	OTE_NOTES,
 	OTE_UPD_USER,
 	OTE_UPD_STAMP,
@@ -96,6 +108,14 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
 				FALSE },				/* export zero as empty */
+		{ OFA_BOX_CSV( OTE_CRE_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( OTE_CRE_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
 		{ OFA_BOX_CSV( OTE_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -116,6 +136,50 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( OTE_REF_MANDATORY ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( OTE_PAM_ROW ),
+				OFA_TYPE_INTEGER,
+				FALSE,
+				TRUE },
+		{ OFA_BOX_CSV( OTE_HAVE_TIERS ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( OTE_TIERS ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( OTE_TIERS_LOCKED ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( OTE_HAVE_QPPRO ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( OTE_QPPRO ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( OTE_QPPRO_LOCKED ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( OTE_HAVE_RULE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( OTE_RULE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( OTE_RULE_LOCKED ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( OTE_NOTES ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -126,10 +190,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				FALSE },
 		{ OFA_BOX_CSV( OTE_UPD_STAMP ),
 				OFA_TYPE_TIMESTAMP,
-				FALSE,
-				TRUE },
-		{ OFA_BOX_CSV( OTE_PAM_ROW ),
-				OFA_TYPE_INTEGER,
 				FALSE,
 				TRUE },
 		{ 0 }
@@ -196,7 +256,7 @@ static const ofsBoxDef st_doc_defs[] = {
 };
 
 #define OPE_TEMPLATE_TABLES_COUNT       3
-#define OPE_TEMPLATE_EXPORT_VERSION     1
+#define OPE_TEMPLATE_EXPORT_VERSION     2
 
 typedef struct {
 	GList *details;						/* the details of the operation template as a GList of GList fields */
@@ -206,8 +266,10 @@ typedef struct {
 
 static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gchar          *get_mnemo_new_from( const ofoOpeTemplate *model );
-static void            ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *upd_user );
-static void            ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp );
+static void            ope_template_set_cre_user( ofoOpeTemplate *model, const gchar *user );
+static void            ope_template_set_cre_stamp( ofoOpeTemplate *model, const GTimeVal *stamp );
+static void            ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *user );
+static void            ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *stamp );
 static GList          *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean        model_do_insert( ofoOpeTemplate *model, const ofaIDBConnect *connect );
 static gboolean        model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect );
@@ -519,6 +581,24 @@ get_mnemo_new_from( const ofoOpeTemplate *model )
 }
 
 /**
+ * ofo_ope_template_get_cre_user:
+ */
+const gchar *
+ofo_ope_template_get_cre_user( const ofoOpeTemplate *model )
+{
+	ofo_base_getter( OPE_TEMPLATE, model, string, NULL, OTE_CRE_USER );
+}
+
+/**
+ * ofo_ope_template_get_cre_stamp:
+ */
+const GTimeVal *
+ofo_ope_template_get_cre_stamp( const ofoOpeTemplate *model )
+{
+	ofo_base_getter( OPE_TEMPLATE, model, timestamp, NULL, OTE_CRE_STAMP );
+}
+
+/**
  * ofo_ope_template_get_label:
  */
 const gchar *
@@ -578,6 +658,22 @@ ofo_ope_template_get_ref_locked( const ofoOpeTemplate *model )
 }
 
 /**
+ * ofo_ope_template_get_ref_mandatory:
+ */
+gboolean
+ofo_ope_template_get_ref_mandatory( const ofoOpeTemplate *model )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
+
+	cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_REF_MANDATORY );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
  * ofo_ope_template_get_pam_row:
  *
  * Returns: the row index, starting with zero, of the account which is
@@ -587,6 +683,129 @@ gint
 ofo_ope_template_get_pam_row( const ofoOpeTemplate *model )
 {
 	ofo_base_getter( OPE_TEMPLATE, model, int, -1, OTE_PAM_ROW );
+}
+
+/**
+ * ofo_ope_template_get_have_tiers:
+ */
+gboolean
+ofo_ope_template_get_have_tiers( const ofoOpeTemplate *model )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
+
+	cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_HAVE_TIERS );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_ope_template_get_tiers:
+ */
+const gchar *
+ofo_ope_template_get_tiers( const ofoOpeTemplate *model )
+{
+	ofo_base_getter( OPE_TEMPLATE, model, string, NULL, OTE_TIERS );
+}
+
+/**
+ * ofo_ope_template_get_tiers_locked:
+ */
+gboolean
+ofo_ope_template_get_tiers_locked( const ofoOpeTemplate *model )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
+
+	cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_TIERS_LOCKED );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_ope_template_get_have_qppro:
+ */
+gboolean
+ofo_ope_template_get_have_qppro( const ofoOpeTemplate *model )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
+
+	cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_HAVE_QPPRO );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_ope_template_get_qppro:
+ */
+const gchar *
+ofo_ope_template_get_qppro( const ofoOpeTemplate *model )
+{
+	ofo_base_getter( OPE_TEMPLATE, model, string, NULL, OTE_QPPRO );
+}
+
+/**
+ * ofo_ope_template_get_qppro_locked:
+ */
+gboolean
+ofo_ope_template_get_qppro_locked( const ofoOpeTemplate *model )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
+
+	cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_QPPRO_LOCKED );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_ope_template_get_have_rule:
+ */
+gboolean
+ofo_ope_template_get_have_rule( const ofoOpeTemplate *model )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
+
+	cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_HAVE_RULE );
+
+	return( !my_collate( cstr, "Y" ));
+}
+
+/**
+ * ofo_ope_template_get_rule:
+ */
+const gchar *
+ofo_ope_template_get_rule( const ofoOpeTemplate *model )
+{
+	ofo_base_getter( OPE_TEMPLATE, model, string, NULL, OTE_RULE );
+}
+
+/**
+ * ofo_ope_template_get_rule_locked:
+ */
+gboolean
+ofo_ope_template_get_rule_locked( const ofoOpeTemplate *model )
+{
+	const gchar *cstr;
+
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
+
+	cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, OTE_RULE_LOCKED );
+
+	return( !my_collate( cstr, "Y" ));
 }
 
 /**
@@ -697,6 +916,24 @@ ofo_ope_template_set_mnemo( ofoOpeTemplate *model, const gchar *mnemo )
 	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_MNEMO, mnemo );
 }
 
+/*
+ * ofo_ope_template_set_cre_user:
+ */
+static void
+ope_template_set_cre_user( ofoOpeTemplate *model, const gchar *user )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_CRE_USER, user );
+}
+
+/*
+ * ofo_ope_template_set_cre_stamp:
+ */
+static void
+ope_template_set_cre_stamp( ofoOpeTemplate *model, const GTimeVal *stamp )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_CRE_STAMP, stamp );
+}
+
 /**
  * ofo_ope_template_set_label:
  */
@@ -734,12 +971,21 @@ ofo_ope_template_set_ref( ofoOpeTemplate *model, const gchar *ref )
 }
 
 /**
- * ofo_ope_template_set_ref:
+ * ofo_ope_template_set_ref_locked:
  */
 void
 ofo_ope_template_set_ref_locked( ofoOpeTemplate *model, gboolean ref_locked )
 {
 	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_REF_LOCKED, ref_locked ? "Y":"N" );
+}
+
+/**
+ * ofo_ope_template_set_ref_mandatory:
+ */
+void
+ofo_ope_template_set_ref_mandatory( ofoOpeTemplate *model, gboolean ref_mandatory )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_REF_MANDATORY, ref_mandatory ? "Y":"N" );
 }
 
 /**
@@ -749,6 +995,87 @@ void
 ofo_ope_template_set_pam_row( ofoOpeTemplate *model, gint row )
 {
 	ofo_base_setter( OPE_TEMPLATE, model, int, OTE_PAM_ROW, row );
+}
+
+/**
+ * ofo_ope_template_set_have_tiers:
+ */
+void
+ofo_ope_template_set_have_tiers( ofoOpeTemplate *model, gboolean have_tiers )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_HAVE_TIERS, have_tiers ? "Y":"N" );
+}
+
+/**
+ * ofo_ope_template_set_tiers:
+ */
+void
+ofo_ope_template_set_tiers( ofoOpeTemplate *model, const gchar *tiers )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_TIERS, tiers );
+}
+
+/**
+ * ofo_ope_template_set_tiers_locked:
+ */
+void
+ofo_ope_template_set_tiers_locked( ofoOpeTemplate *model, gboolean tiers_locked )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_TIERS_LOCKED, tiers_locked ? "Y":"N" );
+}
+
+/**
+ * ofo_ope_template_set_have_qppro:
+ */
+void
+ofo_ope_template_set_have_qppro( ofoOpeTemplate *model, gboolean have_qppro )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_HAVE_QPPRO, have_qppro ? "Y":"N" );
+}
+
+/**
+ * ofo_ope_template_set_qppro:
+ */
+void
+ofo_ope_template_set_qppro( ofoOpeTemplate *model, const gchar *qppro )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_QPPRO, qppro );
+}
+
+/**
+ * ofo_ope_template_set_qppro_locked:
+ */
+void
+ofo_ope_template_set_qppro_locked( ofoOpeTemplate *model, gboolean qppro_locked )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_QPPRO_LOCKED, qppro_locked ? "Y":"N" );
+}
+
+/**
+ * ofo_ope_template_set_have_rule:
+ */
+void
+ofo_ope_template_set_have_rule( ofoOpeTemplate *model, gboolean have_rule )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_HAVE_RULE, have_rule ? "Y":"N" );
+}
+
+/**
+ * ofo_ope_template_set_rule:
+ */
+void
+ofo_ope_template_set_rule( ofoOpeTemplate *model, const gchar *rule )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_RULE, rule );
+}
+
+/**
+ * ofo_ope_template_set_rule_locked:
+ */
+void
+ofo_ope_template_set_rule_locked( ofoOpeTemplate *model, gboolean rule_locked )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_RULE_LOCKED, rule_locked ? "Y":"N" );
 }
 
 /**
@@ -764,18 +1091,18 @@ ofo_ope_template_set_notes( ofoOpeTemplate *model, const gchar *notes )
  * ofo_ope_template_set_upd_user:
  */
 static void
-ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *upd_user )
+ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *user )
 {
-	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_UPD_USER, upd_user );
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_UPD_USER, user );
 }
 
 /*
  * ofo_ope_template_set_upd_stamp:
  */
 static void
-ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp )
+ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *stamp )
 {
-	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_UPD_STAMP, upd_stamp );
+	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_UPD_STAMP, stamp );
 }
 
 /**
@@ -1229,7 +1556,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *label, *notes, *ref, *stamp_str;
+	gchar *label, *notes, *ref, *stamp_str, *stiers, *sqppro, *srule;
 	GTimeVal stamp;
 	gint row;
 	const gchar *userid;
@@ -1237,6 +1564,9 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_ope_template_get_label( model ));
 	ref = my_utils_quote_sql( ofo_ope_template_get_ref( model ));
+	stiers = my_utils_quote_sql( ofo_ope_template_get_tiers( model ));
+	sqppro = my_utils_quote_sql( ofo_ope_template_get_qppro( model ));
+	srule = my_utils_quote_sql( ofo_ope_template_get_rule( model ));
 	notes = my_utils_quote_sql( ofo_ope_template_get_notes( model ));
 	my_stamp_set_now( &stamp );
 	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
@@ -1244,10 +1574,15 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	query = g_string_new( "INSERT INTO OFA_T_OPE_TEMPLATES" );
 
 	g_string_append_printf( query,
-			"	(OTE_MNEMO,OTE_LABEL,OTE_LED_MNEMO,OTE_LED_LOCKED,"
-			"	OTE_REF,OTE_REF_LOCKED,OTE_PAM_ROW,OTE_NOTES,"
-			"	OTE_UPD_USER, OTE_UPD_STAMP) VALUES ('%s','%s','%s','%s',",
+			"	(OTE_MNEMO,OTE_CRE_USER, OTE_CRE_STAMP,OTE_LABEL,OTE_LED_MNEMO,OTE_LED_LOCKED,"
+			"	 OTE_REF,OTE_REF_LOCKED,OTE_REF_MANDATORY,OTE_PAM_ROW,"
+			"	 OTE_HAVE_TIERS,OTE_TIERS,OTE_TIERS_LOCKED,"
+			"	 OTE_HAVE_QPPRO,OTE_QPPRO,OTE_QPPRO_LOCKED,"
+			"	 OTE_HAVE_RULE,OTE_RULE,OTE_RULE_LOCKED,OTE_NOTES) "
+			"	VALUES ('%s','%s','%s','%s','%s','%s',",
 			ofo_ope_template_get_mnemo( model ),
+			userid,
+			stamp_str,
 			label,
 			ofo_ope_template_get_ledger( model ),
 			ofo_ope_template_get_ledger_locked( model ) ? "Y":"N" );
@@ -1259,6 +1594,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	}
 
 	g_string_append_printf( query, "'%s',", ofo_ope_template_get_ref_locked( model ) ? "Y":"N" );
+	g_string_append_printf( query, "'%s',", ofo_ope_template_get_ref_mandatory( model ) ? "Y":"N" );
 
 	row = ofo_ope_template_get_pam_row( model );
 	if( row >= 0 ){
@@ -1267,22 +1603,49 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	if( my_strlen( notes )){
-		g_string_append_printf( query, "'%s',", notes );
+	g_string_append_printf( query, "'%s',", ofo_ope_template_get_have_tiers( model ) ? "Y":"N" );
+	if( my_strlen( stiers )){
+		g_string_append_printf( query, "'%s',", stiers );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
+	g_string_append_printf( query, "'%s',", ofo_ope_template_get_tiers_locked( model ) ? "Y":"N" );
 
-	g_string_append_printf( query,
-			"'%s','%s')", userid, stamp_str );
+	g_string_append_printf( query, "'%s',", ofo_ope_template_get_have_qppro( model ) ? "Y":"N" );
+	if( my_strlen( sqppro )){
+		g_string_append_printf( query, "'%s',", sqppro );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+	g_string_append_printf( query, "'%s',", ofo_ope_template_get_qppro_locked( model ) ? "Y":"N" );
+
+	g_string_append_printf( query, "'%s',", ofo_ope_template_get_have_rule( model ) ? "Y":"N" );
+	if( my_strlen( srule )){
+		g_string_append_printf( query, "'%s',", srule );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+	g_string_append_printf( query, "'%s',", ofo_ope_template_get_rule_locked( model ) ? "Y":"N" );
+
+	if( my_strlen( notes )){
+		g_string_append_printf( query, "'%s'", notes );
+	} else {
+		query = g_string_append( query, "NULL" );
+	}
+
+	query = g_string_append( query, ")" );
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
-	ope_template_set_upd_user( model, userid );
-	ope_template_set_upd_stamp( model, &stamp );
+	ope_template_set_cre_user( model, userid );
+	ope_template_set_cre_stamp( model, &stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
+	g_free( srule );
+	g_free( sqppro );
+	g_free( stiers );
+	g_free( ref );
 	g_free( label );
 	g_free( stamp_str );
 
@@ -1342,10 +1705,10 @@ model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *connect, gint 
 
 	g_string_append_printf( query,
 			"	(OTE_MNEMO,OTE_DET_ROW,OTE_DET_COMMENT,"
-			"	OTE_DET_ACCOUNT,OTE_DET_ACCOUNT_LOCKED,"
-			"	OTE_DET_LABEL,OTE_DET_LABEL_LOCKED,"
-			"	OTE_DET_DEBIT,OTE_DET_DEBIT_LOCKED,"
-			"	OTE_DET_CREDIT,OTE_DET_CREDIT_LOCKED) "
+			"	 OTE_DET_ACCOUNT,OTE_DET_ACCOUNT_LOCKED,"
+			"	 OTE_DET_LABEL,OTE_DET_LABEL_LOCKED,"
+			"	 OTE_DET_DEBIT,OTE_DET_DEBIT_LOCKED,"
+			"	 OTE_DET_CREDIT,OTE_DET_CREDIT_LOCKED) "
 			"	VALUES('%s',%d,",
 			ofo_ope_template_get_mnemo( model ), rang );
 
@@ -1451,7 +1814,7 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 {
 	gboolean ok;
 	GString *query;
-	gchar *label, *ref, *notes, *stamp_str;
+	gchar *label, *ref, *notes, *stamp_str, *stiers, *sqppro, *srule;
 	const gchar *new_mnemo, *userid;
 	GTimeVal stamp;
 	gint row;
@@ -1459,6 +1822,9 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_ope_template_get_label( model ));
 	ref = my_utils_quote_sql( ofo_ope_template_get_ref( model ));
+	stiers = my_utils_quote_sql( ofo_ope_template_get_tiers( model ));
+	sqppro = my_utils_quote_sql( ofo_ope_template_get_qppro( model ));
+	srule = my_utils_quote_sql( ofo_ope_template_get_rule( model ));
 	notes = my_utils_quote_sql( ofo_ope_template_get_notes( model ));
 	new_mnemo = ofo_ope_template_get_mnemo( model );
 	my_stamp_set_now( &stamp );
@@ -1481,6 +1847,7 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 	}
 
 	g_string_append_printf( query, "OTE_REF_LOCKED='%s',", ofo_ope_template_get_ref_locked( model ) ? "Y":"N" );
+	g_string_append_printf( query, "OTE_REF_MANDATORY='%s',", ofo_ope_template_get_ref_mandatory( model ) ? "Y":"N" );
 
 	row = ofo_ope_template_get_pam_row( model );
 	if( row >= 0 ){
@@ -1488,6 +1855,30 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 	} else {
 		query = g_string_append( query, "OTE_PAM_ROW=NULL," );
 	}
+
+	g_string_append_printf( query, "OTE_HAVE_TIERS='%s',", ofo_ope_template_get_have_tiers( model ) ? "Y":"N" );
+	if( my_strlen( stiers )){
+		g_string_append_printf( query, "OTE_TIERS='%s',", stiers );
+	} else {
+		query = g_string_append( query, "OTE_TIERS=NULL," );
+	}
+	g_string_append_printf( query, "OTE_TIERS_LOCKED='%s',", ofo_ope_template_get_tiers_locked( model ) ? "Y":"N" );
+
+	g_string_append_printf( query, "OTE_HAVE_QPPRO='%s',", ofo_ope_template_get_have_qppro( model ) ? "Y":"N" );
+	if( my_strlen( sqppro )){
+		g_string_append_printf( query, "OTE_QPPRO='%s',", sqppro );
+	} else {
+		query = g_string_append( query, "OTE_QPPRO=NULL," );
+	}
+	g_string_append_printf( query, "OTE_QPPRO_LOCKED='%s',", ofo_ope_template_get_qppro_locked( model ) ? "Y":"N" );
+
+	g_string_append_printf( query, "OTE_HAVE_RULE='%s',", ofo_ope_template_get_have_rule( model ) ? "Y":"N" );
+	if( my_strlen( srule )){
+		g_string_append_printf( query, "OTE_RULE='%s',", srule );
+	} else {
+		query = g_string_append( query, "OTE_RULE=NULL," );
+	}
+	g_string_append_printf( query, "OTE_RULE_LOCKED='%s',", ofo_ope_template_get_rule_locked( model ) ? "Y":"N" );
 
 	g_string_append_printf( query,
 			"	OTE_UPD_USER='%s',OTE_UPD_STAMP='%s'"
@@ -1503,8 +1894,9 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 
 	g_string_free( query, TRUE );
 	g_free( notes );
-	g_free( stamp_str );
+	g_free( ref );
 	g_free( label );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -1984,7 +2376,8 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	GSList *itf;
 	gchar *splitted;
 	ofoOpeTemplate *model;
-	gboolean locked;
+	gboolean locked, mandatory;
+	GTimeVal stamp;
 
 	model = ofo_ope_template_new( parms->getter );
 
@@ -1998,6 +2391,21 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 		return( NULL );
 	}
 	ofo_ope_template_set_mnemo( model, cstr );
+
+	/* creation user */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ope_template_set_cre_user( model, cstr );
+	}
+
+	/* creation timestamp */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		my_stamp_set_from_sql( &stamp, cstr );
+		ope_template_set_cre_stamp( model, &stamp );
+	}
 
 	/* model label */
 	itf = itf ? itf->next : NULL;
@@ -2041,6 +2449,71 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	locked = my_utils_boolean_from_str( cstr );
 	ofo_ope_template_set_ref_locked( model, locked );
+
+	/* ref mandatory
+	 * default to false if not set, but must be valid if set */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	mandatory = my_utils_boolean_from_str( cstr );
+	ofo_ope_template_set_ref_mandatory( model, mandatory );
+
+	/* pma row */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_ope_template_set_pam_row( model, atoi( cstr ));
+	}
+
+	/* have tiers */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofo_ope_template_set_have_tiers( model, my_utils_boolean_from_str( cstr ));
+
+	/* tiers */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_ope_template_set_tiers( model, cstr );
+	}
+
+	/* tiers locked */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofo_ope_template_set_tiers_locked( model, my_utils_boolean_from_str( cstr ));
+
+	/* have qppro */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofo_ope_template_set_have_qppro( model, my_utils_boolean_from_str( cstr ));
+
+	/* qppro */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_ope_template_set_qppro( model, cstr );
+	}
+
+	/* qppro locked */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofo_ope_template_set_qppro_locked( model, my_utils_boolean_from_str( cstr ));
+
+	/* have rule */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofo_ope_template_set_have_rule( model, my_utils_boolean_from_str( cstr ));
+
+	/* rule */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_ope_template_set_rule( model, cstr );
+	}
+
+	/* rule locked */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofo_ope_template_set_rule_locked( model, my_utils_boolean_from_str( cstr ));
 
 	/* notes
 	 * we are tolerant on the last field... */

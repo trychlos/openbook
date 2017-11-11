@@ -2908,14 +2908,23 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
-	/* 19 */
-	/*
+	/* 21 */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES "
-			"	MODIFY COLUMN OTE_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+			"	ADD    COLUMN OTE_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN OTE_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN OTE_RULE          VARCHAR(256)             COMMENT 'Default rule',"
+			"	MODIFY COLUMN OTE_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Properties last update timestamp'" )){
 		return( FALSE );
 	}
-	*/
+
+	/* 22 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES SET "
+			"	OTE_CRE_USER=OTE_UPD_USER,"
+			"	OTE_CRE_STAMP=OTE_UPD_STAMP" )){
+		return( FALSE );
+	}
 
 	/* 21 */
 	/*

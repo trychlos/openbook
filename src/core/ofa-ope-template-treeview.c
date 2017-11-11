@@ -394,15 +394,29 @@ setup_columns( ofaOpeTemplateTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_MNEMO,         _( "Mnemo" ),  _( "Identifier" ));
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), OPE_TEMPLATE_COL_LABEL,         _( "Label" ),      NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_LEDGER,        _( "Ledger" ),     NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_REF,           _( "Ref." ),   _( "Piece reference" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_PAM_ROW,       _( "PAM" ),    _( "Paiement target" ));
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), OPE_TEMPLATE_COL_NOTES,         _( "Notes" ),      NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_NOTES_PNG,        "",         _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_UPD_USER,      _( "User" ),   _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_UPD_STAMP,         NULL,      _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_MNEMO,         _( "Mnemo" ),        _( "Identifier" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_CRE_USER,      _( "Cre.user" ),     _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_CRE_STAMP,     _( "Cre.stamp" ),    _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), OPE_TEMPLATE_COL_LABEL,         _( "Label" ),            NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_LEDGER,        _( "Ledger" ),           NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_LEDGER_LOCKED, _( "Led.locked" ),   _( "Ledger is locked" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_REF,           _( "Ref." ),         _( "Piece reference" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_REF_LOCKED,    _( "Ref.locked" ),   _( "Reference is locked" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_REF_MANDATORY, _( "Ref.mandat" ),   _( "Reference is mandatory" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_PAM_ROW,       _( "PAM" ),          _( "Target of the mean of paiement" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_HAVE_TIERS,    _( "Have.tiers" ),   _( "Have tiers" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_TIERS,         _( "Tiers" ),            NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_TIERS_LOCKED,  _( "Tiers.locked" ), _( "Tiers is locked" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_HAVE_QPPRO,    _( "Have.pro" ),     _( "Have professional part" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_QPPRO,         _( "Pro.part" ),     _( "Professional part" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_QPPRO_LOCKED,  _( "Pro.locked" ),   _( "Professional part is locked" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_HAVE_RULE,     _( "Have.rule" ),    _( "Have rule" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_RULE,          _( "Rule" ),             NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_RULE_LOCKED,   _( "Rule.locked" ),  _( "Rule is locked" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), OPE_TEMPLATE_COL_NOTES,         _( "Notes" ),            NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_NOTES_PNG,        "",               _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_UPD_USER,      _( "Upd.user" ),     _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_UPD_STAMP,     _( "Upd.stamp" ),    _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), OPE_TEMPLATE_COL_LABEL );
 }
@@ -571,31 +585,61 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	static const gchar *thisfn = "ofa_ope_template_treeview_v_sort";
 	GtkTreeModel *child_model;
 	gint cmp;
-	gchar *mnemoa, *labela, *ledgera, *refa, *notesa, *usera, *stampa;
-	gchar *mnemob, *labelb, *ledgerb, *refb, *notesb, *userb, *stampb;
+	gchar *mnemoa, *labela, *ledgera, *ledlcka, *refa, *reflcka, *refmdta, *havtiera, *tiera, *tierlcka, *havproa, *proa,
+			*prolcka, *havrula, *rula, *rullcka, *notesa, *creusera, *crestampa, *updusera, *updstampa;
+	gchar *mnemob, *labelb, *ledgerb, *ledlckb, *refb, *reflckb, *refmdtb, *havtierb, *tierb, *tierlckb, *havprob, *prob,
+			*prolckb, *havrulb, *rulb, *rullckb, *notesb, *creuserb, *crestampb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
 	gboolean handled;
 
 	gtk_tree_model_get( tmodel, a,
-			OPE_TEMPLATE_COL_MNEMO,     &mnemoa,
-			OPE_TEMPLATE_COL_LABEL,     &labela,
-			OPE_TEMPLATE_COL_LEDGER,    &ledgera,
-			OPE_TEMPLATE_COL_REF,       &refa,
-			OPE_TEMPLATE_COL_NOTES,     &notesa,
-			OPE_TEMPLATE_COL_NOTES_PNG, &pnga,
-			OPE_TEMPLATE_COL_UPD_USER,  &usera,
-			OPE_TEMPLATE_COL_UPD_STAMP, &stampa,
+			OPE_TEMPLATE_COL_MNEMO,         &mnemoa,
+			OPE_TEMPLATE_COL_CRE_USER,      &creusera,
+			OPE_TEMPLATE_COL_CRE_STAMP,     &crestampa,
+			OPE_TEMPLATE_COL_LABEL,         &labela,
+			OPE_TEMPLATE_COL_LEDGER,        &ledgera,
+			OPE_TEMPLATE_COL_LEDGER_LOCKED, &ledlcka,
+			OPE_TEMPLATE_COL_REF,           &refa,
+			OPE_TEMPLATE_COL_REF_LOCKED,    &reflcka,
+			OPE_TEMPLATE_COL_REF_MANDATORY, &refmdta,
+			OPE_TEMPLATE_COL_HAVE_TIERS,    &havtiera,
+			OPE_TEMPLATE_COL_TIERS,         &tiera,
+			OPE_TEMPLATE_COL_TIERS_LOCKED,  &tierlcka,
+			OPE_TEMPLATE_COL_HAVE_QPPRO,    &havproa,
+			OPE_TEMPLATE_COL_QPPRO,         &proa,
+			OPE_TEMPLATE_COL_QPPRO_LOCKED,  &prolcka,
+			OPE_TEMPLATE_COL_HAVE_RULE,     &havrula,
+			OPE_TEMPLATE_COL_RULE,          &rula,
+			OPE_TEMPLATE_COL_RULE_LOCKED,   &rullcka,
+			OPE_TEMPLATE_COL_NOTES,         &notesa,
+			OPE_TEMPLATE_COL_NOTES_PNG,     &pnga,
+			OPE_TEMPLATE_COL_UPD_USER,      &updusera,
+			OPE_TEMPLATE_COL_UPD_STAMP,     &updstampa,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
-			OPE_TEMPLATE_COL_MNEMO,     &mnemob,
-			OPE_TEMPLATE_COL_LABEL,     &labelb,
-			OPE_TEMPLATE_COL_LEDGER,    &ledgerb,
-			OPE_TEMPLATE_COL_REF,       &refb,
-			OPE_TEMPLATE_COL_NOTES,     &notesb,
-			OPE_TEMPLATE_COL_NOTES_PNG, &pngb,
-			OPE_TEMPLATE_COL_UPD_USER,  &userb,
-			OPE_TEMPLATE_COL_UPD_STAMP, &stampb,
+			OPE_TEMPLATE_COL_MNEMO,         &mnemob,
+			OPE_TEMPLATE_COL_CRE_USER,      &creuserb,
+			OPE_TEMPLATE_COL_CRE_STAMP,     &crestampb,
+			OPE_TEMPLATE_COL_LABEL,         &labelb,
+			OPE_TEMPLATE_COL_LEDGER_LOCKED, &ledlckb,
+			OPE_TEMPLATE_COL_LEDGER,        &ledgerb,
+			OPE_TEMPLATE_COL_REF,           &refb,
+			OPE_TEMPLATE_COL_REF_LOCKED,    &reflckb,
+			OPE_TEMPLATE_COL_REF_MANDATORY, &refmdtb,
+			OPE_TEMPLATE_COL_HAVE_TIERS,    &havtierb,
+			OPE_TEMPLATE_COL_TIERS,         &tierb,
+			OPE_TEMPLATE_COL_TIERS_LOCKED,  &tierlckb,
+			OPE_TEMPLATE_COL_HAVE_QPPRO,    &havprob,
+			OPE_TEMPLATE_COL_QPPRO,         &prob,
+			OPE_TEMPLATE_COL_QPPRO_LOCKED,  &prolckb,
+			OPE_TEMPLATE_COL_HAVE_RULE,     &havrulb,
+			OPE_TEMPLATE_COL_RULE,          &rulb,
+			OPE_TEMPLATE_COL_RULE_LOCKED,   &rullckb,
+			OPE_TEMPLATE_COL_NOTES,         &notesb,
+			OPE_TEMPLATE_COL_NOTES_PNG,     &pngb,
+			OPE_TEMPLATE_COL_UPD_USER,      &upduserb,
+			OPE_TEMPLATE_COL_UPD_STAMP,     &updstampb,
 			-1 );
 
 	cmp = 0;
@@ -604,14 +648,56 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 		case OPE_TEMPLATE_COL_MNEMO:
 			cmp = my_collate( mnemoa, mnemob );
 			break;
+		case OPE_TEMPLATE_COL_CRE_USER:
+			cmp = my_collate( creusera, creuserb );
+			break;
+		case OPE_TEMPLATE_COL_CRE_STAMP:
+			cmp = my_collate( crestampa, crestampb );
+			break;
 		case OPE_TEMPLATE_COL_LABEL:
 			cmp = my_collate( labela, labelb );
 			break;
 		case OPE_TEMPLATE_COL_LEDGER:
 			cmp = my_collate( ledgera, ledgerb );
 			break;
+		case OPE_TEMPLATE_COL_LEDGER_LOCKED:
+			cmp = my_collate( ledlcka, ledlckb );
+			break;
 		case OPE_TEMPLATE_COL_REF:
 			cmp = my_collate( refa, refb );
+			break;
+		case OPE_TEMPLATE_COL_REF_LOCKED:
+			cmp = my_collate( reflcka, reflckb );
+			break;
+		case OPE_TEMPLATE_COL_REF_MANDATORY:
+			cmp = my_collate( refmdta, refmdtb );
+			break;
+		case OPE_TEMPLATE_COL_HAVE_TIERS:
+			cmp = my_collate( havtiera, havtierb );
+			break;
+		case OPE_TEMPLATE_COL_TIERS:
+			cmp = my_collate( tiera, tierb );
+			break;
+		case OPE_TEMPLATE_COL_TIERS_LOCKED:
+			cmp = my_collate( tierlcka, tierlckb );
+			break;
+		case OPE_TEMPLATE_COL_HAVE_QPPRO:
+			cmp = my_collate( havproa, havprob );
+			break;
+		case OPE_TEMPLATE_COL_QPPRO:
+			cmp = my_collate( proa, prob );
+			break;
+		case OPE_TEMPLATE_COL_QPPRO_LOCKED:
+			cmp = my_collate( prolcka, prolckb );
+			break;
+		case OPE_TEMPLATE_COL_HAVE_RULE:
+			cmp = my_collate( havrula, havrulb );
+			break;
+		case OPE_TEMPLATE_COL_RULE:
+			cmp = my_collate( rula, rulb );
+			break;
+		case OPE_TEMPLATE_COL_RULE_LOCKED:
+			cmp = my_collate( rullcka, rullckb );
 			break;
 		case OPE_TEMPLATE_COL_NOTES:
 			cmp = my_collate( notesa, notesb );
@@ -620,10 +706,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = ofa_itvsortable_sort_png( pnga, pngb );
 			break;
 		case OPE_TEMPLATE_COL_UPD_USER:
-			cmp = my_collate( usera, userb );
+			cmp = my_collate( updusera, upduserb );
 			break;
 		case OPE_TEMPLATE_COL_UPD_STAMP:
-			cmp = my_collate( stampa, stampb );
+			cmp = my_collate( updstampa, updstampb );
 			break;
 		default:
 			handled = FALSE;
@@ -640,21 +726,49 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	}
 
 	g_free( mnemoa );
+	g_free( creusera );
+	g_free( crestampa );
 	g_free( labela );
 	g_free( ledgera );
+	g_free( ledlcka );
 	g_free( refa );
+	g_free( reflcka );
+	g_free( refmdta );
+	g_free( havtiera );
+	g_free( tiera );
+	g_free( tierlcka );
+	g_free( havproa );
+	g_free( proa );
+	g_free( prolcka );
+	g_free( havrula );
+	g_free( rula );
+	g_free( rullcka );
 	g_free( notesa );
-	g_free( usera );
-	g_free( stampa );
+	g_free( updusera );
+	g_free( updstampa );
 	g_clear_object( &pnga );
 
 	g_free( mnemob );
+	g_free( creuserb );
+	g_free( crestampb );
 	g_free( labelb );
 	g_free( ledgerb );
+	g_free( ledlckb );
 	g_free( refb );
+	g_free( reflckb );
+	g_free( refmdtb );
+	g_free( havtierb );
+	g_free( tierb );
+	g_free( tierlckb );
+	g_free( havprob );
+	g_free( prob );
+	g_free( prolckb );
+	g_free( havrulb );
+	g_free( rulb );
+	g_free( rullckb );
 	g_free( notesb );
-	g_free( userb );
-	g_free( stampb );
+	g_free( upduserb );
+	g_free( updstampb );
 	g_clear_object( &pngb );
 
 	return( cmp );

@@ -355,6 +355,7 @@ idialog_init( myIDialog *instance )
 	init_ref( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
 
 	my_utils_container_notes_init( instance, ope_template );
+	my_utils_container_crestamp_init( instance, ope_template );
 	my_utils_container_updstamp_init( instance, ope_template );
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "help-btn" );
