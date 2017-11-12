@@ -49,15 +49,6 @@ typedef struct {
 }
 	ofaUserCredentialsBinPrivate;
 
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-user-credentials-bin.ui";
 
 static void          setup_bin( ofaUserCredentialsBin *self );
@@ -139,32 +130,6 @@ ofa_user_credentials_bin_class_init( ofaUserCredentialsBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = user_credentials_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = user_credentials_bin_finalize;
-
-	/**
-	 * ofaUserCredentialsBin::changed:
-	 *
-	 * This signal is sent on the #ofaUserCredentialsBin when one of
-	 * the entry fields (account, password or second password) is changed.
-	 *
-	 * Arguments are account and password.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaUserCredentialsBin *self,
-	 * 						const gchar         *account,
-	 * 						const gchar         *password,
-	 * 						gpointer             user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
-				OFA_TYPE_USER_CREDENTIALS_BIN,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_STRING, G_TYPE_STRING );
 }
 
 /**
@@ -280,11 +245,32 @@ on_password_changed( GtkEditable *entry, ofaUserCredentialsBin *self )
 static void
 changed_composite( ofaUserCredentialsBin *self )
 {
+	g_signal_emit_by_name( self, "my-ibin-changed" );
+}
+
+/**
+ * ofa_user_credentials_bin_get_credentials:
+ * @bin: this #ofaUserCredentialsBin instance.
+ * @account: [out]: a placeholder for the account.
+ * @password: [out]: a placeholder for the password.
+ *
+ * Returns: the current account and password.
+ */
+void
+ofa_user_credentials_bin_get_credentials( ofaUserCredentialsBin *bin, gchar **account, gchar **password )
+{
 	ofaUserCredentialsBinPrivate *priv;
 
-	priv = ofa_user_credentials_bin_get_instance_private( self );
+	g_return_if_fail( bin && OFA_IS_USER_CREDENTIALS_BIN( bin ));
+	g_return_if_fail( account );
+	g_return_if_fail( password );
 
-	g_signal_emit_by_name( self, "ofa-changed", priv->account, priv->password );
+	priv = ofa_user_credentials_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	*account = g_strdup( priv->account );
+	*password = g_strdup( priv->password );
 }
 
 /**

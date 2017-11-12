@@ -59,6 +59,7 @@ static void  on_non_empty_notes_toggled( GtkToggleButton *button, ofaOpenPrefsBi
 static void  on_display_properties_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self );
 static void  on_check_balances_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self );
 static void  on_check_integrity_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self );
+static void  on_bin_changed( ofaOpenPrefsBin *self );
 static void  ibin_iface_init( myIBinInterface *iface );
 static guint ibin_get_interface_version( void );
 static void  ibin_apply( myIBin *instance );
@@ -241,6 +242,8 @@ on_display_notes_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self )
 	ofa_open_prefs_set_display_notes( priv->prefs, active );
 
 	gtk_widget_set_sensitive( priv->nonempty_btn, active );
+
+	on_bin_changed( self );
 }
 
 static void
@@ -253,6 +256,8 @@ on_non_empty_notes_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self )
 
 	active = gtk_toggle_button_get_active( button );
 	ofa_open_prefs_set_non_empty_notes( priv->prefs, active );
+
+	on_bin_changed( self );
 }
 
 static void
@@ -265,6 +270,8 @@ on_display_properties_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self )
 
 	active = gtk_toggle_button_get_active( button );
 	ofa_open_prefs_set_display_properties( priv->prefs, active );
+
+	on_bin_changed( self );
 }
 
 static void
@@ -277,6 +284,8 @@ on_check_balances_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self )
 
 	active = gtk_toggle_button_get_active( button );
 	ofa_open_prefs_set_check_balances( priv->prefs, active );
+
+	on_bin_changed( self );
 }
 
 static void
@@ -289,6 +298,14 @@ on_check_integrity_toggled( GtkToggleButton *button, ofaOpenPrefsBin *self )
 
 	active = gtk_toggle_button_get_active( button );
 	ofa_open_prefs_set_check_integrity( priv->prefs, active );
+
+	on_bin_changed( self );
+}
+
+static void
+on_bin_changed( ofaOpenPrefsBin *self )
+{
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 /*

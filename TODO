@@ -348,16 +348,17 @@
 
 1500 2017-10-22 DBMS AUDIT: add current user
 
-1501 2017-10-28 myIBin interface: should define a my-bin-changed signal
-                to be used in place of ofa-changed
-     2017-11- 1 myIBin: signal defined
-     2017-11- 1 myPeriodBin: signal used
-
 1502 2017-11- 2 DBMS RecurrentModel: move editable amounts to a child table
 
 1503 2017-11- 2 DBMS RecurrentRun: move amounts to a child table
 
-1507
+1507 2017-11-12 RestoreAssistant: segfault if cancel on page 5 when restoring
+                on a newly created dossier
+
+1508 2017-11-12 RestoreAssistant: ofa_exercice_treeview_set_dossier: assertion 'g_list_length(( GList * ) periods ) >= 1' failed
+                when not confirming the restoration on a newly created dossier
+
+1509
 
 -----------------------------------------------------------------------
  DONE
@@ -1330,6 +1331,12 @@
                 #8  0x00007ffff77eae1b in my_iwindow_init (instance=0xf006f0) at ../../../../src/my-1/src/my-iwindow.c:447
                 #9  0x00007ffff77e611c in my_idialog_run_maybe_modal (instance=0xf006f0) at ../../../../src/my-1/src/my-idialog.c:396
      2017-11- 1 obsoleted by new myPeriod class.
+
+1501 2017-10-28 myIBin interface: should define a my-ibin-changed signal
+                to be used in place of ofa-changed
+     2017-11- 1 myIBin: signal 'my-ibin-changed' defined
+     2017-11- 1 myPeriodBin: signal used
+     2017-11-12 done
 
 1504 2017-11- 4 VAT form property: OK should only be enabled is minimal
                 data (mnemo+label) are set

@@ -59,20 +59,12 @@ typedef struct {
 }
 	ofaMysqlExerciceBinPrivate;
 
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-exercice-bin.ui";
 
 static void          setup_bin( ofaMysqlExerciceBin *self );
 static void          on_database_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaMysqlExerciceBin *self );
 static void          on_database_changed( GtkEntry *entry, ofaMysqlExerciceBin *self );
+static void          on_bin_changed( ofaMysqlExerciceBin *self );
 static void          ibin_iface_init( myIBinInterface *iface );
 static guint         ibin_get_interface_version( void );
 static GtkSizeGroup *ibin_get_size_group( const myIBin *instance, guint column );
@@ -150,30 +142,6 @@ ofa_mysql_exercice_bin_class_init( ofaMysqlExerciceBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_exercice_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_exercice_bin_finalize;
-
-	/**
-	 * ofaMysqlExerciceBin::ofa-changed:
-	 *
-	 * This signal is sent on the #ofaMysqlExerciceBin when any of the
-	 * underlying information is changed.
-	 *
-	 * There is no argument.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaMysqlExerciceBin *bin,
-	 * 						gpointer           user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
-				OFA_TYPE_MYSQL_EXERCICE_BIN,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
 }
 
 /**
@@ -269,7 +237,13 @@ on_database_changed( GtkEntry *entry, ofaMysqlExerciceBin *self )
 	g_free( priv->database );
 	priv->database = g_strdup( gtk_entry_get_text( entry ));
 
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
+}
+
+static void
+on_bin_changed( ofaMysqlExerciceBin *self )
+{
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 /**

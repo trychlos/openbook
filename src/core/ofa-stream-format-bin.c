@@ -95,15 +95,6 @@ enum {
 	MAP_N_COLUMNS
 };
 
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-stream-format-bin.ui";
 
 static void          setup_bin( ofaStreamFormatBin *bin );
@@ -137,6 +128,7 @@ static void          headers_init( ofaStreamFormatBin *self );
 static void          headers_on_with_toggled( GtkToggleButton *button, ofaStreamFormatBin *self );
 static void          headers_on_count_changed( GtkSpinButton *button, ofaStreamFormatBin *self );
 static void          headers_set_sensitive( ofaStreamFormatBin *self );
+static void          on_bin_changed( ofaStreamFormatBin *self );
 static void          setup_format( ofaStreamFormatBin *bin );
 static void          setup_updatable( ofaStreamFormatBin *self );
 static void          ibin_iface_init( myIBinInterface *iface );
@@ -214,27 +206,6 @@ ofa_stream_format_bin_class_init( ofaStreamFormatBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = stream_format_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = stream_format_bin_finalize;
-
-	/**
-	 * ofaStreamFormatBin::changed:
-	 *
-	 * This signal is sent when one of the data is changed.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaStreamFormatBin *bin,
-	 * 						gpointer          user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
-				OFA_TYPE_STREAM_FORMAT_BIN,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
 }
 
 /**
@@ -330,7 +301,7 @@ name_init( ofaStreamFormatBin *self )
 static void
 name_on_changed( GtkEntry *entry, ofaStreamFormatBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
@@ -423,7 +394,7 @@ mode_on_changed( GtkComboBox *box, ofaStreamFormatBin *self )
 			break;
 	}
 
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
@@ -602,13 +573,13 @@ encoding_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_CHARMAP );
 	gtk_widget_set_sensitive( priv->encoding_combo, active && allow && priv->updatable );
 
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
 encoding_on_changed( GtkComboBox *box, ofaStreamFormatBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
@@ -650,13 +621,13 @@ date_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_DATEFMT );
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->date_combo ), active && allow && priv->updatable );
 
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
 date_on_changed( myDateCombo *combo, myDateFormat format, ofaStreamFormatBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
@@ -698,13 +669,13 @@ thousand_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_THOUSANDSEP );
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->thousand_combo ), active && allow && priv->updatable );
 
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
 thousand_on_changed( myThousandCombo *combo, const gchar *thousand_sep, ofaStreamFormatBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
@@ -746,13 +717,13 @@ decimal_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_DECIMALSEP );
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->decimal_combo ), active && allow && priv->updatable );
 
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
 decimal_on_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaStreamFormatBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
@@ -794,13 +765,13 @@ field_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_FIELDSEP );
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->field_combo ), active && allow && priv->updatable );
 
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
 field_on_changed( myFieldCombo *combo, const gchar *field_sep, ofaStreamFormatBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
@@ -838,13 +809,13 @@ str_delim_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	allow = ofa_stream_format_get_field_updatable( priv->stformat, OFA_SFHAS_STRDELIM );
 	gtk_widget_set_sensitive( priv->strdelim_entry, active && allow && priv->updatable );
 
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
 str_delim_on_changed( GtkEntry *entry, ofaStreamFormatBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
@@ -873,13 +844,13 @@ headers_init( ofaStreamFormatBin *self )
 static void
 headers_on_with_toggled( GtkToggleButton *button, ofaStreamFormatBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
 headers_on_count_changed( GtkSpinButton *button, ofaStreamFormatBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	on_bin_changed( self );
 }
 
 static void
@@ -907,6 +878,12 @@ headers_set_sensitive( ofaStreamFormatBin *self )
 		default:
 			g_warning( "%s: mode=%d is not Export not Import", thisfn, mode );
 	}
+}
+
+static void
+on_bin_changed( ofaStreamFormatBin *self )
+{
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 /**

@@ -88,15 +88,6 @@ enum {
 	N_COLUMNS
 };
 
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-closing-parms-bin.ui";
 
 static void          setup_bin( ofaClosingParmsBin *self );
@@ -198,26 +189,6 @@ ofa_closing_parms_bin_class_init( ofaClosingParmsBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = closing_parms_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = closing_parms_bin_finalize;
-
-	/**
-	 * ofaClosingParmsBin::changed:
-	 *
-	 * This signal is sent when one of the field is changed.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaClosingParmsBin *bin,
-	 * 						gpointer          user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
-				OFA_TYPE_CLOSING_PARMS_BIN,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0 );
 }
 
 /**
@@ -554,7 +525,7 @@ get_currency_combo_at( ofaClosingParmsBin *self, gint row )
 static void
 check_bin( ofaClosingParmsBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 /*

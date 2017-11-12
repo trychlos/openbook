@@ -33,7 +33,7 @@
  *
  * Development rules:
  * - type:       bin (parent='top')
- * - validation: yes (has 'ofa-changed' signal)
+ * - validation: yes (has 'my-ibin-changed' signal)
  * - settings:   no
  * - current:    no
  */

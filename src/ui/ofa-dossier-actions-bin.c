@@ -74,15 +74,6 @@ static sLabel st_label[] = {
 		{ 0 }
 };
 
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-actions-bin.ui";
 
 static void  setup_bin( ofaDossierActionsBin *self );
@@ -165,30 +156,6 @@ ofa_dossier_actions_bin_class_init( ofaDossierActionsBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = dossier_actions_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_actions_bin_finalize;
-
-	/**
-	 * ofaDossierActionsBin::ofa-changed:
-	 *
-	 * This signal is sent on the #ofaDossierActionsBin when any of the
-	 * underlying information is changed.
-	 *
-	 * There is no argument.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaDossierActionsBin *bin,
-	 * 						gpointer            user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
-				OFA_TYPE_DOSSIER_ACTIONS_BIN,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
 }
 
 /**
@@ -298,7 +265,7 @@ on_open_toggled( GtkToggleButton *button, ofaDossierActionsBin *self )
 static void
 changed_composite( ofaDossierActionsBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 /**

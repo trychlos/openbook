@@ -78,7 +78,7 @@ static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
-static void     on_edit_bin_changed( ofaExerciceEditBin *bin, ofaExerciceNew *self );
+static void     on_edit_bin_changed( myIBin *bin, ofaExerciceNew *self );
 static void     check_for_enable_dlg( ofaExerciceNew *self );
 static gboolean idialog_quit_on_ok( myIDialog *instance );
 static void     set_message( ofaExerciceNew *self, const gchar *message );
@@ -297,7 +297,7 @@ idialog_init( myIDialog *instance )
 	priv->edit_bin = ofa_exercice_edit_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_EXERCICE_NEW );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->edit_bin ));
 	ofa_exercice_edit_bin_set_dossier_meta( priv->edit_bin, priv->dossier_meta );
-	g_signal_connect( priv->edit_bin, "ofa-changed", G_CALLBACK( on_edit_bin_changed ), instance );
+	g_signal_connect( priv->edit_bin, "my-ibin-changed", G_CALLBACK( on_edit_bin_changed ), instance );
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
@@ -313,7 +313,7 @@ idialog_init( myIDialog *instance )
 }
 
 static void
-on_edit_bin_changed( ofaExerciceEditBin *bin, ofaExerciceNew *self )
+on_edit_bin_changed( myIBin *bin, ofaExerciceNew *self )
 {
 	check_for_enable_dlg( self );
 }

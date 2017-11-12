@@ -70,20 +70,11 @@ typedef struct {
 }
 	ofaDossierEditBinPrivate;
 
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-edit-bin.ui";
 
 static void          setup_bin( ofaDossierEditBin *self );
-static void          on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self );
-static void          on_dossier_editor_changed( ofaIDBDossierEditor *editor, ofaDossierEditBin *self );
+static void          on_dossier_meta_changed( myIBin *bin, ofaDossierEditBin *self );
+static void          on_dossier_editor_changed( myIBin *editor, ofaDossierEditBin *self );
 static void          changed_composite( ofaDossierEditBin *self );
 static void          ibin_iface_init( myIBinInterface *iface );
 static guint         ibin_get_interface_version( void );
@@ -166,32 +157,6 @@ ofa_dossier_edit_bin_class_init( ofaDossierEditBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = dossier_edit_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_edit_bin_finalize;
-
-	/**
-	 * ofaDossierEditBin::ofa-changed:
-	 *
-	 * This signal is sent on the #ofaDossierEditBin when any of the
-	 * underlying information is changed. This includes the dossier
-	 * name, the DBMS provider, the connection informations and the
-	 * DBMS root credentials
-	 *
-	 * There is no argument.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaDossierEditBin *bin,
-	 * 						gpointer         user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
-				OFA_TYPE_DOSSIER_EDIT_BIN,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
 }
 
 /**
@@ -229,7 +194,7 @@ ofa_dossier_edit_bin_new( ofaIGetter *getter, const gchar *settings_prefix, guin
 	priv->settings_prefix = g_strdup( settings_prefix );
 
 	setup_bin( bin );
-	on_dossier_meta_changed( priv->dossier_meta_bin, bin );
+	on_dossier_meta_changed( MY_IBIN( priv->dossier_meta_bin ), bin );
 
 	return( bin );
 }
@@ -257,7 +222,7 @@ setup_bin( ofaDossierEditBin *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "deb-dossier-meta-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->dossier_meta_bin = ofa_dossier_meta_bin_new( priv->getter, priv->settings_prefix, priv->rule );
-	g_signal_connect( priv->dossier_meta_bin, "ofa-changed", G_CALLBACK( on_dossier_meta_changed ), self );
+	g_signal_connect( priv->dossier_meta_bin, "my-ibin-changed", G_CALLBACK( on_dossier_meta_changed ), self );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_meta_bin ));
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->dossier_meta_bin ), 0 ))){
 		my_utils_size_group_add_size_group( priv->group0, group_bin );
@@ -273,7 +238,7 @@ setup_bin( ofaDossierEditBin *self )
 }
 
 static void
-on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self )
+on_dossier_meta_changed( myIBin *bin, ofaDossierEditBin *self )
 {
 	ofaDossierEditBinPrivate *priv;
 	ofaIDBProvider *provider;
@@ -291,7 +256,7 @@ on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self )
 		}
 		priv->dossier_editor_bin = ofa_idbprovider_new_dossier_editor( provider, priv->settings_prefix, priv->rule, priv->with_su );
 		gtk_container_add( GTK_CONTAINER( priv->dossier_editor_parent ), GTK_WIDGET( priv->dossier_editor_bin ));
-		g_signal_connect( priv->dossier_editor_bin, "ofa-changed", G_CALLBACK( on_dossier_editor_changed ), self );
+		g_signal_connect( priv->dossier_editor_bin, "my-ibin-changed", G_CALLBACK( on_dossier_editor_changed ), self );
 		my_utils_size_group_add_size_group( priv->group1, ofa_idbdossier_editor_get_size_group( priv->dossier_editor_bin, 0 ));
 
 		gtk_widget_show_all( GTK_WIDGET( self ));
@@ -301,7 +266,7 @@ on_dossier_meta_changed( ofaDossierMetaBin *bin, ofaDossierEditBin *self )
 }
 
 static void
-on_dossier_editor_changed( ofaIDBDossierEditor *editor, ofaDossierEditBin *self )
+on_dossier_editor_changed( myIBin *editor, ofaDossierEditBin *self )
 {
 	changed_composite( self );
 }
@@ -309,7 +274,7 @@ on_dossier_editor_changed( ofaIDBDossierEditor *editor, ofaDossierEditBin *self 
 static void
 changed_composite( ofaDossierEditBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 /**

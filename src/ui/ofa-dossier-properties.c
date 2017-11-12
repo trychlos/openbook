@@ -152,7 +152,7 @@ static void     on_duree_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void     on_begin_changed( GtkEditable *editable, ofaDossierProperties *self );
 static void     on_end_changed( GtkEditable *editable, ofaDossierProperties *self );
 static void     on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date, gboolean *is_empty );
-static void     on_closing_parms_changed( ofaClosingParmsBin *bin, ofaDossierProperties *self );
+static void     on_closing_parms_changed( myIBin *bin, ofaDossierProperties *self );
 static void     on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self );
 static void     background_image_on_file_set( GtkFileChooserButton *button, ofaDossierProperties *self );
 static void     background_image_on_clear_clicked( GtkButton *button, ofaDossierProperties *self );
@@ -642,7 +642,7 @@ init_exercice_page( ofaDossierProperties *self )
 	priv->closing_parms = ofa_closing_parms_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->closing_parms ));
 	g_signal_connect(
-			priv->closing_parms, "ofa-changed", G_CALLBACK( on_closing_parms_changed ), self );
+			priv->closing_parms, "my-ibin-changed", G_CALLBACK( on_closing_parms_changed ), self );
 
 	/* manage the horizontal alignment */
 	hgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
@@ -930,7 +930,7 @@ on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date,
 }
 
 static void
-on_closing_parms_changed( ofaClosingParmsBin *bin, ofaDossierProperties *self )
+on_closing_parms_changed( myIBin *bin, ofaDossierProperties *self )
 {
 	check_for_enable_dlg( self );
 }

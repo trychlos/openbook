@@ -63,7 +63,7 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-exercice-editor.ui";
 
 static void          setup_bin( ofaMysqlExerciceEditor *self );
-static void          on_exercice_bin_changed( ofaMysqlExerciceBin *bin, ofaMysqlExerciceEditor *self );
+static void          on_exercice_bin_changed( myIBin *bin, ofaMysqlExerciceEditor *self );
 //static gboolean      does_database_exist( ofaMysqlExerciceEditor *self, const gchar *database );
 static void          ibin_iface_init( myIBinInterface *iface );
 static guint         ibin_get_interface_version( void );
@@ -202,7 +202,7 @@ setup_bin( ofaMysqlExerciceEditor *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->exercice_bin = ofa_mysql_exercice_bin_new( priv->settings_prefix, priv->rule );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
-	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), self );
+	g_signal_connect( priv->exercice_bin, "my-ibin-changed", G_CALLBACK( on_exercice_bin_changed ), self );
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->exercice_bin ), 0 ))){
 		my_utils_size_group_add_size_group( priv->group0, group_bin );
 	}
@@ -212,9 +212,9 @@ setup_bin( ofaMysqlExerciceEditor *self )
 }
 
 static void
-on_exercice_bin_changed( ofaMysqlExerciceBin *bin, ofaMysqlExerciceEditor *self )
+on_exercice_bin_changed( myIBin *bin, ofaMysqlExerciceEditor *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 #if 0

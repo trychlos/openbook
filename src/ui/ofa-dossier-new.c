@@ -97,10 +97,10 @@ static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
-static void     on_dossier_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self );
-static void     on_exercice_bin_changed( ofaExerciceEditBin *bin, ofaDossierNew *self );
-static void     on_admin_bin_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
-static void     on_actions_bin_changed( ofaDossierActionsBin *bin, ofaDossierNew *self );
+static void     on_dossier_bin_changed( myIBin *bin, ofaDossierNew *self );
+static void     on_exercice_bin_changed( myIBin *bin, ofaDossierNew *self );
+static void     on_admin_bin_changed( myIBin *bin, ofaDossierNew *self );
+static void     on_actions_bin_changed( myIBin *bin, ofaDossierNew *self );
 static void     check_for_enable_dlg( ofaDossierNew *self );
 static void     on_ok_clicked( ofaDossierNew *self );
 static gboolean do_create( ofaDossierNew *self );
@@ -351,7 +351,7 @@ idialog_init( myIDialog *instance )
 	priv->dossier_bin = ofa_dossier_edit_bin_new(
 			priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_NEW, priv->with_su );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_bin ));
-	g_signal_connect( priv->dossier_bin, "ofa-changed", G_CALLBACK( on_dossier_bin_changed ), instance );
+	g_signal_connect( priv->dossier_bin, "my-ibin-changed", G_CALLBACK( on_dossier_bin_changed ), instance );
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->dossier_bin ), 0 ))){
 		my_utils_size_group_add_size_group( group, group_bin );
 	}
@@ -361,7 +361,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->exercice_bin = ofa_exercice_edit_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_bin ));
-	g_signal_connect( priv->exercice_bin, "ofa-changed", G_CALLBACK( on_exercice_bin_changed ), instance );
+	g_signal_connect( priv->exercice_bin, "my-ibin-changed", G_CALLBACK( on_exercice_bin_changed ), instance );
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->exercice_bin ), 0 ))){
 		my_utils_size_group_add_size_group( group, group_bin );
 	}
@@ -372,7 +372,7 @@ idialog_init( myIDialog *instance )
 		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 		priv->admin_bin = ofa_admin_credentials_bin_new( priv->getter, HUB_RULE_DOSSIER_NEW );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->admin_bin ));
-		g_signal_connect( priv->admin_bin, "ofa-changed", G_CALLBACK( on_admin_bin_changed ), instance );
+		g_signal_connect( priv->admin_bin, "my-ibin-changed", G_CALLBACK( on_admin_bin_changed ), instance );
 		if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->admin_bin ), 0 ))){
 			my_utils_size_group_add_size_group( group, group_bin );
 		}
@@ -384,7 +384,7 @@ idialog_init( myIDialog *instance )
 		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 		priv->actions_bin = ofa_dossier_actions_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_NEW );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->actions_bin ));
-		g_signal_connect( priv->actions_bin, "ofa-changed", G_CALLBACK( on_actions_bin_changed ), instance );
+		g_signal_connect( priv->actions_bin, "my-ibin-changed", G_CALLBACK( on_actions_bin_changed ), instance );
 	}
 
 	/* message */
@@ -397,11 +397,11 @@ idialog_init( myIDialog *instance )
 
 	read_settings( OFA_DOSSIER_NEW( instance ));
 
-	on_dossier_bin_changed( priv->dossier_bin, OFA_DOSSIER_NEW( instance ));
+	on_dossier_bin_changed( MY_IBIN( priv->dossier_bin ), OFA_DOSSIER_NEW( instance ));
 }
 
 static void
-on_dossier_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self )
+on_dossier_bin_changed( myIBin *bin, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
 	ofaIDBProvider *provider;
@@ -425,19 +425,19 @@ on_dossier_bin_changed( ofaDossierEditBin *bin, ofaDossierNew *self )
 }
 
 static void
-on_exercice_bin_changed( ofaExerciceEditBin *bin, ofaDossierNew *self )
+on_exercice_bin_changed( myIBin *bin, ofaDossierNew *self )
 {
 	check_for_enable_dlg( self );
 }
 
 static void
-on_admin_bin_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self )
+on_admin_bin_changed( myIBin *bin, ofaDossierNew *self )
 {
 	check_for_enable_dlg( self );
 }
 
 static void
-on_actions_bin_changed( ofaDossierActionsBin *bin, ofaDossierNew *self )
+on_actions_bin_changed( myIBin *bin, ofaDossierNew *self )
 {
 	check_for_enable_dlg( self );
 }

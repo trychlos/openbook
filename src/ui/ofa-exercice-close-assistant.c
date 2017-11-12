@@ -162,12 +162,12 @@ static void           p0_do_forward( ofaExerciceCloseAssistant *self, gint page_
 static void           p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void           p1_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void           p1_on_date_changed( GtkEditable *editable, ofaExerciceCloseAssistant *self );
-static void           p1_on_closing_parms_changed( ofaClosingParmsBin *bin, ofaExerciceCloseAssistant *self );
+static void           p1_on_closing_parms_changed( myIBin *bin, ofaExerciceCloseAssistant *self );
 static void           p1_check_for_complete( ofaExerciceCloseAssistant *self );
 static void           p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void           p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void           p2_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
-static void           p2_on_dbsu_credentials_changed( ofaIDBSuperuser *bin, ofaExerciceCloseAssistant *self );
+static void           p2_on_dbsu_credentials_changed( myIBin *bin, ofaExerciceCloseAssistant *self );
 static void           p2_check_for_complete( ofaExerciceCloseAssistant *self );
 static void           p2_set_message( ofaExerciceCloseAssistant *self, const gchar *message );
 static void           p2_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
@@ -560,7 +560,7 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p1_closing_parms = ofa_closing_parms_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p1_closing_parms ));
-	g_signal_connect( priv->p1_closing_parms, "ofa-changed", G_CALLBACK( p1_on_closing_parms_changed ), self );
+	g_signal_connect( priv->p1_closing_parms, "my-ibin-changed", G_CALLBACK( p1_on_closing_parms_changed ), self );
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), FALSE );
 }
@@ -584,7 +584,7 @@ p1_on_date_changed( GtkEditable *editable, ofaExerciceCloseAssistant *self )
 }
 
 static void
-p1_on_closing_parms_changed( ofaClosingParmsBin *bin, ofaExerciceCloseAssistant *self )
+p1_on_closing_parms_changed( myIBin *bin, ofaExerciceCloseAssistant *self )
 {
 	p1_check_for_complete( self );
 }
@@ -683,7 +683,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	if( priv->p2_dbsu_credentials ){
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dbsu_credentials ));
 		ofa_idbsuperuser_set_dossier_meta( priv->p2_dbsu_credentials, priv->dossier_meta );
-		g_signal_connect( priv->p2_dbsu_credentials, "ofa-changed", G_CALLBACK( p2_on_dbsu_credentials_changed ), self );
+		g_signal_connect( priv->p2_dbsu_credentials, "my-ibin-changed", G_CALLBACK( p2_on_dbsu_credentials_changed ), self );
 
 	} else {
 		label = gtk_label_new( _(
@@ -710,7 +710,7 @@ p2_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 }
 
 static void
-p2_on_dbsu_credentials_changed( ofaIDBSuperuser *bin, ofaExerciceCloseAssistant *self )
+p2_on_dbsu_credentials_changed( myIBin *bin, ofaExerciceCloseAssistant *self )
 {
 	p2_check_for_complete( self );
 }

@@ -65,21 +65,11 @@ typedef struct {
 }
 	ofaExerciceEditBinPrivate;
 
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-exercice-edit-bin.ui";
 
 static void          setup_bin( ofaExerciceEditBin *self );
-static void          on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaExerciceEditBin *self );
-static void          on_exercice_meta_changed( ofaExerciceMetaBin *bin, ofaExerciceEditBin *self );
-static void          on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaExerciceEditBin *self );
+static void          on_exercice_editor_changed( myIBin *editor, ofaExerciceEditBin *self );
+static void          on_exercice_meta_changed( myIBin *bin, ofaExerciceEditBin *self );
 static void          changed_composite( ofaExerciceEditBin *self );
 static void          ibin_iface_init( myIBinInterface *iface );
 static guint         ibin_get_interface_version( void );
@@ -161,32 +151,6 @@ ofa_exercice_edit_bin_class_init( ofaExerciceEditBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = exercice_edit_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = exercice_edit_bin_finalize;
-
-	/**
-	 * ofaExerciceEditBin::ofa-changed:
-	 *
-	 * This signal is sent on the #ofaExerciceEditBin when any of the
-	 * underlying information is changed. This includes the dossier
-	 * name, the DBMS provider, the connection informations and the
-	 * DBMS root credentials
-	 *
-	 * There is no argument.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaExerciceEditBin *bin,
-	 * 						gpointer         user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
-				OFA_TYPE_EXERCICE_EDIT_BIN,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
 }
 
 /**
@@ -254,7 +218,7 @@ setup_bin( ofaExerciceEditBin *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "eeb-exercice-meta-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->exercice_meta_bin = ofa_exercice_meta_bin_new( priv->getter, priv->settings_prefix, priv->rule );
-	g_signal_connect( priv->exercice_meta_bin, "ofa-changed", G_CALLBACK( on_exercice_meta_changed ), self );
+	g_signal_connect( priv->exercice_meta_bin, "my-ibin-changed", G_CALLBACK( on_exercice_meta_changed ), self );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_meta_bin ));
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->exercice_meta_bin ), 0 ))){
 		my_utils_size_group_add_size_group( priv->group0, group_bin );
@@ -270,7 +234,7 @@ setup_bin( ofaExerciceEditBin *self )
 }
 
 static void
-on_exercice_meta_changed( ofaExerciceMetaBin *bin, ofaExerciceEditBin *self )
+on_exercice_meta_changed( myIBin *bin, ofaExerciceEditBin *self )
 {
 	changed_composite( self );
 }
@@ -304,7 +268,7 @@ ofa_exercice_edit_bin_set_provider( ofaExerciceEditBin *bin, ofaIDBProvider *pro
 			priv->provider = provider;
 			priv->exercice_editor_bin = ofa_idbprovider_new_exercice_editor( provider, priv->settings_prefix, priv->rule );
 			gtk_container_add( GTK_CONTAINER( priv->exercice_editor_parent ), GTK_WIDGET( priv->exercice_editor_bin ));
-			g_signal_connect( priv->exercice_editor_bin, "ofa-changed", G_CALLBACK( on_exercice_editor_changed ), bin );
+			g_signal_connect( priv->exercice_editor_bin, "my-ibin-changed", G_CALLBACK( on_exercice_editor_changed ), bin );
 			my_utils_size_group_add_size_group( priv->group1, ofa_idbexercice_editor_get_size_group( priv->exercice_editor_bin, 0 ));
 		}
 		gtk_widget_show_all( GTK_WIDGET( bin ));
@@ -337,7 +301,7 @@ ofa_exercice_edit_bin_set_dossier_meta( ofaExerciceEditBin *bin, ofaIDBDossierMe
 }
 
 static void
-on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaExerciceEditBin *self )
+on_exercice_editor_changed( myIBin *editor, ofaExerciceEditBin *self )
 {
 	changed_composite( self );
 }
@@ -345,7 +309,7 @@ on_exercice_editor_changed( ofaIDBExerciceEditor *editor, ofaExerciceEditBin *se
 static void
 changed_composite( ofaExerciceEditBin *self )
 {
-	g_signal_emit_by_name( self, "ofa-changed" );
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 /**

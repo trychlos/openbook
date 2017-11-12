@@ -224,13 +224,13 @@ static void     p2_set_message( ofaRestoreAssistant *self, const gchar *message 
 static void     p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void     p3_on_dbsu_credentials_changed( ofaIDBSuperuser *bin, ofaRestoreAssistant *self );
+static void     p3_on_dbsu_credentials_changed( myIBin *bin, ofaRestoreAssistant *self );
 static void     p3_check_for_complete( ofaRestoreAssistant *self );
 static void     p3_set_message( ofaRestoreAssistant *self, const gchar *message );
 static void     p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void     p4_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
-static void     p4_on_actions_changed( ofaDossierActionsBin *bin, ofaRestoreAssistant *self );
+static void     p4_on_admin_credentials_changed( myIBin *bin, ofaRestoreAssistant *self );
+static void     p4_on_actions_changed( myIBin *bin, ofaRestoreAssistant *self );
 static void     p4_check_for_complete( ofaRestoreAssistant *self );
 static void     p4_set_message( ofaRestoreAssistant *self, const gchar *message );
 static void     p4_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -1019,7 +1019,7 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 			if( group ){
 				my_utils_size_group_add_size_group( priv->p3_hgroup, group );
 			}
-			g_signal_connect( priv->p3_dbsu_credentials, "ofa-changed", G_CALLBACK( p3_on_dbsu_credentials_changed ), self );
+			g_signal_connect( priv->p3_dbsu_credentials, "my-ibin-changed", G_CALLBACK( p3_on_dbsu_credentials_changed ), self );
 
 			/* if SU account is already set */
 			ofa_idbsuperuser_set_credentials_from_connect( priv->p3_dbsu_credentials, priv->p2_connect );
@@ -1043,7 +1043,7 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p3_on_dbsu_credentials_changed( ofaIDBSuperuser *bin, ofaRestoreAssistant *self )
+p3_on_dbsu_credentials_changed( myIBin *bin, ofaRestoreAssistant *self )
 {
 	p3_check_for_complete( self );
 }
@@ -1154,16 +1154,15 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p4_admin_credentials ), 0 ))){
 		my_utils_size_group_add_size_group( priv->p4_hgroup, group_bin );
 	}
-
 	g_signal_connect( priv->p4_admin_credentials,
-			"ofa-changed", G_CALLBACK( p4_on_admin_credentials_changed ), self );
+			"my-ibin-changed", G_CALLBACK( p4_on_admin_credentials_changed ), self );
 
 	/* open, and action on open */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-actions" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p4_actions = ofa_dossier_actions_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_RESTORE );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_actions ));
-	g_signal_connect( priv->p4_actions, "ofa-changed", G_CALLBACK( p4_on_actions_changed ), self );
+	g_signal_connect( priv->p4_actions, "my-ibin-changed", G_CALLBACK( p4_on_actions_changed ), self );
 
 	priv->p4_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-message" );
 	g_return_if_fail( priv->p4_message && GTK_IS_LABEL( priv->p4_message ));
@@ -1205,23 +1204,23 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p4_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self )
+p4_on_admin_credentials_changed( myIBin *bin, ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	g_free( priv->p4_account );
-	priv->p4_account = g_strdup( account );
-
 	g_free( priv->p4_password );
-	priv->p4_password = g_strdup( password );
+
+	ofa_admin_credentials_bin_get_credentials(
+			OFA_ADMIN_CREDENTIALS_BIN( bin ), &priv->p4_account, &priv->p4_password );
 
 	p4_check_for_complete( self );
 }
 
 static void
-p4_on_actions_changed( ofaDossierActionsBin *bin, ofaRestoreAssistant *self )
+p4_on_actions_changed( myIBin *bin, ofaRestoreAssistant *self )
 {
 	/* nothing to do here */
 }

@@ -229,7 +229,7 @@ static gboolean p1_check_for_complete( ofaRecoveryAssistant *self );
 static void     p1_do_forward( ofaRecoveryAssistant *self, GtkWidget *page );
 static void     p2_do_init( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_do_display( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page );
-static void     p2_on_format_changed( ofaStreamFormatBin *bin, ofaRecoveryAssistant *self );
+static void     p2_on_format_changed( myIBin *bin, ofaRecoveryAssistant *self );
 static gboolean p2_check_for_complete( ofaRecoveryAssistant *self );
 static void     p2_do_forward( ofaRecoveryAssistant *self, GtkWidget *page );
 static void     p3_do_init( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page );
@@ -247,13 +247,13 @@ static void     p4_set_message( ofaRecoveryAssistant *self, const gchar *message
 static void     p4_do_forward( ofaRecoveryAssistant *self, GtkWidget *page );
 static void     p5_do_init( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page );
 static void     p5_do_display( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page );
-static void     p5_on_dbsu_credentials_changed( ofaIDBSuperuser *bin, ofaRecoveryAssistant *self );
+static void     p5_on_dbsu_credentials_changed( myIBin *bin, ofaRecoveryAssistant *self );
 static void     p5_check_for_complete( ofaRecoveryAssistant *self );
 static void     p5_set_message( ofaRecoveryAssistant *self, const gchar *message );
 static void     p6_do_init( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page );
 static void     p6_do_display( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page );
-static void     p6_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRecoveryAssistant *self );
-static void     p6_on_actions_changed( ofaDossierActionsBin *bin, ofaRecoveryAssistant *self );
+static void     p6_on_admin_credentials_changed( myIBin *bin, ofaRecoveryAssistant *self );
+static void     p6_on_actions_changed( myIBin *bin, ofaRecoveryAssistant *self );
 static void     p6_check_for_complete( ofaRecoveryAssistant *self );
 static void     p6_set_message( ofaRecoveryAssistant *self, const gchar *message );
 static void     p6_do_forward( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page );
@@ -633,7 +633,7 @@ p2_do_init( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p2_format_bin ), 0 ))){
 		my_utils_size_group_add_size_group( hgroup, group_bin );
 	}
-	g_signal_connect( priv->p2_format_bin, "ofa-changed", G_CALLBACK( p2_on_format_changed ), self );
+	g_signal_connect( priv->p2_format_bin, "my-ibin-changed", G_CALLBACK( p2_on_format_changed ), self );
 
 	/* error message */
 	priv->p2_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-message" );
@@ -659,7 +659,7 @@ p2_do_display( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p2_on_format_changed( ofaStreamFormatBin *bin, ofaRecoveryAssistant *self )
+p2_on_format_changed( myIBin *bin, ofaRecoveryAssistant *self )
 {
 	p2_check_for_complete( self );
 }
@@ -1153,7 +1153,7 @@ p5_do_display( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 			if( group ){
 				my_utils_size_group_add_size_group( priv->p5_hgroup, group );
 			}
-			g_signal_connect( priv->p5_dbsu_credentials, "ofa-changed", G_CALLBACK( p5_on_dbsu_credentials_changed ), self );
+			g_signal_connect( priv->p5_dbsu_credentials, "my-ibin-changed", G_CALLBACK( p5_on_dbsu_credentials_changed ), self );
 
 			/* if SU account is already set */
 			ofa_idbsuperuser_set_credentials_from_connect( priv->p5_dbsu_credentials, priv->p4_connect );
@@ -1177,7 +1177,7 @@ p5_do_display( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p5_on_dbsu_credentials_changed( ofaIDBSuperuser *bin, ofaRecoveryAssistant *self )
+p5_on_dbsu_credentials_changed( myIBin *bin, ofaRecoveryAssistant *self )
 {
 	p5_check_for_complete( self );
 }
@@ -1309,16 +1309,15 @@ p6_do_init( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p6_admin_credentials ), 0 ))){
 		my_utils_size_group_add_size_group( priv->p6_hgroup, group_bin );
 	}
-
 	g_signal_connect( priv->p6_admin_credentials,
-			"ofa-changed", G_CALLBACK( p6_on_admin_credentials_changed ), self );
+			"my-ibin-changed", G_CALLBACK( p6_on_admin_credentials_changed ), self );
 
 	/* open, and action on open */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-actions" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p6_actions = ofa_dossier_actions_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_RECOVERY );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p6_actions ));
-	g_signal_connect( priv->p6_actions, "ofa-changed", G_CALLBACK( p6_on_actions_changed ), self );
+	g_signal_connect( priv->p6_actions, "my-ibin-changed", G_CALLBACK( p6_on_actions_changed ), self );
 
 	priv->p6_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-message" );
 	g_return_if_fail( priv->p6_message && GTK_IS_LABEL( priv->p6_message ));
@@ -1362,23 +1361,23 @@ p6_do_display( ofaRecoveryAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p6_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRecoveryAssistant *self )
+p6_on_admin_credentials_changed( myIBin *bin, ofaRecoveryAssistant *self )
 {
 	ofaRecoveryAssistantPrivate *priv;
 
 	priv = ofa_recovery_assistant_get_instance_private( self );
 
 	g_free( priv->p6_account );
-	priv->p6_account = g_strdup( account );
-
 	g_free( priv->p6_password );
-	priv->p6_password = g_strdup( password );
+
+	ofa_admin_credentials_bin_get_credentials(
+			OFA_ADMIN_CREDENTIALS_BIN( bin ), &priv->p6_account, &priv->p6_password );
 
 	p6_check_for_complete( self );
 }
 
 static void
-p6_on_actions_changed( ofaDossierActionsBin *bin, ofaRecoveryAssistant *self )
+p6_on_actions_changed( myIBin *bin, ofaRecoveryAssistant *self )
 {
 	/* nothing to do here */
 }

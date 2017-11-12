@@ -62,15 +62,6 @@ typedef struct {
 }
 	ofaAdminCredentialsBinPrivate;
 
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_settings_key     = "ofa-admin";
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-admin-credentials-bin.ui";
 
@@ -161,33 +152,6 @@ ofa_admin_credentials_bin_class_init( ofaAdminCredentialsBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = admin_credentials_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = admin_credentials_bin_finalize;
-
-	/**
-	 * ofaAdminCredentialsBin::ofa-changed:
-	 *
-	 * This signal is sent on the #ofaAdminCredentialsBin when one of
-	 * the three entry fields (account, password or second password) is
-	 * changed.
-	 *
-	 * Arguments are current account and password.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaAdminCredentialsBin *bin,
-	 * 						const gchar    *account,
-	 * 						const gchar    *password,
-	 * 						gpointer        user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
-				OFA_TYPE_ADMIN_CREDENTIALS_BIN,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_STRING, G_TYPE_STRING );
 }
 
 /**
@@ -354,11 +318,7 @@ on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self )
 static void
 changed_composite( ofaAdminCredentialsBin *self )
 {
-	ofaAdminCredentialsBinPrivate *priv;
-
-	priv = ofa_admin_credentials_bin_get_instance_private( self );
-
-	g_signal_emit_by_name( self, "ofa-changed", priv->account, priv->password );
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 /**

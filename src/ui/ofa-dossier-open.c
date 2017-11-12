@@ -99,7 +99,7 @@ static void     setup_menu( ofaDossierOpen *self );
 static void     on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
 static void     on_exercice_changed( ofaExerciceCombo *combo, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
 static void     on_read_only_toggled( GtkToggleButton *button, ofaDossierOpen *self );
-static void     on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
+static void     on_user_credentials_changed( myIBin *bin, ofaDossierOpen *self );
 static void     check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean are_data_set( ofaDossierOpen *self, gchar **msg );
 static gboolean idialog_quit_on_ok( myIDialog *instance );
@@ -453,8 +453,7 @@ setup_credentials( ofaDossierOpen *self, GtkSizeGroup *group )
 
 	priv->user_credentials = ofa_user_credentials_bin_new();
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->user_credentials ));
-
-	g_signal_connect( priv->user_credentials, "ofa-changed", G_CALLBACK( on_user_credentials_changed ), self );
+	g_signal_connect( priv->user_credentials, "my-ibin-changed", G_CALLBACK( on_user_credentials_changed ), self );
 
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->user_credentials ), 0 ))){
 		my_utils_size_group_add_size_group( group, group_bin );
@@ -530,7 +529,7 @@ on_read_only_toggled( GtkToggleButton *button, ofaDossierOpen *self )
 }
 
 static void
-on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self )
+on_user_credentials_changed( myIBin *bin, ofaDossierOpen *self )
 {
 	static const gchar *thisfn = "ofa_dossier_open_on_user_credentials_changed";
 	ofaDossierOpenPrivate *priv;
@@ -542,10 +541,10 @@ on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *ac
 	priv = ofa_dossier_open_get_instance_private( self );
 
 	g_free( priv->account );
-	priv->account = g_strdup( account );
-
 	g_free( priv->password );
-	priv->password = g_strdup( password );
+
+	ofa_user_credentials_bin_get_credentials(
+			OFA_USER_CREDENTIALS_BIN( bin ), &priv->account, &priv->password );
 
 	check_for_enable_dlg( self );
 }

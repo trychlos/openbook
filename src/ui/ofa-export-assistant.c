@@ -200,7 +200,7 @@ static void     p2_init_format_combo( ofaExportAssistant *self, GtkWidget *page 
 static void     p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_display_format_combo( ofaExportAssistant *self );
 static void     p2_on_format_combo_changed( GtkComboBox *combo, ofaExportAssistant *self );
-static void     p2_on_settings_changed( ofaStreamFormatBin *bin, ofaExportAssistant *self );
+static void     p2_on_settings_changed( myIBin *bin, ofaExportAssistant *self );
 static void     p2_on_new_profile_clicked( GtkButton *button, ofaExportAssistant *self );
 static void     p2_check_for_complete( ofaExportAssistant *self );
 static void     p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
@@ -670,8 +670,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p2_settings_prefs = ofa_stream_format_bin_new( NULL );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_settings_prefs ));
-
-	g_signal_connect( priv->p2_settings_prefs, "ofa-changed", G_CALLBACK( p2_on_settings_changed ), self );
+	g_signal_connect( priv->p2_settings_prefs, "my-ibin-changed", G_CALLBACK( p2_on_settings_changed ), self );
 
 	/* get a suitable default stream format */
 	found_key = NULL;
@@ -835,7 +834,7 @@ p2_on_format_combo_changed( GtkComboBox *combo, ofaExportAssistant *self )
 }
 
 static void
-p2_on_settings_changed( ofaStreamFormatBin *bin, ofaExportAssistant *self )
+p2_on_settings_changed( myIBin *bin, ofaExportAssistant *self )
 {
 	p2_check_for_complete( self );
 }

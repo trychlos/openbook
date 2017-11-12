@@ -34,7 +34,7 @@
  *
  * Development rules:
  * - type:       bin (parent='top')
- * - validation: yes (has 'ofa-changed' signal)
+ * - validation: yes (has 'my-ibin-changed' signal)
  * - settings:   no
  * - current:    no
  */
@@ -62,17 +62,21 @@ typedef struct {
 }
 	ofaUserCredentialsBinClass;
 
-GType                  ofa_user_credentials_bin_get_type    ( void ) G_GNUC_CONST;
+GType                  ofa_user_credentials_bin_get_type       ( void ) G_GNUC_CONST;
 
-ofaUserCredentialsBin *ofa_user_credentials_bin_new         ( void );
+ofaUserCredentialsBin *ofa_user_credentials_bin_new            ( void );
 
-void                   ofa_user_credentials_bin_grab_focus  ( ofaUserCredentialsBin *bin );
+void                   ofa_user_credentials_bin_grab_focus     ( ofaUserCredentialsBin *bin );
 
-void                   ofa_user_credentials_bin_set_account ( ofaUserCredentialsBin *bin,
-																	const gchar *account );
+void                   ofa_user_credentials_bin_get_credentials( ofaUserCredentialsBin *bin,
+																		gchar **account,
+																		gchar **password );
 
-void                   ofa_user_credentials_bin_set_password( ofaUserCredentialsBin *bin,
-																	const gchar *account );
+void                   ofa_user_credentials_bin_set_account    ( ofaUserCredentialsBin *bin,
+																		const gchar *account );
+
+void                   ofa_user_credentials_bin_set_password   ( ofaUserCredentialsBin *bin,
+																		const gchar *password );
 
 G_END_DECLS
 

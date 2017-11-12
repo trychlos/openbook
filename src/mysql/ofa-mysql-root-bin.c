@@ -338,7 +338,7 @@ changed_composite( ofaMysqlRootBin *self )
 {
 	ofa_mysql_root_bin_set_valid( self, FALSE );
 
-	g_signal_emit_by_name( self, "ofa-changed" );
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 /*

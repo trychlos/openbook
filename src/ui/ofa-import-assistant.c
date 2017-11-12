@@ -243,7 +243,7 @@ static gboolean p4_check_for_complete( ofaImportAssistant *self );
 static void     p4_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p5_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
-static void     p5_on_settings_changed( ofaStreamFormatBin *bin, ofaImportAssistant *self );
+static void     p5_on_settings_changed( myIBin *bin, ofaImportAssistant *self );
 static void     p5_check_for_complete( ofaImportAssistant *self );
 static void     p5_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p6_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page );
@@ -1178,9 +1178,8 @@ p5_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	if(( group_bin = my_ibin_get_size_group( MY_IBIN( priv->p5_settings_prefs ), 0 ))){
 		my_utils_size_group_add_size_group( hgroup, group_bin );
 	}
-
 	g_signal_connect(
-			priv->p5_settings_prefs, "ofa-changed", G_CALLBACK( p5_on_settings_changed ), self );
+			priv->p5_settings_prefs, "my-ibin-changed", G_CALLBACK( p5_on_settings_changed ), self );
 
 	/* error message */
 	priv->p5_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-message" );
@@ -1240,7 +1239,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p5_on_settings_changed( ofaStreamFormatBin *bin, ofaImportAssistant *self )
+p5_on_settings_changed( myIBin *bin, ofaImportAssistant *self )
 {
 	p5_check_for_complete( self );
 }

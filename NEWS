@@ -35,7 +35,7 @@
 
  Other changes:
 
-   - 
+   - myIBin: has its own 'my-ibin-changed' signal (todo #1501).
 
 -----------------------------------------------------------------------
  Version 0.73

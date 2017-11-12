@@ -71,8 +71,8 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-dossier-editor.ui";
 
 static void             setup_bin( ofaMysqlDossierEditor *self );
-static void             on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlDossierEditor *self );
-static void             on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self );
+static void             on_dossier_bin_changed( myIBin *bin, ofaMysqlDossierEditor *self );
+static void             on_root_bin_changed( myIBin *bin, ofaMysqlDossierEditor *self );
 static void             changed_composite( ofaMysqlDossierEditor *self );
 static gboolean         check_root_connection( ofaMysqlDossierEditor *self, gchar **msgerr );
 static void             ibin_iface_init( myIBinInterface *iface );
@@ -224,7 +224,7 @@ setup_bin( ofaMysqlDossierEditor *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->dossier_bin = ofa_mysql_dossier_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->settings_prefix, priv->rule );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_bin ));
-	g_signal_connect( priv->dossier_bin, "ofa-changed", G_CALLBACK( on_dossier_bin_changed ), self );
+	g_signal_connect( priv->dossier_bin, "my-ibin-changed", G_CALLBACK( on_dossier_bin_changed ), self );
 	if(( group = my_ibin_get_size_group( MY_IBIN( priv->dossier_bin ), 0 ))){
 		my_utils_size_group_add_size_group( priv->group0, group );
 	}
@@ -235,7 +235,7 @@ setup_bin( ofaMysqlDossierEditor *self )
 		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 		priv->root_bin = ofa_mysql_root_bin_new( OFA_MYSQL_DBPROVIDER( priv->provider ), priv->rule );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->root_bin ));
-		g_signal_connect( priv->root_bin, "ofa-changed", G_CALLBACK( on_root_bin_changed ), self );
+		g_signal_connect( priv->root_bin, "my-ibin-changed", G_CALLBACK( on_root_bin_changed ), self );
 		if(( group = my_ibin_get_size_group( MY_IBIN( priv->root_bin ), 0 ))){
 			my_utils_size_group_add_size_group( priv->group0, group );
 		}
@@ -246,13 +246,13 @@ setup_bin( ofaMysqlDossierEditor *self )
 }
 
 static void
-on_dossier_bin_changed( ofaMysqlDossierBin *bin, ofaMysqlDossierEditor *self )
+on_dossier_bin_changed( myIBin *bin, ofaMysqlDossierEditor *self )
 {
 	changed_composite( self );
 }
 
 static void
-on_root_bin_changed( ofaMysqlRootBin *bin, ofaMysqlDossierEditor *self )
+on_root_bin_changed( myIBin *bin, ofaMysqlDossierEditor *self )
 {
 	changed_composite( self );
 }
@@ -266,7 +266,7 @@ changed_composite( ofaMysqlDossierEditor *self )
 
 	ofa_mysql_connect_close( priv->connect );
 
-	g_signal_emit_by_name( self, "ofa-changed" );
+	g_signal_emit_by_name( self, "my-ibin-changed" );
 }
 
 /*
