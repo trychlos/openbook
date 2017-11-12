@@ -52,7 +52,7 @@ src/core/ofa-ope-template-help.ui
 src/core/ofa-ope-template-properties.c
 src/core/ofa-ope-template-properties.ui
 src/core/ofa-ope-template-select.ui
-src/core/ofa-ope-template-store.ui
+src/core/ofa-ope-template-store.c
 src/core/ofa-ope-template-treeview.c
 src/core/ofa-operation-group.c
 src/core/ofa-operation-group.ui
