@@ -143,6 +143,7 @@ api_include_HEADERS = \
 	ofo-paimean.h										\
 	ofo-rate.h											\
 	ofo-rate-def.h										\
+	ofo-tiers.h											\
 	\
 	ofs-account-balance.h								\
 	ofs-concil-id.h										\

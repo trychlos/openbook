@@ -250,6 +250,7 @@ libofa_core_la_SOURCES = \
 	ofo-ope-template.c									\
 	ofo-paimean.c										\
 	ofo-rate.c											\
+	ofo-tiers.c											\
 	\
 	ofs-account-balance.c								\
 	ofs-concil-id.c										\

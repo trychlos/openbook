@@ -303,12 +303,6 @@
 1477 2017- 8-15 icontext: better position the context menu, depending of
                 activated from the keyboard or by mouse
 
-1488 2017-10-14 IMPORTANT: OFA_T_ENTRIES: suspect that user timestamp is
-                automatically updated on each row update: this would be
-                bad! Check + get a fixed timestamp at entry creation +
-                re-asses needed timestamps
-     2017-10-18 see https://mariadb.com/kb/en/library/timestamp/
-
 1489 2017-10-14 review period closing to actually forbid entries only
                 during period close - so will able to close N+1/01,
                 N+1/02, etc. even if exercice N is not yet closed
@@ -1290,6 +1284,13 @@
 1487 2017-10- 5 when dossier is read-only, guided input by ledger menu
                 item should be disabled
      2017-10- 6 fixed
+
+1488 2017-10-14 IMPORTANT: OFA_T_ENTRIES: suspect that user timestamp is
+                automatically updated on each row update: this would be
+                bad! Check + get a fixed timestamp at entry creation +
+                re-asses needed timestamps
+     2017-10-18 see https://mariadb.com/kb/en/library/timestamp/
+     2017-11-12 done
 
 1490 2017-10-14 review ACCOUNT macro (VAT) to make sure it takes the
                 entries between two dates
