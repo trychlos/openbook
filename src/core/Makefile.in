@@ -214,7 +214,7 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofo-bat-line.lo ofo-class.lo ofo-concil.lo ofo-counters.lo \
 	ofo-currency.lo ofo-doc.lo ofo-dossier.lo ofo-entry.lo \
 	ofo-exemeta.lo ofo-ledger.lo ofo-ope-template.lo \
-	ofo-paimean.lo ofo-rate.lo ofs-account-balance.lo \
+	ofo-paimean.lo ofo-rate.lo ofo-tiers.lo ofs-account-balance.lo \
 	ofs-concil-id.lo ofs-currency.lo ofs-ledger-balance.lo \
 	ofs-ope.lo
 am__objects_1 = resources.lo
@@ -688,6 +688,7 @@ libofa_core_la_SOURCES = \
 	ofo-ope-template.c									\
 	ofo-paimean.c										\
 	ofo-rate.c											\
+	ofo-tiers.c											\
 	\
 	ofs-account-balance.c								\
 	ofs-concil-id.c										\
@@ -930,6 +931,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-ope-template.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-paimean.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-rate.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-tiers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-account-balance.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-concil-id.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-currency.Plo@am__quote@

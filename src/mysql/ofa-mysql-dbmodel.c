@@ -2960,14 +2960,22 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
-	/* 25 */
-	/*
+	/* 27 */
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_TIERS "
-			"	MODIFY COLUMN TRS_UPD_STAMP     TIMESTAMP DEFAULT 0 COMMENT 'Properties last update timestamp'" )){
+			"	ADD    COLUMN TRS_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
+			"	ADD    COLUMN TRS_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
+			"	MODIFY COLUMN TRS_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Properties last update timestamp'" )){
 		return( FALSE );
 	}
-	*/
+
+	/* 28 */
+	if( !exec_query( self,
+			"UPDATE OFA_T_TIERS SET "
+			"	TRS_CRE_USER=TRS_UPD_USER,"
+			"	TRS_CRE_STAMP=TRS_UPD_STAMP" )){
+		return( FALSE );
+	}
 
 	return( TRUE );
 }

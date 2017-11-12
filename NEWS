@@ -48,7 +48,12 @@
    - ofoBat: have creation user and timestamp (todo #1488).
    - ofoClass: have creation user and timestamp (todo #1488).
    - ofoCurrency: have creation user and timestamp (todo #1488).
+   - ofoDossier: have creation user and timestamp (todo #1488).
    - ofoEntry: have creation user and timestamp (todo #1488).
+   - ofoLedger: have creation user and timestamp (todo #1488).
+   - ofoOpeTemplate: have creation user and timestamp (todo #1488).
+   - ofoPaimean: have creation user and timestamp (todo #1488).
+   - ofoRate: have creation user and timestamp (todo #1488).
 
  Bug fixes:
 
@@ -64,6 +69,7 @@
    - myIBin: define new "my-ibin-changed" signal (todo #1501).
    - myPeriod: new class, obsoletes ofoRecPeriod.
    - myPeriodBin: new class, obsoletes ofaRecPeriodProperties.
+   - ofoTiers: new class.
 
 -----------------------------------------------------------------------
  Version 0.72
