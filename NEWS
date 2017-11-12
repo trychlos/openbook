@@ -36,6 +36,7 @@
  Other changes:
 
    - myIBin: has its own 'my-ibin-changed' signal (todo #1501).
+   - mySettings: have an info message instead of debug when file doesn't exist.
 
 -----------------------------------------------------------------------
  Version 0.73

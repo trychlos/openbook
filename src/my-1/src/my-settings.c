@@ -624,7 +624,7 @@ load_key_file( mySettings *settings, const gchar *filename )
 			g_warning( "%s: %s (%d) %s",
 					thisfn, priv->fname, error->code, error->message );
 		} else {
-			g_debug( "%s: %s: file doesn't exist", thisfn, priv->fname );
+			g_info( "%s: %s: file doesn't exist", thisfn, priv->fname );
 		}
 
 		g_error_free( error );
