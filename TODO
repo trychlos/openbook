@@ -358,7 +358,26 @@
 1508 2017-11-12 RestoreAssistant: ofa_exercice_treeview_set_dossier: assertion 'g_list_length(( GList * ) periods ) >= 1' failed
                 when not confirming the restoration on a newly created dossier
 
-1509
+1509 2017-11-16 VAT: duplicate form
+
+1510 2017-11-16 VAT: ofaRecordTreeview: review status column title or content
+                as "status=no" is a bit disturbing
+
+1511 2017-11-16 VAT: review the dynamic of Record status
+                may the properties be edited after operations have been generated ?
+
+1512 2017-11-16 VAT: have a button on FormPage and RecordPage to switch to the other one
+
+1513 2017-11-16 Recurrent: have a button on ModelPage and RunPage to switch to the other one
+
+1514 2017-11-16 VAT: generating operations does not work the first time after compute
+
+1515 2017-11-16 VAT: RecordProperties
+                the label "<n> operations have been generated" is not well centered
+
+1516 2017-11-16 on period closing, save the position of the "archiving account balances" dialog box
+
+1517
 
 -----------------------------------------------------------------------
  DONE
