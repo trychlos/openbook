@@ -33,9 +33,10 @@
 
  Bug fixes:
 
+   - ofaTVAFormProperties: fix new record creation.
+   - ofaTVARecordProperties: fix operation date setting (todo #1514).
    - ofoBat: fix new record insertion.
    - ofoTVAForm: fix new record insertion.
-   - ofoTVAFormProperties: fix new record creation.
    - ofoTVARecord: fix new record insertion.
 
  Other changes:

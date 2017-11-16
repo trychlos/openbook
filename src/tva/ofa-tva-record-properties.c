@@ -1516,8 +1516,9 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 		if( ofo_tva_record_detail_get_has_amount( priv->tva_record, rec_idx )){
 			amount = ofo_tva_record_detail_get_amount( priv->tva_record, rec_idx );
 			cstr = ofo_tva_record_detail_get_template( priv->tva_record, rec_idx );
+			g_debug( "%s: idx=%u, amount=%lf, template=%s", thisfn, rec_idx, amount, cstr );
 			if( amount > 0 && my_strlen( cstr )){
-				g_debug( "%s: amount=%lf, template=%s", thisfn, amount, cstr );
+				//g_debug( "%s: amount=%lf, template=%s", thisfn, amount, cstr );
 				done = FALSE;
 				ope = NULL;
 				template = ofo_ope_template_get_by_mnemo( priv->getter, cstr );
@@ -1531,7 +1532,7 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 					 * first detail of the template
 					 */
 					ope = ofs_ope_new( template );
-					my_date_set_from_date( &ope->dope, ofo_tva_record_get_dope( priv->tva_record ));
+					my_date_set_from_date( &ope->dope, &priv->dope_date );
 					ope->dope_user_set = TRUE;
 					ope->ref = g_strdup( ofo_tva_record_get_mnemo( priv->tva_record ));
 					ope->ref_user_set = TRUE;
