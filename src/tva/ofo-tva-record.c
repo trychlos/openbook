@@ -304,7 +304,8 @@ static void      vat_record_set_sta_user( ofoTVARecord *record, const gchar *use
 static void      vat_record_set_sta_stamp( ofoTVARecord *record, const GTimeVal *stamp );
 static void      vat_record_set_upd_user( ofoTVARecord *record, const gchar *user );
 static void      vat_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *stamp );
-static void      vat_record_boolean_set_label( ofoTVARecord *record, guint idx, const gchar *label );
+static void      vat_record_boolean_add( ofoTVARecord *record, const gchar *label, gboolean is_true );
+static void      vat_record_detail_add( ofoTVARecord *record, ofxAmount base, ofxAmount amount );
 static void      vat_record_detail_set_code( ofoTVARecord *record, guint idx, const gchar *code );
 static void      vat_record_detail_set_label( ofoTVARecord *record, guint idx, const gchar *label );
 static void      vat_record_detail_set_level( ofoTVARecord *record, guint idx, guint level );
@@ -320,8 +321,8 @@ static gboolean  record_insert_main( ofoTVARecord *record, const ofaIDBConnect *
 static gboolean  record_delete_bools( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean  record_delete_details( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean  record_insert_details_ex( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gboolean  record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details );
-static gboolean  record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details );
+static gboolean  record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint idx );
+static gboolean  record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint idx );
 static gboolean  record_do_update( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean  record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean  record_do_update_dope( ofoTVARecord *record, ofaIDBConnect *connect, const GDate *dope );
@@ -615,7 +616,8 @@ ofo_tva_record_new( ofoTVAForm *form )
 {
 	ofaIGetter *getter;
 	ofoTVARecord *record;
-	gint count, i;
+	guint count, i;
+	const gchar *cstr;
 
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
 	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, NULL );
@@ -633,23 +635,40 @@ ofo_tva_record_new( ofoTVAForm *form )
 	vat_record_set_status( record, VAT_STATUS_NO );
 
 	count = ofo_tva_form_boolean_get_count( form );
+	bools_list_free( record );
 	for( i=0 ; i<count ; ++i ){
-		ofo_tva_record_boolean_add( record, FALSE );
-		vat_record_boolean_set_label( record, i, ofo_tva_form_boolean_get_label( form, i ));
+		cstr = ofo_tva_form_boolean_get_label( form, i );
+		vat_record_boolean_add( record, cstr, FALSE );
 	}
 
 	count = ofo_tva_form_detail_get_count( form );
+	details_list_free( record );
 	for( i=0 ; i<count ; ++i ){
-		ofo_tva_record_detail_add( record, 0, 0 );
-		vat_record_detail_set_code( record, i, ofo_tva_form_detail_get_code( form, i ));
-		vat_record_detail_set_label( record, i, ofo_tva_form_detail_get_label( form, i ));
+		vat_record_detail_add( record, 0, 0 );
+		cstr = ofo_tva_form_detail_get_code( form, i );
+		if( my_strlen( cstr )){
+			vat_record_detail_set_code( record, i, cstr );
+		}
+		cstr = ofo_tva_form_detail_get_label( form, i );
+		if( my_strlen( cstr )){
+			vat_record_detail_set_label( record, i, cstr );
+		}
 		vat_record_detail_set_level( record, i, ofo_tva_form_detail_get_level( form, i ));
 		vat_record_detail_set_has_base( record, i, ofo_tva_form_detail_get_has_base( form, i ));
-		vat_record_detail_set_base_formula( record, i, ofo_tva_form_detail_get_base( form, i ));
+		cstr = ofo_tva_form_detail_get_base( form, i );
+		if( my_strlen( cstr )){
+			vat_record_detail_set_base_formula( record, i, cstr );
+		}
 		vat_record_detail_set_has_amount( record, i, ofo_tva_form_detail_get_has_amount( form, i ));
-		vat_record_detail_set_amount_formula( record, i, ofo_tva_form_detail_get_amount( form, i ));
+		cstr = ofo_tva_form_detail_get_amount( form, i );
+		if( my_strlen( cstr )){
+			vat_record_detail_set_amount_formula( record, i, cstr );
+		}
 		vat_record_detail_set_has_template( record, i, ofo_tva_form_detail_get_has_template( form, i ));
-		vat_record_detail_set_template( record, i, ofo_tva_form_detail_get_template( form, i ));
+		cstr = ofo_tva_form_detail_get_template( form, i );
+		if( my_strlen( cstr )){
+			vat_record_detail_set_template( record, i, cstr );
+		}
 	}
 
 	return( record );
@@ -1039,11 +1058,11 @@ ofo_tva_record_boolean_get_label( ofoTVARecord *record, guint idx )
 }
 
 /**
- * ofo_tva_record_boolean_get_is_true:
+ * ofo_tva_record_boolean_get_true:
  * @idx is the index in the booleans list, starting with zero
  */
 gboolean
-ofo_tva_record_boolean_get_is_true( ofoTVARecord *record, guint idx )
+ofo_tva_record_boolean_get_true( ofoTVARecord *record, guint idx )
 {
 	ofoTVARecordPrivate *priv;
 	GList *nth;
@@ -1636,31 +1655,20 @@ vat_record_set_sta_stamp( ofoTVARecord *record, const GTimeVal *stamp )
 	ofo_base_setter( TVA_RECORD, record, timestamp, TFO_STA_STAMP, stamp );
 }
 
-/**
- * ofo_tva_record_boolean_free_all:
- */
-void
-ofo_tva_record_boolean_free_all( ofoTVARecord *record )
-{
-	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
-	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
-
-	bools_list_free( record );
-}
-
-/**
- * ofo_tva_record_boolean_add:
+/*
+ * vat_record_boolean_add:
  * @record:
  * @label:
  * @is_true:
  */
-void
-ofo_tva_record_boolean_add( ofoTVARecord *record, gboolean is_true )
+static void
+vat_record_boolean_add( ofoTVARecord *record, const gchar *label, gboolean is_true )
 {
 	ofoTVARecordPrivate *priv;
 	GList *fields;
 
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( my_strlen( label ));
 	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
 
 	priv = ofo_tva_record_get_instance_private( record );
@@ -1668,17 +1676,22 @@ ofo_tva_record_boolean_add( ofoTVARecord *record, gboolean is_true )
 	fields = ofa_box_init_fields_list( st_bools_defs );
 	ofa_box_set_string( fields, TFO_MNEMO, ofo_tva_record_get_mnemo( record ));
 	ofa_box_set_int( fields, TFO_BOOL_ROW, 1+ofo_tva_record_boolean_get_count( record ));
+	ofa_box_set_string( fields, TFO_BOOL_LABEL, label );
 	ofa_box_set_string( fields, TFO_BOOL_TRUE, is_true ? "Y":"N" );
 
 	priv->bools = g_list_append( priv->bools, fields );
 }
 
-/*
- * vat_record_boolean_set_label:
- * @idx is the index in the details list, starting with zero
+/**
+ * ofo_tva_record_boolean_set_true:
+ * @record:
+ * @idx:
+ * @is_true:
+ *
+ * @idx is the index in the details list, starting with zero.
  */
-static void
-vat_record_boolean_set_label( ofoTVARecord *record, guint idx, const gchar *label )
+void
+ofo_tva_record_boolean_set_true( ofoTVARecord *record, guint idx, gboolean is_true )
 {
 	ofoTVARecordPrivate *priv;
 	GList *nth;
@@ -1690,23 +1703,11 @@ vat_record_boolean_set_label( ofoTVARecord *record, guint idx, const gchar *labe
 
 	nth = g_list_nth( priv->bools, idx );
 	g_return_if_fail( nth );
-	ofa_box_set_string( nth->data, TFO_BOOL_LABEL, label );
+	ofa_box_set_string( nth->data, TFO_BOOL_TRUE, is_true ? "Y":"N" );
 }
 
-/**
- * ofo_tva_record_detail_free_all:
- */
-void
-ofo_tva_record_detail_free_all( ofoTVARecord *record )
-{
-	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
-	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
-
-	details_list_free( record );
-}
-
-void
-ofo_tva_record_detail_add( ofoTVARecord *record, ofxAmount base, ofxAmount amount )
+static void
+vat_record_detail_add( ofoTVARecord *record, ofxAmount base, ofxAmount amount )
 {
 	ofoTVARecordPrivate *priv;
 	GList *fields;
@@ -2346,25 +2347,23 @@ record_delete_details( ofoTVARecord *record, const ofaIDBConnect *connect )
 static gboolean
 record_insert_details_ex( ofoTVARecord *record, const ofaIDBConnect *connect )
 {
-	ofoTVARecordPrivate *priv;
 	gboolean ok;
-	GList *idet;
-	guint rang;
+	guint count, idx;
 
-	priv = ofo_tva_record_get_instance_private( record );
+	ok = record_delete_bools( record, connect ) &&
+			record_delete_details( record, connect );
 
-	ok = FALSE;
-
-	if( record_delete_details( record, connect ) && record_delete_bools( record, connect )){
-		ok = TRUE;
-		for( idet=priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
-			if( !record_insert_details( record, connect, rang, idet->data )){
+	if( ok ){
+		count = ofo_tva_record_boolean_get_count( record );
+		for( idx=0 ; idx<count ; ++idx ){
+			if( !record_insert_bools( record, connect, idx )){
 				ok = FALSE;
 				break;
 			}
 		}
-		for( idet=priv->bools, rang=1 ; idet ; idet=idet->next, rang+=1 ){
-			if( !record_insert_bools( record, connect, rang, idet->data )){
+		count = ofo_tva_record_detail_get_count( record );
+		for( idx=0 ; idx<count ; ++idx ){
+			if( !record_insert_details( record, connect, idx )){
 				ok = FALSE;
 				break;
 			}
@@ -2374,26 +2373,29 @@ record_insert_details_ex( ofoTVARecord *record, const ofaIDBConnect *connect )
 	return( ok );
 }
 
+/*
+ * booleans and details insertion:
+ * - idx is counted from zero, while TFO_ROW is counted from 1.
+ */
 static gboolean
-record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *fields )
+record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint idx )
 {
 	GString *query;
-	gboolean ok;
+	gboolean ok, is_true;
 	gchar *send, *label;
-	const gchar *cstr;
 
 	query = g_string_new( "INSERT INTO TVA_T_RECORDS_BOOL " );
 
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
-	label = my_utils_quote_sql( ofo_tva_record_boolean_get_label( record, rang ));
+	label = my_utils_quote_sql( ofo_tva_record_boolean_get_label( record, idx ));
 
 	g_string_append_printf( query,
 			"	(TFO_MNEMO,TFO_END,TFO_BOOL_ROW,TFO_BOOL_LABEL,TFO_BOOL_TRUE) "
-			"	VALUES('%s','%s',%d,'%s'",
-			ofo_tva_record_get_mnemo( record ), send, rang, label );
+			"	VALUES('%s','%s',%u,'%s'",
+			ofo_tva_record_get_mnemo( record ), send, idx+1, label );
 
-	cstr = ofa_box_get_string( fields, TFO_BOOL_TRUE );
-	g_string_append_printf( query, ",'%s'", cstr );
+	is_true = ofo_tva_record_boolean_get_true( record, idx );
+	g_string_append_printf( query, ",'%s'", is_true ? "Y":"N" );
 
 	query = g_string_append( query, ")" );
 
@@ -2408,18 +2410,18 @@ record_insert_bools( ofoTVARecord *record, const ofaIDBConnect *connect, guint r
 }
 
 static gboolean
-record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint rang, GList *details )
+record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint idx )
 {
 	GString *query;
-	gboolean ok;
+	gboolean ok, has;
 	gchar *send, *formula, *samount, *code, *label, *template;
 	ofxCounter number;
 
 	query = g_string_new( "INSERT INTO TVA_T_RECORDS_DET " );
 
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
-	code = my_utils_quote_sql( ofo_tva_record_detail_get_code( record, rang ));
-	label = my_utils_quote_sql( ofo_tva_record_detail_get_label( record, rang ));
+	code = my_utils_quote_sql( ofo_tva_record_detail_get_code( record, idx ));
+	label = my_utils_quote_sql( ofo_tva_record_detail_get_label( record, idx ));
 
 	g_string_append_printf( query,
 			"	(TFO_MNEMO,TFO_END,TFO_DET_ROW,"
@@ -2427,43 +2429,78 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint
 			"	 TFO_DET_HAS_BASE,TFO_DET_BASEF,TFO_DET_BASE,"
 			"	 TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNTF,TFO_DET_AMOUNT,"
 			"	 TFO_DET_HAS_TEMPLATE,TFO_DET_TEMPLATE,TFO_DET_OPE_NUMBER) "
-			"	VALUES('%s','%s',%d,'%s','%s',%u",
+			"	VALUES('%s','%s',%u",
 			ofo_tva_record_get_mnemo( record ),
-			send, rang, code, label,
-			ofo_tva_record_detail_get_level( record, rang ));
+			send, idx+1 );
 
-	if( ofo_tva_record_detail_get_has_base( record, rang )){
-		formula = my_utils_quote_sql( ofo_tva_record_detail_get_base_formula( record, rang ));
-		samount = my_double_to_sql( ofo_tva_record_detail_get_base( record, rang ));
-		g_string_append_printf( query, ",'Y','%s',%s", formula, samount );
-		g_free( samount );
-		g_free( formula );
+	if( my_strlen( code )){
+		g_string_append_printf( query, ",'%s'", code );
 	} else {
-		query = g_string_append( query, ",'N',NULL,NULL" );
+		query = g_string_append( query, ",NULL" );
 	}
 
-	if( ofo_tva_record_detail_get_has_amount( record, rang )){
-		formula = my_utils_quote_sql( ofo_tva_record_detail_get_amount_formula( record, rang ));
-		samount = my_double_to_sql( ofo_tva_record_detail_get_amount( record, rang ));
-		g_string_append_printf( query, ",'Y','%s',%s", formula, samount );
-		g_free( samount );
-		g_free( formula );
+	if( my_strlen( label )){
+		g_string_append_printf( query, ",'%s'", label );
 	} else {
-		query = g_string_append( query, ",'N',NULL,NULL" );
+		query = g_string_append( query, ",NULL" );
 	}
 
-	if( ofo_tva_record_detail_get_has_template( record, rang )){
-		template = my_utils_quote_sql( ofo_tva_record_detail_get_amount_formula( record, rang ));
-		g_string_append_printf( query, ",'Y','%s'", template );
-		number = ofo_tva_record_detail_get_ope_number( record, rang );
-		if( number > 0 ){
-			g_string_append_printf( query, ",%lu", number );
-		} else {
-			query = g_string_append( query, ",NULL" );
-		}
-		g_free( template );
+	g_string_append_printf( query, ",%u", ofo_tva_record_detail_get_level( record, idx ));
+
+	has = ofo_tva_record_detail_get_has_base( record, idx );
+	query = g_string_append( query, has ? ",'Y'":",'N'" );
+
+	formula = has ? my_utils_quote_sql( ofo_tva_record_detail_get_base_formula( record, idx )) : NULL;
+	if( my_strlen( formula )){
+		g_string_append_printf( query, ",'%s'", formula );
 	} else {
-		query = g_string_append( query, ",'N',NULL,NULL" );
+		query = g_string_append( query, ",NULL" );
+	}
+	g_free( formula );
+
+	samount = has ? my_double_to_sql( ofo_tva_record_detail_get_base( record, idx )) : NULL;
+	if( my_strlen( samount )){
+		g_string_append_printf( query, ",'%s'", samount );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
+	g_free( samount );
+
+	has = ofo_tva_record_detail_get_has_amount( record, idx );
+	query = g_string_append( query, has ? ",'Y'":",'N'" );
+
+	formula = has ? my_utils_quote_sql( ofo_tva_record_detail_get_amount_formula( record, idx )) : NULL;
+	if( my_strlen( formula )){
+		g_string_append_printf( query, ",'%s'", formula );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
+	g_free( formula );
+
+	samount = has ? my_double_to_sql( ofo_tva_record_detail_get_amount( record, idx )) : NULL;
+	if( my_strlen( samount )){
+		g_string_append_printf( query, ",'%s'", samount );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
+	g_free( samount );
+
+	has = ofo_tva_record_detail_get_has_template( record, idx );
+	query = g_string_append( query, has ? ",'Y'":",'N'" );
+
+	template = has ? my_utils_quote_sql( ofo_tva_record_detail_get_template( record, idx )) : NULL;
+	if( my_strlen( template )){
+		g_string_append_printf( query, ",'%s'", template );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
+	g_free( template );
+
+	number = has ? ofo_tva_record_detail_get_ope_number( record, idx ) : 0;
+	if( number > 0 ){
+		g_string_append_printf( query, ",%lu", number );
+	} else {
+		query = g_string_append( query, ",NULL" );
 	}
 
 	query = g_string_append( query, ")" );

@@ -125,7 +125,7 @@ void            ofo_tva_record_delete_accounting_entries( ofoTVARecord *record, 
 
 guint           ofo_tva_record_boolean_get_count        ( ofoTVARecord *record );
 const gchar    *ofo_tva_record_boolean_get_label        ( ofoTVARecord *record, guint idx );
-gboolean        ofo_tva_record_boolean_get_is_true      ( ofoTVARecord *record, guint idx );
+gboolean        ofo_tva_record_boolean_get_true         ( ofoTVARecord *record, guint idx );
 
 guint           ofo_tva_record_detail_get_count         ( ofoTVARecord *record );
 const gchar    *ofo_tva_record_detail_get_code          ( ofoTVARecord *record, guint idx );
@@ -152,13 +152,7 @@ void            ofo_tva_record_set_correspondence       ( ofoTVARecord *record, 
 void            ofo_tva_record_set_begin                ( ofoTVARecord *record, const GDate *date );
 void            ofo_tva_record_set_notes                ( ofoTVARecord *record, const gchar *notes );
 
-void            ofo_tva_record_boolean_free_all         ( ofoTVARecord *record );
-
-void            ofo_tva_record_boolean_add              ( ofoTVARecord *record, gboolean is_true );
-
-void            ofo_tva_record_detail_free_all          ( ofoTVARecord *record );
-
-void            ofo_tva_record_detail_add               ( ofoTVARecord *record, ofxAmount base, ofxAmount amount );
+void            ofo_tva_record_boolean_set_true         ( ofoTVARecord *record, guint idx, gboolean is_true );
 
 void            ofo_tva_record_detail_set_base          ( ofoTVARecord *record, guint idx, ofxAmount base );
 void            ofo_tva_record_detail_set_amount        ( ofoTVARecord *record, guint idx, ofxAmount amount );

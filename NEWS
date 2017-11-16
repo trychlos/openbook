@@ -31,7 +31,8 @@
 
  Bug fixes:
 
-   - ofoBat: fix record insertion.
+   - ofoBat: fix new record insertion.
+   - ofoTVARecord: fix new record insertion.
 
  Other changes:
 

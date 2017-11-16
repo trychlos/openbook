@@ -616,7 +616,7 @@ init_booleans( ofaTVARecordProperties *self )
 		my_utils_widget_set_editable( button, priv->is_writable && !priv->is_validated );
 		gtk_grid_attach( GTK_GRID( grid ), button, BOOL_COL_LABEL, row, 1, 1 );
 		g_signal_connect( button, "toggled", G_CALLBACK( on_boolean_toggled ), self );
-		is_true = ofo_tva_record_boolean_get_is_true( priv->tva_record, idx );
+		is_true = ofo_tva_record_boolean_get_true( priv->tva_record, idx );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), is_true );
 	}
 }
@@ -1029,12 +1029,11 @@ setup_tva_record( ofaTVARecordProperties *self )
 	my_utils_container_notes_get( GTK_WINDOW( self ), tva_record );
 
 	count = ofo_tva_record_boolean_get_count( priv->tva_record );
-	ofo_tva_record_boolean_free_all( priv->tva_record );
 	for( idx=0, row=0 ; idx<count ; ++idx, ++row ){
 		button = gtk_grid_get_child_at( GTK_GRID( priv->boolean_grid ), BOOL_COL_LABEL, row );
 		g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 		is_true = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button ));
-		ofo_tva_record_boolean_add( priv->tva_record, is_true );
+		ofo_tva_record_boolean_set_true( priv->tva_record, idx, is_true );
 	}
 
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
