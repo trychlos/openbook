@@ -1167,7 +1167,7 @@ bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 			"	(BAT_ID,BAT_CRE_USER,BAT_CRE_STAMP,BAT_URI,BAT_FORMAT,BAT_BEGIN,BAT_END,"
 			"	 BAT_RIB,BAT_CURRENCY,"
 			"	 BAT_SOLDE_BEGIN,BAT_SOLDE_BEGIN_SET,BAT_SOLDE_END,BAT_SOLDE_END_SET) "
-			"	VALUES (%ld,'%s','%s','%s',",
+			"	VALUES (%ld,'%s','%s','%s'",
 					ofo_bat_get_id( bat ),
 					userid,
 					stamp_str,
@@ -1177,60 +1177,62 @@ bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 
 	str = my_utils_quote_sql( ofo_bat_get_format( bat ));
 	if( my_strlen( str )){
-		g_string_append_printf( query, "'%s',", str );
+		g_string_append_printf( query, ",'%s'", str );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, ",NULL" );
 	}
 	g_free( str );
 
 	begin = ofo_bat_get_begin_date( bat );
 	if( my_date_is_valid( begin )){
 		str = my_date_to_str( begin, MY_DATE_SQL );
-		g_string_append_printf( query, "'%s',", str );
+		g_string_append_printf( query, ",'%s'", str );
 		g_free( str );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, ",NULL" );
 	}
 
 	end = ofo_bat_get_end_date( bat );
 	if( my_date_is_valid( end )){
 		str = my_date_to_str( end, MY_DATE_SQL );
-		g_string_append_printf( query, "'%s',", str );
+		g_string_append_printf( query, ",'%s'", str );
 		g_free( str );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, ",NULL" );
 	}
 
 	str = ( gchar * ) ofo_bat_get_rib( bat );
 	if( my_strlen( str )){
-		g_string_append_printf( query, "'%s',", str );
+		g_string_append_printf( query, ",'%s'", str );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, ",NULL" );
 	}
 
 	if( my_strlen( cur_code )){
-		g_string_append_printf( query, "'%s',", cur_code );
+		g_string_append_printf( query, ",'%s'", cur_code );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, ",NULL" );
 	}
 
 	is_set = ofo_bat_get_begin_solde_set( bat );
 	if( is_set ){
 		str = ofa_amount_to_sql( ofo_bat_get_begin_solde( bat ), cur_obj );
-		g_string_append_printf( query, "%s,'Y',", str );
+		g_string_append_printf( query, ",%s,'Y'", str );
 		g_free( str );
 	} else {
-		query = g_string_append( query, "NULL,'N'," );
+		query = g_string_append( query, ",NULL,'N'" );
 	}
 
 	is_set = ofo_bat_get_end_solde_set( bat );
 	if( is_set ){
 		str = ofa_amount_to_sql( ofo_bat_get_end_solde( bat ), cur_obj );
-		g_string_append_printf( query, "%s,'Y',", str );
+		g_string_append_printf( query, ",%s,'Y'", str );
 		g_free( str );
 	} else {
-		query = g_string_append( query, "NULL,'N'," );
+		query = g_string_append( query, ",NULL,'N'" );
 	}
+
+	query = g_string_append( query, ")" );
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		bat_set_cre_user( bat, userid );
