@@ -474,8 +474,12 @@ do_close( ofaPeriodClose *self )
 	myProgressBar *bar;
 	gdouble progress;
 	ofaISignaler *signaler;
+	myISettings *settings;
 
 	priv = ofa_period_close_get_instance_private( self );
+
+	settings = ofa_igetter_get_user_settings( priv->getter );
+	g_return_val_if_fail( settings && MY_IS_ISETTINGS( settings ), FALSE );
 
 	signaler = ofa_igetter_get_signaler( priv->getter );
 	g_signal_emit_by_name( signaler, SIGNALER_DOSSIER_PERIOD_CLOSING, SIGNALER_CLOSING_INTERMEDIATE, &priv->closing );
@@ -498,6 +502,7 @@ do_close( ofaPeriodClose *self )
 						GTK_DIALOG_MODAL,
 						_( "_Close" ), GTK_RESPONSE_OK,
 						NULL );
+		my_utils_window_position_restore( GTK_WINDOW( dialog ), settings, "ArchiveAccountsBalance" );
 		gtk_container_set_border_width( GTK_CONTAINER( dialog ), 4 );
 		button = gtk_dialog_get_widget_for_response( GTK_DIALOG( dialog ), GTK_RESPONSE_OK );
 		g_return_val_if_fail( button && GTK_IS_BUTTON( button ), FALSE );
@@ -537,6 +542,7 @@ do_close( ofaPeriodClose *self )
 
 		gtk_widget_set_sensitive( button, TRUE );
 		gtk_dialog_run( GTK_DIALOG( dialog ));
+		my_utils_window_position_save( GTK_WINDOW( dialog ), settings, "ArchiveAccountsBalance" );
 		gtk_widget_destroy( dialog );
 	}
 

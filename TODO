@@ -375,8 +375,6 @@
 1515 2017-11-16 VAT: RecordProperties
                 the label "<n> operations have been generated" is not well centered
 
-1516 2017-11-16 on period closing, save the position of the "archiving account balances" dialog box
-
 1517
 
 -----------------------------------------------------------------------
@@ -1368,6 +1366,9 @@
 1506 2017-11- 4 VAT form page: generate from selected button should only
                 be enabled when currently selected form is enabled
      2017-11- 6 fixed by unselecting all when running the properties
+
+1516 2017-11-16 on period closing, save the position of the "archiving account balances" dialog box
+     2017-11-16 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
