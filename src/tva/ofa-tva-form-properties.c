@@ -127,6 +127,7 @@ static void     setup_boolean_widgets( ofaTVAFormProperties *self, guint row );
 static void     set_boolean_values( ofaTVAFormProperties *self, guint row );
 static void     on_mnemo_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     on_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
+static void     on_corresp_toggled( GtkToggleButton *button, ofaTVAFormProperties *self );
 static void     on_enabled_toggled( GtkToggleButton *button, ofaTVAFormProperties *self );
 static void     on_det_code_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     on_det_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
@@ -374,6 +375,7 @@ idialog_init( myIDialog *instance )
 	gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON( priv->corresp_btn ),
 			ofo_tva_form_get_has_correspondence( priv->tva_form ));
+	g_signal_connect( priv->corresp_btn, "toggled", G_CALLBACK( on_corresp_toggled ), instance );
 
 	/* enabled */
 	priv->enabled_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-enabled" );
@@ -706,6 +708,12 @@ on_label_changed( GtkEntry *entry, ofaTVAFormProperties *self )
 }
 
 static void
+on_corresp_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
+{
+	check_for_enable_dlg( self );
+}
+
+static void
 on_enabled_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
 {
 	check_for_enable_dlg( self );
@@ -810,11 +818,21 @@ on_bool_label_changed( GtkEntry *entry, ofaTVAFormProperties *self )
  * OK is made sensitive as soon as we are able to save the form, even
  * if it cannot be enabled
  *
- * If enable is set, but the form cannot be enabled, then unsensitive ok
+ * If enable is set, but the form could not be enabled, then unsensitive ok.
+ *
+ * The form may be saved as soon as we have non empty mnemo and label.
+ * This let the user build his form in several times.
+ *
+ * A boolean line with empty label is silently ignored.
+ * A detail line with all fields empty is silently ignored.
+ *
+ * Invalid detail lines which make the form unenableable:
+ * - the has_template is set, but content is empty or invalid
  */
 static void
 check_for_enable_dlg( ofaTVAFormProperties *self )
 {
+	static const gchar *thisfn = "ofa_tva_form_properties_check_for_enable_dlg";
 	ofaTVAFormPropertiesPrivate *priv;
 	gboolean validable, enableable, enabled;
 
@@ -824,6 +842,13 @@ check_for_enable_dlg( ofaTVAFormProperties *self )
 		validable = is_dialog_validable( self );
 		enableable = validable ? is_form_enableable( self ) : FALSE;
 		enabled = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ));
+
+		if( 0 ){
+			g_debug( "%s: validable=%s, enableable=%s, enabled=%s",
+					thisfn,
+					validable ? "True":"False", enableable ? "True":"False", enabled ? "True":"False");
+		}
+
 		gtk_widget_set_sensitive( priv->ok_btn, validable && ( enableable || !enabled ));
 	}
 }
@@ -874,26 +899,72 @@ is_form_enableable( ofaTVAFormProperties *self )
 	gchar *msgerr;
 	guint rows_count, i;
 	GtkWidget *entry, *btn;
-	const gchar *template;
-	ofoOpeTemplate *template_obj;
+	const gchar *cstr;
+	ofoOpeTemplate *template;
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
+	ok = TRUE;
 	msgerr = NULL;
 	rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ));
 
 	for( i=1 ; i<=rows_count ; ++i ){
-		btn = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_TEMPLATE, i );
-		g_return_val_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ), FALSE );
+		/*
+		 * this is not an error to have an empty entry if the button is checked
+		 *
+		if( ok ){
+			btn = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_BASE, i );
+			g_return_val_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ), FALSE );
 
-		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_TEMPLATE, i );
-		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-		template = gtk_entry_get_text( GTK_ENTRY( entry ));
+			if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
 
-		if( my_strlen( template )){
-			template_obj = ofo_ope_template_get_by_mnemo( priv->getter, template );
-			if( !template_obj || !OFO_IS_OPE_TEMPLATE( template_obj )){
-				msgerr = g_strdup_printf( _( "Operation template %s does not exist" ), template );
+				entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_BASE, i );
+				g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+				cstr = gtk_entry_get_text( GTK_ENTRY( entry ));
+
+				if( !my_strlen( cstr )){
+					ok = FALSE;
+					msgerr = g_strdup_printf( _( "At row %u, « Has base » is checked, but « Base » is empty" ), i );
+				}
+			}
+		}
+		if( ok ){
+			btn = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_AMOUNT, i );
+			g_return_val_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ), FALSE );
+
+			if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
+
+				entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_AMOUNT, i );
+				g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+				cstr = gtk_entry_get_text( GTK_ENTRY( entry ));
+
+				if( !my_strlen( cstr )){
+					ok = FALSE;
+					msgerr = g_strdup_printf( _( "At row %u, « Has amount » is checked, but « Amount » is empty" ), i );
+				}
+			}
+		}
+		*/
+		if( ok ){
+			btn = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_TEMPLATE, i );
+			g_return_val_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ), FALSE );
+
+			if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
+
+				entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_TEMPLATE, i );
+				g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+				cstr = gtk_entry_get_text( GTK_ENTRY( entry ));
+
+				if( my_strlen( cstr )){
+					template = ofo_ope_template_get_by_mnemo( priv->getter, cstr );
+					if( !template || !OFO_IS_OPE_TEMPLATE( template )){
+						ok = FALSE;
+						msgerr = g_strdup_printf( _( "At row %u, operation template '%s' does not exist" ), i, cstr );
+					}
+				} else {
+					ok = FALSE;
+					msgerr = g_strdup_printf( _( "At row %u, « Has operation template » is checked, but « Operation template » is empty" ), i );
+				}
 			}
 		}
 	}
@@ -955,6 +1026,17 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 
 	my_utils_container_notes_get( GTK_WINDOW( self ), tva_form );
 
+	rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->bool_grid ));
+	ofo_tva_form_boolean_reset( priv->tva_form );
+	for( i=1 ; i<=rows_count ; ++i ){
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->bool_grid ), 1+COL_BOOL_LABEL, i );
+		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+		label = gtk_entry_get_text( GTK_ENTRY( entry ));
+		if( my_strlen( label )){
+			ofo_tva_form_boolean_add( priv->tva_form, label );
+		}
+	}
+
 	rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ));
 	ofo_tva_form_detail_reset( priv->tva_form );
 	for( i=1 ; i<=rows_count ; ++i ){
@@ -993,22 +1075,12 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 					gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( amount_check )), amount,
 					gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( template_check )), template );
 		}
+
 		/* add to orig_templates the new values */
 		if( my_strlen( template )){
 			if( !g_list_find_custom( priv->orig_templates, template, ( GCompareFunc ) my_collate )){
 				priv->orig_templates = g_list_prepend( priv->orig_templates, g_strdup( template ));
 			}
-		}
-	}
-
-	rows_count = my_igridlist_get_details_count( MY_IGRIDLIST( self ), GTK_GRID( priv->bool_grid ));
-	ofo_tva_form_boolean_reset( priv->tva_form );
-	for( i=1 ; i<=rows_count ; ++i ){
-		entry = gtk_grid_get_child_at( GTK_GRID( priv->bool_grid ), 1+COL_BOOL_LABEL, i );
-		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-		label = gtk_entry_get_text( GTK_ENTRY( entry ));
-		if( my_strlen( label )){
-			ofo_tva_form_boolean_add( priv->tva_form, label );
 		}
 	}
 

@@ -774,6 +774,15 @@ ofo_tva_form_set_has_correspondence( ofoTVAForm *form, gboolean has_corresponden
 /**
  * ofo_tva_form_set_is_enabled:
  */
+void
+ofo_tva_form_set_is_enabled( ofoTVAForm *form, gboolean is_enabled )
+{
+	ofo_base_setter( TVA_FORM, form, string, TFO_ENABLED, is_enabled ? "Y":"N" );
+}
+
+/**
+ * ofo_tva_form_set_is_enabled:
+ */
 /**
  * ofo_tva_form_set_notes:
  */
