@@ -216,6 +216,7 @@ typedef struct {
 	ofoTVAFormPrivate;
 
 static ofoTVAForm *form_find_by_mnemo( GList *set, const gchar *mnemo );
+static gchar      *get_mnemo_new_from( const ofoTVAForm *form );
 static void        tva_form_set_cre_user( ofoTVAForm *form, const gchar *user );
 static void        tva_form_set_cre_stamp( ofoTVAForm *form, const GTimeVal *stamp );
 static void        tva_form_set_upd_user( ofoTVAForm *form, const gchar *user );
@@ -513,7 +514,7 @@ ofo_tva_form_new_from_form( ofoTVAForm *form )
 
 	dest = ofo_tva_form_new( getter );
 
-	ofo_tva_form_set_mnemo( dest, ofo_tva_form_get_mnemo( form ));
+	ofo_tva_form_set_mnemo( dest, get_mnemo_new_from( form ));
 	ofo_tva_form_set_label( dest, ofo_tva_form_get_label( form ));
 	ofo_tva_form_set_has_correspondence( dest, ofo_tva_form_get_has_correspondence( form ));
 	ofo_tva_form_set_notes( dest, ofo_tva_form_get_notes( form ));
@@ -539,6 +540,45 @@ ofo_tva_form_new_from_form( ofoTVAForm *form )
 	}
 
 	return( dest );
+}
+
+/*
+ * Returns a new mnemo derived from the given one, as a newly allocated
+ * string that the caller should g_free().
+ */
+static gchar *
+get_mnemo_new_from( const ofoTVAForm *form )
+{
+	ofaIGetter *getter;
+	const gchar *mnemo;
+	gint len_mnemo;
+	gchar *str;
+	gint i, maxlen;
+
+	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), NULL );
+	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, NULL );
+
+	str = NULL;
+	getter = ofo_base_get_getter( OFO_BASE( form ));
+	mnemo = ofo_tva_form_get_mnemo( form );
+	len_mnemo = my_strlen( mnemo );
+	for( i=2 ; ; ++i ){
+		/* if we are greater than 9999, there is a problem... */
+		maxlen = ( i < 10 ? OTE_MNEMO_MAX_LENGTH-1 :
+					( i < 100 ? OTE_MNEMO_MAX_LENGTH-2 :
+					( i < 1000 ? OTE_MNEMO_MAX_LENGTH-3 : OTE_MNEMO_MAX_LENGTH-4 )));
+		if( maxlen < len_mnemo ){
+			str = g_strdup_printf( "%*.*s%d", maxlen, maxlen, mnemo, i );
+		} else {
+			str = g_strdup_printf( "%s%d", mnemo, i );
+		}
+		if( !ofo_tva_form_get_by_mnemo( getter, str )){
+			break;
+		}
+		g_free( str );
+	}
+
+	return( str );
 }
 
 /**

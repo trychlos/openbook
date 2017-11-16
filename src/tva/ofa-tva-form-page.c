@@ -69,6 +69,7 @@ typedef struct {
 	 */
 	GSimpleAction      *new_action;
 	GSimpleAction      *update_action;
+	GSimpleAction      *dup_action;
 	GSimpleAction      *delete_action;
 	GSimpleAction      *declare_action;
 	GSimpleAction      *record_action;
@@ -86,6 +87,7 @@ static void       on_insert_key( ofaTVAFormTreeview *view, ofaTVAFormPage *self 
 static void       on_delete_key( ofaTVAFormTreeview *view, ofoTVAForm *form, ofaTVAFormPage *self );
 static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPage *self );
 static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPage *self );
+static void       action_on_dup_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPage *self );
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPage *self );
 static gboolean   check_for_deletability( ofaTVAFormPage *self, ofoTVAForm *form );
 static void       delete_with_confirm( ofaTVAFormPage *self, ofoTVAForm *form );
@@ -129,6 +131,7 @@ tva_form_page_dispose( GObject *instance )
 
 		g_object_unref( priv->new_action );
 		g_object_unref( priv->update_action );
+		g_object_unref( priv->dup_action );
 		g_object_unref( priv->delete_action );
 		g_object_unref( priv->declare_action );
 		g_object_unref( priv->record_action );
@@ -263,6 +266,19 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 					OFA_IACTIONABLE_PROPERTIES_BTN ));
 	g_simple_action_set_enabled( priv->update_action, FALSE );
 
+	/* duplicate action */
+	priv->dup_action = g_simple_action_new( "dup", NULL );
+	g_signal_connect( priv->dup_action, "activate", G_CALLBACK( action_on_dup_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->dup_action ),
+			_( "Duplicate" ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_new_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->dup_action ),
+					_( "D_uplicate" )));
+	g_simple_action_set_enabled( priv->dup_action, FALSE );
+
 	/* delete action */
 	priv->delete_action = g_simple_action_new( "delete", NULL );
 	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), page );
@@ -347,6 +363,7 @@ on_row_selected( ofaTVAFormTreeview *view, ofoTVAForm *form, ofaTVAFormPage *sel
 	enabled = is_form ? ofo_tva_form_get_is_enabled( form ) : FALSE;
 
 	g_simple_action_set_enabled( priv->update_action, is_form );
+	g_simple_action_set_enabled( priv->dup_action, is_form );
 	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, form ));
 	g_simple_action_set_enabled( priv->declare_action, priv->is_writable && is_form && enabled );
 }
@@ -426,6 +443,27 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPa
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_tva_form_properties_run( priv->getter, toplevel, form );
+
+	ofa_tvbin_select_row( OFA_TVBIN( priv->tview ), NULL );
+}
+
+static void
+action_on_dup_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPage *self )
+{
+	ofaTVAFormPagePrivate *priv;
+	ofoTVAForm *form_ref, *form;
+	GtkWindow *toplevel;
+
+	priv = ofa_tva_form_page_get_instance_private( self );
+
+	form_ref = ofa_tva_form_treeview_get_selected( priv->tview );
+	g_return_if_fail( form_ref && OFO_IS_TVA_FORM( form_ref ));
+
+	form = ofo_tva_form_new_from_form( form_ref );
+	if( ofo_tva_form_insert( form )){
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+		ofa_tva_form_properties_run( priv->getter, toplevel, form );
+	}
 
 	ofa_tvbin_select_row( OFA_TVBIN( priv->tview ), NULL );
 }
