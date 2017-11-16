@@ -220,22 +220,22 @@ static void        tva_form_set_cre_user( ofoTVAForm *form, const gchar *user );
 static void        tva_form_set_cre_stamp( ofoTVAForm *form, const GTimeVal *stamp );
 static void        tva_form_set_upd_user( ofoTVAForm *form, const gchar *user );
 static void        tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *stamp );
-static GList      *form_detail_new( ofoTVAForm *form, guint level, const gchar *code, const gchar *label, gboolean has_base, const gchar *base, gboolean has_amount, const gchar *amount, gboolean has_template, const gchar *template );
-static void        form_detail_add( ofoTVAForm *form, GList *fields );
 static GList      *form_boolean_new( ofoTVAForm *form, const gchar *label );
 static void        form_boolean_add( ofoTVAForm *form, GList *fields );
+static GList      *form_detail_new( ofoTVAForm *form, guint level, const gchar *code, const gchar *label, gboolean has_base, const gchar *base, gboolean has_amount, const gchar *amount, gboolean has_template, const gchar *template );
+static void        form_detail_add( ofoTVAForm *form, GList *fields );
 static GList      *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean    form_do_insert( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gboolean    form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gboolean    form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *connect );
-static gboolean    form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang, GList *details );
-static gboolean    form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang, GList *details );
+static gboolean    form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *connect, guint idx );
+static gboolean    form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint idx );
 static gboolean    form_do_update( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *prev_mnemo );
 static gboolean    form_update_main( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *prev_mnemo );
 static gboolean    form_do_delete( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gboolean    form_do_delete_by_mnemo( const ofaIDBConnect *connect, const gchar *mnemo, const gchar *table );
-static gboolean    form_delete_details( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gboolean    form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *connect );
+static gboolean    form_delete_details( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gint        form_cmp_by_mnemo( const ofoTVAForm *a, const gchar *mnemo );
 static void        icollectionable_iface_init( myICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( void );
@@ -774,12 +774,6 @@ ofo_tva_form_set_has_correspondence( ofoTVAForm *form, gboolean has_corresponden
 /**
  * ofo_tva_form_set_is_enabled:
  */
-void
-ofo_tva_form_set_is_enabled( ofoTVAForm *form, gboolean enabled )
-{
-	ofo_base_setter( TVA_FORM, form, string, TFO_ENABLED, enabled ? "Y":"N" );
-}
-
 /**
  * ofo_tva_form_set_notes:
  */
@@ -1411,28 +1405,30 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 	return( ok );
 }
 
+/*
+ * booleans and details insertion:
+ * - idx is counted from zero, while row is counted from 1
+ */
 static gboolean
 form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *connect )
 {
-	ofoTVAFormPrivate *priv;
 	gboolean ok;
-	GList *idet;
-	guint rang;
+	guint count, idx;
 
-	priv = ofo_tva_form_get_instance_private( form );
+	ok = form_delete_bools( form, connect ) &&
+			form_delete_details( form, connect );
 
-	ok = FALSE;
-
-	if( form_delete_details( form, connect ) && form_delete_bools( form, connect )){
-		ok = TRUE;
-		for( idet=priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
-			if( !form_insert_details( form, connect, rang, idet->data )){
+	if( ok ){
+		count = ofo_tva_form_boolean_get_count( form );
+		for( idx=0 ; idx<count ; ++idx ){
+			if( !form_insert_bools( form, connect, idx )){
 				ok = FALSE;
 				break;
 			}
 		}
-		for( idet=priv->bools, rang=1 ; idet ; idet=idet->next, rang+=1 ){
-			if( !form_insert_bools( form, connect, rang, idet->data )){
+		count = ofo_tva_form_detail_get_count( form );
+		for( idx=0 ; idx<count ; ++idx ){
+			if( !form_insert_details( form, connect, idx )){
 				ok = FALSE;
 				break;
 			}
@@ -1443,74 +1439,23 @@ form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *connect )
 }
 
 static gboolean
-form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang, GList *details )
+form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *connect, guint idx )
 {
 	GString *query;
 	gboolean ok;
-	gchar *code, *label, *base, *amount;
-	const gchar *cstr;
+	gchar *label;
 
-	query = g_string_new( "INSERT INTO TVA_T_FORMS_DET " );
+	query = g_string_new( "INSERT INTO TVA_T_FORMS_BOOL " );
 
 	g_string_append_printf( query,
-			"	(TFO_MNEMO,TFO_DET_ROW,"
-			"	 TFO_DET_LEVEL,TFO_DET_CODE,TFO_DET_LABEL,"
-			"	 TFO_DET_HAS_BASE,TFO_DET_BASE,"
-			"	 TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNT,"
-			"	 TFO_DET_HAS_TEMPLATE,TFO_DET_TEMPLATE) "
-			"	VALUES('%s',%d",
-			ofo_tva_form_get_mnemo( form ), rang );
+			"	(TFO_MNEMO,TFO_BOOL_ROW,"
+			"	 TFO_BOOL_LABEL) "
+			"	VALUES('%s',%u",
+			ofo_tva_form_get_mnemo( form ), idx+1 );
 
-	g_string_append_printf( query, ",%u", ofa_box_get_int( details, TFO_DET_LEVEL ));
-
-	code = my_utils_quote_sql( ofa_box_get_string( details, TFO_DET_CODE ));
-	if( my_strlen( code )){
-		g_string_append_printf( query, ",'%s'", code );
-	} else {
-		query = g_string_append( query, ",NULL" );
-	}
-	g_free( code );
-
-	label = my_utils_quote_sql( ofa_box_get_string( details, TFO_DET_LABEL ));
-	if( my_strlen( label )){
-		g_string_append_printf( query, ",'%s'", label );
-	} else {
-		query = g_string_append( query, ",NULL" );
-	}
+	label = my_utils_quote_sql( ofo_tva_form_boolean_get_label( form, idx ));
+	g_string_append_printf( query, ",'%s'", label );
 	g_free( label );
-
-	cstr = ofa_box_get_string( details, TFO_DET_HAS_BASE );
-	g_string_append_printf( query, ",'%s'", cstr );
-
-	base = my_utils_quote_sql( ofa_box_get_string( details, TFO_DET_BASE ));
-	if( my_strlen( base )){
-		g_string_append_printf( query, ",'%s'", base );
-	} else {
-		query = g_string_append( query, ",NULL" );
-	}
-	g_free( base );
-
-	cstr = ofa_box_get_string( details, TFO_DET_HAS_AMOUNT );
-	g_string_append_printf( query, ",'%s'", cstr );
-
-	amount = my_utils_quote_sql( ofa_box_get_string( details, TFO_DET_AMOUNT ));
-	if( my_strlen( amount )){
-		g_string_append_printf( query, ",'%s'", amount );
-	} else {
-		query = g_string_append( query, ",NULL" );
-	}
-	g_free( amount );
-
-	cstr = ofa_box_get_string( details, TFO_DET_HAS_TEMPLATE );
-	g_string_append_printf( query, ",'%s'", cstr );
-
-	code = my_utils_quote_sql( ofa_box_get_string( details, TFO_DET_TEMPLATE ));
-	if( my_strlen( code )){
-		g_string_append_printf( query, ",'%s'", code );
-	} else {
-		query = g_string_append( query, ",NULL" );
-	}
-	g_free( code );
 
 	query = g_string_append( query, ")" );
 
@@ -1522,23 +1467,73 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang,
 }
 
 static gboolean
-form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang, GList *fields )
+form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint idx )
 {
 	GString *query;
-	gboolean ok;
-	gchar *label;
+	gboolean ok, has;
+	gchar *code, *label, *base, *amount;
 
-	query = g_string_new( "INSERT INTO TVA_T_FORMS_BOOL " );
+	query = g_string_new( "INSERT INTO TVA_T_FORMS_DET " );
 
 	g_string_append_printf( query,
-			"	(TFO_MNEMO,TFO_BOOL_ROW,"
-			"	 TFO_BOOL_LABEL) "
-			"	VALUES('%s',%d",
-			ofo_tva_form_get_mnemo( form ), rang );
+			"	(TFO_MNEMO,TFO_DET_ROW,"
+			"	 TFO_DET_LEVEL,TFO_DET_CODE,TFO_DET_LABEL,"
+			"	 TFO_DET_HAS_BASE,TFO_DET_BASE,"
+			"	 TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNT,"
+			"	 TFO_DET_HAS_TEMPLATE,TFO_DET_TEMPLATE) "
+			"	VALUES('%s',%u,%u",
+			ofo_tva_form_get_mnemo( form ),
+			idx+1,
+			ofo_tva_form_detail_get_level( form, idx ));
 
-	label = my_utils_quote_sql( ofa_box_get_string( fields, TFO_BOOL_LABEL ));
-	g_string_append_printf( query, ",'%s'", label );
+	code = my_utils_quote_sql( ofo_tva_form_detail_get_code( form, idx ));
+	if( my_strlen( code )){
+		g_string_append_printf( query, ",'%s'", code );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
+	g_free( code );
+
+	label = my_utils_quote_sql( ofo_tva_form_detail_get_label( form, idx ));
+	if( my_strlen( label )){
+		g_string_append_printf( query, ",'%s'", label );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
 	g_free( label );
+
+	has = ofo_tva_form_detail_get_has_base( form, idx );
+	query = g_string_append( query, has ? ",'Y'":",'N'" );
+
+	base = has ? my_utils_quote_sql( ofo_tva_form_detail_get_base( form, idx )) : NULL;
+	if( my_strlen( base )){
+		g_string_append_printf( query, ",'%s'", base );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
+	g_free( base );
+
+	has = ofo_tva_form_detail_get_has_amount( form, idx );
+	query = g_string_append( query, has ? ",'Y'":",'N'" );
+
+	amount = has ? my_utils_quote_sql( ofo_tva_form_detail_get_amount( form, idx )) : NULL;
+	if( my_strlen( amount )){
+		g_string_append_printf( query, ",'%s'", amount );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
+	g_free( amount );
+
+	has = ofo_tva_form_detail_get_has_template( form, idx );
+	query = g_string_append( query, has ? ",'Y'":",'N'" );
+
+	code = has ? my_utils_quote_sql( ofo_tva_form_detail_get_template( form, idx )) : NULL;
+	if( my_strlen( code )){
+		g_string_append_printf( query, ",'%s'", code );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
+	g_free( code );
 
 	query = g_string_append( query, ")" );
 
@@ -1717,15 +1712,15 @@ form_do_delete_by_mnemo( const ofaIDBConnect *connect, const gchar *mnemo, const
 }
 
 static gboolean
-form_delete_details( ofoTVAForm *form, const ofaIDBConnect *connect )
-{
-	return( form_do_delete_by_mnemo( connect, ofo_tva_form_get_mnemo( form ), "TVA_T_FORMS_DET" ));
-}
-
-static gboolean
 form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *connect )
 {
 	return( form_do_delete_by_mnemo( connect, ofo_tva_form_get_mnemo( form ), "TVA_T_FORMS_BOOL" ));
+}
+
+static gboolean
+form_delete_details( ofoTVAForm *form, const ofaIDBConnect *connect )
+{
+	return( form_do_delete_by_mnemo( connect, ofo_tva_form_get_mnemo( form ), "TVA_T_FORMS_DET" ));
 }
 
 static gint
