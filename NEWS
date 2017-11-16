@@ -29,6 +29,7 @@
 
    - ofaPeriodClose: save size and position of "ArchivingAccountsBalance" dialog box (todo #1516).
    - ofoTVAFormProperties: improve properties update.
+   - ofaTVARecordProperties: better center the label (todo #1515).
 
  Bug fixes:
 
