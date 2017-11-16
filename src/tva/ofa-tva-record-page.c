@@ -35,12 +35,14 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-prefs.h"
 #include "api/ofo-dossier.h"
 
+#include "tva/ofa-tva-form-page.h"
 #include "tva/ofa-tva-record-page.h"
 #include "tva/ofa-tva-record-properties.h"
 #include "tva/ofa-tva-record-store.h"
@@ -67,6 +69,7 @@ typedef struct {
 	GSimpleAction        *update_action;
 	GSimpleAction        *delete_action;
 	GSimpleAction        *validate_action;
+	GSimpleAction        *form_action;
 
 	/* runtime
 	 */
@@ -91,6 +94,7 @@ static gboolean   check_for_deletability( ofaTVARecordPage *self, ofoTVARecord *
 static void       delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record );
 static void       action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self );
 static void       validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record );
+static void       action_on_form_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaTVARecordPage, ofa_tva_record_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaTVARecordPage ))
@@ -132,6 +136,7 @@ tva_record_page_dispose( GObject *instance )
 		g_object_unref( priv->update_action );
 		g_object_unref( priv->delete_action );
 		g_object_unref( priv->validate_action );
+		g_object_unref( priv->form_action );
 	}
 
 	/* chain up to the parent class */
@@ -291,6 +296,19 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->validate_action ),
 					_( "_Validate..." )));
 	g_simple_action_set_enabled( priv->validate_action, FALSE );
+
+	/* switch to form page */
+	priv->form_action = g_simple_action_new( "form", NULL );
+	g_signal_connect( priv->form_action, "activate", G_CALLBACK( action_on_form_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->form_action ),
+			_( "Switch to VAT forms page" ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_new_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->form_action ),
+					_( "VAT _forms" )));
+	g_simple_action_set_enabled( priv->form_action, TRUE );
 }
 
 static void
@@ -508,4 +526,16 @@ validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 		my_date_set_now( &today );
 		ofo_tva_record_validate( record, VAT_STATUS_USER, &today );
 	}
+}
+
+static void
+action_on_form_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self )
+{
+	ofaTVARecordPagePrivate *priv;
+	ofaIPageManager *manager;
+
+	priv = ofa_tva_record_page_get_instance_private( self );
+
+	manager = ofa_igetter_get_page_manager( priv->getter);
+	ofa_ipage_manager_activate( manager, OFA_TYPE_TVA_FORM_PAGE );
 }

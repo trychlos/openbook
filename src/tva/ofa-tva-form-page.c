@@ -36,6 +36,7 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
@@ -70,6 +71,7 @@ typedef struct {
 	GSimpleAction      *update_action;
 	GSimpleAction      *delete_action;
 	GSimpleAction      *declare_action;
+	GSimpleAction      *record_action;
 }
 	ofaTVAFormPagePrivate;
 
@@ -88,6 +90,7 @@ static void       action_on_delete_activated( GSimpleAction *action, GVariant *e
 static gboolean   check_for_deletability( ofaTVAFormPage *self, ofoTVAForm *form );
 static void       delete_with_confirm( ofaTVAFormPage *self, ofoTVAForm *form );
 static void       action_on_declare_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPage *self );
+static void       action_on_record_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaTVAFormPage, ofa_tva_form_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaTVAFormPage ))
@@ -128,6 +131,7 @@ tva_form_page_dispose( GObject *instance )
 		g_object_unref( priv->update_action );
 		g_object_unref( priv->delete_action );
 		g_object_unref( priv->declare_action );
+		g_object_unref( priv->record_action );
 	}
 
 	/* chain up to the parent class */
@@ -286,6 +290,19 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->declare_action ),
 					_( "De_clare from selected..." )));
 	g_simple_action_set_enabled( priv->declare_action, FALSE );
+
+	/* switch to VAT record page */
+	priv->record_action = g_simple_action_new( "record", NULL );
+	g_signal_connect( priv->record_action, "activate", G_CALLBACK( action_on_record_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->record_action ),
+			_( "Switch to VAT records page" ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_new_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->record_action ),
+					_( "VAT _records" )));
+	g_simple_action_set_enabled( priv->record_action, TRUE );
 }
 
 static void
@@ -483,4 +500,19 @@ action_on_declare_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormP
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_tva_record_new_run( priv->getter, toplevel, record );
+}
+
+/*
+ * switch to record page
+ */
+static void
+action_on_record_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPage *self )
+{
+	ofaTVAFormPagePrivate *priv;
+	ofaIPageManager *manager;
+
+	priv = ofa_tva_form_page_get_instance_private( self );
+
+	manager = ofa_igetter_get_page_manager( priv->getter);
+	ofa_ipage_manager_activate( manager, OFA_TYPE_TVA_RECORD_PAGE );
 }

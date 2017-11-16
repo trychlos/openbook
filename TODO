@@ -366,8 +366,6 @@
 1511 2017-11-16 VAT: review the dynamic of Record status
                 may the properties be edited after operations have been generated ?
 
-1512 2017-11-16 VAT: have a button on FormPage and RecordPage to switch to the other one
-
 1513 2017-11-16 Recurrent: have a button on ModelPage and RunPage to switch to the other one
 
 1517
@@ -1361,6 +1359,9 @@
 1506 2017-11- 4 VAT form page: generate from selected button should only
                 be enabled when currently selected form is enabled
      2017-11- 6 fixed by unselecting all when running the properties
+
+1512 2017-11-16 VAT: have a button on FormPage and RecordPage to switch to the other one
+     2017-11-16 done
 
 1514 2017-11-16 VAT: generating operations does not work the first time after compute
      2017-11-16 fixed

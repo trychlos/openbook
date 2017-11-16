@@ -28,7 +28,8 @@
  New features and improvements:
 
    - ofaPeriodClose: save size and position of "ArchivingAccountsBalance" dialog box (todo #1516).
-   - ofoTVAFormProperties: improve properties update.
+   - ofaTVAFormPage, ofaTVARecordPage: have a button to switch to each other (todo #1512).
+   - ofaTVAFormProperties: improve properties update.
    - ofaTVARecordProperties: better center the label (todo #1515).
 
  Bug fixes:
