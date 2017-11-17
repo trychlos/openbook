@@ -37,6 +37,7 @@
 
    - ofaTVAFormProperties: fix new record creation.
    - ofaTVARecordProperties: fix operation date setting (todo #1514).
+   - ofaUnsettledPage: disconnect the signal handler (todo #1496).
    - ofoBat: fix new record insertion.
    - ofoTVAForm: fix new record insertion.
    - ofoTVARecord: fix new record insertion.
