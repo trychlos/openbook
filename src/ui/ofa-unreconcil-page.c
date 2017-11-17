@@ -156,6 +156,8 @@ unreconcil_page_dispose( GObject *instance )
 		g_object_unref( priv->vaccount_action );
 		g_object_unref( priv->ventry_action );
 		g_object_unref( priv->vope_action );
+
+		g_object_unref( priv->store );
 	}
 
 	/* chain up to the parent class */
@@ -347,6 +349,7 @@ action_page_v_init_view( ofaActionPage *page )
 	ofaUnreconcilPagePrivate *priv;
 	GMenu *menu;
 	gboolean is_empty;
+	gulong handler;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -367,7 +370,8 @@ action_page_v_init_view( ofaActionPage *page )
 	 *  menus definition) */
 	priv->store = ofa_accentry_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
-	g_signal_connect( priv->store, "ofa-istore-need-refilter", G_CALLBACK( store_on_need_refilter ), page );
+	handler = g_signal_connect( priv->store, "ofa-istore-need-refilter", G_CALLBACK( store_on_need_refilter ), page );
+	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 
 	ofa_accentry_treeview_expand_all( priv->tview );
 	refresh_status_label( OFA_UNRECONCIL_PAGE( page ));
