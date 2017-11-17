@@ -187,30 +187,40 @@ ofa_accentry_store_new( ofaIGetter *getter )
 {
 	ofaAccentryStore *store;
 	ofaAccentryStorePrivate *priv;
+	myICollector *collector;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	store = g_object_new( OFA_TYPE_ACCENTRY_STORE, NULL );
+	collector = ofa_igetter_get_collector( getter );
+	store = ( ofaAccentryStore * ) my_icollector_single_get_object( collector, OFA_TYPE_ACCENTRY_STORE );
 
-	priv = ofa_accentry_store_get_instance_private( store );
+	if( store ){
+		g_return_val_if_fail( OFA_IS_ACCENTRY_STORE( store ), NULL );
 
-	priv->getter = getter;
+	} else {
+		store = g_object_new( OFA_TYPE_ACCENTRY_STORE, NULL );
 
-	gtk_tree_store_set_column_types(
-			GTK_TREE_STORE( store ), ACCENTRY_N_COLUMNS, st_col_types );
+		priv = ofa_accentry_store_get_instance_private( store );
 
-	// before setting default sort function to optimize the bulk insertion
-	load_store( store );
+		priv->getter = getter;
 
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
+		gtk_tree_store_set_column_types(
+				GTK_TREE_STORE( store ), ACCENTRY_N_COLUMNS, st_col_types );
 
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( store ), GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
+		// before setting default sort function to optimize the bulk insertion
+		load_store( store );
 
-	signaler_connect_to_signaling_system( store );
+		gtk_tree_sortable_set_default_sort_func(
+				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 
-	return( store );
+		gtk_tree_sortable_set_sort_column_id(
+				GTK_TREE_SORTABLE( store ), GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
+
+		my_icollector_single_set_object( collector, store );
+		signaler_connect_to_signaling_system( store );
+	}
+
+	return( g_object_ref( store ));
 }
 
 /*

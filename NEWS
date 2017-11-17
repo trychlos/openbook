@@ -45,6 +45,7 @@
 
    - myIBin: has its own 'my-ibin-changed' signal (todo #1501).
    - mySettings: have an info message instead of debug when file doesn't exist.
+   - ofaAccentryStore: becomes a dossier-level singleton.
    - ofo-entry-fec.{c,h}: removed files.
 
 -----------------------------------------------------------------------
