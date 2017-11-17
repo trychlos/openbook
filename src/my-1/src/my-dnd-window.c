@@ -256,16 +256,13 @@ my_dnd_window_present_by_type( GType type )
 	myDndWindow *window;
 	myDndWindowPrivate *priv;
 	GList *it;
-	const gchar *ctype_name;
 
-	ctype_name = g_type_name( type );
-
-	g_debug( "%s: type=%lu, class_name=%s", thisfn, type, ctype_name );
+	g_debug( "%s: type=%lu, class=%s", thisfn, type, g_type_name( type ));
 
 	for( it=st_list ; it ; it=it->next ){
 		window = MY_DND_WINDOW( it->data );
 		priv = my_dnd_window_get_instance_private( window );
-		if( !my_collate( G_OBJECT_TYPE_NAME( priv->child_widget ), ctype_name )){
+		if( G_OBJECT_TYPE( priv->child_widget ) == type ){
 			g_debug( "%s: found window=%p", thisfn, ( void * ) window );
 			my_iwindow_present( MY_IWINDOW( window ));
 			return( TRUE );

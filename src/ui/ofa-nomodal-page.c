@@ -279,14 +279,13 @@ ofa_nomodal_page_present_by_type( GType type )
 	ofaNomodalPagePrivate *priv;
 	GList *it;
 
-	g_debug( "%s: type=%lu", thisfn, type );
+	g_debug( "%s: type=%lu, class=%s", thisfn, type, g_type_name( type ));
 
 	for( it=st_list ; it ; it=it->next ){
 		page = OFA_NOMODAL_PAGE( it->data );
 		priv = ofa_nomodal_page_get_instance_private( page );
 		if( G_OBJECT_TYPE( OFA_PAGE( priv->top_widget )) == type ){
-			g_debug( "%s: found page=%p (ofaPage=%p (%s))",
-					thisfn, ( void * ) page, ( void * ) priv->top_widget, G_OBJECT_TYPE_NAME( priv->top_widget ));
+			g_debug( "%s: found page=%p", thisfn, ( void * ) page );
 			my_iwindow_present( MY_IWINDOW( page ));
 			return( TRUE );
 		}
