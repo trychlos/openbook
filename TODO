@@ -355,7 +355,29 @@
 1511 2017-11-16 VAT: review the dynamic of Record status
                 may the properties be edited after operations have been generated ?
 
-1517
+1517 2017-11-17 DBMS: have user+timestamp on entry status change
+
+1518 2017-11-17 when deleting an entry:
+                UPDATE OFA_T_ENTRIES SET ENT_IPERIOD='C',ENT_STATUS='D' WHERE ENT_NUMBER=5568
+                why the iperiod has to be updated (does not supposed to be modified
+                on a status change)
+
+1519 2017-11-17 VAT: when accounting operations are deleted, the corresponded
+                detail lines should be updated (set to null) accordingly
+
+1520 2017-11-17 VAT: have a new vat record status: 'O' when operation has been generated
+
+1521 2017-11-17 VAT: after operation has been generated, computing is forbidden
+                and properties are no more modifiable
+
+1522 2017-11-17 VAT: should monitor ofa_t_entries status change, so that delete
+                the operation if entries are deleted, or validate the record if
+                entries are validated
+                -> what happens during period closing ?
+
+1523 2017-11-17 VAT: record properties dialog should ahve OK/Cancel as notes are updatable
+
+1524
 
 -----------------------------------------------------------------------
  DONE
