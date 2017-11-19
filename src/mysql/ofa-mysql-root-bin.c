@@ -648,7 +648,7 @@ ibin_get_size_group( const myIBin *instance, guint column )
  * If a #ofaIDBDossierMeta is set, then check a connection against the
  * DBMS server (at DBMS server level).
  */
-gboolean
+static gboolean
 ibin_is_valid( const myIBin *instance, gchar **msgerr )
 {
 	ofaMysqlRootBinPrivate *priv;

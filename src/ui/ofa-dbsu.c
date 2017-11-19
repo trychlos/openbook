@@ -244,7 +244,7 @@ idialog_init( myIDialog *instance )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "edit-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->su_bin ));
-	g_signal_connect( priv->su_bin, "ofa-changed", G_CALLBACK( on_su_bin_changed ), instance );
+	g_signal_connect( priv->su_bin, "my-ibin-changed", G_CALLBACK( on_su_bin_changed ), instance );
 	priv->su_parent = parent;
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
