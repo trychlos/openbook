@@ -80,6 +80,8 @@
     OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf \
       gdb ./_install/bin/openbook
  or
+ $ G_DEBUG=fatal_criticals G_MESSAGES_DEBUG='MY|OFA' OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf gdb ./_install/bin/openbook
+ or
  $ G_DEBUG=fatal_criticals \
     G_MESSAGES_DEBUG='MY|OFA' \
     OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf \
