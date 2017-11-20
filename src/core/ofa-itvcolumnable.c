@@ -498,6 +498,7 @@ on_action_changed_state( GSimpleAction *action, GVariant *value, ofaITVColumnabl
 GtkTreeViewColumn *
 ofa_itvcolumnable_get_column( ofaITVColumnable *instance, gint column_id )
 {
+	static const gchar *thisfn = "ofa_itvcolumnable_get_column";
 	sITVColumnable *sdata;
 	sColumn *scol;
 
@@ -506,7 +507,14 @@ ofa_itvcolumnable_get_column( ofaITVColumnable *instance, gint column_id )
 	sdata = get_instance_data( instance );
 	scol = get_column_data_by_id( instance, sdata, column_id );
 
-	return( scol->column );
+	if( scol ){
+		return( scol->column );
+
+	} else {
+		g_warning( "%s: unknwon column_id=%u", thisfn, column_id );
+	}
+
+	return( NULL );
 }
 
 /**
@@ -668,6 +676,7 @@ ofa_itvcolumnable_get_menu( ofaITVColumnable *instance )
 void
 ofa_itvcolumnable_set_default_column( ofaITVColumnable *instance, gint column_id )
 {
+	static const gchar *thisfn = "ofa_itvcolumnable_set_default_column";
 	sITVColumnable *sdata;
 	sColumn *scol;
 
@@ -675,9 +684,13 @@ ofa_itvcolumnable_set_default_column( ofaITVColumnable *instance, gint column_id
 
 	sdata = get_instance_data( instance );
 	scol = get_column_data_by_id( instance, sdata, column_id );
-	g_return_if_fail( scol );
 
-	scol->def_visible = TRUE;
+	if( scol ){
+		scol->def_visible = TRUE;
+
+	} else {
+		g_warning( "%s: unknown column_id=%u", thisfn, column_id );
+	}
 }
 
 /**
@@ -694,6 +707,7 @@ ofa_itvcolumnable_set_default_column( ofaITVColumnable *instance, gint column_id
 void
 ofa_itvcolumnable_set_invisible( ofaITVColumnable *instance, gint column_id, gboolean invisible )
 {
+	static const gchar *thisfn = "ofa_itvcolumnable_set_invisible";
 	sITVColumnable *sdata;
 	sColumn *scol;
 	GActionGroup *action_group;
@@ -702,16 +716,22 @@ ofa_itvcolumnable_set_invisible( ofaITVColumnable *instance, gint column_id, gbo
 
 	sdata = get_instance_data( instance );
 	scol = get_column_data_by_id( instance, sdata, column_id );
-	scol->invisible = invisible;
 
-	/* make the column not visible when disabled */
-	if( invisible ){
-		action_group = ofa_iactionable_get_action_group( OFA_IACTIONABLE( instance ), scol->group_name );
-		g_action_group_change_action_state( action_group, scol->name, g_variant_new_boolean( FALSE ));
+	if( scol ){
+		scol->invisible = invisible;
+
+		/* make the column not visible when disabled */
+		if( invisible ){
+			action_group = ofa_iactionable_get_action_group( OFA_IACTIONABLE( instance ), scol->group_name );
+			g_action_group_change_action_state( action_group, scol->name, g_variant_new_boolean( FALSE ));
+		}
+
+		/* enable/disable the action */
+		enable_action( instance, sdata, scol );
+
+	} else {
+		g_warning( "%s: unknwon column_id=%u", thisfn, column_id );
 	}
-
-	/* enable/disable the action */
-	enable_action( instance, sdata, scol );
 }
 
 /*

@@ -35,6 +35,7 @@
 
  Bug fixes:
 
+   - ofaITVColumnable: protect column addressing against false identifiers.
    - ofaTVAFormProperties: fix new record creation.
    - ofaTVARecordProperties: fix operation date setting (todo #1514).
    - ofaUnreconcilPage: disconnect the signal handler (todo #1496).
