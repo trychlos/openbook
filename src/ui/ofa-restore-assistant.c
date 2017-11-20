@@ -214,7 +214,7 @@ static guint    p1_get_archive_format( ofaRestoreAssistant *self );
 static void     p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void     p2_on_target_chooser_changed( ofaTargetChooserBin *bin, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta, ofaRestoreAssistant *self );
+static void     p2_on_target_chooser_changed( myIBin *bin, ofaRestoreAssistant *self );
 static gboolean p2_check_for_complete( ofaRestoreAssistant *self );
 static gboolean p2_check_for_restore_rules( ofaRestoreAssistant *self );
 static gboolean p2_check_for_rule1_dates( ofaRestoreAssistant *self );
@@ -665,7 +665,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p2_chooser = ofa_target_chooser_bin_new( priv->getter, priv->settings_prefix, HUB_RULE_DOSSIER_RESTORE );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_chooser ));
-	g_signal_connect( priv->p2_chooser, "ofa-changed", G_CALLBACK( p2_on_target_chooser_changed ), self );
+	g_signal_connect( priv->p2_chooser, "my-ibin-changed", G_CALLBACK( p2_on_target_chooser_changed ), self );
 
 	/* message */
 	priv->p2_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-message" );
@@ -697,22 +697,15 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p2_on_target_chooser_changed( ofaTargetChooserBin *bin, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *exercice_meta, ofaRestoreAssistant *self )
+p2_on_target_chooser_changed( myIBin *bin, ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 
-	g_debug( "p2_on_target_chooser_changed: dossier=%p, exercice=%p", dossier_meta, exercice_meta );
-
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	if( dossier_meta ){
-		priv->p2_dossier_meta = dossier_meta;
-		priv->p2_new_dossier = ofa_target_chooser_bin_is_new_dossier( bin, dossier_meta );
-		if( exercice_meta ){
-			priv->p2_exercice_meta = exercice_meta;
-			priv->p2_new_exercice = ofa_target_chooser_bin_is_new_exercice( bin, exercice_meta );
-		}
-	}
+	ofa_target_chooser_bin_get_selected( OFA_TARGET_CHOOSER_BIN( bin ), &priv->p2_dossier_meta, &priv->p2_exercice_meta );
+	priv->p2_new_dossier = ofa_target_chooser_bin_is_new_dossier( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_dossier_meta );
+	priv->p2_new_exercice = ofa_target_chooser_bin_is_new_exercice( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_exercice_meta );
 
 	p2_check_for_complete( self );
 }

@@ -28,6 +28,7 @@
 
 #include <stdlib.h>
 
+#include "my/my-ibin.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-dossier-collection.h"
@@ -72,15 +73,6 @@ typedef struct {
 }
 	ofaTargetChooserBinPrivate;
 
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-target-chooser-bin.ui";
 
 static void     setup_bin( ofaTargetChooserBin *self );
@@ -90,16 +82,19 @@ static void     exercice_set_sensitive( ofaTargetChooserBin *self );
 static void     exercice_set_sensitive_widget( GtkWidget *widget, ofaTargetChooserBin *self );
 static void     exercice_on_selection_changed( ofaExerciceTreeview *treeview, ofaIDBExerciceMeta *meta, ofaTargetChooserBin *self );
 static void     exercice_on_new( GtkButton *button, ofaTargetChooserBin *self );
-static void     set_collection_handler( ofaTargetChooserBin *self );
-static void     remove_collection_handler( ofaTargetChooserBin *self );
-static void     on_collection_changed( ofaDossierCollection *collection, guint count, ofaTargetChooserBin *self );
+static void     collection_handler_install( ofaTargetChooserBin *self );
+static void     collection_handler_remove( ofaTargetChooserBin *self );
+static void     collection_on_changed( ofaDossierCollection *collection, guint count, ofaTargetChooserBin *self );
 static void     set_new_object( ofaTargetChooserBin *self, GObject *object );
 static gboolean get_is_new_object( ofaTargetChooserBin *self, GObject *object );
 static void     read_settings( ofaTargetChooserBin *self );
 static void     write_settings( ofaTargetChooserBin *self );
+static void     ibin_iface_init( myIBinInterface *iface );
+static guint    ibin_get_interface_version( void );
 
 G_DEFINE_TYPE_EXTENDED( ofaTargetChooserBin, ofa_target_chooser_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaTargetChooserBin ))
+		G_ADD_PRIVATE( ofaTargetChooserBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IBIN, ibin_iface_init ))
 
 static void
 target_chooser_bin_finalize( GObject *instance )
@@ -148,7 +143,7 @@ target_chooser_bin_dispose( GObject *instance )
 	if( !priv->dispose_has_run ){
 
 		write_settings( OFA_TARGET_CHOOSER_BIN( instance ));
-		remove_collection_handler( OFA_TARGET_CHOOSER_BIN( instance ));
+		collection_handler_remove( OFA_TARGET_CHOOSER_BIN( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -188,32 +183,6 @@ ofa_target_chooser_bin_class_init( ofaTargetChooserBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = target_chooser_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = target_chooser_bin_finalize;
-
-	/**
-	 * ofaTargetChooserBin::ofa-changed:
-	 *
-	 * This signal is sent on the #ofaTargetChooserBin when any of the
-	 * underlying information is changed.
-	 *
-	 * Arguments are currently selected dossier and exercices.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaTargetChooserBin *bin,
-	 * 						ofaDossierMeta    *dossier_meta;
-	 * 						ofaExerciceMeta   *exercice_meta,
-	 * 						gpointer           user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
-				OFA_TYPE_TARGET_CHOOSER_BIN,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_POINTER, G_TYPE_POINTER );
 }
 
 /**
@@ -250,6 +219,7 @@ ofa_target_chooser_bin_new( ofaIGetter *getter, const gchar *settings_prefix, gu
 
 	setup_bin( bin );
 	read_settings( bin );
+	collection_handler_install( bin );
 	exercice_set_sensitive( bin );
 
 	return( bin );
@@ -318,10 +288,9 @@ dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *m
 		priv->exercice_meta = NULL;
 
 		ofa_exercice_treeview_set_dossier( priv->exercice_tview, meta );
-
 		exercice_set_sensitive( self );
 
-		g_signal_emit_by_name( self, "ofa-changed", priv->dossier_meta, priv->exercice_meta );
+		g_signal_emit_by_name( self, "my-ibin-changed" );
 	}
 }
 
@@ -333,7 +302,6 @@ dossier_on_new( GtkButton *button, ofaTargetChooserBin *self )
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
-	set_collection_handler( self );
 	ofa_dossier_treeview_set_selected( priv->dossier_tview, NULL );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	priv->block_dossier = TRUE;
@@ -389,7 +357,7 @@ exercice_on_selection_changed( ofaExerciceTreeview *treeview, ofaIDBExerciceMeta
 
 		priv->exercice_meta = meta;
 
-		g_signal_emit_by_name( self, "ofa-changed", priv->dossier_meta, priv->exercice_meta );
+		g_signal_emit_by_name( self, "my-ibin-changed" );
 	}
 }
 
@@ -401,7 +369,6 @@ exercice_on_new( GtkButton *button, ofaTargetChooserBin *self )
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
-	set_collection_handler( self );
 	ofa_exercice_treeview_set_selected( priv->exercice_tview, NULL );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	priv->block_dossier = TRUE;
@@ -425,43 +392,39 @@ exercice_on_new( GtkButton *button, ofaTargetChooserBin *self )
 }
 
 /*
- * Before updating the dossier collection, set a handler to reset the
- * current selection after a dossier store reload
- *
- * The handler is set when we need id, and removed on dispose().
+ * Monitor the dossier collection so that we are able to react on
+ * collection changes: because the ofaDossierStore is cleared and
+ * reloaded, we lose the current selection; so reset it from the
+ * handler.
  */
 static void
-set_collection_handler( ofaTargetChooserBin *self )
+collection_handler_install( ofaTargetChooserBin *self )
 {
 	ofaTargetChooserBinPrivate *priv;
 	ofaDossierCollection *collection;
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
-	if( !priv->collection_handler ){
-		collection = ofa_igetter_get_dossier_collection( priv->getter );
-		priv->collection_handler = g_signal_connect( collection, "changed", G_CALLBACK( on_collection_changed ), self );
-	}
+	collection = ofa_igetter_get_dossier_collection( priv->getter );
+	priv->collection_handler = g_signal_connect( collection, "changed", G_CALLBACK( collection_on_changed ), self );
 }
 
 static void
-remove_collection_handler( ofaTargetChooserBin *self )
+collection_handler_remove( ofaTargetChooserBin *self )
 {
 	ofaTargetChooserBinPrivate *priv;
 	ofaDossierCollection *collection;
 
 	priv = ofa_target_chooser_bin_get_instance_private( self );
 
-	if( priv->collection_handler ){
-		collection = ofa_igetter_get_dossier_collection( priv->getter );
-		g_signal_handler_disconnect( collection, priv->collection_handler );
-	}
+	collection = ofa_igetter_get_dossier_collection( priv->getter );
+	g_signal_handler_disconnect( collection, priv->collection_handler );
 }
 
 static void
-on_collection_changed( ofaDossierCollection *collection, guint count, ofaTargetChooserBin *self )
+collection_on_changed( ofaDossierCollection *collection, guint count, ofaTargetChooserBin *self )
 {
-	static const gchar *thisfn = "ofa_target_chooser_bin_on_collection_changed";
+	static const gchar *thisfn = "ofa_target_chooser_bin_collection_on_changed";
 	ofaTargetChooserBinPrivate *priv;
 	const gchar *dossier_name;
 	ofaIDBDossierMeta *dossier_meta;
@@ -547,6 +510,38 @@ get_is_new_object( ofaTargetChooserBin *self, GObject *object )
 }
 
 /**
+ * ofa_target_chooser_bin_get_selected:
+ * @bin: this #ofaTargetChooserBin instance.
+ * @dossier_meta: [out][allow-none]: a placeholder for the #ofaIDBDossierMeta object.
+ * @exercice_meta: [out][allow-none]: a placeholder for the #ofaIDBExerciceMeta object.
+ *
+ * Get the current selection.
+ */
+void
+ofa_target_chooser_bin_get_selected( ofaTargetChooserBin *bin,
+										ofaIDBDossierMeta **dossier_meta, ofaIDBExerciceMeta **exercice_meta )
+{
+	static const gchar *thisfn = "ofa_target_chooser_bin_get_selected";
+	ofaTargetChooserBinPrivate *priv;
+
+	g_debug( "%s: bin=%p, dossier_meta=%p, exercice_meta=%p",
+			thisfn, ( void * ) bin, ( void * ) dossier_meta, ( void * ) exercice_meta );
+
+	g_return_if_fail( bin && OFA_IS_TARGET_CHOOSER_BIN( bin ));
+
+	priv = ofa_target_chooser_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( dossier_meta ){
+		*dossier_meta = priv->dossier_meta;
+	}
+	if( exercice_meta ){
+		*exercice_meta = priv->exercice_meta;
+	}
+}
+
+/**
  * ofa_target_chooser_bin_set_selected:
  * @bin: this #ofaTargetChooserBin instance.
  * @dossier_meta: [allow-none]: the requested #ofaIDBDossierMeta object.
@@ -624,4 +619,23 @@ write_settings( ofaTargetChooserBin *self )
 	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 	g_free( key );
 	g_free( str );
+}
+
+/*
+ * myIBin interface management
+ */
+static void
+ibin_iface_init( myIBinInterface *iface )
+{
+	static const gchar *thisfn = "ofa_target_chooser_bin_ibin_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ibin_get_interface_version;
+}
+
+static guint
+ibin_get_interface_version( void )
+{
+	return( 1 );
 }
