@@ -53,6 +53,7 @@ static GType st_col_types[DOSSIER_N_COLUMNS] = {
 		G_TYPE_STRING, 					/* dossier name */
 		G_TYPE_STRING, 					/* DBMS provider name */
 		G_TYPE_STRING,					/* period name */
+		G_TYPE_STRING,					/* localized exercice label */
 		G_TYPE_STRING, 					/* end date (user display) */
 		G_TYPE_STRING, 					/* begin date (user display) */
 		G_TYPE_STRING, 					/* localized status */
@@ -205,6 +206,9 @@ ofa_dossier_store_new( ofaIGetter *getter )
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), DOSSIER_N_COLUMNS, st_col_types );
 
+		collection = ofa_igetter_get_dossier_collection( getter );
+		load_dataset( store, collection );
+
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 
@@ -212,9 +216,7 @@ ofa_dossier_store_new( ofaIGetter *getter )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		collection = ofa_igetter_get_dossier_collection( getter );
 		g_signal_connect( collection, "changed", G_CALLBACK( on_dossier_collection_changed ), store );
-		load_dataset( store, collection );
 	}
 
 	return( store );
@@ -312,7 +314,7 @@ static void
 set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period, GtkTreeIter *iter )
 {
 	ofaDossierStorePrivate *priv;
-	gchar *begin, *end, *status, *pername, *provname;
+	gchar *begin, *end, *status, *pername, *provname, *exelabel;
 	ofaIDBProvider *provider;
 	const gchar *dosname;
 
@@ -326,6 +328,7 @@ set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofa
 	end = my_date_to_str( ofa_idbexercice_meta_get_end_date( period ), ofa_prefs_date_get_display_format( priv->getter ));
 	status = ofa_idbexercice_meta_get_status( period );
 	pername = ofa_idbexercice_meta_get_name( period );
+	exelabel = ofa_idbexercice_meta_get_label( period );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
@@ -333,6 +336,7 @@ set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofa
 			DOSSIER_COL_DOSNAME,  dosname,
 			DOSSIER_COL_PROVNAME, provname,
 			DOSSIER_COL_PERNAME,  pername,
+			DOSSIER_COL_EXELABEL, exelabel,
 			DOSSIER_COL_BEGIN,    begin,
 			DOSSIER_COL_END,      end,
 			DOSSIER_COL_STATUS,   status,
@@ -341,6 +345,7 @@ set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofa
 			DOSSIER_COL_EXE_META, period,
 			-1 );
 
+	g_free( exelabel );
 	g_free( provname );
 	g_free( pername );
 	g_free( begin );

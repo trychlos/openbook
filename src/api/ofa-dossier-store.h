@@ -45,7 +45,8 @@
  * The #ofaDossierStore is managed as a singleton: the first
  * instanciation actually builds the store, while next only returns a
  * new reference on this same instance.
- * The #ofaApplication take ownership on this singleton so that it is
+ *
+ * The #ofaApplication takes ownership on this singleton so that it is
  * always available during the run.
  *
  * The class provides the following signals:
@@ -95,7 +96,8 @@ struct _ofaDossierStoreClass {
  *                                                             -------  ------------
  * @DOSSIER_COL_DOSNAME : dossier name                         String        Yes
  * @DOSSIER_COL_PROVNAME: dbms provider name                   String        Yes
- * @DOSSIER_COL_PERNAME : localized period label               String        Yes
+ * @DOSSIER_COL_PERNAME : period name from dbms provider       String        Yes
+ * @DOSSIER_COL_EXELABEL: localized exercice label             String        Yes
  * @DOSSIER_COL_END     : end of exercice                      String        Yes
  * @DOSSIER_COL_BEGIN   : begin of exercice                    String        Yes
  * @DOSSIER_COL_STATUS  : localized status of the exercice     String        Yes
@@ -107,6 +109,7 @@ enum {
 	DOSSIER_COL_DOSNAME = 0,
 	DOSSIER_COL_PROVNAME,
 	DOSSIER_COL_PERNAME,
+	DOSSIER_COL_EXELABEL,
 	DOSSIER_COL_END,
 	DOSSIER_COL_BEGIN,
 	DOSSIER_COL_STATUS,
