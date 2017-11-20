@@ -566,7 +566,7 @@ do_create( ofaDossierNew *self )
 			}
 			my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_ERROR, msgerr );
 			g_free( msgerr );
-			g_object_unref( dossier_meta );
+			ofa_idbdossier_meta_unref( dossier_meta );
 		}
 	}
 	if( ret ){
