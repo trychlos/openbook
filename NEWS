@@ -51,6 +51,7 @@
    - mySettings: have an info message instead of debug when file doesn't exist.
    - ofaAccentryStore: becomes a dossier-level singleton.
    - ofaDossierStore: add exercice localized label column.
+   - ofaExerciceTreeview: now uses ofaDossierStore.
    - ofo-entry-fec.{c,h}: removed files.
 
 -----------------------------------------------------------------------

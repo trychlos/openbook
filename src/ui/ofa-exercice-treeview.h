@@ -31,7 +31,9 @@
  * @include: ui/ofa-exercice-treeview.h
  *
  * Manage a treeview with the list of the exercices which are defined
- * in the settings.
+ * for the current dossier.
+ *
+ * This treeview acts as a filter on the ofaDossierStore.
  *
  * The class provides the following signals, which are proxyed from
  * #ofaTVBin base class:
@@ -49,8 +51,6 @@
 #include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-tvbin.h"
-
-#include "ui/ofa-exercice-store.h"
 
 G_BEGIN_DECLS
 
