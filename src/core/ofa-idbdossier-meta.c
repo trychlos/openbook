@@ -213,8 +213,9 @@ ofa_idbdossier_meta_unref( ofaIDBDossierMeta *meta )
 {
 	static const gchar *thisfn = "ofa_idbdossier_meta_unref";
 
-	g_debug( "%s: meta=%p (%s), ref_count=%d",
-			thisfn, ( void * ) meta, G_OBJECT_TYPE_NAME( meta ), G_OBJECT( meta )->ref_count );
+	g_debug( "%s: meta=%p (%s), ref_count=%d->%d",
+			thisfn, ( void * ) meta, G_OBJECT_TYPE_NAME( meta ),
+			G_OBJECT( meta )->ref_count, G_OBJECT( meta )->ref_count-1 );
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 

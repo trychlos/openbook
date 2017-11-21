@@ -36,6 +36,8 @@
  Bug fixes:
 
    - ofaITVColumnable: protect column addressing against false identifiers.
+   - ofaRestoreAssistant: fix ofaIDBDossierMeta ref count (todo #1507).
+   - ofaRestoreAssistant: fix ofaIDBExerciceMeta occurrence count (todo #1508).
    - ofaTVAFormProperties: fix new record creation.
    - ofaTVARecordProperties: fix operation date setting (todo #1514).
    - ofaUnreconcilPage: disconnect the signal handler (todo #1496).

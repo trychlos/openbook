@@ -704,8 +704,13 @@ p2_on_target_chooser_changed( myIBin *bin, ofaRestoreAssistant *self )
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	ofa_target_chooser_bin_get_selected( OFA_TARGET_CHOOSER_BIN( bin ), &priv->p2_dossier_meta, &priv->p2_exercice_meta );
+
 	priv->p2_new_dossier = ofa_target_chooser_bin_is_new_dossier( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_dossier_meta );
-	priv->p2_new_exercice = ofa_target_chooser_bin_is_new_exercice( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_exercice_meta );
+
+	priv->p2_new_exercice =
+			priv->p2_exercice_meta ?
+					ofa_target_chooser_bin_is_new_exercice( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_exercice_meta ) :
+					FALSE;
 
 	p2_check_for_complete( self );
 }
@@ -1384,7 +1389,7 @@ p6_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv->p6_label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-label" );
 	g_return_if_fail( priv->p6_label && GTK_IS_LABEL( priv->p6_label ));
 
-	/* keep a ref on target dossier/exercice as the current selection
+	/* keep a ptr on target dossier/exercice as the current selection
 	 * will be reset during restore */
 	priv->p6_dossier_meta = priv->p2_dossier_meta;
 	priv->p6_exercice_meta = priv->p2_exercice_meta;

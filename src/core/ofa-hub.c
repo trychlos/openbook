@@ -242,8 +242,11 @@ ofa_hub_class_init( ofaHubClass *klass )
 ofaHub *
 ofa_hub_new( void )
 {
+	static const gchar *thisfn = "ofa_hub_new";
 	ofaHub *hub;
 	ofaHubPrivate *priv;
+
+	g_debug( "%s:", thisfn );
 
 	hub = g_object_new( OFA_TYPE_HUB, NULL );
 
@@ -264,6 +267,11 @@ ofa_hub_new( void )
 	priv->openbook_props = ofa_openbook_props_new( OFA_IGETTER( hub ));
 	priv->scope_mapper = my_scope_mapper_new();
 	priv->dossier_store = ofa_dossier_store_new( OFA_IGETTER( hub ));
+
+	/* after ofaDossierStore initialization, all dossiers and exercices
+	 *  meta have a ref_count=2 (which is fine) */
+	g_debug( "%s: dumping the dossiers collection after store initialization", thisfn );
+	ofa_dossier_collection_dump( priv->dossiers_collection );
 
 	/* remediate dossier settings when properties change */
 	g_signal_connect( OFA_ISIGNALER( hub ), SIGNALER_DOSSIER_CHANGED, G_CALLBACK( on_properties_dossier_changed ), NULL );

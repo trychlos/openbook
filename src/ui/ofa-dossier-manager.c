@@ -548,6 +548,7 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 	priv = ofa_dossier_manager_get_instance_private( self );
 
 	hub = ofa_igetter_get_hub( priv->getter );
+	collection = ofa_igetter_get_dossier_collection( priv->getter );
 
 	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period )){
 
@@ -576,17 +577,15 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 				ofa_hub_close_dossier( hub );
 			}
 
+			msgerr = NULL;
 			connect = ofa_idbdossier_meta_new_connect( meta, NULL );
-			if( ofa_idbconnect_open_with_superuser( connect, su_bin )){
 
-				msgerr = NULL;
-				collection = ofa_igetter_get_dossier_collection( priv->getter );
+			if( ofa_idbconnect_open_with_superuser( connect, su_bin ) &&
+					!ofa_dossier_collection_delete_period( collection, connect, period, TRUE, &msgerr )){
 
-				if( !ofa_dossier_collection_delete_period( collection, connect, period, TRUE, &msgerr )){
-					toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-					my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING, msgerr );
-					g_free( msgerr );
-				}
+				toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+				my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING, msgerr );
+				g_free( msgerr );
 			}
 
 			g_object_unref( connect );
@@ -597,6 +596,9 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 			//gtk_widget_destroy( GTK_WIDGET( su_bin ));
 		}
 	}
+
+	/* the dossier collection auto-updates itself in an async way
+	 * (some ms timeout due to settings monitoring) */
 }
 
 static gboolean

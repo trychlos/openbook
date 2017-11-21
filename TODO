@@ -343,12 +343,6 @@
 
 1503 2017-11- 2 DBMS RecurrentRun: move amounts to a child table
 
-1507 2017-11-12 RestoreAssistant: segfault if cancel on page 5 when restoring
-                on a newly created dossier
-
-1508 2017-11-12 RestoreAssistant: ofa_exercice_treeview_set_dossier: assertion 'g_list_length(( GList * ) periods ) >= 1' failed
-                when not confirming the restoration on a newly created dossier
-
 1510 2017-11-16 VAT: ofaRecordTreeview: review status column title or content
                 as "status=no" is a bit disturbing
 
@@ -1378,6 +1372,14 @@
 1506 2017-11- 4 VAT form page: generate from selected button should only
                 be enabled when currently selected form is enabled
      2017-11- 6 fixed by unselecting all when running the properties
+
+1507 2017-11-12 RestoreAssistant: segfault if cancel on page 5 when restoring
+                on a newly created dossier
+     2017-11-21 fixed
+
+1508 2017-11-12 RestoreAssistant: ofa_exercice_treeview_set_dossier: assertion 'g_list_length(( GList * ) periods ) >= 1' failed
+                when not confirming the restoration on a newly created dossier
+     2017-11-21 fixed
 
 1509 2017-11-16 VAT: duplicate form
      2017-11-16 done

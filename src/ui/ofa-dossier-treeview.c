@@ -576,8 +576,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	static const gchar *thisfn = "ofa_dossier_treeview_v_sort";
 	ofaDossierTreeviewPrivate *priv;
 	gint cmp;
-	gchar *dosa, *prova, *pera, *enda, *begina, *stata;
-	gchar *dosb, *provb, *perb, *endb, *beginb, *statb;
+	gchar *dosa, *prova, *pera, *enda, *begina, *stata, *laba;
+	gchar *dosb, *provb, *perb, *endb, *beginb, *statb, *labb;
 
 	priv = ofa_dossier_treeview_get_instance_private( OFA_DOSSIER_TREEVIEW( bin ));
 
@@ -585,6 +585,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			DOSSIER_COL_DOSNAME,  &dosa,
 			DOSSIER_COL_PROVNAME, &prova,
 			DOSSIER_COL_PERNAME,  &pera,
+			DOSSIER_COL_EXELABEL, &laba,
 			DOSSIER_COL_END,      &enda,
 			DOSSIER_COL_BEGIN,    &begina,
 			DOSSIER_COL_STATUS,   &stata,
@@ -594,6 +595,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			DOSSIER_COL_DOSNAME,  &dosb,
 			DOSSIER_COL_PROVNAME, &provb,
 			DOSSIER_COL_PERNAME,  &perb,
+			DOSSIER_COL_EXELABEL, &labb,
 			DOSSIER_COL_END,      &endb,
 			DOSSIER_COL_BEGIN,    &beginb,
 			DOSSIER_COL_STATUS,   &statb,
@@ -610,6 +612,9 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			break;
 		case DOSSIER_COL_PERNAME:
 			cmp = my_collate( pera, perb );
+			break;
+		case DOSSIER_COL_EXELABEL:
+			cmp = my_collate( laba, labb );
 			break;
 		case DOSSIER_COL_END:
 			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_get_display_format( priv->getter ));
@@ -628,6 +633,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( dosa );
 	g_free( prova );
 	g_free( pera );
+	g_free( laba );
 	g_free( enda );
 	g_free( begina );
 	g_free( stata );
@@ -635,6 +641,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( dosb );
 	g_free( provb );
 	g_free( perb );
+	g_free( labb );
 	g_free( endb );
 	g_free( beginb );
 	g_free( statb );

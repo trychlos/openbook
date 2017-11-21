@@ -64,8 +64,9 @@ typedef struct {
 	 */
 	ofaIGetter             *getter;
 	GtkWindow              *parent;
-		/* when run as modal
-		 * (the caller is waiting for the result) */
+
+	/* when run as modal
+	 * (the caller is waiting for the result) */
 	guint                   rule;
 	gboolean                with_su;
 	gboolean                with_admin;
@@ -79,6 +80,7 @@ typedef struct {
 	GtkWindow              *actual_parent;
 	gboolean                dossier_created;
 	gboolean                apply_actions;
+	ofaDossierCollection   *dossier_collection;
 
 	/* UI
 	 */
@@ -262,6 +264,8 @@ ofa_dossier_new_run_modal( ofaIGetter *getter, GtkWindow *parent, const gchar *s
 	}
 
 	dossier_created = FALSE;
+	priv->dossier_collection = ofa_igetter_get_dossier_collection( priv->getter );
+
 
 	if( my_idialog_run( MY_IDIALOG( self )) == GTK_RESPONSE_OK ){
 		g_debug( "%s: dossier_created=%s", thisfn, priv->dossier_created ? "True":"False" );
@@ -490,13 +494,13 @@ on_ok_clicked( ofaDossierNew *self )
 static gboolean
 do_create( ofaDossierNew *self )
 {
+	static const gchar *thisfn = "ofa_dossier_new_do_create";
 	ofaDossierNewPrivate *priv;
 	gboolean ret, open;
 	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBExerciceMeta *exercice_meta;
 	ofaIDBConnect *connect;
 	gchar *msgerr, *adm_account, *adm_password;
-	ofaDossierCollection *collection;
 	myISettings *settings;
 	ofaOpenPrefs *prefs;
 	const gchar *group;
@@ -515,6 +519,10 @@ do_create( ofaDossierNew *self )
 		return( FALSE );
 	}
 
+	/* before any collection update */
+	g_debug( "%s: dumping collection before creation", thisfn );
+	ofa_dossier_collection_dump( priv->dossier_collection );
+
 	/* register the new dossier in dossier settings */
 	dossier_meta = ofa_dossier_edit_bin_apply( priv->dossier_bin );
 	if( dossier_meta ){
@@ -527,9 +535,13 @@ do_create( ofaDossierNew *self )
 	if( !ret ){
 		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_ERROR,
 				_( "Unable to register the new dossier in settings" ));
-		ofa_idbdossier_meta_unref( dossier_meta );
+		ofa_dossier_collection_remove_meta( priv->dossier_collection, dossier_meta );
 		return( FALSE );
 	}
+
+	/* the new dossier should have been registered in dossier collection and store */
+	g_debug( "%s: dumping collection after creation", thisfn );
+	ofa_dossier_collection_dump( priv->dossier_collection );
 
 	/* copy user preferences for actions on open */
 	settings = ofa_igetter_get_user_settings( priv->getter );
@@ -559,8 +571,7 @@ do_create( ofaDossierNew *self )
 		}
 
 		if( !ret ){
-			collection = ofa_igetter_get_dossier_collection( priv->getter );
-			ofa_dossier_collection_delete_period( collection, connect, NULL, TRUE, NULL );
+			ofa_dossier_collection_delete_period( priv->dossier_collection, connect, NULL, TRUE, NULL );
 			if( !my_strlen( msgerr )){
 				msgerr = g_strdup( _( "Unable to create the new dossier" ));
 			}

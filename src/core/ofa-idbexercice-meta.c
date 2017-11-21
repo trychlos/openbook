@@ -581,6 +581,9 @@ ofa_idbexercice_meta_get_label( const ofaIDBExerciceMeta *period )
  *
  * Returns: a plugin-specific which qualifies the @period,
  *  as a newly allocated string which should be g_free() by the caller.
+ *
+ * Example:
+ * - MySQL DBMS provider uses this method to return the database name.
  */
 gchar *
 ofa_idbexercice_meta_get_name( const ofaIDBExerciceMeta *period )

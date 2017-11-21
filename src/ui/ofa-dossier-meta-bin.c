@@ -417,8 +417,11 @@ is_valid( ofaDossierMetaBin *self, gchar **msgerr )
  * ofa_dossier_meta_bin_apply:
  * @bin: this #ofaDossierMetaBin instance.
  *
- * If needed (on new dossier), instanciates a new #ofaIDBDossierMeta.
- * Register the #ofaIDBDossierMeta in dossier settings.
+ * Returns: on new dossier, a new #ofaIDBDossierMeta instance which has.
+ * been registered in dossier settings.
+ *
+ * The returned instance is owned by #ofaDossierCollection, and should
+ * not be released by the caller.
  */
 ofaIDBDossierMeta *
 ofa_dossier_meta_bin_apply( ofaDossierMetaBin *bin )

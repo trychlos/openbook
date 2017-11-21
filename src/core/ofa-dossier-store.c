@@ -268,6 +268,10 @@ on_dossier_collection_changed( ofaDossierCollection *collection, guint count, of
 
 	gtk_list_store_clear( GTK_LIST_STORE( self ));
 	load_dataset( self, collection );
+
+	/* dump the dossier collection after having refreshed the store so
+	 * that the ref_counts are up to date */
+	ofa_dossier_collection_dump( collection );
 }
 
 /*
@@ -285,6 +289,7 @@ load_dataset( ofaDossierStore *self, ofaDossierCollection *collection )
 
 	for( itd=dossier_list ; itd ; itd=itd->next ){
 		dossier_meta = ( ofaIDBDossierMeta * ) itd->data;
+		//g_debug( "ofa_dossier_store_load_dataset: dossier_meta=%p", dossier_meta );
 		g_return_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ));
 
 		period_list = ofa_idbdossier_meta_get_periods( dossier_meta );
