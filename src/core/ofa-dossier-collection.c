@@ -177,8 +177,11 @@ ofa_dossier_collection_class_init( ofaDossierCollectionClass *klass )
 ofaDossierCollection *
 ofa_dossier_collection_new( ofaIGetter *getter )
 {
+	static const gchar *thisfn = "ofa_dossier_collection_new";
 	ofaDossierCollection *collection;
 	ofaDossierCollectionPrivate *priv;
+
+	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
@@ -190,7 +193,6 @@ ofa_dossier_collection_new( ofaIGetter *getter )
 
 	setup_settings( collection );
 	priv->list = load_dossiers( collection, NULL );
-	collection_dump( collection, priv->list );
 
 	return( collection );
 }
@@ -262,12 +264,11 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCo
 	} else {
 		prev_list = priv->list;
 		priv->list = load_dossiers( collection, prev_list );
-
-		/* dump the collection after having updated the ref counts */
 		g_list_free_full( prev_list, ( GDestroyNotify ) ofa_idbdossier_meta_unref );
-		collection_dump( collection, priv->list );
 
-		/* last advertize the change */
+		/* last advertize the change
+		 * the ofaDossierStore singleton will update itself
+		 * and then dump the collection */
 		g_signal_emit_by_name( collection, "changed", g_list_length( priv->list ));
 	}
 }
@@ -465,6 +466,41 @@ get_dossier_by_name( GList *list, const gchar *dossier_name )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_dossier_collection_remove_meta:
+ * @collection: this #ofaDossierCollection instance.
+ * @meta: a #ofaIDBDossierMeta instance.
+ *
+ * Remove the @meta, along with all attached #ofaIDBExerciceMeta
+ *  informations from the @collection.
+ * Update the dossier settings accordingly.
+ */
+void
+ofa_dossier_collection_remove_meta( ofaDossierCollection *collection, ofaIDBDossierMeta *meta )
+{
+	static const gchar *thisfn = "ofa_dossier_collection_remove_meta";
+	ofaDossierCollectionPrivate *priv;
+	const gchar *dossier_name;
+	gchar *group;
+
+	g_debug( "%s: collection=%p, meta=%p (%s)",
+			thisfn, ( void * ) collection, ( void * ) meta, G_OBJECT_TYPE_NAME( meta ));
+
+	g_return_if_fail( collection && OFA_IS_DOSSIER_COLLECTION( collection ));
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
+
+	priv = ofa_dossier_collection_get_instance_private( collection );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
+	group = g_strdup_printf( "%s%s", DOSSIER_COLLECTION_DOSSIER_GROUP_PREFIX, dossier_name );
+
+	my_isettings_remove_group( priv->dossier_settings, group );
+
+	g_free( group );
 }
 
 /**

@@ -39,7 +39,7 @@
  * and has been reloaded.
  *
  * This is an Openbook software suite decision to have the dossiers
- * directory stored in a single dedicated ini file, said dossiers
+ * directory stored in a single dedicated .ini file, said dossiers
  * settings.
  */
 
@@ -87,6 +87,9 @@ ofaIDBDossierMeta    *ofa_dossier_collection_get_by_name  ( ofaDossierCollection
 																const gchar *dossier_name );
 
 void                  ofa_dossier_collection_add_meta     ( ofaDossierCollection *collection,
+																ofaIDBDossierMeta *meta );
+
+void                  ofa_dossier_collection_remove_meta  ( ofaDossierCollection *collection,
 																ofaIDBDossierMeta *meta );
 
 gboolean              ofa_dossier_collection_delete_period( ofaDossierCollection *collection,
