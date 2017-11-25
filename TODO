@@ -343,9 +343,6 @@
 
 1503 2017-11- 2 DBMS RecurrentRun: move amounts to a child table
 
-1510 2017-11-16 VAT: ofaRecordTreeview: review status column title or content
-                as "status=no" is a bit disturbing
-
 1517 2017-11-17 DBMS: have user+timestamp on entry status change
 
 1518 2017-11-17 when deleting an entry:
@@ -1378,6 +1375,10 @@
 
 1509 2017-11-16 VAT: duplicate form
      2017-11-16 done
+
+1510 2017-11-16 VAT: ofaRecordTreeview: review status column title or content
+                as "status=no" is a bit disturbing
+     2017-11-25 done
 
 1512 2017-11-16 VAT: have a button on FormPage and RecordPage to switch to the other one
      2017-11-16 done

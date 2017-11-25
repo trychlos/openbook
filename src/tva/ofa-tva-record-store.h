@@ -88,7 +88,7 @@ typedef struct {
  * @TVA_RECORD_COL_NOTES_PNG         : notes indicator                           Pixbuf       Yes
  * @TVA_RECORD_COL_UPD_USER          : last update user                          String       Yes
  * @TVA_RECORD_COL_UPD_STAMP         : last update timestamp                     String       Yes
- * @TVA_RECORD_COL_DOPE              : validation operation date                 String       Yes
+ * @TVA_RECORD_COL_DOPE              : accounting operation date                 String       Yes
  * @TVA_RECORD_COL_OPE_USER          : operation user                            String       Yes
  * @TVA_RECORD_COL_OPE_STAMP         : operation timestamp                       String       Yes
  * @TVA_RECORD_COL_STATUS            : the validation status of the declaration  String       Yes

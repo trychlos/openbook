@@ -33,6 +33,7 @@
    - ofaTVAFormProperties: improve properties update.
    - ofaTVARecordProperties: better center the label (todo #1515).
    - ofaTVARecordProperties: review life cycle and dynamic of the status (todo #1511).
+   - ofaTVARecordTreeview: review column title of the status (todo #1510).
 
  Bug fixes:
 

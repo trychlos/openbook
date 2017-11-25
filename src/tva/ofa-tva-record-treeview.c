@@ -309,8 +309,8 @@ setup_columns( ofaTVARecordTreeview *self )
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_DOPE,               _( "Ope" ),          _( "Operation date" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_OPE_USER,           _( "Ope.user" ),     _( "Operation user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_OPE_STAMP,          _( "Ope.stamp" ),    _( "Operation timestamp" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_STATUS,             _( "Status" ),       _( "Validation status" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STA_CLOSING,        _( "Closing" ),      _( "Validation date" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_STATUS,             _( "Valid." ),       _( "Validation status" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STA_CLOSING,        _( "Val.date" ),     _( "Validation date" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STA_USER,           _( "Sta.user" ),     _( "Status last change user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), TVA_RECORD_COL_STA_STAMP,          _( "Sta.stamp" ),    _( "Status last change timestamp" ));
 
