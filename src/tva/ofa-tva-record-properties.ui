@@ -60,7 +60,7 @@
             <property name="row_spacing">2</property>
             <property name="column_spacing">4</property>
             <child>
-              <object class="GtkNotebook" id="tva-book">
+              <object class="GtkNotebook" id="vat-book">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <child>

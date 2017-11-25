@@ -82,6 +82,7 @@ typedef struct {
 
 	/* UI
 	 */
+	GtkWidget    *vat_book;
 	GtkWidget    *begin_editable;
 	GtkWidget    *end_editable;
 	GtkWidget    *dope_editable;
@@ -95,7 +96,6 @@ typedef struct {
 	GtkWidget    *viewopes_btn;
 	GtkWidget    *delopes_btn;
 	GtkWidget    *ok_btn;
-	GtkWidget    *cancel_btn;
 	GtkWidget    *msg_label;
 
 	/* data
@@ -398,7 +398,6 @@ idialog_init( myIDialog *instance )
 	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
-		priv->cancel_btn = NULL;
 	}
 
 	set_props_dirty( OFA_TVA_RECORD_PROPERTIES( instance ), FALSE );
@@ -426,10 +425,6 @@ init_ui( ofaTVARecordProperties *self )
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	g_signal_connect_swapped( btn, "clicked", G_CALLBACK( on_ok_clicked ), self );
 	priv->ok_btn = btn;
-
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "cancel-btn" );
-	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-	priv->cancel_btn = btn;
 
 	/* writability of the dossier */
 	hub = ofa_igetter_get_hub( priv->getter );
@@ -720,7 +715,7 @@ static void
 init_correspondence( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	GtkWidget *book, *label, *scrolled;
+	GtkWidget *label, *scrolled;
 	GtkTextBuffer *buffer;
 	const gchar *cstr;
 
@@ -729,11 +724,11 @@ init_correspondence( ofaTVARecordProperties *self )
 	priv->has_correspondence = ofo_tva_record_get_has_correspondence( priv->tva_record );
 
 	if( priv->has_correspondence ){
-		book = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "tva-book" );
-		g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
+		priv->vat_book = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "vat-book" );
+		g_return_if_fail( priv->vat_book && GTK_IS_NOTEBOOK( priv->vat_book ));
 		label = gtk_label_new_with_mnemonic( _( "_Correspondence" ));
 		scrolled = gtk_scrolled_window_new( NULL, NULL );
-		gtk_notebook_insert_page( GTK_NOTEBOOK( book ), scrolled, label, 3 );
+		gtk_notebook_insert_page( GTK_NOTEBOOK( priv->vat_book ), scrolled, label, 3 );
 		priv->corresp_textview = gtk_text_view_new();
 		gtk_text_view_set_left_margin( GTK_TEXT_VIEW( priv->corresp_textview ), 2 );
 		gtk_container_add( GTK_CONTAINER( scrolled ), priv->corresp_textview );
@@ -754,7 +749,7 @@ init_editability( ofaTVARecordProperties *self )
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	my_utils_container_set_editable( GTK_CONTAINER( self ),
+	my_utils_container_set_editable( GTK_CONTAINER( priv->vat_book ),
 			priv->is_writable && !priv->is_validated);
 
 	/* notes may be edited even after the declaration has been validated */
@@ -989,13 +984,6 @@ set_props_dirty( ofaTVARecordProperties *self, gboolean dirty )
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	priv->is_props_dirty = dirty;
-
-	/*
-	if( priv->cancel_btn ){
-		gtk_widget_set_sensitive( priv->cancel_btn, priv->is_props_dirty );
-		gtk_button_set_label( GTK_BUTTON( priv->ok_btn ), priv->is_props_dirty ? _( "_OK" ) : _( "Cl_ose" ));
-	}
-	*/
 
 	check_for_enable_dlg( self );
 }

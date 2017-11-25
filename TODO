@@ -361,8 +361,6 @@
                 entries are validated
                 -> what happens during period closing ?
 
-1523 2017-11-17 VAT: record properties dialog should have OK/Cancel as notes are updatable
-
 1524
 
 -----------------------------------------------------------------------
@@ -1380,6 +1378,10 @@
                 as "status=no" is a bit disturbing
      2017-11-25 done
 
+1511 2017-11-16 VAT: review the dynamic of Record status
+                may the properties be edited after operations have been generated ?
+     2017-11-25 done
+
 1512 2017-11-16 VAT: have a button on FormPage and RecordPage to switch to the other one
      2017-11-16 done
 
@@ -1400,9 +1402,9 @@
 1520 2017-11-17 VAT: have a new vat record status: 'O' when operation has been generated
      2017-11-25 cancelled as this is not a status
 
-1511 2017-11-16 VAT: review the dynamic of Record status
-                may the properties be edited after operations have been generated ?
-     2017-11-25 done
+1523 2017-11-17 VAT: record properties dialog should have OK/Cancel as notes are updatable
+     2017-11-25 reminder: notes are updatable as long as the dossier is writable
+     2017-11-25 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

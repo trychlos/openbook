@@ -42,6 +42,7 @@
    - ofaRestoreAssistant: fix ofaIDBExerciceMeta occurrence count (todo #1508).
    - ofaTVAFormProperties: fix new record creation.
    - ofaTVARecordProperties: fix operation date setting (todo #1514).
+   - ofaTVARecordProperties: fix Cancel button sensitivity (todo #1523).
    - ofaUnreconcilPage: disconnect the signal handler (todo #1496).
    - ofaUnsettledPage: disconnect the signal handler (todo #1496).
    - ofoBat: fix new record insertion.
