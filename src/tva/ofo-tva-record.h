@@ -32,14 +32,65 @@
  *
  * This file defines the #ofoTVARecord class behavior.
  *
- * An #ofoTVARecord describes a TVA declaration.
- * A TVA declaration is created from a form, and is assigned a begin
- * and an end date for this declaration.
- * The declaration end date is required in order the declaration be
- * recordable.
+ * An #ofoTVARecord describes a VAT declaration.
+ * A VAT declaration is created from a form, and is assigned a begin
+ * and an end date for this declaration. The declaration end date is
+ * required in order the declaration be recordable.
  * Both begin and end dates are needed for the declaration be able to
  * be computed and validated.
- * Once validated, the declaration is no more modifiable.
+ *
+ * Dynamic of the status
+ * ---------------------
+ *
+ * [creation] -> NO -> [user validation] -> USER
+ *                  -> [period closing]  -> PCLOSE
+ *
+ * On creation, the declaration is given the status NO: all operations
+ * may be freely executed.
+ *
+ * The declaration may be computed as often that the user wants to.
+ * The status does not change when computing.
+ *
+ * When the user is satisfied with his declaration, he should:
+ * - record his VAT declaration on government web site (impots.gouv.fr),
+ *   maybe sending a paiment at that time;
+ * - generate accounting operations.
+ *
+ * When the VAT declaration has been recorded on the DGI site, and the
+ * paiement sent, then there is no sense to recompute or modify the
+ * declaration in Openbook.
+ *
+ * The user should so "validate" his declaration, either manually
+ * (status USER) or by closing the period (status PCLOSE).
+ *
+ * Accounting operations
+ * ---------------------
+ *
+ * Accounting operations may be generated at any time, either while
+ * computing or before or after having declared the VAT to the DGI,
+ * or even after having validated the declaration:
+ *
+ * - accounting operations may be generated only once, and corresponding
+ *   entries default to be created with Rough status
+ *
+ * - when the user validate his VAT declararation, entries which may
+ *   have been generated, are validated too
+ *
+ * - while entries are not validated (and so the VAT declaration itself
+ *   is not validated), then the generated operations may be freely
+ *   cancelled, and regenerated, maybe after another computing
+ *
+ * - accounting operations can be generated after having validated the
+ *   VAT declaration; corresponding entries are thus immediately set to
+ *   Validated status.
+ *
+ * Properties update, computing
+ * ----------------------------
+ *
+ * Computing the VAT declaration and updating the properties are up to
+ * the user as long as the VAT declaration is in NO status.
+ *
+ * Once the VAT declaration has been validated, only notes can be updated.
  */
 
 #include "api/ofa-box.h"

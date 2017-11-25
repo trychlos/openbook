@@ -346,9 +346,6 @@
 1510 2017-11-16 VAT: ofaRecordTreeview: review status column title or content
                 as "status=no" is a bit disturbing
 
-1511 2017-11-16 VAT: review the dynamic of Record status
-                may the properties be edited after operations have been generated ?
-
 1517 2017-11-17 DBMS: have user+timestamp on entry status change
 
 1518 2017-11-17 when deleting an entry:
@@ -359,8 +356,6 @@
 1519 2017-11-17 VAT: when accounting operations are deleted, the corresponded
                 detail lines should be updated (set to null) accordingly
 
-1520 2017-11-17 VAT: have a new vat record status: 'O' when operation has been generated
-
 1521 2017-11-17 VAT: after operation has been generated, computing is forbidden
                 and properties are no more modifiable
 
@@ -369,7 +364,7 @@
                 entries are validated
                 -> what happens during period closing ?
 
-1523 2017-11-17 VAT: record properties dialog should ahve OK/Cancel as notes are updatable
+1523 2017-11-17 VAT: record properties dialog should have OK/Cancel as notes are updatable
 
 1524
 
@@ -1400,6 +1395,13 @@
 
 1516 2017-11-16 on period closing, save the position of the "archiving account balances" dialog box
      2017-11-16 done
+
+1520 2017-11-17 VAT: have a new vat record status: 'O' when operation has been generated
+     2017-11-25 cancelled as this is not a status
+
+1511 2017-11-16 VAT: review the dynamic of Record status
+                may the properties be edited after operations have been generated ?
+     2017-11-25 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -32,6 +32,7 @@
    - ofaTVAFormPage: the form is now duplicable (todo #1509).
    - ofaTVAFormProperties: improve properties update.
    - ofaTVARecordProperties: better center the label (todo #1515).
+   - ofaTVARecordProperties: review life cycle and dynamic of the status (todo #1511).
 
  Bug fixes:
 
