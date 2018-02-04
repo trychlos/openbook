@@ -14407,7 +14407,9 @@ fi
 
 	if test "${have_GTK3}" = "yes"; then
 		GTK3_msg_version=$(pkg-config --modversion gtk+-3.0)
+		echo "Adding '${GTK3_CFLAGS}' to PWI_CFLAGS"
 		PWI_CFLAGS="${PWI_CFLAGS} ${GTK3_CFLAGS}"
+		echo "Adding '${GTK3_LIBS}' to PWI_LIBS"
 		PWI_LIBS="${PWI_LIBS} ${GTK3_LIBS}"
 	else
 
@@ -14527,7 +14529,9 @@ fi
 
 	if test "${have_GLIB}" = "yes"; then
 		GLIB_msg_version=$(pkg-config --modversion glib-2.0)
+		echo "Adding '${GLIB_CFLAGS}' to PWI_CFLAGS"
 		PWI_CFLAGS="${PWI_CFLAGS} ${GLIB_CFLAGS}"
+		echo "Adding '${GLIB_LIBS}' to PWI_LIBS"
 		PWI_LIBS="${PWI_LIBS} ${GLIB_LIBS}"
 	else
 
@@ -14647,7 +14651,9 @@ fi
 
 	if test "${have_GMODULE}" = "yes"; then
 		GMODULE_msg_version=$(pkg-config --modversion gmodule-2.0)
+		echo "Adding '${GMODULE_CFLAGS}' to PWI_CFLAGS"
 		PWI_CFLAGS="${PWI_CFLAGS} ${GMODULE_CFLAGS}"
+		echo "Adding '${GMODULE_LIBS}' to PWI_LIBS"
 		PWI_LIBS="${PWI_LIBS} ${GMODULE_LIBS}"
 	else
 
@@ -14767,7 +14773,9 @@ fi
 
 	if test "${have_POPPLER}" = "yes"; then
 		POPPLER_msg_version=$(pkg-config --modversion poppler)
+		echo "Adding '${POPPLER_CFLAGS}' to PWI_CFLAGS"
 		PWI_CFLAGS="${PWI_CFLAGS} ${POPPLER_CFLAGS}"
+		echo "Adding '${POPPLER_LIBS}' to PWI_LIBS"
 		PWI_LIBS="${PWI_LIBS} ${POPPLER_LIBS}"
 	else
 
@@ -14887,7 +14895,9 @@ fi
 
 	if test "${have_POPPLER_GLIB}" = "yes"; then
 		POPPLER_GLIB_msg_version=$(pkg-config --modversion poppler-glib)
+		echo "Adding '${POPPLER_GLIB_CFLAGS}' to PWI_CFLAGS"
 		PWI_CFLAGS="${PWI_CFLAGS} ${POPPLER_GLIB_CFLAGS}"
+		echo "Adding '${POPPLER_GLIB_LIBS}' to PWI_LIBS"
 		PWI_LIBS="${PWI_LIBS} ${POPPLER_GLIB_LIBS}"
 	else
 
@@ -15007,7 +15017,9 @@ fi
 
 	if test "${have_JSON_GLIB}" = "yes"; then
 		JSON_GLIB_msg_version=$(pkg-config --modversion json-glib-1.0)
+		echo "Adding '${JSON_GLIB_CFLAGS}' to PWI_CFLAGS"
 		PWI_CFLAGS="${PWI_CFLAGS} ${JSON_GLIB_CFLAGS}"
+		echo "Adding '${JSON_GLIB_LIBS}' to PWI_LIBS"
 		PWI_LIBS="${PWI_LIBS} ${JSON_GLIB_LIBS}"
 	else
 
@@ -15127,7 +15139,9 @@ fi
 
 	if test "${have_LIBARCHIVE}" = "yes"; then
 		LIBARCHIVE_msg_version=$(pkg-config --modversion libarchive)
+		echo "Adding '${LIBARCHIVE_CFLAGS}' to PWI_CFLAGS"
 		PWI_CFLAGS="${PWI_CFLAGS} ${LIBARCHIVE_CFLAGS}"
+		echo "Adding '${LIBARCHIVE_LIBS}' to PWI_LIBS"
 		PWI_LIBS="${PWI_LIBS} ${LIBARCHIVE_LIBS}"
 	else
 
@@ -17746,6 +17760,7 @@ $as_echo "
 	  libarchive                    ${LIBARCHIVE_msg_version}
 	Built plugins:"
 	$as_echo "	  EBP-Recovery                  yes"
+	$as_echo "	  DGI_FEC                       yes"
 if test "${have_POPPLER}" = "yes"; then
 	$as_echo "	  Stock importers               ${have_IMPORTERS} (with Poppler ${POPPLER_msg_version})"
 else

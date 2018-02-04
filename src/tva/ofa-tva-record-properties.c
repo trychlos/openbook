@@ -513,6 +513,20 @@ init_properties( ofaTVARecordProperties *self )
 	cstr = ofo_tva_record_status_get_label( priv->status );
 	gtk_label_set_text( GTK_LABEL( label ), cstr );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-status-label" );
+	switch( priv->status ){
+		case VAT_STATUS_NO:
+			cstr = gettext( N_(
+					"While VAT record is not validated, it is freely recomputable and updatable." ));
+			break;
+		default:
+			cstr = gettext( N_(
+					"When VAT record has been validated, it is no more recomputable nor updatable.\n"
+					"Only notes can still be modified as long as dossier is writable." ));
+			break;
+	}
+	gtk_label_set_text( GTK_LABEL( label ), cstr );
+
 	/* begin date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -1095,17 +1109,24 @@ do_update_dbms( ofaTVARecordProperties *self, gchar **msgerr )
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	if( priv->is_props_dirty ){
+	ok = TRUE;
+
+	if( ok && priv->is_props_dirty ){
 		ok = ofo_tva_record_update( priv->tva_record );
-
 		if( !ok ){
-			*msgerr = g_strdup( _( "Unable to update the VAT declaration" ));
-
+			*msgerr = g_strdup( _( "Unable to update properties of the VAT declaration" ));
 		} else {
 			set_props_dirty( self, FALSE );
 		}
-	} else {
-		ok = TRUE;
+	}
+
+	if( ok && priv->is_notes_dirty ){
+		ok = ofo_tva_record_update_notes( priv->tva_record );
+		if( !ok ){
+			*msgerr = g_strdup( _( "Unable to update notes of the VAT declaration" ));
+		} else {
+			set_notes_dirty( self, FALSE );
+		}
 	}
 
 	return( ok );

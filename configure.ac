@@ -167,6 +167,7 @@ $as_echo "
 	  libarchive                    ${LIBARCHIVE_msg_version}
 	Built plugins:"
 	$as_echo "	  EBP-Recovery                  yes"
+	$as_echo "	  DGI_FEC                       yes"
 if test "${have_POPPLER}" = "yes"; then
 	$as_echo "	  Stock importers               ${have_IMPORTERS} (with Poppler ${POPPLER_msg_version})"
 else

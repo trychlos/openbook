@@ -88,7 +88,8 @@
  * ----------------------------
  *
  * Computing the VAT declaration and updating the properties are up to
- * the user as long as the VAT declaration is in NO status.
+ * the user as long as the VAT declaration is in NO status and accounting
+ * operations have not been generated.
  *
  * Once the VAT declaration has been validated, only notes can be updated.
  */
@@ -224,6 +225,7 @@ guint           ofo_tva_record_validate_all             ( ofaIGetter *getter, co
 gboolean        ofo_tva_record_insert                   ( ofoTVARecord *record );
 
 gboolean        ofo_tva_record_update                   ( ofoTVARecord *record );
+gboolean        ofo_tva_record_update_notes             ( ofoTVARecord *record );
 gboolean        ofo_tva_record_update_dope              ( ofoTVARecord *record, const GDate *date );
 
 gboolean        ofo_tva_record_delete                   ( ofoTVARecord *record );

@@ -195,6 +195,7 @@
                               <object class="GtkLabel" id="p1-status-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="wrap">True</property>
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
@@ -352,6 +353,7 @@
                                   <object class="GtkLabel" id="p1-compute-label">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="wrap">True</property>
                                     <property name="xalign">0</property>
                                   </object>
                                   <packing>
@@ -520,6 +522,7 @@
                                   <object class="GtkLabel" id="p1-opes-label">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="wrap">True</property>
                                     <property name="xalign">0</property>
                                   </object>
                                   <packing>
@@ -690,7 +693,7 @@
                   <object class="GtkLabel" id="label8">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">B_ooleans</property>
+                    <property name="label" translatable="yes">Boo_leans</property>
                     <property name="use_underline">True</property>
                   </object>
                   <packing>

@@ -325,6 +325,7 @@ static gboolean  record_insert_bools( ofoTVARecord *record, const ofaIDBConnect 
 static gboolean  record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint idx );
 static gboolean  record_do_update( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean  record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect );
+static gboolean  record_do_update_notes( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean  record_do_update_dope( ofoTVARecord *record, ofaIDBConnect *connect, const GDate *dope );
 static gboolean  record_do_delete( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gint      record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar *mnemo, const GDate *end );
@@ -2569,14 +2570,13 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *notes, *label, *corresp, *sbegin, *send, *stamp_str;
+	gchar *label, *corresp, *sbegin, *send, *stamp_str;
 	const gchar *mnemo, *userid;
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_tva_record_get_label( record ));
 	corresp = my_utils_quote_sql( ofo_tva_record_get_correspondence( record ));
-	notes = my_utils_quote_sql( ofo_tva_record_get_notes( record ));
 	mnemo = ofo_tva_record_get_mnemo( record );
 	my_stamp_set_now( &stamp );
 	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
@@ -2603,12 +2603,6 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 		query = g_string_append( query, ",TFO_BEGIN=NULL" );
 	}
 
-	if( my_strlen( notes )){
-		g_string_append_printf( query, ",TFO_NOTES='%s'", notes );
-	} else {
-		query = g_string_append( query, ",TFO_NOTES=NULL" );
-	}
-
 	g_string_append_printf( query,
 			",TFO_UPD_USER='%s',TFO_UPD_STAMP='%s' "
 			"	WHERE TFO_MNEMO='%s' AND TFO_END='%s'",
@@ -2624,9 +2618,87 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	g_string_free( query, TRUE );
 	g_free( label );
 	g_free( corresp );
-	g_free( notes );
 	g_free( stamp_str );
 	g_free( sbegin );
+	g_free( send );
+
+	return( ok );
+}
+
+/**
+ * ofo_tva_record_update_notes:
+ * @record: this #ofoTVARecord object.
+ *
+ * Update only the notes of @record.
+ *
+ * Notes are still updatable even after the declaration has been validated.
+ */
+gboolean
+ofo_tva_record_update_notes( ofoTVARecord *record )
+{
+	static const gchar *thisfn = "ofo_tva_record_update_notes";
+	ofaIGetter *getter;
+	ofaISignaler *signaler;
+	ofaHub *hub;
+	gboolean ok;
+
+	g_debug( "%s: record=%p", thisfn, ( void * ) record );
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
+
+	ok = FALSE;
+	getter = ofo_base_get_getter( OFO_BASE( record ));
+	signaler = ofa_igetter_get_signaler( getter );
+	hub = ofa_igetter_get_hub( getter );
+
+	if( record_do_update_notes( record, ofa_hub_get_connect( hub ))){
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, record, NULL );
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+static gboolean
+record_do_update_notes( ofoTVARecord *record, const ofaIDBConnect *connect )
+{
+	gboolean ok;
+	GString *query;
+	gchar *notes, *send, *stamp_str;
+	const gchar *mnemo, *userid;
+	GTimeVal stamp;
+
+	userid = ofa_idbconnect_get_account( connect );
+	notes = my_utils_quote_sql( ofo_tva_record_get_notes( record ));
+	mnemo = ofo_tva_record_get_mnemo( record );
+	my_stamp_set_now( &stamp );
+	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
+
+	query = g_string_new( "UPDATE TVA_T_RECORDS SET " );
+
+	if( my_strlen( notes )){
+		g_string_append_printf( query, "TFO_NOTES='%s'", notes );
+	} else {
+		query = g_string_append( query, "TFO_NOTES=NULL" );
+	}
+
+	g_string_append_printf( query,
+			",TFO_UPD_USER='%s',TFO_UPD_STAMP='%s' "
+			"	WHERE TFO_MNEMO='%s' AND TFO_END='%s'",
+					userid,
+					stamp_str,
+					mnemo, send );
+
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
+
+	vat_record_set_upd_user( record, userid );
+	vat_record_set_upd_stamp( record, &stamp );
+
+	g_string_free( query, TRUE );
+	g_free( notes );
+	g_free( stamp_str );
 	g_free( send );
 
 	return( ok );

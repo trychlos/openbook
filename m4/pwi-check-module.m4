@@ -56,7 +56,9 @@ AC_DEFUN([PWI_CHECK_MODULE],[
 
 	if test "${have_$1}" = "yes"; then
 		$1_msg_version=$(pkg-config --modversion $2)
+		echo "Adding '${$1_CFLAGS}' to PWI_CFLAGS"
 		PWI_CFLAGS="${PWI_CFLAGS} ${$1_CFLAGS}"
+		echo "Adding '${$1_LIBS}' to PWI_LIBS"
 		PWI_LIBS="${PWI_LIBS} ${$1_LIBS}"
 	else
 		_PWI_CHECK_MODULE_MSG([${_ac_fatal}],[$1: condition ${_ac_cond} not satisfied])

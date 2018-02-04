@@ -306,6 +306,9 @@
 1489 2017-10-14 review period closing to actually forbid entries only
                 during period close - so will able to close N+1/01,
                 N+1/02, etc. even if exercice N is not yet closed
+     2017-12-21 this may be complex as closing a period implies to archive
+                the accounts balances, while leaving an period opened leads
+                to accept new entries (which modify these same balances)
 
 1491 2017-10-19 guided input: the ref field may be a combobox with an
                 input field
@@ -361,7 +364,19 @@
                 entries are validated
                 -> what happens during period closing ?
 
-1524
+1524 2018- 1-19 Macro in entries label are not expanded on all entries
+                of an operation (cf. for example 'reversement de tva'
+
+1525 2018- 1-19 when re-entering a new operation on the same template than
+                previous, and entering a new amount in first line, second
+                and third VAT lines rightly recompute, but not fourth. Why ?
+
+1526 2018- 1-19 BUG: when reconciliating a line
+
+1527 2018- 1-19 BUG: on reconciliation, open the select BAT window and escape
+                without selectionning any line
+
+1528
 
 -----------------------------------------------------------------------
  DONE
