@@ -2754,7 +2754,7 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 			"ALTER TABLE OFA_T_BAT "
 			"	ADD    COLUMN BAT_CRE_USER      VARCHAR(64)  NOT NULL    COMMENT 'Creation user',"
 			"	ADD    COLUMN BAT_CRE_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Creation timestamp',"
-			"	ADD    COLUMN BAT_ACC_USER      VARCHAR(64)  NOT NULL    COMMENT 'Account association user',"
+			"	ADD    COLUMN BAT_ACC_USER      VARCHAR(64)              COMMENT 'Account association user',"
 			"	ADD    COLUMN BAT_ACC_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Account association timestamp',"
 			"	MODIFY COLUMN BAT_UPD_STAMP     TIMESTAMP    DEFAULT 0   COMMENT 'Last update timestamp'" )){
 		return( FALSE );
