@@ -48,6 +48,7 @@
    - ofoBat: fix new record insertion.
    - ofoTVAForm: fix new record insertion.
    - ofoTVARecord: fix new record insertion.
+   - DBModel v0.38: allow BAT_ACC_USER to be NULL.
 
  Other changes:
 
