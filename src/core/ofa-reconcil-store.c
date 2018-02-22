@@ -301,9 +301,11 @@ ofa_reconcil_store_load_by_account( ofaReconcilStore *store, const gchar *accoun
 
 	priv->account = ofo_account_get_by_number( priv->getter, account );
 	if( priv->account ){
+		g_return_val_if_fail( OFO_IS_ACCOUNT( priv->account ), 0 );
 		priv->acc_number = g_strdup( account );
 		priv->acc_currency = g_strdup( ofo_account_get_currency( priv->account ));
 		priv->currency = ofo_currency_get_by_code( priv->getter, priv->acc_currency );
+		g_return_val_if_fail( !priv->currency || OFO_IS_CURRENCY( priv->currency ), 0 );
 	}
 
 	/* recall the unique dataset (loaded only once) */
