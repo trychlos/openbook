@@ -2,7 +2,7 @@
  * Open Firm AccountArcing
  * A double-entry account_arcing application for professional services.
  *
- * Copyright (C) 2014,2015,2016,2017 Pierre Wieser (see AUTHORS)
+ * Copyright (C) 2014-2018 Pierre Wieser (see AUTHORS)
  *
  * Open Firm AccountArcing is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as

@@ -193,7 +193,7 @@ sub msg_help(){
 sub msg_version(){
 	print "
  $my_version
- Copyright (C) 2013,2014,2015,2016 Pierre Wieser.
+ Copyright (C) 2013-2018 Pierre Wieser.
 ";
 }
 
