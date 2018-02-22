@@ -1963,6 +1963,8 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 	GDate dope, deffect;
 	ofoBatLine *batline;
 	ofxAmount amount;
+	gchar *sdope;
+	gint eff_year, eff_month, ope_month;
 
 	batline = ofo_bat_line_new( parms->getter );
 
@@ -1970,14 +1972,15 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 	slabel = NULL;
 	my_date_clear( &dope );
 	my_date_clear( &deffect );
+	sdope = NULL;
 
 	/* operation date
-	 * LCL PDF provides an operation date without year */
+	 * LCL PDF provides an operation date without year, i.e. as 'dd.mm'
+	 * have to wait until having dealt with effect date to compute the ope year */
 	itf = fields ? fields->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_bat_line_set_dope( batline,
-				my_date_set_from_str_ex( &dope, cstr, ofa_stream_format_get_date_format( parms->format ), &year ));
+		sdope = g_strdup( cstr );
 	}
 
 	/* effect date */
@@ -1986,6 +1989,18 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 	if( my_strlen( cstr )){
 		ofo_bat_line_set_deffect( batline,
 				my_date_set_from_str( &deffect, cstr, ofa_stream_format_get_date_format( parms->format )));
+
+		/* remediate dope considering that we can have ope=31.12 and effect = 01.01 */
+		if( my_strlen( sdope )){
+			eff_year = g_date_get_year( &deffect );
+			eff_month = g_date_get_month( &deffect );
+			my_date_set_from_str_ex( &dope, sdope, ofa_stream_format_get_date_format( parms->format ), &eff_year );
+			ope_month = g_date_get_month( &dope );
+			if( ope_month > eff_month ){
+				g_date_add_years( &dope, -1 );
+			}
+			ofo_bat_line_set_dope( batline, &dope );
+		}
 	}
 
 	/* effect date is mandatory */
@@ -2036,6 +2051,8 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 	if( my_strlen( cstr )){
 		ofo_bat_line_set_currency( batline, cstr );
 	}
+
+	g_free( sdope );
 
 	return( batline );
 }

@@ -378,18 +378,21 @@
 
 1528 2018- 2-17 BUG: reconciliation page: 'clear' button appears disabled
 
-1529 2018- 2-17 BUG: when importing LCL BAT PDF, where is taken effect year from ?
-                (should be the same that value year, or at least from begin date)
-
-1530 2018- 2-17 Segfault when updating an amount in view entries
-                (see TODO_1530)
+1530 2018- 2-17 Segfault when updating an amount in view entries while the
+                reconciliation is opened (see TODO_1530)
      2018- 2-22 cannot reproduce
 
-1531
+1531 2018- 2-22 review user/timestamp display when null
+
+1532
 
 -----------------------------------------------------------------------
  DONE
  ====
+
+1529 2018- 2-17 BUG: when importing LCL BAT PDF, where is taken effect year from ?
+                (should be the same that value year, or at least from begin date)
+     2018- 2-22 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
