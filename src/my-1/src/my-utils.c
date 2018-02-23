@@ -1295,7 +1295,12 @@ my_utils_container_updstamp_setup_full( GtkContainer *container,
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	str_stamp = stamp ? my_stamp_to_str( stamp, MY_STAMP_YYMDHMS ) : g_strdup( "" );
-	str = g_strdup_printf( "%s (%s)", str_stamp, my_strlen( user ) ? user : "" );
+
+	if( my_strlen( str_stamp ) && my_strlen( user )){
+		str = g_strdup_printf( "%s (%s)", str_stamp, user );
+	} else {
+		str = g_strdup( _( "-none-" ));
+	}
 
 	gtk_label_set_text( GTK_LABEL( label ), str );
 

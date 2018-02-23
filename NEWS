@@ -40,6 +40,7 @@
    - ofoTVARecord: fix new record insertion.
    - DBModel v0.38: allow BAT_ACC_USER to be NULL.
    - LCL PDF importer: fix operation year setup (todo #1529).
+   - my_utils_container_updstamp_setup_full(): review null values handling (todo #1531).
 
  Other changes:
 

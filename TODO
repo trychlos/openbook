@@ -382,8 +382,6 @@
                 reconciliation is opened (see TODO_1530)
      2018- 2-22 cannot reproduce
 
-1531 2018- 2-22 review user/timestamp display when null
-
 1532
 
 -----------------------------------------------------------------------
@@ -393,6 +391,9 @@
 1529 2018- 2-17 BUG: when importing LCL BAT PDF, where is taken effect year from ?
                 (should be the same that value year, or at least from begin date)
      2018- 2-22 fixed
+
+1531 2018- 2-22 review user/timestamp display when null
+     2018- 2-23 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
