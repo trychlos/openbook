@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.20.0 -->
+<!-- Generated with glade 3.20.2 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
   <object class="GtkWindow" id="ReconciliationView1">
@@ -246,12 +246,9 @@
         </child>
       </object>
     </child>
-  </object>
-  <object class="GtkSizeGroup" id="f2-sizegroup"/>
-  <object class="GtkImage" id="image2">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-clear</property>
+    <child type="titlebar">
+      <placeholder/>
+    </child>
   </object>
   <object class="GtkWindow" id="ReconciliationView2">
     <property name="can_focus">False</property>
@@ -436,7 +433,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkFrame" id="frame5">
+          <object class="GtkFrame" id="f5_assist">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label_xalign">0</property>
@@ -466,8 +463,8 @@
                         <property name="receives_default">True</property>
                         <property name="tooltip_text" translatable="yes">Clear the displayed Bank Account Transaction lines.</property>
                         <property name="halign">end</property>
-                        <property name="image">image2</property>
                         <property name="use_underline">True</property>
+                        <property name="always_show_image">True</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -735,5 +732,9 @@ When clicked with &lt;Ctrl&gt; key, then expand all.</property>
         </child>
       </object>
     </child>
+    <child type="titlebar">
+      <placeholder/>
+    </child>
   </object>
+  <object class="GtkSizeGroup" id="f2-sizegroup"/>
 </interface>

@@ -31,6 +31,8 @@
     <file>ofa-stream-format-bin.ui</file>
     <file>ofa-stream-format-disp.ui</file>
 
+    <file>edit-clear-disabled.png</file>
+    <file>edit-clear-enabled.png</file>
     <file>filler.png</file>
     <file>notes.png</file>
     <file>ofa-account-editable-icon-16.png</file>
@@ -39,6 +41,8 @@
     <file>ofa-guided-input-bin-green-check-68.png</file>
     <file>ofa-paimean-editable-icon-16.png</file>
     <file>ofa-ope-template-editable-icon-16.png</file>
+    <file>ofa-reconcil-page-clear-disabled.png</file>
+    <file>ofa-reconcil-page-clear-enabled.png</file>
     <file>ofa-reconcil-page-light-empty-14.png</file>
     <file>ofa-reconcil-page-light-green-14.png</file>
     <file>ofa-reconcil-page-light-yellow-14.png</file>

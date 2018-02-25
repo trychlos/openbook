@@ -28,6 +28,7 @@
  Bug fixes:
 
    - ofaITVColumnable: protect column addressing against false identifiers.
+   - ofaReconcilPage: disable the clear button at initialization (todo #1528).
    - ofaRestoreAssistant: fix ofaIDBDossierMeta ref count (todo #1507).
    - ofaRestoreAssistant: fix ofaIDBExerciceMeta occurrence count (todo #1508).
    - ofaTVAFormProperties: fix new record creation.

@@ -112,7 +112,7 @@ typedef struct {
 	GtkWidget           *bat_label1;
 	GtkWidget           *bat_unused_label;
 	GtkWidget           *bat_count_label;
-	GtkButton           *clear;
+	GtkWidget           *clear_btn;
 
 	/* UI - actions
 	 */
@@ -222,12 +222,14 @@ enum {
 	ACTIV_UNCONCILIATE
 };
 
-static const gchar *st_resource_ui           = "/org/trychlos/openbook/core/ofa-reconcil-page.ui";
-static const gchar *st_resource_light_green  = "/org/trychlos/openbook/core/ofa-reconcil-page-light-green-14.png";
-static const gchar *st_resource_light_yellow = "/org/trychlos/openbook/core/ofa-reconcil-page-light-yellow-14.png";
-static const gchar *st_resource_light_empty  = "/org/trychlos/openbook/core/ofa-reconcil-page-light-empty-14.png";
-static const gchar *st_ui_name1              = "ReconciliationView1";
-static const gchar *st_ui_name2              = "ReconciliationView2";
+static const gchar *st_resource_ui             = "/org/trychlos/openbook/core/ofa-reconcil-page.ui";
+static const gchar *st_resource_clear_disabled = "/org/trychlos/openbook/core/ofa-reconcil-page-clear-disabled.png";
+static const gchar *st_resource_clear_enabled  = "/org/trychlos/openbook/core/ofa-reconcil-page-clear-enabled.png";
+static const gchar *st_resource_light_green    = "/org/trychlos/openbook/core/ofa-reconcil-page-light-green-14.png";
+static const gchar *st_resource_light_yellow   = "/org/trychlos/openbook/core/ofa-reconcil-page-light-yellow-14.png";
+static const gchar *st_resource_light_empty    = "/org/trychlos/openbook/core/ofa-reconcil-page-light-empty-14.png";
+static const gchar *st_ui_name1                = "ReconciliationView1";
+static const gchar *st_ui_name2                = "ReconciliationView2";
 
 static const gchar *st_default_reconciliated_class = "5";	/* default account class to be reconciliated */
 
@@ -358,7 +360,9 @@ reconciliation_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		write_settings( OFA_RECONCIL_PAGE( instance ));
+		if( 0 ){
+			write_settings( OFA_RECONCIL_PAGE( instance ));
+		}
 
 		priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( instance ));
 
@@ -1252,7 +1256,7 @@ static void
 setup_auto_rappro( ofaReconcilPage *self, GtkContainer *parent )
 {
 	ofaReconcilPagePrivate *priv;
-	GtkWidget *button, *label;
+	GtkWidget *button, *label, *image;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
@@ -1267,7 +1271,10 @@ setup_auto_rappro( ofaReconcilPage *self, GtkContainer *parent )
 	button = my_utils_container_get_child_by_name( parent, "bat-clear" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	g_signal_connect( button, "clicked", G_CALLBACK( bat_on_clear_clicked ), self );
-	priv->clear = GTK_BUTTON( button );
+	priv->clear_btn = button;
+	image = gtk_image_new_from_resource( st_resource_clear_disabled );
+	gtk_button_set_image( GTK_BUTTON( priv->clear_btn ), image );
+	gtk_widget_set_sensitive( priv->clear_btn, FALSE );
 
 	label = my_utils_container_get_child_by_name( parent, "bat-name" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -1426,7 +1433,9 @@ paned_page_v_init_view( ofaPanedPage *page )
 	signaler_connect_to_signaling_system( OFA_RECONCIL_PAGE( page ));
 
 	/* setup initial values */
-	read_settings( OFA_RECONCIL_PAGE( page ));
+	if( 0 ){
+		read_settings( OFA_RECONCIL_PAGE( page ));
+	}
 }
 
 /**
@@ -1824,6 +1833,7 @@ static void
 bat_clear_content( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
+	GtkWidget *image;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
@@ -1835,6 +1845,10 @@ bat_clear_content( ofaReconcilPage *self )
 	gtk_label_set_text( GTK_LABEL( priv->bat_label1 ), "" );
 	gtk_label_set_text( GTK_LABEL( priv->bat_unused_label ), "" );
 	gtk_label_set_text( GTK_LABEL( priv->bat_count_label ), "" );
+
+	image = gtk_image_new_from_resource( st_resource_clear_disabled );
+	gtk_button_set_image( GTK_BUTTON( priv->clear_btn ), image );
+	gtk_widget_set_sensitive( priv->clear_btn, FALSE );
 
 	/* clear the store
 	 * be lazzy: rather than deleting the bat lines, just delete all and
@@ -1929,6 +1943,7 @@ static void
 bat_display_file( ofaReconcilPage *self, ofoBat *bat )
 {
 	ofaReconcilPagePrivate *priv;
+	GtkWidget *image;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
@@ -1937,6 +1952,10 @@ bat_display_file( ofaReconcilPage *self, ofoBat *bat )
 	bat_display_name( self );
 	bat_display_counts( self );
 	set_reconciliated_balance( self );
+
+	gtk_widget_set_sensitive( priv->clear_btn, TRUE );
+	image = gtk_image_new_from_resource( st_resource_clear_enabled );
+	gtk_button_set_image( GTK_BUTTON( priv->clear_btn ), image );
 }
 
 /*
