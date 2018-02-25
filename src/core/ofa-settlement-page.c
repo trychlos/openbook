@@ -178,9 +178,12 @@ static const sSettlementPage st_settlements[] = {
 static const gchar *st_resource_ui           = "/org/trychlos/openbook/core/ofa-settlement-page.ui";
 static const gchar *st_resource_light_green  = "/org/trychlos/openbook/core/ofa-settlement-page-light-green-14.png";
 static const gchar *st_resource_light_yellow = "/org/trychlos/openbook/core/ofa-settlement-page-light-yellow-14.png";
+static const gchar *st_resource_light_grey   = "/org/trychlos/openbook/core/ofa-settlement-page-light-grey-14.png";
 static const gchar *st_resource_light_empty  = "/org/trychlos/openbook/core/ofa-settlement-page-light-empty-14.png";
 static const gchar *st_ui_name1              = "SettlementPageView1";
 static const gchar *st_ui_name2              = "SettlementPageView2";
+
+#define HAVE_SETTINGS                    1
 
 static void       paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
 static GtkWidget *setup_view1( ofaSettlementPage *self );
@@ -254,7 +257,9 @@ settlement_page_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		write_settings( OFA_SETTLEMENT_PAGE( instance ));
+		if( HAVE_SETTINGS ){
+			write_settings( OFA_SETTLEMENT_PAGE( instance ));
+		}
 
 		priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( instance ));
 
@@ -758,7 +763,9 @@ paned_page_v_init_view( ofaPanedPage *page )
 	ofa_tvbin_select_first_row( OFA_TVBIN( priv->tview ));
 
 	/* setup initial values */
-	read_settings( OFA_SETTLEMENT_PAGE( page ));
+	if( HAVE_SETTINGS ){
+		read_settings( OFA_SETTLEMENT_PAGE( page ));
+	}
 }
 
 static void
@@ -1085,8 +1092,10 @@ refresh_selection_compute_with_selected( ofaSettlementPage *self, GList *selecte
 			} else {
 				gtk_image_set_from_resource( GTK_IMAGE( priv->light_balance ), st_resource_light_yellow );
 			}
+
 		} else {
-			gtk_image_set_from_resource( GTK_IMAGE( priv->light_balance ), st_resource_light_empty );
+			gtk_image_set_from_resource( GTK_IMAGE( priv->light_balance ),
+					priv->account_currency ? st_resource_light_grey : st_resource_light_empty );
 		}
 	}
 }
