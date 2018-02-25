@@ -231,6 +231,7 @@ static const gchar *st_resource_clear_disabled = "/org/trychlos/openbook/core/of
 static const gchar *st_resource_clear_enabled  = "/org/trychlos/openbook/core/ofa-reconcil-page-clear-enabled.png";
 static const gchar *st_resource_light_green    = "/org/trychlos/openbook/core/ofa-reconcil-page-light-green-14.png";
 static const gchar *st_resource_light_yellow   = "/org/trychlos/openbook/core/ofa-reconcil-page-light-yellow-14.png";
+static const gchar *st_resource_light_grey     = "/org/trychlos/openbook/core/ofa-reconcil-page-light-grey-14.png";
 static const gchar *st_resource_light_empty    = "/org/trychlos/openbook/core/ofa-reconcil-page-light-empty-14.png";
 static const gchar *st_ui_name1                = "ReconciliationView1";
 static const gchar *st_ui_name2                = "ReconciliationView2";
@@ -259,7 +260,7 @@ static void                 tview_on_selection_changed( ofaTVBin *treeview, GtkT
 static void                 tview_examine_selection( ofaReconcilPage *self, GList *selected, ofsCurrency *scurrency, guint *concil_rows, guint *unconcil_rows, gboolean *is_child, ofoEntry **entry, ofoBatLine **batline );
 static void                 tview_on_selection_activated( ofaTVBin *treeview, GtkTreeSelection *selection, ofaReconcilPage *self );
 static void                 tview_expand_selection( ofaReconcilPage *self );
-static void                 tview_clear_selection( ofaReconcilPage *self );
+static void                 tview_clear_content( ofaReconcilPage *self );
 static GtkWidget           *setup_view2( ofaReconcilPage *self );
 static void                 setup_account_selection( ofaReconcilPage *self, GtkContainer *parent );
 static void                 setup_entries_filter( ofaReconcilPage *self, GtkContainer *parent );
@@ -870,7 +871,7 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 				gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_yellow );
 			}
 		} else {
-			gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_empty );
+			gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_grey );
 		}
 
 		/* it is important to only enable actions when only one unique
@@ -1085,8 +1086,14 @@ tview_expand_selection( ofaReconcilPage *self )
 	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
 }
 
+/*
+ * The treeview, along with the underlying treestore, is cleared when the
+ * account changes or the bats list changes. This is a rather lazzy behavior:
+ * rather than trying to find the rows to be removed, just remove all and
+ * reinsert the right rows...
+ */
 static void
-tview_clear_selection( ofaReconcilPage *self )
+tview_clear_content( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	GtkTreeSelection *selection;
@@ -1095,6 +1102,9 @@ tview_clear_selection( ofaReconcilPage *self )
 
 	selection = ofa_tvbin_get_selection( OFA_TVBIN( priv->tview ));
 	gtk_tree_selection_unselect_all( selection );
+
+	/* clear the store */
+	gtk_tree_store_clear( GTK_TREE_STORE( priv->store ));
 }
 
 static GtkWidget *
@@ -1511,8 +1521,8 @@ account_do_change( ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	tview_clear_selection( self );
-	/* clear the store */
+	/* clear the store and the account datas */
+	tview_clear_content( self );
 	account_clear_content( self );
 
 	/* get an ofoAccount object, or NULL */
@@ -1533,7 +1543,7 @@ account_do_change( ofaReconcilPage *self )
 	} else {
 		gtk_label_set_text( GTK_LABEL( priv->select_debit ), "" );
 		gtk_label_set_text( GTK_LABEL( priv->select_credit ), "" );
-		gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_empty );
+		gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_grey );
 	}
 
 	check_for_enable_view( self );
@@ -1638,10 +1648,6 @@ account_clear_content( ofaReconcilPage *self )
 	gtk_label_set_text( GTK_LABEL( priv->acc_credit_label ), "" );
 	gtk_label_set_text( GTK_LABEL( priv->acc_credit_sens ), "" );
 
-	/* clear the store
-	 * be lazzy: rather than deleting the entries, just delete all and
-	 * reinsert bat lines */
-	gtk_tree_store_clear( GTK_TREE_STORE( priv->store ));
 	gtk_label_set_text( GTK_LABEL( priv->bal_debit_label ), "" );
 	gtk_label_set_text( GTK_LABEL( priv->bal_debit_sens ), "" );
 	gtk_label_set_text( GTK_LABEL( priv->bal_credit_label ), "" );
@@ -1858,17 +1864,6 @@ bat_clear_content( ofaReconcilPage *self )
 	image = gtk_image_new_from_resource( st_resource_clear_disabled );
 	gtk_button_set_image( GTK_BUTTON( priv->clear_btn ), image );
 	gtk_widget_set_sensitive( priv->clear_btn, FALSE );
-
-	/* clear the store
-	 * be lazzy: rather than deleting the bat lines, just delete all and
-	 * reinsert entries */
-	gtk_tree_store_clear( GTK_TREE_STORE( priv->store ));
-	if( priv->account ){
-		ofa_reconcil_store_load_by_account( priv->store, ofo_account_get_number( priv->account ));
-	}
-
-	/* and update the bank reconciliated balance */
-	set_reconciliated_balance( self );
 }
 
 /*
@@ -1942,7 +1937,9 @@ bat_display_by_id( ofaReconcilPage *self, ofxCounter bat_id )
 					bat_account, bat_prev );
 			my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING, msg );
 			g_free( msg );
+			return;
 		}
+		/* fine: display it */
 		priv->bats = g_list_prepend( priv->bats, bat );
 		bat_display_file( self, bat );
 	}
@@ -2099,6 +2096,8 @@ check_for_enable_view( ofaReconcilPage *self )
 
 	selection = ofa_tvbin_get_selection( OFA_TVBIN( priv->tview ));
 	gtk_tree_selection_set_mode( selection, enabled ? GTK_SELECTION_MULTIPLE : GTK_SELECTION_NONE );
+
+	gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), enabled ? st_resource_light_grey : st_resource_light_empty );
 
 	gtk_widget_set_sensitive( priv->bal_footer_label, enabled );
 	gtk_widget_set_sensitive( priv->bal_debit_label, enabled );
