@@ -87,6 +87,10 @@ typedef struct {
 	GtkWidget           *acc_debit_sens;
 	GtkWidget           *acc_credit_label;
 	GtkWidget           *acc_credit_sens;
+
+		/* account is the main leader of account-related datas
+		 * if set, then all others must be also set
+		 * if not set, all other must be ignored */
 	ofoAccount          *account;
 	ofoCurrency         *acc_currency;
 	ofxAmount            acc_debit;
@@ -172,7 +176,7 @@ typedef struct {
 	 */
 	ofaIGetter          *getter;
 	GList               *signaler_handlers;
-	GList               *bats;				/* loaded ofoBat objects */
+	GList               *bats;					/* loaded ofoBat objects */
 }
 	ofaReconcilPagePrivate;
 
@@ -407,6 +411,11 @@ ofa_reconcil_page_init( ofaReconcilPage *self )
 
 	my_date_clear( &priv->dconcil );
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
+
+	priv->account = NULL;
+	priv->bats = NULL;
+	priv->store = NULL;
+	priv->tview = NULL;
 }
 
 static void
@@ -454,7 +463,6 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 	priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( page ));
 
 	priv->getter = ofa_page_get_getter( OFA_PAGE( page ));
-
 	priv->paned = GTK_WIDGET( paned );
 
 	view = setup_view1( OFA_RECONCIL_PAGE( page ));
@@ -1432,7 +1440,8 @@ paned_page_v_init_view( ofaPanedPage *page )
 	 * the store itself */
 	signaler_connect_to_signaling_system( OFA_RECONCIL_PAGE( page ));
 
-	/* setup initial values */
+	/* initialize view and setup initial values */
+	check_for_enable_view( OFA_RECONCIL_PAGE( page ));
 	if( 0 ){
 		read_settings( OFA_RECONCIL_PAGE( page ));
 	}
@@ -2065,15 +2074,17 @@ bat_associates_account( ofaReconcilPage *self, ofoBatLine *batline, const gchar 
 }
 
 /*
- * the view is disabled (insensitive) each time the configuration parms
- * are not valid (invalid account or invalid reconciliation display
- * mode)
+ * Update the view sensitivity each time the configuration parms are not
+ * valid (invalid account or invalid reconciliation display mode)
+ * - labels are marked insensitive
+ * - selection treeview is forbidden
  */
 static gboolean
 check_for_enable_view( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	gboolean enabled;
+	GtkTreeSelection *selection;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
@@ -2086,7 +2097,8 @@ check_for_enable_view( ofaReconcilPage *self )
 	gtk_widget_set_sensitive( priv->acc_credit_label, enabled );
 	gtk_widget_set_sensitive( priv->acc_credit_sens, enabled );
 
-	gtk_widget_set_sensitive( GTK_WIDGET( priv->tview ), enabled );
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( priv->tview ));
+	gtk_tree_selection_set_mode( selection, enabled ? GTK_SELECTION_MULTIPLE : GTK_SELECTION_NONE );
 
 	gtk_widget_set_sensitive( priv->bal_footer_label, enabled );
 	gtk_widget_set_sensitive( priv->bal_debit_label, enabled );
