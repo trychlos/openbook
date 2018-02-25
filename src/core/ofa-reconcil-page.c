@@ -246,6 +246,8 @@ static const gchar *st_default_reconciliated_class = "5";	/* default account cla
 #define COLOR_WARNING                       "#ff8000"		/* orange */
 #define COLOR_INFO                          "#0000ff"		/* blue */
 
+#define HAVE_SETTINGS                        1
+
 static GtkWidget           *page_v_get_top_focusable_widget( const ofaPage *page );
 static void                 paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
 static GtkWidget           *setup_view1( ofaReconcilPage *self );
@@ -365,7 +367,7 @@ reconciliation_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		if( 0 ){
+		if( HAVE_SETTINGS ){
 			write_settings( OFA_RECONCIL_PAGE( instance ));
 		}
 
@@ -1452,7 +1454,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 
 	/* initialize view and setup initial values */
 	check_for_enable_view( OFA_RECONCIL_PAGE( page ));
-	if( 0 ){
+	if( HAVE_SETTINGS ){
 		read_settings( OFA_RECONCIL_PAGE( page ));
 	}
 }
