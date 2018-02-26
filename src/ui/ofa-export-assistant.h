@@ -43,7 +43,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-iexportable.h"
+#include "api/ofa-iexportable-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
