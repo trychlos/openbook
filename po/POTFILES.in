@@ -92,7 +92,9 @@ src/core/ofo-ledger.c
 src/core/ofo-ope-template.c
 src/core/ofo-paimean.c
 src/core/ofo-rate.c
+src/core/ofo-tiers.c
 src/core/ofs-ope.c
+src/dgifec/ofa-fec-export.c
 src/ebp-recovery/ofa-ebp-recover.c
 src/importers/ofa-importer-pdf-bourso.c
 src/importers/ofa-importer-pdf-lcl.c
