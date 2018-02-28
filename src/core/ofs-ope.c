@@ -207,9 +207,9 @@ ofs_ope_new( ofoOpeTemplate *template )
  * ofs_ope_apply_template:
  * @ope: [in]: the input operation.
  *
- * Update fields from @ope from formulas from @template.
+ * Update fields from @ope applying formulas from @template.
  *
- * All formulas defined in operation template are computed and set
+ * All formulas defined in operation template are computed and set.
  * Have to scan all the fields of the operation template
  */
 void
@@ -272,7 +272,9 @@ compute_simple_formulas( sOpeHelper *helper )
 	for( i=0 ; i<count ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
 		helper->row = i;
-		DEBUG( "%s: i=%d", thisfn, i );
+		DEBUG( "%s: i=%d, account_user_set=%s, label_user_set=%s, debit_user_set=%s, credit_user_set=%s",
+				thisfn, i, detail->account_user_set ? "True":"False", detail->label_user_set ? "True":"False",
+				detail->debit_user_set ? "True":"False", detail->credit_user_set ? "True":"False" );
 
 		if( !detail->account_user_set ){
 			g_free( detail->account );
