@@ -382,8 +382,6 @@
                 reconciliation is opened
      2018- 2-22 cannot reproduce
 
-1532 2018- 2-25 Recurrent: unselect all when defining new
-
 1533
 
 -----------------------------------------------------------------------
@@ -399,6 +397,9 @@
 
 1531 2018- 2-22 review user/timestamp display when null
      2018- 2-23 done
+
+1532 2018- 2-25 Recurrent: unselect all when defining new
+     2018- 2-28 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

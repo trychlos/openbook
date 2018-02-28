@@ -454,6 +454,7 @@ ofa_recurrent_model_page_get_selected( ofaRecurrentModelPage *page )
  * @model: [allow-none]: a #ofoRecurrentModel object.
  *
  * Unselect the @model from the treeview.
+ * Unselect all if @model is %NULL.
  */
 void
 ofa_recurrent_model_page_unselect( ofaRecurrentModelPage *page, ofoRecurrentModel *model )
@@ -481,6 +482,8 @@ action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentMod
 	GtkWindow *toplevel;
 
 	priv = ofa_recurrent_model_page_get_instance_private( self );
+
+	ofa_recurrent_model_page_unselect( self, NULL );
 
 	model = ofo_recurrent_model_new( priv->getter );
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));

@@ -3,7 +3,30 @@
  Summary
  =======
  
+   Version 0.75
    Version 0.74
+
+-----------------------------------------------------------------------
+ Version 0.75
+ ============
+
+ Released on 
+
+ Total files count: 
+ Total lines count: 
+ maintainer/run-distcheck.sh: 
+
+ New features and improvements:
+
+   - ofaRecurrentModel: unselect all before creating a new one (todo #1532).
+
+ Bug fixes:
+
+   - 
+
+ Other changes:
+
+   - 
 
 -----------------------------------------------------------------------
  Version 0.74

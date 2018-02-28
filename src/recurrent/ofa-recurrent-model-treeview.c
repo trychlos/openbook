@@ -475,6 +475,7 @@ get_selected_with_selection( ofaRecurrentModelTreeview *self, GtkTreeSelection *
  * @model: [allow-none]: a #ofoRecurrentModel object.
  *
  * Unselect the @model from the @view.
+ * Unselect all if @model is %NULL.
  */
 void
 ofa_recurrent_model_treeview_unselect( ofaRecurrentModelTreeview *view, ofoRecurrentModel *model )
@@ -490,13 +491,17 @@ ofa_recurrent_model_treeview_unselect( ofaRecurrentModelTreeview *view, ofoRecur
 
 	g_return_if_fail( !priv->dispose_has_run );
 
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
+
 	if( model &&
 			ofa_recurrent_model_store_get_iter( priv->store, model, &store_iter ) &&
 			ofa_tvbin_store_iter_to_treeview_iter( OFA_TVBIN( view ), &store_iter, &tview_iter )){
 
 		//g_debug( "gtk_tree_selection_unselect_iter" );
-		selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
 		gtk_tree_selection_unselect_iter( selection, &tview_iter );
+
+	} else {
+		gtk_tree_selection_unselect_all( selection );
 	}
 }
 
