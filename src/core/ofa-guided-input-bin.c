@@ -1081,10 +1081,10 @@ check_for_account( ofaGuidedInputBin *self, GtkEntry *entry, gint row  )
  *
  * setting the deffect also triggers the change signal of the deffect
  * field (and so the comment)
- * => we should only react to the content while the focus is in the
- *    field
- * More, we shouldn't triggers an automatic changes to a field which
- * has been manually modified
+ * => we should only react to the content while the focus is in the field.
+ *
+ * More, we shouldn't triggers an automatic change from a field which has
+ * been manually modified
  */
 static gboolean
 on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *self )
@@ -1840,7 +1840,10 @@ ofa_guided_input_bin_reset( ofaGuidedInputBin *bin )
 
 
 /*
- * nb: entries_count = count of entries + 2 (for totals and diff)
+ * Reset here debit and credit of each row of the screen so that the
+ * same template may be reused for another operation of the same type.
+ *
+ * Nb: rows_count starts with  model_count+2 (for totals and diff)
  * Only the LABEL entries may be non present on the last two lines
  */
 static void
@@ -1848,7 +1851,6 @@ do_reset_entries_rows( ofaGuidedInputBin *self )
 {
 	ofaGuidedInputBinPrivate *priv;
 	gint i, model_count;
-	GtkWidget *entry;
 	ofsOpeDetail *detail;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
@@ -1860,20 +1862,6 @@ do_reset_entries_rows( ofaGuidedInputBin *self )
 	priv->rows_count = model_count;
 
 	for( i=1 ; i<=priv->rows_count ; ++i ){
-		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_DEBIT, i );
-		if( entry && GTK_IS_ENTRY( entry )){
-			g_signal_handlers_block_by_func( entry, on_entry_changed, self );
-			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
-			g_signal_handlers_unblock_by_func( entry, on_entry_changed, self );
-		}
-		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CREDIT, i );
-		if( entry && GTK_IS_ENTRY( entry )){
-			g_signal_handlers_block_by_func( entry, on_entry_changed, self );
-			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
-			g_signal_handlers_unblock_by_func( entry, on_entry_changed, self );
-		}
-		draw_valid_coche( self, i, FALSE );
-
 		detail = ( ofsOpeDetail * ) g_list_nth_data( priv->ope->detail, i-1 );
 		detail->debit = 0;
 		detail->debit_user_set = FALSE;
