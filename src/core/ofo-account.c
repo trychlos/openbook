@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "my/my-char.h"
 #include "my/my-date.h"
 #include "my/my-double.h"
 #include "my/my-icollectionable.h"
@@ -294,61 +295,68 @@ static sType st_type[] = {
 		{ 0 },
 };
 
-static void         archives_list_free_detail( GList *fields );
-static void         archives_list_free( ofoAccount *account );
-static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
-static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
-static void         account_get_children( const ofoAccount *account, sChildren *child_str );
-static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
-static void         account_set_cre_user( ofoAccount *account, const gchar *user );
-static void         account_set_cre_stamp( ofoAccount *account, const GTimeVal *stamp );
-static void         account_set_upd_user( ofoAccount *account, const gchar *user );
-static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
-static gboolean     archive_do_add_dbms( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
-static gboolean     archive_do_add_list( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
-static gint         archive_get_last_index( ofoAccount *account, const GDate *requested );
-static GList       *get_orphans( ofaIGetter *getter, const gchar *table );
-static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
-static gboolean     account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
-static gboolean     account_do_update_arc( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
-static gboolean     account_do_update_amounts( ofoAccount *account, ofaIGetter *getter );
-static gboolean     account_do_delete( ofoAccount *account, const ofaIDBConnect *connect );
-static gint         account_cmp_by_number( const ofoAccount *a, const gchar *number );
-static void         icollectionable_iface_init( myICollectionableInterface *iface );
-static guint        icollectionable_get_interface_version( void );
-static GList       *icollectionable_load_collection( void *user_data );
-static void         idoc_iface_init( ofaIDocInterface *iface );
-static guint        idoc_get_interface_version( void );
-static void         iexportable_iface_init( ofaIExportableInterface *iface );
-static guint        iexportable_get_interface_version( void );
-static gchar       *iexportable_get_label( const ofaIExportable *instance );
-static gboolean     iexportable_get_published( const ofaIExportable *instance );
-static gboolean     iexportable_export( ofaIExportable *exportable, const gchar *format_id );
-static gboolean     iexportable_export_default( ofaIExportable *exportable );
-static void         iimportable_iface_init( ofaIImportableInterface *iface );
-static guint        iimportable_get_interface_version( void );
-static gchar       *iimportable_get_label( const ofaIImportable *instance );
-static guint        iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
-static GList       *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
-static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
-static gboolean     account_get_exists( const ofoAccount *account, const ofaIDBConnect *connect );
-static gboolean     account_drop_content( const ofaIDBConnect *connect );
-static void         isignalable_iface_init( ofaISignalableInterface *iface );
-static void         isignalable_connect_to( ofaISignaler *signaler );
-static gboolean     signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
-static gboolean     signaler_is_deletable_class( ofaISignaler *signaler, ofoClass *class );
-static gboolean     signaler_is_deletable_currency( ofaISignaler *signaler, ofoCurrency *currency );
-static void         signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, void *empty );
-static void         signaler_on_new_base_entry( ofaISignaler *signaler, ofoEntry *entry );
-static void         signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
-static void         signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
-static void         signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryPeriod prev_period, ofeEntryStatus prev_status, ofeEntryPeriod new_period, ofeEntryStatus new_status, void *empty );
+static void                archives_list_free_detail( GList *fields );
+static void                archives_list_free( ofoAccount *account );
+static ofoAccount         *account_find_by_number( GList *set, const gchar *number );
+static const gchar        *account_get_string_ex( const ofoAccount *account, gint data_id );
+static void                account_get_children( const ofoAccount *account, sChildren *child_str );
+static void                account_iter_children( const ofoAccount *account, sChildren *child_str );
+static void                account_set_cre_user( ofoAccount *account, const gchar *user );
+static void                account_set_cre_stamp( ofoAccount *account, const GTimeVal *stamp );
+static void                account_set_upd_user( ofoAccount *account, const gchar *user );
+static void                account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
+static gboolean            archive_do_add_dbms( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
+static gboolean            archive_do_add_list( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
+static gint                archive_get_last_index( ofoAccount *account, const GDate *requested );
+static GList              *get_orphans( ofaIGetter *getter, const gchar *table );
+static gboolean            account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
+static gboolean            account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
+static gboolean            account_do_update_arc( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
+static gboolean            account_do_update_amounts( ofoAccount *account, ofaIGetter *getter );
+static gboolean            account_do_delete( ofoAccount *account, const ofaIDBConnect *connect );
+static gint                account_cmp_by_number( const ofoAccount *a, const gchar *number );
+static void                icollectionable_iface_init( myICollectionableInterface *iface );
+static guint               icollectionable_get_interface_version( void );
+static GList              *icollectionable_load_collection( void *user_data );
+static void                idoc_iface_init( ofaIDocInterface *iface );
+static guint               idoc_get_interface_version( void );
+static void                iexportable_iface_init( ofaIExportableInterface *iface );
+static guint               iexportable_get_interface_version( void );
+static gchar              *iexportable_get_label( const ofaIExportable *instance );
+static gboolean            iexportable_get_published( const ofaIExportable *instance );
+static gboolean            iexportable_export( ofaIExportable *exportable, const gchar *format_id );
+static gboolean            iexportable_export_default( ofaIExportable *exportable );
+static void                iexporter_iface_init( ofaIExporterInterface *iface );
+static guint               iexporter_get_interface_version( void );
+static ofsIExporterFormat *iexporter_get_formats( ofaIExporter *instance, GType exportable_type, ofaIGetter *getter );
+static ofsIExporterFormat *iexporter_get_v1_format( ofaIExporter *instance, ofaIGetter *getter );
+static gboolean            iexporter_export( ofaIExporter *instance, ofaIExportable *exportable, const gchar *format_id );
+static GString            *iexporter_export_addstr( ofaIExporter *instance, GString *src, const gchar *addstr, gchar field_sep, gchar str_delim );
+static void                iimportable_iface_init( ofaIImportableInterface *iface );
+static guint               iimportable_get_interface_version( void );
+static gchar              *iimportable_get_label( const ofaIImportable *instance );
+static guint               iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static GList              *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static void                iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
+static gboolean            account_get_exists( const ofoAccount *account, const ofaIDBConnect *connect );
+static gboolean            account_drop_content( const ofaIDBConnect *connect );
+static void                isignalable_iface_init( ofaISignalableInterface *iface );
+static void                isignalable_connect_to( ofaISignaler *signaler );
+static gboolean            signaler_on_deletable_object( ofaISignaler *signaler, ofoBase *object, void *empty );
+static gboolean            signaler_is_deletable_class( ofaISignaler *signaler, ofoClass *class );
+static gboolean            signaler_is_deletable_currency( ofaISignaler *signaler, ofoCurrency *currency );
+static void                signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, void *empty );
+static void                signaler_on_new_base_entry( ofaISignaler *signaler, ofoEntry *entry );
+static void                signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
+static void                signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
+static void                signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryPeriod prev_period, ofeEntryStatus prev_status, ofeEntryPeriod new_period, ofeEntryStatus new_status, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_ACCOUNT_V34, 0,
 		G_ADD_PRIVATE( ofoAccount )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDOC, idoc_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTER, iexporter_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNALABLE, isignalable_iface_init ))
 
@@ -2721,6 +2729,242 @@ iexportable_export_default( ofaIExportable *exportable )
 	}
 
 	return( ok );
+}
+
+/*
+ * ofaIExporter interface management
+ */
+static void
+iexporter_iface_init( ofaIExporterInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_iexporter_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexporter_get_interface_version;
+	iface->get_formats = iexporter_get_formats;
+	iface->export = iexporter_export;
+}
+
+static guint
+iexporter_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static ofsIExporterFormat *
+iexporter_get_formats( ofaIExporter *instance, GType exportable_type, ofaIGetter *getter )
+{
+	return( exportable_type == OFO_TYPE_ACCOUNT ? iexporter_get_v1_format( instance, getter ) : NULL );
+}
+
+static ofsIExporterFormat *
+iexporter_get_v1_format( ofaIExporter *instance, ofaIGetter *getter )
+{
+	ofsIExporterFormat *ret_list, *exp_format;
+	ofaStreamFormat *str_format;
+
+	ret_list = g_new0( ofsIExporterFormat, 2 );
+
+	exp_format = &ret_list[0];
+	exp_format->format_id = g_strdup( "ACCOUNTS_V1" );
+	exp_format->format_label = g_strdup( _( "Accounts chart (legacy v1 format)" ));
+
+	str_format = ofa_stream_format_new( getter, _( "ACCOUNTS_V1" ), OFA_SFMODE_EXPORT );
+
+	ofa_stream_format_set( str_format,
+			TRUE, "UTF-8",
+			FALSE, MY_DATE_YYMD,			/* (not used here) */
+			FALSE, MY_CHAR_ZERO,			/* no thousand sep */
+			TRUE,  MY_CHAR_COMMA,			/* comma decimal sep */
+			TRUE,  MY_CHAR_PIPE,			/* '|' field sep */
+			TRUE,  MY_CHAR_DQUOTE,			/* double quote as string delim */
+			1 );							/* with headers */
+
+	ofa_stream_format_set_field_updatable( str_format, OFA_SFHAS_ALL, FALSE );
+
+	exp_format->stream_format = str_format;
+
+	return( ret_list );
+}
+
+static gboolean
+iexporter_export( ofaIExporter *instance, ofaIExportable *exportable, const gchar *format_id )
+{
+	static const gchar *thisfn = "ofo_account_iexporter_export";
+	ofaIGetter *getter;
+	GList *dataset, *it;
+	ofaStreamFormat *stformat;
+	gboolean ok, with_headers, is_root;
+	gchar field_sep, str_delim;
+	gulong count;
+	ofoAccount *account;
+	ofoCurrency *currency;
+	GString *str;
+	const gchar *cstr;
+	gchar *supduser, *supdstamp, *snotes;
+	gchar *scrdebit, *scrcredit, *scvdebit, *scvcredit, *sfrdebit, *sfrcredit, *sfvdebit, *sfvcredit;
+
+	g_debug( "%s: exporter=%p, exportable=%p, format_id=%s",
+			thisfn, ( void * ) instance, ( void * ) exportable, format_id );
+
+	g_return_val_if_fail( instance && OFA_IS_IEXPORTER( instance ), FALSE );
+	g_return_val_if_fail( exportable && OFA_IS_IEXPORTABLE( exportable ), FALSE );
+
+	getter = ofa_iexportable_get_getter( exportable );
+	dataset = ofo_account_get_dataset( getter );
+
+	stformat = ofa_iexportable_get_stream_format( exportable );
+	with_headers = ofa_stream_format_get_with_headers( stformat );;
+	field_sep = ofa_stream_format_get_field_sep( stformat );
+	str_delim = ofa_stream_format_get_string_delim( stformat );
+
+	count = ( gulong ) g_list_length( dataset );
+	if( with_headers ){
+		count += 1;
+	}
+	ofa_iexportable_set_count( exportable, count );
+
+	if( with_headers ){
+		str = g_string_new( NULL );
+		iexporter_export_addstr( instance, str, "AccNumber", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccLabel", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccCurrency", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccRoot", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccSettleable", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccReconciable", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccForwardable", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccClosed", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccNotes", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccUpdUser", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccUpdStamp", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccCRDebit", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccCRCredit", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccCVDebit", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccCVCredit", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccFRDebit", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccFRCredit", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccFVDebit", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccFVCredit", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccKeepUnsettled", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccKeepUnreconciliated", field_sep, str_delim );
+
+		ok = ofa_iexportable_append_line( exportable, str->str );
+
+		g_string_free( str, TRUE );
+
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	for( it=dataset ; it ; it=it->next ){
+		account = ( ofoAccount * ) it->data;
+		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+
+		is_root = ofo_account_is_root( account );
+
+		if( is_root ){
+			currency = NULL;
+			scrdebit = g_strdup( "" );
+			scrcredit = g_strdup( "" );
+			scvdebit = g_strdup( "" );
+			scvcredit = g_strdup( "" );
+			sfrdebit = g_strdup( "" );
+			sfrcredit = g_strdup( "" );
+			sfvdebit = g_strdup( "" );
+			sfvcredit = g_strdup( "" );
+
+		} else {
+			currency = ofo_currency_get_by_code( getter, ofo_account_get_currency( account ));
+			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
+
+			scrdebit = ofa_amount_to_csv( ofo_account_get_current_rough_debit( account ), currency, stformat );
+			scrcredit = ofa_amount_to_csv( ofo_account_get_current_rough_credit( account ), currency, stformat );
+			scvdebit = ofa_amount_to_csv( ofo_account_get_current_val_debit( account ), currency, stformat );
+			scvcredit = ofa_amount_to_csv( ofo_account_get_current_val_credit( account ), currency, stformat );
+			sfrdebit = ofa_amount_to_csv( ofo_account_get_futur_rough_debit( account ), currency, stformat );
+			sfrcredit = ofa_amount_to_csv( ofo_account_get_futur_rough_credit( account ), currency, stformat );
+			sfvdebit = ofa_amount_to_csv( ofo_account_get_futur_val_debit( account ), currency, stformat );
+			sfvcredit = ofa_amount_to_csv( ofo_account_get_futur_val_credit( account ), currency, stformat );
+		}
+
+		cstr = ofo_account_get_upd_user( account );
+		if( my_strlen( cstr )){
+			supduser = g_strdup( cstr );
+			supdstamp = my_stamp_to_str( ofo_account_get_upd_stamp( account ), MY_STAMP_YYMDHMS );
+		} else {
+			supduser = g_strdup( "" );
+			supdstamp = g_strdup( "" );
+		}
+
+		snotes = ofa_box_csv_get_field_ex( OFO_BASE( account )->prot->fields, ACC_NOTES, stformat, NULL, NULL, NULL );
+
+		/* 18 mandatory columns */
+		str = g_string_new( NULL );
+		iexporter_export_addstr( instance, str, ofo_account_get_number( account ), field_sep, str_delim );
+		iexporter_export_addstr( instance, str, ofo_account_get_label( account ), field_sep, str_delim );
+		iexporter_export_addstr( instance, str, is_root ? "" : ofo_account_get_currency( account ), field_sep, str_delim );
+		iexporter_export_addstr( instance, str, is_root ? "Y":"N", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, is_root ? "" : ( ofo_account_is_settleable( account ) ? "Y":"N" ), field_sep, str_delim );
+		iexporter_export_addstr( instance, str, is_root ? "" : ( ofo_account_is_reconciliable( account ) ? "Y":"N" ), field_sep, str_delim );
+		iexporter_export_addstr( instance, str, is_root ? "" : ( ofo_account_is_forwardable( account ) ? "Y":"N" ), field_sep, str_delim );
+		iexporter_export_addstr( instance, str, is_root ? "" : ofo_account_is_closed( account ) ? "Y":"N", field_sep, str_delim );
+		g_string_append_printf( str, "%c%s", field_sep, snotes );
+		iexporter_export_addstr( instance, str, supduser, field_sep, str_delim );
+		iexporter_export_addstr( instance, str, supdstamp, field_sep, str_delim );
+		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : scrdebit );
+		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : scrcredit );
+		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : scvdebit );
+		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : scvcredit );
+		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : sfrdebit );
+		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : sfrcredit );
+		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : sfvdebit );
+		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : sfvcredit );
+		iexporter_export_addstr( instance, str, is_root ? "" : ( ofo_account_get_keep_unsettled( account ) ? "Y":"N" ), field_sep, str_delim );
+		iexporter_export_addstr( instance, str, is_root ? "" : ( ofo_account_get_keep_unreconciliated( account ) ? "Y":"N" ), field_sep, str_delim );
+
+		ok = ofa_iexportable_append_line( exportable, str->str );
+
+		g_string_free( str, TRUE );
+		g_free( snotes );
+		g_free( supdstamp );
+		g_free( scrdebit );
+		g_free( scrcredit );
+		g_free( scvdebit );
+		g_free( scvcredit );
+		g_free( sfrdebit );
+		g_free( sfrcredit );
+		g_free( sfvdebit );
+		g_free( sfvcredit );
+
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	return( TRUE );
+}
+
+static GString *
+iexporter_export_addstr( ofaIExporter *instance, GString *src, const gchar *addstr, gchar field_sep, gchar str_delim )
+{
+	GString *dest;
+
+	if( src->len && field_sep ){
+		dest = g_string_append_c( src, field_sep );
+		src = dest;
+	}
+
+	if( my_strlen( addstr )){
+		if( str_delim ){
+			g_string_append_printf( src, "%c%s%c", str_delim, addstr, str_delim );
+		} else {
+			g_string_append_printf( src, "%s", addstr );
+		}
+	}
+
+	return( src );
 }
 
 /*

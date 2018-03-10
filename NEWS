@@ -19,6 +19,7 @@
  New features and improvements:
 
    - ofaRecurrentModel: unselect all before creating a new one (todo #1532).
+   - ofoAccount: restore v1 export version for annual accountings needs (todo #1533).
 
  Bug fixes:
 
@@ -26,7 +27,7 @@
 
  Other changes:
 
-   - 
+   - ofa_box_csv_get_field_ex(): new function.
 
 -----------------------------------------------------------------------
  Version 0.74

@@ -59,6 +59,7 @@ struct _ofsBoxData {
 static void   box_dump_def( const ofsBoxDef *def );
 static gchar *get_csv_name( const ofsBoxDef *def );
 static gchar *compute_csv_name( const gchar *dbms_name );
+static gchar *csv_get_field_ex( const ofsBoxData *box_data, ofaStreamFormat *format, ofoCurrency *currency, CSVExportFunc cb, void *user_data );
 static void   set_decimal_point( gchar *str, gchar decimal_sep );
 
 /*
@@ -806,53 +807,107 @@ ofa_box_csv_get_line_ex( const GList *fields_list, ofaStreamFormat *format, ofoC
 	GString *line;
 	const GList *it;
 	ofsBoxData *box_data;
-	const ofsBoxDef *def;
-	const sBoxHelpers *ihelper;
-	gchar *str1, *str2;
-	gchar decimal_sep, field_sep;
+	gchar *str;
+	gchar field_sep;
 
 	line = g_string_new( "" );
-	decimal_sep = ofa_stream_format_get_decimal_sep( format );
 	field_sep = ofa_stream_format_get_field_sep( format );
 
 	for( it=fields_list ; it ; it=it->next ){
-
 		box_data = ( ofsBoxData * ) it->data;
 		g_return_val_if_fail( box_data, NULL );
+		g_return_val_if_fail( box_data->def, NULL );
+		g_return_val_if_fail( box_data->def->id, NULL );
 
-		def = box_data->def;
-		g_return_val_if_fail( def, NULL );
-
-		ihelper = box_get_helper_for_type( def->type );
-		g_return_val_if_fail( ihelper, NULL );
-
-		str1 = ihelper->to_string_fn( it->data, format );
-		if( ihelper->type == OFA_TYPE_AMOUNT ){
-			if( currency ){
-				g_free( str1 );
-				str1 = ofa_amount_to_csv( ofa_box_data_get_amount( box_data ), currency, format );
-			} else {
-				set_decimal_point( str1, decimal_sep );
-			}
-		}
-
-		if( cb ){
-			str2 = cb( box_data, format, currency, str1, user_data );
-		} else {
-			str2 = g_strdup( str1 );
-		}
+		str = csv_get_field_ex( box_data, format, currency, cb, user_data );
 
 		if( line->len ){
 			line = g_string_append_c( line, field_sep );
 		}
 
-		g_string_append_printf( line, "%s", str2 );
+		g_string_append_printf( line, "%s", str );
 
-		g_free( str2 );
-		g_free( str1 );
+		g_free( str );
 	}
 
 	return( g_string_free( line, FALSE ));
+}
+
+/**
+ * ofa_box_csv_get_field_ex:
+ * @fields_list: the list of elementary datas of the record
+ * @id: the identifier of the field to be printed
+ * @format: the #ofaStreamFormat configuration settings.
+ * @currency: [allow-none]: the currency of the amounts found in the
+ *  @fields_list.
+ * @cb: a callback user function which will be called for each field.
+ * @user_data: data to be passed to @cb.
+ *
+ * Returns the string as a CSV-type one, with requested configuration,
+ * as a newly allocated string which should be g_free() by the caller.
+ */
+gchar *
+ofa_box_csv_get_field_ex( const GList *fields_list, gint id,
+							ofaStreamFormat *format, ofoCurrency *currency, CSVExportFunc cb, void *user_data )
+{
+	const GList *it;
+	ofsBoxData *box_data;
+	gchar *str;
+
+	str = NULL;
+
+	for( it=fields_list ; it ; it=it->next ){
+		box_data = ( ofsBoxData * ) it->data;
+		g_return_val_if_fail( box_data, NULL );
+		g_return_val_if_fail( box_data->def, NULL );
+		g_return_val_if_fail( box_data->def->id, NULL );
+
+		if( box_data->def->id == id ){
+			str = csv_get_field_ex( box_data, format, currency, cb, user_data );
+		}
+	}
+
+	return( str );
+}
+
+static gchar *
+csv_get_field_ex( const ofsBoxData *box_data, ofaStreamFormat *format, ofoCurrency *currency, CSVExportFunc cb, void *user_data )
+{
+	const sBoxHelpers *ihelper;
+	gchar *str1, *str2;
+	gchar decimal_sep;
+	GString *string;
+
+	g_return_val_if_fail( box_data, NULL );
+	g_return_val_if_fail( box_data->def, NULL );
+
+	string = g_string_new( NULL );
+
+	ihelper = box_get_helper_for_type( box_data->def->type );
+	g_return_val_if_fail( ihelper, NULL );
+
+	str1 = ihelper->to_string_fn( box_data, format );
+	if( ihelper->type == OFA_TYPE_AMOUNT ){
+		if( currency ){
+			g_free( str1 );
+			str1 = ofa_amount_to_csv( ofa_box_data_get_amount( box_data ), currency, format );
+		} else {
+			decimal_sep = ofa_stream_format_get_decimal_sep( format );
+			set_decimal_point( str1, decimal_sep );
+		}
+	}
+
+	if( cb ){
+		str2 = cb( box_data, format, currency, str1, user_data );
+	} else {
+		str2 = g_strdup( str1 );
+	}
+
+	g_string_printf( string, "%s", str2 );
+	g_free( str2 );
+	g_free( str1 );
+
+	return( g_string_free( string, FALSE ));
 }
 
 /*

@@ -382,7 +382,7 @@
                 reconciliation is opened
      2018- 2-22 cannot reproduce
 
-1533
+1534
 
 -----------------------------------------------------------------------
  DONE
@@ -400,6 +400,11 @@
 
 1532 2018- 2-25 Recurrent: unselect all when defining new
      2018- 2-28 done
+
+1533 2018- 3- 6 should be able to export v1 accounts to be reimported when
+                pre-ods and post-ods charts - most probably should define
+                a specific exporter
+     2018- 3-10 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

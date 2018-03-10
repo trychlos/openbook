@@ -134,6 +134,13 @@ gchar           *ofa_box_csv_get_line_ex      ( const GList *fields_list,
 													CSVExportFunc cb,
 													void *user_data );
 
+gchar           *ofa_box_csv_get_field_ex     ( const GList *fields_list,
+													gint id,
+													ofaStreamFormat *format,
+													ofoCurrency *currency,
+													CSVExportFunc cb,
+													void *user_data );
+
 gboolean         ofa_box_is_set               ( const GList *fields_list, gint id );
 
 gconstpointer    ofa_box_get_value            ( const GList *fields_list, gint id );

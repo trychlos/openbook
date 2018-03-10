@@ -75,8 +75,6 @@ static void                on_instance_finalized( sFecData *sdata, GObject * fin
  * @getter: the #ofaIGetter of the application.
  *
  * Returns: the export formats we are able to manage for @exportable_type.
- *
- * This function is called because #ofoEntry is an #ofaIExporter.
  */
 ofsIExporterFormat *
 ofa_fec_export_get_formats( ofaIExporter *exporter, GType exportable_type, ofaIGetter *getter )
