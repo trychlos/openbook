@@ -382,7 +382,15 @@
                 reconciliation is opened
      2018- 2-22 cannot reproduce
 
-1534
+1534 2018- 3-11 BUG when importing ODs
+                (openbook:23243): OFA-DEBUG: ofa_importer_csv_get_lines_from_content: splitted count=51
+(openbook:23243): OFA-DEBUG: ofo_entry_init: instance=0x7fffc8018520 (ofoEntry)
+#3  0x00007ffff7af619c in ofs_currency_add_by_object (list=list@entry=0x7fffffffd8b0, currency=currency@entry=0x0, debit=debit@entry=0, credit=0)
+    at ../../../src/core/ofs-currency.c:77
+#4  0x00007ffff7ade0f5 in iimportable_import_parse (lines=<optimized out>, parms=0x7fffffffd9c0, importer=0x91b850) at ../../../src/core/ofo-entry.c:4059
+(openbook:23243): OFA-CRITICAL **: entry_compute_status: assertion 'my_date_is_valid( deffect )' failed
+
+1535
 
 -----------------------------------------------------------------------
  DONE

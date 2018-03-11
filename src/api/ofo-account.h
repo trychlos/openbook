@@ -70,7 +70,7 @@ typedef struct {
  * This is a type attached to the archived account balance.
  *
  * @ACC_TYPE_OPEN: the balance of the account when opening the exercice.
- * @ACC_TYPE_NORMAL: a balance archived dduring the exercice.
+ * @ACC_TYPE_NORMAL: a balance archived during the exercice.
  */
 typedef enum {
 	ACC_TYPE_OPEN = 1,
@@ -108,6 +108,8 @@ gboolean        ofo_account_is_closed                 ( const ofoAccount *accoun
 const gchar    *ofo_account_get_notes                 ( const ofoAccount *account );
 const gchar    *ofo_account_get_upd_user              ( const ofoAccount *account );
 const GTimeVal *ofo_account_get_upd_stamp             ( const ofoAccount *account );
+ofxAmount       ofo_account_get_open_debit            ( ofoAccount *account );
+ofxAmount       ofo_account_get_open_credit           ( ofoAccount *account );
 ofxAmount       ofo_account_get_current_rough_debit   ( const ofoAccount *account );
 ofxAmount       ofo_account_get_current_rough_credit  ( const ofoAccount *account );
 ofxAmount       ofo_account_get_current_val_debit     ( const ofoAccount *account );

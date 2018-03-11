@@ -28,6 +28,7 @@
  Other changes:
 
    - ofa_box_csv_get_field_ex(): new function.
+   - ofo_account_get_open_debit(), ofo_account_get_open_credit(): new functions.
 
 -----------------------------------------------------------------------
  Version 0.74

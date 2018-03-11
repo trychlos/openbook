@@ -849,6 +849,66 @@ ofo_account_get_upd_stamp( const ofoAccount *account )
 }
 
 /**
+ * ofo_account_get_open_debit:
+ * @account: the #ofoAccount account.
+ *
+ * Returns: the debit amount archived when opening this exercice.
+ */
+ofxAmount
+ofo_account_get_open_debit( ofoAccount *account )
+{
+	ofxAmount amount;
+	guint i, count;
+	ofeAccountType acc_type;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
+
+	amount = 0;
+	count = ofo_account_archive_get_count( account );
+
+	for( i=0 ; i<count ; ++i ){
+		acc_type = ofo_account_archive_get_type( account, i );
+		if( acc_type == ACC_TYPE_OPEN ){
+			amount = ofo_account_archive_get_debit( account, i );
+			break;
+		}
+	}
+
+	return( amount );
+}
+
+/**
+ * ofo_account_get_open_credit:
+ * @account: the #ofoAccount account.
+ *
+ * Returns: the credit amount archived when opening this exercice.
+ */
+ofxAmount
+ofo_account_get_open_credit( ofoAccount *account )
+{
+	ofxAmount amount;
+	guint i, count;
+	ofeAccountType acc_type;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
+
+	amount = 0;
+	count = ofo_account_archive_get_count( account );
+
+	for( i=0 ; i<count ; ++i ){
+		acc_type = ofo_account_archive_get_type( account, i );
+		if( acc_type == ACC_TYPE_OPEN ){
+			amount = ofo_account_archive_get_credit( account, i );
+			break;
+		}
+	}
+
+	return( amount );
+}
+
+/**
  * ofo_account_get_current_rough_debit:
  * @account: the #ofoAccount account.
  *
@@ -2803,7 +2863,7 @@ iexporter_export( ofaIExporter *instance, ofaIExportable *exportable, const gcha
 	GString *str;
 	const gchar *cstr;
 	gchar *supduser, *supdstamp, *snotes;
-	gchar *scrdebit, *scrcredit, *scvdebit, *scvcredit, *sfrdebit, *sfrcredit, *sfvdebit, *sfvcredit;
+	gchar *sopdebit, *sopcredit, *scrdebit, *scrcredit, *scvdebit, *scvcredit, *sfrdebit, *sfrcredit, *sfvdebit, *sfvcredit;
 
 	g_debug( "%s: exporter=%p, exportable=%p, format_id=%s",
 			thisfn, ( void * ) instance, ( void * ) exportable, format_id );
@@ -2838,6 +2898,8 @@ iexporter_export( ofaIExporter *instance, ofaIExportable *exportable, const gcha
 		iexporter_export_addstr( instance, str, "AccNotes", field_sep, str_delim );
 		iexporter_export_addstr( instance, str, "AccUpdUser", field_sep, str_delim );
 		iexporter_export_addstr( instance, str, "AccUpdStamp", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccOpenDebit", field_sep, str_delim );
+		iexporter_export_addstr( instance, str, "AccOpenCredit", field_sep, str_delim );
 		iexporter_export_addstr( instance, str, "AccCRDebit", field_sep, str_delim );
 		iexporter_export_addstr( instance, str, "AccCRCredit", field_sep, str_delim );
 		iexporter_export_addstr( instance, str, "AccCVDebit", field_sep, str_delim );
@@ -2879,6 +2941,8 @@ iexporter_export( ofaIExporter *instance, ofaIExportable *exportable, const gcha
 			currency = ofo_currency_get_by_code( getter, ofo_account_get_currency( account ));
 			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 
+			sopdebit = ofa_amount_to_csv( ofo_account_get_open_debit( account ), currency, stformat );
+			sopcredit = ofa_amount_to_csv( ofo_account_get_open_credit( account ), currency, stformat );
 			scrdebit = ofa_amount_to_csv( ofo_account_get_current_rough_debit( account ), currency, stformat );
 			scrcredit = ofa_amount_to_csv( ofo_account_get_current_rough_credit( account ), currency, stformat );
 			scvdebit = ofa_amount_to_csv( ofo_account_get_current_val_debit( account ), currency, stformat );
@@ -2913,6 +2977,8 @@ iexporter_export( ofaIExporter *instance, ofaIExportable *exportable, const gcha
 		g_string_append_printf( str, "%c%s", field_sep, snotes );
 		iexporter_export_addstr( instance, str, supduser, field_sep, str_delim );
 		iexporter_export_addstr( instance, str, supdstamp, field_sep, str_delim );
+		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : sopdebit );
+		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : sopcredit );
 		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : scrdebit );
 		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : scrcredit );
 		g_string_append_printf( str, "%c%s", field_sep, is_root ? "" : scvdebit );
