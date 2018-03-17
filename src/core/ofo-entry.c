@@ -338,6 +338,8 @@ static guint        iimportable_get_interface_version( void );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
 static guint        iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static GList       *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static ofoCurrency *iimportable_import_by_date( ofaIImporter *importer, ofsImporterParms *parms, ofoDossier *dossier, ofoEntry *entry, guint numline, GSList *itf );
+static ofoCurrency *iimportable_import_by_version( ofaIImporter *importer, ofsImporterParms *parms, ofoDossier *dossier, ofoEntry *entry, guint numline, GSList *itf );
 static void         iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoEntry *entry, GSList **fields );
 static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean     entry_drop_content( const ofaIDBConnect *connect );
@@ -3745,7 +3747,6 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 static GList *
 iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
-	static const gchar *thisfn = "ofo_entry_iimportable_import";
 	GList *dataset;
 	const gchar *cstr;
 	GSList *itl, *fields, *itf;
@@ -3753,18 +3754,14 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	guint numline, total, format;
 	GDate date;
 	gchar *currency, *str, *sdeb, *scre;
-	ofoAccount *account;
-	ofoLedger *ledger;
 	gdouble debit, credit;
 	GList *past, *exe, *fut, *it;
 	ofsCurrency *sdet;
 	ofoCurrency *cur_object;
-	ofxCounter counter, tiers;
 	myDateFormat date_format;
 	ofaHub *hub;
 	ofoDossier *dossier;
 	ofeEntryPeriod period;
-	GTimeVal stamp;
 
 	numline = 0;
 	dataset = NULL;
@@ -3799,249 +3796,19 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		my_date_set_from_str( &date, cstr, date_format );
 		format = atoi( cstr );
 
-		if( format == ENTRY_EXPORT_VERSION ){
+		if( format <= ENTRY_EXPORT_VERSION ){
+			cur_object = iimportable_import_by_version( importer, parms, dossier, entry, numline, itf );
 
-			/* conciliation group */
-			iimportable_import_concil( importer, parms, entry, &itf );
-
-			/* entry number (ignored) */
-			itf = itf ? itf->next : NULL;
-
-			/* creation user (ignored) */
-			itf = itf ? itf->next : NULL;
-
-			/* creation timestamp (ignored) */
-			itf = itf ? itf->next : NULL;
-
-			/* operation template - optional */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			ofo_entry_set_ope_template( entry, cstr );
-
-			/* format >= 1: operation number */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			counter = my_strlen( cstr ) ? atol( cstr ) : 0;
-			if( counter ){
-				ofo_entry_set_ope_number( entry, counter );
-			}
-
-			/* operation date */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			my_date_set_from_str( &date, cstr, date_format );
-			if( !my_date_is_valid( &date )){
-				str = g_strdup_printf( _( "invalid entry operation date: %s" ), cstr );
-				ofa_iimporter_progress_num_text( importer, parms, numline, str );
-				g_free( str );
-				parms->parse_errs += 1;
-				continue;
-			}
+		/* assuming this is an operation date */
+		} else if( !my_date_is_valid( &date )){
+			str = g_strdup_printf( _( "invalid entry operation date: %s" ), cstr );
+			ofa_iimporter_progress_num_text( importer, parms, numline, str );
+			g_free( str );
+			parms->parse_errs += 1;
+			continue;
+		} else {
 			ofo_entry_set_dope( entry, &date );
-
-			/* effect date */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			my_date_set_from_str( &date, cstr, date_format );
-			if( !my_date_is_valid( &date )){
-				str = g_strdup_printf( _( "invalid entry effect date: %s" ), cstr );
-				ofa_iimporter_progress_num_text( importer, parms, numline, str );
-				g_free( str );
-				parms->parse_errs += 1;
-				continue;
-			}
-			ofo_entry_set_deffect( entry, &date );
-
-			/* entry label */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( !my_strlen( cstr )){
-				ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty entry label" ));
-				parms->parse_errs += 1;
-				continue;
-			}
-			ofo_entry_set_label( entry, cstr );
-
-			/* entry piece's reference - may be empty */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			ofo_entry_set_ref( entry, cstr );
-
-			/* entry account */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( !my_strlen( cstr )){
-				ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty entry account" ));
-				parms->parse_errs += 1;
-				continue;
-			}
-			account = ofo_account_get_by_number( parms->getter, cstr );
-			if( !account ){
-				str = g_strdup_printf( _( "entry account not found: %s" ), cstr );
-				ofa_iimporter_progress_num_text( importer, parms, numline, str );
-				g_free( str );
-				parms->parse_errs += 1;
-				continue;
-			}
-			if( ofo_account_is_root( account )){
-				str = g_strdup_printf( _( "entry account is a root account: %s" ), cstr );
-				ofa_iimporter_progress_num_text( importer, parms, numline, str );
-				g_free( str );
-				parms->parse_errs += 1;
-				continue;
-			}
-			if( ofo_account_is_closed( account )){
-				str = g_strdup_printf( _( "entry account is closed: %s" ), cstr );
-				ofa_iimporter_progress_num_text( importer, parms, numline, str );
-				g_free( str );
-				parms->parse_errs += 1;
-				continue;
-			}
-			ofo_entry_set_account( entry, cstr );
-
-			/* entry currency - a default is provided by the account
-			 *  so check and set is pushed back after having read it */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			currency = g_strdup( cstr );
-
-			cstr = ofo_account_get_currency( account );
-			if( !my_strlen( currency )){
-				g_free( currency );
-				currency = g_strdup( cstr );
-			} else if( my_collate( currency, cstr )){
-				str = g_strdup_printf(
-						_( "entry currency: %s is not the same than those of the account: %s" ),
-						currency, cstr );
-				ofa_iimporter_progress_num_text( importer, parms, numline, str );
-				g_free( str );
-				parms->parse_errs += 1;
-				continue;
-			}
-			cur_object = ofo_currency_get_by_code( parms->getter, currency );
-			if( !cur_object ){
-				str = g_strdup_printf( _( "unregistered currency: %s" ), currency );
-				ofa_iimporter_progress_num_text( importer, parms, numline, str );
-				g_free( str );
-				parms->parse_errs += 1;
-				continue;
-			}
-			ofo_entry_set_currency( entry, currency );
-
-			/* ledger - default is from the dossier */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( !my_strlen( cstr )){
-				str = g_strdup( ofo_dossier_get_import_ledger( dossier ));
-				if( !my_strlen( str )){
-					ofa_iimporter_progress_num_text( importer, parms, numline, _( "dossier is missing a default import ledger" ));
-					parms->parse_errs += 1;
-					continue;
-				}
-			}
-			ledger = ofo_ledger_get_by_mnemo( parms->getter, cstr );
-			if( !ledger ){
-				str = g_strdup_printf( _( "entry ledger not found: %s" ), cstr );
-				ofa_iimporter_progress_num_text( importer, parms, numline, str );
-				g_free( str );
-				parms->parse_errs += 1;
-				continue;
-			}
-			ofo_entry_set_ledger( entry, cstr );
-
-			/* debit */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			debit = my_double_set_from_csv( cstr, ofa_stream_format_get_decimal_sep( parms->format ));
-
-			/* credit */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			credit = my_double_set_from_csv( cstr, ofa_stream_format_get_decimal_sep( parms->format ));
-
-			if( 0 ){
-				g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );
-			}
-			if(( debit && !credit ) || ( !debit && credit )){
-				ofo_entry_set_debit( entry, debit );
-				ofo_entry_set_credit( entry, credit );
-			} else {
-				str = g_strdup_printf(
-						_( "invalid entry amounts: debit=%'.5lf, credit=%'.5lf" ), debit, credit );
-				ofa_iimporter_progress_num_text( importer, parms, numline, str );
-				g_free( str );
-				parms->parse_errs += 1;
-				continue;
-			}
-
-			/* tiers */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( my_strlen( cstr )){
-				tiers = atol( cstr );
-				if( tiers > 0 ){
-					ofo_entry_set_tiers( entry, tiers );
-				}
-			}
-
-			/* notes */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( my_strlen( cstr )){
-				ofo_entry_set_notes( entry, cstr );
-			}
-
-			/* last update user */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( my_strlen( cstr )){
-				entry_set_upd_user( entry, cstr );
-			}
-
-			/* last update timestamp */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( my_strlen( cstr )){
-				my_stamp_set_from_sql( &stamp, cstr );
-				entry_set_upd_stamp( entry, &stamp );
-			}
-
-			/* period indicator */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( my_strlen( cstr )){
-				ofa_box_set_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD, cstr );
-			}
-
-			/* status (ignored) */
-			itf = itf ? itf->next : NULL;
-
-			/* entry rule */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( my_strlen( cstr )){
-				ofa_box_set_string( OFO_BASE( entry )->prot->fields, ENT_RULE, cstr );
-			}
-
-			/* settlement (number or True)
-			 * do not allocate a settlement number from the dossier here
-			 * in case where the entries import would not be inserted */
-			itf = itf ? itf->next : NULL;
-			cstr = itf ? ( const gchar * ) itf->data : NULL;
-			if( my_strlen( cstr ) && ofo_account_is_settleable( account )){
-				counter = atol( cstr );
-				if( counter ){
-					entry_set_import_settled( entry, TRUE );
-				} else {
-					entry_set_import_settled( entry, my_utils_boolean_from_str( cstr ));
-				}
-			}
-
-			/* settlement user (ignored) */
-			itf = itf ? itf->next : NULL;
-
-			/* settlement timestamp (ignored) */
-			itf = itf ? itf->next : NULL;
+			cur_object = iimportable_import_by_date( importer, parms, dossier, entry, numline, itf );
 		}
 
 		/* what to do regarding the effect date ?
@@ -4128,6 +3895,415 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	ofs_currency_list_free( &fut );
 
 	return( dataset );
+}
+
+static ofoCurrency *
+iimportable_import_by_date( ofaIImporter *importer, ofsImporterParms *parms, ofoDossier *dossier, ofoEntry *entry, guint numline, GSList *itf )
+{
+	static const gchar *thisfn = "ofo_entry_iimportable_import_by_date";
+	const gchar *cstr;
+	myDateFormat date_format;
+	GDate date;
+	gchar *str;
+	ofoAccount *account;
+	ofoCurrency *cur_object;
+	ofoLedger *ledger;
+	ofxAmount debit, credit;
+
+	cur_object = NULL;
+	date_format = ofa_stream_format_get_date_format( parms->format );
+
+	/* effect date */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	my_date_set_from_str( &date, cstr, date_format );
+	if( !my_date_is_valid( &date )){
+		str = g_strdup_printf( _( "invalid entry effect date: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	ofo_entry_set_deffect( entry, &date );
+
+	/* entry label */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !my_strlen( cstr )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty entry label" ));
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	ofo_entry_set_label( entry, cstr );
+
+	/* entry piece's reference - may be empty */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofo_entry_set_ref( entry, cstr );
+
+	/* entry currency (ignored) */
+	itf = itf ? itf->next : NULL;
+
+	/* ledger - default is from the dossier */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !my_strlen( cstr )){
+		str = g_strdup( ofo_dossier_get_import_ledger( dossier ));
+		if( !my_strlen( str )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "dossier is missing a default import ledger" ));
+			parms->parse_errs += 1;
+			return( NULL );
+		}
+	}
+	ledger = ofo_ledger_get_by_mnemo( parms->getter, cstr );
+	if( !ledger ){
+		str = g_strdup_printf( _( "entry ledger not found: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	ofo_entry_set_ledger( entry, cstr );
+
+	/* entry ope.template (optional) */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_entry_set_ope_template( entry, cstr );
+	}
+
+	/* entry account */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !my_strlen( cstr )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty entry account" ));
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	account = ofo_account_get_by_number( parms->getter, cstr );
+	if( !account ){
+		str = g_strdup_printf( _( "entry account not found: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	if( ofo_account_is_root( account )){
+		str = g_strdup_printf( _( "entry account is a root account: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	if( ofo_account_is_closed( account )){
+		str = g_strdup_printf( _( "entry account is closed: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	ofo_entry_set_account( entry, cstr );
+
+	cstr = ofo_account_get_currency( account );
+	cur_object = ofo_currency_get_by_code( parms->getter, cstr );
+	if( !cur_object ){
+		str = g_strdup_printf( _( "unregistered currency: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	ofo_entry_set_currency( entry, cstr );
+
+	/* debit */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	debit = my_double_set_from_csv( cstr, ofa_stream_format_get_decimal_sep( parms->format ));
+
+	/* credit */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	credit = my_double_set_from_csv( cstr, ofa_stream_format_get_decimal_sep( parms->format ));
+
+	if( 0 ){
+		g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );
+	}
+	if(( debit && !credit ) || ( !debit && credit )){
+		ofo_entry_set_debit( entry, debit );
+		ofo_entry_set_credit( entry, credit );
+	} else {
+		str = g_strdup_printf(
+				_( "invalid entry amounts: debit=%'.5lf, credit=%'.5lf" ), debit, credit );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+
+	return( cur_object );
+}
+
+static ofoCurrency *
+iimportable_import_by_version( ofaIImporter *importer, ofsImporterParms *parms, ofoDossier *dossier, ofoEntry *entry, guint numline, GSList *itf )
+{
+	static const gchar *thisfn = "ofo_entry_iimportable_import_by_version";
+	const gchar *cstr;
+	ofxCounter counter, tiers;
+	myDateFormat date_format;
+	GDate date;
+	gchar *str, *currency;
+	ofoAccount *account;
+	ofoCurrency *cur_object;
+	ofoLedger *ledger;
+	ofxAmount debit, credit;
+	GTimeVal stamp;
+
+	cur_object = NULL;
+	date_format = ofa_stream_format_get_date_format( parms->format );
+
+	/* conciliation group */
+	iimportable_import_concil( importer, parms, entry, &itf );
+
+	/* entry number (ignored) */
+	itf = itf ? itf->next : NULL;
+
+	/* creation user (ignored) */
+	itf = itf ? itf->next : NULL;
+
+	/* creation timestamp (ignored) */
+	itf = itf ? itf->next : NULL;
+
+	/* operation template - optional */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofo_entry_set_ope_template( entry, cstr );
+
+	/* format >= 1: operation number */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	counter = my_strlen( cstr ) ? atol( cstr ) : 0;
+	if( counter ){
+		ofo_entry_set_ope_number( entry, counter );
+	}
+
+	/* operation date */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	my_date_set_from_str( &date, cstr, date_format );
+	if( !my_date_is_valid( &date )){
+		str = g_strdup_printf( _( "invalid entry operation date: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	ofo_entry_set_dope( entry, &date );
+
+	/* effect date */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	my_date_set_from_str( &date, cstr, date_format );
+	if( !my_date_is_valid( &date )){
+		str = g_strdup_printf( _( "invalid entry effect date: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	ofo_entry_set_deffect( entry, &date );
+
+	/* entry label */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !my_strlen( cstr )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty entry label" ));
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	ofo_entry_set_label( entry, cstr );
+
+	/* entry piece's reference - may be empty */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofo_entry_set_ref( entry, cstr );
+
+	/* entry account */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !my_strlen( cstr )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty entry account" ));
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	account = ofo_account_get_by_number( parms->getter, cstr );
+	if( !account ){
+		str = g_strdup_printf( _( "entry account not found: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	if( ofo_account_is_root( account )){
+		str = g_strdup_printf( _( "entry account is a root account: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	if( ofo_account_is_closed( account )){
+		str = g_strdup_printf( _( "entry account is closed: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	ofo_entry_set_account( entry, cstr );
+
+	/* entry currency - a default is provided by the account
+	 *  so check and set is pushed back after having read it */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	currency = g_strdup( cstr );
+
+	cstr = ofo_account_get_currency( account );
+	if( !my_strlen( currency )){
+		g_free( currency );
+		currency = g_strdup( cstr );
+	} else if( my_collate( currency, cstr )){
+		str = g_strdup_printf(
+				_( "entry currency: %s is not the same than those of the account: %s" ),
+				currency, cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	cur_object = ofo_currency_get_by_code( parms->getter, currency );
+	if( !cur_object ){
+		str = g_strdup_printf( _( "unregistered currency: %s" ), currency );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	ofo_entry_set_currency( entry, currency );
+
+	/* ledger - default is from the dossier */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !my_strlen( cstr )){
+		str = g_strdup( ofo_dossier_get_import_ledger( dossier ));
+		if( !my_strlen( str )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "dossier is missing a default import ledger" ));
+			parms->parse_errs += 1;
+			return( NULL );
+		}
+	}
+	ledger = ofo_ledger_get_by_mnemo( parms->getter, cstr );
+	if( !ledger ){
+		str = g_strdup_printf( _( "entry ledger not found: %s" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+	ofo_entry_set_ledger( entry, cstr );
+
+	/* debit */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	debit = my_double_set_from_csv( cstr, ofa_stream_format_get_decimal_sep( parms->format ));
+
+	/* credit */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	credit = my_double_set_from_csv( cstr, ofa_stream_format_get_decimal_sep( parms->format ));
+
+	if( 0 ){
+		g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );
+	}
+	if(( debit && !credit ) || ( !debit && credit )){
+		ofo_entry_set_debit( entry, debit );
+		ofo_entry_set_credit( entry, credit );
+	} else {
+		str = g_strdup_printf(
+				_( "invalid entry amounts: debit=%'.5lf, credit=%'.5lf" ), debit, credit );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		g_free( str );
+		parms->parse_errs += 1;
+		return( NULL );
+	}
+
+	/* tiers */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		tiers = atol( cstr );
+		if( tiers > 0 ){
+			ofo_entry_set_tiers( entry, tiers );
+		}
+	}
+
+	/* notes */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_entry_set_notes( entry, cstr );
+	}
+
+	/* last update user */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		entry_set_upd_user( entry, cstr );
+	}
+
+	/* last update timestamp */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		my_stamp_set_from_sql( &stamp, cstr );
+		entry_set_upd_stamp( entry, &stamp );
+	}
+
+	/* period indicator */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofa_box_set_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD, cstr );
+	}
+
+	/* status (ignored) */
+	itf = itf ? itf->next : NULL;
+
+	/* entry rule */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofa_box_set_string( OFO_BASE( entry )->prot->fields, ENT_RULE, cstr );
+	}
+
+	/* settlement (number or True)
+	 * do not allocate a settlement number from the dossier here
+	 * in case where the entries import would not be inserted */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr ) && ofo_account_is_settleable( account )){
+		counter = atol( cstr );
+		if( counter ){
+			entry_set_import_settled( entry, TRUE );
+		} else {
+			entry_set_import_settled( entry, my_utils_boolean_from_str( cstr ));
+		}
+	}
+
+	/* settlement user (ignored) */
+	itf = itf ? itf->next : NULL;
+
+	/* settlement timestamp (ignored) */
+	itf = itf ? itf->next : NULL;
+
+	return( cur_object );
 }
 
 /*
