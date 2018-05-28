@@ -20,6 +20,7 @@
 
    - ofaRecurrentModel: unselect all before creating a new one (todo #1532).
    - ofoAccount: restore v1 export version for annual accountings needs (todo #1533).
+   - docs: add 'Attestation de conformité' (fr) for PWI Consultants.
 
  Bug fixes:
 
