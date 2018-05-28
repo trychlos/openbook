@@ -382,7 +382,19 @@
                 reconciliation is opened
      2018- 2-22 cannot reproduce
 
-1535
+1535 2018- 5-10 ExerciceClosing: on Esc, the assistant still checks DBMS
+                integrity and balances, but should not
+
+1536 2018- 5-27 Check for recurent models integrity: 57/81
+
+1537 2018- 5-27 Check for VAT forms integrity: 60/5
+
+1538 2018- 5-27 why the Boursorama 2014 didn't been purged on last exercice closing ?
+
+1539 2018- 5-27 Treeview of unsettled entries is not updated when settle two entries
+                in the settlement page
+
+1541
 
 -----------------------------------------------------------------------
  DONE
@@ -414,6 +426,9 @@
                 #4  0x00007ffff7ade0f5 in iimportable_import_parse (lines=<optimized out>, parms=0x7fffffffd9c0, importer=0x91b850) at ../../../src/core/ofo-entry.c:4059
                 (openbook:23243): OFA-CRITICAL **: entry_compute_status: assertion 'my_date_is_valid( deffect )' failed
      2018- 3-15 fixed
+
+1540 2018- 5-27 Line too long when importing a BAT file
+     2018- 5-28 Increase BAT_LINE_LABEL column size to 1024
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

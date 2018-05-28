@@ -16,6 +16,10 @@
  Total lines count: 
  maintainer/run-distcheck.sh: 
 
+ CORE DB Model v39
+
+   - OFAT_T_BAT_LINES: increase the BAT_LINE_LABEL column size to 1024 (todo #1540).
+
  New features and improvements:
 
    - ofaRecurrentModel: unselect all before creating a new one (todo #1532).

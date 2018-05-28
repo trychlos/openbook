@@ -139,6 +139,8 @@ static gboolean dbmodel_v37( ofaMysqlDBModel *self, gint version );
 static gulong   count_v37( ofaMysqlDBModel *self );
 static gboolean dbmodel_v38( ofaMysqlDBModel *self, gint version );
 static gulong   count_v38( ofaMysqlDBModel *self );
+static gboolean dbmodel_v39( ofaMysqlDBModel *self, gint version );
+static gulong   count_v39( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -160,6 +162,7 @@ static sMigration st_migrates[] = {
 		{ 36, dbmodel_v36, count_v36 },
 		{ 37, dbmodel_v37, count_v37 },
 		{ 38, dbmodel_v38, count_v38 },
+		{ 39, dbmodel_v39, count_v39 },
 		{ 0 }
 };
 
@@ -584,6 +587,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* BAT_LINE_UPD_STAMP is remediated in v21 */
 	/* BAT_LINE_ENTRY and BAT_LINE_UPD_USER are remediated in v24 */
 	/* Labels are resized in v28 */
+	/* Labels are resized in v39 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
 			"	BAT_ID             BIGINT   NOT NULL                 COMMENT 'Intern import identifier',"
@@ -2988,4 +2992,36 @@ static gulong
 count_v38( ofaMysqlDBModel *self )
 {
 	return( 28 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v39:
+ *
+ * - Resize BAT_LABEL column
+ */
+static gboolean
+dbmodel_v39( ofaMysqlDBModel *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v39";
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	/* 1 */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_BAT_LINES "
+			"	MODIFY COLUMN BAT_LINE_LABEL    VARCHAR(1024)            COMMENT 'Line label'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v39( ofaMysqlDBModel *self )
+{
+	return( 1 );
 }
