@@ -22,12 +22,14 @@
 
  New features and improvements:
 
+   - ofaExerciceCloseAssistant: check that current rough soldes are zero.
    - ofaRecurrentModel: unselect all before creating a new one (todo #1532).
    - ofoAccount: restore v1 export version for annual accountings needs (todo #1533).
    - docs: add 'Attestation de conformité' (fr) for PWI Consultants.
 
  Bug fixes:
 
+   - ofaAccountStore: global balance takes into account both current and future, rough and validated entries.
    - ofoEntry: import generated ODs (todo #1534).
 
  Other changes:

@@ -806,7 +806,7 @@ ofo_entry_get_dataset_for_print_reconcil( ofaIGetter *getter,
 
 /**
  * ofo_entry_get_dataset_for_exercice_by_status:
- * @hub: the current #ofaHub object.
+ * @getter: the #ofaIGetterr instance of the application.
  * @status: the requested status, or -1 for all status.
  *
  * Returns the dataset of entries on the exercice of the specified

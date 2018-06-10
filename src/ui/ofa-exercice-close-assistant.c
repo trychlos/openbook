@@ -39,6 +39,7 @@
 #include "my/my-stamp.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
@@ -1157,7 +1158,7 @@ p6_solde_accounts( ofaExerciceCloseAssistant *self )
 }
 
 /*
- * Balance the detail accounts with for validated soldes.
+ * Balance the detail accounts with validated soldes.
  * As all remaining rough entries have been previously validated, the
  * accounts rough balances should be zero.
  *
@@ -1185,6 +1186,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofoEntry *entry;
 	ofoCurrency *cur_obj;
 	ofsCurrency *scur;
+	ofxAmount amount;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1216,10 +1218,26 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	for( it=accounts ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
+		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), errors );
 
-		/* setup ofsCurrency */
+		acc_number = ofo_account_get_number( account );
 		acc_cur = ofo_account_get_currency( account );
 		cur_obj = ofo_currency_get_by_code( priv->getter, acc_cur );
+		g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), errors );
+
+		/* check that rough soldes are zero */
+		amount = ofo_account_get_current_rough_debit( account );
+		if( !ofa_amount_is_zero( amount, cur_obj )){
+			g_warning( "%s: account=%s current_rough_debit=%lf (should be zero)",
+					thisfn, acc_number, amount );
+		}
+		amount = ofo_account_get_current_rough_credit( account );
+		if( !ofa_amount_is_zero( amount, cur_obj )){
+			g_warning( "%s: account=%s current_rough_credit=%lf (should be zero)",
+					thisfn, acc_number, amount );
+		}
+
+		/* setup ofsCurrency */
 		scur = g_new0( ofsCurrency, 1 );
 		scur->currency = cur_obj;
 		scur->debit = ofo_account_get_current_val_debit( account );
@@ -1227,7 +1245,6 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 		if( !ofs_currency_is_balanced( scur )){
 
-			acc_number = ofo_account_get_number( account );
 			sld_entries = NULL;
 			for_entries = NULL;
 			counter = 0;
@@ -1660,7 +1677,7 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 
-	/* archive deleted (non-reported) entries
+	/* archive deleted (non-forwarded) entries
 	 * or
 	 * keep and report:
 	 *  - unsettled entries on settleable accounts (all periods, but deleted)
@@ -1835,8 +1852,10 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	 */
 	if( ok ){
 		query = g_strdup( "UPDATE OFA_T_ACCOUNTS SET "
+					"ACC_CR_DEBIT=0, ACC_CR_CREDIT=0, "
 					"ACC_CV_DEBIT=0, ACC_CV_CREDIT=0, "
-					"ACC_CV_DEBIT=0, ACC_CV_CREDIT=0" );
+					"ACC_FR_DEBIT=0, ACC_FR_CREDIT=0, "
+					"ACC_FV_DEBIT=0, ACC_FV_CREDIT=0" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
@@ -1844,7 +1863,9 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	if( ok ){
 		query = g_strdup( "UPDATE OFA_T_LEDGERS_CUR SET "
 					"LED_CUR_CR_DEBIT=0, LED_CUR_CR_CREDIT=0, "
-					"LED_CUR_CV_DEBIT=0, LED_CUR_CV_CREDIT=0" );
+					"LED_CUR_CV_DEBIT=0, LED_CUR_CV_CREDIT=0, "
+					"LED_CUR_FR_DEBIT=0, LED_CUR_FR_CREDIT=0, "
+					"LED_CUR_FV_DEBIT=0, LED_CUR_FV_CREDIT=0" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
@@ -2031,8 +2052,8 @@ p6_archive_opening_account_soldes( ofaExerciceCloseAssistant *self )
 }
 
 /*
- * take the ex-future entries, bringing them up in the new exercice
- * if appropriate
+ * take the entries of this new exercice (which were marked as 'future',
+ * and mark them as 'current', updating accounts and ledgers accordingly.
  */
 static gboolean
 p6_future_to_current( ofaExerciceCloseAssistant *self )
