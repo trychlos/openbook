@@ -4854,12 +4854,12 @@ signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry
 	getter = ofa_isignaler_get_getter( signaler );
 	hub = ofa_igetter_get_hub( getter );
 
-	if( new_period != -1 ){
+	if( prev_period != -1 && new_period != -1 && ofo_entry_get_period( entry ) == prev_period ){
 		entry_set_period( entry, new_period );
 	}
 	cperiod = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD );
 
-	if( new_status != -1 ){
+	if( prev_status != -1 && new_status != -1 && ofo_entry_get_status( entry ) == prev_status ){
 		entry_set_status( entry, new_status );
 	}
 	cstatus = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_STATUS );
