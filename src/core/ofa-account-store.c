@@ -321,7 +321,7 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 	gchar *crestamp, *updstamp;
 	gchar *svdeb, *svcre, *srdeb, *srcre, *sfdeb, *sfcre, *sedeb, *secre, *sesol;
 	gchar *str;
-	ofxAmount val_debit, val_credit, rough_debit, rough_credit, fut_debit, fut_credit, exe_solde;
+	ofxAmount val_debit, val_credit, rough_debit, rough_credit, fut_debit, fut_credit, exe_debit, exe_credit, exe_solde;
 	GdkPixbuf *notes_png;
 	GError *error;
 
@@ -346,10 +346,13 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 		sfdeb = ofa_amount_to_str( fut_debit, currency_obj, priv->getter );
 		sfcre = ofa_amount_to_str( fut_credit, currency_obj, priv->getter );
 
-		sedeb = ofa_amount_to_str( val_debit+rough_debit+fut_debit, currency_obj, priv->getter );
-		secre = ofa_amount_to_str( val_credit+rough_credit+fut_credit, currency_obj, priv->getter );
+		exe_debit = val_debit + rough_debit + fut_debit;
+		exe_credit = val_credit + rough_credit + fut_credit;
 
-		exe_solde = val_debit-val_credit+rough_debit-rough_credit+fut_debit-fut_credit;
+		sedeb = ofa_amount_to_str( exe_debit, currency_obj, priv->getter );
+		secre = ofa_amount_to_str( exe_credit, currency_obj, priv->getter );
+
+		exe_solde = exe_debit-exe_credit;
 		if( exe_solde >= 0 ){
 			str = ofa_amount_to_str( exe_solde, currency_obj, priv->getter );
 			sesol = g_strdup_printf( _( "%s DB" ), str );

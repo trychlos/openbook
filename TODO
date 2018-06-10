@@ -371,10 +371,10 @@
                 previous, and entering a new amount in first line, second
                 and third VAT lines rightly recompute, but not fourth. Why ?
 
-1526 2018- 1-19 BUG: when reconciliating a line
+1526 2018- 1-19 Segfault when reconciliating a line
      2018- 2-25 cannot reproduce
 
-1527 2018- 1-19 BUG: on reconciliation, open the select BAT window and escape
+1527 2018- 1-19 Segfault on reconciliation, open the select BAT window and escape
                 without selectionning any line
      2018- 2-25 cannot reproduce
 
@@ -391,10 +391,15 @@
 
 1538 2018- 5-27 why the Boursorama 2014 didn't been purged on last exercice closing ?
 
-1539 2018- 5-27 Treeview of unsettled entries is not updated when settle two entries
+1539 2018- 5-27 Treeview of unsettled entries is not updated when settling two entries
                 in the settlement page
 
-1541
+1541 2018- 6- 4 Segfault at end of a restore (when restoring on a new dossier)
+                cf. trash/todo_1541
+
+1542 2018- 6- 4 Balances displayed in the chart of accounts are twice what they should
+
+1543
 
 -----------------------------------------------------------------------
  DONE
