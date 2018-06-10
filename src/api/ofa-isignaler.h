@@ -102,6 +102,7 @@ typedef struct {
 #define SIGNALER_DOSSIER_PERIOD_CLOSING     "ofa-signaler-dossier-period-closing"
 #define SIGNALER_DOSSIER_PERIOD_CLOSED      "ofa-signaler-dossier-period-closed"
 #define SIGNALER_EXERCICE_DATES_CHANGED     "ofa-signaler-exercice-dates-changed"
+#define SIGNALER_EXERCICE_RECOMPUTE         "ofa-signaler-exercice-recompute"
 #define SIGNALER_CHANGE_COUNT               "ofa-signaler-entry-change-count"
 #define SIGNALER_PERIOD_STATUS_CHANGE       "ofa-signaler-entry-period-status-change"
 

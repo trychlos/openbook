@@ -58,6 +58,7 @@ enum {
 	PERIOD_CLOSING,
 	PERIOD_CLOSED,
 	EXE_DATES_CHANGED,
+	EXE_RECOMPUTE,
 	STATUS_COUNT,
 	STATUS_CHANGE,
 
@@ -376,6 +377,54 @@ interface_base_init( ofaISignalerInterface *klass )
 					G_TYPE_STRING );
 
 		/**
+		 * ofaISignaler::ofa-signaler-exercice-dates-changed:
+		 *
+		 * Beginning and or ending exercice dates of the dossier have
+		 * been modified.
+		 *
+		 * Handler is of type:
+		 * 		void user_handler( ofaISignaler *signaler
+		 * 							const GDate *prev_begin,
+		 * 							const GDate *prev_end,
+		 * 							gpointer     user_data );
+		 */
+		st_signals[ EXE_DATES_CHANGED ] = g_signal_new_class_handler(
+					SIGNALER_EXERCICE_DATES_CHANGED,
+					OFA_TYPE_ISIGNALER,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					2,
+					G_TYPE_POINTER, G_TYPE_POINTER );
+
+		/**
+		 * ofaISignaler::ofa-signaler-exercice-recompute:
+		 *
+		 * Recompute account and ledger balances on new exercice opening.
+		 * This signal expects that all account and ledger balances have
+		 * been previously zeroed.
+		 *
+		 * Handler is of type:
+		 * 		void user_handler( ofaISignaler *signaler
+		 * 							ofoEntry    *entry,
+		 * 							gpointer     user_data );
+		 */
+		st_signals[ EXE_RECOMPUTE ] = g_signal_new_class_handler(
+					SIGNALER_EXERCICE_RECOMPUTE,
+					OFA_TYPE_ISIGNALER,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					1,
+					G_TYPE_POINTER );
+
+		/**
 		 * ofaISignaler::ofa-signaler-dossier-period-closing:
 		 * @closing_ind: an indicator of the period being closed.
 		 * @closing_date: the closing date.
@@ -438,30 +487,6 @@ interface_base_init( ofaISignalerInterface *klass )
 					G_TYPE_NONE,
 					2,
 					G_TYPE_UINT, G_TYPE_POINTER );
-
-		/**
-		 * ofaISignaler::ofa-signaler-exercice-dates-changed:
-		 *
-		 * Beginning and or ending exercice dates of the dossier have
-		 * been modified.
-		 *
-		 * Handler is of type:
-		 * 		void user_handler( ofaISignaler *signaler
-		 * 							const GDate *prev_begin,
-		 * 							const GDate *prev_end,
-		 * 							gpointer     user_data );
-		 */
-		st_signals[ EXE_DATES_CHANGED ] = g_signal_new_class_handler(
-					SIGNALER_EXERCICE_DATES_CHANGED,
-					OFA_TYPE_ISIGNALER,
-					G_SIGNAL_RUN_LAST,
-					NULL,
-					NULL,								/* accumulator */
-					NULL,								/* accumulator data */
-					NULL,
-					G_TYPE_NONE,
-					2,
-					G_TYPE_POINTER, G_TYPE_POINTER );
 
 		/**
 		 * ofaISignaler::ofa-signaler-entry-change-count:
