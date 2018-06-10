@@ -1035,7 +1035,7 @@ p6_close_windows( ofaExerciceCloseAssistant *self )
 	/* before beginning with all the actions needed to close a financial
 	 * period, close the pages which may be opened at this time: this has
 	 * two benefits:
-	 * - do not disturb the user with a dimultaneous display
+	 * - do not disturb the user with any simultaneous display
 	 * - gain in performances due to not updating the UI
 	 */
 	my_iwindow_set_allow_close( MY_IWINDOW( self ), FALSE );
