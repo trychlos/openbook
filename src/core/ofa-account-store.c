@@ -75,8 +75,9 @@ static GType st_col_types[ACCOUNT_N_COLUMNS] = {
 	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* keep_unreconciliated, forwardable, closed */
 	G_TYPE_STRING,  0,              G_TYPE_STRING,		/* notes, notes_png, upd_user */
 	G_TYPE_STRING,										/* upd_stamp */
-	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* val_debit, val_credit, rough_debit */
-	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* rough_credit, fut_debit, fut_credit */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* cur_rough_debit, cur_rough_credit, cur_val_debit */
+	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING,		/* cur_val_credit, fut_rough_debit, fut_rough_credit */
+	G_TYPE_STRING,  G_TYPE_STRING,						/* fut_val_debit, fut_val_credit */
 	G_TYPE_STRING,  G_TYPE_STRING,  G_TYPE_STRING, 		/* exe_debit, exe_credit, exe_solde */
 	G_TYPE_OBJECT										/* the #ofoAccount itself */
 };
@@ -293,10 +294,13 @@ tree_store_v_load_dataset( ofaTreeStore *store )
 static void
 insert_row( ofaAccountStore *self, const ofoAccount *account )
 {
+	static const gchar *thisfn = "ofa_account_store_insert_row";
 	GtkTreeIter parent_iter, iter;
 	gboolean parent_found;
 
 	parent_found = find_parent_iter( self, account, &parent_iter );
+
+	g_debug( "%s: number=%s", thisfn, ofo_account_get_number( account ));
 
 	gtk_tree_store_insert_with_values(
 			GTK_TREE_STORE( self ),
@@ -319,9 +323,11 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 	const gchar *currency_code, *notes;
 	ofoCurrency *currency_obj;
 	gchar *crestamp, *updstamp;
-	gchar *svdeb, *svcre, *srdeb, *srcre, *sfdeb, *sfcre, *sedeb, *secre, *sesol;
+	gchar *scrdeb, *scrcre, *scvdeb, *scvcre, *sfrdeb, *sfrcre, *sfvdeb, *sfvcre, *sedeb, *secre, *sesol;
 	gchar *str;
-	ofxAmount val_debit, val_credit, rough_debit, rough_credit, fut_debit, fut_credit, exe_debit, exe_credit, exe_solde;
+	ofxAmount crough_debit, crough_credit, cval_debit, cval_credit;
+	ofxAmount frough_debit, frough_credit, fval_debit, fval_credit;
+	ofxAmount exe_debit, exe_credit, exe_solde;
 	GdkPixbuf *notes_png;
 	GError *error;
 
@@ -332,27 +338,31 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 		currency_obj = ofo_currency_get_by_code( priv->getter, currency_code );
 		g_return_if_fail( currency_obj && OFO_IS_CURRENCY( currency_obj ));
 
-		val_debit = ofo_account_get_current_val_debit( account );
-		val_credit = ofo_account_get_current_val_credit( account );
-		rough_debit = ofo_account_get_current_rough_debit( account );
-		rough_credit = ofo_account_get_current_rough_credit( account );
-		fut_debit = ofo_account_get_futur_rough_debit( account );
-		fut_credit = ofo_account_get_futur_rough_credit( account );
+		crough_debit = ofo_account_get_current_rough_debit( account );
+		crough_credit = ofo_account_get_current_rough_credit( account );
+		cval_debit = ofo_account_get_current_val_debit( account );
+		cval_credit = ofo_account_get_current_val_credit( account );
+		frough_debit = ofo_account_get_futur_rough_debit( account );
+		frough_credit = ofo_account_get_futur_rough_credit( account );
+		fval_debit = ofo_account_get_futur_val_debit( account );
+		fval_credit = ofo_account_get_futur_val_credit( account );
 
-		svdeb = ofa_amount_to_str( val_debit, currency_obj, priv->getter );
-		svcre = ofa_amount_to_str( val_credit, currency_obj, priv->getter );
-		srdeb = ofa_amount_to_str( rough_debit, currency_obj, priv->getter );
-		srcre = ofa_amount_to_str( rough_credit, currency_obj, priv->getter );
-		sfdeb = ofa_amount_to_str( fut_debit, currency_obj, priv->getter );
-		sfcre = ofa_amount_to_str( fut_credit, currency_obj, priv->getter );
+		scrdeb = ofa_amount_to_str( crough_debit, currency_obj, priv->getter );
+		scrcre = ofa_amount_to_str( crough_credit, currency_obj, priv->getter );
+		scvdeb = ofa_amount_to_str( cval_debit, currency_obj, priv->getter );
+		scvcre = ofa_amount_to_str( cval_credit, currency_obj, priv->getter );
+		sfrdeb = ofa_amount_to_str( frough_debit, currency_obj, priv->getter );
+		sfrcre = ofa_amount_to_str( frough_credit, currency_obj, priv->getter );
+		sfvdeb = ofa_amount_to_str( fval_debit, currency_obj, priv->getter );
+		sfvcre = ofa_amount_to_str( fval_credit, currency_obj, priv->getter );
 
-		exe_debit = val_debit + rough_debit + fut_debit;
-		exe_credit = val_credit + rough_credit + fut_credit;
+		exe_debit = crough_debit + cval_debit + frough_debit + fval_debit;
+		exe_credit = crough_credit + cval_credit + frough_credit + fval_credit;
 
 		sedeb = ofa_amount_to_str( exe_debit, currency_obj, priv->getter );
 		secre = ofa_amount_to_str( exe_credit, currency_obj, priv->getter );
+		exe_solde = exe_debit - exe_credit;
 
-		exe_solde = exe_debit-exe_credit;
 		if( exe_solde >= 0 ){
 			str = ofa_amount_to_str( exe_solde, currency_obj, priv->getter );
 			sesol = g_strdup_printf( _( "%s DB" ), str );
@@ -363,12 +373,14 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 		g_free( str );
 
 	} else {
-		svdeb = g_strdup( "" );
-		svcre = g_strdup( "" );
-		srdeb = g_strdup( "" );
-		srcre = g_strdup( "" );
-		sfdeb = g_strdup( "" );
-		sfcre = g_strdup( "" );
+		scrdeb = g_strdup( "" );
+		scrcre = g_strdup( "" );
+		scvdeb = g_strdup( "" );
+		scvcre = g_strdup( "" );
+		sfrdeb = g_strdup( "" );
+		sfrcre = g_strdup( "" );
+		sfvdeb = g_strdup( "" );
+		sfvcre = g_strdup( "" );
 		sedeb = g_strdup( "" );
 		secre = g_strdup( "" );
 		sesol = g_strdup( "" );
@@ -402,24 +414,28 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 			ACCOUNT_COL_NOTES_PNG,            notes_png,
 			ACCOUNT_COL_UPD_USER,             ofo_account_get_upd_user( account ),
 			ACCOUNT_COL_UPD_STAMP,            updstamp,
-			ACCOUNT_COL_VAL_DEBIT,            svdeb,
-			ACCOUNT_COL_VAL_CREDIT,           svcre,
-			ACCOUNT_COL_ROUGH_DEBIT,          srdeb,
-			ACCOUNT_COL_ROUGH_CREDIT,         srcre,
-			ACCOUNT_COL_FUT_DEBIT,            sfdeb,
-			ACCOUNT_COL_FUT_CREDIT,           sfcre,
+			ACCOUNT_COL_CROUGH_DEBIT,         scrdeb,
+			ACCOUNT_COL_CROUGH_CREDIT,        scrcre,
+			ACCOUNT_COL_CVAL_DEBIT,           scvdeb,
+			ACCOUNT_COL_CVAL_CREDIT,          scvcre,
+			ACCOUNT_COL_FROUGH_DEBIT,         sfrdeb,
+			ACCOUNT_COL_FROUGH_CREDIT,        sfrcre,
+			ACCOUNT_COL_FVAL_DEBIT,           sfvdeb,
+			ACCOUNT_COL_FVAL_CREDIT,          sfvcre,
 			ACCOUNT_COL_EXE_DEBIT,            sedeb,
 			ACCOUNT_COL_EXE_CREDIT,           secre,
 			ACCOUNT_COL_EXE_SOLDE,            sesol,
 			-1 );
 
 	g_object_unref( notes_png );
-	g_free( svdeb );
-	g_free( svcre );
-	g_free( srdeb );
-	g_free( srcre );
-	g_free( sfdeb );
-	g_free( sfcre );
+	g_free( scrdeb );
+	g_free( scrcre );
+	g_free( scvdeb );
+	g_free( scvcre );
+	g_free( sfrdeb );
+	g_free( sfrcre );
+	g_free( sfvdeb );
+	g_free( sfvcre );
 	g_free( sedeb );
 	g_free( secre );
 	g_free( sesol );

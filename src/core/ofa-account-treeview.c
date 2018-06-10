@@ -437,21 +437,23 @@ setup_columns( ofaAccountTreeview *self )
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), ACCOUNT_COL_LABEL,                _( "Label" ),         NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_CURRENCY,             _( "Currency" ),      NULL );
 	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_SETTLEABLE,           _( "S" ),         _( "Settleable" ));
-	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_KEEP_UNSETTLED,       _( "Kus" ),       _( "Keep unsettled" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_KEEP_UNSETTLED,       _( "KUS" ),       _( "Keep unsettled" ));
 	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_RECONCILIABLE,        _( "R" ),         _( "Reconciliable" ));
-	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_KEEP_UNRECONCILIATED, _( "Kur" ),       _( "Keep unreconciliated" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_KEEP_UNRECONCILIATED, _( "KUR" ),       _( "Keep unreconciliated" ));
 	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_FORWARDABLE,          _( "F" ),         _( "Forwardable" ));
 	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), ACCOUNT_COL_CLOSED,               _( "C" ),         _( "Closed" ));
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), ACCOUNT_COL_NOTES,                _( "Notes" ),         NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), ACCOUNT_COL_NOTES_PNG,               "",            _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_UPD_USER,             _( "Upd.user" ),  _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ACCOUNT_COL_UPD_STAMP,            _( "Upd.stamp" ), _( "Last update timestamp" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_VAL_DEBIT,            _( "Debit" ),     _( "Validated debit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_VAL_CREDIT,           _( "Credit" ),    _( "Validated credit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_ROUGH_DEBIT,          _( "Debit" ),     _( "Rough debit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_ROUGH_CREDIT,         _( "Credit" ),    _( "Rough credit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FUT_DEBIT,            _( "Debit" ),     _( "Future debit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FUT_CREDIT,           _( "Credit" ),    _( "Future credit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_CROUGH_DEBIT,         _( "Debit" ),     _( "Current rough debit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_CROUGH_CREDIT,        _( "Credit" ),    _( "Current rough credit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_CVAL_DEBIT,           _( "Debit" ),     _( "Current validated debit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_CVAL_CREDIT,          _( "Credit" ),    _( "Current validated credit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FROUGH_DEBIT,         _( "Debit" ),     _( "Future rough debit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FROUGH_CREDIT,        _( "Credit" ),    _( "Future rough credit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FVAL_DEBIT,           _( "Debit" ),     _( "Future validated debit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FVAL_CREDIT,          _( "Credit" ),    _( "Future validated credit" ));
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_DEBIT,            _( "Debit" ),     _( "Exercice debit" ));
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_CREDIT,           _( "Credit" ),    _( "Exercice credit" ));
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_SOLDE,            _( "Solde" ),     _( "Exercice solde" ));
@@ -459,11 +461,13 @@ setup_columns( ofaAccountTreeview *self )
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ACCOUNT_COL_LABEL );
 
 	ofa_itvcolumnable_twins_group_new(
-			OFA_ITVCOLUMNABLE( self ), "val", ACCOUNT_COL_VAL_DEBIT, ACCOUNT_COL_VAL_CREDIT, -1 );
+			OFA_ITVCOLUMNABLE( self ), "crough", ACCOUNT_COL_CROUGH_DEBIT, ACCOUNT_COL_CROUGH_CREDIT, -1 );
 	ofa_itvcolumnable_twins_group_new(
-			OFA_ITVCOLUMNABLE( self ), "rough", ACCOUNT_COL_ROUGH_DEBIT, ACCOUNT_COL_ROUGH_CREDIT, -1 );
+			OFA_ITVCOLUMNABLE( self ), "cval", ACCOUNT_COL_CVAL_DEBIT, ACCOUNT_COL_CVAL_CREDIT, -1 );
 	ofa_itvcolumnable_twins_group_new(
-			OFA_ITVCOLUMNABLE( self ), "fut", ACCOUNT_COL_FUT_DEBIT, ACCOUNT_COL_FUT_CREDIT, -1 );
+			OFA_ITVCOLUMNABLE( self ), "frough", ACCOUNT_COL_FROUGH_DEBIT, ACCOUNT_COL_FROUGH_CREDIT, -1 );
+	ofa_itvcolumnable_twins_group_new(
+			OFA_ITVCOLUMNABLE( self ), "fval", ACCOUNT_COL_FVAL_DEBIT, ACCOUNT_COL_FVAL_CREDIT, -1 );
 	ofa_itvcolumnable_twins_group_new(
 			OFA_ITVCOLUMNABLE( self ), "exe", ACCOUNT_COL_EXE_DEBIT, ACCOUNT_COL_EXE_CREDIT, ACCOUNT_COL_EXE_SOLDE, -1 );
 }

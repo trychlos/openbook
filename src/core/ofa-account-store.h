@@ -95,12 +95,14 @@ typedef struct {
  * @ACCOUNT_COL_NOTES_PNG           : notes indicator                          Pixbuf      Yes
  * @ACCOUNT_COL_UPD_USER            : last update user                         String      Yes
  * @ACCOUNT_COL_UPD_STAMP           : last update timestamp                    String      Yes
- * @ACCOUNT_COL_VAL_DEBIT           : validated debit                          String      Yes
- * @ACCOUNT_COL_VAL_CREDIT          : validated credit                         String      Yes
- * @ACCOUNT_COL_ROUGH_DEBIT         : rough debit                              String      Yes
- * @ACCOUNT_COL_ROUGH_CREDIT        : rough credit                             String      Yes
- * @ACCOUNT_COL_FUT_DEBIT           : future debit                             String      Yes
- * @ACCOUNT_COL_FUT_CREDIT          : future credit                            String      Yes
+ * @ACCOUNT_COL_CROUGH_DEBIT        : current rough debit                      String      Yes
+ * @ACCOUNT_COL_CROUGH_CREDIT       : current rough credit                     String      Yes
+ * @ACCOUNT_COL_CVAL_DEBIT          : current validated debit                  String      Yes
+ * @ACCOUNT_COL_CVAL_CREDIT         : current validated credit                 String      Yes
+ * @ACCOUNT_COL_FROUGH_DEBIT        : future rough debit                       String      Yes
+ * @ACCOUNT_COL_FROUGH_CREDIT       : future rough credit                      String      Yes
+ * @ACCOUNT_COL_FVAL_DEBIT          : future validated debit                   String      Yes
+ * @ACCOUNT_COL_FVAL_CREDIT         : future validated credit                  String      Yes
  * @ACCOUNT_COL_EXE_DEBIT           : current (validated+rough) debit          String      Yes
  * @ACCOUNT_COL_EXE_CREDIT          : current (validated+rough) credit         String      Yes
  * @ACCOUNT_COL_EXE_SOLDE           : current solde                            String      Yes
@@ -125,12 +127,14 @@ enum {
 	ACCOUNT_COL_NOTES_PNG,
 	ACCOUNT_COL_UPD_USER,
 	ACCOUNT_COL_UPD_STAMP,
-	ACCOUNT_COL_VAL_DEBIT,
-	ACCOUNT_COL_VAL_CREDIT,
-	ACCOUNT_COL_ROUGH_DEBIT,
-	ACCOUNT_COL_ROUGH_CREDIT,
-	ACCOUNT_COL_FUT_DEBIT,
-	ACCOUNT_COL_FUT_CREDIT,
+	ACCOUNT_COL_CROUGH_DEBIT,
+	ACCOUNT_COL_CROUGH_CREDIT,
+	ACCOUNT_COL_CVAL_DEBIT,
+	ACCOUNT_COL_CVAL_CREDIT,
+	ACCOUNT_COL_FROUGH_DEBIT,
+	ACCOUNT_COL_FROUGH_CREDIT,
+	ACCOUNT_COL_FVAL_DEBIT,
+	ACCOUNT_COL_FVAL_CREDIT,
 	ACCOUNT_COL_EXE_DEBIT,
 	ACCOUNT_COL_EXE_CREDIT,
 	ACCOUNT_COL_EXE_SOLDE,

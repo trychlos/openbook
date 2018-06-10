@@ -394,12 +394,19 @@
 1539 2018- 5-27 Treeview of unsettled entries is not updated when settling two entries
                 in the settlement page
 
-1541 2018- 6- 4 Segfault at end of a restore (when restoring on a new dossier)
+1541 2018- 6- 4 Sigtrap at end of a restore (when restoring on a new dossier)
                 cf. trash/todo_1541
 
 1542 2018- 6- 4 Balances displayed in the chart of accounts are twice what they should
 
-1543
+1543 2018- 6-10 DossierManage: when acting on the database, make sure it is up and running
+                reason: when deleting a dossier while the dbms is down, nothing happens
+                but there is no error message
+
+1544 2018- 6-10 Sigtrap when restoring on the current exercice
+                cf. trash/todo_1544
+
+1545
 
 -----------------------------------------------------------------------
  DONE
