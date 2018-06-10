@@ -350,6 +350,7 @@ static void                signaler_on_new_base_entry( ofaISignaler *signaler, o
 static void                signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static void                signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
 static void                signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryPeriod prev_period, ofeEntryStatus prev_status, ofeEntryPeriod new_period, ofeEntryStatus new_status, void *empty );
+static void                signaler_on_exe_recompute( ofaISignaler *signaler, ofoEntry *entry, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_ACCOUNT_V34, 0,
 		G_ADD_PRIVATE( ofoAccount )
@@ -3779,6 +3780,7 @@ isignalable_connect_to( ofaISignaler *signaler )
 
 	g_signal_connect( signaler, SIGNALER_BASE_IS_DELETABLE, G_CALLBACK( signaler_on_deletable_object ), NULL );
 	g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), NULL );
+	g_signal_connect( signaler, SIGNALER_EXERCICE_RECOMPUTE, G_CALLBACK( signaler_on_exe_recompute ), NULL );
 	g_signal_connect( signaler, SIGNALER_PERIOD_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_period_status_changed ), NULL );
 	g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), NULL );
 }
@@ -4060,6 +4062,58 @@ signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry
 	}
 
 	ofo_account_update_amounts( account );
+}
+
+/*
+ * SIGNALER_EXERCICE_RECOMPUTE signal handler
+ *
+ * After having zeroed all current and future, rough and validated,
+ *  debit and credit account and ledger balances, change a future entry to
+ *  a current one. Status is unchanged.
+ *
+ * We cannot check the period here as the entry handler is called after
+ * this one.
+ */
+static void
+signaler_on_exe_recompute( ofaISignaler *signaler, ofoEntry *entry, void *empty )
+{
+	static const gchar *thisfn = "ofo_account_signaler_on_exe_recompute";
+	ofaIGetter *getter;
+	ofoAccount *account;
+	ofxAmount debit, credit, amount;
+	ofeEntryStatus status;
+
+	g_debug( "%s: signaler=%p, entry=%p, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) entry, ( void * ) empty );
+
+	if( ofo_entry_get_rule( entry ) == ENT_RULE_NORMAL ){
+
+		getter = ofa_isignaler_get_getter( signaler );
+		account = ofo_account_get_by_number( getter, ofo_entry_get_account( entry ));
+		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+
+		status = ofo_entry_get_status( entry );
+		debit = ofo_entry_get_debit( entry );
+		credit = ofo_entry_get_credit( entry );
+
+		switch( status ){
+			case ENT_STATUS_ROUGH:
+				amount = ofo_account_get_current_rough_debit( account );
+				ofo_account_set_current_rough_debit( account, amount+debit );
+				amount = ofo_account_get_current_rough_credit( account );
+				ofo_account_set_current_rough_credit( account, amount+credit );
+				break;
+			case ENT_STATUS_VALIDATED:
+				amount = ofo_account_get_current_val_debit( account );
+				ofo_account_set_current_val_debit( account, amount+debit );
+				amount = ofo_account_get_current_val_credit( account );
+				ofo_account_set_current_val_credit( account, amount+credit );
+				break;
+			default:
+				break;
+		}
+		ofo_account_update_amounts( account );
+	}
 }
 
 /*

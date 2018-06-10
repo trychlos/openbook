@@ -1944,7 +1944,7 @@ isignalable_iface_init( ofaISignalableInterface *iface )
 static void
 isignalable_connect_to( ofaISignaler *signaler )
 {
-	static const gchar *thisfn = "ofo_entry_isignalable_connect_to";
+	static const gchar *thisfn = "ofo_dossier_isignalable_connect_to";
 
 	g_debug( "%s: signaler=%p", thisfn, ( void * ) signaler );
 

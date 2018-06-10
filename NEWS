@@ -30,6 +30,7 @@
  Bug fixes:
 
    - ofaAccountStore: global balance takes into account both current and future, rough and validated entries.
+   - ofaExerciceCloseAssistant: fix the account and ledger soldes computing on new exercice (todo #1542).
    - ofoEntry: import generated ODs (todo #1534).
 
  Other changes:

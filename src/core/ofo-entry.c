@@ -352,11 +352,12 @@ static gboolean     signaler_is_deletable_ledger( ofaISignaler *signaler, ofoLed
 static gboolean     signaler_is_deletable_ope_template( ofaISignaler *signaler, ofoOpeTemplate *template );
 static void         signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, void *empty );
 static void         signaler_on_deleted_entry( ofaISignaler *signaler, ofoEntry *entry );
+static void         signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryPeriod prev_period, ofeEntryStatus prev_status, ofeEntryPeriod new_period, ofeEntryStatus new_status, void *empty );
 static void         signaler_on_exe_dates_changed( ofaISignaler *signaler, const GDate *prev_begin, const GDate *prev_end, void *empty );
 static gint         check_for_changed_begin_exe_dates( ofaIGetter *getter, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
 static gint         check_for_changed_end_exe_dates( ofaIGetter *getter, const GDate *prev_end, const GDate *new_end, gboolean remediate );
 static gint         remediate_status( ofaIGetter *getter, const gchar *where, ofeEntryPeriod new_period );
-static void         signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryPeriod prev_period, ofeEntryStatus prev_status, ofeEntryPeriod new_period, ofeEntryStatus new_status, void *empty );
+static void         signaler_on_exe_recompute( ofaISignaler *signaler, ofoEntry *entry, void *empty );
 static void         signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static void         signaler_on_updated_account_number( ofaISignaler *signaler, const gchar *prev_id, const gchar *number );
 static void         signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
@@ -4457,6 +4458,7 @@ isignalable_connect_to( ofaISignaler *signaler )
 	g_signal_connect( signaler, SIGNALER_BASE_IS_DELETABLE, G_CALLBACK( signaler_on_deletable_object ), NULL );
 	g_signal_connect( signaler, SIGNALER_BASE_DELETED, G_CALLBACK( signaler_on_deleted_base ), NULL );
 	g_signal_connect( signaler, SIGNALER_EXERCICE_DATES_CHANGED, G_CALLBACK( signaler_on_exe_dates_changed ), NULL );
+	g_signal_connect( signaler, SIGNALER_EXERCICE_RECOMPUTE, G_CALLBACK( signaler_on_exe_recompute ), NULL );
 	g_signal_connect( signaler, SIGNALER_PERIOD_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_period_status_changed ), NULL );
 	g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), NULL );
 }
@@ -4597,6 +4599,49 @@ signaler_on_deleted_entry( ofaISignaler *signaler, ofoEntry *entry )
 	if( concil ){
 		ofo_concil_delete( concil );
 	}
+}
+
+/*
+ * SIGNALER_PERIOD_STATUS_CHANGE signal handler
+ */
+static void
+signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry,
+											ofeEntryPeriod prev_period, ofeEntryStatus prev_status,
+											ofeEntryPeriod new_period, ofeEntryStatus new_status,
+											void *empty )
+{
+	static const gchar *thisfn = "ofo_entry_signaler_on_entry_period_status_changed";
+	gchar *query;
+	ofaIGetter *getter;
+	ofaHub *hub;
+	const gchar *cperiod, *cstatus;
+
+	g_debug( "%s: signaler=%p, entry=%p, prev_period=%d, prev_status=%d, new_period=%d, new_status=%d, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) entry,
+			prev_period, prev_status, new_period, new_status, ( void * ) empty );
+
+	getter = ofa_isignaler_get_getter( signaler );
+	hub = ofa_igetter_get_hub( getter );
+
+	if( prev_period != -1 && new_period != -1 && ofo_entry_get_period( entry ) == prev_period ){
+		entry_set_period( entry, new_period );
+	}
+	cperiod = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD );
+
+	if( prev_status != -1 && new_status != -1 && ofo_entry_get_status( entry ) == prev_status ){
+		entry_set_status( entry, new_status );
+	}
+	cstatus = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_STATUS );
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_ENTRIES SET ENT_IPERIOD='%s',ENT_STATUS='%s' WHERE ENT_NUMBER=%ld",
+						cperiod, cstatus, ofo_entry_get_number( entry ));
+
+	if( ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE )){
+		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, entry, NULL );
+	}
+
+	g_free( query );
 }
 
 /*
@@ -4833,46 +4878,46 @@ remediate_status( ofaIGetter *getter, const gchar *where, ofeEntryPeriod new_per
 }
 
 /*
- * SIGNALER_PERIOD_STATUS_CHANGE signal handler
+ * SIGNALER_EXERCICE_RECOMPUTE signal handler
+ *
+ * After having zeroed all current and future, rough and validated,
+ *  debit and credit account and ledger balances, change a future entry to a
+ *  current one. Status is unchanged.
  */
 static void
-signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry,
-											ofeEntryPeriod prev_period, ofeEntryStatus prev_status,
-											ofeEntryPeriod new_period, ofeEntryStatus new_status,
-											void *empty )
+signaler_on_exe_recompute( ofaISignaler *signaler, ofoEntry *entry, void *empty )
 {
-	static const gchar *thisfn = "ofo_entry_signaler_on_entry_period_status_changed";
+	static const gchar *thisfn = "ofo_entry_signaler_on_exe_recompute";
 	gchar *query;
 	ofaIGetter *getter;
 	ofaHub *hub;
-	const gchar *cperiod, *cstatus;
+	ofeEntryPeriod period;
+	const gchar *cperiod;
 
-	g_debug( "%s: signaler=%p, entry=%p, prev_period=%d, prev_status=%d, new_period=%d, new_status=%d, empty=%p",
-			thisfn, ( void * ) signaler, ( void * ) entry,
-			prev_period, prev_status, new_period, new_status, ( void * ) empty );
+	g_debug( "%s: signaler=%p, entry=%p, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) entry, ( void * ) empty );
 
-	getter = ofa_isignaler_get_getter( signaler );
-	hub = ofa_igetter_get_hub( getter );
+	if( ofo_entry_get_rule( entry ) == ENT_RULE_NORMAL ){
 
-	if( prev_period != -1 && new_period != -1 && ofo_entry_get_period( entry ) == prev_period ){
-		entry_set_period( entry, new_period );
+		getter = ofa_isignaler_get_getter( signaler );
+		hub = ofa_igetter_get_hub( getter );
+
+		period = ofo_entry_get_period( entry );
+		g_return_if_fail( period == ENT_PERIOD_FUTURE );
+
+		entry_set_period( entry, ENT_PERIOD_CURRENT );
+		cperiod = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD );
+
+		query = g_strdup_printf(
+						"UPDATE OFA_T_ENTRIES SET ENT_IPERIOD='%s' WHERE ENT_NUMBER=%ld",
+							cperiod, ofo_entry_get_number( entry ));
+
+		if( ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE )){
+			g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, entry, NULL );
+		}
+
+		g_free( query );
 	}
-	cperiod = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_IPERIOD );
-
-	if( prev_status != -1 && new_status != -1 && ofo_entry_get_status( entry ) == prev_status ){
-		entry_set_status( entry, new_status );
-	}
-	cstatus = ofa_box_get_string( OFO_BASE( entry )->prot->fields, ENT_STATUS );
-
-	query = g_strdup_printf(
-					"UPDATE OFA_T_ENTRIES SET ENT_IPERIOD='%s',ENT_STATUS='%s' WHERE ENT_NUMBER=%ld",
-						cperiod, cstatus, ofo_entry_get_number( entry ));
-
-	if( ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE )){
-		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, entry, NULL );
-	}
-
-	g_free( query );
 }
 
 /*

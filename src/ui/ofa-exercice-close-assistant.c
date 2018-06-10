@@ -2083,12 +2083,14 @@ p6_future_to_current( ofaExerciceCloseAssistant *self )
 		entry = OFO_ENTRY( it->data );
 		ent_deffect = ofo_entry_get_deffect( entry );
 		g_return_val_if_fail( my_date_compare( ent_deffect, dos_dend ) <= 0, G_SOURCE_REMOVE );
-		g_signal_emit_by_name( signaler, SIGNALER_PERIOD_STATUS_CHANGE, entry, ENT_PERIOD_FUTURE, -1, ENT_PERIOD_CURRENT, -1 );
+		g_signal_emit_by_name( signaler, SIGNALER_EXERCICE_RECOMPUTE, entry );
 		update_bar( bar, &i, count, thisfn );
 	}
 	if( count == 0 ){
 		g_signal_emit_by_name( bar, "my-text", "0/0" );
 	}
+
+	ofo_entry_free_dataset( entries );
 
 	gtk_widget_show_all( GTK_WIDGET( bar ));
 	g_idle_add(( GSourceFunc ) p6_plugin_opening, self );

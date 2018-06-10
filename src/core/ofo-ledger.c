@@ -292,6 +292,7 @@ static gboolean   signaler_is_deletable_currency( ofaISignaler *signaler, ofoCur
 static void       signaler_on_new_base( ofaISignaler *signaler, ofoBase *object, void *empty );
 static void       signaler_on_new_ledger_entry( ofaISignaler *signaler, ofoEntry *entry );
 static void       signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry, ofeEntryPeriod prev_period, ofeEntryStatus prev_status, ofeEntryPeriod new_period, ofeEntryStatus new_status, void *empty );
+static void       signaler_on_exe_recompute( ofaISignaler *signaler, ofoEntry *entry, void *empty );
 static void       signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static void       signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
 
@@ -2625,6 +2626,7 @@ isignalable_connect_to( ofaISignaler *signaler )
 	g_signal_connect( signaler, SIGNALER_BASE_IS_DELETABLE, G_CALLBACK( signaler_on_deletable_object ), NULL );
 	g_signal_connect( signaler, SIGNALER_BASE_NEW, G_CALLBACK( signaler_on_new_base ), NULL );
 	g_signal_connect( signaler, SIGNALER_PERIOD_STATUS_CHANGE, G_CALLBACK( signaler_on_entry_period_status_changed ), NULL );
+	g_signal_connect( signaler, SIGNALER_EXERCICE_RECOMPUTE, G_CALLBACK( signaler_on_exe_recompute ), NULL );
 	g_signal_connect( signaler, SIGNALER_BASE_UPDATED, G_CALLBACK( signaler_on_updated_base ), NULL );
 }
 
@@ -2847,6 +2849,61 @@ signaler_on_entry_period_status_changed( ofaISignaler *signaler, ofoEntry *entry
 	balance = ledger_find_balance_by_code( ledger, currency );
 	if( ledger_do_update_balance( ledger, balance, getter )){
 		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, ledger, NULL );
+	}
+}
+
+/*
+ * SIGNALER_EXERCICE_RECOMPUTE signal handler
+ *
+ * After having zeroed all current and future, rough and validated,
+ *  debit and credit account and ledger balances, change a future entry to
+ *  a current one. Status is unchanged.
+ *
+ * We cannot check the period here as the entry handler is called after
+ * this one.
+ */
+static void
+signaler_on_exe_recompute( ofaISignaler *signaler, ofoEntry *entry, void *empty )
+{
+	static const gchar *thisfn = "ofo_ledger_signaler_on_exe_recompute";
+	const gchar *mnemo, *currency;
+	ofoLedger *ledger;
+	ofxAmount debit, credit;
+	GList *balance;
+	ofaIGetter *getter;
+	ofeEntryStatus status;
+
+	g_debug( "%s: signaler=%p, entry=%p, empty=%p",
+			thisfn, ( void * ) signaler, ( void * ) entry, ( void * ) empty );
+
+	if( ofo_entry_get_rule( entry ) == ENT_RULE_NORMAL ){
+
+		getter = ofo_base_get_getter( OFO_BASE( entry ));
+
+		mnemo = ofo_entry_get_ledger( entry );
+		ledger = ofo_ledger_get_by_mnemo( getter, mnemo );
+		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+
+		status = ofo_entry_get_status( entry );
+		debit = ofo_entry_get_debit( entry );
+		credit = ofo_entry_get_credit( entry );
+		currency = ofo_entry_get_currency( entry );
+
+		switch( status ){
+			case ENT_STATUS_ROUGH:
+				ledger_add_balance_current_rough( ledger, currency, debit, credit );
+				break;
+			case ENT_STATUS_VALIDATED:
+				ledger_add_balance_current_val( ledger, currency, debit, credit );
+				break;
+			default:
+				break;
+		}
+
+		balance = ledger_find_balance_by_code( ledger, currency );
+		if( ledger_do_update_balance( ledger, balance, getter )){
+			g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, ledger, NULL );
+		}
 	}
 }
 

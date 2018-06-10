@@ -397,8 +397,6 @@
 1541 2018- 6- 4 Sigtrap at end of a restore (when restoring on a new dossier)
                 cf. trash/todo_1541
 
-1542 2018- 6- 4 Balances displayed in the chart of accounts are twice what they should
-
 1543 2018- 6-10 DossierManage: when acting on the database, make sure it is up and running
                 reason: when deleting a dossier while the dbms is down, nothing happens
                 but there is no error message
@@ -406,7 +404,16 @@
 1544 2018- 6-10 Sigtrap when restoring on the current exercice
                 cf. trash/todo_1544
 
-1545
+1545 2018- 6-10 Exercice closing: Recurent tasks on N+1 period opening
+                should be 'Nothing to do' rather than 100%
+
+1546 2018- 6-10 Exercice closing: VAT tasks on N+1 period opening
+                should be 'Nothing to do' rather than 100%
+
+1547 2018- 6-10 After an exercice closing, and the new exercice opening,
+                entries do not display their correct period (at least)
+
+1548
 
 -----------------------------------------------------------------------
  DONE
@@ -441,6 +448,9 @@
 
 1540 2018- 5-27 Line too long when importing a BAT file
      2018- 5-28 Increase BAT_LINE_LABEL column size to 1024
+
+1542 2018- 6- 4 Balances displayed in the chart of accounts are twice what they should
+     2018- 6-10 fixed by recomputing the soldes at exercice opening
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
