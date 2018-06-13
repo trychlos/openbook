@@ -242,6 +242,7 @@ libofa_core_la_SOURCES = \
 	ofo-concil.c										\
 	ofo-counters.c										\
 	ofo-currency.c										\
+	ofo-data.c											\
 	ofo-doc.c											\
 	ofo-dossier.c										\
 	ofo-entry.c											\

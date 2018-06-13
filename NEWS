@@ -16,6 +16,10 @@
  Total lines count: 
  maintainer/run-distcheck.sh: 
 
+ CORE DB Model v40
+
+   - OFA_T_DATA: new table.
+
  CORE DB Model v39
 
    - OFAT_T_BAT_LINES: increase the BAT_LINE_LABEL column size to 1024 (todo #1540).
@@ -39,6 +43,7 @@
    - ofa_box_csv_get_field_ex(): new function.
    - ofaISignaler::ofa-signaler-exercice-recompute: new signal.
    - ofo_account_get_open_debit(), ofo_account_get_open_credit(): new functions.
+   - ofoData: new class.
 
 -----------------------------------------------------------------------
  Version 0.74

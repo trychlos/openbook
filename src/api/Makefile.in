@@ -491,6 +491,8 @@ api_include_HEADERS = \
 	ofo-counters-def.h									\
 	ofo-currency.h										\
 	ofo-currency-def.h									\
+	ofo-data.h											\
+	ofo-data-def.h										\
 	ofo-doc.h											\
 	ofo-doc-def.h										\
 	ofo-dossier.h										\

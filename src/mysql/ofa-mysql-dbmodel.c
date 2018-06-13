@@ -141,6 +141,8 @@ static gboolean dbmodel_v38( ofaMysqlDBModel *self, gint version );
 static gulong   count_v38( ofaMysqlDBModel *self );
 static gboolean dbmodel_v39( ofaMysqlDBModel *self, gint version );
 static gulong   count_v39( ofaMysqlDBModel *self );
+static gboolean dbmodel_v40( ofaMysqlDBModel *self, gint version );
+static gulong   count_v40( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -163,6 +165,7 @@ static sMigration st_migrates[] = {
 		{ 37, dbmodel_v37, count_v37 },
 		{ 38, dbmodel_v38, count_v38 },
 		{ 39, dbmodel_v39, count_v39 },
+		{ 40, dbmodel_v40, count_v40 },
 		{ 0 }
 };
 
@@ -3022,6 +3025,45 @@ dbmodel_v39( ofaMysqlDBModel *self, gint version )
  */
 static gulong
 count_v39( ofaMysqlDBModel *self )
+{
+	return( 1 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v40:
+ *
+ * - OFA_T_DATA: new table
+ */
+static gboolean
+dbmodel_v40( ofaMysqlDBModel *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v40";
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	/* 1 */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_DATA ("
+			"	DAT_KEY                VARCHAR(64)   NOT NULL               COMMENT 'Data key',"
+			"	DAT_CONTENT            VARCHAR(4096) NOT NULL               COMMENT 'Data content',"
+			"	DAT_CRE_USER           VARCHAR(64)   NOT NULL               COMMENT 'Creation user',"
+			"	DAT_NOTES              VARCHAR(4096)                        COMMENT 'Notes',"
+			"	DAT_CRE_STAMP          TIMESTAMP     DEFAULT 0              COMMENT 'Creation timestamp',"
+			"	DAT_UPD_STAMP          TIMESTAMP     DEFAULT 0              COMMENT 'Last update timestamp',"
+			"UNIQUE (DAT_KEY)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v40( ofaMysqlDBModel *self )
 {
 	return( 1 );
 }
