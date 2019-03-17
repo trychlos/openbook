@@ -415,7 +415,12 @@
 
 1548 2018- 6-13 have a UI for OFA_T_DATA table
 
-1549
+1549 2018-11- 4 ofa-hub.c: In function ‘ofa_hub_get_willing_to_import’:
+ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *’} from a function with incompatible return type ‘ofaIImporter *’ {aka ‘struct _ofaIImporter *’} [-Wincompatible-pointer-types]
+  return( found ? g_object_ref( G_OBJECT( found )) : NULL );
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+
+1550
 
 -----------------------------------------------------------------------
  DONE

@@ -3047,8 +3047,9 @@ dbmodel_v40( ofaMysqlDBModel *self, gint version )
 			"	DAT_KEY                VARCHAR(64)   NOT NULL               COMMENT 'Data key',"
 			"	DAT_CONTENT            VARCHAR(4096) NOT NULL               COMMENT 'Data content',"
 			"	DAT_CRE_USER           VARCHAR(64)   NOT NULL               COMMENT 'Creation user',"
-			"	DAT_NOTES              VARCHAR(4096)                        COMMENT 'Notes',"
 			"	DAT_CRE_STAMP          TIMESTAMP     DEFAULT 0              COMMENT 'Creation timestamp',"
+			"	DAT_NOTES              VARCHAR(4096)                        COMMENT 'Notes',"
+			"	DAT_UPD_USER           VARCHAR(64)   NOT NULL               COMMENT 'Last update user',"
 			"	DAT_UPD_STAMP          TIMESTAMP     DEFAULT 0              COMMENT 'Last update timestamp',"
 			"UNIQUE (DAT_KEY)"
 			") CHARACTER SET utf8" )){

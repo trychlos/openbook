@@ -180,25 +180,26 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-entry-store.lo ofa-entry-treeview.lo \
 	ofa-extender-collection.lo ofa-extender-module.lo \
 	ofa-formula-engine.lo ofa-guided-input.lo \
-	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
-	ofa-iactionable.lo ofa-iactioner.lo ofa-icontext.lo \
-	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
-	ofa-idbdossier-editor.lo ofa-idbdossier-meta.lo \
-	ofa-idbexercice-meta.lo ofa-idbmodel.lo ofa-idbprovider.lo \
-	ofa-idbexercice-editor.lo ofa-idbsuperuser.lo ofa-idoc.lo \
-	ofa-iexe-close.lo ofa-iexportable.lo ofa-iexporter.lo \
-	ofa-iextender-setter.lo ofa-igetter.lo ofa-iimporter.lo \
-	ofa-iimportable.lo ofa-ijson.lo ofa-import-duplicate.lo \
-	ofa-ipage-manager.lo ofa-iprintable.lo ofa-iproperties.lo \
-	ofa-irecover.lo ofa-irenderable.lo ofa-irenderer.lo \
-	ofa-isignalable.lo ofa-isignaler.lo ofa-istore.lo \
-	ofa-itree-adder.lo ofa-itvcolumnable.lo ofa-itvfilterable.lo \
-	ofa-itvsortable.lo ofa-ledger-combo.lo ofa-ledger-store.lo \
-	ofa-list-store.lo ofa-ope-template-editable.lo \
-	ofa-ope-template-frame-bin.lo ofa-ope-template-help.lo \
-	ofa-ope-template-properties.lo ofa-ope-template-select.lo \
-	ofa-ope-template-store.lo ofa-ope-template-treeview.lo \
-	ofa-open-prefs.lo ofa-open-prefs-bin.lo ofa-openbook-props.lo \
+	ofa-guided-input-bin.lo ofa-hub.lo ofa-hub-remediate.lo \
+	ofa-iabout.lo ofa-iactionable.lo ofa-iactioner.lo \
+	ofa-icontext.lo ofa-iconcil.lo ofa-idate-filter.lo \
+	ofa-idbconnect.lo ofa-idbdossier-editor.lo \
+	ofa-idbdossier-meta.lo ofa-idbexercice-meta.lo ofa-idbmodel.lo \
+	ofa-idbprovider.lo ofa-idbexercice-editor.lo \
+	ofa-idbsuperuser.lo ofa-idoc.lo ofa-iexe-close.lo \
+	ofa-iexportable.lo ofa-iexporter.lo ofa-iextender-setter.lo \
+	ofa-igetter.lo ofa-iimporter.lo ofa-iimportable.lo \
+	ofa-ijson.lo ofa-import-duplicate.lo ofa-ipage-manager.lo \
+	ofa-iprintable.lo ofa-iproperties.lo ofa-irecover.lo \
+	ofa-irenderable.lo ofa-irenderer.lo ofa-isignalable.lo \
+	ofa-isignaler.lo ofa-istore.lo ofa-itree-adder.lo \
+	ofa-itvcolumnable.lo ofa-itvfilterable.lo ofa-itvsortable.lo \
+	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
+	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
+	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
+	ofa-ope-template-select.lo ofa-ope-template-store.lo \
+	ofa-ope-template-treeview.lo ofa-open-prefs.lo \
+	ofa-open-prefs-bin.lo ofa-openbook-props.lo \
 	ofa-operation-group.lo ofa-paimean-editable.lo \
 	ofa-paimean-frame-bin.lo ofa-paimean-properties.lo \
 	ofa-paimean-select.lo ofa-paimean-store.lo \
@@ -359,6 +360,7 @@ INTLTOOL_V_MERGE = @INTLTOOL_V_MERGE@
 INTLTOOL_V_MERGE_OPTIONS = @INTLTOOL_V_MERGE_OPTIONS@
 INTLTOOL__v_MERGE_ = @INTLTOOL__v_MERGE_@
 INTLTOOL__v_MERGE_0 = @INTLTOOL__v_MERGE_0@
+INTL_MACOSX_LIBS = @INTL_MACOSX_LIBS@
 JSON_GLIB_CFLAGS = @JSON_GLIB_CFLAGS@
 JSON_GLIB_LIBS = @JSON_GLIB_LIBS@
 LCOV = @LCOV@
@@ -567,6 +569,8 @@ libofa_core_la_SOURCES = \
 	ofa-guided-input-bin.c								\
 	ofa-guided-input-bin.h								\
 	ofa-hub.c											\
+	ofa-hub-remediate.c									\
+	ofa-hub-remediate.h									\
 	ofa-iabout.c										\
 	ofa-iactionable.c									\
 	ofa-iactioner.c										\
@@ -838,6 +842,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-formula-engine.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-hub-remediate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-hub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iabout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iactionable.Plo@am__quote@

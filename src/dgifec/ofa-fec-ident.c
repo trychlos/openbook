@@ -132,7 +132,7 @@ iident_iface_init( myIIdentInterface *iface )
 static gchar *
 iident_get_display_name( const myIIdent *instance, void *user_data )
 {
-	return( g_strdup( "DGI FEC exoprter" ));
+	return( g_strdup( "DGI FEC exporter" ));
 }
 
 static gchar *

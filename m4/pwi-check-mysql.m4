@@ -28,6 +28,10 @@
 # pwi 2015- 3- 8: this is a hack from MYSQL_CLIENT standard macro
 # in order to survive to a missing library. 
 # As of 5.5.40, MySQL doesn't provide a pkg-config file.
+#
+# pwi 2019- 3-17 as of MariaDB 10.3 (Fedora 28), the mysql_config command
+# no more provides the '--variable=pkgincludedir' option ; so have to rely
+# on '--cflags' and '--libs' options 
 
 dnl usage: PWI_CHECK_MYSQL([version[,fatal]])
 dnl if 'fatal' != 'no', then a missing library will emit a warning and
@@ -50,8 +54,11 @@ AC_DEFUN([PWI_CHECK_MYSQL],[
 		have_MYSQL="no"
 		MYSQL_msg_version="no"
 	else
-		_ac_includedir=`$mysql_config --variable=pkgincludedir 2>/dev/null`
-		if test -z "${_ac_includedir}" || test ! -d "${_ac_includedir}"; then
+		#_ac_includedir=`$mysql_config --variable=pkgincludedir 2>/dev/null`
+		#if test -z "${_ac_includedir}" || test ! -d "${_ac_includedir}"; then
+		_ac_cflags=`$mysql_config --cflags 2>/dev/null`
+		_ac_libs=`$mysql_config --libs 2>/dev/null`
+		if test -z "${_ac_cflags}" || test -z "${_ac_libs}"; then
 			have_MYSQL="no"
 			MYSQL_msg_version="no"
 		fi

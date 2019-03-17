@@ -26,7 +26,6 @@
 #include <config.h>
 #endif
 
-#include "my/my-date.h"
 #include "my/my-icollector.h"
 #include "my/my-isettings.h"
 #include "my/my-scope-mapper.h"
@@ -64,6 +63,7 @@
 #include "api/ofo-rate.h"
 
 #include "core/ofa-account-balance.h"
+#include "core/ofa-hub-remediate.h"
 
 /* private instance data
  */
@@ -103,7 +103,6 @@ typedef struct {
 static void                   hub_register_types( ofaHub *self );
 static void                   hub_setup_settings( ofaHub *self );
 static void                   on_properties_dossier_changed( ofaISignaler *signaler, void *empty );
-static gboolean               remediate_dossier_settings( ofaIGetter *getter );
 static void                   icollector_iface_init( myICollectorInterface *iface );
 static guint                  icollector_get_interface_version( void );
 static void                   igetter_iface_init( ofaIGetterInterface *iface );
@@ -500,6 +499,7 @@ ofa_hub_open_dossier( ofaHub *hub, GtkWindow *parent,
 				g_signal_emit_by_name( OFA_ISIGNALER( hub ), SIGNALER_DOSSIER_CHANGED );
 			}
 			priv->counters = ofo_counters_new( OFA_IGETTER( hub ));
+			ofa_hub_remediate_logicals( hub );
 		}
 	}
 
@@ -514,86 +514,15 @@ static void
 on_properties_dossier_changed( ofaISignaler *signaler, void *empty )
 {
 	ofaIGetter *getter;
+	ofaHub *hub;
 
 	getter = ofa_isignaler_get_getter( signaler );
-
-	remediate_dossier_settings( getter );
-}
-
-/*
- * When opening the dossier, make sure the settings are up to date
- * (this may not be the case when the dossier has just been restored
- *  or created)
- *
- * The datas found in the dossier database take precedence over those
- * read from dossier settings. This is because dossier database is
- * (expected to be) updated via the Openbook software suite and so be
- * controlled, while the dossier settings may easily be tweaked by the
- * user.
- */
-static gboolean
-remediate_dossier_settings( ofaIGetter *getter )
-{
-	static const gchar *thisfn = "ofa_hub_remediate_dossier_settings";
-	ofaHub *hub;
-	ofaIDBConnect *cnx;
-	ofoDossier *dossier;
-	gboolean db_current, settings_current, remediated;
-	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
-	ofaIDBExerciceMeta *period;
-	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
-
-	remediated = FALSE;
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	hub = ofa_igetter_get_hub( getter );
-	dossier = ofa_hub_get_dossier( hub );
-	cnx = ofa_hub_get_connect( hub );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	/* data from db */
-	db_current = ofo_dossier_is_current( dossier );
-	db_begin = ofo_dossier_get_exe_begin( dossier );
-	db_end = ofo_dossier_get_exe_end( dossier );
-
-	/* data from settings */
-	period = ofa_idbconnect_get_exercice_meta( cnx );
-	settings_current = ofa_idbexercice_meta_get_current( period );
-	settings_begin = ofa_idbexercice_meta_get_begin_date( period );
-	settings_end = ofa_idbexercice_meta_get_end_date( period );
-
-	sdbbegin = my_date_to_str( db_begin, MY_DATE_SQL );
-	sdbend = my_date_to_str( db_end, MY_DATE_SQL );
-	ssetbegin = my_date_to_str( settings_begin, MY_DATE_SQL );
-	ssetend = my_date_to_str( settings_end, MY_DATE_SQL );
-
-	g_debug( "%s: db_current=%s, db_begin=%s, db_end=%s, settings_current=%s, settings_begin=%s, settings_end=%s",
-			thisfn,
-			db_current ? "True":"False", sdbbegin, sdbend,
-			settings_current ? "True":"False", ssetbegin, ssetend );
-
-	g_free( sdbbegin );
-	g_free( sdbend );
-	g_free( ssetbegin );
-	g_free( ssetend );
-
-	/* update settings if not equal */
-	if( db_current != settings_current ||
-			my_date_compare_ex( db_begin, settings_begin, TRUE ) != 0 ||
-			my_date_compare_ex( db_end, settings_end, FALSE ) != 0 ){
-
-		g_debug( "%s: remediating settings", thisfn );
-
-		ofa_idbexercice_meta_set_current( period, db_current );
-		ofa_idbexercice_meta_set_begin_date( period, db_begin );
-		ofa_idbexercice_meta_set_end_date( period, db_end );
-		ofa_idbexercice_meta_update_settings( period );
-
-		remediated = TRUE;
-
-	} else {
-		g_debug( "%s: nothing to do", thisfn );
-	}
-
-	return( remediated );
+	ofa_hub_remediate_settings( hub );
 }
 
 /*
@@ -804,7 +733,7 @@ ofa_hub_get_willing_to_import( ofaHub *hub, const gchar *uri, GType type )
 
 	g_list_free( importers );
 
-	return( found ? g_object_ref( G_OBJECT( found )) : NULL );
+	return(( ofaIImporter * )( found ? g_object_ref( G_OBJECT( found )) : NULL ));
 }
 
 /*

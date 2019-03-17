@@ -2929,6 +2929,8 @@ iexporter_export( ofaIExporter *instance, ofaIExportable *exportable, const gcha
 
 		if( is_root ){
 			currency = NULL;
+			sopdebit = NULL;
+			sopcredit = NULL;
 			scrdebit = g_strdup( "" );
 			scrcredit = g_strdup( "" );
 			scvdebit = g_strdup( "" );

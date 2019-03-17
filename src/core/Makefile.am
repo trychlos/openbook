@@ -129,6 +129,8 @@ libofa_core_la_SOURCES = \
 	ofa-guided-input-bin.c								\
 	ofa-guided-input-bin.h								\
 	ofa-hub.c											\
+	ofa-hub-remediate.c									\
+	ofa-hub-remediate.h									\
 	ofa-iabout.c										\
 	ofa-iactionable.c									\
 	ofa-iactioner.c										\
