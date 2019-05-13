@@ -420,7 +420,15 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
   return( found ? g_object_ref( G_OBJECT( found )) : NULL );
         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
 
-1550
+1550 2019- 4-25 Check DBMS Integrity: Check for recurrent models integrity
+                count 57/81, but should be equals
+
+1551 2019- 4-25 Check DBMS Integrity: Check for VAT forms integrity
+                count 60/5, but should be equals
+
+1552 2019- 4-25 (F28) Wayland doesn't honor windows placement :(
+
+1553
 
 -----------------------------------------------------------------------
  DONE

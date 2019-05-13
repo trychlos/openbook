@@ -100,9 +100,7 @@ ofa_hub_remediate_recompute_balances( ofaHub *hub, fnRemediateRecompute pfn, voi
  *
  * This bug has been detected, and fixed, before the closing of the first quarter.
  *
- * So the dossier is to be remediated if:
- * - the exercice is 2018
- * - the remediation has not already been done.
+ * So the dossier is to be remediated if the remediation has not already been done.
  */
 static gboolean
 remediate_1542( ofaHub *hub )
