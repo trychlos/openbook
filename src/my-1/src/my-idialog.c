@@ -424,7 +424,7 @@ ok_to_terminate( myIDialog *instance, gint response_code )
 	gboolean quit = FALSE;
 
 	if( !MY_IS_IDIALOG( instance )){
-		g_warning( "%s: calling ok_to_terminate() while the dialog is already destroyed", thisfn );
+		g_info( "%s: calling ok_to_terminate() while the dialog is already destroyed", thisfn );
 		return( TRUE );
 	}
 
