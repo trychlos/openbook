@@ -64,40 +64,40 @@ typedef struct {
 #define PAM_NUMBER_WIDTH                10
 #define PAM_NUMBER_MAX_LENGTH           64
 
-GType           ofo_paimean_get_type              ( void ) G_GNUC_CONST;
+GType             ofo_paimean_get_type              ( void ) G_GNUC_CONST;
 
-GList          *ofo_paimean_get_dataset           ( ofaIGetter *getter );
-#define         ofo_paimean_free_dataset( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref ))
+GList            *ofo_paimean_get_dataset           ( ofaIGetter *getter );
+#define           ofo_paimean_free_dataset( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref ))
 
-ofoPaimean     *ofo_paimean_get_by_code           ( ofaIGetter *getter, const gchar *code );
+ofoPaimean       *ofo_paimean_get_by_code           ( ofaIGetter *getter, const gchar *code );
 
-ofoPaimean     *ofo_paimean_new                   ( ofaIGetter *getter );
+ofoPaimean       *ofo_paimean_new                   ( ofaIGetter *getter );
 
-const gchar    *ofo_paimean_get_code              ( const ofoPaimean *paimean );
-const gchar    *ofo_paimean_get_cre_user          ( const ofoPaimean *paimean );
-const GTimeVal *ofo_paimean_get_cre_stamp         ( const ofoPaimean *paimean );
-const gchar    *ofo_paimean_get_label             ( const ofoPaimean *paimean );
-const gchar    *ofo_paimean_get_account           ( const ofoPaimean *paimean );
-const gchar    *ofo_paimean_get_notes             ( const ofoPaimean *paimean );
-const gchar    *ofo_paimean_get_upd_user          ( const ofoPaimean *paimean );
-const GTimeVal *ofo_paimean_get_upd_stamp         ( const ofoPaimean *paimean );
+const gchar      *ofo_paimean_get_code              ( const ofoPaimean *paimean );
+const gchar      *ofo_paimean_get_cre_user          ( const ofoPaimean *paimean );
+const myStampVal *ofo_paimean_get_cre_stamp         ( const ofoPaimean *paimean );
+const gchar      *ofo_paimean_get_label             ( const ofoPaimean *paimean );
+const gchar      *ofo_paimean_get_account           ( const ofoPaimean *paimean );
+const gchar      *ofo_paimean_get_notes             ( const ofoPaimean *paimean );
+const gchar      *ofo_paimean_get_upd_user          ( const ofoPaimean *paimean );
+const myStampVal *ofo_paimean_get_upd_stamp         ( const ofoPaimean *paimean );
 
-gboolean        ofo_paimean_is_deletable          ( const ofoPaimean *paimean );
-gboolean        ofo_paimean_is_valid_data         ( const gchar *code, gchar **msgerr );
+gboolean          ofo_paimean_is_deletable          ( const ofoPaimean *paimean );
+gboolean          ofo_paimean_is_valid_data         ( const gchar *code, gchar **msgerr );
 
-void            ofo_paimean_set_code              ( ofoPaimean *paimean, const gchar *code );
-void            ofo_paimean_set_label             ( ofoPaimean *paimean, const gchar *label );
-void            ofo_paimean_set_account           ( ofoPaimean *paimean, const gchar *account );
-void            ofo_paimean_set_notes             ( ofoPaimean *paimean, const gchar *notes );
+void              ofo_paimean_set_code              ( ofoPaimean *paimean, const gchar *code );
+void              ofo_paimean_set_label             ( ofoPaimean *paimean, const gchar *label );
+void              ofo_paimean_set_account           ( ofoPaimean *paimean, const gchar *account );
+void              ofo_paimean_set_notes             ( ofoPaimean *paimean, const gchar *notes );
 
-guint           ofo_paimean_doc_get_count         ( ofoPaimean *paimean );
+guint             ofo_paimean_doc_get_count         ( ofoPaimean *paimean );
 
-GList          *ofo_paimean_doc_get_orphans       ( ofaIGetter *getter );
-#define         ofo_paimean_free_orphans( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+GList            *ofo_paimean_doc_get_orphans       ( ofaIGetter *getter );
+#define           ofo_paimean_free_orphans( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
-gboolean        ofo_paimean_insert                ( ofoPaimean *paimean );
-gboolean        ofo_paimean_update                ( ofoPaimean *paimean, const gchar *prev_code );
-gboolean        ofo_paimean_delete                ( ofoPaimean *paimean );
+gboolean          ofo_paimean_insert                ( ofoPaimean *paimean );
+gboolean          ofo_paimean_update                ( ofoPaimean *paimean, const gchar *prev_code );
+gboolean          ofo_paimean_delete                ( ofoPaimean *paimean );
 
 G_END_DECLS
 

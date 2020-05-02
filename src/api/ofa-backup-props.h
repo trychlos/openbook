@@ -37,7 +37,7 @@
  * can thus be exported as a JSON string.
  */
 
-#include <glib-object.h>
+#include <my/my-stamp.h>
 
 G_BEGIN_DECLS
 
@@ -61,26 +61,19 @@ typedef struct {
 }
 	ofaBackupPropsClass;
 
-GType           ofa_backup_props_get_type       ( void ) G_GNUC_CONST;
+GType             ofa_backup_props_get_type       ( void ) G_GNUC_CONST;
 
-ofaBackupProps *ofa_backup_props_new            ( void );
+ofaBackupProps   *ofa_backup_props_new            ( void );
+ofaBackupProps   *ofa_backup_props_new_from_string( const gchar *string );
 
-ofaBackupProps *ofa_backup_props_new_from_string( const gchar *string );
+const gchar      *ofa_backup_props_get_comment    ( ofaBackupProps *props );
+void              ofa_backup_props_set_comment    ( ofaBackupProps *props, const gchar *comment );
 
-const gchar     *ofa_backup_props_get_comment   ( ofaBackupProps *props );
+const myStampVal *ofa_backup_props_get_stamp      ( ofaBackupProps *props );
+void              ofa_backup_props_set_stamp      ( ofaBackupProps *props, const myStampVal *stamp );
 
-void             ofa_backup_props_set_comment   ( ofaBackupProps *props,
-														const gchar *comment );
-
-const GTimeVal  *ofa_backup_props_get_stamp     ( ofaBackupProps *props );
-
-void             ofa_backup_props_set_stamp     ( ofaBackupProps *props,
-														const GTimeVal *stamp );
-
-const gchar     *ofa_backup_props_get_userid    ( ofaBackupProps *props );
-
-void             ofa_backup_props_set_userid    ( ofaBackupProps *props,
-														const gchar *userid );
+const gchar      *ofa_backup_props_get_userid     ( ofaBackupProps *props );
+void              ofa_backup_props_set_userid     ( ofaBackupProps *props, const gchar *userid );
 
 G_END_DECLS
 

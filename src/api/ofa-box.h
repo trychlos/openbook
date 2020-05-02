@@ -25,6 +25,8 @@
 #ifndef __OPENBOOK_API_OFA_BOX_H__
 #define __OPENBOOK_API_OFA_BOX_H__
 
+#include "my/my-stamp.h"
+
 #include "api/ofa-stream-format.h"
 #include "api/ofo-currency-def.h"
 
@@ -150,7 +152,7 @@ gconstpointer    ofa_box_get_value            ( const GList *fields_list, gint i
 #define          ofa_box_get_int(F,I)         (GPOINTER_TO_INT(ofa_box_get_value((F),(I))))
 #define          ofa_box_get_date(F,I)        ((const GDate *)ofa_box_get_value((F),(I)))
 #define          ofa_box_get_string(F,I)      ((const gchar *)ofa_box_get_value((F),(I)))
-#define          ofa_box_get_timestamp(F,I)   ((const GTimeVal *)ofa_box_get_value((F),(I)))
+#define          ofa_box_get_timestamp(F,I)   ((const myStampVal *)ofa_box_get_value((F),(I)))
 
 void             ofa_box_set_value            ( const GList *fields_list, gint id, gconstpointer value );
 
@@ -159,7 +161,7 @@ void             ofa_box_set_value            ( const GList *fields_list, gint i
 #define          ofa_box_set_int(F,I,V)       ofa_box_set_value((F),(I),GINT_TO_POINTER(V))
 #define          ofa_box_set_date(F,I,V)      ofa_box_set_value((F),(I),(const GDate *)(V))
 #define          ofa_box_set_string(F,I,V)    ofa_box_set_value((F),(I),(const gchar *)(V))
-#define          ofa_box_set_timestamp(F,I,V) ofa_box_set_value((F),(I),(const GTimeVal *)(V))
+#define          ofa_box_set_timestamp(F,I,V) ofa_box_set_value((F),(I),(const myStampVal *)(V))
 
 void             ofa_box_free_fields_list     ( GList *fields_list );
 

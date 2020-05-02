@@ -170,9 +170,9 @@ typedef struct {
 
 static ofoRate  *rate_find_by_mnemo( GList *set, const gchar *mnemo );
 static void      rate_set_cre_user( ofoRate *rate, const gchar *user );
-static void      rate_set_cre_stamp( ofoRate *rate, const GTimeVal *stamp );
+static void      rate_set_cre_stamp( ofoRate *rate, const myStampVal *stamp );
 static void      rate_set_upd_user( ofoRate *rate, const gchar *user );
-static void      rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp );
+static void      rate_set_upd_stamp( ofoRate *rate, const myStampVal *stamp );
 static GList    *rate_val_new_detail( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
 static void      rate_val_add_detail( ofoRate *rate, GList *detail );
 static GList    *get_orphans( ofaIGetter *getter, const gchar *table );
@@ -390,7 +390,7 @@ ofo_rate_get_cre_user( const ofoRate *rate )
 /**
  * ofo_rate_get_cre_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_rate_get_cre_stamp( const ofoRate *rate )
 {
 	ofo_base_getter( RATE, rate, timestamp, NULL, RAT_CRE_STAMP );
@@ -426,7 +426,7 @@ ofo_rate_get_upd_user( const ofoRate *rate )
 /**
  * ofo_rate_get_upd_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_rate_get_upd_stamp( const ofoRate *rate )
 {
 	ofo_base_getter( RATE, rate, timestamp, NULL, RAT_UPD_STAMP );
@@ -581,7 +581,7 @@ rate_set_cre_user( ofoRate *rate, const gchar *user )
  * rate_set_cre_stamp:
  */
 static void
-rate_set_cre_stamp( ofoRate *rate, const GTimeVal *stamp )
+rate_set_cre_stamp( ofoRate *rate, const myStampVal *stamp )
 {
 	ofo_base_setter( RATE, rate, timestamp, RAT_CRE_STAMP, stamp );
 }
@@ -617,7 +617,7 @@ rate_set_upd_user( ofoRate *rate, const gchar *user )
  * rate_set_upd_stamp:
  */
 static void
-rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp )
+rate_set_upd_stamp( ofoRate *rate, const myStampVal *stamp )
 {
 	ofo_base_setter( RATE, rate, timestamp, RAT_UPD_STAMP, stamp );
 }
@@ -968,7 +968,7 @@ rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect )
 	GString *query;
 	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
@@ -978,8 +978,8 @@ rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect )
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_rate_get_label( rate ));
 	notes = my_utils_quote_sql( ofo_rate_get_notes( rate ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_RATES" );
 
@@ -1000,7 +1000,7 @@ rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect )
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 
 		rate_set_cre_user( rate, userid );
-		rate_set_cre_stamp( rate, &stamp );
+		rate_set_cre_stamp( rate, stamp );
 		ok = TRUE;
 	}
 
@@ -1008,6 +1008,7 @@ rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1147,7 +1148,7 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *c
 	GString *query;
 	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
@@ -1157,8 +1158,8 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *c
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_rate_get_label( rate ));
 	notes = my_utils_quote_sql( ofo_rate_get_notes( rate ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_RATES SET " );
 
@@ -1179,7 +1180,7 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *c
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 
 		rate_set_upd_user( rate, userid );
-		rate_set_upd_stamp( rate, &stamp );
+		rate_set_upd_stamp( rate, stamp );
 		ok = TRUE;
 	}
 
@@ -1187,6 +1188,7 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *c
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1727,7 +1729,7 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	GSList *itf;
 	gchar *splitted;
 	ofoRate *rate;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	rate = ofo_rate_new( parms->getter );
 
@@ -1753,7 +1755,9 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		rate_set_cre_stamp( rate, my_stamp_set_from_sql( &stamp, cstr ));
+		stamp = my_stamp_new_from_sql( cstr );
+		rate_set_cre_stamp( rate, stamp );
+		my_stamp_free( stamp );
 	}
 
 	/* rate label */

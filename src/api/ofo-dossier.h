@@ -86,7 +86,7 @@ GType                ofo_dossier_get_type                   ( void ) G_GNUC_CONS
 ofoDossier          *ofo_dossier_new                        ( ofaIGetter *getter );
 
 const gchar         *ofo_dossier_get_cre_user               ( const ofoDossier *dossier );
-const GTimeVal      *ofo_dossier_get_cre_stamp              ( const ofoDossier *dossier );
+const myStampVal    *ofo_dossier_get_cre_stamp              ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_default_currency       ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_exe_begin              ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_exe_end                ( const ofoDossier *dossier );
@@ -103,7 +103,7 @@ const gchar         *ofo_dossier_get_siret                  ( const ofoDossier *
 const gchar         *ofo_dossier_get_vatic                  ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_naf                    ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_upd_user               ( const ofoDossier *dossier );
-const GTimeVal      *ofo_dossier_get_upd_stamp              ( const ofoDossier *dossier );
+const myStampVal    *ofo_dossier_get_upd_stamp              ( const ofoDossier *dossier );
 const gchar         *ofo_dossier_get_status                 ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_last_closing_date      ( const ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_prevexe_last_entry     ( const ofoDossier *dossier );

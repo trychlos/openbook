@@ -129,9 +129,9 @@ typedef struct {
 static ofoTiers   *tiers_find_by_id( GList *set, ofxCounter id );
 static void        tiers_set_id( ofoTiers *tiers, ofxCounter id );
 static void        tiers_set_cre_user( ofoTiers *tiers, const gchar *user );
-static void        tiers_set_cre_stamp( ofoTiers *tiers, const GTimeVal *stamp );
+static void        tiers_set_cre_stamp( ofoTiers *tiers, const myStampVal *stamp );
 static void        tiers_set_upd_user( ofoTiers *tiers, const gchar *user );
-static void        tiers_set_upd_stamp( ofoTiers *tiers, const GTimeVal *stamp );
+static void        tiers_set_upd_stamp( ofoTiers *tiers, const myStampVal *stamp );
 static GList      *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean    tiers_do_insert( ofoTiers *tiers, const ofaIDBConnect *connect );
 static gboolean    tiers_insert_main( ofoTiers *tiers, const ofaIDBConnect *connect );
@@ -322,7 +322,7 @@ ofo_tiers_get_cre_user( const ofoTiers *tiers )
 /**
  * ofo_tiers_get_cre_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_tiers_get_cre_stamp( const ofoTiers *tiers )
 {
 	ofo_base_getter( TIERS, tiers, timestamp, NULL, TRS_CRE_STAMP );
@@ -358,7 +358,7 @@ ofo_tiers_get_upd_user( const ofoTiers *tiers )
 /**
  * ofo_tiers_get_upd_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_tiers_get_upd_stamp( const ofoTiers *tiers )
 {
 	ofo_base_getter( TIERS, tiers, timestamp, NULL, TRS_UPD_STAMP );
@@ -424,7 +424,7 @@ tiers_set_cre_user( ofoTiers *tiers, const gchar *user )
  * tiers_set_cre_stamp:
  */
 static void
-tiers_set_cre_stamp( ofoTiers *tiers, const GTimeVal *stamp )
+tiers_set_cre_stamp( ofoTiers *tiers, const myStampVal *stamp )
 {
 	ofo_base_setter( TIERS, tiers, timestamp, TRS_CRE_STAMP, stamp );
 }
@@ -460,7 +460,7 @@ tiers_set_upd_user( ofoTiers *tiers, const gchar *user )
  * tiers_set_upd_stamp:
  */
 static void
-tiers_set_upd_stamp( ofoTiers *tiers, const GTimeVal *stamp )
+tiers_set_upd_stamp( ofoTiers *tiers, const myStampVal *stamp )
 {
 	ofo_base_setter( TIERS, tiers, timestamp, TRS_UPD_STAMP, stamp );
 }
@@ -581,7 +581,7 @@ tiers_insert_main( ofoTiers *tiers, const ofaIDBConnect *connect )
 	GString *query;
 	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 	ofxCounter id;
 
@@ -592,8 +592,8 @@ tiers_insert_main( ofoTiers *tiers, const ofaIDBConnect *connect )
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_tiers_get_label( tiers ));
 	notes = my_utils_quote_sql( ofo_tiers_get_notes( tiers ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	getter = ofo_base_get_getter( OFO_BASE( tiers ));
 	id = ofo_counters_get_next_tiers_id( getter );
@@ -618,7 +618,7 @@ tiers_insert_main( ofoTiers *tiers, const ofaIDBConnect *connect )
 
 		tiers_set_id( tiers, id );
 		tiers_set_cre_user( tiers, userid );
-		tiers_set_cre_stamp( tiers, &stamp );
+		tiers_set_cre_stamp( tiers, stamp );
 		ok = TRUE;
 	}
 
@@ -626,6 +626,7 @@ tiers_insert_main( ofoTiers *tiers, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -674,7 +675,7 @@ tiers_update_main( ofoTiers *tiers, const ofaIDBConnect *connect )
 	GString *query;
 	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 
 	g_return_val_if_fail( tiers && OFO_IS_TIERS( tiers ), FALSE );
@@ -684,8 +685,8 @@ tiers_update_main( ofoTiers *tiers, const ofaIDBConnect *connect )
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_tiers_get_label( tiers ));
 	notes = my_utils_quote_sql( ofo_tiers_get_notes( tiers ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_TIERS SET " );
 
@@ -707,7 +708,7 @@ tiers_update_main( ofoTiers *tiers, const ofaIDBConnect *connect )
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 
 		tiers_set_upd_user( tiers, userid );
-		tiers_set_upd_stamp( tiers, &stamp );
+		tiers_set_upd_stamp( tiers, stamp );
 		ok = TRUE;
 	}
 
@@ -715,6 +716,7 @@ tiers_update_main( ofoTiers *tiers, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1092,7 +1094,7 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	GSList *itf;
 	gchar *splitted;
 	ofoTiers *tiers;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	tiers = ofo_tiers_new( parms->getter );
 
@@ -1117,7 +1119,9 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		tiers_set_cre_stamp( tiers, my_stamp_set_from_sql( &stamp, cstr ));
+		stamp = my_stamp_new_from_sql( cstr );
+		tiers_set_cre_stamp( tiers, stamp );
+		my_stamp_free( stamp );
 	}
 
 	/* tiers label */

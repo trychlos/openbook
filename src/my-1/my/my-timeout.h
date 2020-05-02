@@ -35,7 +35,7 @@
  * functions.
  */
 
-#include <glib-object.h>
+#include <my/my-stamp.h>
 
 G_BEGIN_DECLS
 
@@ -74,12 +74,16 @@ typedef struct {
 	myTimeoutFunc  handler;
 	gpointer       user_data;
 	/*< private >*/
-	GTimeVal       last_time;
+	myStampVal    *last_time;
 	guint          source_id;
 }
 	myTimeout;
 
-void my_timeout_event( myTimeout *timeout );
+myTimeout *my_timeout_new  ( void );
+
+void       my_timeout_event( myTimeout *timeout );
+
+void       my_timeout_free ( myTimeout *timeout );
 
 G_END_DECLS
 

@@ -99,18 +99,18 @@ const gchar       *ofo_recurrent_run_get_ope_template      ( const ofoRecurrentR
 myPeriod          *ofo_recurrent_run_get_period            ( ofoRecurrentRun *model );
 const GDate       *ofo_recurrent_run_get_end               ( const ofoRecurrentRun *model );
 const gchar       *ofo_recurrent_run_get_cre_user          ( const ofoRecurrentRun *model );
-const GTimeVal    *ofo_recurrent_run_get_cre_stamp         ( const ofoRecurrentRun *model );
+const myStampVal  *ofo_recurrent_run_get_cre_stamp         ( const ofoRecurrentRun *model );
 ofeRecurrentStatus ofo_recurrent_run_get_status            ( const ofoRecurrentRun *model );
 const gchar       *ofo_recurrent_run_status_get_dbms       ( ofeRecurrentStatus status );
 const gchar       *ofo_recurrent_run_status_get_abr        ( ofeRecurrentStatus status );
 const gchar       *ofo_recurrent_run_status_get_label      ( ofeRecurrentStatus status );
 const gchar       *ofo_recurrent_run_get_sta_user          ( const ofoRecurrentRun *model );
-const GTimeVal    *ofo_recurrent_run_get_sta_stamp         ( const ofoRecurrentRun *model );
+const myStampVal  *ofo_recurrent_run_get_sta_stamp         ( const ofoRecurrentRun *model );
 ofxAmount          ofo_recurrent_run_get_amount1           ( const ofoRecurrentRun *model );
 ofxAmount          ofo_recurrent_run_get_amount2           ( const ofoRecurrentRun *model );
 ofxAmount          ofo_recurrent_run_get_amount3           ( const ofoRecurrentRun *model );
 const gchar       *ofo_recurrent_run_get_edi_user          ( const ofoRecurrentRun *model );
-const GTimeVal    *ofo_recurrent_run_get_edi_stamp         ( const ofoRecurrentRun *model );
+const myStampVal  *ofo_recurrent_run_get_edi_stamp         ( const ofoRecurrentRun *model );
 
 gint               ofo_recurrent_run_compare               ( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 

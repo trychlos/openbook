@@ -797,7 +797,7 @@ static gboolean
 tview_is_session_conciliated( ofaReconcilPage *self, ofoConcil *concil )
 {
 	gboolean is_session;
-	const GTimeVal *stamp;
+	const myStampVal *stamp;
 	GDate date, dnow;
 
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), FALSE );

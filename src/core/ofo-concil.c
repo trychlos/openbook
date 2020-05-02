@@ -51,10 +51,10 @@ typedef struct {
 
 	/* OFA_T_CONCIL table content
 	 */
-	ofxCounter id;
-	GDate      dval;
-	gchar     *user;
-	GTimeVal   stamp;
+	ofxCounter  id;
+	GDate       dval;
+	gchar      *user;
+	myStampVal *stamp;
 
 	/* OFA_T_CONCIL_IDS table content
 	 */
@@ -97,6 +97,7 @@ concil_finalize( GObject *instance )
 	/* free data members here */
 
 	g_free( priv->user );
+	my_stamp_free( priv->stamp );
 	g_list_free_full( priv->ids, ( GDestroyNotify ) ofs_concil_id_free );
 
 	/* chain up to the parent class */
@@ -289,7 +290,7 @@ ofo_concil_get_upd_user( ofoConcil *concil )
  * ofo_concil_get_upd_stamp:
  * @concil:
  */
-const GTimeVal *
+const myStampVal *
 ofo_concil_get_upd_stamp( ofoConcil *concil )
 {
 	ofoConcilPrivate *priv;
@@ -299,7 +300,7 @@ ofo_concil_get_upd_stamp( ofoConcil *concil )
 
 	priv = ofo_concil_get_instance_private( concil );
 
-	return(( const GTimeVal * ) &priv->stamp );
+	return(( const myStampVal * ) priv->stamp );
 }
 
 /**
@@ -435,7 +436,7 @@ ofo_concil_set_upd_user( ofoConcil *concil, const gchar *user )
  * @stamp:
  */
 void
-ofo_concil_set_upd_stamp( ofoConcil *concil, const GTimeVal *stamp )
+ofo_concil_set_upd_stamp( ofoConcil *concil, const myStampVal *stamp )
 {
 	ofoConcilPrivate *priv;
 
@@ -444,7 +445,7 @@ ofo_concil_set_upd_stamp( ofoConcil *concil, const GTimeVal *stamp )
 
 	priv = ofo_concil_get_instance_private( concil );
 
-	my_stamp_set_from_stamp( &priv->stamp, stamp );
+	my_stamp_set_from_stamp( priv->stamp, stamp );
 }
 
 static void
@@ -796,7 +797,7 @@ icollectionable_load_collection( void *user_data )
 	ofxCounter prev_id, id, other;
 	gchar *type;
 	GDate date;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	ofoConcil *concil;
 
 	g_return_val_if_fail( user_data && OFA_IS_IGETTER( user_data ), NULL );
@@ -832,8 +833,9 @@ icollectionable_load_collection( void *user_data )
 				icol = icol->next;
 				ofo_concil_set_upd_user( concil, ( const gchar * ) icol->data );
 				icol = icol->next;
-				ofo_concil_set_upd_stamp( concil,
-						my_stamp_set_from_sql( &stamp, ( const gchar * ) icol->data ));
+				stamp = my_stamp_new_from_sql(( const gchar * ) icol->data );
+				ofo_concil_set_upd_stamp( concil, stamp );
+				my_stamp_free( stamp );
 				prev_id = id;
 			}
 

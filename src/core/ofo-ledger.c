@@ -243,9 +243,9 @@ typedef struct {
 
 static ofoLedger *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
 static void       ledger_set_cre_user( ofoLedger *ledger, const gchar *user );
-static void       ledger_set_cre_stamp( ofoLedger *ledger, const GTimeVal *stamp );
+static void       ledger_set_cre_stamp( ofoLedger *ledger, const myStampVal *stamp );
 static void       ledger_set_upd_user( ofoLedger *ledger, const gchar *user );
-static void       ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *stamp );
+static void       ledger_set_upd_stamp( ofoLedger *ledger, const myStampVal *stamp );
 static void       ledger_set_last_clo( ofoLedger *ledger, const GDate *date );
 static gint       cmp_currencies( const gchar *a_currency, const gchar *b_currency );
 static GList     *ledger_find_balance_by_code( ofoLedger *ledger, const gchar *currency );
@@ -470,7 +470,7 @@ ofo_ledger_get_cre_user( const ofoLedger *ledger )
 /**
  * ofo_ledger_get_cre_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_ledger_get_cre_stamp( const ofoLedger *ledger )
 {
 	ofo_base_getter( LEDGER, ledger, timestamp, NULL, LED_CRE_STAMP );
@@ -515,7 +515,7 @@ ofo_ledger_get_upd_user( const ofoLedger *ledger )
 /**
  * ofo_ledger_get_upd_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_ledger_get_upd_stamp( const ofoLedger *ledger )
 {
 	ofo_base_getter( LEDGER, ledger, timestamp, NULL, LED_UPD_STAMP );
@@ -703,7 +703,7 @@ ledger_set_cre_user( ofoLedger *ledger, const gchar *user )
  * ledger_set_cre_stamp:
  */
 static void
-ledger_set_cre_stamp( ofoLedger *ledger, const GTimeVal *stamp )
+ledger_set_cre_stamp( ofoLedger *ledger, const myStampVal *stamp )
 {
 	ofo_base_setter( LEDGER, ledger, timestamp, LED_CRE_STAMP, stamp );
 }
@@ -748,7 +748,7 @@ ledger_set_upd_user( ofoLedger *ledger, const gchar *user )
  * ledger_set_upd_stamp:
  */
 static void
-ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *stamp )
+ledger_set_upd_stamp( ofoLedger *ledger, const myStampVal *stamp )
 {
 	ofo_base_setter( LEDGER, ledger, timestamp, LED_UPD_STAMP, stamp );
 }
@@ -1777,15 +1777,15 @@ ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect )
 	GString *query;
 	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_ledger_get_label( ledger ));
 	notes = my_utils_quote_sql( ofo_ledger_get_notes( ledger ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_LEDGERS" );
 
@@ -1805,7 +1805,7 @@ ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect )
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		ledger_set_cre_user( ledger, userid );
-		ledger_set_cre_stamp( ledger, &stamp );
+		ledger_set_cre_stamp( ledger, stamp );
 		ok = TRUE;
 	}
 
@@ -1813,6 +1813,7 @@ ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1859,7 +1860,7 @@ ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaIDBConnec
 	gchar *label, *notes;
 	gboolean ok;
 	gchar *stamp_str, *sdate;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const GDate *last_clo;
 	const gchar *userid;
 
@@ -1867,8 +1868,8 @@ ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaIDBConnec
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_ledger_get_label( ledger ));
 	notes = my_utils_quote_sql( ofo_ledger_get_notes( ledger ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_LEDGERS SET " );
 
@@ -1896,7 +1897,7 @@ ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaIDBConnec
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		ledger_set_upd_user( ledger, userid );
-		ledger_set_upd_stamp( ledger, &stamp );
+		ledger_set_upd_stamp( ledger, stamp );
 		ok = TRUE;
 	}
 
@@ -1904,6 +1905,7 @@ ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaIDBConnec
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	if( ok && g_utf8_collate( prev_mnemo, ofo_ledger_get_mnemo( ledger ))){
 		query = g_string_new( "UPDATE OFA_T_LEDGERS_CUR SET " );
@@ -2422,7 +2424,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	gchar *splitted, *str;
 	gboolean have_prefix;
 	ofoLedger *ledger;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	numline = 0;
 	dataset = NULL;
@@ -2477,8 +2479,9 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( my_strlen( cstr )){
-			my_stamp_set_from_sql( &stamp, cstr );
-			ledger_set_cre_stamp( ledger, &stamp );
+			stamp = my_stamp_new_from_sql( cstr );
+			ledger_set_cre_stamp( ledger, stamp );
+			my_stamp_free( stamp );
 		}
 
 		/* ledger label */

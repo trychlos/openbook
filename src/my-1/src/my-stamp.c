@@ -32,89 +32,270 @@
 
 #include "my/my-stamp.h"
 
-static GTimeVal *set_from_str_yymdhms( GTimeVal *timeval, const gchar *str );
-static GTimeVal *set_from_str_dmyyhm( GTimeVal *timeval, const gchar *str );
+struct _myStampVal {
+	guint64 sec;
+	guint64 usec;
+};
+
+static myStampVal *set_from_str_yymdhms( myStampVal *timeval, const gchar *str );
+static myStampVal *set_from_str_dmyyhm( myStampVal *timeval, const gchar *str );
+
+/**
+ * my_stamp_new:
+ *
+ * Allocates a new #myStampVal.
+ *
+ * Returns: a new #myStampVal which should be my_stamp_free() by the caller.
+ */
+myStampVal *
+my_stamp_new()
+{
+	return( g_new0( struct _myStampVal, 1 ));
+}
+
+/**
+ * my_stamp_new_now:
+ *
+ * Allocates a new #myStampVal, setting it to the current timestamp.
+ *
+ * Returns: a new #myStampVal which should be my_stamp_free() by the caller.
+ */
+myStampVal *
+my_stamp_new_now()
+{
+	return( my_stamp_set_now( my_stamp_new()));
+}
+
+/**
+ * my_stamp_new_from_sql:
+ * @str: [allow-none]: a SQL timestamp string as 'YYYY-MM-DD HH:MI:SS'.
+ *
+ * Allocates a new #myStampVal, setting it to the @str timestamp.
+ *
+ * Returns: a new #myStampVal which should be my_stamp_free() by the caller.
+ */
+myStampVal *
+my_stamp_new_from_sql( const gchar *str )
+{
+	return( my_stamp_set_from_sql( my_stamp_new(), str ));
+}
+
+/**
+ * my_stamp_new_from_stamp:
+ * @stamp: [allow-none]: a @myStampVal value to be copied.
+ *
+ * Allocates a new #myStampVal, setting it to the @stamp timestamp.
+ *
+ * Returns: a new #myStampVal which should be my_stamp_free() by the caller.
+ */
+myStampVal *
+my_stamp_new_from_stamp( const myStampVal *stamp )
+{
+	return( my_stamp_set_from_stamp( my_stamp_new(), stamp ));
+}
+
+/**
+ * my_stamp_new_from_str:
+ * @str: [allow-none]: the string to be parsed
+ * @format: the expected #myStampFormat.
+ *
+ * Allocates a new #myStampVal, setting it to the @str parsed timestamp.
+ *
+ * Returns: a new #myStampVal which should be my_stamp_free() by the caller.
+ */
+myStampVal *
+my_stamp_new_from_str( const gchar *str, myStampFormat format )
+{
+	return( my_stamp_set_from_str( my_stamp_new(), str, format ));
+}
 
 /**
  * my_stamp_set_now:
- * @timeval: [out]: the destination of the timestamp
+ * @stamp: [out]: the destination of the timestamp
  *
- * Set the provided #GTimeVal to the current timestamp.
+ * Set the provided #myStampVal to the current timestamp.
  *
- * Returns: @timeval.
+ * Returns: @stamp.
  */
-GTimeVal *
-my_stamp_set_now( GTimeVal *timeval )
+myStampVal *
+my_stamp_set_now( myStampVal *stamp )
 {
 	GDateTime *dt;
 
+	g_return_val_if_fail( stamp, NULL );
+
 	dt = g_date_time_new_now_local();
-	g_date_time_to_timeval( dt, timeval );
+	stamp->sec = g_date_time_to_unix( dt );
+	stamp->usec = g_date_time_get_microsecond( dt );
 	g_date_time_unref( dt );
 
-	return( timeval );
+	return( stamp );
 }
 
 /**
  * my_stamp_compare:
- * @a: a #GTimeVal.
- * @b: another #GTimeVal.
+ * @a: [allow-none]: a #myStampVal.
+ * @b: [allow-none]: another #myStampVal.
  *
  * Returns: -1 if @a < @b, +1 if @a > @b, 0 if they are equal.
  */
 gint
-my_stamp_compare( const GTimeVal *a, const GTimeVal *b )
+my_stamp_compare( const myStampVal *a, const myStampVal *b )
 {
-	return( a->tv_sec < b->tv_sec
-			? -1 : ( a->tv_sec > b->tv_sec
-			? 1 : ( a->tv_usec < b->tv_usec ? -1 : ( a ->tv_usec > b->tv_usec ? 1 : 0 ))));
+	if( a ){
+		if( b ){
+			return( a->sec < b->sec ? -1 : ( a->sec > b->sec ? 1 : ( a->usec < b->usec ? -1 : ( a->usec > b->usec ? 1 : 0 ))));
+		} else {
+			return( 1 );
+		}
+	} else if( b ){
+		return( -1 );
+	}
+
+	return( 0 );
+}
+
+/**
+ * my_stamp_diff_us:
+ * @a: [allow-none]: a #myStampVal.
+ * @b: [allow-none]: another #myStampVal.
+ *
+ * Returns: the difference in micro-seconds between @a and @b, as @a - @b.
+ */
+gint64
+my_stamp_diff_us( const myStampVal *a, const myStampVal *b )
+{
+	gint64 diff = 0;
+
+	if( a ){
+		if( b ){
+			diff = G_USEC_PER_SEC * ( a->sec - b->sec );
+			diff += a->usec - b->usec;
+		} else {
+			diff = G_USEC_PER_SEC * a->sec;
+			diff += a->usec;
+		}
+	} else if( b ){
+		diff = G_USEC_PER_SEC * b->sec;
+		diff += b->usec;
+		diff *= -1;
+	}
+
+	return( diff );
+}
+
+/**
+ * my_stamp_get_seconds:
+ * @stamp: [allow-none]: a #myStampVal.
+ *
+ * Returns: the seconds since EPOCH time.
+ */
+time_t
+my_stamp_get_seconds( const myStampVal *stamp )
+{
+	GDateTime *dt;
+	time_t seconds = 0;
+
+	dt = g_date_time_new_from_unix_local( stamp->sec );
+	if( dt ){
+		seconds = ( time_t ) g_date_time_to_unix( dt );
+		g_date_time_unref( dt );
+	}
+
+	return( seconds );
+}
+
+/**
+ * my_stamp_get_usecs:
+ * @stamp: [allow-none]: a #myStampVal.
+ *
+ * Returns: the micro-seconds.
+ */
+gulong
+my_stamp_get_usecs( const myStampVal *stamp )
+{
+	GDateTime *dt;
+	gulong usecs = 0;
+
+	dt = g_date_time_new_from_unix_local( stamp->sec );
+	if( dt ){
+		usecs = ( gulong ) g_date_time_get_microsecond( dt );
+		g_date_time_unref( dt );
+	}
+
+	return( usecs );
 }
 
 /**
  * my_stamp_set_from_sql:
- * @timeval: a pointer to a GTimeVal structure
- * @str: [allow-none]:
+ * @stamp: [out]: a pointer to a #myStampVal structure.
+ * @str: [allow-none]: a SQL timestamp string as 'YYYY-MM-DD HH:MI:SS'.
  *
  * SQL timestamp is returned as a string '2014-05-24 20:05:46'
+ *
+ * Returns: @stamp.
  */
-GTimeVal *
-my_stamp_set_from_sql( GTimeVal *timeval, const gchar *str )
+myStampVal *
+my_stamp_set_from_sql( myStampVal *stamp, const gchar *str )
 {
-	return( set_from_str_yymdhms( timeval, str ));
+	return( set_from_str_yymdhms( stamp, str ));
+}
+
+/**
+ * my_stamp_set_from_stamp:
+ * @stamp: (out]: a pointer to a myStampVal structure
+ * @orig: [allow-none]: the #myStampVal to be copied from.
+ *
+ * Returns: @stamp.
+ */
+myStampVal *
+my_stamp_set_from_stamp( myStampVal *stamp, const myStampVal *orig )
+{
+	g_return_val_if_fail( stamp, NULL );
+
+	if( orig ){
+		memcpy( stamp, orig, sizeof( myStampVal ));
+	} else {
+		memset( stamp, '\0', sizeof( myStampVal ));
+	}
+
+	return( stamp );
 }
 
 /**
  * my_stamp_set_from_str:
- * @timeval: a pointer to a GTimeVal structure
+ * @stamp: [out]: a pointer to a #myStampVal structure
  * @str: [allow-none]: the string to be parsed
  * @format: the expected #myStampFormat.
  *
  * Parse the @str to the @timeval timestamp structure.
+ *
+ * Returns: @stamp.
  */
-GTimeVal *
-my_stamp_set_from_str( GTimeVal *timeval, const gchar *str, myStampFormat format )
+myStampVal *
+my_stamp_set_from_str( myStampVal *stamp, const gchar *str, myStampFormat format )
 {
 	static const gchar *thisfn = "my_stamp_set_from_str";
 
 	switch( format ){
 		case MY_STAMP_YYMDHMS:
-			set_from_str_yymdhms( timeval, str );
+			set_from_str_yymdhms( stamp, str );
 			break;
 		case MY_STAMP_DMYYHM:
-			set_from_str_dmyyhm( timeval, str );
+			set_from_str_dmyyhm( stamp, str );
 			break;
 		default:
 			g_warning( "%s: unknown or invalid format: %u", thisfn, format );
 	}
 
-	return( timeval );
+	return( stamp );
 }
 
 /*
  * SQL timestamp is returned as a string '2014-05-24 20:05:46'
  */
-static GTimeVal *
-set_from_str_yymdhms( GTimeVal *timeval, const gchar *str )
+static myStampVal *
+set_from_str_yymdhms( myStampVal *timeval, const gchar *str )
 {
 	gint y, m, d, H, M, S;
 	struct tm broken;
@@ -130,8 +311,8 @@ set_from_str_yymdhms( GTimeVal *timeval, const gchar *str )
 	broken.tm_sec = S;
 	broken.tm_isdst = -1;
 
-	timeval->tv_sec = mktime( &broken );
-	timeval->tv_usec = 0;
+	timeval->sec = mktime( &broken );
+	timeval->usec = 0;
 
 	return( timeval );
 }
@@ -139,8 +320,8 @@ set_from_str_yymdhms( GTimeVal *timeval, const gchar *str )
 /*
  * The string is expected to be 'dd/mm/yyyy hh:mi'
  */
-static GTimeVal *
-set_from_str_dmyyhm( GTimeVal *timeval, const gchar *str )
+static myStampVal *
+set_from_str_dmyyhm( myStampVal *timeval, const gchar *str )
 {
 	gint y, m, d, H, M, S;
 	struct tm broken;
@@ -157,36 +338,22 @@ set_from_str_dmyyhm( GTimeVal *timeval, const gchar *str )
 	broken.tm_sec = S;
 	broken.tm_isdst = -1;
 
-	timeval->tv_sec = mktime( &broken );
-	timeval->tv_usec = 0;
-
-	return( timeval );
-}
-
-/**
- * my_stamp_set_from_stamp:
- * @timeval: a pointer to a GTimeVal structure
- * @orig: [allow-none]:
- *
- * Returns a pointer to the destination @timeval.
- */
-GTimeVal *
-my_stamp_set_from_stamp( GTimeVal *timeval, const GTimeVal *orig )
-{
-	if( orig ){
-		memcpy( timeval, orig, sizeof( GTimeVal ));
-	} else {
-		memset( timeval, '\0', sizeof( GTimeVal ));
-	}
+	timeval->sec = mktime( &broken );
+	timeval->usec = 0;
 
 	return( timeval );
 }
 
 /**
  * my_stamp_to_str:
+ * @stamp: a #myStampVal timestamp.
+ * @format: a #myStampFormat string format.
+ *
+ * Returns: a newly allocated string which should be g_free() by the caller,
+ * or %NULL if @stamp was NULL or invalid.
  */
 gchar *
-my_stamp_to_str( const GTimeVal *stamp, myStampFormat format )
+my_stamp_to_str( const myStampVal *stamp, myStampFormat format )
 {
 	GDateTime *dt;
 	gchar *str;
@@ -194,7 +361,7 @@ my_stamp_to_str( const GTimeVal *stamp, myStampFormat format )
 	str = NULL;
 
 	if( stamp ){
-		dt = g_date_time_new_from_timeval_local( stamp );
+		dt = g_date_time_new_from_unix_local( stamp->sec );
 		if( dt ){
 			switch( format ){
 				/* this is SQL format */
@@ -217,4 +384,18 @@ my_stamp_to_str( const GTimeVal *stamp, myStampFormat format )
 	}
 
 	return( str );
+}
+
+/**
+ * my_stamp_free:
+ * @stamp: [allow-none]: a #myStampVal structure.
+ *
+ * Release the @stamp allocation.
+ */
+void
+my_stamp_free( myStampVal *stamp )
+{
+	if( stamp ){
+		g_free( stamp );
+	}
 }

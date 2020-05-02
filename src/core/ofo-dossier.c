@@ -276,7 +276,7 @@ typedef struct {
 	ofoDossierPrivate;
 
 static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
-static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
+static void        dossier_set_upd_stamp( ofoDossier *dossier, const myStampVal *stamp );
 static void        dossier_setup_rpid( ofoDossier *self );
 static GList      *dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency );
 static GList      *dossier_find_currency_by_account( ofoDossier *dossier, const gchar *account );
@@ -420,7 +420,7 @@ ofo_dossier_get_cre_user( const ofoDossier *dossier )
  * Returns: the timestamp when a user has last updated the properties
  * of the dossier.
  */
-const GTimeVal *
+const myStampVal *
 ofo_dossier_get_cre_stamp( const ofoDossier *dossier )
 {
 	ofo_base_getter( DOSSIER, dossier, timestamp, NULL, DOS_CRE_STAMP );
@@ -628,7 +628,7 @@ ofo_dossier_get_upd_user( const ofoDossier *dossier )
  * Returns: the timestamp when a user has last updated the properties
  * of the dossier.
  */
-const GTimeVal *
+const myStampVal *
 ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 {
 	ofo_base_getter( DOSSIER, dossier, timestamp, NULL, DOS_UPD_STAMP );
@@ -1035,7 +1035,7 @@ dossier_set_upd_user( ofoDossier *dossier, const gchar *user )
  * ofo_dossier_set_upd_stamp:
  */
 static void
-dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp )
+dossier_set_upd_stamp( ofoDossier *dossier, const myStampVal *stamp )
 {
 	ofo_base_setter( DOSSIER, dossier, timestamp, DOS_UPD_STAMP, stamp );
 }
@@ -1077,19 +1077,21 @@ ofo_dossier_set_rpid( ofoDossier *dossier, const gchar *rpid )
 static void
 dossier_setup_rpid( ofoDossier *dossier )
 {
-	GTimeVal stamp;
+	myStampVal *stamp;
 	gchar *rpid;
 
 	guint32 random32 = g_random_int();
-	my_stamp_set_now( &stamp );
-	guint32 stamp_a = stamp.tv_sec & 0x00000000ffffffff;
+	stamp = my_stamp_new_now();
+	guint32 stamp_a = my_stamp_get_seconds( stamp ) & 0x00000000ffffffff;
 	/* this is nul
 	guint32 stamp_b = stamp.tv_usec & 0xffffffff00000000; */
-	guint32 stamp_b = stamp.tv_usec & 0x00000000ffffffff;
+	guint32 stamp_b = my_stamp_get_usecs( stamp ) & 0x00000000ffffffff;
 
 	rpid = g_strdup_printf( "%8.8x-%8.8x-%8.8x", stamp_a, random32, stamp_b );
 	ofo_dossier_set_rpid( dossier, rpid );
 	g_free( rpid );
+
+	my_stamp_free( stamp );
 }
 
 /**
@@ -1480,7 +1482,7 @@ do_update_properties( ofoDossier *dossier )
 	const ofaIDBConnect *connect;
 	GString *query;
 	gchar *label, *notes, *stamp_str, *sdate;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	gboolean ok, current;
 	const gchar *cstr, *userid;
 	const GDate *date;
@@ -1634,8 +1636,8 @@ do_update_properties( ofoDossier *dossier )
 	cstr = ofo_dossier_get_rpid( dossier );
 	g_string_append_printf( query, "DOS_RPID='%s',", cstr );
 
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 	g_string_append_printf( query,
 			"DOS_UPD_USER='%s',DOS_UPD_STAMP='%s' ", userid, stamp_str );
 	g_free( stamp_str );
@@ -1644,10 +1646,11 @@ do_update_properties( ofoDossier *dossier )
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		dossier_set_upd_user( dossier, userid );
-		dossier_set_upd_stamp( dossier, &stamp );
+		dossier_set_upd_stamp( dossier, stamp );
 		ok = TRUE;
 	}
 
+	my_stamp_free( stamp );
 	g_string_free( query, TRUE );
 
 	return( ok );
@@ -1688,7 +1691,7 @@ do_update_currency_properties( ofoDossier *dossier )
 	GList *details;
 	gboolean ok;
 	GList *it;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	gint count;
 	const gchar *userid;
 
@@ -1717,8 +1720,8 @@ do_update_currency_properties( ofoDossier *dossier )
 		}
 
 		if( ok && count ){
-			my_stamp_set_now( &stamp );
-			stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+			stamp = my_stamp_new_now();
+			stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 			query = g_strdup_printf(
 					"UPDATE OFA_T_DOSSIER SET "
 					"	DOS_UPD_USER='%s',DOS_UPD_STAMP='%s' "
@@ -1729,8 +1732,9 @@ do_update_currency_properties( ofoDossier *dossier )
 				ok = FALSE;
 			} else {
 				dossier_set_upd_user( dossier, userid );
-				dossier_set_upd_stamp( dossier, &stamp );
+				dossier_set_upd_stamp( dossier, stamp );
 			}
+			my_stamp_free( stamp );
 		}
 	}
 

@@ -294,16 +294,16 @@ static sValid st_valid[] = {
 static void      vat_record_set_mnemo( ofoTVARecord *record, const gchar *mnemo );
 static void      vat_record_set_has_correspondence( ofoTVARecord *record, gboolean has_correspondence );
 static void      vat_record_set_cre_user( ofoTVARecord *record, const gchar *user );
-static void      vat_record_set_cre_stamp( ofoTVARecord *record, const GTimeVal *stamp );
+static void      vat_record_set_cre_stamp( ofoTVARecord *record, const myStampVal *stamp );
 static void      vat_record_set_ope_date( ofoTVARecord *record, const GDate *date );
 static void      vat_record_set_ope_user( ofoTVARecord *record, const gchar *user );
-static void      vat_record_set_ope_stamp( ofoTVARecord *record, const GTimeVal *stamp );
+static void      vat_record_set_ope_stamp( ofoTVARecord *record, const myStampVal *stamp );
 static void      vat_record_set_status( ofoTVARecord *record, ofeVatStatus status );
 static void      vat_record_set_sta_closing( ofoTVARecord *record, const GDate *date );
 static void      vat_record_set_sta_user( ofoTVARecord *record, const gchar *user );
-static void      vat_record_set_sta_stamp( ofoTVARecord *record, const GTimeVal *stamp );
+static void      vat_record_set_sta_stamp( ofoTVARecord *record, const myStampVal *stamp );
 static void      vat_record_set_upd_user( ofoTVARecord *record, const gchar *user );
-static void      vat_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *stamp );
+static void      vat_record_set_upd_stamp( ofoTVARecord *record, const myStampVal *stamp );
 static void      vat_record_boolean_add( ofoTVARecord *record, const gchar *label, gboolean is_true );
 static void      vat_record_detail_add( ofoTVARecord *record, ofxAmount base, ofxAmount amount );
 static void      vat_record_detail_set_code( ofoTVARecord *record, guint idx, const gchar *code );
@@ -733,7 +733,7 @@ ofo_tva_record_get_cre_user( const ofoTVARecord *record )
 /**
  * ofo_tva_record_get_cre_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_tva_record_get_cre_stamp( const ofoTVARecord *record )
 {
 	ofo_base_getter( TVA_RECORD, record, timestamp, NULL, TFO_CRE_STAMP );
@@ -787,7 +787,7 @@ ofo_tva_record_get_upd_user( const ofoTVARecord *record )
 /**
  * ofo_tva_record_get_upd_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_tva_record_get_upd_stamp( const ofoTVARecord *record )
 {
 	ofo_base_getter( TVA_RECORD, record, timestamp, NULL, TFO_UPD_STAMP );
@@ -814,7 +814,7 @@ ofo_tva_record_get_ope_user( const ofoTVARecord *record )
 /**
  * ofo_tva_record_get_ope_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_tva_record_get_ope_stamp( const ofoTVARecord *record )
 {
 	ofo_base_getter( TVA_RECORD, record, timestamp, NULL, TFO_OPE_STAMP );
@@ -948,7 +948,7 @@ ofo_tva_record_get_sta_user( const ofoTVARecord *record )
  *
  * Returns: the validation timestamp.
  */
-const GTimeVal *
+const myStampVal *
 ofo_tva_record_get_sta_stamp( const ofoTVARecord *record )
 {
 	ofo_base_getter( TVA_RECORD, record, timestamp, NULL, TFO_STA_STAMP );
@@ -1522,7 +1522,7 @@ vat_record_set_cre_user( ofoTVARecord *record, const gchar *user )
  * ofo_tva_record_set_cre_stamp:
  */
 static void
-vat_record_set_cre_stamp( ofoTVARecord *record, const GTimeVal *stamp )
+vat_record_set_cre_stamp( ofoTVARecord *record, const myStampVal *stamp )
 {
 	ofo_base_setter( TVA_RECORD, record, string, TFO_CRE_STAMP, stamp );
 }
@@ -1576,7 +1576,7 @@ vat_record_set_upd_user( ofoTVARecord *record, const gchar *user )
  * ofo_tva_record_set_upd_stamp:
  */
 static void
-vat_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *stamp )
+vat_record_set_upd_stamp( ofoTVARecord *record, const myStampVal *stamp )
 {
 	ofo_base_setter( TVA_RECORD, record, string, TFO_UPD_STAMP, stamp );
 }
@@ -1603,7 +1603,7 @@ vat_record_set_ope_user( ofoTVARecord *record, const gchar *user )
  * ofo_tva_record_set_ope_stamp:
  */
 static void
-vat_record_set_ope_stamp( ofoTVARecord *record, const GTimeVal *stamp )
+vat_record_set_ope_stamp( ofoTVARecord *record, const myStampVal *stamp )
 {
 	ofo_base_setter( TVA_RECORD, record, string, TFO_OPE_STAMP, stamp );
 }
@@ -1651,7 +1651,7 @@ vat_record_set_sta_user( ofoTVARecord *record, const gchar *user )
  * ofo_tva_record_set_sta_stamp:
  */
 static void
-vat_record_set_sta_stamp( ofoTVARecord *record, const GTimeVal *stamp )
+vat_record_set_sta_stamp( ofoTVARecord *record, const myStampVal *stamp )
 {
 	ofo_base_setter( TVA_RECORD, record, timestamp, TFO_STA_STAMP, stamp );
 }
@@ -2069,7 +2069,7 @@ ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate 
 	ofaIDBConnect *connect;
 	const gchar *user, *cstr;
 	gchar *stamp_str, *sdate, *send;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	GString *gstr;
 	gboolean ok;
 	ofaISignaler *signaler;
@@ -2096,9 +2096,9 @@ ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate 
 	vat_record_set_sta_user( record, user );
 	g_string_append_printf( gstr, "TFO_STA_USER='%s',", user );
 
-	my_stamp_set_now( &stamp );
-	vat_record_set_sta_stamp( record, &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	vat_record_set_sta_stamp( record, stamp );
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 	g_string_append_printf( gstr, "TFO_STA_STAMP='%s',", stamp_str );
 	g_free( stamp_str );
 
@@ -2130,6 +2130,8 @@ ofo_tva_record_validate( ofoTVARecord *record, ofeVatStatus status, const GDate 
 	opes = ofo_tva_record_get_accounting_opes( record );
 	ofo_entry_validate_by_opes( getter, opes );
 	g_list_free( opes );
+
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -2234,7 +2236,7 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	gboolean ok;
 	GString *query;
 	gchar *notes, *label, *corresp, *sbegin, *send, *stamp_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid, *cstr;
 
 	userid = ofa_idbconnect_get_account( connect );
@@ -2243,8 +2245,8 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	notes = my_utils_quote_sql( ofo_tva_record_get_notes( record ));
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), MY_DATE_SQL );
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO TVA_T_RECORDS" );
 
@@ -2286,12 +2288,12 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	cstr = ofa_box_get_string( OFO_BASE( record )->prot->fields, TFO_STATUS );
 	g_string_append_printf( query, ",'%s','%s','%s')", cstr, userid, stamp_str );
 	vat_record_set_sta_user( record, userid );
-	vat_record_set_sta_stamp( record, &stamp );
+	vat_record_set_sta_stamp( record, stamp );
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	vat_record_set_cre_user( record, userid );
-	vat_record_set_cre_stamp( record, &stamp );
+	vat_record_set_cre_stamp( record, stamp );
 
 	g_free( send );
 	g_free( sbegin );
@@ -2299,6 +2301,7 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	g_free( label );
 	g_free( corresp );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	g_string_free( query, TRUE );
 
@@ -2572,14 +2575,14 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	GString *query;
 	gchar *label, *corresp, *sbegin, *send, *stamp_str;
 	const gchar *mnemo, *userid;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_tva_record_get_label( record ));
 	corresp = my_utils_quote_sql( ofo_tva_record_get_correspondence( record ));
 	mnemo = ofo_tva_record_get_mnemo( record );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), MY_DATE_SQL );
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
 
@@ -2613,7 +2616,7 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	vat_record_set_upd_user( record, userid );
-	vat_record_set_upd_stamp( record, &stamp );
+	vat_record_set_upd_stamp( record, stamp );
 
 	g_string_free( query, TRUE );
 	g_free( label );
@@ -2621,6 +2624,7 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	g_free( stamp_str );
 	g_free( sbegin );
 	g_free( send );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -2667,13 +2671,13 @@ record_do_update_notes( ofoTVARecord *record, const ofaIDBConnect *connect )
 	GString *query;
 	gchar *notes, *send, *stamp_str;
 	const gchar *mnemo, *userid;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
 	notes = my_utils_quote_sql( ofo_tva_record_get_notes( record ));
 	mnemo = ofo_tva_record_get_mnemo( record );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
 
 	query = g_string_new( "UPDATE TVA_T_RECORDS SET " );
@@ -2694,12 +2698,13 @@ record_do_update_notes( ofoTVARecord *record, const ofaIDBConnect *connect )
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	vat_record_set_upd_user( record, userid );
-	vat_record_set_upd_stamp( record, &stamp );
+	vat_record_set_upd_stamp( record, stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( stamp_str );
 	g_free( send );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -2748,7 +2753,7 @@ record_do_update_dope( ofoTVARecord *record, ofaIDBConnect *connect, const GDate
 	GString *query;
 	gchar *sdend, *sstamp, *sdope;
 	const gchar *mnemo, *userid;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	mnemo = ofo_tva_record_get_mnemo( record );
 	sdend = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
@@ -2758,8 +2763,8 @@ record_do_update_dope( ofoTVARecord *record, ofaIDBConnect *connect, const GDate
 	if( my_date_is_valid( dope )){
 		sdope = my_date_to_str( dope, MY_DATE_SQL );
 		userid = ofa_idbconnect_get_account( connect );
-		my_stamp_set_now( &stamp );
-		sstamp = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+		stamp = my_stamp_new_now();
+		sstamp = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 		g_string_append_printf( query, "TFO_DOPE='%s',TFO_OPE_USER='%s',TFO_OPE_STAMP='%s'",
 				sdope, userid, sstamp );
@@ -2769,7 +2774,9 @@ record_do_update_dope( ofoTVARecord *record, ofaIDBConnect *connect, const GDate
 
 		vat_record_set_ope_date( record, dope );
 		vat_record_set_ope_user( record, userid );
-		vat_record_set_ope_stamp( record, &stamp );
+		vat_record_set_ope_stamp( record, stamp );
+
+		my_stamp_free( stamp );
 
 	} else {
 		query = g_string_append( query, "TFO_DOPE=NULL,TFO_OPE_USER=NULL,TFO_OPE_STAMP=NULL" );
@@ -2785,7 +2792,6 @@ record_do_update_dope( ofoTVARecord *record, ofaIDBConnect *connect, const GDate
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	g_free( sdend );
-
 	g_string_free( query, TRUE );
 
 	return( ok );

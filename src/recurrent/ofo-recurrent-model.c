@@ -174,9 +174,9 @@ typedef struct {
 static ofoRecurrentModel *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gchar             *get_mnemo_new_from( const ofoRecurrentModel *model );
 static void               recurrent_model_set_cre_user( ofoRecurrentModel *model, const gchar *user );
-static void               recurrent_model_set_cre_stamp( ofoRecurrentModel *model, const GTimeVal *stamp );
+static void               recurrent_model_set_cre_stamp( ofoRecurrentModel *model, const myStampVal *stamp );
 static void               recurrent_model_set_upd_user( ofoRecurrentModel *model, const gchar *user );
-static void               recurrent_model_set_upd_stamp( ofoRecurrentModel *model, const GTimeVal *stamp );
+static void               recurrent_model_set_upd_stamp( ofoRecurrentModel *model, const myStampVal *stamp );
 static GList             *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean           model_do_insert( ofoRecurrentModel *model, const ofaIDBConnect *connect );
 static gboolean           model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect );
@@ -494,7 +494,7 @@ ofo_recurrent_model_get_cre_user( const ofoRecurrentModel *model )
  * ofo_recurrent_model_get_cre_stamp:
  * @model: this #ofoRecurrentModel object.
  */
-const GTimeVal *
+const myStampVal *
 ofo_recurrent_model_get_cre_stamp( const ofoRecurrentModel *model )
 {
 	ofo_base_getter( RECURRENT_MODEL, model, timestamp, NULL, REC_CRE_STAMP );
@@ -620,7 +620,7 @@ ofo_recurrent_model_get_upd_user( const ofoRecurrentModel *model )
  * ofo_recurrent_model_get_upd_stamp:
  * @model: this #ofoRecurrentModel object.
  */
-const GTimeVal *
+const myStampVal *
 ofo_recurrent_model_get_upd_stamp( const ofoRecurrentModel *model )
 {
 	ofo_base_getter( RECURRENT_MODEL, model, timestamp, NULL, REC_UPD_STAMP );
@@ -730,7 +730,7 @@ recurrent_model_set_cre_user( ofoRecurrentModel *model, const gchar *user )
  * ofo_recurrent_model_set_cre_stamp:
  */
 static void
-recurrent_model_set_cre_stamp( ofoRecurrentModel *model, const GTimeVal *stamp )
+recurrent_model_set_cre_stamp( ofoRecurrentModel *model, const myStampVal *stamp )
 {
 	ofo_base_setter( RECURRENT_MODEL, model, string, REC_CRE_STAMP, stamp );
 }
@@ -848,7 +848,7 @@ recurrent_model_set_upd_user( ofoRecurrentModel *model, const gchar *user )
  * ofo_recurrent_model_set_upd_stamp:
  */
 static void
-recurrent_model_set_upd_stamp( ofoRecurrentModel *model, const GTimeVal *stamp )
+recurrent_model_set_upd_stamp( ofoRecurrentModel *model, const myStampVal *stamp )
 {
 	ofo_base_setter( RECURRENT_MODEL, model, string, REC_UPD_STAMP, stamp );
 }
@@ -968,7 +968,7 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	const gchar *def_amount1, *def_amount2, *def_amount3, *userid;
 	gchar *label, *template, *end_str, *notes, *stamp_str, *period_str;
 	myPeriod *period;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const GDate *dend;
 	myPeriodKey per_id;
 
@@ -979,8 +979,8 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	def_amount2 = ofo_recurrent_model_get_def_amount2( model );
 	def_amount3 = ofo_recurrent_model_get_def_amount3( model );
 	notes = my_utils_quote_sql( ofo_recurrent_model_get_notes( model ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO REC_T_MODELS " );
 
@@ -1064,7 +1064,7 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	recurrent_model_set_cre_user( model, userid );
-	recurrent_model_set_cre_stamp( model, &stamp );
+	recurrent_model_set_cre_stamp( model, stamp );
 
 	g_string_free( query, TRUE );
 	g_free( period_str );
@@ -1073,6 +1073,7 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	g_free( template );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1125,7 +1126,7 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	gchar *label, *notes;
 	const gchar *new_mnemo, *template, *def_amount, *userid;
 	gchar *stamp_str, *end_str, *period_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	myPeriod *period;
 	const GDate *dend;
 	myPeriodKey per_id;
@@ -1134,8 +1135,8 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	label = my_utils_quote_sql( ofo_recurrent_model_get_label( model ));
 	notes = my_utils_quote_sql( ofo_recurrent_model_get_notes( model ));
 	new_mnemo = ofo_recurrent_model_get_mnemo( model );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE REC_T_MODELS SET " );
 
@@ -1227,7 +1228,7 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	recurrent_model_set_upd_user( model, userid );
-	recurrent_model_set_upd_stamp( model, &stamp );
+	recurrent_model_set_upd_stamp( model, stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
@@ -1235,6 +1236,7 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	g_free( period_str );
 	g_free( stamp_str );
 	g_free( label );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1762,7 +1764,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	guint period_n;
 	ofaHub *hub;
 	ofaIDBConnect *connect;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	GDate date;
 
 	numline = 0;
@@ -1806,15 +1808,17 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		 * default to current */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !my_strlen( cstr )){
-			my_stamp_set_now( &stamp );
-			stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
-		} else {
+		if( my_strlen( cstr )){
+			stamp = my_stamp_new();
 			stamp_str = g_strdup( cstr );
+		} else {
+			stamp = my_stamp_new_now();
+			stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 		}
-		my_stamp_set_from_sql( &stamp, stamp_str );
-		recurrent_model_set_cre_stamp( model, &stamp );
+		my_stamp_set_from_sql( stamp, stamp_str );
+		recurrent_model_set_cre_stamp( model, stamp );
 		g_free( stamp_str );
+		my_stamp_free( stamp );
 
 		/* label
 		 * not mandatory as far as model is not enabled */

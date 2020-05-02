@@ -80,7 +80,7 @@ settings_monitor_finalize( GObject *object )
 
 	g_free( priv->filename );
 	g_clear_object( &priv->monitor );
-	g_free( priv->timeout );
+	my_timeout_free( priv->timeout );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( my_file_monitor_parent_class )->finalize( object );
@@ -180,7 +180,7 @@ my_file_monitor_new( const gchar *filename )
 
 	/*g_file_monitor_set_rate_limit( priv->monitor, FILE_MONITOR_RATE_LIMIT );*/
 	/* rather use our myTimeout struct */
-	priv->timeout = g_new0( myTimeout, 1 );
+	priv->timeout = my_timeout_new();
 	priv->timeout->timeout = FILE_MONITOR_RATE_LIMIT;
 	priv->timeout->handler = ( myTimeoutFunc ) on_monitor_changed_timeout;
 	priv->timeout->user_data = monitor;

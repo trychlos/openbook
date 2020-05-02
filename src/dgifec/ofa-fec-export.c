@@ -404,7 +404,7 @@ static gint
 iexportable_export_fec_cmp_entries( ofoEntry *a, ofoEntry *b )
 {
 	const GDate *deffecta, *deffectb;
-	const GTimeVal *stampa, *stampb;
+	const myStampVal *stampa, *stampb;
 	ofxCounter numa, numb;
 	gint cmp;
 

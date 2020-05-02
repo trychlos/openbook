@@ -1161,29 +1161,29 @@ tview_apply_extfilter_for_stamp( ofaEntryPage *self, sExtend *criterium, const g
 {
 	static const gchar *thisfn = "ofa_entry_page_tview_apply_extfilter_for_stamp";
 	gboolean ok;
-	GTimeVal crit_stamp, entry_stamp;
+	myStampVal *crit_stamp, *entry_stamp;
 
-	my_stamp_set_from_str( &crit_stamp, criterium->value, MY_STAMP_DMYYHM );
-	my_stamp_set_from_str( &entry_stamp, entry_value, MY_STAMP_DMYYHM );
+	crit_stamp = my_stamp_new_from_str( criterium->value, MY_STAMP_DMYYHM );
+	entry_stamp = my_stamp_new_from_str( entry_value, MY_STAMP_DMYYHM );
 
 	switch( criterium->condition ){
 		case COND_EQUAL:
-			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) == 0 );
+			ok = ( my_stamp_compare( entry_stamp, crit_stamp ) == 0 );
 			break;
 		case COND_LE:
-			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) <= 0 );
+			ok = ( my_stamp_compare( entry_stamp, crit_stamp ) <= 0 );
 			break;
 		case COND_LT:
-			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) < 0 );
+			ok = ( my_stamp_compare( entry_stamp, crit_stamp ) < 0 );
 			break;
 		case COND_GE:
-			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) >= 0 );
+			ok = ( my_stamp_compare( entry_stamp, crit_stamp ) >= 0 );
 			break;
 		case COND_GT:
-			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) > 0 );
+			ok = ( my_stamp_compare( entry_stamp, crit_stamp ) > 0 );
 			break;
 		case COND_NE:
-			ok = ( my_stamp_compare( &entry_stamp, &crit_stamp ) != 0 );
+			ok = ( my_stamp_compare( entry_stamp, crit_stamp ) != 0 );
 			break;
 
 		// does not apply
@@ -1199,6 +1199,9 @@ tview_apply_extfilter_for_stamp( ofaEntryPage *self, sExtend *criterium, const g
 			ok = FALSE;
 			break;
 	}
+
+	my_stamp_free( entry_stamp );
+	my_stamp_free( crit_stamp );
 
 	return( ok );
 }

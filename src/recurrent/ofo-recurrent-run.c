@@ -190,11 +190,11 @@ static sStatus st_status[] = {
 static void       recurrent_run_set_numseq( ofoRecurrentRun *model, ofxCounter numseq );
 static void       recurrent_run_set_period( ofoRecurrentRun *run, myPeriod *period );
 static void       recurrent_run_set_cre_user( ofoRecurrentRun *model, const gchar *user );
-static void       recurrent_run_set_cre_stamp( ofoRecurrentRun *model, const GTimeVal *stamp );
+static void       recurrent_run_set_cre_stamp( ofoRecurrentRun *model, const myStampVal *stamp );
 static void       recurrent_run_set_sta_user( ofoRecurrentRun *model, const gchar *user );
-static void       recurrent_run_set_sta_stamp( ofoRecurrentRun *model, const GTimeVal *stamp );
+static void       recurrent_run_set_sta_stamp( ofoRecurrentRun *model, const myStampVal *stamp );
 static void       recurrent_run_set_edi_user( ofoRecurrentRun *model, const gchar *user );
-static void       recurrent_run_set_edi_stamp( ofoRecurrentRun *model, const GTimeVal *stamp );
+static void       recurrent_run_set_edi_stamp( ofoRecurrentRun *model, const myStampVal *stamp );
 static GList     *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean   recurrent_run_do_insert( ofoRecurrentRun *model, ofaIGetter *getter );
 static gboolean   recurrent_run_insert_main( ofoRecurrentRun *model, ofaIGetter *getter );
@@ -468,7 +468,7 @@ ofo_recurrent_run_get_cre_user( const ofoRecurrentRun *model )
 /**
  * ofo_recurrent_run_get_cre_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_recurrent_run_get_cre_stamp( const ofoRecurrentRun *model )
 {
 	ofo_base_getter( RECURRENT_RUN, model, timestamp, NULL, REC_CRE_STAMP );
@@ -584,7 +584,7 @@ ofo_recurrent_run_get_sta_user( const ofoRecurrentRun *model )
 /**
  * ofo_recurrent_run_get_sta_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_recurrent_run_get_sta_stamp( const ofoRecurrentRun *model )
 {
 	ofo_base_getter( RECURRENT_RUN, model, timestamp, NULL, REC_STA_STAMP );
@@ -638,7 +638,7 @@ ofo_recurrent_run_get_edi_user( const ofoRecurrentRun *model )
 /**
  * ofo_recurrent_run_get_edi_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_recurrent_run_get_edi_stamp( const ofoRecurrentRun *model )
 {
 	ofo_base_getter( RECURRENT_RUN, model, timestamp, NULL, REC_EDI_STAMP );
@@ -803,7 +803,7 @@ recurrent_run_set_cre_user( ofoRecurrentRun *model, const gchar *user )
  * recurrent_run_set_cre_stamp:
  */
 static void
-recurrent_run_set_cre_stamp( ofoRecurrentRun *model, const GTimeVal *stamp )
+recurrent_run_set_cre_stamp( ofoRecurrentRun *model, const myStampVal *stamp )
 {
 	ofo_base_setter( RECURRENT_RUN, model, string, REC_CRE_STAMP, stamp );
 }
@@ -840,7 +840,7 @@ recurrent_run_set_sta_user( ofoRecurrentRun *model, const gchar *user )
  * recurrent_run_set_sta_stamp:
  */
 static void
-recurrent_run_set_sta_stamp( ofoRecurrentRun *model, const GTimeVal *stamp )
+recurrent_run_set_sta_stamp( ofoRecurrentRun *model, const myStampVal *stamp )
 {
 	ofo_base_setter( RECURRENT_RUN, model, string, REC_STA_STAMP, stamp );
 }
@@ -897,7 +897,7 @@ recurrent_run_set_edi_user( ofoRecurrentRun *model, const gchar *user )
  * recurrent_run_set_edi_stamp:
  */
 static void
-recurrent_run_set_edi_stamp( ofoRecurrentRun *model, const GTimeVal *stamp )
+recurrent_run_set_edi_stamp( ofoRecurrentRun *model, const myStampVal *stamp )
 {
 	ofo_base_setter( RECURRENT_RUN, model, string, REC_EDI_STAMP, stamp );
 }
@@ -1001,7 +1001,7 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	const GDate *date;
 	const gchar *mnemo, *userid, *cdbms;
 	gchar *sdate, *stamp_str, *samount, *label, *template, *period_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	ofoRecurrentModel *model;
 	ofxCounter numseq;
 	ofeRecurrentStatus status;
@@ -1013,8 +1013,8 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	connect = ofa_hub_get_connect( hub );
 
 	userid = ofa_idbconnect_get_account( connect );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	mnemo = ofo_recurrent_run_get_mnemo( recrun );
 	model = ofo_recurrent_model_get_by_mnemo( getter, mnemo );
@@ -1081,7 +1081,7 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	g_string_append_printf( query, "'%s',", stamp_str );
 
 	recurrent_run_set_cre_user( recrun, userid );
-	recurrent_run_set_cre_stamp( recrun, &stamp );
+	recurrent_run_set_cre_stamp( recrun, stamp );
 
 	/* status */
 	status = ofo_recurrent_run_get_status( recrun );
@@ -1097,7 +1097,7 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	g_string_append_printf( query, "'%s',", stamp_str );
 
 	recurrent_run_set_sta_user( recrun, userid );
-	recurrent_run_set_sta_stamp( recrun, &stamp );
+	recurrent_run_set_sta_stamp( recrun, stamp );
 
 	amount = ofo_recurrent_run_get_amount1( recrun );
 	if( amount > 0 ){
@@ -1131,12 +1131,13 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	g_string_append_printf( query, "'%s')", stamp_str );
 
 	recurrent_run_set_edi_user( recrun, userid );
-	recurrent_run_set_edi_stamp( recrun, &stamp );
+	recurrent_run_set_edi_stamp( recrun, stamp );
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1183,7 +1184,7 @@ recurrent_run_do_update_status( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	GString *query;
 	const gchar *userid, *cdbms;
 	gchar *stamp_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	ofxCounter numseq;
 	ofeRecurrentStatus status;
 
@@ -1196,8 +1197,8 @@ recurrent_run_do_update_status( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	connect = ofa_hub_get_connect( hub );
 
 	userid = ofa_idbconnect_get_account( connect );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE REC_T_RUN SET " );
 
@@ -1221,10 +1222,11 @@ recurrent_run_do_update_status( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	recurrent_run_set_sta_user( recrun, userid );
-	recurrent_run_set_sta_stamp( recrun, &stamp );
+	recurrent_run_set_sta_stamp( recrun, stamp );
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1272,7 +1274,7 @@ recurrent_run_do_update_amounts( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	gchar *samount;
 	const gchar *userid, *mnemo;
 	gchar *stamp_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	ofxCounter numseq;
 	ofoRecurrentModel *model;
 	ofxAmount amount;
@@ -1290,8 +1292,8 @@ recurrent_run_do_update_amounts( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	connect = ofa_hub_get_connect( hub );
 
 	userid = ofa_idbconnect_get_account( connect );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE REC_T_RUN SET " );
 
@@ -1334,10 +1336,11 @@ recurrent_run_do_update_amounts( ofoRecurrentRun *recrun, ofaIGetter *getter )
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	recurrent_run_set_edi_user( recrun, userid );
-	recurrent_run_set_edi_stamp( recrun, &stamp );
+	recurrent_run_set_edi_stamp( recrun, stamp );
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }

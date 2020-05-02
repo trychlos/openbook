@@ -26,14 +26,22 @@
 #define __MY_API_MY_STAMP_H__
 
 /**
- * SECTION: my_date
- * @short_description: Miscellaneous utilities for GTimeVal management
+ * SECTION: my_stamp
+ * @short_description: Miscellaneous utilities for timestamp management
  * @include: my/my-stamp.h
  */
 
+#include <glib.h>
 #include <glib-object.h>
 
 G_BEGIN_DECLS
+
+/**
+ * myStampVal:
+ *
+ * An opaque data structure which holds a timestamp.
+ */
+typedef struct _myStampVal myStampVal;
 
 /**
  * myStampFormat:
@@ -53,15 +61,27 @@ typedef enum {
 }
 	myStampFormat;
 
-GTimeVal *my_stamp_set_now       ( GTimeVal *stamp );
+myStampVal *my_stamp_new           ( void );
+myStampVal *my_stamp_new_now       ( void );
+myStampVal *my_stamp_new_from_sql  ( const gchar *str );
+myStampVal *my_stamp_new_from_stamp( const myStampVal *stamp );
+myStampVal *my_stamp_new_from_str  ( const gchar *str, myStampFormat format );
 
-gint      my_stamp_compare       ( const GTimeVal *a, const GTimeVal *b );
+myStampVal *my_stamp_set_now       ( myStampVal *stamp );
 
-GTimeVal *my_stamp_set_from_sql  ( GTimeVal *timeval, const gchar *str );
-GTimeVal *my_stamp_set_from_str  ( GTimeVal *timeval, const gchar *str, myStampFormat format );
-GTimeVal *my_stamp_set_from_stamp( GTimeVal *timeval, const GTimeVal *orig );
+gint        my_stamp_compare       ( const myStampVal *a, const myStampVal *b );
+gint64      my_stamp_diff_us       ( const myStampVal *a, const myStampVal *b );
 
-gchar    *my_stamp_to_str        ( const GTimeVal *stamp, myStampFormat format );
+time_t      my_stamp_get_seconds   ( const myStampVal *stamp );
+gulong      my_stamp_get_usecs     ( const myStampVal *stamp );
+
+myStampVal *my_stamp_set_from_sql  ( myStampVal *stamp, const gchar *str );
+myStampVal *my_stamp_set_from_stamp( myStampVal *stamp, const myStampVal *orig );
+myStampVal *my_stamp_set_from_str  ( myStampVal *stamp, const gchar *str, myStampFormat format );
+
+gchar      *my_stamp_to_str        ( const myStampVal *stamp, myStampFormat format );
+
+void        my_stamp_free          ( myStampVal *stamp );
 
 G_END_DECLS
 

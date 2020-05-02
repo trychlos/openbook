@@ -144,9 +144,9 @@ typedef struct {
 static ofoCurrency *currency_find_by_code( GList *set, const gchar *code );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static void         currency_set_cre_user( ofoCurrency *currency, const gchar *user );
-static void         currency_set_cre_stamp( ofoCurrency *currency, const GTimeVal *stamp );
+static void         currency_set_cre_stamp( ofoCurrency *currency, const myStampVal *stamp );
 static void         currency_set_upd_user( ofoCurrency *currency, const gchar *user );
-static void         currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp );
+static void         currency_set_upd_stamp( ofoCurrency *currency, const myStampVal *stamp );
 static GList       *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean     currency_do_insert( ofoCurrency *currency, const ofaIDBConnect *connect );
 static gboolean     currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect );
@@ -336,7 +336,7 @@ ofo_currency_get_cre_user( const ofoCurrency *currency )
 /**
  * ofo_currency_get_cre_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_currency_get_cre_stamp( const ofoCurrency *currency )
 {
 	ofo_base_getter( CURRENCY, currency, timestamp, NULL, CUR_CRE_STAMP );
@@ -390,7 +390,7 @@ ofo_currency_get_upd_user( const ofoCurrency *currency )
 /**
  * ofo_currency_get_upd_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_currency_get_upd_stamp( const ofoCurrency *currency )
 {
 	ofo_base_getter( CURRENCY, currency, timestamp, NULL, CUR_UPD_STAMP );
@@ -505,7 +505,7 @@ currency_set_cre_user( ofoCurrency *currency, const gchar *user )
  * currency_set_cre_stamp:
  */
 static void
-currency_set_cre_stamp( ofoCurrency *currency, const GTimeVal *stamp )
+currency_set_cre_stamp( ofoCurrency *currency, const myStampVal *stamp )
 {
 	ofo_base_setter( CURRENCY, currency, timestamp, CUR_CRE_STAMP, stamp );
 }
@@ -559,7 +559,7 @@ currency_set_upd_user( ofoCurrency *currency, const gchar *user )
  * currency_set_upd_stamp:
  */
 static void
-currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp )
+currency_set_upd_stamp( ofoCurrency *currency, const myStampVal *stamp )
 {
 	ofo_base_setter( CURRENCY, currency, timestamp, CUR_UPD_STAMP, stamp );
 }
@@ -677,7 +677,7 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect )
 {
 	GString *query;
 	gchar *label, *notes, *stamp_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *symbol, *userid;
 	gboolean ok;
 
@@ -686,8 +686,8 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect )
 	label = my_utils_quote_sql( ofo_currency_get_label( currency ));
 	symbol = ofo_currency_get_symbol( currency );
 	notes = my_utils_quote_sql( ofo_currency_get_notes( currency ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "" );
 	g_string_append_printf( query,
@@ -709,7 +709,7 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect )
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		currency_set_cre_user( currency, userid );
-		currency_set_cre_stamp( currency, &stamp );
+		currency_set_cre_stamp( currency, stamp );
 		ok = TRUE;
 	}
 
@@ -717,6 +717,7 @@ currency_insert_main( ofoCurrency *currency, const ofaIDBConnect *connect )
 	g_free( label );
 	g_free( notes );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -757,7 +758,7 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBC
 {
 	GString *query;
 	gchar *label, *notes, *stamp_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	gboolean ok;
 	const gchar *userid;
 
@@ -765,8 +766,8 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBC
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_currency_get_label( currency ));
 	notes = my_utils_quote_sql( ofo_currency_get_notes( currency ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_CURRENCIES SET " );
 
@@ -789,7 +790,7 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBC
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		currency_set_upd_user( currency, userid );
-		currency_set_upd_stamp( currency, &stamp );
+		currency_set_upd_stamp( currency, stamp );
 		ok = TRUE;
 	}
 
@@ -797,6 +798,7 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBC
 	g_free( label );
 	g_free( notes );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1130,7 +1132,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	const gchar *cstr;
 	gchar *splitted;
 	ofoCurrency *currency;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	numline = 0;
 	dataset = NULL;
@@ -1169,8 +1171,9 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( my_strlen( cstr )){
-			my_stamp_set_from_sql( &stamp, cstr );
-			currency_set_cre_stamp( currency, &stamp );
+			stamp = my_stamp_new_from_sql( cstr );
+			currency_set_cre_stamp( currency, stamp );
+			my_stamp_free( stamp );
 		}
 
 		/* currency label */

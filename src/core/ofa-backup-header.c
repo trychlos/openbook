@@ -160,7 +160,7 @@ write_header( struct archive *archive, struct archive_entry *entry, const gchar 
 {
 	static const gchar *thisfn = "ofa_backup_header_write_header";
 	gchar *header_title;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	glong written;
 
 	archive_entry_clear( entry );
@@ -171,8 +171,9 @@ write_header( struct archive *archive, struct archive_entry *entry, const gchar 
 
     archive_entry_set_filetype( entry, AE_IFREG );
     archive_entry_set_perm( entry, 0644 );
-	my_stamp_set_now( &stamp );
-    archive_entry_set_mtime( entry, stamp.tv_sec, 0 );
+    stamp = my_stamp_new_now();
+    archive_entry_set_mtime( entry, my_stamp_get_seconds( stamp ), 0 );
+    my_stamp_free( stamp );
 
     if( archive_write_header( archive, entry) != ARCHIVE_OK ){
     	g_warning( "%s: archive_write_header: %s", thisfn, archive_error_string( archive ));

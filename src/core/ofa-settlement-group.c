@@ -272,7 +272,7 @@ setup_ui( ofaSettlementGroup *self )
 	ofaSettlementGroupPrivate *priv;
 	GtkWidget *parent, *btn, *label;
 	gchar *str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	priv = ofa_settlement_group_get_instance_private( self );
 
@@ -290,8 +290,9 @@ setup_ui( ofaSettlementGroup *self )
 	g_signal_connect( priv->tview, "ofa-selchanged", G_CALLBACK( tview_on_selection_changed ), self );
 
 	ofo_entry_get_settlement_by_number( priv->getter, priv->settlement_id, &str, &stamp );
-	my_utils_container_updstamp_setup_full( GTK_CONTAINER( self ), "px-last-update", &stamp, str );
+	my_utils_container_updstamp_setup_full( GTK_CONTAINER( self ), "px-last-update", stamp, str );
 	g_free( str );
+	my_stamp_free( stamp );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "id-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

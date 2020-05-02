@@ -2728,7 +2728,7 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 	ofaMysqlDBModelPrivate *priv;
 	const gchar *userid;
 	gchar *stamp_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	GString *query;
 	gboolean ok;
 
@@ -2737,7 +2737,7 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
 	userid = ofa_idbconnect_get_account( priv->connect );
-	my_stamp_set_now( &stamp );
+	stamp = my_stamp_new_now();
 
 	/* 1 */
 	if( !exec_query( self,
@@ -2869,7 +2869,7 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 	/* 16
 	 * if the dossier has never been updated (just created) */
 	query = g_string_new( NULL );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 	g_string_append_printf( query,
 			"UPDATE OFA_T_DOSSIER SET "
 			"	DOS_CRE_USER='%s',"
@@ -2983,6 +2983,8 @@ dbmodel_v38( ofaMysqlDBModel *self, gint version )
 			"	TRS_CRE_STAMP=TRS_UPD_STAMP" )){
 		return( FALSE );
 	}
+
+	my_stamp_free( stamp );
 
 	return( TRUE );
 }

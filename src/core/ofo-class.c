@@ -130,9 +130,9 @@ typedef struct {
 
 static ofoClass  *class_find_by_number( GList *set, gint number );
 static void       class_set_cre_user( ofoClass *class, const gchar *user );
-static void       class_set_cre_stamp( ofoClass *class, const GTimeVal *stamp );
+static void       class_set_cre_stamp( ofoClass *class, const myStampVal *stamp );
 static void       class_set_upd_user( ofoClass *class, const gchar *user );
-static void       class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp );
+static void       class_set_upd_stamp( ofoClass *class, const myStampVal *stamp );
 static GList     *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean   class_do_insert( ofoClass *class, const ofaIDBConnect *connect );
 static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect );
@@ -320,7 +320,7 @@ ofo_class_get_cre_user( const ofoClass *class )
 /**
  * ofo_class_get_cre_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_class_get_cre_stamp( const ofoClass *class )
 {
 	ofo_base_getter( CLASS, class, timestamp, NULL, CLA_CRE_STAMP );
@@ -356,7 +356,7 @@ ofo_class_get_upd_user( const ofoClass *class )
 /**
  * ofo_class_get_upd_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_class_get_upd_stamp( const ofoClass *class )
 {
 	ofo_base_getter( CLASS, class, timestamp, NULL, CLA_UPD_STAMP );
@@ -468,7 +468,7 @@ class_set_cre_user( ofoClass *class, const gchar *user )
  * class_set_cre_stamp:
  */
 static void
-class_set_cre_stamp( ofoClass *class, const GTimeVal *stamp )
+class_set_cre_stamp( ofoClass *class, const myStampVal *stamp )
 {
 	ofo_base_setter( CLASS, class, timestamp, CLA_CRE_STAMP, stamp );
 }
@@ -506,7 +506,7 @@ class_set_upd_user( ofoClass *class, const gchar *user )
  * class_set_upd_stamp:
  */
 static void
-class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp )
+class_set_upd_stamp( ofoClass *class, const myStampVal *stamp )
 {
 	ofo_base_setter( CLASS, class, timestamp, CLA_UPD_STAMP, stamp );
 }
@@ -622,14 +622,14 @@ class_do_insert( ofoClass *class, const ofaIDBConnect *connect )
 	GString *query;
 	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 
 	query = g_string_new( "INSERT INTO OFA_T_CLASSES " );
 
 	userid = ofa_idbconnect_get_account( connect );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	label = my_utils_quote_sql( ofo_class_get_label( class ));
 	notes = my_utils_quote_sql( ofo_class_get_notes( class ));
@@ -653,11 +653,12 @@ class_do_insert( ofoClass *class, const ofaIDBConnect *connect )
 
 	if( ok ){
 		class_set_cre_user( class, userid );
-		class_set_cre_stamp( class, &stamp );
+		class_set_cre_stamp( class, stamp );
 	}
 
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -700,7 +701,7 @@ class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect )
 {
 	GString *query;
 	gchar *label, *notes, *stamp_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	gboolean ok;
 	const gchar *userid;
 
@@ -708,8 +709,8 @@ class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect )
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_class_get_label( class ));
 	notes = my_utils_quote_sql( ofo_class_get_notes( class ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_CLASSES SET " );
 
@@ -728,7 +729,7 @@ class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect )
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		class_set_upd_user( class, userid );
-		class_set_upd_stamp( class, &stamp );
+		class_set_upd_stamp( class, stamp );
 		ok = TRUE;
 	}
 
@@ -736,6 +737,7 @@ class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect )
 	g_free( label );
 	g_free( notes );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1148,7 +1150,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	ofoClass *class;
 	gchar *str, *splitted;
 	GSList *itl, *fields, *itf;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	numline = 0;
 	dataset = NULL;
@@ -1193,8 +1195,9 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( my_strlen( cstr )){
-			my_stamp_set_from_sql( &stamp, cstr );
-			class_set_cre_stamp( class, &stamp );
+			stamp = my_stamp_new_from_sql( cstr );
+			class_set_cre_stamp( class, stamp );
+			my_stamp_free( stamp );
 		}
 
 		/* class label */

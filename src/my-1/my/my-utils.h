@@ -34,6 +34,7 @@
 #include <gtk/gtk.h>
 
 #include <my/my-isettings.h>
+#include <my/my-stamp.h>
 
 G_BEGIN_DECLS
 
@@ -104,7 +105,7 @@ void          my_utils_container_notes_setup_ex       ( GtkTextView *textview,
 
 void          my_utils_container_updstamp_setup_full  ( GtkContainer *container,
 																const gchar *label_name,
-																const GTimeVal *stamp,
+																const myStampVal *stamp,
 																const gchar *user );
 
 #define       my_utils_container_crestamp_init( C,T ) if( !priv->is_new ){ my_utils_container_updstamp_setup_full( \

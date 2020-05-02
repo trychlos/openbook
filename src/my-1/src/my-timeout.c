@@ -29,7 +29,22 @@
 #include "my/my-timeout.h"
 
 static gboolean on_timeout_event_timeout( myTimeout *timeout );
-static gulong   time_val_diff( const GTimeVal *recent, const GTimeVal *old );
+
+/**
+ * my_timeout_new:
+ *
+ * Returns: a new #myTimeout structure, which should be my_timeout_free() by the caller.
+ */
+myTimeout *
+my_timeout_new()
+{
+	myTimeout *timeout;
+
+	timeout = g_new0( myTimeout, 1 );
+	timeout->last_time = my_stamp_new();
+
+	return( timeout );
+}
 
 /**
  * my_timeout_event:
@@ -40,7 +55,7 @@ my_timeout_event( myTimeout *event )
 {
 	g_return_if_fail( event != NULL );
 
-	g_get_current_time( &event->last_time );
+	my_stamp_set_now( event->last_time );
 
 	if( !event->source_id ){
 		event->source_id = g_timeout_add(
@@ -55,12 +70,12 @@ my_timeout_event( myTimeout *event )
 static gboolean
 on_timeout_event_timeout( myTimeout *timeout )
 {
-	GTimeVal now;
+	myStampVal *now;
 	gulong diff;
 	gulong timeout_usec;
 
-	g_get_current_time( &now );
-	diff = time_val_diff( &now, &timeout->last_time );
+	now = my_stamp_new_now();
+	diff = ( gulong ) my_stamp_diff_us( now, timeout->last_time );
 	timeout_usec = 1000*timeout->timeout;
 
 	if( diff < timeout_usec ){
@@ -81,13 +96,17 @@ on_timeout_event_timeout( myTimeout *timeout )
 	return( FALSE );
 }
 
-/*
- * returns the difference in microseconds.
+/**
+ * my_timeout_free:
+ * @timeout: [allow-none]: a #myTimeout structure to be released.
+ *
+ * Release the @timeout structure.
  */
-static gulong
-time_val_diff( const GTimeVal *recent, const GTimeVal *old )
+void
+my_timeout_free( myTimeout *timeout )
 {
-	gulong microsec = 1000000 * ( recent->tv_sec - old->tv_sec );
-	microsec += recent->tv_usec  - old->tv_usec;
-	return( microsec );
+	if( timeout ){
+		g_free( timeout->last_time );
+		g_free( timeout );
+	}
 }

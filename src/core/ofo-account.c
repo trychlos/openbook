@@ -302,9 +302,9 @@ static const gchar        *account_get_string_ex( const ofoAccount *account, gin
 static void                account_get_children( const ofoAccount *account, sChildren *child_str );
 static void                account_iter_children( const ofoAccount *account, sChildren *child_str );
 static void                account_set_cre_user( ofoAccount *account, const gchar *user );
-static void                account_set_cre_stamp( ofoAccount *account, const GTimeVal *stamp );
+static void                account_set_cre_stamp( ofoAccount *account, const myStampVal *stamp );
 static void                account_set_upd_user( ofoAccount *account, const gchar *user );
-static void                account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
+static void                account_set_upd_stamp( ofoAccount *account, const myStampVal *stamp );
 static gboolean            archive_do_add_dbms( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
 static gboolean            archive_do_add_list( ofoAccount *account, const GDate *date, ofeAccountType type, ofxAmount debit, ofxAmount credit );
 static gint                archive_get_last_index( ofoAccount *account, const GDate *requested );
@@ -641,7 +641,7 @@ ofo_account_get_cre_user( const ofoAccount *account )
  *
  * Returns: the timestamp of the last properties update.
  */
-const GTimeVal *
+const myStampVal *
 ofo_account_get_cre_stamp( const ofoAccount *account )
 {
 	account_get_timestamp( ACC_CRE_STAMP );
@@ -843,7 +843,7 @@ ofo_account_get_upd_user( const ofoAccount *account )
  *
  * Returns: the timestamp of the last properties update.
  */
-const GTimeVal *
+const myStampVal *
 ofo_account_get_upd_stamp( const ofoAccount *account )
 {
 	account_get_timestamp( ACC_UPD_STAMP );
@@ -1462,7 +1462,7 @@ account_set_cre_user( ofoAccount *account, const gchar *user )
  * @account: the #ofoAccount account
  */
 static void
-account_set_cre_stamp( ofoAccount *account, const GTimeVal *stamp )
+account_set_cre_stamp( ofoAccount *account, const myStampVal *stamp )
 {
 	account_set_timestamp( ACC_CRE_STAMP, stamp );
 }
@@ -1590,7 +1590,7 @@ account_set_upd_user( ofoAccount *account, const gchar *user )
  * @account: the #ofoAccount account
  */
 static void
-account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp )
+account_set_upd_stamp( ofoAccount *account, const myStampVal *stamp )
 {
 	account_set_timestamp( ACC_UPD_STAMP, stamp );
 }
@@ -2129,7 +2129,7 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 	GString *query;
 	gchar *label, *notes, *stamp_str;
 	gboolean ok;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 
 	ok = FALSE;
@@ -2137,8 +2137,8 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_account_get_label( account ));
 	notes = my_utils_quote_sql( ofo_account_get_notes( account ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_ACCOUNTS" );
 
@@ -2175,7 +2175,7 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		account_set_cre_user( account, userid );
-		account_set_cre_stamp( account, &stamp );
+		account_set_cre_stamp( account, stamp );
 		ok = TRUE;
 	}
 
@@ -2183,6 +2183,7 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -2237,7 +2238,7 @@ account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gcha
 	gchar *label, *notes, *stamp_str;
 	gboolean ok;
 	const gchar *new_number;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 
 	ok = FALSE;
@@ -2246,8 +2247,8 @@ account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gcha
 	label = my_utils_quote_sql( ofo_account_get_label( account ));
 	notes = my_utils_quote_sql( ofo_account_get_notes( account ));
 	new_number = ofo_account_get_number( account );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
 
@@ -2299,12 +2300,13 @@ account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gcha
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		account_set_upd_user( account, userid );
-		account_set_upd_stamp( account, &stamp );
+		account_set_upd_stamp( account, stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 	g_free( notes );
 	g_free( label );
 
@@ -3404,7 +3406,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	ofoCurrency *currency;
 	ofoClass *class_obj;
 	gboolean is_root;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	numline = 0;
 	dataset = NULL;
@@ -3458,8 +3460,9 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( my_strlen( cstr )){
-			my_stamp_set_from_sql( &stamp, cstr );
-			account_set_cre_stamp( account, &stamp );
+			stamp = my_stamp_new_from_sql( cstr );
+			account_set_cre_stamp( account, stamp );
+			my_stamp_free( stamp );
 		}
 
 		/* account label */

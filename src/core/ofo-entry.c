@@ -297,13 +297,13 @@ static GDate       *entry_get_min_deffect( const ofoEntry *entry, GDate *date, o
 static gboolean     entry_get_import_settled( ofoEntry *entry );
 static void         entry_set_number( ofoEntry *entry, ofxCounter number );
 static void         entry_set_cre_user( ofoEntry *entry, const gchar *user );
-static void         entry_set_cre_stamp( ofoEntry *entry, const GTimeVal *stamp );
+static void         entry_set_cre_stamp( ofoEntry *entry, const myStampVal *stamp );
 static void         entry_set_upd_user( ofoEntry *entry, const gchar *user );
-static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *stamp );
+static void         entry_set_upd_stamp( ofoEntry *entry, const myStampVal *stamp );
 static void         entry_set_period( ofoEntry *entry, ofeEntryPeriod period );
 static void         entry_set_status( ofoEntry *entry, ofeEntryStatus status );
 static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
-static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
+static void         entry_set_settlement_stamp( ofoEntry *entry, const myStampVal *stamp );
 static void         entry_set_import_settled( ofoEntry *entry, gboolean settled );
 static gboolean     entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaIGetter *getter );
 static GList       *get_orphans( ofaIGetter *getter, const gchar *table );
@@ -983,14 +983,15 @@ ofo_entry_get_by_ope_numbers( ofaIGetter *getter, GList *ope_numbers )
  *
  * Set the provided @user and @stamp to the properties of the settlement.
  *
- * If set, the returned @user should be g_free() by the caller.
+ * If set, the returned @user (resp. @stamp) should be g_free() (resp. my_stamp_free())
+ * by the caller.
  */
 void
-ofo_entry_get_settlement_by_number( ofaIGetter *getter, ofxCounter number, gchar **user, GTimeVal *stamp )
+ofo_entry_get_settlement_by_number( ofaIGetter *getter, ofxCounter number, gchar **user, myStampVal **stamp )
 {
 	GList *dataset, *it;
 	ofoEntry *entry;
-	const GTimeVal *ent_stamp;
+	const myStampVal *ent_stamp;
 
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( number > 0 );
@@ -999,8 +1000,7 @@ ofo_entry_get_settlement_by_number( ofaIGetter *getter, ofxCounter number, gchar
 		*user = NULL;
 	}
 	if( stamp ){
-		stamp->tv_sec = 0;
-		stamp->tv_usec = 0;
+		*stamp = NULL;
 	}
 
 	dataset = ofo_entry_get_dataset( getter );
@@ -1012,8 +1012,7 @@ ofo_entry_get_settlement_by_number( ofaIGetter *getter, ofxCounter number, gchar
 			}
 			if( stamp ){
 				ent_stamp = ofo_entry_get_settlement_stamp( entry );
-				stamp->tv_sec = ent_stamp->tv_sec;
-				stamp->tv_usec = ent_stamp->tv_usec;
+				*stamp = my_stamp_new_from_stamp( ent_stamp );
 			}
 			break;;
 		}
@@ -1173,7 +1172,7 @@ ofo_entry_get_cre_user( const ofoEntry *entry )
 /**
  * ofo_entry_get_cre_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_entry_get_cre_stamp( const ofoEntry *entry )
 {
 	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_CRE_STAMP );
@@ -1311,7 +1310,7 @@ ofo_entry_get_upd_user( const ofoEntry *entry )
 /**
  * ofo_entry_get_upd_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_entry_get_upd_stamp( const ofoEntry *entry )
 {
 	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_UPD_STAMP );
@@ -1622,7 +1621,7 @@ ofo_entry_get_settlement_user( const ofoEntry *entry )
 /**
  * ofo_entry_get_settlement_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_entry_get_settlement_stamp( const ofoEntry *entry )
 {
 	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_STLMT_STAMP );
@@ -1795,7 +1794,7 @@ entry_set_cre_user( ofoEntry *entry, const gchar *user )
  * entry_set_cre_stamp:
  */
 static void
-entry_set_cre_stamp( ofoEntry *entry, const GTimeVal *stamp )
+entry_set_cre_stamp( ofoEntry *entry, const myStampVal *stamp )
 {
 	ofo_base_setter( ENTRY, entry, timestamp, ENT_CRE_STAMP, stamp );
 }
@@ -1930,7 +1929,7 @@ entry_set_upd_user( ofoEntry *entry, const gchar *user )
  * ofo_entry_set_upd_stamp:
  */
 static void
-entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *stamp )
+entry_set_upd_stamp( ofoEntry *entry, const myStampVal *stamp )
 {
 	ofo_base_setter( ENTRY, entry, timestamp, ENT_UPD_STAMP, stamp );
 }
@@ -2004,7 +2003,7 @@ entry_set_settlement_user( ofoEntry *entry, const gchar *user )
  * ofo_entry_set_settlement_stamp:
  */
 static void
-entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp )
+entry_set_settlement_stamp( ofoEntry *entry, const myStampVal *stamp )
 {
 	ofo_base_setter( ENTRY, entry, timestamp, ENT_STLMT_STAMP, stamp );
 }
@@ -2322,7 +2321,7 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	gchar *label, *ref;
 	gchar *sdeff, *sdope, *sdebit, *scredit, *stamp_str, *notes;
 	gboolean ok;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *model, *cur_code, *userid, *rule, *status, *period;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
@@ -2344,8 +2343,8 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	ref = my_utils_quote_sql( ofo_entry_get_ref( entry ));
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_ENTRIES " );
 
@@ -2431,10 +2430,10 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 
 		entry_set_cre_user( entry, userid );
-		entry_set_cre_stamp( entry, &stamp );
+		entry_set_cre_stamp( entry, stamp );
 
 		entry_set_upd_user( entry, userid );
-		entry_set_upd_stamp( entry, &stamp );
+		entry_set_upd_stamp( entry, stamp );
 
 		ok = TRUE;
 	}
@@ -2448,6 +2447,7 @@ entry_do_insert( ofoEntry *entry, ofaIGetter *getter )
 	g_free( ref );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -2585,7 +2585,7 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 	GString *query;
 	gchar *sdeff, *sdope, *sdeb, *scre, *notes;
 	gchar *stamp_str, *label, *ref;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	gboolean ok;
 	const gchar *model, *cstr, *userid, *rule, *period;
 	const gchar *cur_code;
@@ -2609,8 +2609,8 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	sdeb = ofa_amount_to_sql( ofo_entry_get_debit( entry ), cur_obj );
 	scre = ofa_amount_to_sql( ofo_entry_get_credit( entry ), cur_obj );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
 
@@ -2670,7 +2670,7 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		entry_set_upd_user( entry, userid );
-		entry_set_upd_stamp( entry, &stamp );
+		entry_set_upd_stamp( entry, stamp );
 		ok = TRUE;
 	}
 
@@ -2682,6 +2682,7 @@ entry_do_update( ofoEntry *entry, ofaIGetter *getter )
 	g_free( sdeb );
 	g_free( scre );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -2725,7 +2726,7 @@ do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter 
 {
 	GString *query;
 	gchar *stamp_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	gboolean ok;
 	const gchar *userid;
 
@@ -2734,15 +2735,17 @@ do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES SET " );
 
 	if( number > 0 ){
+		stamp = my_stamp_new_now();
 		ofo_entry_set_settlement_number( entry, number );
 		entry_set_settlement_user( entry, userid );
-		entry_set_settlement_stamp( entry, my_stamp_set_now( &stamp ));
+		entry_set_settlement_stamp( entry, stamp );
 
-		stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+		stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 		g_string_append_printf( query,
 				"ENT_STLMT_NUMBER=%ld,ENT_STLMT_USER='%s',ENT_STLMT_STAMP='%s' ",
 				number, userid, stamp_str );
 		g_free( stamp_str );
+		my_stamp_free( stamp );
 
 	} else {
 		ofo_entry_set_settlement_number( entry, 0 );
@@ -4057,7 +4060,7 @@ iimportable_import_by_version( ofaIImporter *importer, ofsImporterParms *parms, 
 	ofoCurrency *cur_object;
 	ofoLedger *ledger;
 	ofxAmount debit, credit;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	cur_object = NULL;
 	date_format = ofa_stream_format_get_date_format( parms->format );
@@ -4263,8 +4266,9 @@ iimportable_import_by_version( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		my_stamp_set_from_sql( &stamp, cstr );
-		entry_set_upd_stamp( entry, &stamp );
+		stamp = my_stamp_new_from_sql( cstr );
+		entry_set_upd_stamp( entry, stamp );
+		my_stamp_free( stamp );
 	}
 
 	/* period indicator */
@@ -4319,7 +4323,7 @@ iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoE
 	GSList *itf;
 	const gchar *cstr, *userid;
 	GDate date;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	ofoConcil *concil;
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
@@ -4360,12 +4364,13 @@ iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoE
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( concil ){
 		if( !my_strlen( cstr )){
-			my_stamp_set_now( &stamp );
+			stamp = my_stamp_new_now();
 		} else {
-			my_stamp_set_from_sql( &stamp, cstr );
+			stamp = my_stamp_new_from_sql( cstr );
 		}
-		ofo_concil_set_upd_stamp( concil, &stamp );
+		ofo_concil_set_upd_stamp( concil, stamp );
 		g_debug( "%s: new concil stamp=%s", thisfn, cstr );
+		my_stamp_free( stamp );
 	}
 
 	*fields = itf;

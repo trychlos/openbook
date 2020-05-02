@@ -428,7 +428,9 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
 
 1552 2019- 4-25 (F28) Wayland doesn't honor windows placement :(
 
-1553
+1553 2020- 5- 2 dossier_setup_rpid(): use a real UUID with GUuid library
+
+1554
 
 -----------------------------------------------------------------------
  DONE

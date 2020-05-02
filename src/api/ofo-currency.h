@@ -63,43 +63,43 @@ typedef struct {
 }
 	ofoCurrencyClass;
 
-GType           ofo_currency_get_type              ( void ) G_GNUC_CONST;
+GType             ofo_currency_get_type              ( void ) G_GNUC_CONST;
 
-GList          *ofo_currency_get_dataset           ( ofaIGetter *getter );
-#define         ofo_currency_free_dataset( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref ))
+GList            *ofo_currency_get_dataset           ( ofaIGetter *getter );
+#define           ofo_currency_free_dataset( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref ))
 
-ofoCurrency    *ofo_currency_get_by_code           ( ofaIGetter *getter, const gchar *code );
+ofoCurrency      *ofo_currency_get_by_code           ( ofaIGetter *getter, const gchar *code );
 
-ofoCurrency    *ofo_currency_new                   ( ofaIGetter *getter );
+ofoCurrency      *ofo_currency_new                   ( ofaIGetter *getter );
 
-const gchar    *ofo_currency_get_code              ( const ofoCurrency *currency );
-const gchar    *ofo_currency_get_cre_user          ( const ofoCurrency *currency );
-const GTimeVal *ofo_currency_get_cre_stamp         ( const ofoCurrency *currency );
-const gchar    *ofo_currency_get_label             ( const ofoCurrency *currency );
-const gchar    *ofo_currency_get_symbol            ( const ofoCurrency *currency );
-gint            ofo_currency_get_digits            ( const ofoCurrency *currency );
-const gchar    *ofo_currency_get_notes             ( const ofoCurrency *currency );
-const gchar    *ofo_currency_get_upd_user          ( const ofoCurrency *currency );
-const GTimeVal *ofo_currency_get_upd_stamp         ( const ofoCurrency *currency );
-const gdouble   ofo_currency_get_precision         ( const ofoCurrency *currency );
+const gchar      *ofo_currency_get_code              ( const ofoCurrency *currency );
+const gchar      *ofo_currency_get_cre_user          ( const ofoCurrency *currency );
+const myStampVal *ofo_currency_get_cre_stamp         ( const ofoCurrency *currency );
+const gchar      *ofo_currency_get_label             ( const ofoCurrency *currency );
+const gchar      *ofo_currency_get_symbol            ( const ofoCurrency *currency );
+gint              ofo_currency_get_digits            ( const ofoCurrency *currency );
+const gchar      *ofo_currency_get_notes             ( const ofoCurrency *currency );
+const gchar      *ofo_currency_get_upd_user          ( const ofoCurrency *currency );
+const myStampVal *ofo_currency_get_upd_stamp         ( const ofoCurrency *currency );
+const gdouble     ofo_currency_get_precision         ( const ofoCurrency *currency );
 
-gboolean        ofo_currency_is_deletable          ( const ofoCurrency *currency );
-gboolean        ofo_currency_is_valid_data         ( const gchar *code, const gchar *label, const gchar *symbol, gint digits, gchar **msgerr );
+gboolean          ofo_currency_is_deletable          ( const ofoCurrency *currency );
+gboolean          ofo_currency_is_valid_data         ( const gchar *code, const gchar *label, const gchar *symbol, gint digits, gchar **msgerr );
 
-void            ofo_currency_set_code              ( ofoCurrency *currency, const gchar *code );
-void            ofo_currency_set_label             ( ofoCurrency *currency, const gchar *label );
-void            ofo_currency_set_symbol            ( ofoCurrency *currency, const gchar *symbol );
-void            ofo_currency_set_digits            ( ofoCurrency *currency, gint digits );
-void            ofo_currency_set_notes             ( ofoCurrency *currency, const gchar *notes );
+void              ofo_currency_set_code              ( ofoCurrency *currency, const gchar *code );
+void              ofo_currency_set_label             ( ofoCurrency *currency, const gchar *label );
+void              ofo_currency_set_symbol            ( ofoCurrency *currency, const gchar *symbol );
+void              ofo_currency_set_digits            ( ofoCurrency *currency, gint digits );
+void              ofo_currency_set_notes             ( ofoCurrency *currency, const gchar *notes );
 
-guint           ofo_currency_doc_get_count         ( ofoCurrency *currency );
+guint             ofo_currency_doc_get_count         ( ofoCurrency *currency );
 
-GList          *ofo_currency_doc_get_orphans       ( ofaIGetter *getter );
-#define         ofo_currency_doc_free_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+GList            *ofo_currency_doc_get_orphans       ( ofaIGetter *getter );
+#define           ofo_currency_doc_free_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
-gboolean        ofo_currency_insert                ( ofoCurrency *currency );
-gboolean        ofo_currency_update                ( ofoCurrency *currency, const gchar *prev_code );
-gboolean        ofo_currency_delete                ( ofoCurrency *currency );
+gboolean          ofo_currency_insert                ( ofoCurrency *currency );
+gboolean          ofo_currency_update                ( ofoCurrency *currency, const gchar *prev_code );
+gboolean          ofo_currency_delete                ( ofoCurrency *currency );
 
 G_END_DECLS
 

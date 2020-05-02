@@ -1100,7 +1100,7 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 	guint count, i;
 	gchar *sstart, *send;
 	gulong udelay;
-	GTimeVal stamp_start, stamp_end;
+	myStampVal *stamp_start, *stamp_end;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1109,7 +1109,7 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 	entries = ofo_entry_get_dataset_for_exercice_by_status( priv->getter, ENT_STATUS_ROUGH );
 	count = g_list_length( entries );
 	i = 0;
-	my_stamp_set_now( &stamp_start );
+	stamp_start = my_stamp_new_now();
 	bar = get_new_bar( self, "p6-validating" );
 	gtk_widget_show_all( priv->p6_page );
 
@@ -1125,16 +1125,19 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 
 	ofo_entry_free_dataset( entries );
 
-	my_stamp_set_now( &stamp_end );
-	sstart = my_stamp_to_str( &stamp_start, MY_STAMP_YYMDHMS );
-	send = my_stamp_to_str( &stamp_end, MY_STAMP_YYMDHMS );
-	udelay = 1000000*(stamp_end.tv_sec-stamp_start.tv_sec)+stamp_end.tv_usec-stamp_start.tv_usec;
+	stamp_end = my_stamp_new_now();
+	sstart = my_stamp_to_str( stamp_start, MY_STAMP_YYMDHMS );
+	send = my_stamp_to_str( stamp_end, MY_STAMP_YYMDHMS );
+	udelay = ( gulong ) my_stamp_diff_us( stamp_end, stamp_start );
 
 	g_debug( "%s: stamp_start=%s, stamp_end=%s, count=%u: average is %'.5lf s",
 			thisfn, sstart, send, count, ( gdouble ) udelay / 1000000.0 / ( gdouble ) count );
 
 	gtk_widget_show_all( GTK_WIDGET( bar ));
 	g_idle_add(( GSourceFunc ) p6_solde_accounts, self );
+
+	my_stamp_free( stamp_start );
+	my_stamp_free( stamp_end );
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );

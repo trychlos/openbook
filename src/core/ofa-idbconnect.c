@@ -1031,7 +1031,7 @@ backup_create_entry( const ofaIDBConnect *self, GFile *file, sBackup *sope )
 {
 	static const gchar *thisfn = "ofa_idbconnect_backup_create_entry";
 	gchar *basename, *name, *header_name;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	sope->entry = archive_entry_new();
 	if( !sope->entry ){
@@ -1049,8 +1049,9 @@ backup_create_entry( const ofaIDBConnect *self, GFile *file, sBackup *sope )
 
     archive_entry_set_filetype( sope->entry, AE_IFREG );
     archive_entry_set_perm( sope->entry, 0644 );
-	my_stamp_set_now( &stamp );
-    archive_entry_set_mtime( sope->entry, stamp.tv_sec, 0 );
+    stamp = my_stamp_new_now();
+    archive_entry_set_mtime( sope->entry, my_stamp_get_seconds( stamp ), 0 );
+    my_stamp_free( stamp );
 
     if( archive_write_header( sope->archive, sope->entry) != ARCHIVE_OK ){
     	g_warning( "%s: archive_write_header: %s", thisfn, archive_error_string( sope->archive ));

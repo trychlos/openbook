@@ -117,59 +117,59 @@ typedef struct {
 }
 	ofsImportedBat;
 
-GType           ofo_bat_get_type                   ( void ) G_GNUC_CONST;
+GType             ofo_bat_get_type                   ( void ) G_GNUC_CONST;
 
-GList          *ofo_bat_get_dataset                ( ofaIGetter *getter );
+GList            *ofo_bat_get_dataset                ( ofaIGetter *getter );
 
-ofoBat         *ofo_bat_get_by_id                  ( ofaIGetter *getter, ofxCounter id );
+ofoBat           *ofo_bat_get_by_id                  ( ofaIGetter *getter, ofxCounter id );
 
-ofoBat         *ofo_bat_new                        ( ofaIGetter *getter );
+ofoBat           *ofo_bat_new                        ( ofaIGetter *getter );
 
-ofxCounter      ofo_bat_get_id                     ( ofoBat *bat );
-const gchar    *ofo_bat_get_uri                    ( ofoBat *bat );
-const gchar    *ofo_bat_get_format                 ( ofoBat *bat );
-const GDate    *ofo_bat_get_begin_date             ( ofoBat *bat );
-ofxAmount       ofo_bat_get_begin_solde            ( ofoBat *bat );
-gboolean        ofo_bat_get_begin_solde_set        ( ofoBat *bat );
-const GDate    *ofo_bat_get_end_date               ( ofoBat *bat );
-ofxAmount       ofo_bat_get_end_solde              ( ofoBat *bat );
-gboolean        ofo_bat_get_end_solde_set          ( ofoBat *bat );
-const gchar    *ofo_bat_get_rib                    ( ofoBat *bat );
-const gchar    *ofo_bat_get_currency               ( ofoBat *bat );
-const gchar    *ofo_bat_get_cre_user               ( ofoBat *bat );
-const GTimeVal *ofo_bat_get_cre_stamp              ( ofoBat *bat );
-const gchar    *ofo_bat_get_notes                  ( ofoBat *bat );
-const gchar    *ofo_bat_get_upd_user               ( ofoBat *bat );
-const GTimeVal *ofo_bat_get_upd_stamp              ( ofoBat *bat );
-const gchar    *ofo_bat_get_account                ( ofoBat *bat );
-const gchar    *ofo_bat_get_acc_user               ( ofoBat *bat );
-const GTimeVal *ofo_bat_get_acc_stamp              ( ofoBat *bat );
+ofxCounter        ofo_bat_get_id                     ( ofoBat *bat );
+const gchar      *ofo_bat_get_uri                    ( ofoBat *bat );
+const gchar      *ofo_bat_get_format                 ( ofoBat *bat );
+const GDate      *ofo_bat_get_begin_date             ( ofoBat *bat );
+ofxAmount         ofo_bat_get_begin_solde            ( ofoBat *bat );
+gboolean          ofo_bat_get_begin_solde_set        ( ofoBat *bat );
+const GDate      *ofo_bat_get_end_date               ( ofoBat *bat );
+ofxAmount         ofo_bat_get_end_solde              ( ofoBat *bat );
+gboolean          ofo_bat_get_end_solde_set          ( ofoBat *bat );
+const gchar      *ofo_bat_get_rib                    ( ofoBat *bat );
+const gchar      *ofo_bat_get_currency               ( ofoBat *bat );
+const gchar      *ofo_bat_get_cre_user               ( ofoBat *bat );
+const myStampVal *ofo_bat_get_cre_stamp              ( ofoBat *bat );
+const gchar      *ofo_bat_get_notes                  ( ofoBat *bat );
+const gchar      *ofo_bat_get_upd_user               ( ofoBat *bat );
+const myStampVal *ofo_bat_get_upd_stamp              ( ofoBat *bat );
+const gchar      *ofo_bat_get_account                ( ofoBat *bat );
+const gchar      *ofo_bat_get_acc_user               ( ofoBat *bat );
+const myStampVal *ofo_bat_get_acc_stamp              ( ofoBat *bat );
 
-gboolean        ofo_bat_exists                     ( ofaIGetter *getter, const gchar *rib, const GDate *begin, const GDate *end );
-gboolean        ofo_bat_is_deletable               ( ofoBat *bat );
-gint            ofo_bat_get_lines_count            ( ofoBat *bat );
-gint            ofo_bat_get_used_count             ( ofoBat *bat );
+gboolean          ofo_bat_exists                     ( ofaIGetter *getter, const gchar *rib, const GDate *begin, const GDate *end );
+gboolean          ofo_bat_is_deletable               ( ofoBat *bat );
+gint              ofo_bat_get_lines_count            ( ofoBat *bat );
+gint              ofo_bat_get_used_count             ( ofoBat *bat );
 
-void            ofo_bat_set_uri                    ( ofoBat *bat, const gchar *uri );
-void            ofo_bat_set_format                 ( ofoBat *bat, const gchar *format );
-void            ofo_bat_set_begin_date             ( ofoBat *bat, const GDate *date );
-void            ofo_bat_set_begin_solde            ( ofoBat *bat, ofxAmount solde );
-void            ofo_bat_set_begin_solde_set        ( ofoBat *bat, gboolean set );
-void            ofo_bat_set_end_date               ( ofoBat *bat, const GDate *date );
-void            ofo_bat_set_end_solde              ( ofoBat *bat, ofxAmount solde );
-void            ofo_bat_set_end_solde_set          ( ofoBat *bat, gboolean set );
-void            ofo_bat_set_rib                    ( ofoBat *bat, const gchar *rib );
-void            ofo_bat_set_currency               ( ofoBat *bat, const gchar *currency );
+void              ofo_bat_set_uri                    ( ofoBat *bat, const gchar *uri );
+void              ofo_bat_set_format                 ( ofoBat *bat, const gchar *format );
+void              ofo_bat_set_begin_date             ( ofoBat *bat, const GDate *date );
+void              ofo_bat_set_begin_solde            ( ofoBat *bat, ofxAmount solde );
+void              ofo_bat_set_begin_solde_set        ( ofoBat *bat, gboolean set );
+void              ofo_bat_set_end_date               ( ofoBat *bat, const GDate *date );
+void              ofo_bat_set_end_solde              ( ofoBat *bat, ofxAmount solde );
+void              ofo_bat_set_end_solde_set          ( ofoBat *bat, gboolean set );
+void              ofo_bat_set_rib                    ( ofoBat *bat, const gchar *rib );
+void              ofo_bat_set_currency               ( ofoBat *bat, const gchar *currency );
 
-guint           ofo_bat_doc_get_count              ( ofoBat *bat );
+guint             ofo_bat_doc_get_count              ( ofoBat *bat );
 
-GList          *ofo_bat_doc_get_orphans            ( ofaIGetter *getter );
-#define         ofo_bat_doc_free_orphans( L )      ( g_list_free( L ))
+GList            *ofo_bat_doc_get_orphans            ( ofaIGetter *getter );
+#define           ofo_bat_doc_free_orphans( L )      ( g_list_free( L ))
 
-gboolean        ofo_bat_insert                     ( ofoBat *bat );
-gboolean        ofo_bat_update_notes               ( ofoBat *bat, const gchar *notes );
-gboolean        ofo_bat_update_account             ( ofoBat *bat, const gchar *account );
-gboolean        ofo_bat_delete                     ( ofoBat *bat );
+gboolean          ofo_bat_insert                     ( ofoBat *bat );
+gboolean          ofo_bat_update_notes               ( ofoBat *bat, const gchar *notes );
+gboolean          ofo_bat_update_account             ( ofoBat *bat, const gchar *account );
+gboolean          ofo_bat_delete                     ( ofoBat *bat );
 
 G_END_DECLS
 

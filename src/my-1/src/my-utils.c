@@ -1286,7 +1286,7 @@ on_notes_changed( GtkTextBuffer *buffer, void *empty )
  */
 void
 my_utils_container_updstamp_setup_full( GtkContainer *container,
-								const gchar *label_name, const GTimeVal *stamp, const gchar *user )
+								const gchar *label_name, const myStampVal *stamp, const gchar *user )
 {
 	GtkWidget *label;
 	gchar *str_stamp, *str;

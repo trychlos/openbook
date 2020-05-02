@@ -503,7 +503,7 @@ static gboolean
 tview_is_session_settled( ofaSettlementPage *self, ofoEntry *entry )
 {
 	gboolean is_session;
-	const GTimeVal *stamp;
+	const myStampVal *stamp;
 	GDate date, dnow;
 
 	stamp = ofo_entry_get_settlement_stamp( entry );

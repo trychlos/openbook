@@ -77,7 +77,7 @@ ofoRecurrentModel *ofo_recurrent_model_new_from_model         ( ofoRecurrentMode
 
 const gchar       *ofo_recurrent_model_get_mnemo              ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_cre_user           ( const ofoRecurrentModel *model );
-const GTimeVal    *ofo_recurrent_model_get_cre_stamp          ( const ofoRecurrentModel *model );
+const myStampVal  *ofo_recurrent_model_get_cre_stamp          ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_label              ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_ope_template       ( const ofoRecurrentModel *model );
 myPeriod          *ofo_recurrent_model_get_period             ( ofoRecurrentModel *model );
@@ -88,7 +88,7 @@ gboolean           ofo_recurrent_model_get_enabled            ( const ofoRecurre
 const GDate       *ofo_recurrent_model_get_end                ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_notes              ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_upd_user           ( const ofoRecurrentModel *model );
-const GTimeVal    *ofo_recurrent_model_get_upd_stamp          ( const ofoRecurrentModel *model );
+const myStampVal  *ofo_recurrent_model_get_upd_stamp          ( const ofoRecurrentModel *model );
 
 gboolean           ofo_recurrent_model_is_deletable           ( const ofoRecurrentModel *model );
 gboolean           ofo_recurrent_model_is_valid_data          ( const gchar *mnemo, const gchar *label, const gchar *ope_template, myPeriod *period, gchar **msgerr );

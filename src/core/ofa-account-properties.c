@@ -109,7 +109,7 @@ typedef struct {
 	const gchar  *cur_symbol;
 	gboolean      root;
 	gchar        *upd_user;
-	GTimeVal      upd_stamp;
+	myStampVal   *upd_stamp;
 }
 	ofaAccountPropertiesPrivate;
 

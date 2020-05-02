@@ -63,30 +63,30 @@ typedef struct {
 }
 	ofoDataClass;
 
-GType           ofo_data_get_type          ( void ) G_GNUC_CONST;
+GType             ofo_data_get_type          ( void ) G_GNUC_CONST;
 
-GList          *ofo_data_get_dataset       ( ofaIGetter *getter );
-#define         ofo_data_free_dataset( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref ))
+GList            *ofo_data_get_dataset       ( ofaIGetter *getter );
+#define           ofo_data_free_dataset( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref ))
 
-ofoData        *ofo_data_get_by_key        ( ofaIGetter *getter, const gchar *mnemo );
+ofoData          *ofo_data_get_by_key        ( ofaIGetter *getter, const gchar *mnemo );
 
-ofoData        *ofo_data_new               ( ofaIGetter *getter );
+ofoData          *ofo_data_new               ( ofaIGetter *getter );
 
-const gchar    *ofo_data_get_key           ( const ofoData *data );
-const gchar    *ofo_data_get_cre_user      ( const ofoData *data );
-const GTimeVal *ofo_data_get_cre_stamp     ( const ofoData *data );
-const gchar    *ofo_data_get_content       ( const ofoData *data );
-const gchar    *ofo_data_get_notes         ( const ofoData *data );
-const gchar    *ofo_data_get_upd_user      ( const ofoData *data );
-const GTimeVal *ofo_data_get_upd_stamp     ( const ofoData *data );
+const gchar      *ofo_data_get_key           ( const ofoData *data );
+const gchar      *ofo_data_get_cre_user      ( const ofoData *data );
+const myStampVal *ofo_data_get_cre_stamp     ( const ofoData *data );
+const gchar      *ofo_data_get_content       ( const ofoData *data );
+const gchar      *ofo_data_get_notes         ( const ofoData *data );
+const gchar      *ofo_data_get_upd_user      ( const ofoData *data );
+const myStampVal *ofo_data_get_upd_stamp     ( const ofoData *data );
 
-void            ofo_data_set_key           ( ofoData *data, const gchar *key );
-void            ofo_data_set_content       ( ofoData *data, const gchar *content );
-void            ofo_data_set_notes         ( ofoData *data, const gchar *notes );
+void              ofo_data_set_key           ( ofoData *data, const gchar *key );
+void              ofo_data_set_content       ( ofoData *data, const gchar *content );
+void              ofo_data_set_notes         ( ofoData *data, const gchar *notes );
 
-gboolean        ofo_data_insert            ( ofoData *data );
-gboolean        ofo_data_update            ( ofoData *data, const gchar *prev_key );
-gboolean        ofo_data_delete            ( ofoData *data );
+gboolean          ofo_data_insert            ( ofoData *data );
+gboolean          ofo_data_update            ( ofoData *data, const gchar *prev_key );
+gboolean          ofo_data_delete            ( ofoData *data );
 
 G_END_DECLS
 

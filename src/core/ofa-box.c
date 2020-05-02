@@ -31,7 +31,6 @@
 
 #include "my/my-date.h"
 #include "my/my-double.h"
-#include "my/my-stamp.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -47,12 +46,12 @@ struct _ofsBoxData {
 	const ofsBoxDef *def;
 	gboolean         is_null;
 	union {
-		ofxAmount  amount;
-		ofxCounter counter;
-		gint       integer;
-		GDate      date;
-		gchar     *string;
-		GTimeVal   timestamp;
+		ofxAmount   amount;
+		ofxCounter  counter;
+		gint        integer;
+		GDate       date;
+		gchar      *string;
+		myStampVal *timestamp;
 	};
 };
 
@@ -383,29 +382,30 @@ string_free( ofsBoxData *box )
 /*
  * OFA_TYPE_TIMESTAMP
  */
-static const GTimeVal *
+static const myStampVal *
 timestamp_get( const ofsBoxData *box )
 {
 	g_return_val_if_fail( box->def->type == OFA_TYPE_TIMESTAMP, NULL );
 
 	if( !box->is_null ){
-		return(( const GTimeVal * ) &box->timestamp );
+		return(( const myStampVal * ) box->timestamp );
 	}
 
 	return( NULL );
 }
 
 static void
-timestamp_set( ofsBoxData *box, const GTimeVal *value )
+timestamp_set( ofsBoxData *box, const myStampVal *value )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_TIMESTAMP );
 
 	if( value ){
 		box->is_null = FALSE;
-		memcpy( &box->timestamp, value, sizeof( GTimeVal ));
+		box->timestamp = my_stamp_new_from_stamp( value );
 
 	} else {
 		box->is_null = TRUE;
+		box->timestamp = NULL;
 	}
 }
 
@@ -419,7 +419,7 @@ timestamp_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 
 	if( my_strlen( str )){
 		box->is_null = FALSE;
-		my_stamp_set_from_sql( &box->timestamp, str );
+		box->timestamp = my_stamp_new_from_sql( str );
 	}
 
 	return( box );
@@ -435,13 +435,22 @@ timestamp_to_string( const ofsBoxData *box, ofaStreamFormat *format )
 	if( box->is_null ){
 		str = g_strdup( "" );
 	} else {
-		str = my_stamp_to_str( &box->timestamp, MY_STAMP_YYMDHMS );
+		str = my_stamp_to_str( box->timestamp, MY_STAMP_YYMDHMS );
 		if( !str ){
 			str = g_strdup( "" );
 		}
 	}
 
 	return( str );
+}
+
+static void
+timestamp_free( ofsBoxData *box )
+{
+	g_return_if_fail( box->def->type == OFA_TYPE_TIMESTAMP );
+
+	my_stamp_free( box->timestamp );
+	g_free( box );
 }
 
 typedef gconstpointer ( *GetFn )       ( gconstpointer box );
@@ -512,7 +521,7 @@ static const sBoxHelpers st_box_helpers[] = {
 				( ToDBMSFn )     NULL,
 				( FromStringFn ) NULL,
 				( ToStringFn )   timestamp_to_string,
-				( FreeFn )       g_free },
+				( FreeFn )       timestamp_free },
 		{ 0 }
 };
 

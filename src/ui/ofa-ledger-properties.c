@@ -67,8 +67,8 @@ typedef struct {
 	 */
 	gchar               *mnemo;
 	gchar               *label;
-	gchar               *upd_user;
-	GTimeVal             upd_stamp;
+    gchar               *upd_user;
+    myStampVal          *upd_stamp;
 	GDate                closing;
 
 	/* UI
@@ -130,6 +130,7 @@ ledger_properties_finalize( GObject *instance )
 	g_free( priv->mnemo );
 	g_free( priv->label );
 	g_free( priv->upd_user );
+	my_stamp_free( priv->upd_stamp );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ledger_properties_parent_class )->finalize( instance );

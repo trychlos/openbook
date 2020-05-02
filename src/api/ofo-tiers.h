@@ -60,37 +60,37 @@ typedef struct {
 }
 	ofoTiersClass;
 
-GType           ofo_tiers_get_type              ( void ) G_GNUC_CONST;
+GType             ofo_tiers_get_type              ( void ) G_GNUC_CONST;
 
-GList          *ofo_tiers_get_dataset           ( ofaIGetter *getter );
-#define         ofo_tiers_free_dataset( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref ))
+GList            *ofo_tiers_get_dataset           ( ofaIGetter *getter );
+#define           ofo_tiers_free_dataset( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref ))
 
-ofoTiers       *ofo_tiers_get_by_id             ( ofaIGetter *getter, ofxCounter id );
+ofoTiers         *ofo_tiers_get_by_id             ( ofaIGetter *getter, ofxCounter id );
 
-ofoTiers       *ofo_tiers_new                   ( ofaIGetter *getter );
+ofoTiers         *ofo_tiers_new                   ( ofaIGetter *getter );
 
-ofxCounter      ofo_tiers_get_id                ( const ofoTiers *tiers );
-const gchar    *ofo_tiers_get_cre_user          ( const ofoTiers *tiers );
-const GTimeVal *ofo_tiers_get_cre_stamp         ( const ofoTiers *tiers );
-const gchar    *ofo_tiers_get_label             ( const ofoTiers *tiers );
-const gchar    *ofo_tiers_get_notes             ( const ofoTiers *tiers );
-const gchar    *ofo_tiers_get_upd_user          ( const ofoTiers *tiers );
-const GTimeVal *ofo_tiers_get_upd_stamp         ( const ofoTiers *tiers );
+ofxCounter        ofo_tiers_get_id                ( const ofoTiers *tiers );
+const gchar      *ofo_tiers_get_cre_user          ( const ofoTiers *tiers );
+const myStampVal *ofo_tiers_get_cre_stamp         ( const ofoTiers *tiers );
+const gchar      *ofo_tiers_get_label             ( const ofoTiers *tiers );
+const gchar      *ofo_tiers_get_notes             ( const ofoTiers *tiers );
+const gchar      *ofo_tiers_get_upd_user          ( const ofoTiers *tiers );
+const myStampVal *ofo_tiers_get_upd_stamp         ( const ofoTiers *tiers );
 
-gboolean        ofo_tiers_is_deletable          ( const ofoTiers *tiers );
-gboolean        ofo_tiers_is_valid_data         ( const gchar *label, gchar **msgerr );
+gboolean          ofo_tiers_is_deletable          ( const ofoTiers *tiers );
+gboolean          ofo_tiers_is_valid_data         ( const gchar *label, gchar **msgerr );
 
-void            ofo_tiers_set_label             ( ofoTiers *tiers, const gchar *label );
-void            ofo_tiers_set_notes             ( ofoTiers *tiers, const gchar *notes );
+void              ofo_tiers_set_label             ( ofoTiers *tiers, const gchar *label );
+void              ofo_tiers_set_notes             ( ofoTiers *tiers, const gchar *notes );
 
-guint           ofo_tiers_doc_get_count         ( ofoTiers *tiers );
+guint             ofo_tiers_doc_get_count         ( ofoTiers *tiers );
 
-GList          *ofo_tiers_doc_get_orphans       ( ofaIGetter *getter );
-#define         ofo_tiers_free_orphans( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+GList            *ofo_tiers_doc_get_orphans       ( ofaIGetter *getter );
+#define           ofo_tiers_free_orphans( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
-gboolean        ofo_tiers_insert                ( ofoTiers *tiers );
-gboolean        ofo_tiers_update                ( ofoTiers *tiers );
-gboolean        ofo_tiers_delete                ( ofoTiers *tiers );
+gboolean          ofo_tiers_insert                ( ofoTiers *tiers );
+gboolean          ofo_tiers_update                ( ofoTiers *tiers );
+gboolean          ofo_tiers_delete                ( ofoTiers *tiers );
 
 G_END_DECLS
 

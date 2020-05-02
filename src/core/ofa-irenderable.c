@@ -1815,7 +1815,7 @@ ofa_irenderable_draw_default_page_footer( ofaIRenderable *instance )
 	static gdouble vspace_after_line = 1.0; 	/* points */
 	sIRenderable *sdata;
 	gchar *str, *stamp_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	gdouble y, text_height, r, g, b;
 
 	sdata = get_instance_data( instance );
@@ -1842,11 +1842,12 @@ ofa_irenderable_draw_default_page_footer( ofaIRenderable *instance )
 	ofa_irenderable_set_text( instance, st_page_margin, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
 
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 	str = g_strdup_printf(
 			_( "Printed on %s - Page %d/%d" ), stamp_str, 1+sdata->page_num, sdata->pages_count );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 	ofa_irenderable_set_text( instance, sdata->render_width-st_page_margin, y, str, PANGO_ALIGN_RIGHT );
 	g_free( str );
 

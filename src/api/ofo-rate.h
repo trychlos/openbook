@@ -75,53 +75,53 @@ typedef struct {
 }
 	ofsRateValidity;
 
-GType           ofo_rate_get_type          ( void ) G_GNUC_CONST;
+GType             ofo_rate_get_type          ( void ) G_GNUC_CONST;
 
-GList          *ofo_rate_get_dataset       ( ofaIGetter *getter );
-#define         ofo_rate_free_dataset( L ) ( g_list_free_full(( L ),( GDestroyNotify ) g_object_unref ))
+GList            *ofo_rate_get_dataset       ( ofaIGetter *getter );
+#define           ofo_rate_free_dataset( L ) ( g_list_free_full(( L ),( GDestroyNotify ) g_object_unref ))
 
-ofoRate        *ofo_rate_get_by_mnemo      ( ofaIGetter *getter, const gchar *mnemo );
+ofoRate          *ofo_rate_get_by_mnemo      ( ofaIGetter *getter, const gchar *mnemo );
 
-ofoRate        *ofo_rate_new               ( ofaIGetter *getter );
+ofoRate          *ofo_rate_new               ( ofaIGetter *getter );
 
-const gchar    *ofo_rate_get_mnemo         ( const ofoRate *rate );
-const gchar    *ofo_rate_get_cre_user      ( const ofoRate *rate );
-const GTimeVal *ofo_rate_get_cre_stamp     ( const ofoRate *rate );
-const gchar    *ofo_rate_get_label         ( const ofoRate *rate );
-const gchar    *ofo_rate_get_notes         ( const ofoRate *rate );
-const gchar    *ofo_rate_get_upd_user      ( const ofoRate *rate );
-const GTimeVal *ofo_rate_get_upd_stamp     ( const ofoRate *rate );
+const gchar      *ofo_rate_get_mnemo         ( const ofoRate *rate );
+const gchar      *ofo_rate_get_cre_user      ( const ofoRate *rate );
+const myStampVal *ofo_rate_get_cre_stamp     ( const ofoRate *rate );
+const gchar      *ofo_rate_get_label         ( const ofoRate *rate );
+const gchar      *ofo_rate_get_notes         ( const ofoRate *rate );
+const gchar      *ofo_rate_get_upd_user      ( const ofoRate *rate );
+const myStampVal *ofo_rate_get_upd_stamp     ( const ofoRate *rate );
 
-ofxAmount       ofo_rate_get_rate_at_date  ( ofoRate *rate, const GDate *date );
+ofxAmount         ofo_rate_get_rate_at_date  ( ofoRate *rate, const GDate *date );
 
-gboolean        ofo_rate_is_deletable      ( const ofoRate *rate );
-gboolean        ofo_rate_is_valid_data     ( const gchar *mnemo, const gchar *label, GList *validities, gchar **msgerr );
+gboolean          ofo_rate_is_deletable      ( const ofoRate *rate );
+gboolean          ofo_rate_is_valid_data     ( const gchar *mnemo, const gchar *label, GList *validities, gchar **msgerr );
 
-void            ofo_rate_set_mnemo         ( ofoRate *rate, const gchar *number );
-void            ofo_rate_set_label         ( ofoRate *rate, const gchar *label );
-void            ofo_rate_set_notes         ( ofoRate *rate, const gchar *notes );
+void              ofo_rate_set_mnemo         ( ofoRate *rate, const gchar *number );
+void              ofo_rate_set_label         ( ofoRate *rate, const gchar *label );
+void              ofo_rate_set_notes         ( ofoRate *rate, const gchar *notes );
 
-gint            ofo_rate_valid_get_count   ( ofoRate *rate );
-const GDate    *ofo_rate_valid_get_begin   ( ofoRate *rate, gint idx );
-const GDate    *ofo_rate_valid_get_end     ( ofoRate *rate, gint idx );
-ofxAmount       ofo_rate_valid_get_rate    ( ofoRate *rate, gint idx );
-const GDate    *ofo_rate_valid_get_min_date( ofoRate *rate );
-const GDate    *ofo_rate_valid_get_max_date( ofoRate *rate );
+gint              ofo_rate_valid_get_count   ( ofoRate *rate );
+const GDate      *ofo_rate_valid_get_begin   ( ofoRate *rate, gint idx );
+const GDate      *ofo_rate_valid_get_end     ( ofoRate *rate, gint idx );
+ofxAmount         ofo_rate_valid_get_rate    ( ofoRate *rate, gint idx );
+const GDate      *ofo_rate_valid_get_min_date( ofoRate *rate );
+const GDate      *ofo_rate_valid_get_max_date( ofoRate *rate );
 
-void            ofo_rate_valid_reset       ( ofoRate *rate );
-void            ofo_rate_valid_add         ( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
+void              ofo_rate_valid_reset       ( ofoRate *rate );
+void              ofo_rate_valid_add         ( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
 
-GList          *ofo_rate_valid_get_orphans ( ofaIGetter *getter );
+GList            *ofo_rate_valid_get_orphans ( ofaIGetter *getter );
 
-guint           ofo_rate_doc_get_count     ( ofoRate *rate );
+guint             ofo_rate_doc_get_count     ( ofoRate *rate );
 
-GList          *ofo_rate_doc_get_orphans   ( ofaIGetter *getter );
+GList            *ofo_rate_doc_get_orphans   ( ofaIGetter *getter );
 
-#define         ofo_rate_free_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+#define           ofo_rate_free_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
-gboolean        ofo_rate_insert            ( ofoRate *rate );
-gboolean        ofo_rate_update            ( ofoRate *rate, const gchar *prev_mnemo );
-gboolean        ofo_rate_delete            ( ofoRate *rate );
+gboolean          ofo_rate_insert            ( ofoRate *rate );
+gboolean          ofo_rate_update            ( ofoRate *rate, const gchar *prev_mnemo );
+gboolean          ofo_rate_delete            ( ofoRate *rate );
 
 G_END_DECLS
 

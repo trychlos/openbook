@@ -112,9 +112,9 @@ typedef struct {
 
 static ofoData *data_find_by_key( GList *set, const gchar *key );
 static void     data_set_cre_user( ofoData *data, const gchar *user );
-static void     data_set_cre_stamp( ofoData *data, const GTimeVal *stamp );
+static void     data_set_cre_stamp( ofoData *data, const myStampVal *stamp );
 static void     data_set_upd_user( ofoData *data, const gchar *user );
-static void     data_set_upd_stamp( ofoData *data, const GTimeVal *stamp );
+static void     data_set_upd_stamp( ofoData *data, const myStampVal *stamp );
 static gboolean data_do_insert( ofoData *data, const ofaIDBConnect *connect );
 static gboolean data_insert_main( ofoData *data, const ofaIDBConnect *connect );
 static gboolean data_do_update( ofoData *data, const gchar *prev_key, const ofaIDBConnect *connect );
@@ -287,7 +287,7 @@ ofo_data_get_cre_user( const ofoData *data )
 /**
  * ofo_data_get_cre_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_data_get_cre_stamp( const ofoData *data )
 {
 	ofo_base_getter( DATA, data, timestamp, NULL, DAT_CRE_STAMP );
@@ -332,7 +332,7 @@ ofo_data_get_upd_user( const ofoData *data )
 /**
  * ofo_data_get_upd_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_data_get_upd_stamp( const ofoData *data )
 {
 	ofo_base_getter( DATA, data, timestamp, NULL, DAT_UPD_STAMP );
@@ -351,7 +351,7 @@ data_set_cre_user( ofoData *data, const gchar *user )
  * data_set_cre_stamp:
  */
 static void
-data_set_cre_stamp( ofoData *data, const GTimeVal *stamp )
+data_set_cre_stamp( ofoData *data, const myStampVal *stamp )
 {
 	ofo_base_setter( DATA, data, timestamp, DAT_CRE_STAMP, stamp );
 }
@@ -396,7 +396,7 @@ data_set_upd_user( ofoData *data, const gchar *user )
  * data_set_upd_stamp:
  */
 static void
-data_set_upd_stamp( ofoData *data, const GTimeVal *stamp )
+data_set_upd_stamp( ofoData *data, const myStampVal *stamp )
 {
 	ofo_base_setter( DATA, data, timestamp, DAT_UPD_STAMP, stamp );
 }
@@ -450,15 +450,15 @@ data_insert_main( ofoData *data, const ofaIDBConnect *connect )
 	GString *query;
 	gchar *content, *notes, *stamp_str;
 	gboolean ok;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
 	content = my_utils_quote_sql( ofo_data_get_content( data ));
 	notes = my_utils_quote_sql( ofo_data_get_notes( data ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_DATA" );
 
@@ -478,7 +478,7 @@ data_insert_main( ofoData *data, const ofaIDBConnect *connect )
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		data_set_cre_user( data, userid );
-		data_set_cre_stamp( data, &stamp );
+		data_set_cre_stamp( data, stamp );
 		ok = TRUE;
 	}
 
@@ -486,6 +486,7 @@ data_insert_main( ofoData *data, const ofaIDBConnect *connect )
 	g_free( notes );
 	g_free( content );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -532,15 +533,15 @@ data_do_update( ofoData *data, const gchar *prev_key, const ofaIDBConnect *conne
 	gchar *content, *notes;
 	gboolean ok;
 	gchar *stamp_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
 	content = my_utils_quote_sql( ofo_data_get_content( data ));
 	notes = my_utils_quote_sql( ofo_data_get_notes( data ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_DATA SET " );
 
@@ -559,7 +560,7 @@ data_do_update( ofoData *data, const gchar *prev_key, const ofaIDBConnect *conne
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		data_set_upd_user( data, userid );
-		data_set_upd_stamp( data, &stamp );
+		data_set_upd_stamp( data, stamp );
 		ok = TRUE;
 	}
 
@@ -567,6 +568,7 @@ data_do_update( ofoData *data, const gchar *prev_key, const ofaIDBConnect *conne
 	g_free( notes );
 	g_free( content );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -881,7 +883,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	gchar *splitted, *str;
 	gboolean have_prefix;
 	ofoData *data;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	numline = 0;
 	dataset = NULL;
@@ -936,8 +938,9 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( my_strlen( cstr )){
-			my_stamp_set_from_sql( &stamp, cstr );
-			data_set_cre_stamp( data, &stamp );
+			stamp = my_stamp_new_from_sql( cstr );
+			data_set_cre_stamp( data, stamp );
+			my_stamp_free( stamp );
 		}
 
 		/* data content */

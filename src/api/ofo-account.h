@@ -82,97 +82,97 @@ typedef enum {
 #define ACC_NUMBER_WIDTH                10
 #define ACC_NUMBER_MAX_LENGTH           64
 
-GType           ofo_account_get_type                  ( void ) G_GNUC_CONST;
+GType             ofo_account_get_type                  ( void ) G_GNUC_CONST;
 
-GList          *ofo_account_get_dataset               ( ofaIGetter *getter );
-GList          *ofo_account_get_dataset_for_solde     ( ofaIGetter *getter );
-#define         ofo_account_free_dataset( L )         ( g_list_free_full(( L ),( GDestroyNotify ) g_object_unref ))
+GList            *ofo_account_get_dataset               ( ofaIGetter *getter );
+GList            *ofo_account_get_dataset_for_solde     ( ofaIGetter *getter );
+#define           ofo_account_free_dataset( L )         ( g_list_free_full(( L ),( GDestroyNotify ) g_object_unref ))
 
-ofoAccount     *ofo_account_get_by_number             ( ofaIGetter *getter, const gchar *number );
+ofoAccount       *ofo_account_get_by_number             ( ofaIGetter *getter, const gchar *number );
 
-ofoAccount     *ofo_account_new                       ( ofaIGetter *getter );
+ofoAccount       *ofo_account_new                       ( ofaIGetter *getter );
 
-gint            ofo_account_get_class                 ( const ofoAccount *account );
-const gchar    *ofo_account_get_number                ( const ofoAccount *account );
-const gchar    *ofo_account_get_cre_user              ( const ofoAccount *account );
-const GTimeVal *ofo_account_get_cre_stamp             ( const ofoAccount *account );
-const gchar    *ofo_account_get_label                 ( const ofoAccount *account );
-const gchar    *ofo_account_get_currency              ( const ofoAccount *account );
-gboolean        ofo_account_is_root                   ( const ofoAccount *account );
-gboolean        ofo_account_is_settleable             ( const ofoAccount *account );
-gboolean        ofo_account_get_keep_unsettled        ( const ofoAccount *account );
-gboolean        ofo_account_is_reconciliable          ( const ofoAccount *account );
-gboolean        ofo_account_get_keep_unreconciliated  ( const ofoAccount *account );
-gboolean        ofo_account_is_forwardable            ( const ofoAccount *account );
-gboolean        ofo_account_is_closed                 ( const ofoAccount *account );
-const gchar    *ofo_account_get_notes                 ( const ofoAccount *account );
-const gchar    *ofo_account_get_upd_user              ( const ofoAccount *account );
-const GTimeVal *ofo_account_get_upd_stamp             ( const ofoAccount *account );
-ofxAmount       ofo_account_get_open_debit            ( ofoAccount *account );
-ofxAmount       ofo_account_get_open_credit           ( ofoAccount *account );
-ofxAmount       ofo_account_get_current_rough_debit   ( const ofoAccount *account );
-ofxAmount       ofo_account_get_current_rough_credit  ( const ofoAccount *account );
-ofxAmount       ofo_account_get_current_val_debit     ( const ofoAccount *account );
-ofxAmount       ofo_account_get_current_val_credit    ( const ofoAccount *account );
-ofxAmount       ofo_account_get_futur_rough_debit     ( const ofoAccount *account );
-ofxAmount       ofo_account_get_futur_rough_credit    ( const ofoAccount *account );
-ofxAmount       ofo_account_get_futur_val_debit       ( const ofoAccount *account );
-ofxAmount       ofo_account_get_futur_val_credit      ( const ofoAccount *account );
-ofxAmount       ofo_account_get_solde_at_date         ( ofoAccount *account, const GDate *date, GDate *deffect, ofxAmount *debit, ofxAmount *credit );
+gint              ofo_account_get_class                 ( const ofoAccount *account );
+const gchar      *ofo_account_get_number                ( const ofoAccount *account );
+const gchar      *ofo_account_get_cre_user              ( const ofoAccount *account );
+const myStampVal *ofo_account_get_cre_stamp             ( const ofoAccount *account );
+const gchar      *ofo_account_get_label                 ( const ofoAccount *account );
+const gchar      *ofo_account_get_currency              ( const ofoAccount *account );
+gboolean          ofo_account_is_root                   ( const ofoAccount *account );
+gboolean          ofo_account_is_settleable             ( const ofoAccount *account );
+gboolean          ofo_account_get_keep_unsettled        ( const ofoAccount *account );
+gboolean          ofo_account_is_reconciliable          ( const ofoAccount *account );
+gboolean          ofo_account_get_keep_unreconciliated  ( const ofoAccount *account );
+gboolean          ofo_account_is_forwardable            ( const ofoAccount *account );
+gboolean          ofo_account_is_closed                 ( const ofoAccount *account );
+const gchar      *ofo_account_get_notes                 ( const ofoAccount *account );
+const gchar      *ofo_account_get_upd_user              ( const ofoAccount *account );
+const myStampVal *ofo_account_get_upd_stamp             ( const ofoAccount *account );
+ofxAmount         ofo_account_get_open_debit            ( ofoAccount *account );
+ofxAmount         ofo_account_get_open_credit           ( ofoAccount *account );
+ofxAmount         ofo_account_get_current_rough_debit   ( const ofoAccount *account );
+ofxAmount         ofo_account_get_current_rough_credit  ( const ofoAccount *account );
+ofxAmount         ofo_account_get_current_val_debit     ( const ofoAccount *account );
+ofxAmount         ofo_account_get_current_val_credit    ( const ofoAccount *account );
+ofxAmount         ofo_account_get_futur_rough_debit     ( const ofoAccount *account );
+ofxAmount         ofo_account_get_futur_rough_credit    ( const ofoAccount *account );
+ofxAmount         ofo_account_get_futur_val_debit       ( const ofoAccount *account );
+ofxAmount         ofo_account_get_futur_val_credit      ( const ofoAccount *account );
+ofxAmount         ofo_account_get_solde_at_date         ( ofoAccount *account, const GDate *date, GDate *deffect, ofxAmount *debit, ofxAmount *credit );
 
-gboolean        ofo_account_is_deletable              ( const ofoAccount *account );
-gboolean        ofo_account_is_valid_data             ( const gchar *number, const gchar *label, const gchar *devise, gboolean root, gchar **msgerr );
-gint            ofo_account_get_class_from_number     ( const gchar *number );
-gint            ofo_account_get_level_from_number     ( const gchar *number );
-gboolean        ofo_account_has_children              ( const ofoAccount *account );
-GList          *ofo_account_get_children              ( const ofoAccount *account );
-gboolean        ofo_account_is_child_of               ( const ofoAccount *account, const gchar *candidate );
-gboolean        ofo_account_is_allowed                ( const ofoAccount *account, gint allowed );
-const gchar    *ofo_account_get_balance_type_dbms     ( ofeAccountType type );
-const gchar    *ofo_account_get_balance_type_short    ( ofeAccountType type );
+gboolean          ofo_account_is_deletable              ( const ofoAccount *account );
+gboolean          ofo_account_is_valid_data             ( const gchar *number, const gchar *label, const gchar *devise, gboolean root, gchar **msgerr );
+gint              ofo_account_get_class_from_number     ( const gchar *number );
+gint              ofo_account_get_level_from_number     ( const gchar *number );
+gboolean          ofo_account_has_children              ( const ofoAccount *account );
+GList            *ofo_account_get_children              ( const ofoAccount *account );
+gboolean          ofo_account_is_child_of               ( const ofoAccount *account, const gchar *candidate );
+gboolean          ofo_account_is_allowed                ( const ofoAccount *account, gint allowed );
+const gchar      *ofo_account_get_balance_type_dbms     ( ofeAccountType type );
+const gchar      *ofo_account_get_balance_type_short    ( ofeAccountType type );
 
-void            ofo_account_set_number                ( ofoAccount *account, const gchar *number );
-void            ofo_account_set_label                 ( ofoAccount *account, const gchar *label );
-void            ofo_account_set_currency              ( ofoAccount *account, const gchar *devise );
-void            ofo_account_set_root                  ( ofoAccount *account, gboolean root );
-void            ofo_account_set_settleable            ( ofoAccount *account, gboolean settleable );
-void            ofo_account_set_keep_unsettled        ( ofoAccount *account, gboolean keep );
-void            ofo_account_set_reconciliable         ( ofoAccount *account, gboolean reconciliable );
-void            ofo_account_set_keep_unreconciliated  ( ofoAccount *account, gboolean keep );
-void            ofo_account_set_forwardable           ( ofoAccount *account, gboolean forwardable );
-void            ofo_account_set_closed                ( ofoAccount *account, gboolean closed );
-void            ofo_account_set_notes                 ( ofoAccount *account, const gchar *notes );
-void            ofo_account_set_current_rough_debit   ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_current_rough_credit  ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_current_val_debit     ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_current_val_credit    ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_futur_rough_debit     ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_futur_rough_credit    ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_futur_val_debit       ( ofoAccount *account, ofxAmount amount );
-void            ofo_account_set_futur_val_credit      ( ofoAccount *account, ofxAmount amount );
+void              ofo_account_set_number                ( ofoAccount *account, const gchar *number );
+void              ofo_account_set_label                 ( ofoAccount *account, const gchar *label );
+void              ofo_account_set_currency              ( ofoAccount *account, const gchar *devise );
+void              ofo_account_set_root                  ( ofoAccount *account, gboolean root );
+void              ofo_account_set_settleable            ( ofoAccount *account, gboolean settleable );
+void              ofo_account_set_keep_unsettled        ( ofoAccount *account, gboolean keep );
+void              ofo_account_set_reconciliable         ( ofoAccount *account, gboolean reconciliable );
+void              ofo_account_set_keep_unreconciliated  ( ofoAccount *account, gboolean keep );
+void              ofo_account_set_forwardable           ( ofoAccount *account, gboolean forwardable );
+void              ofo_account_set_closed                ( ofoAccount *account, gboolean closed );
+void              ofo_account_set_notes                 ( ofoAccount *account, const gchar *notes );
+void              ofo_account_set_current_rough_debit   ( ofoAccount *account, ofxAmount amount );
+void              ofo_account_set_current_rough_credit  ( ofoAccount *account, ofxAmount amount );
+void              ofo_account_set_current_val_debit     ( ofoAccount *account, ofxAmount amount );
+void              ofo_account_set_current_val_credit    ( ofoAccount *account, ofxAmount amount );
+void              ofo_account_set_futur_rough_debit     ( ofoAccount *account, ofxAmount amount );
+void              ofo_account_set_futur_rough_credit    ( ofoAccount *account, ofxAmount amount );
+void              ofo_account_set_futur_val_debit       ( ofoAccount *account, ofxAmount amount );
+void              ofo_account_set_futur_val_credit      ( ofoAccount *account, ofxAmount amount );
 
-gboolean        ofo_account_archive_openings          ( ofaIGetter *getter, const GDate *exe_begin );
-gboolean        ofo_account_archive_balances          ( ofoAccount *account, const GDate *date );
+gboolean          ofo_account_archive_openings          ( ofaIGetter *getter, const GDate *exe_begin );
+gboolean          ofo_account_archive_balances          ( ofoAccount *account, const GDate *date );
 
-guint           ofo_account_archive_get_count         ( ofoAccount *account );
-const GDate    *ofo_account_archive_get_date          ( ofoAccount *account, guint idx );
-ofeAccountType  ofo_account_archive_get_type          ( ofoAccount *account, guint idx );
-ofxAmount       ofo_account_archive_get_debit         ( ofoAccount *account, guint idx );
-ofxAmount       ofo_account_archive_get_credit        ( ofoAccount *account, guint idx );
+guint             ofo_account_archive_get_count         ( ofoAccount *account );
+const GDate      *ofo_account_archive_get_date          ( ofoAccount *account, guint idx );
+ofeAccountType    ofo_account_archive_get_type          ( ofoAccount *account, guint idx );
+ofxAmount         ofo_account_archive_get_debit         ( ofoAccount *account, guint idx );
+ofxAmount         ofo_account_archive_get_credit        ( ofoAccount *account, guint idx );
 
-GList          *ofo_account_archive_get_orphans       ( ofaIGetter *getter );
-#define         ofo_account_archive_free_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+GList            *ofo_account_archive_get_orphans       ( ofaIGetter *getter );
+#define           ofo_account_archive_free_orphans( L ) ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
-guint           ofo_account_doc_get_count             ( ofoAccount *account );
+guint             ofo_account_doc_get_count             ( ofoAccount *account );
 
-GList          *ofo_account_doc_get_orphans           ( ofaIGetter *getter );
-#define         ofo_account_doc_free_orphans( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
+GList            *ofo_account_doc_get_orphans           ( ofaIGetter *getter );
+#define           ofo_account_doc_free_orphans( L )     ( g_list_free_full(( L ), ( GDestroyNotify ) g_free ))
 
-gboolean        ofo_account_insert                    ( ofoAccount *account );
-gboolean        ofo_account_update                    ( ofoAccount *account, const gchar *prev_number );
-gboolean        ofo_account_update_amounts            ( ofoAccount *account );
-gboolean        ofo_account_delete                    ( ofoAccount *account );
-gboolean        ofo_account_delete_with_children      ( ofoAccount *account );
+gboolean          ofo_account_insert                    ( ofoAccount *account );
+gboolean          ofo_account_update                    ( ofoAccount *account, const gchar *prev_number );
+gboolean          ofo_account_update_amounts            ( ofoAccount *account );
+gboolean          ofo_account_delete                    ( ofoAccount *account );
+gboolean          ofo_account_delete_with_children      ( ofoAccount *account );
 
 G_END_DECLS
 

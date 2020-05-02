@@ -41,9 +41,9 @@ typedef struct {
 
 	/* props's data
 	 */
-	gchar    *comment;
-	GTimeVal  stamp;
-	gchar    *userid;
+	gchar      *comment;
+	myStampVal *stamp;
+	gchar      *userid;
 }
 	ofaBackupPropsPrivate;
 
@@ -79,6 +79,7 @@ backup_props_finalize( GObject *instance )
 
 	g_free( priv->comment );
 	g_free( priv->userid );
+	my_stamp_free( priv->stamp );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_backup_props_parent_class )->finalize( instance );
@@ -117,7 +118,7 @@ ofa_backup_props_init( ofaBackupProps *self )
 	priv = ofa_backup_props_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	my_stamp_set_now( &priv->stamp );
+	priv->stamp = my_stamp_new();
 }
 
 static void
@@ -191,7 +192,7 @@ new_from_node( JsonNode *root )
 	JsonNode *node;
 	GList *members, *itm;
 	const gchar *cname, *cvalue;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	props = ofa_backup_props_new();
 	root_type = json_node_get_node_type( root );
@@ -213,8 +214,9 @@ new_from_node( JsonNode *root )
 							ofa_backup_props_set_comment( props, cvalue );
 
 						} else if( !my_collate( cname, st_stamp )){
-							my_stamp_set_from_sql( &stamp, cvalue );
-							ofa_backup_props_set_stamp( props, &stamp );
+							stamp = my_stamp_new_from_sql( cvalue );
+							ofa_backup_props_set_stamp( props, stamp );
+							my_stamp_free( stamp );
 
 						} else if( !my_collate( cname, st_userid )){
 							ofa_backup_props_set_userid( props, cvalue );
@@ -291,7 +293,7 @@ ofa_backup_props_set_comment( ofaBackupProps *props, const gchar *comment )
  *
  * Returns: the current timestamp at backup time.
  */
-const GTimeVal *
+const myStampVal *
 ofa_backup_props_get_stamp( ofaBackupProps *props )
 {
 	ofaBackupPropsPrivate *priv;
@@ -302,7 +304,7 @@ ofa_backup_props_get_stamp( ofaBackupProps *props )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return(( const GTimeVal * ) &priv->stamp );
+	return(( const myStampVal * ) priv->stamp );
 }
 
 /**
@@ -316,7 +318,7 @@ ofa_backup_props_get_stamp( ofaBackupProps *props )
  * instanciation time.
  */
 void
-ofa_backup_props_set_stamp( ofaBackupProps *props, const GTimeVal *stamp )
+ofa_backup_props_set_stamp( ofaBackupProps *props, const myStampVal *stamp )
 {
 	ofaBackupPropsPrivate *priv;
 
@@ -326,7 +328,7 @@ ofa_backup_props_set_stamp( ofaBackupProps *props, const GTimeVal *stamp )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	my_stamp_set_from_stamp( &priv->stamp, stamp );
+	my_stamp_set_from_stamp( priv->stamp, stamp );
 }
 
 /**
@@ -418,7 +420,7 @@ ijson_get_as_string( ofaIJson *instance )
 	json_builder_set_member_name( builder, st_comment );
 	json_builder_add_string_value( builder, priv->comment ? priv->comment : "" );
 
-	sdate = my_stamp_to_str( &priv->stamp, MY_STAMP_YYMDHMS );
+	sdate = my_stamp_to_str( priv->stamp, MY_STAMP_YYMDHMS );
 	json_builder_set_member_name( builder, st_stamp );
 	json_builder_add_string_value( builder, sdate );
 	g_free( sdate );

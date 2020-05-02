@@ -267,9 +267,9 @@ typedef struct {
 static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gchar          *get_mnemo_new_from( const ofoOpeTemplate *model );
 static void            ope_template_set_cre_user( ofoOpeTemplate *model, const gchar *user );
-static void            ope_template_set_cre_stamp( ofoOpeTemplate *model, const GTimeVal *stamp );
+static void            ope_template_set_cre_stamp( ofoOpeTemplate *model, const myStampVal *stamp );
 static void            ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *user );
-static void            ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *stamp );
+static void            ope_template_set_upd_stamp( ofoOpeTemplate *model, const myStampVal *stamp );
 static GList          *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean        model_do_insert( ofoOpeTemplate *model, const ofaIDBConnect *connect );
 static gboolean        model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect );
@@ -592,7 +592,7 @@ ofo_ope_template_get_cre_user( const ofoOpeTemplate *model )
 /**
  * ofo_ope_template_get_cre_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_ope_template_get_cre_stamp( const ofoOpeTemplate *model )
 {
 	ofo_base_getter( OPE_TEMPLATE, model, timestamp, NULL, OTE_CRE_STAMP );
@@ -829,7 +829,7 @@ ofo_ope_template_get_upd_user( const ofoOpeTemplate *model )
 /**
  * ofo_ope_template_get_upd_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_ope_template_get_upd_stamp( const ofoOpeTemplate *model )
 {
 	ofo_base_getter( OPE_TEMPLATE, model, timestamp, NULL, OTE_UPD_STAMP );
@@ -929,7 +929,7 @@ ope_template_set_cre_user( ofoOpeTemplate *model, const gchar *user )
  * ofo_ope_template_set_cre_stamp:
  */
 static void
-ope_template_set_cre_stamp( ofoOpeTemplate *model, const GTimeVal *stamp )
+ope_template_set_cre_stamp( ofoOpeTemplate *model, const myStampVal *stamp )
 {
 	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_CRE_STAMP, stamp );
 }
@@ -1100,7 +1100,7 @@ ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *user )
  * ofo_ope_template_set_upd_stamp:
  */
 static void
-ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *stamp )
+ope_template_set_upd_stamp( ofoOpeTemplate *model, const myStampVal *stamp )
 {
 	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_UPD_STAMP, stamp );
 }
@@ -1557,7 +1557,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	gboolean ok;
 	GString *query;
 	gchar *label, *notes, *ref, *stamp_str, *stiers, *sqppro, *srule;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	gint row;
 	const gchar *userid;
 
@@ -1568,8 +1568,8 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	sqppro = my_utils_quote_sql( ofo_ope_template_get_qppro( model ));
 	srule = my_utils_quote_sql( ofo_ope_template_get_rule( model ));
 	notes = my_utils_quote_sql( ofo_ope_template_get_notes( model ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_OPE_TEMPLATES" );
 
@@ -1638,7 +1638,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	ope_template_set_cre_user( model, userid );
-	ope_template_set_cre_stamp( model, &stamp );
+	ope_template_set_cre_stamp( model, stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
@@ -1648,6 +1648,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	g_free( ref );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1816,7 +1817,7 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 	GString *query;
 	gchar *label, *ref, *notes, *stamp_str, *stiers, *sqppro, *srule;
 	const gchar *new_mnemo, *userid;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	gint row;
 
 	userid = ofa_idbconnect_get_account( connect );
@@ -1827,8 +1828,8 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 	srule = my_utils_quote_sql( ofo_ope_template_get_rule( model ));
 	notes = my_utils_quote_sql( ofo_ope_template_get_notes( model ));
 	new_mnemo = ofo_ope_template_get_mnemo( model );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_OPE_TEMPLATES SET " );
 
@@ -1890,13 +1891,14 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	ope_template_set_upd_user( model, userid );
-	ope_template_set_upd_stamp( model, &stamp );
+	ope_template_set_upd_stamp( model, stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( ref );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -2377,7 +2379,7 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	gchar *splitted;
 	ofoOpeTemplate *model;
 	gboolean locked, mandatory;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	model = ofo_ope_template_new( parms->getter );
 
@@ -2403,8 +2405,9 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		my_stamp_set_from_sql( &stamp, cstr );
-		ope_template_set_cre_stamp( model, &stamp );
+		stamp = my_stamp_new_from_sql( cstr );
+		ope_template_set_cre_stamp( model, stamp );
+		my_stamp_free( stamp );
 	}
 
 	/* model label */

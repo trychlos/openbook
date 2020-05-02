@@ -197,13 +197,13 @@ typedef struct {
 static ofoBat     *bat_find_by_id( GList *set, ofxCounter id );
 static void        bat_set_id( ofoBat *bat, ofxCounter id );
 static void        bat_set_cre_user( ofoBat *bat, const gchar *user );
-static void        bat_set_cre_stamp( ofoBat *bat, const GTimeVal *stamp );
+static void        bat_set_cre_stamp( ofoBat *bat, const myStampVal *stamp );
 static void        bat_set_notes( ofoBat *bat, const gchar *account );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *user );
-static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *stamp );
+static void        bat_set_upd_stamp( ofoBat *bat, const myStampVal *stamp );
 static void        bat_set_account( ofoBat *bat, const gchar *account );
 static void        bat_set_acc_user( ofoBat *bat, const gchar *user );
-static void        bat_set_acc_stamp( ofoBat *bat, const GTimeVal *stamp );
+static void        bat_set_acc_stamp( ofoBat *bat, const myStampVal *stamp );
 static GList      *get_orphans( ofaIGetter *getter, const gchar *table );
 static gboolean    bat_do_insert( ofoBat *bat, ofaIGetter *getter );
 static gboolean    bat_insert_main( ofoBat *bat, ofaIGetter *getter );
@@ -549,7 +549,7 @@ ofo_bat_get_cre_user( ofoBat *bat )
  *
  * Returns: the import timestamp.
  */
-const GTimeVal *
+const myStampVal *
 ofo_bat_get_cre_stamp( ofoBat *bat )
 {
 	ofo_base_getter( BAT, bat, timestamp, NULL, BAT_CRE_STAMP );
@@ -585,7 +585,7 @@ ofo_bat_get_upd_user( ofoBat *bat )
  *
  * Returns: the import timestamp.
  */
-const GTimeVal *
+const myStampVal *
 ofo_bat_get_upd_stamp( ofoBat *bat )
 {
 	ofo_base_getter( BAT, bat, timestamp, NULL, BAT_UPD_STAMP );
@@ -621,7 +621,7 @@ ofo_bat_get_acc_user( ofoBat *bat )
  *
  * Returns: the import timestamp.
  */
-const GTimeVal *
+const myStampVal *
 ofo_bat_get_acc_stamp( ofoBat *bat )
 {
 	ofo_base_getter( BAT, bat, timestamp, NULL, BAT_ACC_STAMP );
@@ -943,7 +943,7 @@ bat_set_cre_user( ofoBat *bat, const gchar *user )
  * Set @cre_stamp.
  */
 static void
-bat_set_cre_stamp( ofoBat *bat, const GTimeVal *stamp )
+bat_set_cre_stamp( ofoBat *bat, const myStampVal *stamp )
 {
 	ofo_base_setter( BAT, bat, timestamp, BAT_CRE_STAMP, stamp );
 }
@@ -978,7 +978,7 @@ bat_set_upd_user( ofoBat *bat, const gchar *user )
  * Set @upd_stamp.
  */
 static void
-bat_set_upd_stamp( ofoBat *bat, const GTimeVal *stamp )
+bat_set_upd_stamp( ofoBat *bat, const myStampVal *stamp )
 {
 	ofo_base_setter( BAT, bat, timestamp, BAT_UPD_STAMP, stamp );
 }
@@ -1013,7 +1013,7 @@ bat_set_acc_user( ofoBat *bat, const gchar *user )
  * Set @acc_stamp.
  */
 static void
-bat_set_acc_stamp( ofoBat *bat, const GTimeVal *stamp )
+bat_set_acc_stamp( ofoBat *bat, const myStampVal *stamp )
 {
 	ofo_base_setter( BAT, bat, timestamp, BAT_ACC_STAMP, stamp );
 }
@@ -1143,7 +1143,7 @@ bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 	gchar *suri, *str, *stamp_str;
 	const GDate *begin, *end;
 	gboolean ok, is_set;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid, *cur_code;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
@@ -1156,9 +1156,9 @@ bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 	connect = ofa_hub_get_connect( hub );
 
 	ok = FALSE;
-	my_stamp_set_now( &stamp );
+	stamp = my_stamp_new_now();
 	suri = my_utils_quote_sql( ofo_bat_get_uri( bat ));
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 	userid = ofa_idbconnect_get_account( connect );
 
 	query = g_string_new( "INSERT INTO OFA_T_BAT" );
@@ -1236,12 +1236,13 @@ bat_insert_main( ofoBat *bat, ofaIGetter *getter )
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		bat_set_cre_user( bat, userid );
-		bat_set_cre_stamp( bat, &stamp );
+		bat_set_cre_stamp( bat, stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1273,7 +1274,7 @@ bat_do_update_notes( ofoBat *bat )
 	GString *query;
 	gchar *notes, *stamp_str;
 	gboolean ok;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 
 	ok = FALSE;
@@ -1284,8 +1285,8 @@ bat_do_update_notes( ofoBat *bat )
 	connect = ofa_hub_get_connect( hub );
 
 	notes = my_utils_quote_sql( ofo_bat_get_notes( bat ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 	userid = ofa_idbconnect_get_account( connect );
 
 	query = g_string_new( "UPDATE OFA_T_BAT SET " );
@@ -1302,7 +1303,7 @@ bat_do_update_notes( ofoBat *bat )
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		bat_set_upd_user( bat, userid );
-		bat_set_upd_stamp( bat, &stamp );
+		bat_set_upd_stamp( bat, stamp );
 
 		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, bat, NULL );
 
@@ -1312,6 +1313,7 @@ bat_do_update_notes( ofoBat *bat )
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1343,7 +1345,7 @@ bat_do_update_account( ofoBat *bat )
 	GString *query;
 	gchar *stamp_str;
 	gboolean ok;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid, *caccount;
 
 	ok = FALSE;
@@ -1353,8 +1355,8 @@ bat_do_update_account( ofoBat *bat )
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 	userid = ofa_idbconnect_get_account( connect );
 
 	query = g_string_new( "UPDATE OFA_T_BAT SET " );
@@ -1372,7 +1374,7 @@ bat_do_update_account( ofoBat *bat )
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		bat_set_acc_user( bat, userid );
-		bat_set_acc_stamp( bat, &stamp );
+		bat_set_acc_stamp( bat, stamp );
 
 		g_signal_emit_by_name( signaler, SIGNALER_BASE_UPDATED, bat, NULL );
 
@@ -1381,6 +1383,7 @@ bat_do_update_account( ofoBat *bat )
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }

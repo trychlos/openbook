@@ -218,9 +218,9 @@ typedef struct {
 static ofoTVAForm *form_find_by_mnemo( GList *set, const gchar *mnemo );
 static gchar      *get_mnemo_new_from( const ofoTVAForm *form );
 static void        tva_form_set_cre_user( ofoTVAForm *form, const gchar *user );
-static void        tva_form_set_cre_stamp( ofoTVAForm *form, const GTimeVal *stamp );
+static void        tva_form_set_cre_stamp( ofoTVAForm *form, const myStampVal *stamp );
 static void        tva_form_set_upd_user( ofoTVAForm *form, const gchar *user );
-static void        tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *stamp );
+static void        tva_form_set_upd_stamp( ofoTVAForm *form, const myStampVal *stamp );
 static GList      *form_boolean_new( ofoTVAForm *form, const gchar *label );
 static void        form_boolean_add( ofoTVAForm *form, GList *fields );
 static GList      *form_detail_new( ofoTVAForm *form, guint level, const gchar *code, const gchar *label, gboolean has_base, const gchar *base, gboolean has_amount, const gchar *amount, gboolean has_template, const gchar *template );
@@ -612,7 +612,7 @@ ofo_tva_form_get_cre_user( const ofoTVAForm *form )
 /**
  * ofo_tva_form_get_cre_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_tva_form_get_cre_stamp( const ofoTVAForm *form )
 {
 	ofo_base_getter( TVA_FORM, form, timestamp, NULL, TFO_CRE_STAMP );
@@ -671,7 +671,7 @@ ofo_tva_form_get_upd_user( const ofoTVAForm *form )
 /**
  * ofo_tva_form_get_upd_stamp:
  */
-const GTimeVal *
+const myStampVal *
 ofo_tva_form_get_upd_stamp( const ofoTVAForm *form )
 {
 	ofo_base_getter( TVA_FORM, form, timestamp, NULL, TFO_UPD_STAMP );
@@ -797,7 +797,7 @@ tva_form_set_cre_user( ofoTVAForm *form, const gchar *user )
  * ofo_tva_form_set_cre_stamp:
  */
 static void
-tva_form_set_cre_stamp( ofoTVAForm *form, const GTimeVal *stamp )
+tva_form_set_cre_stamp( ofoTVAForm *form, const myStampVal *stamp )
 {
 	ofo_base_setter( TVA_FORM, form, string, TFO_CRE_STAMP, stamp );
 }
@@ -845,7 +845,7 @@ tva_form_set_upd_user( ofoTVAForm *form, const gchar *user )
  * ofo_tva_form_set_upd_stamp:
  */
 static void
-tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *stamp )
+tva_form_set_upd_stamp( ofoTVAForm *form, const myStampVal *stamp )
 {
 	ofo_base_setter( TVA_FORM, form, string, TFO_UPD_STAMP, stamp );
 }
@@ -1406,14 +1406,14 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 	gboolean ok;
 	GString *query;
 	gchar *label, *notes, *stamp_str;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_tva_form_get_label( form ));
 	notes = my_utils_quote_sql( ofo_tva_form_get_notes( form ));
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO TVA_T_FORMS" );
 
@@ -1444,12 +1444,13 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	tva_form_set_cre_user( form, userid );
-	tva_form_set_cre_stamp( form, &stamp );
+	tva_form_set_cre_stamp( form, stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( label );
 	g_free( stamp_str );
+	my_stamp_free( stamp );
 
 	return( ok );
 }
@@ -1641,14 +1642,14 @@ form_update_main( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *p
 	GString *query;
 	gchar *label, *notes, *stamp_str;
 	const gchar *new_mnemo, *userid;
-	GTimeVal stamp;
+	myStampVal *stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_tva_form_get_label( form ));
 	notes = my_utils_quote_sql( ofo_tva_form_get_notes( form ));
 	new_mnemo = ofo_tva_form_get_mnemo( form );
-	my_stamp_set_now( &stamp );
-	stamp_str = my_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp = my_stamp_new_now();
+	stamp_str = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE TVA_T_FORMS SET " );
 
@@ -1686,12 +1687,13 @@ form_update_main( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *p
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
 	tva_form_set_upd_user( form, userid );
-	tva_form_set_upd_stamp( form, &stamp );
+	tva_form_set_upd_stamp( form, stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( stamp_str );
 	g_free( label );
+	my_stamp_free( stamp );
 
 	return( ok );
 }

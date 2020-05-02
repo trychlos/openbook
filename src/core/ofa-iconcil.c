@@ -212,7 +212,7 @@ ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval )
 	ofaIGetter *getter;
 	ofoConcil *concil;
 	const ofaIDBConnect *connect;
-	GTimeVal stamp;
+	myStampVal *stamp;
 	const gchar *userid;
 	ofaHub *hub;
 
@@ -224,13 +224,16 @@ ofa_iconcil_new_concil( ofaIConcil *instance, const GDate *dval )
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 	userid = ofa_idbconnect_get_account( connect );
+	stamp = my_stamp_new_now();
 
 	concil = ofo_concil_new( getter );
 	ofo_concil_set_dval( concil, dval );
 	ofo_concil_set_upd_user( concil, userid );
-	ofo_concil_set_upd_stamp( concil, my_stamp_set_now( &stamp ));
+	ofo_concil_set_upd_stamp( concil, stamp );
 
 	ofa_iconcil_new_concil_ex( instance, concil );
+
+	my_stamp_free( stamp );
 
 	return( concil );
 }
