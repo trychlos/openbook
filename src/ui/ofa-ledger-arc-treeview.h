@@ -2,7 +2,7 @@
  * Open Firm LedgerArcing
  * A double-entry ledger_arcing application for professional services.
  *
- * Copyright (C) 2014-2018 Pierre Wieser (see AUTHORS)
+ * Copyright (C) 2014-2020 Pierre Wieser (see AUTHORS)
  *
  * Open Firm LedgerArcing is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as

@@ -2,7 +2,7 @@
  * Open Firm Paimeaning
  * A double-entry paimeaning application for professional services.
  *
- * Copyright (C) 2014-2018 Pierre Wieser (see AUTHORS)
+ * Copyright (C) 2014-2020 Pierre Wieser (see AUTHORS)
  *
  * Open Firm Paimeaning is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
