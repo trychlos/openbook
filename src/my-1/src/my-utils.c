@@ -2024,7 +2024,6 @@ position_get_geometry( myISettings *settings, const gchar *name, gint *x, gint *
 
 	key = position_get_key( name );
 	list = my_isettings_get_uint_list( settings, st_save_restore_group, key );
-	g_free( key );
 
 	set = ( g_list_length( list ) > 0 );
 
@@ -2048,10 +2047,11 @@ position_get_geometry( myISettings *settings, const gchar *name, gint *x, gint *
 		*height = -1;
 	}
 
-	g_debug( "%s: list=%p (count=%d) x=%d, y=%d, width=%d, height=%d",
-			thisfn, ( void * ) list, g_list_length( list ), *x, *y, *width, *height );
+	g_debug( "%s: key=%s list=%p (count=%d) x=%d, y=%d, width=%d, height=%d",
+			thisfn, key, ( void * ) list, g_list_length( list ), *x, *y, *width, *height );
 
 	my_isettings_free_uint_list( settings, list );
+	g_free( key );
 
 	return( set );
 }
