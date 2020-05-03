@@ -37,6 +37,7 @@
 
 #include <my/my-period.h>
 
+#include "api/ofa-box.h"
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 

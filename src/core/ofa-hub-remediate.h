@@ -32,6 +32,7 @@
  * @include: openbook/ofa-hub-remediate.h
  */
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-igetter-def.h"
 
 /* The callback function for ofa_hub_remediate_recompute_balances():
