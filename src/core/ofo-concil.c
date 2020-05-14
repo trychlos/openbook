@@ -120,9 +120,14 @@ static void
 ofo_concil_init( ofoConcil *self )
 {
 	static const gchar *thisfn = "ofo_concil_init";
+	ofoConcilPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	priv = ofo_concil_get_instance_private( self );
+
+	priv->stamp = my_stamp_new();
 }
 
 static void
