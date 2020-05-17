@@ -39,6 +39,8 @@ struct _myStampVal {
 
 static myStampVal *set_from_str_yymdhms( myStampVal *timeval, const gchar *str );
 static myStampVal *set_from_str_dmyyhm( myStampVal *timeval, const gchar *str );
+static myStampVal *set_from_str_yymd( myStampVal *timeval, const gchar *str );
+static myStampVal *set_from_str_sqld( myStampVal *timeval, const gchar *str );
 
 /**
  * my_stamp_new:
@@ -110,26 +112,20 @@ my_stamp_new_from_str( const gchar *str, myStampFormat format )
 }
 
 /**
- * my_stamp_set_now:
- * @stamp: [out]: the destination of the timestamp
+ * my_stamp_dump:
+ * @stamp: [allow-none]: the #myStampVal timestamp to be dumped.
  *
- * Set the provided #myStampVal to the current timestamp.
- *
- * Returns: @stamp.
+ * Dump the provided #myStampVal.
  */
-myStampVal *
-my_stamp_set_now( myStampVal *stamp )
+void
+my_stamp_dump( const myStampVal *stamp )
 {
-	GDateTime *dt;
+	const gchar *thisfn = "my_stamp_dump";
 
-	g_return_val_if_fail( stamp, NULL );
-
-	dt = g_date_time_new_now_local();
-	stamp->sec = g_date_time_to_unix( dt );
-	stamp->usec = g_date_time_get_microsecond( dt );
-	g_date_time_unref( dt );
-
-	return( stamp );
+	g_debug( "%s: stamp=%p", thisfn, ( void * ) stamp );
+	if( stamp ){
+		g_debug( "%s: stamp.sec=%lu, stamp.usec=%lu", thisfn, stamp->sec, stamp->usec );
+	}
 }
 
 /**
@@ -227,6 +223,29 @@ my_stamp_get_usecs( const myStampVal *stamp )
 }
 
 /**
+ * my_stamp_set_now:
+ * @stamp: [out]: the destination of the timestamp
+ *
+ * Set the provided #myStampVal to the current timestamp.
+ *
+ * Returns: @stamp.
+ */
+myStampVal *
+my_stamp_set_now( myStampVal *stamp )
+{
+	GDateTime *dt;
+
+	g_return_val_if_fail( stamp, NULL );
+
+	dt = g_date_time_new_now_local();
+	stamp->sec = g_date_time_to_unix( dt );
+	stamp->usec = g_date_time_get_microsecond( dt );
+	g_date_time_unref( dt );
+
+	return( stamp );
+}
+
+/**
  * my_stamp_set_from_sql:
  * @stamp: [out]: a pointer to a #myStampVal structure.
  * @str: [allow-none]: a SQL timestamp string as 'YYYY-MM-DD HH:MI:SS'.
@@ -283,6 +302,12 @@ my_stamp_set_from_str( myStampVal *stamp, const gchar *str, myStampFormat format
 			break;
 		case MY_STAMP_DMYYHM:
 			set_from_str_dmyyhm( stamp, str );
+			break;
+		case MY_STAMP_YYMD:
+			set_from_str_yymd( stamp, str );
+			break;
+		case MY_STAMP_SQLD:
+			set_from_str_sqld( stamp, str );
 			break;
 		default:
 			g_warning( "%s: unknown or invalid format: %u", thisfn, format );
@@ -344,6 +369,58 @@ set_from_str_dmyyhm( myStampVal *timeval, const gchar *str )
 	return( timeval );
 }
 
+/*
+ * The string is expected to be 'yyymmdd'
+ */
+static myStampVal *
+set_from_str_yymd( myStampVal *timeval, const gchar *str )
+{
+	gint y, m, d;
+	struct tm broken;
+
+	sscanf( str, "%4d%2d%2d", &y, &m, &d );
+
+	memset( &broken, '\0', sizeof( broken ));
+	broken.tm_year = y - 1900;
+	broken.tm_mon = m-1;	/* 0 to 11 */
+	broken.tm_mday = d;
+	broken.tm_hour = 0;
+	broken.tm_min = 0;
+	broken.tm_sec = 0;
+	broken.tm_isdst = -1;
+
+	timeval->sec = mktime( &broken );
+	timeval->usec = 0;
+
+	return( timeval );
+}
+
+/*
+ * The string is expected to be 'yyyy-mm-dd'
+ */
+static myStampVal *
+set_from_str_sqld( myStampVal *timeval, const gchar *str )
+{
+	gint y, m, d;
+	struct tm broken;
+
+	sscanf( str, "%d-%d-%d", &y, &m, &d );
+
+	memset( &broken, '\0', sizeof( broken ));
+	broken.tm_year = y - 1900;
+	broken.tm_mon = m-1;	/* 0 to 11 */
+	broken.tm_mday = d;
+	broken.tm_hour = 0;
+	broken.tm_min = 0;
+	broken.tm_sec = 0;
+	broken.tm_isdst = -1;
+
+	timeval->sec = mktime( &broken );
+	timeval->usec = 0;
+
+	return( timeval );
+}
+
 /**
  * my_stamp_to_str:
  * @stamp: a #myStampVal timestamp.
@@ -364,7 +441,7 @@ my_stamp_to_str( const myStampVal *stamp, myStampFormat format )
 		dt = g_date_time_new_from_unix_local( stamp->sec );
 		if( dt ){
 			switch( format ){
-				/* this is SQL format */
+				/* this is full SQL timestamp format */
 				case MY_STAMP_YYMDHMS:
 					str = g_date_time_format( dt, "%Y-%m-%d %H:%M:%S" );
 					break;
@@ -377,6 +454,11 @@ my_stamp_to_str( const myStampVal *stamp, myStampFormat format )
 				/* this is the format for FEC export */
 				case MY_STAMP_YYMD:
 					str = g_date_time_format( dt, "%Y%m%d" );
+					break;
+
+				/* this is the SQL date-only format */
+				case MY_STAMP_SQLD:
+					str = g_date_time_format( dt, "%Y-%m-%d" );
 					break;
 			}
 			g_date_time_unref( dt );

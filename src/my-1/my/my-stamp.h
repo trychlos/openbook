@@ -49,6 +49,7 @@ typedef struct _myStampVal myStampVal;
  * @MY_STAMP_YYMDHMS: display as 'yyyy-mm-dd hh:mi:ss' (SQL-like format)
  * @MY_STAMP_DMYYHM:  display as 'dd/mm/yyyy hh:mi'.
  * @MY_STAMP_YYMD: display as 'yyyymmdd'
+ * @MY_STAMP_SQLD: display as 'yyyy-mm-dd'
  *
  * MAINTAINER_NOTE: only add a new format at the end of the list as the
  * format number is stored as a user settings
@@ -57,7 +58,8 @@ typedef struct _myStampVal myStampVal;
 typedef enum {
 	MY_STAMP_YYMDHMS = 1,
 	MY_STAMP_DMYYHM,
-	MY_STAMP_YYMD
+	MY_STAMP_YYMD,
+	MY_STAMP_SQLD
 }
 	myStampFormat;
 
@@ -67,7 +69,7 @@ myStampVal *my_stamp_new_from_sql  ( const gchar *str );
 myStampVal *my_stamp_new_from_stamp( const myStampVal *stamp );
 myStampVal *my_stamp_new_from_str  ( const gchar *str, myStampFormat format );
 
-myStampVal *my_stamp_set_now       ( myStampVal *stamp );
+void        my_stamp_dump          ( const myStampVal *stamp );
 
 gint        my_stamp_compare       ( const myStampVal *a, const myStampVal *b );
 gint64      my_stamp_diff_us       ( const myStampVal *a, const myStampVal *b );
@@ -75,6 +77,7 @@ gint64      my_stamp_diff_us       ( const myStampVal *a, const myStampVal *b );
 time_t      my_stamp_get_seconds   ( const myStampVal *stamp );
 gulong      my_stamp_get_usecs     ( const myStampVal *stamp );
 
+myStampVal *my_stamp_set_now       ( myStampVal *stamp );
 myStampVal *my_stamp_set_from_sql  ( myStampVal *stamp, const gchar *str );
 myStampVal *my_stamp_set_from_stamp( myStampVal *stamp, const myStampVal *orig );
 myStampVal *my_stamp_set_from_str  ( myStampVal *stamp, const gchar *str, myStampFormat format );

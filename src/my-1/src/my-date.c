@@ -232,7 +232,10 @@ my_date_set_from_date( GDate *date, const GDate *orig )
  * Parse a SQL string, putting the result in @date.
  * The dest @date is set invalid if the @string doesn't evaluate to
  * a valid date.
+ *
  * NB: parsing a 'yyyy-mm-dd' is not locale-sensitive.
+ * NB: this function only accepts a SQL date, not a full timestamp.
+ * 	See my_date_set_from_stamp().
  *
  * Returns: @date, in order to be able to chain the functions.
  */
@@ -243,9 +246,7 @@ my_date_set_from_sql( GDate *date, const gchar *string )
 
 	g_date_clear( date, 1 );
 
-	if( my_strlen( string ) &&
-			g_utf8_collate( string, "0000-00-00" )){
-
+	if( my_strlen( string ) && g_utf8_collate( string, "0000-00-00" )){
 		g_date_set_parse( date, string );
 	}
 
@@ -456,16 +457,16 @@ my_date_set_from_str_ex( GDate *date, const gchar *string, myDateFormat format, 
 GDate *
 my_date_set_from_stamp( GDate *date, const myStampVal *stamp )
 {
-	gchar *sql;
+	gchar *sdate;
 
 	g_return_val_if_fail( date, NULL);
 
 	my_date_clear( date );
 	if( stamp ){
-		sql = my_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
-		if( sql ){
-			my_date_set_from_sql( date, sql );
-			g_free( sql );
+		sdate = my_stamp_to_str( stamp, MY_STAMP_SQLD );
+		if( sdate ){
+			my_date_set_from_sql( date, sdate );
+			g_free( sdate );
 		}
 	}
 
