@@ -200,7 +200,10 @@ ofa_hub_remediate_logicals( ofaHub *hub )
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	remediated = remediate_1542( hub );
+	remediated = TRUE;
+	if( 0 ){
+		remediated &= remediate_1542( hub );
+	}
 
 	return( remediated );
 }
