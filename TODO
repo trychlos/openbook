@@ -422,15 +422,35 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
 
 1550 2019- 4-25 Check DBMS Integrity: Check for recurrent models integrity
                 count 57/81, but should be equals
+     2021- 6- 5 count=56/85 and displays 'ok'
+                see also #1536
 
 1551 2019- 4-25 Check DBMS Integrity: Check for VAT forms integrity
                 count 60/5, but should be equals
+     2021- 6- 5 count=60/5 and displays 'ok'
+                see also #1537
 
 1552 2019- 4-25 (F28) Wayland doesn't honor windows placement :(
 
 1553 2020- 5- 2 dossier_setup_rpid(): use a real UUID with GUuid library
 
-1554
+1554 2021- 6- 5 DBMS integrity check
+                - check for conciliationg groups integrity: is empty, does not display anything but 'ok'
+
+1555 2021- 6- 5 recurent models management, when displaying the 'comment' column and trying to reorder it:
+                (openbook:303287): OFA-DEBUG: 00:11:03.787: ofa_icontext_on_button_pressed: instance=0x1052fd0, event=0x1269bf0, sdata=0x1498cd0
+                (openbook:303287): OFA-DEBUG: 00:11:18.181: ofa_itvcolumnable_on_action_changed_state: action_name=itvcolumnable_14, column=Enabled, visible=True
+                (openbook:303287): OFA-DEBUG: 00:11:21.836: ofa_icontext_on_button_pressed: instance=0x1052fd0, event=0x13c5330, sdata=0x1498cd0
+                (openbook:303287): OFA-DEBUG: 00:11:27.864: ofa_itvcolumnable_on_action_changed_state: action_name=itvcolumnable_18, column=Notes indicator, visible=True
+                (openbook:303287): Gtk-WARNING **: 00:11:32.836: Negative content width -17 (allocation 1, extents 9x9) while allocating gadget (node button, owner GtkButton)
+                bt unrelevant
+     2021- 6- 7 same when reoredering column in 'select a paieman mean'
+
+1556 2021- 6- 7 recurent model management: first generate all operations for a period,
+                then enable a supplementary model : unable to generate the corresponding operation
+                for the same period (already generated but for this particular model)
+
+1558                
 
 -----------------------------------------------------------------------
  DONE
@@ -468,6 +488,26 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
 
 1542 2018- 6- 4 Balances displayed in the chart of accounts are twice what they should
      2018- 6-10 fixed by recomputing the soldes at exercice opening
+
+1557 2021- 6- 7 when importing LCL-DEPOTS_01800904778_20180430.pdf
+                (openbook:733380): OFA-DEBUG: 14:42:21.845: ofo_bat_line_init: instance=0x2bd0130 (ofoBatLine)
+                (openbook:733380): MY-DEBUG: 14:42:21.845: my_date_parse_ddmmyyyy_string: setting yy from 18 to 2018
+                (openbook:733380): MY-DEBUG: 14:42:21.845: my_date_parse_ddmmyyyy_string: setting yy to 2018
+                (openbook:733380): OFA-DEBUG: 14:42:21.845: ofo_bat_line_init: instance=0x2e01a80 (ofoBatLine)
+                (openbook:733380): MY-DEBUG: 14:42:21.845: my_date_parse_ddmmyyyy_string: setting yy from 18 to 2018
+                (openbook:733380): MY-DEBUG: 14:42:21.845: my_date_parse_ddmmyyyy_string: setting yy to 2018
+                (openbook:733380): OFA-DEBUG: 14:42:21.845: ofo_bat_line_init: instance=0x2e1c5e0 (ofoBatLine)
+                (openbook:733380): MY-DEBUG: 14:42:21.845: my_date_parse_ddmmyyyy_string: setting yy from 18 to 2018
+                (openbook:733380): MY-DEBUG: 14:42:21.845: my_date_parse_ddmmyyyy_string: setting yy to 2018
+                (openbook:733380): GLib-CRITICAL **: 14:42:21.845: g_date_add_years: assertion 'nyears <= (guint) (G_MAXUINT16 - d->year)' failed
+                (gdb) bt
+                #0  0x00007ffff6ad2647 in g_logv () at /lib64/libglib-2.0.so.0
+                #1  0x00007ffff6ad2903 in g_log () at /lib64/libglib-2.0.so.0
+                #2  0x00007ffff7eabb29 in iimportable_import_parse_line (year=2018, fields=<optimized out>, numline=4, parms=0x7fffffffc920, importer=0x692420) at ../../../src/core/ofo-bat.c:2003
+                #3  iimportable_import_parse (lines=<optimized out>, parms=0x7fffffffc920, importer=0x692420) at ../../../src/core/ofo-bat.c:1838
+                #4  iimportable_import (importer=0x692420, parms=0x7fffffffc920, lines=<optimized out>) at ../../../src/core/ofo-bat.c:1726
+                Same beehavior when re-running.
+     2021- 6- 7 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
