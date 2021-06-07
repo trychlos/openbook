@@ -2000,7 +2000,7 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 			my_date_set_from_str_ex( &dope, sdope, ofa_stream_format_get_date_format( parms->format ), &eff_year );
 			ope_month = g_date_get_month( &dope );
 			if( ope_month > eff_month ){
-				g_date_add_years( &dope, -1 );
+				g_date_subtract_years( &dope, 1 );
 			}
 			ofo_bat_line_set_dope( batline, &dope );
 		}
