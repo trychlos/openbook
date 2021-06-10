@@ -271,6 +271,7 @@ exercice_close_assistant_dispose( GObject *instance )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
+	gboolean cancelled;
 
 	g_return_if_fail( instance && OFA_IS_EXERCICE_CLOSE_ASSISTANT( instance ));
 
@@ -283,7 +284,10 @@ exercice_close_assistant_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->dossier_meta );
 
-		if( priv->getter ){
+		/* #1559
+		 * does not run the dossier actions if the assistant has been cancelled */
+		cancelled = my_iassistant_has_been_cancelled( MY_IASSISTANT( instance ));
+		if( priv->getter && !cancelled ){
 			main_window = ofa_igetter_get_main_window( priv->getter );
 			g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 			ofa_main_window_dossier_apply_actions( OFA_MAIN_WINDOW( main_window ));
