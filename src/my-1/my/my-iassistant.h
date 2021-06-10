@@ -210,6 +210,8 @@ void     my_iassistant_do_close                  ( myIAssistant *instance );
 void     my_iassistant_do_prepare                ( myIAssistant *instance,
 														GtkWidget *page );
 
+gboolean my_iassistant_has_been_cancelled        ( myIAssistant *instance );
+
 gboolean my_iassistant_is_page_initialized       ( const myIAssistant *instance,
 														GtkWidget *page );
 

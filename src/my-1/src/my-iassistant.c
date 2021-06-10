@@ -53,6 +53,7 @@ typedef struct {
 	/* when quitting
 	 */
 	gboolean             escape_key_pressed;
+	gboolean             cancelled;
 }
 	sInstance;
 
@@ -245,6 +246,10 @@ do_setup_once( myIAssistant *instance, sInstance *sdata )
 
 	/* deals with 'Esc' key */
 	g_signal_connect( instance, "key-press-event", G_CALLBACK( on_key_pressed_event ), instance );
+
+	/* make sure the booleans are correctly set */
+	sdata->escape_key_pressed = FALSE;
+	sdata->cancelled = FALSE;
 }
 
 /*
@@ -484,13 +489,18 @@ void
 my_iassistant_do_cancel( myIAssistant *instance, guint keyval )
 {
 	static const gchar *thisfn = "my_iassistant_do_cancel";
+	sInstance *inst_data;
 
 	g_debug( "%s: instance=%p, keyval=%u", thisfn, ( void * ) instance, keyval );
 
 	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
 	g_return_if_fail( MY_IS_IWINDOW( instance ));
 
+	inst_data = get_instance_data( instance );
+	g_return_if_fail( inst_data );
+
 	if( is_willing_to_quit( instance, keyval )){
+		inst_data->cancelled = TRUE;
 		my_iassistant_do_close( instance );
 	}
 }
@@ -528,6 +538,26 @@ my_iassistant_do_close( myIAssistant *instance )
 				thisfn, G_OBJECT_TYPE_NAME( instance ));
 		g_object_unref( instance );
 	}
+}
+
+/**
+ * my_iassistant_has_been_cancelled:
+ * @instance: this #myIAssistant instance.
+ *
+ * Returns: %TRUE if the assistant has been cancelled by the user.
+ */
+gboolean
+my_iassistant_has_been_cancelled( myIAssistant *instance )
+{
+	sInstance *inst_data;
+
+	g_return_val_if_fail( instance && MY_IS_IASSISTANT( instance ), FALSE );
+	g_return_val_if_fail( MY_IS_IWINDOW( instance ), FALSE );
+
+	inst_data = get_instance_data( instance );
+	g_return_val_if_fail( inst_data, FALSE );
+
+	return( inst_data->cancelled );
 }
 
 /**
