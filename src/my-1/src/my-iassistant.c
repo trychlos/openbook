@@ -64,23 +64,23 @@ typedef struct {
 }
 	sPage;
 
-static GType                register_type( void );
-static void                 interface_base_init( myIAssistantInterface *klass );
-static void                 interface_base_finalize( myIAssistantInterface *klass );
-static void                 do_setup_once( myIAssistant *instance, sInstance *sdata );
-static void                 on_prepare( myIAssistant *instance, GtkWidget *page, void *empty );
-static void                 do_page_init( myIAssistant *instance, GtkWidget *page, sInstance *inst_data, sPage *page_data );
-static void                 do_page_display( myIAssistant *instance, GtkWidget *page, sInstance *inst_data, sPage *page_data );
-static void                 do_page_forward( myIAssistant *instance, GtkWidget *page, sInstance *inst_data );
-static void                 on_cancel( myIAssistant *instance, void *empty );
-static void                 on_close( myIAssistant *instance, void *empty );
-static gboolean             on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, myIAssistant *instance );
-static gboolean             is_willing_to_quit( myIAssistant *instance, guint keyval );
-static void                 do_close( myIAssistant *instance );
+static GType      register_type( void );
+static void       interface_base_init( myIAssistantInterface *klass );
+static void       interface_base_finalize( myIAssistantInterface *klass );
+static void       do_setup_once( myIAssistant *instance, sInstance *sdata );
+static void       on_prepare( myIAssistant *instance, GtkWidget *page, void *empty );
+static void       do_page_init( myIAssistant *instance, GtkWidget *page, sInstance *inst_data, sPage *page_data );
+static void       do_page_display( myIAssistant *instance, GtkWidget *page, sInstance *inst_data, sPage *page_data );
+static void       do_page_forward( myIAssistant *instance, GtkWidget *page, sInstance *inst_data );
+static void       on_cancel( myIAssistant *instance, void *empty );
+static void       on_close( myIAssistant *instance, void *empty );
+static gboolean   on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, myIAssistant *instance );
+static gboolean   is_willing_to_quit( myIAssistant *instance, guint keyval );
+static void       do_close( myIAssistant *instance );
 static sInstance *get_instance_data( myIAssistant *instance );
-static void                 on_instance_finalized( sInstance *sdata, gpointer finalized_iassistant );
+static void       on_instance_finalized( sInstance *sdata, gpointer finalized_iassistant );
 static sPage     *get_page_data( const myIAssistant *instance, GtkWidget *page );
-static void                 on_page_finalized( sPage *sdata, gpointer finalized_page );
+static void       on_page_finalized( sPage *sdata, gpointer finalized_page );
 
 /**
  * my_iassistant_get_type:
