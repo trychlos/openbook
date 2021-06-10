@@ -105,6 +105,63 @@ typedef struct {
 	 */
 	gboolean ( *is_willing_to_quit )   ( myIAssistant *instance,
 												guint keyval );
+	/**
+	 * on_prepare:
+	 * @instance: the #myIAssistant instance.
+	 * @page: the page to be prepared.
+	 *
+	 * The interface calls this method before each page be displayed so that
+	 * the implementation may decide or not to run the default tasks.
+	 *
+	 * If this method is not implemented, then the interface executes the default
+	 * my_iassistant_do_prepare() code:
+	 * - if this is the first time, then call the 'init' cb
+	 * - only then, call the 'display' cb
+	 *
+	 * Most of the time, it is not needed for the implementation to implement
+	 * this method as the default traitement already takes care of calling
+	 * 'init' and 'dsplay' callbacks.
+	 *
+	 * The "prepare" signal for the first page (usually Introduction) is
+	 * sent during GtkAssistant construction, so before the derived class
+	 * has any chance to connect to it.
+	 *
+	 * Since: version 2.
+	 */
+	void     ( *on_prepare )           ( myIAssistant *instance,
+												GtkWidget *page );
+	/**
+	 * on_cancel:
+	 * @instance: the #myIAssistant instance.
+	 * @keyval: the hit key, which may be the 'Cancel' button or the 'Esc' key.
+	 *
+	 * This method is called when the user clicks on the "Cancel"
+	 * button, or if he hits the 'Escape' key (and the 'Quit on escape'
+	 * preference is set).
+	 *
+	 * If this method is not implemented, then the interface executes the default
+	 * my_iassistant_do_cancel() code:
+	 * - if the user confirms he is willing to quit, then closes the window.
+	 *
+	 * Since: version 2.
+	 */
+	void     ( *on_cancel )            ( myIAssistant *instance,
+												guint keyval );
+
+	/**
+	 * on_close:
+	 * @instance: the #myIAssistant instance.
+	 *
+	 * This method is called when the user hits the 'Close' key after the
+	 * assistant is complete.
+	 *
+	 * If this method is not implemented, then the interface executes the default
+	 * my_iassistant_do_close() code:
+	 * - close the window.
+	 *
+	 * Since: version 2.
+	 */
+	void     ( *on_close )             ( myIAssistant *instance );
 }
 	myIAssistantInterface;
 
@@ -144,6 +201,14 @@ guint    my_iassistant_get_interface_version     ( GType type );
  */
 void     my_iassistant_set_callbacks             ( myIAssistant *instance,
 														const ofsIAssistant *cbs );
+
+void     my_iassistant_do_cancel                 ( myIAssistant *instance,
+														guint keyval );
+
+void     my_iassistant_do_close                  ( myIAssistant *instance );
+
+void     my_iassistant_do_prepare                ( myIAssistant *instance,
+														GtkWidget *page );
 
 gboolean my_iassistant_is_page_initialized       ( const myIAssistant *instance,
 														GtkWidget *page );

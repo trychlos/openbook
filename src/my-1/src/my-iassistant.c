@@ -30,7 +30,7 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
-#define IASSISTANT_LAST_VERSION         1
+#define IASSISTANT_LAST_VERSION         2
 #define IASSISTANT_INSTANCE_DATA        "my-iassistant-instance-data"
 #define IASSISTANT_PAGE_DATA            "my-iassistant-page-data"
 
@@ -76,7 +76,6 @@ static void       on_cancel( myIAssistant *instance, void *empty );
 static void       on_close( myIAssistant *instance, void *empty );
 static gboolean   on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, myIAssistant *instance );
 static gboolean   is_willing_to_quit( myIAssistant *instance, guint keyval );
-static void       do_close( myIAssistant *instance );
 static sInstance *get_instance_data( myIAssistant *instance );
 static void       on_instance_finalized( sInstance *sdata, gpointer finalized_iassistant );
 static sPage     *get_page_data( const myIAssistant *instance, GtkWidget *page );
@@ -261,14 +260,45 @@ static void
 on_prepare( myIAssistant *instance, GtkWidget *page, void *empty )
 {
 	static const gchar *thisfn = "my_iassistant_on_prepare";
-	sInstance *inst_data;
-	sPage *page_data;
 
 	g_debug( "%s: instance=%p, page=%p, empty=%p",
 			thisfn, ( void * ) instance, ( void * ) page, ( void * ) empty );
 
 	g_return_if_fail( instance && GTK_IS_ASSISTANT( instance ));
 	g_return_if_fail( page && GTK_IS_WIDGET( page ));
+
+	if( MY_IASSISTANT_GET_INTERFACE( instance )->on_prepare ){
+		MY_IASSISTANT_GET_INTERFACE( instance )->on_prepare( instance, page );
+		return;
+	}
+
+	g_info( "%s: myIAssistant's %s implementation does not provide 'on_prepare()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+
+	my_iassistant_do_prepare( instance, page );
+}
+
+/**
+ * my_iassistant_do_prepare:
+ * @instance: this #myIAssistant instance.
+ * @page: the page to be prepared.
+ *
+ * Prepare the page before it is displayed, taking care of initializing it the
+ * first time:
+ * - if this is the first time, then call the 'init' callback
+ * - only then, call the 'display' callback.
+ */
+void
+my_iassistant_do_prepare( myIAssistant *instance, GtkWidget *page )
+{
+	static const gchar *thisfn = "my_iassistant_do_prepare";
+	sInstance *inst_data;
+	sPage *page_data;
+
+	g_debug( "%s: instance=%p, page=%p", thisfn, ( void * ) instance, ( void * ) page );
+
+	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
+	g_return_if_fail( MY_IS_IWINDOW( instance ));
 
 	inst_data = get_instance_data( instance );
 	g_return_if_fail( inst_data );
@@ -370,7 +400,7 @@ do_page_forward( myIAssistant *instance, GtkWidget *page, sInstance *inst_data )
  * button, or if he hits the 'Escape' key and the 'Quit on escape'
  * preference is set
  *
- *  Key values come from /usr/include/gtk-3.0/gdk/gdkkeysyms.h.
+ * Key values come from /usr/include/gtk-3.0/gdk/gdkkeysyms.h.
  */
 static void
 on_cancel( myIAssistant *instance, void *empty )
@@ -380,9 +410,15 @@ on_cancel( myIAssistant *instance, void *empty )
 	g_debug( "%s: instance=%p, empty=%p",
 			thisfn, ( void * ) instance, ( void * ) empty );
 
-	if( is_willing_to_quit( instance, GDK_KEY_Cancel )){
-		do_close( instance );
+	if( MY_IASSISTANT_GET_INTERFACE( instance )->on_cancel ){
+		MY_IASSISTANT_GET_INTERFACE( instance )->on_cancel( instance, GDK_KEY_Cancel );
+		return;
 	}
+
+	g_info( "%s: myIAssistant's %s implementation does not provide 'on_cancel()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+
+	my_iassistant_do_cancel( instance, GDK_KEY_Cancel );
 }
 
 /*
@@ -397,7 +433,15 @@ on_close( myIAssistant *instance, void *empty )
 	g_debug( "%s: instance=%p, empty=%p",
 			thisfn, ( void * ) instance, ( void * ) empty );
 
-	do_close( instance );
+	if( MY_IASSISTANT_GET_INTERFACE( instance )->on_close ){
+		MY_IASSISTANT_GET_INTERFACE( instance )->on_close ( instance );
+		return;
+	}
+
+	g_info( "%s: myIAssistant's %s implementation does not provide 'on_close()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+
+	my_iassistant_do_close( instance );
 }
 
 /*
@@ -406,16 +450,49 @@ on_close( myIAssistant *instance, void *empty )
 static gboolean
 on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, myIAssistant *instance )
 {
+	static const gchar *thisfn = "my_iassistant_on_key_pressed_event";
 	gboolean stop = FALSE;
 
 	if( event->keyval == GDK_KEY_Escape ){
-		if( is_willing_to_quit( instance, event->keyval )){
-			do_close( instance );
+
+		if( MY_IASSISTANT_GET_INTERFACE( instance )->on_cancel ){
+			MY_IASSISTANT_GET_INTERFACE( instance )->on_cancel( instance, event->keyval );
+
+		} else {
+			g_info( "%s: myIAssistant's %s implementation does not provide 'on_cancel()' method",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
+			my_iassistant_do_cancel( instance, event->keyval );
 		}
+
 		stop = TRUE;
 	}
 
 	return( stop );
+}
+
+/**
+ * my_iassistant_do_cancel:
+ * @instance: this #myIAssistant instance.
+ * @keyval: the hit key, either the 'Close' button, or the 'Esc' key.
+ *
+ * Prepare the page before it is displayed, taking care of initializing it the
+ * first time:
+ * - if this is the first time, then call the 'init' callback
+ * - only then, call the 'display' callback.
+ */
+void
+my_iassistant_do_cancel( myIAssistant *instance, guint keyval )
+{
+	static const gchar *thisfn = "my_iassistant_do_cancel";
+
+	g_debug( "%s: instance=%p, keyval=%u", thisfn, ( void * ) instance, keyval );
+
+	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
+	g_return_if_fail( MY_IS_IWINDOW( instance ));
+
+	if( is_willing_to_quit( instance, keyval )){
+		my_iassistant_do_close( instance );
+	}
 }
 
 static gboolean
@@ -432,8 +509,14 @@ is_willing_to_quit( myIAssistant *instance, guint keyval )
 	return( TRUE );
 }
 
-static void
-do_close( myIAssistant *instance )
+/**
+ * my_iassistant_do_close:
+ * @instance: this #myIAssistant instance.
+ *
+ * Closes the assistant window.
+ */
+void
+my_iassistant_do_close( myIAssistant *instance )
 {
 	static const gchar *thisfn = "my_iassistant_do_close";
 
