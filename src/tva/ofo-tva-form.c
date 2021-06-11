@@ -271,6 +271,7 @@ static gboolean    signaler_on_updated_ope_template_mnemo( ofaISignaler *signale
 static gboolean    signaler_on_updated_rate_mnemo( ofaISignaler *signaler, const gchar *mnemo, const gchar *prev_id );
 static gboolean    do_update_formulas( ofaIGetter *getter, const gchar *new_id, const gchar *prev_id );
 static void        signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, void *empty );
+static void        free_collection( ofaISignaler *signaler );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVAForm, ofo_tva_form, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVAForm )
@@ -2744,6 +2745,8 @@ signaler_on_updated_account_id( ofaISignaler *signaler, const gchar *mnemo, cons
 
 	ok = do_update_formulas( getter, mnemo, prev_id );
 
+	free_collection( signaler );
+
 	return( ok );
 }
 
@@ -2772,6 +2775,8 @@ signaler_on_updated_ope_template_mnemo( ofaISignaler *signaler, const gchar *mne
 	ok = ofa_idbconnect_query( connect, query, TRUE );
 	g_free( query );
 
+	free_collection( signaler );
+
 	return( ok );
 }
 
@@ -2788,6 +2793,8 @@ signaler_on_updated_rate_mnemo( ofaISignaler *signaler, const gchar *mnemo, cons
 	getter = ofa_isignaler_get_getter( signaler );
 
 	ok = do_update_formulas( getter, mnemo, prev_id );
+
+	free_collection( signaler );
 
 	return( ok );
 }
@@ -2882,4 +2889,21 @@ signaler_on_deleted_base( ofaISignaler *signaler, ofoBase *object, void *empty )
 			}
 		}
 	}
+}
+
+/*
+ * #1558
+ * not only the database must be updated with new values, but the in-memory
+ * current collections should too also.
+ * it is simpler to just free the collections to force a futur refresh
+ */
+static void
+free_collection( ofaISignaler *signaler )
+{
+	ofaIGetter *getter;
+	myICollector *collector;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	collector = ofa_igetter_get_collector( getter );
+	my_icollector_collection_free( collector, OFO_TYPE_TVA_FORM );
 }

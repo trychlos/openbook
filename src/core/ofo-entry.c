@@ -363,6 +363,8 @@ static void         signaler_on_updated_account_number( ofaISignaler *signaler, 
 static void         signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
 static void         signaler_on_updated_ledger_mnemo( ofaISignaler *signaler, const gchar *prev_id, const gchar *mnemo );
 static void         signaler_on_updated_model_mnemo( ofaISignaler *signaler, const gchar *prev_id, const gchar *mnemo );
+static void         free_collection( ofaISignaler *signaler );
+
 
 G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoEntry )
@@ -4604,6 +4606,8 @@ signaler_on_deleted_entry( ofaISignaler *signaler, ofoEntry *entry )
 	if( concil ){
 		ofo_concil_delete( concil );
 	}
+
+	free_collection( signaler );
 }
 
 /*
@@ -5006,6 +5010,8 @@ signaler_on_updated_account_number( ofaISignaler *signaler, const gchar *prev_id
 
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 	g_free( query );
+
+	free_collection( signaler );
 }
 
 /*
@@ -5029,6 +5035,8 @@ signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id,
 
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 	g_free( query );
+
+	free_collection( signaler );
 }
 
 /*
@@ -5052,6 +5060,8 @@ signaler_on_updated_ledger_mnemo( ofaISignaler *signaler, const gchar *prev_id, 
 
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 	g_free( query );
+
+	free_collection( signaler );
 }
 
 /*
@@ -5075,4 +5085,23 @@ signaler_on_updated_model_mnemo( ofaISignaler *signaler, const gchar *prev_id, c
 
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 	g_free( query );
+
+	free_collection( signaler );
+}
+
+/*
+ * #1558
+ * not only the database must be updated with new values, but the in-memory
+ * current collections should too also.
+ * it is simpler to just free the collections to force a futur refresh
+ */
+static void
+free_collection( ofaISignaler *signaler )
+{
+	ofaIGetter *getter;
+	myICollector *collector;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	collector = ofa_igetter_get_collector( getter );
+	my_icollector_collection_free( collector, OFO_TYPE_ENTRY );
 }

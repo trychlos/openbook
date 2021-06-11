@@ -213,6 +213,7 @@ static gboolean   signaler_on_deletable_object( ofaISignaler *signaler, ofoBase 
 static gboolean   signaler_is_deletable_recurrent_model( ofaISignaler *signaler, ofoRecurrentModel *model );
 static void       signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean   signaler_on_updated_rec_model_mnemo( ofaISignaler *signaler, ofoBase *object, const gchar *mnemo, const gchar *prev_id );
+static void       free_collection( ofaISignaler *signaler );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentRun, ofo_recurrent_run, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentRun )
@@ -1568,7 +1569,24 @@ signaler_on_updated_rec_model_mnemo( ofaISignaler *signaler, ofoBase *object, co
 
 	g_free( query );
 
-	my_icollector_collection_free( ofa_igetter_get_collector( getter ), OFO_TYPE_RECURRENT_RUN );
+	free_collection( signaler );
 
 	return( ok );
+}
+
+/*
+ * #1558
+ * not only the database must be updated with new values, but the in-memory
+ * current collections should too also.
+ * it is simpler to just free the collections to force a futur refresh
+ */
+static void
+free_collection( ofaISignaler *signaler )
+{
+	ofaIGetter *getter;
+	myICollector *collector;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	collector = ofa_igetter_get_collector( getter );
+	my_icollector_collection_free( collector, OFO_TYPE_RECURRENT_RUN );
 }

@@ -437,32 +437,10 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
 1554 2021- 6- 5 DBMS integrity check
                 - check for conciliationg groups integrity: is empty, does not display anything but 'ok'
 
-1555 2021- 6- 5 recurent models management, when displaying the 'comment' column and trying to reorder it:
-                (openbook:303287): OFA-DEBUG: 00:11:03.787: ofa_icontext_on_button_pressed: instance=0x1052fd0, event=0x1269bf0, sdata=0x1498cd0
-                (openbook:303287): OFA-DEBUG: 00:11:18.181: ofa_itvcolumnable_on_action_changed_state: action_name=itvcolumnable_14, column=Enabled, visible=True
-                (openbook:303287): OFA-DEBUG: 00:11:21.836: ofa_icontext_on_button_pressed: instance=0x1052fd0, event=0x13c5330, sdata=0x1498cd0
-                (openbook:303287): OFA-DEBUG: 00:11:27.864: ofa_itvcolumnable_on_action_changed_state: action_name=itvcolumnable_18, column=Notes indicator, visible=True
-                (openbook:303287): Gtk-WARNING **: 00:11:32.836: Negative content width -17 (allocation 1, extents 9x9) while allocating gadget (node button, owner GtkButton)
-                bt unrelevant
-     2021- 6- 7 same when reoredering column in 'select a paieman mean'
-
 1556 2021- 6- 7 recurent model management: first generate all operations for a period,
                 then enable a supplementary model : unable to generate the corresponding operation
                 for the same period (already generated but for this particular model)
      2021- 6- 8 last generation should be recorded on a model/template basis
-
-1558 2021- 6- 8 renaming an operation template identifier is badly managed:
-                message "Entry 9943 has operation template 'BMSAL' which doesn't exist"
-                when checking entries integrity
-                but select ENT_OPE_TEMPLATE from OFA_T_ENTRIES where ENT_NUMBER=9943;
-                +------------------+
-                | ENT_OPE_TEMPLATE |
-                +------------------+
-                | BMSALARY         |
-                +------------------+
-                Closing/reopening the dossier gets rid of the error
-
-1559 2021- 6- 8 when cancelling an exercice closing, the integrity checks are still run
 
 1560
 
@@ -503,6 +481,17 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
 1542 2018- 6- 4 Balances displayed in the chart of accounts are twice what they should
      2018- 6-10 fixed by recomputing the soldes at exercice opening
 
+1555 2021- 6- 5 recurent models management, when displaying the 'comment' column and trying to reorder it:
+                (openbook:303287): OFA-DEBUG: 00:11:03.787: ofa_icontext_on_button_pressed: instance=0x1052fd0, event=0x1269bf0, sdata=0x1498cd0
+                (openbook:303287): OFA-DEBUG: 00:11:18.181: ofa_itvcolumnable_on_action_changed_state: action_name=itvcolumnable_14, column=Enabled, visible=True
+                (openbook:303287): OFA-DEBUG: 00:11:21.836: ofa_icontext_on_button_pressed: instance=0x1052fd0, event=0x13c5330, sdata=0x1498cd0
+                (openbook:303287): OFA-DEBUG: 00:11:27.864: ofa_itvcolumnable_on_action_changed_state: action_name=itvcolumnable_18, column=Notes indicator, visible=True
+                (openbook:303287): Gtk-WARNING **: 00:11:32.836: Negative content width -17 (allocation 1, extents 9x9) while allocating gadget (node button, owner GtkButton)
+                bt unrelevant
+     2021- 6- 7 same when reoredering column in 'select a paieman mean'
+     2021- 6-10 the application must be run with "G_DEBUG=fatal_criticals" as Gtk warnings ma be safely ignored
+                closed
+
 1557 2021- 6- 7 when importing LCL-DEPOTS_01800904778_20180430.pdf
                 (openbook:733380): OFA-DEBUG: 14:42:21.845: ofo_bat_line_init: instance=0x2bd0130 (ofoBatLine)
                 (openbook:733380): MY-DEBUG: 14:42:21.845: my_date_parse_ddmmyyyy_string: setting yy from 18 to 2018
@@ -522,6 +511,23 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
                 #4  iimportable_import (importer=0x692420, parms=0x7fffffffc920, lines=<optimized out>) at ../../../src/core/ofo-bat.c:1726
                 Same beehavior when re-running.
      2021- 6- 7 fixed
+
+1558 2021- 6- 8 renaming an operation template identifier is badly managed:
+                message "Entry 9943 has operation template 'BMSAL' which doesn't exist"
+                when checking entries integrity
+                but select ENT_OPE_TEMPLATE from OFA_T_ENTRIES where ENT_NUMBER=9943;
+                +------------------+
+                | ENT_OPE_TEMPLATE |
+                +------------------+
+                | BMSALARY         |
+                +------------------+
+                Closing/reopening the dossier gets rid of the error
+     2021- 6-10 maybe there is an entry cache ? which should be cleaned after such a modification
+                or does the cache should be updated accordingly ?
+     2021- 6-11 closed by freeing collections after updates
+
+1559 2021- 6- 8 when cancelling an exercice closing, the integrity checks are still run
+     2021- 6-10 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

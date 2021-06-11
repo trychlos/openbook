@@ -295,6 +295,7 @@ static void       signaler_on_entry_period_status_changed( ofaISignaler *signale
 static void       signaler_on_exe_recompute( ofaISignaler *signaler, ofoEntry *entry, void *empty );
 static void       signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static void       signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id, const gchar *code );
+static void       free_collection( ofaISignaler *signaler );
 
 G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoLedger )
@@ -2957,4 +2958,23 @@ signaler_on_updated_currency_code( ofaISignaler *signaler, const gchar *prev_id,
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 
 	g_free( query );
+
+	free_collection( signaler );
+}
+
+/*
+ * #1558
+ * not only the database must be updated with new values, but the in-memory
+ * current collections should too also.
+ * it is simpler to just free the collections to force a futur refresh
+ */
+static void
+free_collection( ofaISignaler *signaler )
+{
+	ofaIGetter *getter;
+	myICollector *collector;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	collector = ofa_igetter_get_collector( getter );
+	my_icollector_collection_free( collector, OFO_TYPE_LEDGER );
 }

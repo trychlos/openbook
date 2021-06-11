@@ -341,6 +341,7 @@ static gboolean  signaler_is_deletable_tva_form( ofaISignaler *signaler, ofoTVAF
 static void      signaler_on_updated_base( ofaISignaler *signaler, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean  signaler_on_updated_tva_form_mnemo( ofaISignaler *signaler, ofoBase *object, const gchar *mnemo, const gchar *prev_id );
 static void      signaler_on_period_close( ofaISignaler *signaler, ofeSignalerClosing ind, const GDate *closing, void *empty );
+static void      free_collection( ofaISignaler *signaler );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVARecord, ofo_tva_record, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVARecord )
@@ -3077,7 +3078,6 @@ signaler_on_updated_tva_form_mnemo( ofaISignaler *signaler, ofoBase *object, con
 	gchar *query;
 	const ofaIDBConnect *connect;
 	gboolean ok;
-	myICollector *collector;
 
 	g_debug( "%s: signaler=%p, mnemo=%s, prev_id=%s",
 			thisfn, ( void * ) signaler, mnemo, prev_id );
@@ -3110,8 +3110,7 @@ signaler_on_updated_tva_form_mnemo( ofaISignaler *signaler, ofoBase *object, con
 	ok = ofa_idbconnect_query( connect, query, TRUE );
 	g_free( query );
 
-	collector = ofa_igetter_get_collector( getter );
-	my_icollector_collection_free( collector, OFO_TYPE_TVA_RECORD );
+	free_collection( signaler );
 
 	return( ok );
 }
@@ -3137,4 +3136,21 @@ signaler_on_period_close( ofaISignaler *signaler, ofeSignalerClosing ind, const 
 		getter = ofa_isignaler_get_getter( signaler );
 		ofo_tva_record_validate_all( getter, closing );
 	}
+}
+
+/*
+ * #1558
+ * not only the database must be updated with new values, but the in-memory
+ * current collections should too also.
+ * it is simpler to just free the collections to force a futur refresh
+ */
+static void
+free_collection( ofaISignaler *signaler )
+{
+	ofaIGetter *getter;
+	myICollector *collector;
+
+	getter = ofa_isignaler_get_getter( signaler );
+	collector = ofa_igetter_get_collector( getter );
+	my_icollector_collection_free( collector, OFO_TYPE_TVA_RECORD );
 }
