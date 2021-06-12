@@ -242,8 +242,7 @@ bat_line_load_dataset( ofaIGetter *getter, const gchar *where )
  *
  * Returns: the list of BAT identifiers which are referenced but unknwon.
  *
- * The returned list should not be #ofo_bat_line_free_orphans() by
- * the caller.
+ * The returned list should be #ofo_bat_line_free_orphans() by the caller.
  */
 GList *
 ofo_bat_line_get_orphans( ofaIGetter *getter )
@@ -442,12 +441,16 @@ ofo_bat_line_get_bat_id_from_bat_line_id( ofaIGetter *getter, ofxCounter line_id
 	connect = ofa_hub_get_connect( hub );
 
 	query = g_string_new( "SELECT BAT_ID FROM OFA_T_BAT_LINES " );
-	g_string_append_printf( query, "WHERE BAT_LINE_ID=%ld ", line_id );
+	g_string_append_printf( query, "WHERE BAT_LINE_ID=%ld", line_id );
 
 	if( ofa_idbconnect_query_ex( connect, query->str, &result, TRUE )){
-		icol = ( GSList * ) result->data;
-		bat_id = atol(( gchar * ) icol->data );
-		ofa_idbconnect_free_results( result );
+		if( result ){
+			icol = ( GSList * ) result->data;
+			if( icol ){
+				bat_id = atol(( gchar * ) icol->data );
+			}
+			ofa_idbconnect_free_results( result );
+		}
 	}
 	g_string_free( query, TRUE );
 
