@@ -1731,7 +1731,7 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 
 	errs = 0;
 	records = ofo_recurrent_model_get_dataset( getter );
-	count = 1 + 4*g_list_length( records );
+	count = 1 + 3*g_list_length( records );
 	i = 0;
 
 	if( count == 0 ){
