@@ -1707,6 +1707,7 @@ idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, 
 static gulong
 check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
+	static gchar *thisfn = "ofa_recurrent_dbmodel_idbmodel_check_integrity_check_model";
 	gulong errs, moderrs;
 	void *worker;
 	GtkWidget *label;
@@ -1719,6 +1720,8 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	ofxCounter docid;
 	gboolean all_messages;
 	myPeriod *period;
+
+	g_debug( "%s: instance=%p, getter=%p, progress=%p", thisfn, ( void * ) instance, ( void * ) getter, ( void * ) progress );
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_MODEL );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
@@ -1783,6 +1786,12 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 					g_free( str );
 				}
+				errs += 1;
+				moderrs += 1;
+
+			} else if( !my_period_is_valid( period, &str )){
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
+				g_free( str );
 				errs += 1;
 				moderrs += 1;
 			}
@@ -1850,8 +1859,7 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 static gulong
 check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
-	return( 0 );
-#if 0
+	static gchar *thisfn = "ofa_recurrent_dbmodel_idbmodel_check_integrity_check_run";
 	gulong errs, runerrs;
 	void *worker;
 	GtkWidget *label;
@@ -1864,7 +1872,9 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 	ofoOpeTemplate *ope_object;
 	ofxCounter numseq, docid;
 	gboolean all_messages;
-	//myPeriod period;
+	myPeriod *period;
+
+	g_debug( "%s: instance=%p, getter=%p, progress=%p", thisfn, ( void * ) instance, ( void * ) getter, ( void * ) progress );
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_RUN );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
@@ -1877,7 +1887,7 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 
 	errs = 0;
 	records = ofo_recurrent_run_get_dataset( getter );
-	count = 1 + 3*g_list_length( records );
+	count = 1 + 4*g_list_length( records );
 	i = 0;
 
 	if( count == 0 ){
@@ -1934,7 +1944,7 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 			if( !ope_object || !OFO_IS_OPE_TEMPLATE( ope_object )){
 				if( progress ){
 					str = g_strdup_printf(
-							_( "Recurrent model %s has operation template '%s' which doesn't exist" ), mnemo, ope_mnemo );
+							_( "Recurrent run %s has operation template '%s' which doesn't exist" ), mnemo, ope_mnemo );
 					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 					g_free( str );
 				}
@@ -1951,10 +1961,16 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 		if( !period ){
 			if( progress ){
 				str = g_strdup_printf(
-						_( "Recurrent model %s has invalid periodicity" ), mnemo );
+						_( "Recurrent run %s has invalid periodicity" ), mnemo );
 				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
 			}
+			errs += 1;
+			runerrs += 1;
+
+		} else if( !my_period_is_valid( period, &str )){
+			my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
+			g_free( str );
 			errs += 1;
 			runerrs += 1;
 		}
@@ -2016,5 +2032,4 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 	}
 
 	return( errs );
-#endif
 }
