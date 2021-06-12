@@ -53,6 +53,7 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-paimean.h"
 #include "api/ofo-rate.h"
+#include "api/ofs-concil-id.h"
 #include "api/ofs-currency.h"
 
 #include "ui/ofa-check-integrity-bin.h"
@@ -81,7 +82,7 @@ typedef struct {
 	gulong         paimean_errs;
 	gulong         rate_errs;
 	gulong         entries_errs;
-	gulong         bat_lines_errs;
+	gulong         bat_errs;
 	gulong         concil_errs;
 	gulong         others_errs;
 
@@ -137,7 +138,7 @@ static void     check_ope_templates_run( ofaCheckIntegrityBin *self );
 static void     check_paimean_run( ofaCheckIntegrityBin *self );
 static void     check_rate_run( ofaCheckIntegrityBin *self );
 static void     check_entries_run( ofaCheckIntegrityBin *self );
-static void     check_bat_lines_run( ofaCheckIntegrityBin *self );
+static void     check_bat_run( ofaCheckIntegrityBin *self );
 static void     check_concil_run( ofaCheckIntegrityBin *self );
 static void     set_checks_result( ofaCheckIntegrityBin *self );
 static void     on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaCheckIntegrityBin *self );
@@ -163,7 +164,7 @@ static checkfn st_fn[] = {
 		check_paimean_run,
 		check_rate_run,
 		check_entries_run,
-		check_bat_lines_run,
+		check_bat_run,
 		check_concil_run,
 		0
 };
@@ -1030,6 +1031,15 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 
 /*
  * check for ledgers integrity
+ *
+ * for each edger:
+ * - check that each (current) currency exists
+ * - check that each archived currency exists
+ * - check for referenced documents
+ * +
+ * - check for archived orphans
+ * - check for balance orphans
+ * - check for documents orphans
  */
 static void
 check_ledgers_run( ofaCheckIntegrityBin *self )
@@ -1658,10 +1668,20 @@ check_entries_run( ofaCheckIntegrityBin *self )
 }
 
 /*
- * Check that BAT and BAT lines are OK
+ * Check that BAT files are OK
+ *
+ * for each BAT file:
+ * - check that currency exists (but may be empty)
+ * - check that account exists (but may be empty)
+ * - check that referenced documents exist
+ * - for each BAT line:
+ *   > check that currency exists (but may be empty)
+ * +
+ * - check for orphan referenced documents
+ * - check for orphan BAT lines
  */
 static void
-check_bat_lines_run( ofaCheckIntegrityBin *self )
+check_bat_run( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 	const void *worker;
@@ -1686,7 +1706,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
 	}
 
-	priv->bat_lines_errs = 0;
+	priv->bat_errs = 0;
 	bats = ofo_bat_get_dataset( priv->getter );
 	count = 2 + 4*g_list_length( bats );
 	i = 0;
@@ -1708,7 +1728,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 				str = g_strdup_printf( _( "BAT file %lu currency '%s' doesn't exist" ), id, cur_code );
 				my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
-				priv->bat_lines_errs += 1;
+				priv->bat_errs += 1;
 				baterrs += 1;
 			}
 		}
@@ -1722,7 +1742,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 				str = g_strdup_printf( _( "BAT file %lu account '%s' doesn't exist" ), id, acc_number );
 				my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
-				priv->bat_lines_errs += 1;
+				priv->bat_errs += 1;
 				baterrs += 1;
 			}
 		}
@@ -1743,7 +1763,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 							idline, id, cur_code );
 					my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 					g_free( str );
-					priv->bat_lines_errs += 1;
+					priv->bat_errs += 1;
 					baterrs += 1;
 				}
 			}
@@ -1759,7 +1779,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 				str = g_strdup_printf( _( "Found orphan document(s) with DocId %lu" ), docid );
 				my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
-				priv->bat_lines_errs += 1;
+				priv->bat_errs += 1;
 				baterrs += 1;
 			}
 		}
@@ -1777,10 +1797,10 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 	orphans = ofo_bat_line_get_orphans( priv->getter );
 	if( g_list_length( orphans ) > 0 ){
 		for( ito=orphans ; ito ; ito=ito->next ){
-			str = g_strdup_printf( _( "Found orphan line(s) with BatId %lu" ), ( ofxCounter ) ito->data );
+			str = g_strdup_printf( _( "Found orphan BAT detail line with BatId %lu" ), ( ofxCounter ) ito->data );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 			g_free( str );
-			priv->bat_lines_errs += 1;
+			priv->bat_errs += 1;
 		}
 	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan BAT line found: OK" ));
@@ -1788,16 +1808,16 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 	ofo_bat_line_free_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
-	/* check that all documents have a BAT parent */
+	/* check that all BAT documents have a parent */
 	orphans = ofo_bat_doc_get_orphans( priv->getter );
 	if( g_list_length( orphans ) > 0 ){
 		for( it=orphans ; it ; it=it->next ){
-			g_debug( "check_bat_lines_run: data=%s data=%p data=%lu",
+			g_debug( "check_bat_run: data=%s data=%p data=%lu",
 					( const gchar * ) it->data, ( void * ) it->data, ( gulong ) it->data );
 			str = g_strdup_printf( _( "Found orphan document(s) with BatId %lu" ), ( ofxCounter ) it->data );
 			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
 			g_free( str );
-			priv->bat_lines_errs += 1;
+			priv->bat_errs += 1;
 		}
 	} else if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan BAT document found: OK" ));
@@ -1809,11 +1829,18 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 	if( priv->all_messages ){
 		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NONE, "" );
 	}
-	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->bat_lines_errs );
+	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->bat_errs );
 }
 
 /*
  * Check ofoConcil conciliation groups
+ *
+ * For each concilitation group:
+ * - for each conciliation detail:
+ *   > check type validity
+ *   > check that other exists
+ * +
+ * check for detail orphans
  */
 static void
 check_concil_run( ofaCheckIntegrityBin *self )
@@ -1821,9 +1848,14 @@ check_concil_run( ofaCheckIntegrityBin *self )
 	ofaCheckIntegrityBinPrivate *priv;
 	const void *worker;
 	GtkWidget *label;
-	gulong count, i;
-	GList *it, *orphans;
+	gulong count, i, concilerrs;
+	GList *concils, *it, *details, *itd, *orphans;
 	gchar *str;
+	ofoConcil *concil;
+	ofxCounter id, batid;
+	ofsConcilId *sid;
+	ofoEntry *entry;
+	guint nbdets;
 
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
@@ -1835,11 +1867,77 @@ check_concil_run( ofaCheckIntegrityBin *self )
 		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
 	}
 
-	count = 3;
 	priv->concil_errs = 0;
+	concils = ofo_concil_get_dataset( priv->getter );
+	count = 1 + 2*g_list_length( concils );
 	i = 0;
 
-	if( 0 ){
+	if( count == 0 ){
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
+	}
+
+	for( it=concils ; it ; it=it->next ){
+		concil = OFO_CONCIL( it->data );
+		id = ofo_concil_get_id( concil );
+		concilerrs = 0;
+
+		/* check each detail lines: should have at least 2 */
+		details = ofo_concil_get_ids( concil );
+		nbdets = g_list_length( details );
+		if( nbdets < 2 ){
+			str = g_strdup_printf( _( "Found only %u detail member(s) in conciliation group %lu" ), nbdets, id );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
+			g_free( str );
+			priv->concil_errs += 1;
+			concilerrs += 1;
+		} else if( priv->all_messages ){
+			str = g_strdup_printf( _( "Conciliation group %lu exhibits %u members: OK" ), id, nbdets );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
+			g_free( str );
+		}
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+		for( itd=details ; itd ; itd=itd->next ){
+			sid = ( ofsConcilId * ) itd->data;
+
+			/* check type validity */
+			if( g_utf8_collate( sid->type, CONCIL_TYPE_BAT ) && g_utf8_collate( sid->type, CONCIL_TYPE_ENTRY )){
+				str = g_strdup_printf( _( "Found invalid type '%s' in a detail of conciliation group %lu" ), sid->type, id );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
+				g_free( str );
+				priv->concil_errs += 1;
+				concilerrs += 1;
+			}
+
+			/* check that referenced line exists */
+			if( !g_utf8_collate( sid->type, CONCIL_TYPE_BAT )){
+				batid = ofo_bat_line_get_bat_id_from_bat_line_id( priv->getter, sid->other_id );
+				if( !batid ){
+					str = g_strdup_printf( _( "Found orphan conciliation member with BatLineId %lu in conciliation group %lu" ), sid->other_id, id );
+					my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
+					g_free( str );
+					priv->concil_errs += 1;
+					concilerrs += 1;
+				}
+			}
+			if( !g_utf8_collate( sid->type, CONCIL_TYPE_ENTRY )){
+				entry = ofo_entry_get_by_number( priv->getter, sid->other_id );
+				if( !entry ){
+					str = g_strdup_printf( _( "Found orphan conciliation member with EntryId %lu in conciliation group %lu" ), sid->other_id, id );
+					my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
+					g_free( str );
+					priv->concil_errs += 1;
+					concilerrs += 1;
+				}
+			}
+		}
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
+
+		if( priv->all_messages ){
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No error found in conciliation group: OK" ));
+		}
+	}
+
 	/* check that all details have a parent */
 	orphans = ofo_concil_get_concil_orphans( priv->getter );
 	if( g_list_length( orphans ) > 0 ){
@@ -1854,37 +1952,6 @@ check_concil_run( ofaCheckIntegrityBin *self )
 	}
 	ofo_concil_free_concil_orphans( orphans );
 	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
-
-	/* check that all details have a bat line */
-	orphans = ofo_concil_get_bat_orphans( priv->getter );
-	if( g_list_length( orphans ) > 0 ){
-		for( it=orphans ; it ; it=it->next ){
-			str = g_strdup_printf( _( "Found orphan conciliation member with BatLineId %lu" ), ( ofxCounter ) it->data );
-			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
-			g_free( str );
-			priv->concil_errs += 1;
-		}
-	} else if( priv->all_messages ){
-		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan conciliation BAT line found: OK" ));
-	}
-	ofo_concil_free_bat_orphans( orphans );
-	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
-
-	/* check that all details have an entry parent */
-	orphans = ofo_concil_get_entry_orphans( priv->getter );
-	if( g_list_length( orphans ) > 0 ){
-		for( it=orphans ; it ; it=it->next ){
-			str = g_strdup_printf( _( "Found orphan conciliation member with EntNumber %lu" ), ( ofxCounter ) it->data );
-			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
-			g_free( str );
-			priv->concil_errs += 1;
-		}
-	} else if( priv->all_messages ){
-		my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, _( "No orphan conciliation entry found: OK" ));
-	}
-	ofo_concil_free_entry_orphans( orphans );
-	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
-	}
 
 	/* progress end */
 	if( priv->all_messages ){
@@ -1916,7 +1983,7 @@ set_checks_result( ofaCheckIntegrityBin *self )
 			+ priv->ope_templates_errs
 			+ priv->paimean_errs
 			+ priv->entries_errs
-			+ priv->bat_lines_errs
+			+ priv->bat_errs
 			+ priv->concil_errs
 			+ priv->others_errs;
 
