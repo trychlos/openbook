@@ -1721,7 +1721,11 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	gboolean all_messages;
 	myPeriod *period;
 
-	g_debug( "%s: instance=%p, getter=%p, progress=%p", thisfn, ( void * ) instance, ( void * ) getter, ( void * ) progress );
+	g_debug( "%s: instance=%p (%s), getter=%p (%s), progress=%p (%s)",
+			thisfn,
+			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
+			( void * ) progress, G_OBJECT_TYPE_NAME( progress ));
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_MODEL );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
@@ -1874,7 +1878,11 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 	gboolean all_messages;
 	myPeriod *period;
 
-	g_debug( "%s: instance=%p, getter=%p, progress=%p", thisfn, ( void * ) instance, ( void * ) getter, ( void * ) progress );
+	g_debug( "%s: instance=%p (%s), getter=%p (%s), progress=%p (%s)",
+			thisfn,
+			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
+			( void * ) progress, G_OBJECT_TYPE_NAME( progress ));
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_RUN );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
