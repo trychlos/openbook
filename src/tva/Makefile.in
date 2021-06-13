@@ -163,7 +163,7 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_tva_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_tva_la_OBJECTS = ofa-extension.lo ofa-tva-dbmodel.lo \
-	ofa-tva-execlose.lo ofa-tva-form-page.lo \
+	ofa-tva-execloseable.lo ofa-tva-form-page.lo \
 	ofa-tva-form-properties.lo ofa-tva-form-store.lo \
 	ofa-tva-form-treeview.lo ofa-tva-ident.lo ofa-tva-main.lo \
 	ofa-tva-record-new.lo ofa-tva-record-page.lo \
@@ -198,7 +198,7 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/ofa-extension.Plo \
 	./$(DEPDIR)/ofa-tva-dbmodel.Plo \
-	./$(DEPDIR)/ofa-tva-execlose.Plo \
+	./$(DEPDIR)/ofa-tva-execloseable.Plo \
 	./$(DEPDIR)/ofa-tva-form-page.Plo \
 	./$(DEPDIR)/ofa-tva-form-properties.Plo \
 	./$(DEPDIR)/ofa-tva-form-store.Plo \
@@ -471,8 +471,8 @@ libofa_tva_la_SOURCES = \
 	ofa-extension.c										\
 	ofa-tva-dbmodel.c									\
 	ofa-tva-dbmodel.h									\
-	ofa-tva-execlose.c									\
-	ofa-tva-execlose.h									\
+	ofa-tva-execloseable.c									\
+	ofa-tva-execloseable.h									\
 	ofa-tva-form-page.c									\
 	ofa-tva-form-page.h									\
 	ofa-tva-form-properties.c							\
@@ -605,7 +605,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extension.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-dbmodel.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-execlose.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-execloseable.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-page.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-properties.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-store.Plo@am__quote@ # am--include-marker
@@ -790,7 +790,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/ofa-extension.Plo
 	-rm -f ./$(DEPDIR)/ofa-tva-dbmodel.Plo
-	-rm -f ./$(DEPDIR)/ofa-tva-execlose.Plo
+	-rm -f ./$(DEPDIR)/ofa-tva-execloseable.Plo
 	-rm -f ./$(DEPDIR)/ofa-tva-form-page.Plo
 	-rm -f ./$(DEPDIR)/ofa-tva-form-properties.Plo
 	-rm -f ./$(DEPDIR)/ofa-tva-form-store.Plo
@@ -854,7 +854,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/ofa-extension.Plo
 	-rm -f ./$(DEPDIR)/ofa-tva-dbmodel.Plo
-	-rm -f ./$(DEPDIR)/ofa-tva-execlose.Plo
+	-rm -f ./$(DEPDIR)/ofa-tva-execloseable.Plo
 	-rm -f ./$(DEPDIR)/ofa-tva-form-page.Plo
 	-rm -f ./$(DEPDIR)/ofa-tva-form-properties.Plo
 	-rm -f ./$(DEPDIR)/ofa-tva-form-store.Plo

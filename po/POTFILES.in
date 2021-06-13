@@ -142,7 +142,7 @@ src/recurrent/ofa-recurrent-tree-adder.c
 src/recurrent/ofo-recurrent-model.c
 src/recurrent/ofo-recurrent-run.c
 src/tva/ofa-tva-dbmodel.c
-src/tva/ofa-tva-execlose.c
+src/tva/ofa-tva-execloseable.c
 src/tva/ofa-tva-form-page.c
 src/tva/ofa-tva-form-properties.c
 src/tva/ofa-tva-form-properties.ui

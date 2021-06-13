@@ -31,7 +31,7 @@
 
 #include "api/ofa-iexe-closeable.h"
 
-#include "ofa-tva-execlose.h"
+#include "ofa-tva-execloseable.h"
 #include "ofa-tva-ident.h"
 
 /* private instance data
@@ -48,7 +48,7 @@ static gchar *iident_get_version( const myIIdent *instance, void *user_data );
 G_DEFINE_TYPE_EXTENDED( ofaTVAIdent, ofa_tva_ident, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaTVAIdent )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXECLOSEABLE, ofa_tva_execlose_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXECLOSEABLE, ofa_tva_execloseable_iface_init ))
 
 static void
 tva_ident_finalize( GObject *instance )
