@@ -187,19 +187,19 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-idbdossier-meta.lo ofa-idbexercice-meta.lo ofa-idbmodel.lo \
 	ofa-idbprovider.lo ofa-idbexercice-editor.lo \
 	ofa-idbsuperuser.lo ofa-idoc.lo ofa-iexe-closeable.lo \
-	ofa-iexportable.lo ofa-iexporter.lo ofa-iextender-setter.lo \
-	ofa-igetter.lo ofa-iimporter.lo ofa-iimportable.lo \
-	ofa-ijson.lo ofa-import-duplicate.lo ofa-ipage-manager.lo \
-	ofa-iprintable.lo ofa-iproperties.lo ofa-irecover.lo \
-	ofa-irenderable.lo ofa-irenderer.lo ofa-isignalable.lo \
-	ofa-isignaler.lo ofa-istore.lo ofa-itree-adder.lo \
-	ofa-itvcolumnable.lo ofa-itvfilterable.lo ofa-itvsortable.lo \
-	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
-	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
-	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
-	ofa-ope-template-select.lo ofa-ope-template-store.lo \
-	ofa-ope-template-treeview.lo ofa-open-prefs.lo \
-	ofa-open-prefs-bin.lo ofa-openbook-props.lo \
+	ofa-iexe-closer.lo ofa-iexportable.lo ofa-iexporter.lo \
+	ofa-iextender-setter.lo ofa-igetter.lo ofa-iimporter.lo \
+	ofa-iimportable.lo ofa-ijson.lo ofa-import-duplicate.lo \
+	ofa-ipage-manager.lo ofa-iprintable.lo ofa-iproperties.lo \
+	ofa-irecover.lo ofa-irenderable.lo ofa-irenderer.lo \
+	ofa-isignalable.lo ofa-isignaler.lo ofa-istore.lo \
+	ofa-itree-adder.lo ofa-itvcolumnable.lo ofa-itvfilterable.lo \
+	ofa-itvsortable.lo ofa-ledger-combo.lo ofa-ledger-store.lo \
+	ofa-list-store.lo ofa-ope-template-editable.lo \
+	ofa-ope-template-frame-bin.lo ofa-ope-template-help.lo \
+	ofa-ope-template-properties.lo ofa-ope-template-select.lo \
+	ofa-ope-template-store.lo ofa-ope-template-treeview.lo \
+	ofa-open-prefs.lo ofa-open-prefs-bin.lo ofa-openbook-props.lo \
 	ofa-operation-group.lo ofa-paimean-editable.lo \
 	ofa-paimean-frame-bin.lo ofa-paimean-properties.lo \
 	ofa-paimean-select.lo ofa-paimean-store.lo \
@@ -292,8 +292,9 @@ am__depfiles_remade = ./$(DEPDIR)/ofa-account-arc-store.Plo \
 	./$(DEPDIR)/ofa-idbexercice-meta.Plo \
 	./$(DEPDIR)/ofa-idbmodel.Plo ./$(DEPDIR)/ofa-idbprovider.Plo \
 	./$(DEPDIR)/ofa-idbsuperuser.Plo ./$(DEPDIR)/ofa-idoc.Plo \
-	./$(DEPDIR)/ofa-iexe-closeable.Plo ./$(DEPDIR)/ofa-iexportable.Plo \
-	./$(DEPDIR)/ofa-iexporter.Plo \
+	./$(DEPDIR)/ofa-iexe-closeable.Plo \
+	./$(DEPDIR)/ofa-iexe-closer.Plo \
+	./$(DEPDIR)/ofa-iexportable.Plo ./$(DEPDIR)/ofa-iexporter.Plo \
 	./$(DEPDIR)/ofa-iextender-setter.Plo \
 	./$(DEPDIR)/ofa-igetter.Plo ./$(DEPDIR)/ofa-iimportable.Plo \
 	./$(DEPDIR)/ofa-iimporter.Plo ./$(DEPDIR)/ofa-ijson.Plo \
@@ -699,7 +700,8 @@ libofa_core_la_SOURCES = \
 	ofa-idbexercice-editor.c							\
 	ofa-idbsuperuser.c									\
 	ofa-idoc.c											\
-	ofa-iexe-closeable.c									\
+	ofa-iexe-closeable.c								\
+	ofa-iexe-closer.c									\
 	ofa-iexportable.c									\
 	ofa-iexporter.c										\
 	ofa-iextender-setter.c								\
@@ -972,6 +974,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbsuperuser.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idoc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexe-closeable.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexe-closer.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexporter.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iextender-setter.Plo@am__quote@ # am--include-marker
@@ -1283,6 +1286,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/ofa-idbsuperuser.Plo
 	-rm -f ./$(DEPDIR)/ofa-idoc.Plo
 	-rm -f ./$(DEPDIR)/ofa-iexe-closeable.Plo
+	-rm -f ./$(DEPDIR)/ofa-iexe-closer.Plo
 	-rm -f ./$(DEPDIR)/ofa-iexportable.Plo
 	-rm -f ./$(DEPDIR)/ofa-iexporter.Plo
 	-rm -f ./$(DEPDIR)/ofa-iextender-setter.Plo
@@ -1473,6 +1477,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/ofa-idbsuperuser.Plo
 	-rm -f ./$(DEPDIR)/ofa-idoc.Plo
 	-rm -f ./$(DEPDIR)/ofa-iexe-closeable.Plo
+	-rm -f ./$(DEPDIR)/ofa-iexe-closer.Plo
 	-rm -f ./$(DEPDIR)/ofa-iexportable.Plo
 	-rm -f ./$(DEPDIR)/ofa-iexporter.Plo
 	-rm -f ./$(DEPDIR)/ofa-iextender-setter.Plo
