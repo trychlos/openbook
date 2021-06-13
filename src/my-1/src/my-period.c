@@ -41,7 +41,7 @@ typedef struct {
 	 */
 	myPeriodKey  key;
 	guint        every;
-	GList       *details;		/* a list of days which repeat in the period */
+	GList       *details;		/* a list of days which repeat in the period - at least one must be set */
 }
 	myPeriodPrivate;
 
@@ -501,7 +501,29 @@ my_period_details_remove( myPeriod *period, guint det )
 }
 
 /**
- * my_period_details_is_valid:
+ * my_period_is_empty:
+ * @period: this #myPeriod object.
+ *
+ * Returns: %TRUE if the @period is empty (has never been set).
+ */
+gboolean
+my_period_is_empty( myPeriod *period )
+{
+	myPeriodPrivate *priv;
+	gboolean empty;
+
+	g_return_val_if_fail( period && MY_IS_PERIOD( period ), FALSE );
+
+	priv = my_period_get_instance_private( period );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	empty = ( my_period_get_key( period ) == MY_PERIOD_UNSET );
+
+	return( empty );
+}
+
+/**
+ * my_period_is_valid:
  * @period: this #myPeriod object.
  * @msgerr: [out][allow-none]: a placeholder for an error message.
  *

@@ -159,6 +159,7 @@ void         my_period_set_details      ( myPeriod *period, const gchar *details
 void         my_period_details_add      ( myPeriod *period, guint det );
 void         my_period_details_remove   ( myPeriod *period, guint det );
 
+gboolean     my_period_is_empty         ( myPeriod *period );
 gboolean     my_period_is_valid         ( myPeriod *period, gchar **msgerr );
 
 void         my_period_enum_key         ( myPeriodEnumKeyCb cb,
