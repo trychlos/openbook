@@ -541,6 +541,31 @@ my_iassistant_do_close( myIAssistant *instance )
 }
 
 /**
+ * my_iassistant_get_page_complete:
+ * @instance: this #myIAssistant instance.
+ * @page_num: the page number.
+ *
+ * Returns: %TRUE if the pas has been set completed.
+ */
+gboolean
+my_iassistant_get_page_complete( myIAssistant *instance, guint page_num )
+{
+	gboolean complete;
+	GtkWidget *page;
+
+	g_return_val_if_fail( instance && MY_IS_IASSISTANT( instance ), FALSE );
+	g_return_val_if_fail( GTK_IS_ASSISTANT( instance ), FALSE );
+
+	complete = FALSE;
+	page = gtk_assistant_get_nth_page( GTK_ASSISTANT( instance ), page_num );
+	if( page && GTK_IS_WIDGET( page )){
+		complete = gtk_assistant_get_page_complete( GTK_ASSISTANT( instance ), page );
+	}
+
+	return( complete );
+}
+
+/**
  * my_iassistant_has_been_cancelled:
  * @instance: this #myIAssistant instance.
  *
@@ -692,8 +717,8 @@ get_page_data( const myIAssistant *instance, GtkWidget *page )
 
 	if( !sdata ){
 		sdata = g_new0( sPage, 1 );
-		sdata->initialized = FALSE;
 		sdata->page_num = gtk_assistant_get_current_page( GTK_ASSISTANT( instance ));
+		sdata->initialized = FALSE;
 		g_object_set_data( G_OBJECT( page ), IASSISTANT_PAGE_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( page ), ( GWeakNotify ) on_page_finalized, sdata );
 	}

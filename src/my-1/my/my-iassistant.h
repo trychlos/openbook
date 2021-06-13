@@ -177,7 +177,7 @@ typedef void ( *myIAssistantCb )( myIAssistant *instance, gint page_num, GtkWidg
  * ofsIAssistant:
  */
 typedef struct {
-	gint           page_num;
+	guint          page_num;
 	myIAssistantCb init_cb;
 	myIAssistantCb display_cb;
 	myIAssistantCb forward_cb;
@@ -209,6 +209,9 @@ void     my_iassistant_do_close                  ( myIAssistant *instance );
 
 void     my_iassistant_do_prepare                ( myIAssistant *instance,
 														GtkWidget *page );
+
+gboolean my_iassistant_get_page_complete         ( myIAssistant *instance,
+														guint page_num );
 
 gboolean my_iassistant_has_been_cancelled        ( myIAssistant *instance );
 
