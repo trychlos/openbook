@@ -61,7 +61,6 @@ static guint    iexe_closeable_get_interface_version( void );
 static gchar   *iexe_closeable_add_row( ofaIExeCloseable *instance, ofaIExeCloser *closer, guint rowtype );
 static gboolean iexe_closeable_do_task( ofaIExeCloseable *instance, ofaIExeCloser *closer, guint rowtype, GtkWidget *box, ofaIGetter *getter );
 static gboolean do_task_opening( ofaIExeCloseable *instance, ofaIExeCloser *closer, GtkWidget *box, ofaIGetter *getter );
-static void     update_bar( myProgressBar *bar, guint *count, guint total );
 
 /*
  * #ofaIExeCloseable interface setup
@@ -124,8 +123,10 @@ iexe_closeable_do_task( ofaIExeCloseable *instance, ofaIExeCloser *closer, guint
 }
 
 /*
- * archive the cancelled and validated operations records, keeping
+ * Archive the cancelled and validated operations records, keeping
  * the pushed ones, to the ARCHIVE_T_REC_RUN table
+ *
+ * #1545 - the GtkBox may hosts a myProgressBar, but we prefer just a 'Done' label.
  */
 static gboolean
 do_task_opening( ofaIExeCloseable *instance, ofaIExeCloser *closer, GtkWidget *box, ofaIGetter *getter )
@@ -134,17 +135,14 @@ do_task_opening( ofaIExeCloseable *instance, ofaIExeCloser *closer, GtkWidget *b
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	gchar *query, *where, *str;
-	myProgressBar *bar;
-	guint count, total;
 	const gchar *dbms_status;
 	const GDate *prev_end;
+	GtkWidget *label;
 
-	bar = my_progress_bar_new();
-	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( bar ));
+	label = gtk_label_new( "" );
+	gtk_container_add( GTK_CONTAINER( box ), label );
 	gtk_widget_show_all( box );
 
-	total = 4;							/* queries count */
-	count = 0;
 	ok = TRUE;
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
@@ -155,7 +153,6 @@ do_task_opening( ofaIExeCloseable *instance, ofaIExeCloser *closer, GtkWidget *b
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHREC_T_DELETED_RECORDS" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 
 	/* archive records
@@ -166,7 +163,6 @@ do_task_opening( ofaIExeCloseable *instance, ofaIExeCloser *closer, GtkWidget *b
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_REC_RUN" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 
 	dbms_status = ofo_recurrent_run_status_get_dbms( REC_STATUS_WAITING );
@@ -183,28 +179,17 @@ do_task_opening( ofaIExeCloseable *instance, ofaIExeCloser *closer, GtkWidget *b
 					"SELECT * FROM REC_T_RUN %s", where );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 
 	if( ok ){
 		query = g_strdup_printf( "DELETE FROM REC_T_RUN %s", where );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 
 	g_free( where );
 
+	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
+
 	return( ok );
-}
-
-static void
-update_bar( myProgressBar *bar, guint *count, guint total )
-{
-	gdouble progress;
-
-	*count += 1;
-	progress = ( gdouble ) *count / ( gdouble ) total;
-	g_signal_emit_by_name( bar, "my-double", progress );
-	g_signal_emit_by_name( bar, "my-text", NULL );			/* shows a percentage */
 }
