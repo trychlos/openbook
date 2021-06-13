@@ -33,7 +33,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-iexe-closeable.h"
 
-#define IEXECLOSE_LAST_VERSION    1
+#define IEXECLOSEABLE_LAST_VERSION    1
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
@@ -124,7 +124,7 @@ interface_base_finalize( ofaIExeCloseableInterface *klass )
 guint
 ofa_iexe_closeable_get_interface_last_version( void )
 {
-	return( IEXECLOSE_LAST_VERSION );
+	return( IEXECLOSEABLE_LAST_VERSION );
 }
 
 /**
