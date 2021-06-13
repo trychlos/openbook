@@ -1704,6 +1704,10 @@ idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, 
 	return( errs );
 }
 
+/*
+ * Check recurrent models
+ * Even disabled ones must be checked.
+ */
 static gulong
 check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
@@ -1714,7 +1718,7 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	GList *records, *it, *orphans, *ito;
 	gulong count, i;
 	ofoRecurrentModel *model;
-	gchar *str;
+	gchar *str, *str2;
 	const gchar *mnemo, *ope_mnemo;
 	ofoOpeTemplate *ope_object;
 	ofxCounter docid;
@@ -1752,56 +1756,57 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 		mnemo = ofo_recurrent_model_get_mnemo( model );
 		moderrs = 0;
 
-		if( ofo_recurrent_model_get_enabled( model )){
-
-			/* operation template */
-			ope_mnemo = ofo_recurrent_model_get_ope_template( model );
-			if( !my_strlen( ope_mnemo )){
-				if( progress ){
-					str = g_strdup_printf( _( "Recurrent model %s does not have an operation template" ), mnemo );
-					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
-					g_free( str );
-				}
-				errs += 1;
-				moderrs += 1;
-			} else {
-				ope_object = ofo_ope_template_get_by_mnemo( getter, ope_mnemo );
-				if( !ope_object || !OFO_IS_OPE_TEMPLATE( ope_object )){
-					if( progress ){
-						str = g_strdup_printf(
-								_( "Recurrent model %s has operation template '%s' which doesn't exist" ), mnemo, ope_mnemo );
-						my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
-						g_free( str );
-					}
-					errs += 1;
-					moderrs += 1;
-				}
-			}
+		/* operation template */
+		ope_mnemo = ofo_recurrent_model_get_ope_template( model );
+		if( !my_strlen( ope_mnemo )){
 			if( progress ){
-				my_iprogress_pulse( progress, worker, ++i, count );
-			}
-
-			/* periodicity */
-			period = ofo_recurrent_model_get_period( model );
-			if( !period ){
-				if( progress ){
-					str = g_strdup_printf(
-							_( "Recurrent model %s has invalid periodicity" ), mnemo );
-					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
-					g_free( str );
-				}
-				errs += 1;
-				moderrs += 1;
-
-			} else if( !my_period_is_valid( period, &str )){
+				str = g_strdup_printf( _( "Recurrent model %s does not have an operation template" ), mnemo );
 				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
 				g_free( str );
+			}
+			errs += 1;
+			moderrs += 1;
+		} else {
+			ope_object = ofo_ope_template_get_by_mnemo( getter, ope_mnemo );
+			if( !ope_object || !OFO_IS_OPE_TEMPLATE( ope_object )){
+				if( progress ){
+					str = g_strdup_printf(
+							_( "Recurrent model %s has operation template '%s' which doesn't exist" ), mnemo, ope_mnemo );
+					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
+					g_free( str );
+				}
 				errs += 1;
 				moderrs += 1;
 			}
-			if( progress ){
-				my_iprogress_pulse( progress, worker, ++i, count );
+		}
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
+		}
+
+		/* periodicity
+		 * may be unset for a disabled model */
+		period = ofo_recurrent_model_get_period( model );
+		if( !period || my_period_is_empty( period )){
+			if( !ofo_recurrent_model_get_enabled( model )){
+				if( progress ){
+					str = g_strdup_printf(
+							_( "Recurrent model %s has empty periodicity" ), mnemo );
+					my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
+					g_free( str );
+				}
+				errs += 1;
+				moderrs += 1;
 			}
+		} else if( !my_period_is_valid( period, &str )){
+			str2 = g_strdup_printf( _( "%s for recurrent model %s" ), str, mnemo );
+			my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str2 );
+			g_free( str );
+			g_free( str2 );
+			errs += 1;
+			moderrs += 1;
+		}
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
 		}
 
 		/* check for referenced documents which actually do not exist */
@@ -1870,7 +1875,7 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 	GList *records, *it, *orphans, *ito;
 	gulong count, i;
 	ofoRecurrentRun *obj;
-	gchar *str;
+	gchar *str, *str2;
 	const gchar *mnemo, *ope_mnemo;
 	ofoRecurrentModel *model_object;
 	ofoOpeTemplate *ope_object;
@@ -1966,7 +1971,7 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 
 		/* periodicity */
 		period = ofo_recurrent_run_get_period( obj );
-		if( !period ){
+		if( !period || my_period_is_empty( period )){
 			if( progress ){
 				str = g_strdup_printf(
 						_( "Recurrent run %s has invalid periodicity" ), mnemo );
@@ -1977,8 +1982,10 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 			runerrs += 1;
 
 		} else if( !my_period_is_valid( period, &str )){
-			my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str );
+			str2 = g_strdup_printf( _( "%s for recurrent run %lu" ), str, numseq );
+			my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str2 );
 			g_free( str );
+			g_free( str2 );
 			errs += 1;
 			runerrs += 1;
 		}
