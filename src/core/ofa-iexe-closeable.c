@@ -31,23 +31,23 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-igetter.h"
-#include "api/ofa-iexe-close.h"
+#include "api/ofa-iexe-closeable.h"
 
 #define IEXECLOSE_LAST_VERSION    1
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType register_type( void );
-static void  interface_base_init( ofaIExeCloseInterface *klass );
-static void  interface_base_finalize( ofaIExeCloseInterface *klass );
+static void  interface_base_init( ofaIExeCloseableInterface *klass );
+static void  interface_base_finalize( ofaIExeCloseableInterface *klass );
 
 /**
- * ofa_iexe_close_get_type:
+ * ofa_iexe_closeable_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_iexe_close_get_type( void )
+ofa_iexe_closeable_get_type( void )
 {
 	static GType type = 0;
 
@@ -59,18 +59,18 @@ ofa_iexe_close_get_type( void )
 }
 
 /*
- * ofa_iexe_close_register_type:
+ * ofa_iexe_closeable_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_iexe_close_register_type";
+	static const gchar *thisfn = "ofa_iexe_closeable_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaIExeCloseInterface ),
+		sizeof( ofaIExeCloseableInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -83,7 +83,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIExeClose", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIExeCloseable", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -91,9 +91,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaIExeCloseInterface *klass )
+interface_base_init( ofaIExeCloseableInterface *klass )
 {
-	static const gchar *thisfn = "ofa_iexe_close_interface_base_init";
+	static const gchar *thisfn = "ofa_iexe_closeable_interface_base_init";
 
 	if( st_initializations == 0 ){
 
@@ -104,9 +104,9 @@ interface_base_init( ofaIExeCloseInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaIExeCloseInterface *klass )
+interface_base_finalize( ofaIExeCloseableInterface *klass )
 {
-	static const gchar *thisfn = "ofa_iexe_close_interface_base_finalize";
+	static const gchar *thisfn = "ofa_iexe_closeable_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -117,18 +117,18 @@ interface_base_finalize( ofaIExeCloseInterface *klass )
 }
 
 /**
- * ofa_iexe_close_get_interface_last_version:
+ * ofa_iexe_closeable_get_interface_last_version:
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_iexe_close_get_interface_last_version( void )
+ofa_iexe_closeable_get_interface_last_version( void )
 {
 	return( IEXECLOSE_LAST_VERSION );
 }
 
 /**
- * ofa_iexe_close_get_interface_version:
+ * ofa_iexe_closeable_get_interface_version:
  * @type: the implementation's GType.
  *
  * Returns: the version number of this interface which is managed by
@@ -139,7 +139,7 @@ ofa_iexe_close_get_interface_last_version( void )
  * Since: version 1.
  */
 guint
-ofa_iexe_close_get_interface_version( GType type )
+ofa_iexe_closeable_get_interface_version( GType type )
 {
 	gpointer klass, iface;
 	guint version;
@@ -147,16 +147,16 @@ ofa_iexe_close_get_interface_version( GType type )
 	klass = g_type_class_ref( type );
 	g_return_val_if_fail( klass, 1 );
 
-	iface = g_type_interface_peek( klass, OFA_TYPE_IEXECLOSE );
+	iface = g_type_interface_peek( klass, OFA_TYPE_IEXECLOSEABLE );
 	g_return_val_if_fail( iface, 1 );
 
 	version = 1;
 
-	if((( ofaIExeCloseInterface * ) iface )->get_interface_version ){
-		version = (( ofaIExeCloseInterface * ) iface )->get_interface_version();
+	if((( ofaIExeCloseableInterface * ) iface )->get_interface_version ){
+		version = (( ofaIExeCloseableInterface * ) iface )->get_interface_version();
 
 	} else {
-		g_info( "%s implementation does not provide 'ofaIExeClose::get_interface_version()' method",
+		g_info( "%s implementation does not provide 'ofaIExeCloseable::get_interface_version()' method",
 				g_type_name( type ));
 	}
 
@@ -166,8 +166,8 @@ ofa_iexe_close_get_interface_version( GType type )
 }
 
 /**
- * ofa_iexe_close_add_row:
- * @instance: the #ofaIExeClose instance.
+ * ofa_iexe_closeable_add_row:
+ * @instance: the #ofaIExeCloseable instance.
  * @rowtype: whether we insert on closing exercice N, or on opening
  *  exercice N+1.
  *
@@ -177,26 +177,26 @@ ofa_iexe_close_get_interface_version( GType type )
  * Returns: a string which should be g_free() by the caller.
  */
 gchar *
-ofa_iexe_close_add_row( ofaIExeClose *instance, guint rowtype )
+ofa_iexe_closeable_add_row( ofaIExeCloseable *instance, guint rowtype )
 {
-	static const gchar *thisfn = "ofa_iexe_close_add_row";
+	static const gchar *thisfn = "ofa_iexe_closeable_add_row";
 
 	g_debug( "%s: instance=%p, rowtype=%u", thisfn, ( void * ) instance, rowtype );
 
-	g_return_val_if_fail( instance && OFA_IS_IEXECLOSE( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_IEXECLOSEABLE( instance ), NULL );
 
-	if( OFA_IEXECLOSE_GET_INTERFACE( instance )->add_row ){
-		return( OFA_IEXECLOSE_GET_INTERFACE( instance )->add_row( instance, rowtype ));
+	if( OFA_IEXECLOSEABLE_GET_INTERFACE( instance )->add_row ){
+		return( OFA_IEXECLOSEABLE_GET_INTERFACE( instance )->add_row( instance, rowtype ));
 	}
 
-	g_info( "%s: ofaIExeClose's %s implementation does not provide 'add_row()' method",
+	g_info( "%s: ofaIExeCloseable's %s implementation does not provide 'add_row()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
 /**
- * ofa_iexe_close_do_task:
- * @instance: the #ofaIExeClose instance.
+ * ofa_iexe_closeable_do_task:
+ * @instance: the #ofaIExeCloseable instance.
  * @rowtype: whether we insert on closing exercice N, or on opening
  *  exercice N+1.
  * @box: a #GtkBox in which the plugin may display a text, a progress
@@ -208,21 +208,21 @@ ofa_iexe_close_add_row( ofaIExeClose *instance, guint rowtype )
  * Returns: %TRUE if the plugin tasks are successful, %FALSE else.
  */
 gboolean
-ofa_iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter )
+ofa_iexe_closeable_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter )
 {
-	static const gchar *thisfn = "ofa_iexe_close_do_task";
+	static const gchar *thisfn = "ofa_iexe_closeable_do_task";
 
 	g_debug( "%s: instance=%p, rowtype=%u, box=%p, getter=%p",
 			thisfn, ( void * ) instance, rowtype, ( void * ) box, ( void * ) getter );
 
-	g_return_val_if_fail( instance && OFA_IS_IEXECLOSE( instance ), FALSE );
+	g_return_val_if_fail( instance && OFA_IS_IEXECLOSEABLE( instance ), FALSE );
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
-	if( OFA_IEXECLOSE_GET_INTERFACE( instance )->do_task ){
-		return( OFA_IEXECLOSE_GET_INTERFACE( instance )->do_task( instance, rowtype, box, getter ));
+	if( OFA_IEXECLOSEABLE_GET_INTERFACE( instance )->do_task ){
+		return( OFA_IEXECLOSEABLE_GET_INTERFACE( instance )->do_task( instance, rowtype, box, getter ));
 	}
 
-	g_info( "%s: ofaIExeClose's %s implementation does not provide 'do_task()' method",
+	g_info( "%s: ofaIExeCloseable's %s implementation does not provide 'do_task()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	/* returns %TRUE to let the process continue */
 	return( TRUE );

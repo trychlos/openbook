@@ -29,14 +29,14 @@
  * SECTION: ofa_tva_iexeclose
  * @short_description: #ofaTva class definition.
  *
- * #ofaIExeClose interface management.
+ * #ofaIExeCloseable interface management.
  */
 
-#include "api/ofa-iexe-close.h"
+#include "api/ofa-iexe-closeable.h"
 
 G_BEGIN_DECLS
 
-void ofa_tva_execlose_iface_init( ofaIExeCloseInterface *iface );
+void ofa_tva_execlose_iface_init( ofaIExeCloseableInterface *iface );
 
 G_END_DECLS
 

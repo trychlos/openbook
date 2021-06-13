@@ -431,7 +431,7 @@ api_include_HEADERS = \
 	ofa-idbsuperuser.h									\
 	ofa-idbsuperuser-def.h								\
 	ofa-idoc.h											\
-	ofa-iexe-close.h									\
+	ofa-iexe-closeable.h									\
 	ofa-iexportable-def.h								\
 	ofa-iexportable.h									\
 	ofa-iexporter.h										\

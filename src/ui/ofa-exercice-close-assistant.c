@@ -47,7 +47,7 @@
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbsuperuser.h"
-#include "api/ofa-iexe-close.h"
+#include "api/ofa-iexe-closeable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignaler.h"
 #include "api/ofa-prefs.h"
@@ -142,7 +142,7 @@ enum {
 	PAGE_CLOSE,							/* p6 - Progress then Summary */
 };
 
-/* a structure attached to each ofaIExeClosexxx instance which has
+/* a structure attached to each ofaIExeCloseablexxx instance which has
  * showed its will to do some task
  */
 typedef struct {
@@ -183,7 +183,7 @@ static void           p5_do_display( ofaExerciceCloseAssistant *self, gint page_
 static void           p5_on_backup_clicked( GtkButton *button, ofaExerciceCloseAssistant *self );
 static void           p5_check_for_complete( ofaExerciceCloseAssistant *self );
 static void           p6_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
-static void           p6_plugin_init( ofaExerciceCloseAssistant *self, GtkWidget *grid, ofaIExeClose *instance, guint type, const gchar *data_name, GtkWidget *sibling, GWeakNotify fn );
+static void           p6_plugin_init( ofaExerciceCloseAssistant *self, GtkWidget *grid, ofaIExeCloseable *instance, guint type, const gchar *data_name, GtkWidget *sibling, GWeakNotify fn );
 static void           p6_do_signaler_begin( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static gboolean       p6_close_windows( ofaExerciceCloseAssistant *self );
 static gboolean       p6_plugin_closing( ofaExerciceCloseAssistant *self );
@@ -433,7 +433,7 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	priv->dossier = ofa_hub_get_dossier( hub );
 
 	extenders = ofa_igetter_get_extender_collection( priv->getter );
-	priv->close_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IEXECLOSE );
+	priv->close_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IEXECLOSEABLE );
 }
 
 /*
@@ -937,7 +937,7 @@ p6_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	for( it=priv->close_list ; it ; it=it->next ){
 		p6_plugin_init(
 				self, grid,
-				OFA_IEXECLOSE( it->data ), EXECLOSE_CLOSING, EXECLOSE_CLOSING_DATA,
+				OFA_IEXECLOSEABLE( it->data ), EXECLOSE_CLOSING, EXECLOSE_CLOSING_DATA,
 				label, ( GWeakNotify ) on_closing_instance_finalized );
 	}
 
@@ -950,26 +950,26 @@ p6_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	for( it=priv->close_list ; it ; it=it->next ){
 		p6_plugin_init(
 				self, grid,
-				OFA_IEXECLOSE( it->data ), EXECLOSE_OPENING, EXECLOSE_OPENING_DATA,
+				OFA_IEXECLOSEABLE( it->data ), EXECLOSE_OPENING, EXECLOSE_OPENING_DATA,
 				label, ( GWeakNotify ) on_opening_instance_finalized );
 	}
 }
 
 /*
- * Ask the plugin which implement ofaIExeClose interface if it
+ * Ask the plugin which implement ofaIExeCloseable interface if it
  * wants do something on closing/opening the exercice.
  * If a text label is provided, then create a box, and attach it to
  * the instance.
  */
 static void
-p6_plugin_init( ofaExerciceCloseAssistant *self, GtkWidget *grid, ofaIExeClose *instance,
+p6_plugin_init( ofaExerciceCloseAssistant *self, GtkWidget *grid, ofaIExeCloseable *instance,
 					guint type, const gchar *data_name, GtkWidget *sibling, GWeakNotify fn )
 {
 	gchar *text;
 	GtkWidget *text_label, *box;
 	sClose *close_data;
 
-	text = ofa_iexe_close_add_row( instance, type );
+	text = ofa_iexe_closeable_add_row( instance, type );
 	if( my_strlen( text )){
 		text_label = gtk_label_new( text );
 		gtk_label_set_xalign( GTK_LABEL( text_label ), 1 );
@@ -1074,8 +1074,8 @@ p6_plugin_closing( ofaExerciceCloseAssistant *self )
 	for( it=priv->close_list ; it ; it=it->next ){
 		close_data = ( sClose * ) g_object_get_data( G_OBJECT( it->data ), EXECLOSE_CLOSING_DATA );
 		if( close_data ){
-			ofa_iexe_close_do_task(
-					OFA_IEXECLOSE( it->data ), EXECLOSE_CLOSING, close_data->box, priv->getter );
+			ofa_iexe_closeable_do_task(
+					OFA_IEXECLOSEABLE( it->data ), EXECLOSE_CLOSING, close_data->box, priv->getter );
 		}
 	}
 
@@ -2124,8 +2124,8 @@ p6_plugin_opening( ofaExerciceCloseAssistant *self )
 	for( it=priv->close_list ; it ; it=it->next ){
 		close_data = ( sClose * ) g_object_get_data( G_OBJECT( it->data ), EXECLOSE_OPENING_DATA );
 		if( close_data ){
-			ofa_iexe_close_do_task(
-					OFA_IEXECLOSE( it->data ), EXECLOSE_OPENING, close_data->box, priv->getter );
+			ofa_iexe_closeable_do_task(
+					OFA_IEXECLOSEABLE( it->data ), EXECLOSE_OPENING, close_data->box, priv->getter );
 		}
 	}
 
@@ -2222,7 +2222,7 @@ update_bar( myProgressBar *bar, guint *count, guint total, const gchar *emitter_
 }
 
 /*
- * when the ofaIExeClosexxx plugin finalizes
+ * when the ofaIExeCloseablexxx plugin finalizes
  */
 static void
 on_closing_instance_finalized( sClose *close_data, GObject *finalized_instance )

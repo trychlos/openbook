@@ -36,6 +36,7 @@
 #include "api/ofa-igetter.h"
 
 #include "ofa-recurrent-execlose.h"
+#include "ofo-recurrent-run.h"
 
 /* a dedicated structure to hold needed datas
  */
@@ -43,7 +44,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaIExeClose  *instance;
+	const ofaIExeCloseable  *instance;
 	ofaIGetter          *getter;
 	const ofaIDBConnect *connect;
 
@@ -56,16 +57,16 @@ typedef struct {
 	sUpdate;
 
 static guint    iexe_close_get_interface_version( void );
-static gchar   *iexe_close_add_row( ofaIExeClose *instance, guint rowtype );
-static gboolean iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter );
-static gboolean do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter );
+static gchar   *iexe_close_add_row( ofaIExeCloseable *instance, guint rowtype );
+static gboolean iexe_close_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter );
+static gboolean do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter );
 static void     update_bar( myProgressBar *bar, guint *count, guint total );
 
 /*
- * #ofaIExeClose interface setup
+ * #ofaIExeCloseable interface setup
  */
 void
-ofa_recurrent_execlose_iface_init( ofaIExeCloseInterface *iface )
+ofa_recurrent_execlose_iface_init( ofaIExeCloseableInterface *iface )
 {
 	static const gchar *thisfn = "ofa_recurrent_execlose_iface_init";
 
@@ -77,7 +78,7 @@ ofa_recurrent_execlose_iface_init( ofaIExeCloseInterface *iface )
 }
 
 /*
- * the version of the #ofaIExeClose interface implemented by the module
+ * the version of the #ofaIExeCloseable interface implemented by the module
  */
 static guint
 iexe_close_get_interface_version( void )
@@ -86,7 +87,7 @@ iexe_close_get_interface_version( void )
 }
 
 static gchar *
-iexe_close_add_row( ofaIExeClose *instance, guint rowtype )
+iexe_close_add_row( ofaIExeCloseable *instance, guint rowtype )
 {
 	gchar *text;
 
@@ -104,7 +105,7 @@ iexe_close_add_row( ofaIExeClose *instance, guint rowtype )
 }
 
 static gboolean
-iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter )
+iexe_close_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter )
 {
 	gboolean ok;
 
@@ -126,7 +127,7 @@ iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaIG
  * the pushed ones, to the ARCHIVE_T_REC_RUN table
  */
 static gboolean
-do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
+do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter )
 {
 	gboolean ok;
 	ofaHub *hub;
