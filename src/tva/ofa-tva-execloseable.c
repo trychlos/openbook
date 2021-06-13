@@ -63,7 +63,6 @@ static gchar   *iexe_closeable_add_row( ofaIExeCloseable *instance, ofaIExeClose
 static gboolean iexe_closeable_do_task( ofaIExeCloseable *instance, ofaIExeCloser *closer, guint rowtype, GtkWidget *box, ofaIGetter *getter );
 static gboolean do_task_closing( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter );
 static gboolean do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter );
-static void     update_bar( myProgressBar *bar, guint *count, guint total );
 
 /*
  * #ofaIExeCloseable interface setup
@@ -180,18 +179,15 @@ do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter 
 	gboolean ok;
 	const ofaIDBConnect *connect;
 	gchar *query;
-	myProgressBar *bar;
-	guint count, total;
 	ofoDossier *dossier;
 	ofaHub *hub;
 	gchar *sbegin;
+	GtkWidget *label;
 
-	bar = my_progress_bar_new();
-	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( bar ));
+	label = gtk_label_new( "" );
+	gtk_container_add( GTK_CONTAINER( box ), label );
 	gtk_widget_show_all( box );
 
-	total = 10;							/* queries count */
-	count = 0;
 	ok = TRUE;
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
@@ -204,7 +200,6 @@ do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter 
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHTVA_T_DELETED_RECORDS" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 
 	/* archive records
@@ -215,7 +210,6 @@ do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter 
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_TVA_KEEP_RECORDS" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 	if( ok ){
 		query = g_strdup_printf(
@@ -226,13 +220,11 @@ do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter 
 								sbegin, ofo_tva_record_status_get_dbms( VAT_STATUS_NO ));
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_TVA_RECORDS" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 	if( ok ){
 		query = g_strdup( "CREATE TABLE ARCHIVE_T_TVA_RECORDS "
@@ -243,13 +235,11 @@ do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter 
 					"			AND a.TFO_END=b.TFO_END)" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_TVA_RECORDS_BOOL" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 	if( ok ){
 		query = g_strdup( "CREATE TABLE ARCHIVE_T_TVA_RECORDS_BOOL "
@@ -260,13 +250,11 @@ do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter 
 					"			AND a.TFO_END=b.TFO_END)" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_TVA_RECORDS_DET" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 	if( ok ){
 		query = g_strdup( "CREATE TABLE ARCHIVE_T_TVA_RECORDS_DET "
@@ -277,7 +265,6 @@ do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter 
 					"			AND a.TFO_END=b.TFO_END)" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 	if( ok ){
 		query = g_strdup( "DELETE a,b,c FROM TVA_T_RECORDS a, TVA_T_RECORDS_BOOL b, TVA_T_RECORDS_DET c "
@@ -289,19 +276,9 @@ do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter 
 					"			AND a.TFO_END=d.TFO_END)" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
-		update_bar( bar, &count, total );
 	}
 
+	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
+
 	return( ok );
-}
-
-static void
-update_bar( myProgressBar *bar, guint *count, guint total )
-{
-	gdouble progress;
-
-	*count += 1;
-	progress = ( gdouble ) *count / ( gdouble ) total;
-	g_signal_emit_by_name( bar, "my-double", progress );
-	g_signal_emit_by_name( bar, "my-text", NULL );			/* shows a percentage */
 }
