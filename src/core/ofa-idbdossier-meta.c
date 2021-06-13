@@ -690,10 +690,8 @@ ofa_idbdossier_meta_get_period( const ofaIDBDossierMeta *meta, const GDate *date
 	const GDate *period_begin, *period_end;
 	gint cmp_begin, cmp_end;
 
-	if( 0 ){
-		g_debug( "%s: meta=%p, date=%p",
+	g_debug( "%s: meta=%p, date=%p",
 				thisfn, ( void * ) meta, ( void * ) date );
-	}
 
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 	g_return_val_if_fail( my_date_is_valid( date ), NULL );

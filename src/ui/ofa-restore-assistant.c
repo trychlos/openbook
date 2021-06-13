@@ -171,6 +171,7 @@ typedef struct {
 	ofaIDBExerciceMeta     *p6_exercice_meta;
 	gboolean                p6_restored;
 	gboolean                p6_opened;
+	gboolean                p6_running;
 }
 	ofaRestoreAssistantPrivate;
 
@@ -377,6 +378,7 @@ ofa_restore_assistant_init( ofaRestoreAssistant *self )
 	priv->p5_apply = FALSE;
 	priv->p6_restored = FALSE;
 	priv->p6_opened = FALSE;
+	priv->p6_running = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -696,6 +698,10 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	p2_check_for_complete( self );
 }
 
+/*
+ * the ofaTargetChooserBin modifies its own selection during the dossier restoration
+ * just ignore it if running...
+ */
 static void
 p2_on_target_chooser_changed( myIBin *bin, ofaRestoreAssistant *self )
 {
@@ -703,16 +709,19 @@ p2_on_target_chooser_changed( myIBin *bin, ofaRestoreAssistant *self )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	ofa_target_chooser_bin_get_selected( OFA_TARGET_CHOOSER_BIN( bin ), &priv->p2_dossier_meta, &priv->p2_exercice_meta );
+	if( !priv->p6_running ){
 
-	priv->p2_new_dossier = ofa_target_chooser_bin_is_new_dossier( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_dossier_meta );
+		ofa_target_chooser_bin_get_selected( OFA_TARGET_CHOOSER_BIN( bin ), &priv->p2_dossier_meta, &priv->p2_exercice_meta );
 
-	priv->p2_new_exercice =
-			priv->p2_exercice_meta ?
-					ofa_target_chooser_bin_is_new_exercice( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_exercice_meta ) :
-					FALSE;
+		priv->p2_new_dossier = ofa_target_chooser_bin_is_new_dossier( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_dossier_meta );
 
-	p2_check_for_complete( self );
+		priv->p2_new_exercice =
+				priv->p2_exercice_meta ?
+						ofa_target_chooser_bin_is_new_exercice( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_exercice_meta ) :
+						FALSE;
+
+		p2_check_for_complete( self );
+	}
 }
 
 static gboolean
@@ -1477,6 +1486,7 @@ p6_do_restore( ofaRestoreAssistant *self )
 	GtkWidget *dlg;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
+	priv->p6_running = TRUE;
 
 	/* restore the backup */
 	ok = ofa_idbconnect_restore_db(
@@ -1515,8 +1525,10 @@ p6_do_restore( ofaRestoreAssistant *self )
 	if( ok ){
 		priv->p6_restored = TRUE;
 		g_idle_add(( GSourceFunc ) p6_do_open, self );
+
 	} else {
 		my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
+		priv->p6_running = FALSE;
 	}
 
 	return( G_SOURCE_REMOVE );
@@ -1569,7 +1581,7 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 	/* check that the restored datas do not overlap with another exercice */
 	if( ok && my_date_is_valid( dos_begin )){
 		period = ofa_idbdossier_meta_get_period( priv->p6_dossier_meta, dos_begin, TRUE );
-		if( period != priv->p6_exercice_meta ){
+		if( period && period != priv->p6_exercice_meta ){
 			label = ofa_idbexercice_meta_get_label( period );
 			str = g_strdup_printf( _( "Error: the restored file overrides the '%s' exercice" ), label );
 			p6_msg_cb( str, self );
@@ -1580,7 +1592,7 @@ p6_do_remediate_settings( ofaRestoreAssistant *self )
 	}
 	if( ok && my_date_is_valid( dos_end )){
 		period = ofa_idbdossier_meta_get_period( priv->p6_dossier_meta, dos_end, TRUE );
-		if( period != priv->p6_exercice_meta ){
+		if( period && period != priv->p6_exercice_meta ){
 			label = ofa_idbexercice_meta_get_label( period );
 			str = g_strdup_printf( _( "Error: the restored file overrides the '%s' exercice" ), label );
 			p6_msg_cb( str, self );
@@ -1756,6 +1768,8 @@ p6_do_open( ofaRestoreAssistant *self )
 
 	my_iwindow_set_allow_close( MY_IWINDOW( self ), TRUE );
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
+
+	priv->p6_running = FALSE;
 
 	return( G_SOURCE_REMOVE );
 }

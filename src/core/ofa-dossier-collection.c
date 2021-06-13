@@ -278,7 +278,7 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCo
  *
  * Returns: a new list with new references to the #ofaIDBDossierMeta's.
  *
- * The @prev_list will then be released when returning from this function.
+ * The @prev_list can be released by the caller after returning from this function.
  */
 static GList *
 load_dossiers( ofaDossierCollection *self, GList *prev_list )

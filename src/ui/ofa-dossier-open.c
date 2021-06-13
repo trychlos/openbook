@@ -259,7 +259,7 @@ ofa_dossier_open_run_modal( ofaIGetter *getter, GtkWindow *parent, ofaIDBExercic
 	msg = NULL;
 
 	if( are_data_set( self, &msg ) && is_connection_valid( self, &msg )){
-		do_open_dossier( self );
+		opened = do_open_dossier( self );
 
 	} else {
 		g_debug( "%s: %s", thisfn, msg );
