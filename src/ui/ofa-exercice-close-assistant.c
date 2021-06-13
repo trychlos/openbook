@@ -1087,8 +1087,8 @@ p6_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 }
 
 /*
- * Ask the plugin which implement ofaIExeCloseable interface if it
- * wants do something on closing/opening the exercice.
+ * Ask the plugins which implement ofaIExeCloseable interface if they
+ * want do something on closing/opening the exercice.
  * If a text label is provided, then create a box, and attach it to
  * the instance.
  */
