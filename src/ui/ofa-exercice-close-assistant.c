@@ -845,6 +845,11 @@ p4_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widge
 	}
 }
 
+/*
+ * #1561
+ * We are considering that detected DBMS integrity errors may be fixed by themselves
+ * when rows are archived. So we continue the assistant even if errors are found.
+ */
 static void
 p4_on_checks_done( ofaCheckIntegrityBin *bin, gulong errors, ofaExerciceCloseAssistant *self )
 {
@@ -854,12 +859,7 @@ p4_on_checks_done( ofaCheckIntegrityBin *bin, gulong errors, ofaExerciceCloseAss
 
 	priv->p4_done = TRUE;
 
-	if( errors == 0 ){
-		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_CONTENT );
-	} else {
-		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
-	}
-
+	my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_CONTENT );
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), priv->p4_done );
 }
 
