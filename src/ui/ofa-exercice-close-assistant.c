@@ -48,6 +48,7 @@
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbsuperuser.h"
 #include "api/ofa-iexe-closeable.h"
+#include "api/ofa-iexe-closer.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-isignaler.h"
 #include "api/ofa-prefs.h"
@@ -158,7 +159,12 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-exercic
 static void           iwindow_iface_init( myIWindowInterface *iface );
 static void           iwindow_init( myIWindow *instance );
 static void           iassistant_iface_init( myIAssistantInterface *iface );
-static gboolean       iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
+static gboolean       iassistant_is_willing_to_quit( myIAssistant *instance, guint keyval );
+static void           iexecloser_iface_init( ofaIExeCloserInterface *iface );
+static const GDate   *iexecloser_get_prev_begin_date( ofaIExeCloser *instance );
+static const GDate   *iexecloser_get_prev_end_date( ofaIExeCloser *instance );
+static const GDate   *iexecloser_get_next_begin_date( ofaIExeCloser *instance );
+static const GDate   *iexecloser_get_next_end_date( ofaIExeCloser *instance );
 static void           p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void           p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void           p1_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
@@ -210,7 +216,8 @@ static void           on_opening_instance_finalized( sClose *close_data, GObject
 G_DEFINE_TYPE_EXTENDED( ofaExerciceCloseAssistant, ofa_exercice_close_assistant, GTK_TYPE_ASSISTANT, 0,
 		G_ADD_PRIVATE( ofaExerciceCloseAssistant )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IASSISTANT, iassistant_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IASSISTANT, iassistant_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXECLOSER, iexecloser_iface_init ))
 
 static const ofsIAssistant st_pages_cb [] = {
 		{ PAGE_INTRO,
@@ -407,6 +414,86 @@ iassistant_is_willing_to_quit( myIAssistant *instance, guint keyval )
 	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
 
 	return( ofa_prefs_assistant_is_willing_to_quit( priv->getter, keyval ));
+}
+
+/*
+ * ofaIExeCloser interface management
+ */
+static void
+iexecloser_iface_init( ofaIExeCloserInterface *iface )
+{
+	static const gchar *thisfn = "ofa_exercice_close_assistant_iexecloser_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_prev_begin_date = iexecloser_get_prev_begin_date;
+	iface->get_prev_end_date = iexecloser_get_prev_end_date;
+	iface->get_next_begin_date = iexecloser_get_next_begin_date;
+	iface->get_next_end_date = iexecloser_get_next_end_date;
+}
+
+static const GDate *
+iexecloser_get_prev_begin_date( ofaIExeCloser *instance )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	const GDate *date;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
+	date = NULL;
+
+	if( my_iassistant_get_page_complete( MY_IASSISTANT( instance ), PAGE_PARMS )){
+		date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_cur ), NULL );
+	}
+
+	return( date );
+}
+
+static const GDate *
+iexecloser_get_prev_end_date( ofaIExeCloser *instance )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	const GDate *date;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
+	date = NULL;
+
+	if( my_iassistant_get_page_complete( MY_IASSISTANT( instance ), PAGE_PARMS )){
+		date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
+	}
+
+	return( date );
+}
+
+static const GDate *
+iexecloser_get_next_begin_date( ofaIExeCloser *instance )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	const GDate *date;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
+	date = NULL;
+
+	if( my_iassistant_get_page_complete( MY_IASSISTANT( instance ), PAGE_PARMS )){
+		date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
+	}
+
+	return( date );
+}
+
+static const GDate *
+iexecloser_get_next_end_date( ofaIExeCloser *instance )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	const GDate *date;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
+	date = NULL;
+
+	if( my_iassistant_get_page_complete( MY_IASSISTANT( instance ), PAGE_PARMS )){
+		date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
+	}
+
+	return( date );
 }
 
 /*
@@ -608,10 +695,10 @@ p1_check_for_complete( ofaExerciceCloseAssistant *self )
 	complete = FALSE;
 
 	if( priv->p1_end_next ){
-		begin_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_cur ), NULL );
-		end_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
-		begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
-		end_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
+		begin_cur = iexecloser_get_prev_begin_date( OFA_IEXECLOSER( self ));
+		end_cur = iexecloser_get_prev_end_date( OFA_IEXECLOSER( self ));
+		begin_next = iexecloser_get_next_begin_date( OFA_IEXECLOSER( self ));
+		end_next = iexecloser_get_next_end_date( OFA_IEXECLOSER( self ));
 
 		/* check that all dates are valid
 		 * and next exercice begins the next day after the end of the
