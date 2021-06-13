@@ -131,7 +131,7 @@ typedef struct {
 }
 	ofaExerciceCloseAssistantPrivate;
 
-/* the pages of this assistant, counted froom zero
+/* the pages of this assistant, counted from zero
  */
 enum {
 	PAGE_INTRO = 0,						/* Intro */
@@ -171,6 +171,10 @@ static void           p1_display( ofaExerciceCloseAssistant *self, gint page_num
 static void           p1_on_date_changed( GtkEditable *editable, ofaExerciceCloseAssistant *self );
 static void           p1_on_closing_parms_changed( myIBin *bin, ofaExerciceCloseAssistant *self );
 static void           p1_check_for_complete( ofaExerciceCloseAssistant *self );
+static const GDate   *p1_get_prev_begin_date( ofaExerciceCloseAssistant *self );
+static const GDate   *p1_get_prev_end_date( ofaExerciceCloseAssistant *self );
+static const GDate   *p1_get_next_begin_date( ofaExerciceCloseAssistant *self );
+static const GDate   *p1_get_next_end_date( ofaExerciceCloseAssistant *self );
 static void           p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void           p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void           p2_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
@@ -435,14 +439,12 @@ iexecloser_iface_init( ofaIExeCloserInterface *iface )
 static const GDate *
 iexecloser_get_prev_begin_date( ofaIExeCloser *instance )
 {
-	ofaExerciceCloseAssistantPrivate *priv;
 	const GDate *date;
 
-	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
 	date = NULL;
 
 	if( my_iassistant_get_page_complete( MY_IASSISTANT( instance ), PAGE_PARMS )){
-		date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_cur ), NULL );
+		date = p1_get_prev_begin_date( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
 	}
 
 	return( date );
@@ -451,14 +453,12 @@ iexecloser_get_prev_begin_date( ofaIExeCloser *instance )
 static const GDate *
 iexecloser_get_prev_end_date( ofaIExeCloser *instance )
 {
-	ofaExerciceCloseAssistantPrivate *priv;
 	const GDate *date;
 
-	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
 	date = NULL;
 
 	if( my_iassistant_get_page_complete( MY_IASSISTANT( instance ), PAGE_PARMS )){
-		date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
+		date = p1_get_prev_end_date( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
 	}
 
 	return( date );
@@ -467,14 +467,12 @@ iexecloser_get_prev_end_date( ofaIExeCloser *instance )
 static const GDate *
 iexecloser_get_next_begin_date( ofaIExeCloser *instance )
 {
-	ofaExerciceCloseAssistantPrivate *priv;
 	const GDate *date;
 
-	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
 	date = NULL;
 
 	if( my_iassistant_get_page_complete( MY_IASSISTANT( instance ), PAGE_PARMS )){
-		date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
+		date = p1_get_next_begin_date( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
 	}
 
 	return( date );
@@ -483,14 +481,12 @@ iexecloser_get_next_begin_date( ofaIExeCloser *instance )
 static const GDate *
 iexecloser_get_next_end_date( ofaIExeCloser *instance )
 {
-	ofaExerciceCloseAssistantPrivate *priv;
 	const GDate *date;
 
-	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
 	date = NULL;
 
 	if( my_iassistant_get_page_complete( MY_IASSISTANT( instance ), PAGE_PARMS )){
-		date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
+		date = p1_get_next_end_date( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
 	}
 
 	return( date );
@@ -695,10 +691,10 @@ p1_check_for_complete( ofaExerciceCloseAssistant *self )
 	complete = FALSE;
 
 	if( priv->p1_end_next ){
-		begin_cur = iexecloser_get_prev_begin_date( OFA_IEXECLOSER( self ));
-		end_cur = iexecloser_get_prev_end_date( OFA_IEXECLOSER( self ));
-		begin_next = iexecloser_get_next_begin_date( OFA_IEXECLOSER( self ));
-		end_next = iexecloser_get_next_end_date( OFA_IEXECLOSER( self ));
+		begin_cur = p1_get_prev_begin_date( self );
+		end_cur = p1_get_prev_end_date( self );
+		begin_next = p1_get_next_begin_date( self );
+		end_next = p1_get_next_end_date( self );
 
 		/* check that all dates are valid
 		 * and next exercice begins the next day after the end of the
@@ -724,6 +720,54 @@ p1_check_for_complete( ofaExerciceCloseAssistant *self )
 	}
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), complete );
+}
+
+static const GDate *
+p1_get_prev_begin_date( ofaExerciceCloseAssistant *self )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	const GDate *date;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( self );
+	date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_cur ), NULL );
+
+	return( date );
+}
+
+static const GDate *
+p1_get_prev_end_date( ofaExerciceCloseAssistant *self )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	const GDate *date;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( self );
+	date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
+
+	return( date );
+}
+
+static const GDate *
+p1_get_next_begin_date( ofaExerciceCloseAssistant *self )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	const GDate *date;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( self );
+	date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
+
+	return( date );
+}
+
+static const GDate *
+p1_get_next_end_date( ofaExerciceCloseAssistant *self )
+{
+	ofaExerciceCloseAssistantPrivate *priv;
+	const GDate *date;
+
+	priv = ofa_exercice_close_assistant_get_instance_private( self );
+	date = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
+
+	return( date );
 }
 
 /*
@@ -1056,7 +1100,7 @@ p6_plugin_init( ofaExerciceCloseAssistant *self, GtkWidget *grid, ofaIExeCloseab
 	GtkWidget *text_label, *box;
 	sClose *close_data;
 
-	text = ofa_iexe_closeable_add_row( instance, type );
+	text = ofa_iexe_closeable_add_row( instance, OFA_IEXECLOSER( self ), type );
 	if( my_strlen( text )){
 		text_label = gtk_label_new( text );
 		gtk_label_set_xalign( GTK_LABEL( text_label ), 1 );
@@ -1162,7 +1206,7 @@ p6_plugin_closing( ofaExerciceCloseAssistant *self )
 		close_data = ( sClose * ) g_object_get_data( G_OBJECT( it->data ), EXECLOSE_CLOSING_DATA );
 		if( close_data ){
 			ofa_iexe_closeable_do_task(
-					OFA_IEXECLOSEABLE( it->data ), EXECLOSE_CLOSING, close_data->box, priv->getter );
+					OFA_IEXECLOSEABLE( it->data ), OFA_IEXECLOSER( self ), EXECLOSE_CLOSING, close_data->box, priv->getter );
 		}
 	}
 
@@ -2212,7 +2256,7 @@ p6_plugin_opening( ofaExerciceCloseAssistant *self )
 		close_data = ( sClose * ) g_object_get_data( G_OBJECT( it->data ), EXECLOSE_OPENING_DATA );
 		if( close_data ){
 			ofa_iexe_closeable_do_task(
-					OFA_IEXECLOSEABLE( it->data ), EXECLOSE_OPENING, close_data->box, priv->getter );
+					OFA_IEXECLOSEABLE( it->data ), OFA_IEXECLOSER( self ), EXECLOSE_OPENING, close_data->box, priv->getter );
 		}
 	}
 

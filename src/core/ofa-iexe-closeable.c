@@ -33,7 +33,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-iexe-closeable.h"
 
-#define IEXECLOSEABLE_LAST_VERSION    1
+#define IEXECLOSEABLE_LAST_VERSION	2
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
@@ -168,6 +168,7 @@ ofa_iexe_closeable_get_interface_version( GType type )
 /**
  * ofa_iexe_closeable_add_row:
  * @instance: the #ofaIExeCloseable instance.
+ * @closer: a #ofaIExeCloser instance, which should also be the #myIAssistant caller.
  * @rowtype: whether we insert on closing exercice N, or on opening
  *  exercice N+1.
  *
@@ -177,26 +178,28 @@ ofa_iexe_closeable_get_interface_version( GType type )
  * Returns: a string which should be g_free() by the caller.
  */
 gchar *
-ofa_iexe_closeable_add_row( ofaIExeCloseable *instance, guint rowtype )
+ofa_iexe_closeable_add_row( ofaIExeCloseable *instance, ofaIExeCloser *closer, guint rowtype )
 {
 	static const gchar *thisfn = "ofa_iexe_closeable_add_row";
 
-	g_debug( "%s: instance=%p, rowtype=%u", thisfn, ( void * ) instance, rowtype );
+	g_debug( "%s: instance=%p, closer=%p, rowtype=%u", thisfn, ( void * ) instance, ( void * ) closer, rowtype );
 
 	g_return_val_if_fail( instance && OFA_IS_IEXECLOSEABLE( instance ), NULL );
 
 	if( OFA_IEXECLOSEABLE_GET_INTERFACE( instance )->add_row ){
-		return( OFA_IEXECLOSEABLE_GET_INTERFACE( instance )->add_row( instance, rowtype ));
+		return( OFA_IEXECLOSEABLE_GET_INTERFACE( instance )->add_row( instance, closer, rowtype ));
 	}
 
 	g_info( "%s: ofaIExeCloseable's %s implementation does not provide 'add_row()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
+
 	return( NULL );
 }
 
 /**
  * ofa_iexe_closeable_do_task:
  * @instance: the #ofaIExeCloseable instance.
+ * @closer: a #ofaIExeCloser instance, which should also be the #myIAssistant caller.
  * @rowtype: whether we insert on closing exercice N, or on opening
  *  exercice N+1.
  * @box: a #GtkBox in which the plugin may display a text, a progress
@@ -208,18 +211,18 @@ ofa_iexe_closeable_add_row( ofaIExeCloseable *instance, guint rowtype )
  * Returns: %TRUE if the plugin tasks are successful, %FALSE else.
  */
 gboolean
-ofa_iexe_closeable_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter )
+ofa_iexe_closeable_do_task( ofaIExeCloseable *instance, ofaIExeCloser *closer, guint rowtype, GtkWidget *box, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_iexe_closeable_do_task";
 
-	g_debug( "%s: instance=%p, rowtype=%u, box=%p, getter=%p",
-			thisfn, ( void * ) instance, rowtype, ( void * ) box, ( void * ) getter );
+	g_debug( "%s: instance=%p, closer=%p, rowtype=%u, box=%p, getter=%p",
+			thisfn, ( void * ) instance, ( void * ) closer, rowtype, ( void * ) box, ( void * ) getter );
 
 	g_return_val_if_fail( instance && OFA_IS_IEXECLOSEABLE( instance ), FALSE );
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 
 	if( OFA_IEXECLOSEABLE_GET_INTERFACE( instance )->do_task ){
-		return( OFA_IEXECLOSEABLE_GET_INTERFACE( instance )->do_task( instance, rowtype, box, getter ));
+		return( OFA_IEXECLOSEABLE_GET_INTERFACE( instance )->do_task( instance, closer, rowtype, box, getter ));
 	}
 
 	g_info( "%s: ofaIExeCloseable's %s implementation does not provide 'do_task()' method",

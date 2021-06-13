@@ -33,6 +33,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-iexe-closer.h"
 #include "api/ofa-igetter.h"
 
 #include "ofa-recurrent-execloseable.h"
@@ -57,9 +58,9 @@ typedef struct {
 	sUpdate;
 
 static guint    iexe_closeable_get_interface_version( void );
-static gchar   *iexe_closeable_add_row( ofaIExeCloseable *instance, guint rowtype );
-static gboolean iexe_closeable_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter );
-static gboolean do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter );
+static gchar   *iexe_closeable_add_row( ofaIExeCloseable *instance, ofaIExeCloser *closer, guint rowtype );
+static gboolean iexe_closeable_do_task( ofaIExeCloseable *instance, ofaIExeCloser *closer, guint rowtype, GtkWidget *box, ofaIGetter *getter );
+static gboolean do_task_opening( ofaIExeCloseable *instance, ofaIExeCloser *closer, GtkWidget *box, ofaIGetter *getter );
 static void     update_bar( myProgressBar *bar, guint *count, guint total );
 
 /*
@@ -83,11 +84,11 @@ ofa_recurrent_execloseable_iface_init( ofaIExeCloseableInterface *iface )
 static guint
 iexe_closeable_get_interface_version( void )
 {
-	return( 1 );
+	return( 2 );
 }
 
 static gchar *
-iexe_closeable_add_row( ofaIExeCloseable *instance, guint rowtype )
+iexe_closeable_add_row( ofaIExeCloseable *instance, ofaIExeCloser *closer, guint rowtype )
 {
 	gchar *text;
 
@@ -105,7 +106,7 @@ iexe_closeable_add_row( ofaIExeCloseable *instance, guint rowtype )
 }
 
 static gboolean
-iexe_closeable_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter )
+iexe_closeable_do_task( ofaIExeCloseable *instance, ofaIExeCloser *closer, guint rowtype, GtkWidget *box, ofaIGetter *getter )
 {
 	gboolean ok;
 
@@ -113,7 +114,7 @@ iexe_closeable_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *bo
 
 	switch( rowtype ){
 		case EXECLOSE_OPENING:
-			ok = do_task_opening( instance, box, getter );
+			ok = do_task_opening( instance, closer, box, getter );
 			break;
 		default:
 			break;;
@@ -127,21 +128,22 @@ iexe_closeable_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *bo
  * the pushed ones, to the ARCHIVE_T_REC_RUN table
  */
 static gboolean
-do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter )
+do_task_opening( ofaIExeCloseable *instance, ofaIExeCloser *closer, GtkWidget *box, ofaIGetter *getter )
 {
 	gboolean ok;
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
-	gchar *query, *where;
+	gchar *query, *where, *str;
 	myProgressBar *bar;
 	guint count, total;
 	const gchar *dbms_status;
+	const GDate *prev_end;
 
 	bar = my_progress_bar_new();
 	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( bar ));
 	gtk_widget_show_all( box );
 
-	total = 3;							/* queries count */
+	total = 4;							/* queries count */
 	count = 0;
 	ok = TRUE;
 	hub = ofa_igetter_get_hub( getter );
@@ -168,11 +170,24 @@ do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter 
 	}
 
 	dbms_status = ofo_recurrent_run_status_get_dbms( REC_STATUS_WAITING );
+	prev_end = ofa_iexe_closer_get_prev_end_date( closer );
 	where = g_strdup_printf( "WHERE REC_STATUS!='%s'", dbms_status );
+	if( prev_end ){
+		str = g_strdup_printf( "%s AND REC_DATE<='%s'", where, my_date_to_str( prev_end, MY_DATE_SQL ));
+		g_free( where );
+		where = str;
+	}
 
 	if( ok ){
 		query = g_strdup_printf( "CREATE TABLE ARCHIVE_T_REC_RUN "
 					"SELECT * FROM REC_T_RUN %s", where );
+		ok = ofa_idbconnect_query( connect, query, TRUE );
+		g_free( query );
+		update_bar( bar, &count, total );
+	}
+
+	if( ok ){
+		query = g_strdup_printf( "DELETE FROM REC_T_RUN %s", where );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
 		update_bar( bar, &count, total );

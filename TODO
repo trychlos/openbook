@@ -264,12 +264,6 @@
 
 1379 2017- 3- 9 UI: VatForm: set template column to fixed width, rather expand label
 
-1396 2017- 3-16 check conciliation groups integrity is wrong
-                - display erroneous orphan conciliation member with BatLineId xxx
-                - count is wrong
-                + anyway, this cannot be really done while the exercice has
-                not been rightly archived
-
 1402 2017- 3-17 when generating the ODs for non-deductible CSG, should
                 also generate an OD for deductible CSG to 629 account 
 
@@ -382,13 +376,6 @@
                 reconciliation is opened
      2018- 2-22 cannot reproduce
 
-1535 2018- 5-10 ExerciceClosing: on Esc, the assistant still checks DBMS
-                integrity and balances, but should not
-
-1536 2018- 5-27 Check for recurent models integrity: 57/81
-
-1537 2018- 5-27 Check for VAT forms integrity: 60/5
-
 1538 2018- 5-27 why the Boursorama 2014 didn't been purged on last exercice closing ?
 
 1539 2018- 5-27 Treeview of unsettled entries is not updated when settling two entries
@@ -415,38 +402,29 @@
 
 1548 2018- 6-13 have a UI for OFA_T_DATA table
 
-1549 2018-11- 4 ofa-hub.c: In function ‘ofa_hub_get_willing_to_import’:
-ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *’} from a function with incompatible return type ‘ofaIImporter *’ {aka ‘struct _ofaIImporter *’} [-Wincompatible-pointer-types]
-  return( found ? g_object_ref( G_OBJECT( found )) : NULL );
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
-
-1550 2019- 4-25 Check DBMS Integrity: Check for recurrent models integrity
-                count 57/81, but should be equals
-     2021- 6- 5 count=56/85 and displays 'ok'
-                see also #1536
-
-1551 2019- 4-25 Check DBMS Integrity: Check for VAT forms integrity
-                count 60/5, but should be equals
-     2021- 6- 5 count=60/5 and displays 'ok'
-                see also #1537
-
 1552 2019- 4-25 (F28) Wayland doesn't honor windows placement :(
 
 1553 2020- 5- 2 dossier_setup_rpid(): use a real UUID with GUuid library
-
-1554 2021- 6- 5 DBMS integrity check
-                - check for conciliationg groups integrity: is empty, does not display anything but 'ok'
 
 1556 2021- 6- 7 recurent model management: first generate all operations for a period,
                 then enable a supplementary model : unable to generate the corresponding operation
                 for the same period (already generated but for this particular model)
      2021- 6- 8 last generation should be recorded on a model/template basis
 
-1560
+1560 2021- 6-13 recurrent runs are not archived on exercice closing
+
+1562
 
 -----------------------------------------------------------------------
  DONE
  ====
+
+1396 2017- 3-16 check conciliation groups integrity is wrong
+                - display erroneous orphan conciliation member with BatLineId xxx
+                - count is wrong
+                + anyway, this cannot be really done while the exercice has
+                not been rightly archived
+     2021- 6-12 fixed
 
 1528 2018- 2-17 BUG: reconciliation page: 'clear' button appears disabled
      2018- 2-25 fixed
@@ -475,11 +453,41 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
                 (openbook:23243): OFA-CRITICAL **: entry_compute_status: assertion 'my_date_is_valid( deffect )' failed
      2018- 3-15 fixed
 
+1535 2018- 5-10 ExerciceClosing: on Esc, the assistant still checks DBMS
+                integrity and balances, but should not
+     2021- 6-12 closed as duplicate of #1559
+
+1536 2018- 5-27 Check for recurent models integrity: 57/81
+     2021- 6-12 fixed
+
+1537 2018- 5-27 Check for VAT forms integrity: 60/5
+     2021- 6-13 fixed
+
 1540 2018- 5-27 Line too long when importing a BAT file
      2018- 5-28 Increase BAT_LINE_LABEL column size to 1024
 
 1542 2018- 6- 4 Balances displayed in the chart of accounts are twice what they should
      2018- 6-10 fixed by recomputing the soldes at exercice opening
+
+1549 2018-11- 4 ofa-hub.c: In function ‘ofa_hub_get_willing_to_import’:
+ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *’} from a function with incompatible return type ‘ofaIImporter *’ {aka ‘struct _ofaIImporter *’} [-Wincompatible-pointer-types]
+  return( found ? g_object_ref( G_OBJECT( found )) : NULL );
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~*
+     2021- 6-13 cancelled as obsolete
+
+1550 2019- 4-25 Check DBMS Integrity: Check for recurrent models integrity
+                count 57/81, but should be equals
+     2021- 6- 5 count=56/85 and displays 'ok'
+     2021- 6-12 closed as duplicate of #1536
+
+1551 2019- 4-25 Check DBMS Integrity: Check for VAT forms integrity
+                count 60/5, but should be equals
+     2021- 6- 5 count=60/5 and displays 'ok'
+     2021- 6-12 closed as duplicate of #1537
+
+1554 2021- 6- 5 DBMS integrity check
+                - check for conciliationg groups integrity: is empty, does not display anything but 'ok'
+     2021- 6-12 dsabled in the code - cancelled
 
 1555 2021- 6- 5 recurent models management, when displaying the 'comment' column and trying to reorder it:
                 (openbook:303287): OFA-DEBUG: 00:11:03.787: ofa_icontext_on_button_pressed: instance=0x1052fd0, event=0x1269bf0, sdata=0x1498cd0
@@ -528,6 +536,10 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
 
 1559 2021- 6- 8 when cancelling an exercice closing, the integrity checks are still run
      2021- 6-10 fixed
+
+1561 2021- 6-13 Exercice closing: errors in DBMS integrity should may be ignored
+                as archiving may fix them
+     2021- 6-13 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

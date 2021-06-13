@@ -59,6 +59,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-iexe-closer.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -100,6 +101,8 @@ typedef struct {
 	/**
 	 * add_row:
 	 * @instance: the #ofaIExeCloseable instance.
+	 * @closer: a #ofaIExeCloser instance,
+	 *  which should also be the #myIAssistant caller.
 	 * @rowtype: whether we insert on closing exercice N, or on opening
 	 *  exercice N+1.
 	 *
@@ -114,11 +117,14 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gchar *  ( *add_row )              ( ofaIExeCloseable *instance,
+											ofaIExeCloser *closer,
 											guint rowtype );
 
 	/**
 	 * do_task:
 	 * @instance: the #ofaIExeCloseable instance.
+	 * @closer: a #ofaIExeCloser instance,
+	 *  which should also be the #myIAssistant caller.
 	 * @rowtype: whether we insert on closing exercice N, or on opening
 	 *  exercice N+1.
 	 * @box: a #GtkBox available to the plugin.
@@ -129,6 +135,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *do_task )              ( ofaIExeCloseable *instance,
+											ofaIExeCloser *closer,
 											guint rowtype,
 											GtkWidget *box,
 											ofaIGetter *getter );
@@ -160,9 +167,11 @@ guint    ofa_iexe_closeable_get_interface_version     ( GType type );
  * Instance-wide
  */
 gchar   *ofa_iexe_closeable_add_row                   ( ofaIExeCloseable *instance,
+															ofaIExeCloser *closer,
 															guint rowtype );
 
 gboolean ofa_iexe_closeable_do_task                   ( ofaIExeCloseable *instance,
+															ofaIExeCloser *closer,
 															guint rowtype,
 															GtkWidget *box,
 															ofaIGetter *getter );

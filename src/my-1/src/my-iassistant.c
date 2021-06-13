@@ -340,6 +340,12 @@ do_page_init( myIAssistant *instance, GtkWidget *page, sInstance *inst_data, sPa
 
 	if( inst_data->cbs ){
 		for( i=0 ; inst_data->cbs[i].page_num >= 0 ; ++i ){
+
+			g_debug( "%s: i=%u, page_num=%u, init_cb=%p, display_cb=%p, forward_cb=%p",
+					thisfn, i,
+					inst_data->cbs[i].page_num,
+					inst_data->cbs[i].init_cb, inst_data->cbs[i].display_cb, inst_data->cbs[i].forward_cb );
+
 			if( inst_data->cbs[i].page_num == page_data->page_num ){
 				if( inst_data->cbs[i].init_cb ){
 					inst_data->cbs[i].init_cb( instance, page_data->page_num, page );
@@ -548,7 +554,7 @@ my_iassistant_do_close( myIAssistant *instance )
  * Returns: %TRUE if the pas has been set completed.
  */
 gboolean
-my_iassistant_get_page_complete( myIAssistant *instance, guint page_num )
+my_iassistant_get_page_complete( myIAssistant *instance, gint page_num )
 {
 	gboolean complete;
 	GtkWidget *page;
