@@ -35,7 +35,8 @@
  * and archive its data on exercice closing.
  *
  * In particular, this #ofaIExeClose lets a plugin insert its
- * tasks either in the closing exercice, or in the opening exercice.
+ * tasks either as part of the closing exercice and/or as part of the opening
+ * exercice.
  *
  * When the plugin wants insert some tasks either before closing the
  * exercice N, or after opening the exercice N+1, it must:
@@ -51,7 +52,7 @@
  * program has archived all its data, and set the future entries in
  * the new exercice.
  *
- * Please note that the order in which plugins are called in not
+ * Please note that the order in which plugins are called is not
  * guaranteed to be consistent between several executions of the
  * program.
  */
