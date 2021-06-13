@@ -95,7 +95,8 @@ ofaCheckIntegrityBin *ofa_check_integrity_bin_new       ( ofaIGetter *getter,
 void                 ofa_check_integrity_bin_set_display( ofaCheckIntegrityBin *bin,
 																gboolean display );
 
-void                 ofa_check_integrity_bin_check      ( ofaCheckIntegrityBin *bin );
+void                 ofa_check_integrity_bin_check      ( ofaCheckIntegrityBin *bin,
+																gboolean havetofix );
 
 gboolean             ofa_check_integrity_bin_get_status ( ofaCheckIntegrityBin *bin );
 

@@ -67,6 +67,7 @@ typedef struct {
 	 */
 	ofaIGetter    *getter;
 	gchar         *settings_prefix;
+	gboolean       havetofix;
 
 	/* runtime
 	 */
@@ -230,6 +231,7 @@ ofa_check_integrity_bin_init( ofaCheckIntegrityBin *self )
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->havetofix = TRUE;
 	priv->display = TRUE;
 	priv->all_messages = FALSE;
 	priv->others_errs = 0;
@@ -417,11 +419,13 @@ ofa_check_integrity_bin_set_display( ofaCheckIntegrityBin *bin, gboolean display
 /**
  * ofa_check_integrity_bin_check:
  * @bin: this #ofaCheckIntegrityBin instance.
+ * @havetofix: whether the detected integrity errors have to be fixed;
+ *  this only changes the message at the end.
  *
  * Runs all checks.
  */
 void
-ofa_check_integrity_bin_check( ofaCheckIntegrityBin *bin )
+ofa_check_integrity_bin_check( ofaCheckIntegrityBin *bin, gboolean havetofix )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 
@@ -430,6 +434,8 @@ ofa_check_integrity_bin_check( ofaCheckIntegrityBin *bin )
 	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->havetofix = havetofix;
 
 	g_idle_add(( GSourceFunc ) do_run, bin );
 }
@@ -1988,6 +1994,29 @@ set_checks_result( ofaCheckIntegrityBin *self )
 			+ priv->others_errs;
 
 	if( priv->display ){
+
+		/* always display a summary message at the end */
+		label = my_utils_container_get_child_by_name(
+						GTK_CONTAINER( self ), "p4-label-end" );
+		g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+		if( priv->total_errs == 0 ){
+			gtk_label_set_text( GTK_LABEL( label ),
+					_( "Your DBMS is right. Good !" ));
+			my_style_add( label, "labelinfo" );
+
+		} else if( priv->havetofix ){
+			gtk_label_set_text( GTK_LABEL( label ),
+					_( "DBMS integrity errors have been found, have to be fixed." ));
+			my_style_add( label, "labelerror" );
+
+		} else {
+			gtk_label_set_text( GTK_LABEL( label ),
+					_( "DBMS integrity errors have been found, may be fixed by themselves during next archiving." ));
+			my_style_add( label, "labelwarning" );
+		}
+
+		/* alert with a modal message box if there are some errors */
 		if( priv->total_errs > 0 ){
 			str = g_strdup_printf(
 					_( "We have detected %lu integrity errors in the DBMS." ), priv->total_errs );
@@ -1995,21 +2024,6 @@ set_checks_result( ofaCheckIntegrityBin *self )
 			my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING, str );
 			g_free( str );
 
-		} else {
-			label = my_utils_container_get_child_by_name(
-							GTK_CONTAINER( self ), "p4-label-end" );
-			g_return_if_fail( label && GTK_IS_LABEL( label ));
-
-			if( priv->total_errs == 0 ){
-				gtk_label_set_text( GTK_LABEL( label ),
-						_( "Your DBMS is right. Good !" ));
-				my_style_add( label, "labelinfo" );
-
-			} else {
-				gtk_label_set_text( GTK_LABEL( label ),
-						_( "Detected integrity errors have to be fixed." ));
-				my_style_add( label, "labelerror" );
-			}
 		}
 	}
 }
