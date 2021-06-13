@@ -35,7 +35,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-igetter.h"
 
-#include "ofa-recurrent-execlose.h"
+#include "ofa-recurrent-execloseable.h"
 #include "ofo-recurrent-run.h"
 
 /* a dedicated structure to hold needed datas
@@ -44,21 +44,21 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaIExeCloseable  *instance;
-	ofaIGetter          *getter;
-	const ofaIDBConnect *connect;
+	const ofaIExeCloseable *instance;
+	ofaIGetter             *getter;
+	const ofaIDBConnect    *connect;
 
 	/* progression bar
 	 */
-	GtkWidget           *bar;
-	gulong               total;
-	gulong               current;
+	GtkWidget              *bar;
+	gulong                  total;
+	gulong                  current;
 }
 	sUpdate;
 
-static guint    iexe_close_get_interface_version( void );
-static gchar   *iexe_close_add_row( ofaIExeCloseable *instance, guint rowtype );
-static gboolean iexe_close_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter );
+static guint    iexe_closeable_get_interface_version( void );
+static gchar   *iexe_closeable_add_row( ofaIExeCloseable *instance, guint rowtype );
+static gboolean iexe_closeable_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter );
 static gboolean do_task_opening( ofaIExeCloseable *instance, GtkWidget *box, ofaIGetter *getter );
 static void     update_bar( myProgressBar *bar, guint *count, guint total );
 
@@ -66,28 +66,28 @@ static void     update_bar( myProgressBar *bar, guint *count, guint total );
  * #ofaIExeCloseable interface setup
  */
 void
-ofa_recurrent_execlose_iface_init( ofaIExeCloseableInterface *iface )
+ofa_recurrent_execloseable_iface_init( ofaIExeCloseableInterface *iface )
 {
-	static const gchar *thisfn = "ofa_recurrent_execlose_iface_init";
+	static const gchar *thisfn = "ofa_recurrent_execloseable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = iexe_close_get_interface_version;
-	iface->add_row = iexe_close_add_row;
-	iface->do_task = iexe_close_do_task;
+	iface->get_interface_version = iexe_closeable_get_interface_version;
+	iface->add_row = iexe_closeable_add_row;
+	iface->do_task = iexe_closeable_do_task;
 }
 
 /*
  * the version of the #ofaIExeCloseable interface implemented by the module
  */
 static guint
-iexe_close_get_interface_version( void )
+iexe_closeable_get_interface_version( void )
 {
 	return( 1 );
 }
 
 static gchar *
-iexe_close_add_row( ofaIExeCloseable *instance, guint rowtype )
+iexe_closeable_add_row( ofaIExeCloseable *instance, guint rowtype )
 {
 	gchar *text;
 
@@ -105,7 +105,7 @@ iexe_close_add_row( ofaIExeCloseable *instance, guint rowtype )
 }
 
 static gboolean
-iexe_close_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter )
+iexe_closeable_do_task( ofaIExeCloseable *instance, guint rowtype, GtkWidget *box, ofaIGetter *getter )
 {
 	gboolean ok;
 

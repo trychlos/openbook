@@ -62,8 +62,8 @@ libofa_recurrent_la_SOURCES = \
 	ofa-extension.c										\
 	ofa-recurrent-dbmodel.c								\
 	ofa-recurrent-dbmodel.h								\
-	ofa-recurrent-execlose.c							\
-	ofa-recurrent-execlose.h							\
+	ofa-recurrent-execloseable.c							\
+	ofa-recurrent-execloseable.h							\
 	ofa-recurrent-generate.c							\
 	ofa-recurrent-generate.h							\
 	ofa-recurrent-ident.c								\

@@ -126,7 +126,7 @@ src/mysql/ofa-mysql-prefs-bin.ui
 src/mysql/ofa-mysql-root-bin.c
 src/mysql/ofa-mysql-root-bin.ui
 src/recurrent/ofa-recurrent-dbmodel.c
-src/recurrent/ofa-recurrent-execlose.c
+src/recurrent/ofa-recurrent-execloseable.c
 src/recurrent/ofa-recurrent-generate.c
 src/recurrent/ofa-recurrent-generate.ui
 src/recurrent/ofa-recurrent-main.c

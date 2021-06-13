@@ -22,22 +22,22 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_TVA_EXECLOSE_H__
-#define __OFA_TVA_EXECLOSE_H__
+#ifndef __OFA_RECURRENT_EXECLOSEABLE_H__
+#define __OFA_RECURRENT_EXECLOSEABLE_H__
 
 /**
- * SECTION: ofa_recurrent_execlose
- * @short_description: #ofaRecurrent definition.
+ * SECTION: ofa_recurrent_execloseable
+ * @short_description: #ofaRecurrent class definition.
  *
- * #ofaIExeCloseable interface management.
+ * #ofaIExeCloseable interface implementation.
  */
 
 #include "api/ofa-iexe-closeable.h"
 
 G_BEGIN_DECLS
 
-void ofa_recurrent_execlose_iface_init( ofaIExeCloseableInterface *iface );
+void ofa_recurrent_execloseable_iface_init( ofaIExeCloseableInterface *iface );
 
 G_END_DECLS
 
-#endif /* __OFA_TVA_EXECLOSE_H__ */
+#endif /* __OFA_RECURRENT_EXECLOSEABLE_H__ */

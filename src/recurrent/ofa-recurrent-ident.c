@@ -31,7 +31,7 @@
 
 #include "api/ofa-iexe-closeable.h"
 
-#include "ofa-recurrent-execlose.h"
+#include "ofa-recurrent-execloseable.h"
 #include "ofa-recurrent-ident.h"
 
 /* private instance data
@@ -48,7 +48,7 @@ static gchar *iident_get_version( const myIIdent *instance, void *user_data );
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentIdent, ofa_recurrent_ident, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaRecurrentIdent )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXECLOSEABLE, ofa_recurrent_execlose_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXECLOSEABLE, ofa_recurrent_execloseable_iface_init ))
 
 static void
 recurrent_ident_finalize( GObject *instance )

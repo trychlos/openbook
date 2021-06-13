@@ -163,7 +163,7 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_recurrent_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_recurrent_la_OBJECTS = ofa-extension.lo \
-	ofa-recurrent-dbmodel.lo ofa-recurrent-execlose.lo \
+	ofa-recurrent-dbmodel.lo ofa-recurrent-execloseable.lo \
 	ofa-recurrent-generate.lo ofa-recurrent-ident.lo \
 	ofa-recurrent-main.lo ofa-recurrent-model-page.lo \
 	ofa-recurrent-model-properties.lo ofa-recurrent-model-store.lo \
@@ -200,7 +200,7 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/ofa-extension.Plo \
 	./$(DEPDIR)/ofa-recurrent-dbmodel.Plo \
-	./$(DEPDIR)/ofa-recurrent-execlose.Plo \
+	./$(DEPDIR)/ofa-recurrent-execloseable.Plo \
 	./$(DEPDIR)/ofa-recurrent-generate.Plo \
 	./$(DEPDIR)/ofa-recurrent-ident.Plo \
 	./$(DEPDIR)/ofa-recurrent-main.Plo \
@@ -475,8 +475,8 @@ libofa_recurrent_la_SOURCES = \
 	ofa-extension.c										\
 	ofa-recurrent-dbmodel.c								\
 	ofa-recurrent-dbmodel.h								\
-	ofa-recurrent-execlose.c							\
-	ofa-recurrent-execlose.h							\
+	ofa-recurrent-execloseable.c							\
+	ofa-recurrent-execloseable.h							\
 	ofa-recurrent-generate.c							\
 	ofa-recurrent-generate.h							\
 	ofa-recurrent-ident.c								\
@@ -607,7 +607,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extension.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-dbmodel.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-execlose.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-execloseable.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-generate.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-ident.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-main.Plo@am__quote@ # am--include-marker
@@ -791,7 +791,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/ofa-extension.Plo
 	-rm -f ./$(DEPDIR)/ofa-recurrent-dbmodel.Plo
-	-rm -f ./$(DEPDIR)/ofa-recurrent-execlose.Plo
+	-rm -f ./$(DEPDIR)/ofa-recurrent-execloseable.Plo
 	-rm -f ./$(DEPDIR)/ofa-recurrent-generate.Plo
 	-rm -f ./$(DEPDIR)/ofa-recurrent-ident.Plo
 	-rm -f ./$(DEPDIR)/ofa-recurrent-main.Plo
@@ -854,7 +854,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/ofa-extension.Plo
 	-rm -f ./$(DEPDIR)/ofa-recurrent-dbmodel.Plo
-	-rm -f ./$(DEPDIR)/ofa-recurrent-execlose.Plo
+	-rm -f ./$(DEPDIR)/ofa-recurrent-execloseable.Plo
 	-rm -f ./$(DEPDIR)/ofa-recurrent-generate.Plo
 	-rm -f ./$(DEPDIR)/ofa-recurrent-ident.Plo
 	-rm -f ./$(DEPDIR)/ofa-recurrent-main.Plo
