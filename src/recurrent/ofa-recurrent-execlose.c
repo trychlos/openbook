@@ -123,7 +123,7 @@ iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaIG
 
 /*
  * archive the cancelled and validated operations records, keeping
- * the pushed ones, to the ARCHREC_T_DELETED_RECORDS table
+ * the pushed ones, to the ARCHIVE_T_REC_RUN table
  */
 static gboolean
 do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
@@ -131,9 +131,10 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 	gboolean ok;
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
-	gchar *query;
+	gchar *query, *where;
 	myProgressBar *bar;
 	guint count, total;
+	const gchar *dbms_status;
 
 	bar = my_progress_bar_new();
 	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( bar ));
@@ -155,6 +156,8 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 	}
 
 	/* archive records
+	 * note that we archive records as part of the opening exercice so that these
+	 * archived data are kept in the newly opened database
 	 */
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_REC_RUN" );
@@ -162,14 +165,19 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaIGetter *getter )
 		g_free( query );
 		update_bar( bar, &count, total );
 	}
+
+	dbms_status = ofo_recurrent_run_status_get_dbms( REC_STATUS_WAITING );
+	where = g_strdup_printf( "WHERE REC_STATUS!='%s'", dbms_status );
+
 	if( ok ){
-		query = g_strdup( "CREATE TABLE ARCHIVE_T_REC_RUN "
-					"SELECT * FROM REC_T_RUN "
-					"	WHERE REC_STATUS!='%s'" );
+		query = g_strdup_printf( "CREATE TABLE ARCHIVE_T_REC_RUN "
+					"SELECT * FROM REC_T_RUN %s", where );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
 		update_bar( bar, &count, total );
 	}
+
+	g_free( where );
 
 	return( ok );
 }
