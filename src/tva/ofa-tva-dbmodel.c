@@ -1036,6 +1036,7 @@ idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, 
 static gulong
 check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
+	static gchar *thisfn = "ofa_tva_dbmodel_idbmodel_check_integrity_check_forms";
 	gulong errs, objerrs;
 	void *worker;
 	GtkWidget *label;
@@ -1049,6 +1050,12 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 	gboolean has_template;
 	ofoOpeTemplate *template_obj;
 	gboolean all_messages;
+
+	g_debug( "%s: instance=%p (%s), getter=%p (%s), progress=%p (%s)",
+			thisfn,
+			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
+			( void * ) progress, G_OBJECT_TYPE_NAME( progress ));
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_TVA_FORM );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
@@ -1106,12 +1113,12 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 					objerrs += 1;
 				}
 			}
-			if( progress ){
-				my_iprogress_pulse( progress, worker, ++i, count );
-			}
 
 			/* unable to check for accounts and rates without evaluating
 			 * the formulas */
+		}
+		if( progress ){
+			my_iprogress_pulse( progress, worker, ++i, count );
 		}
 
 		/* check for referenced documents which actually do not exist */
@@ -1211,6 +1218,7 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 static gulong
 check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
+	static gchar *thisfn = "ofa_tva_dbmodel_idbmodel_check_integrity_check_records";
 	gulong errs, objerrs;
 	void *worker;
 	GtkWidget *label;
@@ -1222,6 +1230,12 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 	ofoTVAForm *form_obj;
 	ofxCounter docid;
 	gboolean all_messages;
+
+	g_debug( "%s: instance=%p (%s), getter=%p (%s), progress=%p (%s)",
+			thisfn,
+			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
+			( void * ) progress, G_OBJECT_TYPE_NAME( progress ));
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_TVA_FORM );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
