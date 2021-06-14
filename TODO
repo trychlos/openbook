@@ -293,6 +293,7 @@
 1474 2017- 8-10 since Gtk 3.22 (F26), windows size and position are no
                 more restored (probably a Wayland/Mutter issue as X works
                 well)
+     2021- 6-13 it is confirmed that Wayland doesn't honor windows placement :(
 
 1477 2017- 8-15 icontext: better position the context menu, depending of
                 activated from the keyboard or by mouse
@@ -381,22 +382,14 @@
 1539 2018- 5-27 Treeview of unsettled entries is not updated when settling two entries
                 in the settlement page
 
-1541 2018- 6- 4 Sigtrap at end of a restore (when restoring on a new dossier)
-                cf. trash/todo_1541
-
 1543 2018- 6-10 DossierManage: when acting on the database, make sure it is up and running
                 reason: when deleting a dossier while the dbms is down, nothing happens
                 but there is no error message
-
-1544 2018- 6-10 Sigtrap when restoring on the current exercice
-                cf. trash/todo_1544
 
 1547 2018- 6-10 After an exercice closing, and the new exercice opening,
                 entries do not display their correct period (at least)
 
 1548 2018- 6-13 have a UI for OFA_T_DATA table
-
-1552 2019- 4-25 (F28) Wayland doesn't honor windows placement :(
 
 1553 2020- 5- 2 dossier_setup_rpid(): use a real UUID with GUuid library
 
@@ -405,13 +398,10 @@
                 for the same period (already generated but for this particular model)
      2021- 6- 8 last generation should be recorded on a model/template basis
 
-1562 2021- 6-13 at the end of the restoration of a dossier on a new one
-                Gtk-CRITICAL **: 17:43:05.070: gtk_list_store_get_value: assertion 'iter_is_valid (iter, list_store)' failed
+1564 2021- 6-14 on exercice closing, should also archive conciliation groups which have
+                less than 2 members (and are so invalid)
 
-1563 2021- 6-13 at the end of the restoration of a dossier on a new one
-                OFA-CRITICAL **: 18:13:22.644: ofa_target_chooser_bin_is_new_dossier: assertion 'dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta )' failed
-
-1564
+1565
 
 -----------------------------------------------------------------------
  DONE
@@ -464,8 +454,16 @@
 1540 2018- 5-27 Line too long when importing a BAT file
      2018- 5-28 Increase BAT_LINE_LABEL column size to 1024
 
+1541 2018- 6- 4 Sigtrap at end of a restore (when restoring on a new dossier)
+                cf. trash/todo_1541
+     2021- 6-13 fixed
+
 1542 2018- 6- 4 Balances displayed in the chart of accounts are twice what they should
      2018- 6-10 fixed by recomputing the soldes at exercice opening
+
+1544 2018- 6-10 Sigtrap when restoring on the current exercice
+                cf. trash/todo_1544
+     2021- 6-13 fixed
 
 1545 2018- 6-10 Exercice closing: Recurent tasks on N+1 period opening
                 should be 'Nothing to do' rather than 100%
@@ -490,6 +488,9 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
                 count 60/5, but should be equals
      2021- 6- 5 count=60/5 and displays 'ok'
      2021- 6-12 closed as duplicate of #1537
+
+1552 2019- 4-25 (F28) Wayland doesn't honor windows placement :(
+     2021- 6-13 closed as duplicate of #1474
 
 1554 2021- 6- 5 DBMS integrity check
                 - check for conciliationg groups integrity: is empty, does not display anything but 'ok'
@@ -549,6 +550,14 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
 1561 2021- 6-13 Exercice closing: errors in DBMS integrity should may be ignored
                 as archiving may fix them
      2021- 6-13 done
+
+1562 2021- 6-13 at the end of the restoration of a dossier on a new one
+                Gtk-CRITICAL **: 17:43:05.070: gtk_list_store_get_value: assertion 'iter_is_valid (iter, list_store)' failed
+     2021- 6-13 fixed
+
+1563 2021- 6-13 at the end of the restoration of a dossier on a new one
+                OFA-CRITICAL **: 18:13:22.644: ofa_target_chooser_bin_is_new_dossier: assertion 'dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta )' failed
+     2021- 6-13 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

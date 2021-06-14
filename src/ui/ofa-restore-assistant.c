@@ -705,12 +705,15 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 static void
 p2_on_target_chooser_changed( myIBin *bin, ofaRestoreAssistant *self )
 {
+	static const gchar *thisfn = "ofa_restore_assistant_p2_on_target_chooser_changed";
 	ofaRestoreAssistantPrivate *priv;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	if( !priv->p6_running ){
+	if( priv->p6_running ){
+		g_debug( "%s: message received during dossier restoration, just ignoring", thisfn );
 
+	} else {
 		ofa_target_chooser_bin_get_selected( OFA_TARGET_CHOOSER_BIN( bin ), &priv->p2_dossier_meta, &priv->p2_exercice_meta );
 
 		priv->p2_new_dossier = ofa_target_chooser_bin_is_new_dossier( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_dossier_meta );
