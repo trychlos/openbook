@@ -427,7 +427,10 @@
                 idbmodel_check_dbms_integrity (instance=0x6dd8d0, getter=0x602ca0, progress=0x0) at ../../../src/recurrent/ofa-recurrent-dbmodel.c:1701
                 1701		errs += check_model( instance, getter, progress );
 
-1568
+1568 2021- 7- 4 when restoring a dossier, doesn't remember administrative credentials
+                (though the option is checked)
+
+1569
 
 -----------------------------------------------------------------------
  DONE
