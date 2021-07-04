@@ -1695,7 +1695,14 @@ count_v10( ofaRecurrentDBModel *self )
 static gulong
 idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
+	static gchar *thisfn = "ofa_recurrent_dbmodel_idbmodel_check_dbms_integrity";
 	gulong errs;
+
+	g_debug( "%s: instance=%p (%s), getter=%p (%s), progress=%p (%s)",
+			thisfn,
+			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
+			( void * ) progress, G_OBJECT_TYPE_NAME( progress ));
 
 	errs = 0;
 	errs += check_model( instance, getter, progress );

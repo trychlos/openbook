@@ -478,7 +478,7 @@ concil_add_other_id( ofoConcil *concil, const gchar *type, ofxCounter id )
  * Returns: the list of conciliation group identifiers which are
  * referenced in conciliation members, but do not (or no more) exist.
  *
- * The returned list should not be #ofo_concil_free_concil_orphans() by
+ * The returned list should be #ofo_concil_free_concil_orphans() by
  * the caller.
  */
 GList *
