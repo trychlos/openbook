@@ -420,10 +420,6 @@
                 #7  0x00007ffff7e36157 in do_update_concil (self=self@entry=0x1c308c0, concil=<optimized out>, is_deleted=is_deleted@entry=0) at ../../../src/core/ofa-entry-store.c:527
                 #8  0x00007ffff7e36495 in signaler_on_updated_base (signaler=<optimized out>, object=0x6127a0, prev_id=<optimized out>, self=0x1c308c0) at ../../../src/core/ofa-entry-store.c:695
 
-1566 2021- 7- 4 BUG
-                when creating a new gathering account - erreur de syntaxe sql
-                ofa_idbconnect_query: connect=0xa6b170, query='INSERT INTO OFA_T_ACCOUNTS	(ACC_NUMBER,ACC_UPD_USER, ACC_UPD_STAMP,ACC_LABEL,ACC_CURRENCY,	 ACC_ROOT,ACC_SETTLEABLE,ACC_KEEP_UNSETTLED,ACC_RECONCILIABLE,	 ACC_KEEP_UNRECONCILIATED,ACC_FORWARDABLE,ACC_CLOSED,	 ACC_NOTES) 	VALUES ('516','wieser','2021-07-04 12:50:52','Fortuneo',NULL,'Y','N','N','N','N','N','N',NULL,', display_error=True
-
 1567 2021- 7- 4 SEGFAULT on period closing
                 (openbook:9720): OFA-DEBUG: 15:46:13.386: ofa_idbconnect_query_ex: connect=0xa14f50, query='SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL_IDS 	WHERE REC_ID NOT IN (SELECT REC_ID FROM OFA_T_CONCIL)', result=0x7fffffffb918, display_error=False
                 (openbook:9720): OFA-DEBUG: 15:46:13.387: ofa_idbconnect_free_results
@@ -588,6 +584,11 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
 1563 2021- 6-13 at the end of the restoration of a dossier on a new one
                 OFA-CRITICAL **: 18:13:22.644: ofa_target_chooser_bin_is_new_dossier: assertion 'dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta )' failed
      2021- 6-13 fixed
+
+1566 2021- 7- 4 BUG
+                when creating a new gathering account - erreur de syntaxe sql
+                ofa_idbconnect_query: connect=0xa6b170, query='INSERT INTO OFA_T_ACCOUNTS	(ACC_NUMBER,ACC_UPD_USER, ACC_UPD_STAMP,ACC_LABEL,ACC_CURRENCY,	 ACC_ROOT,ACC_SETTLEABLE,ACC_KEEP_UNSETTLED,ACC_RECONCILIABLE,	 ACC_KEEP_UNRECONCILIATED,ACC_FORWARDABLE,ACC_CLOSED,	 ACC_NOTES) 	VALUES ('516','wieser','2021-07-04 12:50:52','Fortuneo',NULL,'Y','N','N','N','N','N','N',NULL,', display_error=True
+     2021- 7- 4 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

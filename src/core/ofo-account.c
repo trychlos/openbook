@@ -2169,10 +2169,12 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 	g_string_append_printf( query, "'%s',", ofo_account_is_closed( account ) ? "Y":"N" );
 
 	if( my_strlen( notes )){
-		g_string_append_printf( query, "'%s',", notes );
+		g_string_append_printf( query, "'%s'", notes );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, "NULL" );
 	}
+
+	query = g_string_append( query, ")" );
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		account_set_cre_user( account, userid );
