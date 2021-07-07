@@ -1861,7 +1861,6 @@ check_concil_run( ofaCheckIntegrityBin *self )
 	ofxCounter id, batid;
 	ofsConcilId *sid;
 	ofoEntry *entry;
-	guint nbdets;
 
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
@@ -1875,7 +1874,7 @@ check_concil_run( ofaCheckIntegrityBin *self )
 
 	priv->concil_errs = 0;
 	concils = ofo_concil_get_dataset( priv->getter );
-	count = 1 + 2*g_list_length( concils );
+	count = 1 + g_list_length( concils );
 	i = 0;
 
 	if( count == 0 ){
@@ -1887,22 +1886,8 @@ check_concil_run( ofaCheckIntegrityBin *self )
 		id = ofo_concil_get_id( concil );
 		concilerrs = 0;
 
-		/* check each detail lines: should have at least 2 */
+		/* check each detail lines */
 		details = ofo_concil_get_ids( concil );
-		nbdets = g_list_length( details );
-		if( nbdets < 2 ){
-			str = g_strdup_printf( _( "Found only %u detail member(s) in conciliation group %lu" ), nbdets, id );
-			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_ERROR, str );
-			g_free( str );
-			priv->concil_errs += 1;
-			concilerrs += 1;
-		} else if( priv->all_messages ){
-			str = g_strdup_printf( _( "Conciliation group %lu exhibits %u members: OK" ), id, nbdets );
-			my_iprogress_set_text( MY_IPROGRESS( self ), worker, MY_PROGRESS_NORMAL, str );
-			g_free( str );
-		}
-		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
-
 		for( itd=details ; itd ; itd=itd->next ){
 			sid = ( ofsConcilId * ) itd->data;
 
