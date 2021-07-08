@@ -307,7 +307,6 @@ static void       setup_status_filter( ofaEntryPage *self );
 static void       setup_period_filter( ofaEntryPage *self );
 static void       setup_edit_switch( ofaEntryPage *self );
 static void       setup_treeview( ofaEntryPage *self );
-static void       store_on_need_refilter( ofaIStore *store, ofaEntryPage *self );
 static gboolean   tview_is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaEntryPage *self );
 static gboolean   tview_apply_stdfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean   tview_apply_extfilter( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -409,6 +408,7 @@ static void       write_settings( ofaEntryPage *self );
 static void       write_settings_selection( ofaEntryPage *self, myISettings *settings );
 static void       write_settings_period_status( ofaEntryPage *self, myISettings *settings );
 static void       store_on_changed( ofaEntryStore *store, ofaEntryPage *self );
+static void       store_on_need_refilter( ofaIStore *store, ofaEntryPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryPage, ofa_entry_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaEntryPage )
@@ -743,21 +743,12 @@ setup_treeview( ofaEntryPage *self )
 
 	priv->store = ofa_entry_store_new( priv->getter );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
-	g_signal_connect( priv->store, "ofa-istore-need-refilter", G_CALLBACK( store_on_need_refilter ), self );
+	handler = g_signal_connect( priv->store, "ofa-istore-need-refilter", G_CALLBACK( store_on_need_refilter ), self );
+	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 	g_object_unref( priv->store );
 
 	handler = g_signal_connect( priv->store, "ofa-changed", G_CALLBACK( store_on_changed ), self );
 	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
-}
-
-static void
-store_on_need_refilter( ofaIStore *store, ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_store_on_need_refilter";
-
-	g_debug( "%s: store=%p, self=%p", thisfn, ( void * ) store, ( void * ) self );
-
-	refresh_display( self );
 }
 
 /*
@@ -4071,5 +4062,18 @@ write_settings_period_status( ofaEntryPage *self, myISettings *settings )
 static void
 store_on_changed( ofaEntryStore *store, ofaEntryPage *self )
 {
+	refresh_display( self );
+}
+
+/*
+ * ofaEntryStore::ofa-istore-need-refilter
+ */
+static void
+store_on_need_refilter( ofaIStore *store, ofaEntryPage *self )
+{
+	static const gchar *thisfn = "ofa_entry_page_store_on_need_refilter";
+
+	g_debug( "%s: store=%p, self=%p", thisfn, ( void * ) store, ( void * ) self );
+
 	refresh_display( self );
 }
