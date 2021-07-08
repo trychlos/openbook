@@ -1296,7 +1296,6 @@ tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 static void
 tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_tview_on_row_selected";
 	ofaEntryPagePrivate *priv;
 	gboolean editable;
 	ofxCounter id;
@@ -1315,12 +1314,10 @@ tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage 
 		priv->sel_opes = id > 0 ? g_list_append( NULL, ( gpointer ) id ) : NULL;
 
 		id = row_get_concil_id( self, selection );
-		g_debug( "%s: concil_id=%lu", thisfn, id );
 		g_simple_action_set_enabled( priv->vconcil_action, id > 0 );
 		priv->sel_concil_id = id;
 
 		id = row_get_settlement_id( self, selection );
-		g_debug( "%s: settle_id=%lu", thisfn, id );
 		g_simple_action_set_enabled( priv->vsettle_action, id > 0 );
 		priv->sel_settle_id = id;
 
@@ -2239,7 +2236,6 @@ ledger_on_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self
 
 	g_free( priv->jou_mnemo );
 	priv->jou_mnemo = g_strdup( mnemo );
-	g_debug( "ledger_on_changed: mnemo=%s", mnemo );
 
 	if( !priv->initializing ){
 		if( my_strlen( priv->jou_mnemo )){
