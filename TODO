@@ -400,6 +400,7 @@
 
 1564 2021- 6-14 on exercice closing, should also archive conciliation groups which have
                 less than 2 members (and are so invalid)
+     2021- 7- 8 should actually archive all conciliation groups + orphan conciliation members
 
 1567 2021- 7- 4 SEGFAULT on period closing
                 (openbook:9720): OFA-DEBUG: 15:46:13.386: ofa_idbconnect_query_ex: connect=0xa14f50, query='SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL_IDS 	WHERE REC_ID NOT IN (SELECT REC_ID FROM OFA_T_CONCIL)', result=0x7fffffffb918, display_error=False
