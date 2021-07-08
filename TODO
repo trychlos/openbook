@@ -432,18 +432,40 @@
 1568 2021- 7- 4 when restoring a dossier, doesn't remember administrative credentials
                 (though the option is checked)
 
-1569 2021- 7- 7 FEAT: display a conciliation group, entering with a conciliation number
-
 1571 2021- 7- 7 FEAT: have a menu item to fix DBMS errors
+                - Found orphan conciliation member with ConcilId 3158:
+                  orphan conciliation members are created because the program aborted in the middle
+                  of the creation of the conciliation group
+                  To fix this, just create a 'recovery' conciliation group with the relevant (orphan) members
+                  => implies adding a column to have a 'nature' of the conciliation group, here 'R' for 'recovery
+                - Periodicity details are not set or invalid for recurrent model REC-BNP:
+                  don't know why, maybe the template has been created and disabled before this column be added
+                  a) it is sure that this model can not be enabled without this data
+                  b) it is sure also that even disabled model should be checked
+                  c) but maybe errors in disabled models should not be blocking
+                     + disabled models with errors should be purged at exercice closing
+                - Periodicity details are not set or invalid for recurrent run 41:
+                  this is not relevant as this data is a copy of the original model
+                  so this is not an integrity error, but only an indicator of an error in the original model
+                  and a consequence of a program error which let the model be enabled without the data
+                  (cf. supra)
 
 1572 2021- 7- 7 when reconciliating entries, be more precise about what is a "reconciliation session"
                 because it is unexpected that conciliated entries of a previous session are still displayed
 
 1573 2021- 7- 7 when entering a date, do not take into account a double '/'
+                because the code is able to automatically add a slash, then ignore the slash entered by the user
 
 1574 2021- 7- 7 FEAT: have an 'Operations' menu item to generate recurrent operations
 
-1575
+1575 2021- 7- 7 BUG: when a recurrent model is disabled, it is impossible to re-enable it because the 'Enable' case
+                is... disabled!
+
+1576 2021- 7- 7 FEAT: recurrent model management: have enable/disable buttons on the page
+
+1577 2021- 7- 7 FEAT: acces to imported bat files should be in a menu item, not only in the left pan
+
+1578
 
 -----------------------------------------------------------------------
  DONE
@@ -605,6 +627,11 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
                 when creating a new gathering account - erreur de syntaxe sql
                 ofa_idbconnect_query: connect=0xa6b170, query='INSERT INTO OFA_T_ACCOUNTS	(ACC_NUMBER,ACC_UPD_USER, ACC_UPD_STAMP,ACC_LABEL,ACC_CURRENCY,	 ACC_ROOT,ACC_SETTLEABLE,ACC_KEEP_UNSETTLED,ACC_RECONCILIABLE,	 ACC_KEEP_UNRECONCILIATED,ACC_FORWARDABLE,ACC_CLOSED,	 ACC_NOTES) 	VALUES ('516','wieser','2021-07-04 12:50:52','Fortuneo',NULL,'Y','N','N','N','N','N','N',NULL,', display_error=True
      2021- 7- 4 fixed
+
+1569 2021- 7- 7 FEAT: display a conciliation group, entering with a conciliation number
+                1. this is already possible via 'View entries' on a bank entry, then view conciliation group
+                2. this is also possible via the 'imported Bat files' option, then view conciliation group
+                => closed
 
 1570 2021- 7- 7 This is not a DBMS integrity error to only have one member in a conciliation group
      2021- 7- 7 fixed
