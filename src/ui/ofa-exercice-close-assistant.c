@@ -972,7 +972,7 @@ p4_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widge
 
 	if( !priv->p4_done ){
 		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_PROGRESS );
-		ofa_check_integrity_bin_check( priv->p4_checks_bin, FALSE );
+		ofa_check_integrity_bin_check( priv->p4_checks_bin );
 	}
 }
 

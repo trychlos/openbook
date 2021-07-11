@@ -67,7 +67,6 @@ typedef struct {
 	 */
 	ofaIGetter    *getter;
 	gchar         *settings_prefix;
-	gboolean       havetofix;
 
 	/* runtime
 	 */
@@ -231,7 +230,6 @@ ofa_check_integrity_bin_init( ofaCheckIntegrityBin *self )
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->havetofix = TRUE;
 	priv->display = TRUE;
 	priv->all_messages = FALSE;
 	priv->others_errs = 0;
@@ -419,13 +417,11 @@ ofa_check_integrity_bin_set_display( ofaCheckIntegrityBin *bin, gboolean display
 /**
  * ofa_check_integrity_bin_check:
  * @bin: this #ofaCheckIntegrityBin instance.
- * @havetofix: whether the detected integrity errors have to be fixed;
- *  this only changes the message at the end.
  *
  * Runs all checks.
  */
 void
-ofa_check_integrity_bin_check( ofaCheckIntegrityBin *bin, gboolean havetofix )
+ofa_check_integrity_bin_check( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 
@@ -434,8 +430,6 @@ ofa_check_integrity_bin_check( ofaCheckIntegrityBin *bin, gboolean havetofix )
 	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->havetofix = havetofix;
 
 	g_idle_add(( GSourceFunc ) do_run, bin );
 }
@@ -1990,15 +1984,10 @@ set_checks_result( ofaCheckIntegrityBin *self )
 					_( "Your DBMS is right. Good !" ));
 			my_style_add( label, "labelinfo" );
 
-		} else if( priv->havetofix ){
+		} else {
 			gtk_label_set_text( GTK_LABEL( label ),
 					_( "DBMS integrity errors have been found, have to be fixed." ));
 			my_style_add( label, "labelerror" );
-
-		} else {
-			gtk_label_set_text( GTK_LABEL( label ),
-					_( "DBMS integrity errors have been found, may be fixed by themselves during next archiving." ));
-			my_style_add( label, "labelwarning" );
 		}
 
 		/* alert with a modal message box if there are some errors */

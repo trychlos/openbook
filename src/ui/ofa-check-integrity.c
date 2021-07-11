@@ -228,7 +228,7 @@ idialog_init( myIDialog *instance )
 
 	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), instance );
 
-	ofa_check_integrity_bin_check( priv->bin, TRUE );
+	ofa_check_integrity_bin_check( priv->bin );
 }
 
 static void
@@ -261,7 +261,7 @@ ofa_check_integrity_check( ofaIGetter *getter )
 
 	bin = ofa_check_integrity_bin_new( getter, "ofaCheckIntegrity" );
 	ofa_check_integrity_bin_set_display( bin, FALSE );
-	ofa_check_integrity_bin_check( bin, TRUE );
+	ofa_check_integrity_bin_check( bin );
 	ok = ofa_check_integrity_bin_get_status( bin );
 
 	g_debug( "%s: ok=%s", thisfn, ok ? "True":"False" );
