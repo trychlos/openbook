@@ -445,7 +445,16 @@
 
 1577 2021- 7- 7 FEAT: acces to imported bat files should be in a menu item, not only in the left pan
 
-1578
+1578 2021- 7- 8 SIGTRAP when restoring a dossier (see trace_1578)
+
+1579 2021- 7- 9 BUG: on period closing, the displayed last close date is the date of the last period close,
+                and doesn't take into account an exercice closing
+                E.g. on a dossier restored from 2018-01-31, last period close is displayed as 2017-11-30
+                but should be 2017-12-31 (end of previous exercice)
+
+1580 2021- 7- 9 Seems that restoring from e.g. 20180131.zip to ofat_11 leads to 2017 exercice (should be 2018)
+
+1581
 
 -----------------------------------------------------------------------
  DONE

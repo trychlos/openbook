@@ -444,9 +444,9 @@ do_ok( ofaPeriodClose *self )
 
 	} else if( !ofa_check_integrity_check( priv->getter )){
 		my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING,
-				_( "Integrity check of the DBMS has failed.\\"
+				_( "Integrity check of the DBMS has failed.\n\n"
 					"In this current state, we will be unable to close the "
-					"period until you fix the errors." ));
+					"period until you fix these errors." ));
 
 	} else if( do_close( self )){
 		gtk_widget_set_sensitive( priv->closing_date, FALSE );

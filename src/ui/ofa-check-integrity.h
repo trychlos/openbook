@@ -30,7 +30,7 @@
  * @short_description: #ofaCheckIntegrity class definition.
  * @include: ui/ofa-check-integrity.h
  *
- * Check DBMS integrity.
+ * User interface for the DBMS integrity check.
  *
  * Development rules:
  * - type:       non-modal dialog

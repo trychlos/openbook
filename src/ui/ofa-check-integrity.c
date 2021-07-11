@@ -248,7 +248,7 @@ on_checks_done( ofaCheckIntegrityBin *bin, gboolean ok, ofaCheckIntegrity *self 
  *
  * Check the DBMS integrity without display.
  *
- * Returns: %TRUE if DBMS is safe, %FALSE else.
+ * Returns: %TRUE if DBMS is safe, %FALSE if at least one error has been detected.
  */
 gboolean
 ofa_check_integrity_check( ofaIGetter *getter )
