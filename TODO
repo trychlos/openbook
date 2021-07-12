@@ -402,13 +402,6 @@
                 less than 2 members (and are so invalid)
      2021- 7- 8 should actually archive all conciliation groups + orphan conciliation members
 
-1567 2021- 7- 4 SEGFAULT on period closing
-                (openbook:9720): OFA-DEBUG: 15:46:13.386: ofa_idbconnect_query_ex: connect=0xa14f50, query='SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL_IDS 	WHERE REC_ID NOT IN (SELECT REC_ID FROM OFA_T_CONCIL)', result=0x7fffffffb918, display_error=False
-                (openbook:9720): OFA-DEBUG: 15:46:13.387: ofa_idbconnect_free_results
-                Thread 1 "openbook" received signal SIGSEGV, Segmentation fault.
-                idbmodel_check_dbms_integrity (instance=0x6dd8d0, getter=0x602ca0, progress=0x0) at ../../../src/recurrent/ofa-recurrent-dbmodel.c:1701
-                1701		errs += check_model( instance, getter, progress );
-
 1568 2021- 7- 4 when restoring a dossier, doesn't remember administrative credentials
                 (though the option is checked)
 
@@ -445,7 +438,7 @@
 
 1577 2021- 7- 7 FEAT: acces to imported bat files should be in a menu item, not only in the left pan
 
-1578 2021- 7- 8 SIGTRAP when restoring a dossier (see trace_1578)
+1578 2021- 7- 8 SIGTRAP when restoring a dossier
                 OFA-CRITICAL **: 10:31:33.016: ofa_target_chooser_bin_is_new_dossier: assertion 'dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta )' failed
                 #2  0x00000000004853d4 in ofa_target_chooser_bin_is_new_dossier (bin=0x1501190, dossier_meta=dossier_meta@entry=0x0) at ../../../src/ui/ofa-target-chooser-bin.c:443
                 #3  0x0000000000483233 in p2_on_target_chooser_changed (bin=0x1501190, self=0xc142a0) at ../../../src/ui/ofa-restore-assistant.c:719
@@ -457,7 +450,10 @@
 
 1580 2021- 7- 9 Seems that restoring from e.g. 20180131.zip to ofat_11 leads to 2017 exercice (should be 2018)
 
-1581
+1581 2021- 7-12 FEAT: Ledgers closing: the 'do ledger closing' button should be enable/disable
+                depending of the selected ledger(s) and the closing date
+
+1582
 
 -----------------------------------------------------------------------
  DONE
@@ -641,6 +637,14 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
                 when creating a new gathering account - erreur de syntaxe sql
                 ofa_idbconnect_query: connect=0xa6b170, query='INSERT INTO OFA_T_ACCOUNTS	(ACC_NUMBER,ACC_UPD_USER, ACC_UPD_STAMP,ACC_LABEL,ACC_CURRENCY,	 ACC_ROOT,ACC_SETTLEABLE,ACC_KEEP_UNSETTLED,ACC_RECONCILIABLE,	 ACC_KEEP_UNRECONCILIATED,ACC_FORWARDABLE,ACC_CLOSED,	 ACC_NOTES) 	VALUES ('516','wieser','2021-07-04 12:50:52','Fortuneo',NULL,'Y','N','N','N','N','N','N',NULL,', display_error=True
      2021- 7- 4 fixed
+
+1567 2021- 7- 4 SEGFAULT on period closing
+                (openbook:9720): OFA-DEBUG: 15:46:13.386: ofa_idbconnect_query_ex: connect=0xa14f50, query='SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL_IDS 	WHERE REC_ID NOT IN (SELECT REC_ID FROM OFA_T_CONCIL)', result=0x7fffffffb918, display_error=False
+                (openbook:9720): OFA-DEBUG: 15:46:13.387: ofa_idbconnect_free_results
+                Thread 1 "openbook" received signal SIGSEGV, Segmentation fault.
+                idbmodel_check_dbms_integrity (instance=0x6dd8d0, getter=0x602ca0, progress=0x0) at ../../../src/recurrent/ofa-recurrent-dbmodel.c:1701
+                1701		errs += check_model( instance, getter, progress );
+     2021- 7-12 fixed
 
 1569 2021- 7- 7 FEAT: display a conciliation group, entering with a conciliation number
                 1. this is already possible via 'View entries' on a bank entry, then view conciliation group

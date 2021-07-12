@@ -432,6 +432,39 @@ ofa_idbmodel_get_by_name( ofaIGetter *getter, const gchar *name )
 }
 
 /**
+ * ofa_idbmodel_check_dbms_integrity:
+ * @instance: the #ofaIDBModel provider.
+ * @getter: a #ofaIGetter instance.
+ * @progress: [alllow-none]: the #myIProgress implementation which handles the display;
+ *  %NULL means no display.
+ *
+ * Returns: the count of found errors.
+ */
+gulong
+ofa_idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
+{
+	static const gchar *thisfn = "ofa_idbmodel_check_dbms_integrity";
+
+	g_debug( "%s: instance=%p (%s), getter=%p (%s), progress=%p (%s)",
+			thisfn,
+			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
+			( void * ) progress, progress ? G_OBJECT_TYPE_NAME( progress ) : "" );
+
+	g_return_val_if_fail( instance && OFA_IS_IDBMODEL( instance ), 0 );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
+	g_return_val_if_fail( !progress || MY_IS_IPROGRESS( progress ), 0 );
+
+	if( OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity ){
+		return( OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity( instance, getter, progress ));
+	}
+
+	g_info( "%s: ofaIDBModel's %s implementation does not provide 'check_dbms_integrity()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( 0 );
+}
+
+/**
  * ofa_idbmodel_get_current_version:
  * @instance:
  * @connect:

@@ -441,7 +441,6 @@ do_run( ofaCheckIntegrityBin *self )
 	gint i;
 	ofaExtenderCollection *extenders;
 	GList *plugins, *it;
-	ofaIDBModel *instance;
 
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
@@ -452,10 +451,7 @@ do_run( ofaCheckIntegrityBin *self )
 	extenders = ofa_igetter_get_extender_collection( priv->getter );
 	plugins = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
 	for( it=plugins ; it ; it=it->next ){
-		instance = OFA_IDBMODEL( it->data );
-		if( OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity ){
-			priv->others_errs += OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity( instance, priv->getter, priv->display ? MY_IPROGRESS( self ) : NULL );
-		}
+		priv->others_errs += ofa_idbmodel_check_dbms_integrity( OFA_IDBMODEL( it->data ), priv->getter, priv->display ? MY_IPROGRESS( self ) : NULL );
 	}
 	g_list_free( plugins );
 

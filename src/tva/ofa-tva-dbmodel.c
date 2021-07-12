@@ -1024,7 +1024,14 @@ count_v10( ofaTvaDBModel *self )
 static gulong
 idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progress )
 {
+	static gchar *thisfn = "ofa_tva_dbmodel_idbmodel_check_dbms_integrity";
 	gulong errs;
+
+	g_debug( "%s: instance=%p (%s), getter=%p (%s), progress=%p (%s)",
+			thisfn,
+			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
+			( void * ) progress, progress ? G_OBJECT_TYPE_NAME( progress ) : "" );
 
 	errs = 0;
 	errs += check_forms( instance, getter, progress );
@@ -1055,7 +1062,7 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 			thisfn,
 			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
-			( void * ) progress, G_OBJECT_TYPE_NAME( progress ));
+			( void * ) progress, progress ? G_OBJECT_TYPE_NAME( progress ) : "" );
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_TVA_FORM );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
@@ -1158,7 +1165,7 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 			}
 			errs += 1;
 		}
-	} else if( all_messages ){
+	} else if( all_messages && progress ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT form boolean found: OK" ));
 	}
 	ofo_tva_form_boolean_free_orphans( orphans );
@@ -1177,7 +1184,7 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 			}
 			errs += 1;
 		}
-	} else if( all_messages ){
+	} else if( all_messages && progress ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT form found: OK" ));
 	}
 	ofo_tva_form_detail_free_orphans( orphans );
@@ -1196,7 +1203,7 @@ check_forms( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 			}
 			errs += 1;
 		}
-	} else if( all_messages ){
+	} else if( all_messages && progress ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT form document found: OK" ));
 	}
 	ofo_tva_form_doc_free_orphans( orphans );
@@ -1235,7 +1242,7 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 			thisfn,
 			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
-			( void * ) progress, G_OBJECT_TYPE_NAME( progress ));
+			( void * ) progress, progress ? G_OBJECT_TYPE_NAME( progress ) : "" );
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_TVA_FORM );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
@@ -1317,7 +1324,7 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 			}
 			errs += 1;
 		}
-	} else if( all_messages ){
+	} else if( all_messages && progress ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT record boolean found: OK" ));
 	}
 	ofo_tva_record_free_bool_orphans( orphans );
@@ -1336,7 +1343,7 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 			}
 			errs += 1;
 		}
-	} else if( all_messages ){
+	} else if( all_messages && progress ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT record found: OK" ));
 	}
 	ofo_tva_record_free_det_orphans( orphans );
@@ -1355,7 +1362,7 @@ check_records( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *pro
 			}
 			errs += 1;
 		}
-	} else if( all_messages ){
+	} else if( all_messages && progress ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan VAT record document found: OK" ));
 	}
 	ofo_tva_record_free_doc_orphans( orphans );

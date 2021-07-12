@@ -212,6 +212,10 @@ gboolean     ofa_idbmodel_update                    ( ofaIGetter *getter,
 ofaIDBModel *ofa_idbmodel_get_by_name               ( ofaIGetter *getter,
 															const gchar *name );
 
+gulong       ofa_idbmodel_check_dbms_integrity      ( const ofaIDBModel *instance,
+		 	 	 	 	 	 	 	 	 	 	 	 	 	ofaIGetter *getter,
+															myIProgress *progress );
+
 guint        ofa_idbmodel_get_current_version       ( const ofaIDBModel *instance,
 															const ofaIDBConnect *connect );
 

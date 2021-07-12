@@ -1702,7 +1702,7 @@ idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaIGetter *getter, 
 			thisfn,
 			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
-			( void * ) progress, G_OBJECT_TYPE_NAME( progress ));
+			( void * ) progress, progress ? G_OBJECT_TYPE_NAME( progress ) : "" );
 
 	errs = 0;
 	errs += check_model( instance, getter, progress );
@@ -1736,7 +1736,7 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 			thisfn,
 			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
-			( void * ) progress, G_OBJECT_TYPE_NAME( progress ));
+			( void * ) progress, progress ? G_OBJECT_TYPE_NAME( progress ) : "" );
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_MODEL );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
@@ -1805,10 +1805,12 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 				moderrs += 1;
 			}
 		} else if( !my_period_is_valid( period, &str )){
-			str2 = g_strdup_printf( _( "%s for recurrent model %s" ), str, mnemo );
-			my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str2 );
+			if( progress ){
+				str2 = g_strdup_printf( _( "%s for recurrent model %s" ), str, mnemo );
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str2 );
+				g_free( str2 );
+			}
 			g_free( str );
-			g_free( str2 );
 			errs += 1;
 			moderrs += 1;
 		}
@@ -1853,7 +1855,7 @@ check_model( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progr
 			}
 			errs += 1;
 		}
-	} else if( all_messages ){
+	} else if( all_messages && progress ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan recurrent model document found: OK" ));
 	}
 	ofo_recurrent_model_doc_free_orphans( orphans );
@@ -1894,7 +1896,7 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 			thisfn,
 			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			( void * ) getter, G_OBJECT_TYPE_NAME( getter ),
-			( void * ) progress, G_OBJECT_TYPE_NAME( progress ));
+			( void * ) progress, progress ? G_OBJECT_TYPE_NAME( progress ) : "" );
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_RUN );
 	all_messages = ofa_prefs_check_integrity_get_display_all( getter );
@@ -1989,10 +1991,12 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 			runerrs += 1;
 
 		} else if( !my_period_is_valid( period, &str )){
-			str2 = g_strdup_printf( _( "%s for recurrent run %lu" ), str, numseq );
-			my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str2 );
+			if( progress ){
+				str2 = g_strdup_printf( _( "%s for recurrent run %lu" ), str, numseq );
+				my_iprogress_set_text( progress, worker, MY_PROGRESS_ERROR, str2 );
+				g_free( str2 );
+			}
 			g_free( str );
-			g_free( str2 );
 			errs += 1;
 			runerrs += 1;
 		}
@@ -2037,7 +2041,7 @@ check_run( const ofaIDBModel *instance, ofaIGetter *getter, myIProgress *progres
 			}
 			errs += 1;
 		}
-	} else if( all_messages ){
+	} else if( all_messages && progress ){
 		my_iprogress_set_text( progress, worker, MY_PROGRESS_NORMAL, _( "No orphan recurrent run document found: OK" ));
 	}
 	ofo_recurrent_run_free_doc_orphans( orphans );
