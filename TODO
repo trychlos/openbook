@@ -448,13 +448,6 @@
 1581 2021- 7-12 FEAT: Ledgers closing: the 'do ledger closing' button should be enable/disable
                 depending of the selected ledger(s) and the closing date
 
-1582 2021- 7-12 OFA-CRITICAL **: 21:58:58.914: ofa_target_chooser_bin_is_new_dossier: assertion 'dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta )' failed
-                #0  0x00007ffff6ace647 in g_logv () at /lib64/libglib-2.0.so.0
-                #1  0x00007ffff6ace903 in g_log () at /lib64/libglib-2.0.so.0
-                #2  0x0000000000485394 in ofa_target_chooser_bin_is_new_dossier (bin=0xb91f90, dossier_meta=dossier_meta@entry=0x0) at ../../../src/ui/ofa-target-chooser-bin.c:443
-                #3  0x00000000004831f3 in p2_on_target_chooser_changed (bin=0xb91f90, self=0x97b6f0) at ../../../src/ui/ofa-restore-assistant.c:719
-                when choosing a file to restore, selecting the target dossier, then back and choosing another file
-
 1583
 
 -----------------------------------------------------------------------
@@ -660,6 +653,14 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
                 OFA-CRITICAL **: 10:31:33.016: ofa_target_chooser_bin_is_new_dossier: assertion 'dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta )' failed
                 #2  0x00000000004853d4 in ofa_target_chooser_bin_is_new_dossier (bin=0x1501190, dossier_meta=dossier_meta@entry=0x0) at ../../../src/ui/ofa-target-chooser-bin.c:443
                 #3  0x0000000000483233 in p2_on_target_chooser_changed (bin=0x1501190, self=0xc142a0) at ../../../src/ui/ofa-restore-assistant.c:719
+     2021- 7-12 fixed
+
+1582 2021- 7-12 OFA-CRITICAL **: 21:58:58.914: ofa_target_chooser_bin_is_new_dossier: assertion 'dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta )' failed
+                #0  0x00007ffff6ace647 in g_logv () at /lib64/libglib-2.0.so.0
+                #1  0x00007ffff6ace903 in g_log () at /lib64/libglib-2.0.so.0
+                #2  0x0000000000485394 in ofa_target_chooser_bin_is_new_dossier (bin=0xb91f90, dossier_meta=dossier_meta@entry=0x0) at ../../../src/ui/ofa-target-chooser-bin.c:443
+                #3  0x00000000004831f3 in p2_on_target_chooser_changed (bin=0xb91f90, self=0x97b6f0) at ../../../src/ui/ofa-restore-assistant.c:719
+                when choosing a file to restore, selecting the target dossier, then back and choosing another file
      2021- 7-12 fixed
 
 -----------------------------------------------------------------------

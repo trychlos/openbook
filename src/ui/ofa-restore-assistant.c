@@ -582,6 +582,10 @@ p1_check_for_complete( ofaRestoreAssistant *self )
 		priv->p1_format = p1_get_archive_format( self );
 		ok = ( priv->p1_format > 0 );
 	}
+	if( ok ){
+		priv->p2_dossier_meta = NULL;
+		priv->p2_exercice_meta = NULL;
+	}
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 
