@@ -438,11 +438,6 @@
 
 1577 2021- 7- 7 FEAT: acces to imported bat files should be in a menu item, not only in the left pan
 
-1578 2021- 7- 8 SIGTRAP when restoring a dossier
-                OFA-CRITICAL **: 10:31:33.016: ofa_target_chooser_bin_is_new_dossier: assertion 'dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta )' failed
-                #2  0x00000000004853d4 in ofa_target_chooser_bin_is_new_dossier (bin=0x1501190, dossier_meta=dossier_meta@entry=0x0) at ../../../src/ui/ofa-target-chooser-bin.c:443
-                #3  0x0000000000483233 in p2_on_target_chooser_changed (bin=0x1501190, self=0xc142a0) at ../../../src/ui/ofa-restore-assistant.c:719
-
 1579 2021- 7- 9 BUG: on period closing, the displayed last close date is the date of the last period close,
                 and doesn't take into account an exercice closing
                 E.g. on a dossier restored from 2018-01-31, last period close is displayed as 2017-11-30
@@ -653,6 +648,12 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
 
 1570 2021- 7- 7 This is not a DBMS integrity error to only have one member in a conciliation group
      2021- 7- 7 fixed
+
+1578 2021- 7- 8 SIGTRAP when restoring a dossier
+                OFA-CRITICAL **: 10:31:33.016: ofa_target_chooser_bin_is_new_dossier: assertion 'dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta )' failed
+                #2  0x00000000004853d4 in ofa_target_chooser_bin_is_new_dossier (bin=0x1501190, dossier_meta=dossier_meta@entry=0x0) at ../../../src/ui/ofa-target-chooser-bin.c:443
+                #3  0x0000000000483233 in p2_on_target_chooser_changed (bin=0x1501190, self=0xc142a0) at ../../../src/ui/ofa-restore-assistant.c:719
+     2021- 7-12 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

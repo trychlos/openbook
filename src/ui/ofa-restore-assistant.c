@@ -1531,7 +1531,6 @@ p6_do_restore( ofaRestoreAssistant *self )
 
 	} else {
 		my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
-		priv->p6_running = FALSE;
 	}
 
 	return( G_SOURCE_REMOVE );
@@ -1771,8 +1770,6 @@ p6_do_open( ofaRestoreAssistant *self )
 
 	my_iwindow_set_allow_close( MY_IWINDOW( self ), TRUE );
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
-
-	priv->p6_running = FALSE;
 
 	return( G_SOURCE_REMOVE );
 }
