@@ -448,16 +448,9 @@
 
 1583 2021- 7-13 OFA_T_LEDGERS_ARC: currency, debit, credit, should not be null
 
-1584 2021- 7-13 SIGTRAP: g_date_subtract_months: assertion 'g_date_valid (d)' failed
-                #2  0x00007ffff7ee07d7 in eval_domyp (helper=helper@entry=0x146fc80) at ../../../src/core/ofs-ope.c:821
-                #3  0x00007ffff7e3b0d1 in evaluate_name_cb (match_info=<optimized out>, result=0x105da00, helper=0xeea410) at ../../../src/core/ofa-formula-engine.c:835
-                #4  0x00007ffff6adb59d in g_regex_replace_eval () at /lib64/libglib-2.0.so.0
-                #5  0x00007ffff7e3a22c in evaluate_names (helper=helper@entry=0xeea410, expression=expression@entry=0x1274400 "%IDEM") at ../../../src/core/ofa-formula-engine.c:725
-                #6  0x00007ffff7e3a302 in do_evaluate_a_expression (helper=0xeea410, expression=<optimized out>) at ../../../src/core/ofa-formula-engine.c:656
-                #7  0x00007ffff7e3ba13 in ofa_formula_engine_eval (engine=0xeea460, formula=0xcfa260 "=%IDEM", finder=<optimized out>, user_data=0xcca870, msg=0x7fffffffb968) at ../../../src/core/ofa-formula-engine.c:556
-                from template LMNP TF to template TVAACO when trying to change date
+1585 2021- 7-13 BUG: template TVAACO, macro %DOMYP is no more evaluated
 
-1585
+1586
 
 -----------------------------------------------------------------------
  DONE
@@ -678,6 +671,16 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
                 #3  0x00000000004831f3 in p2_on_target_chooser_changed (bin=0xb91f90, self=0x97b6f0) at ../../../src/ui/ofa-restore-assistant.c:719
                 when choosing a file to restore, selecting the target dossier, then back and choosing another file
      2021- 7-12 fixed
+
+1584 2021- 7-13 SIGTRAP: g_date_subtract_months: assertion 'g_date_valid (d)' failed
+                #2  0x00007ffff7ee07d7 in eval_domyp (helper=helper@entry=0x146fc80) at ../../../src/core/ofs-ope.c:821
+                #3  0x00007ffff7e3b0d1 in evaluate_name_cb (match_info=<optimized out>, result=0x105da00, helper=0xeea410) at ../../../src/core/ofa-formula-engine.c:835
+                #4  0x00007ffff6adb59d in g_regex_replace_eval () at /lib64/libglib-2.0.so.0
+                #5  0x00007ffff7e3a22c in evaluate_names (helper=helper@entry=0xeea410, expression=expression@entry=0x1274400 "%IDEM") at ../../../src/core/ofa-formula-engine.c:725
+                #6  0x00007ffff7e3a302 in do_evaluate_a_expression (helper=0xeea410, expression=<optimized out>) at ../../../src/core/ofa-formula-engine.c:656
+                #7  0x00007ffff7e3ba13 in ofa_formula_engine_eval (engine=0xeea460, formula=0xcfa260 "=%IDEM", finder=<optimized out>, user_data=0xcca870, msg=0x7fffffffb968) at ../../../src/core/ofa-formula-engine.c:556
+                from template LMNP TF to template TVAACO when trying to change date
+     2021- 7-13 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -800,6 +800,10 @@ eval_debit( ofsFormulaHelper *helper )
 static gchar *
 eval_domy( ofsFormulaHelper *helper )
 {
+	if( !my_date_is_valid( &(( sOpeHelper * ) helper->user_data )->ope->dope )){
+		return( NULL );
+	}
+
 	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->dope, MY_DATE_MMYY ));
 }
 
@@ -813,6 +817,10 @@ eval_domyp( ofsFormulaHelper *helper )
 	GList *it;
 	const gchar *cstr;
 	guint count;
+
+	if( !my_date_is_valid( &(( sOpeHelper * ) helper->user_data )->ope->dope )){
+		return( NULL );
+	}
 
 	my_date_set_from_date( &dprev, &(( sOpeHelper * ) helper->user_data )->ope->dope );
 	it = helper->args_list;
@@ -831,6 +839,10 @@ eval_dope( ofsFormulaHelper *helper )
 {
 	ofaIGetter *getter;
 
+	if( !my_date_is_valid( &(( sOpeHelper * ) helper->user_data )->ope->dope )){
+		return( NULL );
+	}
+
 	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 
 	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->dope, ofa_prefs_date_get_display_format( getter )));
@@ -843,6 +855,10 @@ static gchar *
 eval_deffect( ofsFormulaHelper *helper )
 {
 	ofaIGetter *getter;
+
+	if( !my_date_is_valid( &(( sOpeHelper * ) helper->user_data )->ope->deffect )){
+		return( NULL );
+	}
 
 	getter = ofo_base_get_getter( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 
