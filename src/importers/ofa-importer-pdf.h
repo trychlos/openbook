@@ -89,7 +89,11 @@ gboolean ofa_importer_pdf_is_willing_to      ( ofaImporterPdf *instance,
 													const gchar *uri,
 													const GList *accepted_contents );
 
-GList   *ofa_importer_pdf_get_layout         ( ofaImporterPdf *instance,
+GList   *ofa_importer_pdf_get_doc_layout     ( ofaImporterPdf *instance,
+													PopplerDocument *doc,
+													const gchar *charset );
+
+GList   *ofa_importer_pdf_get_page_layout    ( ofaImporterPdf *instance,
 													PopplerDocument *doc,
 													guint page_num,
 													const gchar *charset );

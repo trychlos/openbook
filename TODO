@@ -450,7 +450,7 @@
 
 1585 2021- 7-13 BUG: template TVAACO, macro %DOMYP is no more evaluated
 
-1586
+1587
 
 -----------------------------------------------------------------------
  DONE
@@ -525,7 +525,6 @@
 1549 2018-11- 4 ofa-hub.c: In function ‘ofa_hub_get_willing_to_import’:
 ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *’} from a function with incompatible return type ‘ofaIImporter *’ {aka ‘struct _ofaIImporter *’} [-Wincompatible-pointer-types]
   return( found ? g_object_ref( G_OBJECT( found )) : NULL );
-        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~*
      2021- 6-13 cancelled as obsolete
 
 1550 2019- 4-25 Check DBMS Integrity: Check for recurrent models integrity
@@ -680,6 +679,12 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
                 #6  0x00007ffff7e3a302 in do_evaluate_a_expression (helper=0xeea410, expression=<optimized out>) at ../../../src/core/ofa-formula-engine.c:656
                 #7  0x00007ffff7e3ba13 in ofa_formula_engine_eval (engine=0xeea460, formula=0xcfa260 "=%IDEM", finder=<optimized out>, user_data=0xcca870, msg=0x7fffffffb968) at ../../../src/core/ofa-formula-engine.c:556
                 from template LMNP TF to template TVAACO when trying to change date
+     2021- 7-13 fixed
+
+1586 2021- 7-13 SIGTRAP: g_str_has_prefix: assertion 'str != NULL' failed
+                #2  0x00007ffff6ae2582 in g_str_has_prefix () at /lib64/libglib-2.0.so.0
+                #3  0x00007fffe676920a in lcl_pdf_v1_parse_lines_merge (parser=<optimized out>, rough_list=<optimized out>, parms=<optimized out>, self=<optimized out>) at ../../../src/importers/ofa-importer-pdf-lcl.c:637
+                when trying to import lcl-depots-181031
      2021- 7-13 fixed
 
 -----------------------------------------------------------------------

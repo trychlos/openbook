@@ -152,7 +152,41 @@ ofa_importer_pdf_is_willing_to( ofaImporterPdf *instance, ofaIGetter *getter, co
 }
 
 /**
- * ofa_importer_pdf_get_layout:
+ * ofa_importer_pdf_get_doc_layout:
+ * @instance: a #ofaImporterPdf instance.
+ * @doc: a #PopplerDocument document.
+ * @charset: the input character set.
+ *
+ * Returns: an ordered list (from left to right, and from top to bottom)
+ * of #ofsPdfRC rectangles with text, which represents the full mlayout for all
+ * the pages of the @doc document.
+ *
+ * The returned list should be ofa_importer_pdf_free_layout() by the caller.
+ */
+GList *
+ofa_importer_pdf_get_doc_layout( ofaImporterPdf *instance, PopplerDocument *doc, const gchar *charset )
+{
+	ofaImporterPdfPrivate *priv;
+	GList *rc_list;
+	gint count, page;
+
+	g_return_val_if_fail( instance && OFA_IS_IMPORTER_PDF( instance ), NULL );
+
+	priv = ofa_importer_pdf_get_instance_private( instance );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	rc_list = NULL;
+	count = poppler_document_get_n_pages( doc );
+	for( page=0 ; page<count ; ++page ){
+		rc_list = g_list_concat( rc_list, ofa_importer_pdf_get_page_layout( instance, doc, page, charset ));
+	}
+
+	return( rc_list );
+}
+
+/**
+ * ofa_importer_pdf_get_page_layout:
  * @instance: a #ofaImporterPdf instance.
  * @doc: a #PopplerDocument document.
  * @page_num: the index of the desired page, counted from zero.
@@ -165,11 +199,13 @@ ofa_importer_pdf_is_willing_to( ofaImporterPdf *instance, ofaIGetter *getter, co
  * Last is most of time a dot-only rectangle, but 2 or 3 times per
  * page, the last rectangle is bad and contains several lines.
  * So we prefer get the first rc and its text, then skip the n others.
+ *
+ * The returned list should be ofa_importer_pdf_free_layout() by the caller.
  */
 GList *
-ofa_importer_pdf_get_layout( ofaImporterPdf *instance, PopplerDocument *doc, guint page_num, const gchar *charset )
+ofa_importer_pdf_get_page_layout( ofaImporterPdf *instance, PopplerDocument *doc, guint page_num, const gchar *charset )
 {
-	static const gchar *thisfn = "ofa_importer_pdf_get_layout";
+	static const gchar *thisfn = "ofa_importer_pdf_get_page_layout";
 	ofaImporterPdfPrivate *priv;
 	PopplerPage *page;
 	PopplerRectangle *rc_layout, *poppler_rc;
@@ -178,18 +214,17 @@ ofa_importer_pdf_get_layout( ofaImporterPdf *instance, PopplerDocument *doc, gui
 	ofsPdfRC *pdf_rc;
 	gchar *text;
 
-	g_return_val_if_fail( instance && OFA_IS_IMPORTER_PDF( instance ), FALSE );
+	g_return_val_if_fail( instance && OFA_IS_IMPORTER_PDF( instance ), NULL );
 
 	priv = ofa_importer_pdf_get_instance_private( instance );
 
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	/* extract all the poppler layout rectangles
 	 * we get one Poppler rectangle for each glyph of the document
 	 * they have to be sorted before trying to merge them
 	 */
 	page = poppler_document_get_page( doc, page_num );
-
 	poppler_page_get_text_layout( page, &rc_layout, &rc_count );
 	if( 1 ){
 		g_debug( "%s: page_num=%u, got %u PopplerRectangles items", thisfn, page_num, rc_count );
@@ -206,6 +241,7 @@ ofa_importer_pdf_get_layout( ofaImporterPdf *instance, PopplerDocument *doc, gui
 					thisfn, page_num, poppler_rc->x1, poppler_rc->y1, poppler_rc->x2, poppler_rc->y2, text );
 			g_free( text );
 		}
+		g_debug( "%s [poppler]: end of dump", thisfn );
 	}
 
 	/* merge the adjacent PopplerRectangle's for the same text */
@@ -222,6 +258,7 @@ ofa_importer_pdf_get_layout( ofaImporterPdf *instance, PopplerDocument *doc, gui
 					thisfn, pdf_rc->page_num, pdf_rc->count,
 					pdf_rc->x1, pdf_rc->y1, pdf_rc->x2, pdf_rc->y2, pdf_rc->text );
 		}
+		g_debug( "%s [pdf]: end of dump", thisfn );
 	}
 
 	g_list_free( rc_merged );
@@ -407,7 +444,7 @@ ofa_importer_pdf_get_acceptable_diff( void )
 /**
  * ofa_importer_pdf_free_layout:
  * @layout: a #GList of #ofsPdfRC rectangles as returned by
- * #ofa_importer_pdf_get_layout() method.
+ * #ofa_importer_pdf_get_page_layout() method.
  *
  * Free the resources allocated to @layout.
  */

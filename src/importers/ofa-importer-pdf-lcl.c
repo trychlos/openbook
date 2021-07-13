@@ -53,8 +53,8 @@ typedef struct {
 
 typedef struct _sParser                    sParser;
 
-#define IMPORTER_CANON_NAME               "LCL.pdf importer"
-#define IMPORTER_VERSION                  "2016.3"
+#define IMPORTER_CANON_NAME               "LCL-PDF Importer"
+#define IMPORTER_VERSION                  "3.1-2021"
 
 /* a data structure to host head detail line datas
  */
@@ -64,13 +64,14 @@ typedef struct {
 	gchar    *deffect;
 	gchar    *amount;
 	gdouble   y;
+	gint      page_num;
 }
 	sLine;
 
 static gchar   *st_header_extrait       = "RELEVE DE COMPTE";
 static gchar   *st_header_banque        = "CREDIT LYONNAIS";
 static gchar   *st_header_iban          = "IBAN : ";
-static gchar   *st_header_begin_solde   = "ANCIEN SOLDE";
+static gchar   *st_header_ancien_solde   = "ANCIEN SOLDE";
 static gchar   *st_footer_end_solde     = "SOLDE EN EUROS";
 static gchar   *st_page_credit          = "CREDIT";
 static gchar   *st_page_totaux          = "TOTAUX";
@@ -81,9 +82,14 @@ static gdouble  st_label_min_x          = 74;
 static gdouble  st_valeur_min_x         = 360;
 static gdouble  st_debit_min_x          = 409;
 static gdouble  st_credit_min_x         = 482;
+static gdouble  st_detail_max_x         = 555;
 static gdouble  st_detail_max_y         = 820;
 
 static GList   *st_accepted_contents    = NULL;
+
+#define DEBUG_PARSE_PDFRC                FALSE		// lcl_pdf_v1_parse(): dump full ofsPdfRC layout
+#define DEBUG_PARSE_ROUGH                TRUE		// lcl_pdf_v1_parse(): dump rough lines
+#define DEBUG_ROUGH_PARSE                FALSE		// lcl_pdf_v1_parse_rough(): dump ofsPdfRC parsing
 
 static void             iident_iface_init( myIIdentInterface *iface );
 static gchar           *iident_get_canon_name( const myIIdent *instance, void *user_data );
@@ -97,13 +103,15 @@ static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParm
 static GSList          *do_parse( ofaImporterPdfLcl *self, ofsImporterParms *parms, gchar **msgerr );
 static gboolean         lcl_pdf_v1_check( const ofaImporterPdfLcl *self, const sParser *parser, const ofaStreamFormat *format, const gchar *uri );
 static GSList          *lcl_pdf_v1_parse( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms );
-static GSList          *lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, PopplerDocument *doc );
-static GList           *lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, guint page_num, GList *rc_list );
-static GList           *lcl_pdf_v1_parse_lines_merge( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *rough_list );
+static GSList          *lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *rc_list );
+static GList           *lcl_pdf_v1_parse_rough( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *rc_list );
+static GList           *lcl_pdf_v1_parse_merge( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *rough_list );
 static GSList          *lcl_pdf_v1_parse_lines_build( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *filtered_list );
 static sParser         *get_willing_to_parser( const ofaImporterPdfLcl *self, const ofaStreamFormat *format, const gchar *uri );
 static ofaStreamFormat *get_default_stream_format( const ofaImporterPdfLcl *self, ofaIGetter *getter );
-static sLine           *find_line( GList **lines, gdouble acceptable_diff, gdouble y );
+static sLine           *find_line( GList **lines, gdouble acceptable_diff, ofsPdfRC *rc );
+static void             dump_line_list( GList *lines, const gchar *label );
+static void             dump_line( sLine *line, const gchar *label );
 static void             free_line( sLine *line );
 static gchar           *get_amount( ofsPdfRC *rc );
 
@@ -124,7 +132,7 @@ struct _sParser {
 };
 
 static sParser st_parsers[] = {
-		{ "LCL-PDF v2.2016", 1, lcl_pdf_v1_check, lcl_pdf_v1_parse },
+		{ "LCL-PDF Importer v3.1-2021", 1, lcl_pdf_v1_check, lcl_pdf_v1_parse },
 		{ 0 }
 };
 
@@ -358,15 +366,20 @@ lcl_pdf_v1_check( const ofaImporterPdfLcl *self, const sParser *parser, const of
 	return( ok );
 }
 
+/*
+ * v3.1-2021
+ * 	 Starting with "Relevé de compte du 02.10.2018 au 31.10.2018 - N° 167"
+ *   LCL adds to the left right corner of the first page some sort of template reference 'K6EXTP23'
+ *   Have to ignore this ref.
+ */
 static GSList *
 lcl_pdf_v1_parse( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms )
 {
+	static const gchar *thisfn = "ofa_importer_pdf_lcl_lcl_pdf_v1_parse";
 	GSList *output;
 	PopplerDocument *doc;
-	gint pages_count;
-	guint page_num;
 	GError *error;
-	GList *rc_list, *lines1, *lines2;
+	GList *rc_list, *it, *lines1, *lines2;
 
 	output = NULL;
 	error = NULL;
@@ -380,27 +393,29 @@ lcl_pdf_v1_parse( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterPar
 		return( NULL );
 	}
 
-	pages_count = poppler_document_get_n_pages( doc );
-
-	/* BAT datas have to be get from first and (one of the) last pages
-	 * so just have to scan *all* pages :(
-	 */
-	output = g_slist_prepend( output, lcl_pdf_v1_parse_header( self, parser, parms, doc ));
-	//my_utils_dump_gslist_str( output );
-
-	/* then get the lines from bat
-	 * all line pieces are read from all pages before trying to merge
-	 * the segments
-	 */
-	lines1 = NULL;
-	for( page_num=0 ; page_num < pages_count ; ++page_num ){
-		rc_list = ofa_importer_pdf_get_layout(
-						OFA_IMPORTER_PDF( self ), doc, page_num, ofa_stream_format_get_charmap( parms->format ));
-		lines1 = g_list_concat( lines1, lcl_pdf_v1_parse_lines_rough( self, parser, parms, page_num, rc_list ));
-		ofa_importer_pdf_free_layout( rc_list );
+	/* get the full layout once for the whole document */
+	rc_list = ofa_importer_pdf_get_doc_layout( OFA_IMPORTER_PDF( self ), doc, ofa_stream_format_get_charmap( parms->format ));
+	if( DEBUG_PARSE_PDFRC ){
+		for( it=rc_list ; it ; it=it->next ){
+			ofa_importer_pdf_dump_rc(( ofsPdfRC* ) it->data, thisfn );
+		}
 	}
-	lines2 = lcl_pdf_v1_parse_lines_merge( self, parser, parms, lines1 );
+
+	/* expected output must begin with global BAT datas
+	 * which are found in first and one of the last pages.... */
+	output = g_slist_prepend( output, lcl_pdf_v1_parse_header( self, parser, parms, rc_list ));
+
+	/* then get the lines from bat file
+	 * all relevant line pieces are extracted from each pages before trying to merge these segments */
+	lines1 = lcl_pdf_v1_parse_rough( self, parser, parms, rc_list );
+	if( DEBUG_PARSE_ROUGH ){
+		g_debug( "%s: dumping rough read lines", thisfn );
+		dump_line_list( lines1, thisfn );
+	}
+
+	lines2 = lcl_pdf_v1_parse_merge( self, parser, parms, lines1 );
 	g_list_free_full( lines1, ( GDestroyNotify ) free_line );
+
 	output = g_slist_concat( output, lcl_pdf_v1_parse_lines_build( self, parser, parms, lines2 ));
 	g_list_free_full( lines2, ( GDestroyNotify ) free_line );
 
@@ -414,13 +429,10 @@ lcl_pdf_v1_parse( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterPar
  * returns: the list of fields
  */
 static GSList *
-lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, PopplerDocument *doc )
+lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *rc_list )
 {
-	static const gchar *thisfn = "ofa_importer_pdf_lcl_parse_header";
 	GSList *fields;
-	gint pages_count;
-	guint page_num;
-	GList *rc_list, *it, *it_next;
+	GList *it, *it_next;
 	ofsPdfRC *rc, *rc_next;
 	gboolean ok, begin_end_found, iban_found, begin_solde_found, end_solde_found;
 	gchar begin_date[88], end_date[88], foo[88];
@@ -428,8 +440,6 @@ lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImpo
 
 	ok = TRUE;
 	fields = NULL;
-	pages_count = poppler_document_get_n_pages( doc );
-
 	begin_solde = NULL;
 	end_solde = NULL;
 	begin_end_found = FALSE;
@@ -437,44 +447,36 @@ lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImpo
 	begin_solde_found = FALSE;
 	end_solde_found = FALSE;
 
-	for( page_num=0 ; page_num < pages_count ; ++page_num ){
-		rc_list = ofa_importer_pdf_get_layout(
-							OFA_IMPORTER_PDF( self ), doc, page_num, ofa_stream_format_get_charmap( parms->format ));
-		for( it=rc_list ; it ; it=it->next ){
-			rc = ( ofsPdfRC * ) it->data;
-			if( 0 ){
-				ofa_importer_pdf_dump_rc( rc, thisfn );
-			}
+	for( it=rc_list ; it ; it=it->next ){
+		rc = ( ofsPdfRC * ) it->data;
 
-			if( !begin_end_found ){
-				if( sscanf( rc->text, "du %s au %s - N° %s", begin_date, end_date, foo )){
-					begin_end_found = TRUE;
-				}
-			}
-
-			if( !iban_found ){
-				if( g_str_has_prefix( rc->text, st_header_iban )){
-					iban = g_strdup( rc->text+my_strlen( st_header_iban ));
-					iban_found = TRUE;
-				}
-			}
-
-			if( !begin_solde_found && !my_collate( rc->text, st_header_begin_solde ) ){
-				it_next = it->next;
-				rc_next = ( ofsPdfRC * ) it_next->data;
-				begin_solde = get_amount( rc_next );
-				begin_solde_found = TRUE;
-			}
-
-			if( !end_solde_found && g_str_has_prefix( rc->text, st_footer_end_solde )){
-				it_next = it->next;
-				rc_next = ( ofsPdfRC * ) it_next->data;
-				end_solde = get_amount( rc_next );
-				end_solde_found = TRUE;
-				break;
+		if( !begin_end_found ){
+			if( sscanf( rc->text, "du %s au %s - N° %s", begin_date, end_date, foo )){
+				begin_end_found = TRUE;
 			}
 		}
-		ofa_importer_pdf_free_layout( rc_list );
+
+		if( !iban_found ){
+			if( g_str_has_prefix( rc->text, st_header_iban )){
+				iban = g_strdup( rc->text+my_strlen( st_header_iban ));
+				iban_found = TRUE;
+			}
+		}
+
+		if( !begin_solde_found && !my_collate( rc->text, st_header_ancien_solde ) ){
+			it_next = it->next;
+			rc_next = ( ofsPdfRC * ) it_next->data;
+			begin_solde = get_amount( rc_next );
+			begin_solde_found = TRUE;
+		}
+
+		if( !end_solde_found && g_str_has_prefix( rc->text, st_footer_end_solde )){
+			it_next = it->next;
+			rc_next = ( ofsPdfRC * ) it_next->data;
+			end_solde = get_amount( rc_next );
+			end_solde_found = TRUE;
+			break;
+		}
 	}
 
 	if( !begin_end_found ){
@@ -526,11 +528,13 @@ lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImpo
 /*
  * Returns: a GList of sLine structure, one for each parsed line
  * (as a consequence, some of them will have to be merged later)
+ * We are trying here to only keep useful datas, i.e. the data which will be
+ * converted to actual BAT lines
  */
 static GList *
-lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, guint page_num, GList *rc_list )
+lcl_pdf_v1_parse_rough( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *rc_list )
 {
-	static const gchar *thisfn = "ofa_importer_pdf_lcl_parse_lines_rough";
+	static const gchar *thisfn = "ofa_importer_pdf_lcl_lcl_pdf_v1_parse_rough";
 	GList *it, *lines;
 	ofsPdfRC *rc;
 	gdouble acceptable_diff, first_y;
@@ -538,47 +542,70 @@ lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, of
 	gchar *tmp, *str;
 
 	lines = NULL;
+
+	/* for each page, we do not try to interpret anything while we do not have found
+	 * the beginning of useful datas - then we scan for end of page, and so we reset
+	 * the beginning of next page
+	 */
 	first_y = 0;
 	acceptable_diff = ofa_importer_pdf_get_acceptable_diff();
 
 	for( it=rc_list ; it ; it=it->next ){
 		rc = ( ofsPdfRC * ) it->data;
-		if( 0 ){
+		if( DEBUG_ROUGH_PARSE ){
 			ofa_importer_pdf_dump_rc( rc, thisfn );
 		}
 
 		/* do not do anything while we do not have found the begin of
-		 * the array - which is 'SOLDE AU : ' for page zero
-		 * or 'Crédit' for others */
-		if( first_y == 0 ){
-			if( page_num == 0 && g_str_has_prefix( rc->text, st_header_begin_solde )){
+		 * the array - which is 'ANCIEN SOLDE' for page zero
+		 * or the common column headers for other pages */
+		if( !first_y ){
+			if( DEBUG_ROUGH_PARSE ){
+				g_debug( "%s: ignored as first_y is zero", thisfn );
+			}
+			// x1=286.064000, y1=466.188000, x2=354.068000, y2=474.513000, text='ANCIEN SOLDE'
+			if( rc->page_num == 0 && g_str_has_prefix( rc->text, st_header_ancien_solde ) && rc->x1 > 257 && rc->x1 < 315 ){
 				first_y = rc->y2;
 			}
-			if( page_num > 0 && g_str_has_prefix( rc->text, st_page_credit )){
+			// x1=504.350000, y1=442.288000, x2=537.848000, y2=450.613000, text='CREDIT'
+			if( rc->page_num > 0 && g_str_has_prefix( rc->text, st_page_credit ) && rc->x1 > 454 && rc->x1 < 554 ){
 				first_y = rc->y2;
 			}
+			continue;
 		}
 
-		/* end of the n-1 pages */
+		/* end of useful page datas
+		 * x1=524.048000, y1=821.256000, x2=560.520000, y2=828.656000, text='Page 1 / 3
+		 * this also marks our search for the beginning of the next page */
 		if( rc->y2 >= st_detail_max_y ){
-			break;
+			if( DEBUG_ROUGH_PARSE ){
+				g_debug( "%s: ignored as rc->y2 >= st_detail_max_y", thisfn );
+			}
+			first_y = 0;
+			continue;
 		}
 
-		/* end of the last page */
-		if( g_str_has_prefix( rc->text, st_page_totaux )){
-			break;
+		/* ignore any sort of data outside of the detail line (e.g. blueprint template ref) */
+		if( rc->x1 >= st_detail_max_x ){
+			if( DEBUG_ROUGH_PARSE ){
+				g_debug( "%s: ignored as rc->x1 >= st_detail_max_x", thisfn );
+			}
+			continue;
 		}
 
-		/* Récapitulatif des frais perçus
-		 * may be on its own page */
-		if( g_str_has_prefix( rc->text, st_page_recapitulatif )){
+		/* also we can safely ignore all datas after SOLDE EN EUROS
+		 * note that this leave the date of this solde as the last (unfinished) line in the list */
+		if( g_str_has_prefix( rc->text, st_footer_end_solde )){
+			if( DEBUG_ROUGH_PARSE ){
+				g_debug( "%s: break as g_str_has_prefix( rc->text, st_footer_end_solde )", thisfn );
+			}
 			break;
 		}
 
 		if( first_y > 0 && rc->y1 > first_y ){
 
 			/* a transaction field */
-			line = find_line( &lines, acceptable_diff, rc->y1 );
+			line = find_line( &lines, acceptable_diff, rc );
 
 			if( rc->x1 < st_label_min_x ){
 				line->dope = g_strstrip( g_strndup( rc->text, 10 ));
@@ -603,6 +630,14 @@ lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, of
 			} else {
 				line->amount = get_amount( rc );
 			}
+
+			if( DEBUG_ROUGH_PARSE ){
+				dump_line( line, thisfn );
+			}
+		} else {
+			if( DEBUG_ROUGH_PARSE ){
+				g_debug( "%s: ignored as first_y <= 0 || rc->y1 <= first_y", thisfn );
+			}
 		}
 	}
 
@@ -611,11 +646,17 @@ lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, of
 
 /*
  * merge
+ *
+ * Rationale: the previous lcl_pdf_v1_parse_rough() function has build sLine's structs
+ * which each handles a printed line of the PDF.
+ * We have here to:
+ * - merge multi-lines data
+ * - filter unrelevant lines
  */
 static GList *
-lcl_pdf_v1_parse_lines_merge( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *rough_list )
+lcl_pdf_v1_parse_merge( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *rough_list )
 {
-	static const gchar *thisfn = "ofa_importer_pdf_lcl_pdf_v1_parse_lines_merge";
+	static const gchar *thisfn = "ofa_importer_pdf_lcl_pdf_v1_parse_merge";
 	GList *it, *lines;
 	gdouble prev_y;
 	sLine *line, *outline, *prev_line;
@@ -634,13 +675,29 @@ lcl_pdf_v1_parse_lines_merge( ofaImporterPdfLcl *self, const sParser *parser, of
 		line = ( sLine * ) it->data;
 
 		/* just ignore solde intermediaire */
-		if( g_str_has_prefix( line->label, st_page_solde_intermed )){
+		if( line->label && g_str_has_prefix( line->label, st_page_solde_intermed )){
+			continue;
+		}
+
+		/* just ignore debits/credits totaux on the last page */
+		if( line->label && g_str_has_prefix( line->label, st_page_totaux )){
+			continue;
+		}
+
+		/* just ignore Récapitulatif des frais perçus (may be on its own page) */
+		if( line->label && g_str_has_prefix( line->label, st_page_recapitulatif )){
 			continue;
 		}
 
 		if( line->dope ){
 
 			if( !line->deffect || !line->amount ){
+				/* this error in the last line can be safely ignored as this was the
+				 * beginning of the SOLDE EN EUROS line */
+				if( !it->next ){
+					continue;
+				}
+
 				str = g_strdup_printf( _( "invalid line: operation=%s, label=%s, value=%s, amount=%s" ),
 						line->dope, line->label, line->deffect, line->amount );
 				if( parms->progress ){
@@ -767,26 +824,44 @@ get_default_stream_format( const ofaImporterPdfLcl *self, ofaIGetter *getter )
 
 /*
  * find the sLine structure for the specified rc
- * allocated a new one if needed
+ * allocating a new one if needed
  */
 static sLine *
-find_line( GList **lines, gdouble acceptable_diff, gdouble y )
+find_line( GList **lines, gdouble acceptable_diff, ofsPdfRC *rc )
 {
 	GList *it;
 	sLine *line;
 
 	for( it=( *lines ) ; it ; it=it->next ){
 		line = ( sLine * ) it->data;
-		if( fabs( line->y - y ) <= acceptable_diff ){
+		if( fabs( line->y - rc->y1 ) <= acceptable_diff && rc->page_num == line->page_num ){
 			return( line );
 		}
 	}
 
 	line = g_new0( sLine, 1 );
-	line->y = y;
+	line->y = rc->y1;
+	line->page_num = rc->page_num;
 	*lines = g_list_append( *lines, line );
 
 	return( line );
+}
+
+static void
+dump_line_list( GList *lines, const gchar *label )
+{
+	GList *it;
+
+	for( it=lines ; it ; it=it->next ){
+		dump_line(( sLine * ) it->data, label );
+	}
+}
+
+static void
+dump_line( sLine *line, const gchar *label )
+{
+	g_debug( "%s: dope='%s', label='%s', deffect='%s', amount='%s', y=%.2f",
+			label, line->dope, line->label, line->deffect, line->amount, line->y );
 }
 
 static void
