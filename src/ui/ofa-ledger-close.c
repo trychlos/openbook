@@ -517,8 +517,8 @@ check_for_enable_dlg( ofaLedgerClose *self, GList *selected )
 /*
  * the closing date is valid:
  * - if it is itself valid
- * - greater or equal to the begin of the exercice (if set)
- * - stricly lesser than the end of the exercice (if set)
+ * - strictly greater to the beginning of the exercice (if set)
+ * - strictly lesser than the end of the exercice (if set)
  * - greater or equal than all selected ledger closing dates (if set)
  */
 static gboolean
@@ -547,15 +547,15 @@ is_dialog_validable( ofaLedgerClose *self, GList *selected )
 
 	} else {
 		exe_begin = ofo_dossier_get_exe_begin( dossier );
-		if( my_date_is_valid( exe_begin ) && my_date_compare( &priv->closing, exe_begin ) < 0 ){
+		if( my_date_is_valid( exe_begin ) && my_date_compare( &priv->closing, exe_begin ) <= 0 ){
 			gtk_label_set_text( GTK_LABEL( priv->message_label ),
-					_( "Closing date must be greater or equal to the beginning of exercice" ));
+					_( "Closing date must be strictly greater than the beginning of exercice" ));
 
 		} else {
 			exe_end = ofo_dossier_get_exe_end( dossier );
 			if( my_date_is_valid( exe_end ) && my_date_compare( &priv->closing, exe_end ) >= 0 ){
 				gtk_label_set_text( GTK_LABEL( priv->message_label ),
-						_( "Closing date must be lesser than the end of exercice" ));
+						_( "Closing date must be strictly lesser than the end of exercice" ));
 
 			} else {
 				ok = TRUE;
@@ -563,7 +563,10 @@ is_dialog_validable( ofaLedgerClose *self, GList *selected )
 		}
 	}
 
-	/* check that each selected ledger is not yet closed for this date */
+	/* check that each selected ledger is not yet closed for this date
+	 * note that we accept to have one (or more) ledger(s) already closed at the given date
+	 * if at least one ledger was not closed at this same date
+	 * => these already closed ledgers will just be ignored during the run */
 	if( ok ){
 		priv->count = 0;
 		priv->uncloseable = 0;
@@ -583,9 +586,9 @@ is_dialog_validable( ofaLedgerClose *self, GList *selected )
 			gtk_label_set_text( GTK_LABEL( priv->message_label ),
 					_( "No selected ledger" ));
 
-		} else if( priv->uncloseable > 0 ){
+		} else if( priv->uncloseable > 0 && priv->uncloseable == priv->count ){
 			gtk_label_set_text( GTK_LABEL( priv->message_label ),
-					_( "At least one of the selected ledgers is not closeable at the proposed date" ));
+					_( "None of the selected ledgers can be closed at the proposed date" ));
 
 		} else {
 			ok = TRUE;
@@ -610,10 +613,11 @@ check_foreach_ledger( ofaLedgerClose *self, ofoLedger *ledger )
 	priv = ofa_ledger_close_get_instance_private( self );
 
 	g_return_if_fail( my_date_is_valid( &priv->closing ));
+
 	priv->count += 1;
 
 	last = ofo_ledger_get_last_close( ledger );
-	if( my_date_is_valid( last ) && my_date_compare( &priv->closing, last ) < 0 ){
+	if( my_date_is_valid( last ) && my_date_compare( &priv->closing, last ) <= 0 ){
 		priv->uncloseable += 1;
 	}
 }
@@ -776,13 +780,21 @@ close_foreach_ledger( sClose *sclose, ofoLedger *ledger )
 {
 	GtkWidget *bar;
 	gboolean ok;
+	const GDate *last;
 
 	bar = gtk_grid_get_child_at( GTK_GRID( sclose->grid ), 1, sclose->count );
 	g_return_val_if_fail( bar && MY_IS_PROGRESS_BAR( bar ), FALSE );
 	sclose->bar = MY_PROGRESS_BAR( bar );
 
-	ok = ofo_ledger_close( ledger, &sclose->closing_date );
+	last = ofo_ledger_get_last_close( ledger );
+	if( my_date_is_valid( last ) && my_date_compare( last, &sclose->closing_date ) >= 0 ){
+		/* just ignore an already closed ledger */
+		ok = TRUE;
+	} else {
+		ok = ofo_ledger_close( ledger, &sclose->closing_date );
+	}
 
+	/* ofo_ledger_archive_balances() takes itself care of duplicates */
 	if( ok && sclose->with_archive ){
 		ok = ofo_ledger_archive_balances( ledger, &sclose->closing_date );
 	}

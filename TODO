@@ -437,6 +437,7 @@
 1576 2021- 7- 7 FEAT: recurrent model management: have enable/disable buttons on the page
 
 1577 2021- 7- 7 FEAT: acces to imported bat files should be in a menu item, not only in the left pan
+     2021- 7-13 more generally, each item of the left pan should have its equivalent as a menu item 
 
 1579 2021- 7- 9 BUG: on period closing, the displayed last close date is the date of the last period close,
                 and doesn't take into account an exercice closing
@@ -445,10 +446,9 @@
 
 1580 2021- 7- 9 Seems that restoring from e.g. 20180131.zip to ofat_11 leads to 2017 exercice (should be 2018)
 
-1581 2021- 7-12 FEAT: Ledgers closing: the 'do ledger closing' button should be enable/disable
-                depending of the selected ledger(s) and the closing date
+1583 2021- 7-13 OFA_T_LEDGERS_ARC: currency, debit, credit, should not be null
 
-1583
+1584
 
 -----------------------------------------------------------------------
  DONE
@@ -654,6 +654,13 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
                 #2  0x00000000004853d4 in ofa_target_chooser_bin_is_new_dossier (bin=0x1501190, dossier_meta=dossier_meta@entry=0x0) at ../../../src/ui/ofa-target-chooser-bin.c:443
                 #3  0x0000000000483233 in p2_on_target_chooser_changed (bin=0x1501190, self=0xc142a0) at ../../../src/ui/ofa-restore-assistant.c:719
      2021- 7-12 fixed
+
+1581 2021- 7-12 FEAT: Ledgers closing: the 'do ledger closing' button should be enable/disable
+                depending of the selected ledger(s) and the closing date
+     2021- 7-13 This is already the case, though:
+                - we now only accept a closing date strictly greater than the beginning of the exercice
+                - we better consider closing a ledger already closed at the given date
+     2021- 7-13 done
 
 1582 2021- 7-12 OFA-CRITICAL **: 21:58:58.914: ofa_target_chooser_bin_is_new_dossier: assertion 'dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta )' failed
                 #0  0x00007ffff6ace647 in g_logv () at /lib64/libglib-2.0.so.0

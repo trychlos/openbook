@@ -1407,6 +1407,11 @@ ofo_ledger_archive_balances( ofoLedger *ledger, const GDate *date )
 	return( ok );
 }
 
+/*
+ * because we accept to try to close a ledger at the same date several times,
+ * depending of the way the user ask for it, then we are able to try to
+ * insert several same keys - just ignore duplicates
+ */
 static gboolean
 do_add_archive_dbms( ofoLedger *ledger, const gchar *currency, const GDate *date, ofxAmount debit, ofxAmount credit )
 {
@@ -1415,32 +1420,53 @@ do_add_archive_dbms( ofoLedger *ledger, const gchar *currency, const GDate *date
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
 	gchar *query, *sdate, *sdebit, *scredit;
-	gboolean ok;
+	gboolean exists, ok;
+	GSList *result;
 
 	getter = ofo_base_get_getter( OFO_BASE( ledger ));
 	hub = ofa_igetter_get_hub( getter );
 	connect = ofa_hub_get_connect( hub );
 
-	cur_obj = ofo_currency_get_by_code( getter, currency );
-	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
-
+	ok = FALSE;
+	exists = FALSE;
 	sdate = my_date_to_str( date, MY_DATE_SQL );
-	sdebit = ofa_amount_to_sql( debit, cur_obj );
-	scredit = ofa_amount_to_sql( credit, cur_obj );
 
 	query = g_strdup_printf(
-				"INSERT INTO OFA_T_LEDGERS_ARC "
-				"	(LED_MNEMO,LED_ARC_CURRENCY,LED_ARC_DATE,LED_ARC_DEBIT,LED_ARC_CREDIT) VALUES "
-				"	('%s','%s','%s',%s,%s)",
-				ofo_ledger_get_mnemo( ledger ), currency,
-				sdate, sdebit, scredit );
+				"SELECT LED_MNEMO,LED_ARC_CURRENCY,LED_ARC_DATE FROM OFA_T_LEDGERS_ARC "
+				"	WHERE LED_MNEMO='%s' AND LED_ARC_CURRENCY='%s' AND LED_ARC_DATE='%s'",
+				ofo_ledger_get_mnemo( ledger ), currency, sdate );
 
-	ok = ofa_idbconnect_query( connect, query, TRUE );
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		exists = ( g_slist_length( result ) > 0 );
+		ofa_idbconnect_free_results( result );
+	}
+
+	g_free( query );
+
+	if( exists ){
+		ok = TRUE;
+
+	} else {
+		cur_obj = ofo_currency_get_by_code( getter, currency );
+		g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
+
+		sdebit = ofa_amount_to_sql( debit, cur_obj );
+		scredit = ofa_amount_to_sql( credit, cur_obj );
+
+		query = g_strdup_printf(
+					"INSERT INTO OFA_T_LEDGERS_ARC "
+					"	(LED_MNEMO,LED_ARC_CURRENCY,LED_ARC_DATE,LED_ARC_DEBIT,LED_ARC_CREDIT) VALUES "
+					"	('%s','%s','%s',%s,%s)",
+					ofo_ledger_get_mnemo( ledger ), currency, sdate, sdebit, scredit );
+
+		ok = ofa_idbconnect_query( connect, query, TRUE );
+
+		g_free( query );
+		g_free( sdebit );
+		g_free( scredit );
+	}
 
 	g_free( sdate );
-	g_free( sdebit );
-	g_free( scredit );
-	g_free( query );
 
 	return( ok );
 }
