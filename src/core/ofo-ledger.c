@@ -1825,10 +1825,12 @@ ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect )
 			label );
 
 	if( my_strlen( notes )){
-		g_string_append_printf( query, "'%s',", notes );
+		g_string_append_printf( query, "'%s'", notes );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, "NULL" );
 	}
+
+	query = g_string_append( query, ")" );
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 		ledger_set_cre_user( ledger, userid );
