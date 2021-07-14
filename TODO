@@ -450,7 +450,27 @@
 
 1585 2021- 7-13 BUG: template TVAACO, macro %DOMYP is no more evaluated
 
-1587
+1588 2021- 7-13 BUG: reconciliation: when selecting a BAT file, the 'select' button keeps disabled
+                but activating the selected line by double-click works
+
+1589 2021- 7-13 BUG: when deleting an entry, so an operation, from which an entry has been reconciliated
+                the displayed warning message is '%u entries have been reconciliated'
+
+1590 2021- 7-13 BUG: entries (cf. #1589) are not deleted: are still visible in 'view entries'
+                though the context menu has disable the 'Delete' item
+
+1591 2021- 7-13 BUG: 'unreconciliated entries' page is not updated when an entry is reconciliated
+
+1592 2021- 7-13 SIGSEGV when deleting an entry
+                0x00007ffff7e189a0 in ofa_amount_to_str (amount=1524, currency=0xa59da0, getter=0x604ae0) at ../../../src/core/ofa-amount.c:138
+                138		digits = currency && OFO_IS_CURRENCY( currency ) ?
+                (gdb) bt
+                #0  0x00007ffff7e189a0 in ofa_amount_to_str (amount=1524, currency=0xa59da0, getter=0x604ae0) at ../../../src/core/ofa-amount.c:138
+                #1  0x00007ffff7e8774d in entry_get_amount_strs (self=self@entry=0x1178670, entry=entry@entry=0x1f78ba0, sdebit=sdebit@entry=0x7fffffffbd40, scredit=scredit@entry=0x7fffffffbd48) at ../../../src/core/ofa-reconcil-store.c:501
+                #2  0x00007ffff7e878a7 in entry_set_row_by_iter (self=0x1178670, entry=0x1f78ba0, iter=0x7fffffffbd90) at ../../../src/core/ofa-reconcil-store.c:402
+                #3  0x00007ffff7e8941c in signaler_on_updated_entry (entry=0x1f78ba0, self=0x1178670) at ../../../src/core/ofa-reconcil-store.c:1417
+
+1593
 
 -----------------------------------------------------------------------
  DONE
@@ -685,6 +705,10 @@ ofa-hub.c:807:51: warning: returning ‘GObject *’ {aka ‘struct _GObject *�
                 #2  0x00007ffff6ae2582 in g_str_has_prefix () at /lib64/libglib-2.0.so.0
                 #3  0x00007fffe676920a in lcl_pdf_v1_parse_lines_merge (parser=<optimized out>, rough_list=<optimized out>, parms=<optimized out>, self=<optimized out>) at ../../../src/importers/ofa-importer-pdf-lcl.c:637
                 when trying to import lcl-depots-181031
+     2021- 7-13 fixed
+
+1587 2021- 7-13 BUG: insert new detail account: INSERT INTO OFA_T_ACCOUNTS	(ACC_NUMBER,ACC_UPD_USER, ACC_UPD_STAMP,ACC_LABEL,ACC_CURRENCY,.....
+                ACC_CRE_USER, ACC_CRE_STAMP do not have default values
      2021- 7-13 fixed
 
 -----------------------------------------------------------------------
