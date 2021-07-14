@@ -62,6 +62,8 @@ typedef struct {
 	gboolean             block_dossier;
 	gboolean             block_exercice;
 	GList               *new_list;
+	gulong               doschanged_handler;
+	gulong               exechanged_handler;
 
 	/* UI
 	 */
@@ -157,6 +159,8 @@ ofa_target_chooser_bin_init( ofaTargetChooserBin *self )
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->block_dossier = FALSE;
 	priv->block_exercice = FALSE;
+	priv->doschanged_handler = 0;
+	priv->exechanged_handler = 0;
 }
 
 static void
@@ -234,7 +238,7 @@ setup_bin( ofaTargetChooserBin *self )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_tview ));
 	ofa_dossier_treeview_set_show_all( priv->dossier_tview, FALSE );
 	ofa_dossier_treeview_setup_store( priv->dossier_tview );
-	g_signal_connect( priv->dossier_tview, "ofa-doschanged", G_CALLBACK( dossier_on_selection_changed ), self );
+	priv->doschanged_handler = g_signal_connect( priv->dossier_tview, "ofa-doschanged", G_CALLBACK( dossier_on_selection_changed ), self );
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-new-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
@@ -245,7 +249,7 @@ setup_bin( ofaTargetChooserBin *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->exercice_tview = ofa_exercice_treeview_new( priv->getter, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->exercice_tview ));
-	g_signal_connect( priv->exercice_tview, "ofa-exechanged", G_CALLBACK( exercice_on_selection_changed ), self );
+	priv->exechanged_handler = g_signal_connect( priv->exercice_tview, "ofa-exechanged", G_CALLBACK( exercice_on_selection_changed ), self );
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-new-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
@@ -556,6 +560,40 @@ ofa_target_chooser_bin_set_selected( ofaTargetChooserBin *bin,
 	dossier_name = dossier_meta ? ofa_idbdossier_meta_get_dossier_name( dossier_meta ) : NULL;
 	ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
 	ofa_exercice_treeview_set_selected( priv->exercice_tview, exercice_meta );
+}
+
+/**
+ * ofa_target_chooser_bin_disconnect_handlers:
+ * @bin: this #ofaTargetChooserBin instance.
+ *
+ * Disconnect the selection handlers.
+ *
+ * This may be called when preparing for a dossier collection change, because
+ * our meta datas may or may not be valid after the clear of the old dossier
+ * collection, and when the new dossier collection triggers selection messages.
+ */
+void
+ofa_target_chooser_bin_disconnect_handlers( ofaTargetChooserBin *bin )
+{
+	static const gchar *thisfn = "ofa_target_chooser_bin_disconnect_handlers";
+	ofaTargetChooserBinPrivate *priv;
+
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
+
+	g_return_if_fail( bin && OFA_IS_TARGET_CHOOSER_BIN( bin ));
+
+	priv = ofa_target_chooser_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( priv->doschanged_handler && priv->dossier_tview && OFA_IS_DOSSIER_TREEVIEW( priv->dossier_tview )){
+		g_signal_handler_disconnect( priv->dossier_tview, priv->doschanged_handler );
+		priv->doschanged_handler = 0;
+	}
+	if( priv->exechanged_handler && priv->exercice_tview && OFA_IS_EXERCICE_TREEVIEW( priv->exercice_tview )){
+		g_signal_handler_disconnect( priv->exercice_tview, priv->exechanged_handler );
+		priv->exechanged_handler = 0;
+	}
 }
 
 /*

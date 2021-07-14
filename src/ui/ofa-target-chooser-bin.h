@@ -69,25 +69,27 @@ typedef struct {
 }
 	ofaTargetChooserBinClass;
 
-GType                ofa_target_chooser_bin_get_type       ( void ) G_GNUC_CONST;
+GType                ofa_target_chooser_bin_get_type           ( void ) G_GNUC_CONST;
 
-ofaTargetChooserBin *ofa_target_chooser_bin_new            ( ofaIGetter *getter,
-																const gchar *settings_prefix,
-																guint rule );
+ofaTargetChooserBin *ofa_target_chooser_bin_new                ( ofaIGetter *getter,
+																	const gchar *settings_prefix,
+																	guint rule );
 
-gboolean             ofa_target_chooser_bin_is_new_dossier ( ofaTargetChooserBin *bin,
-																ofaIDBDossierMeta *dossier_meta );
+gboolean             ofa_target_chooser_bin_is_new_dossier     ( ofaTargetChooserBin *bin,
+																	ofaIDBDossierMeta *dossier_meta );
 
-gboolean             ofa_target_chooser_bin_is_new_exercice( ofaTargetChooserBin *bin,
-																ofaIDBExerciceMeta *exercice_meta );
+gboolean             ofa_target_chooser_bin_is_new_exercice    ( ofaTargetChooserBin *bin,
+																	ofaIDBExerciceMeta *exercice_meta );
 
-void                 ofa_target_chooser_bin_get_selected   ( ofaTargetChooserBin *bin,
-																ofaIDBDossierMeta **dossier_meta,
-																ofaIDBExerciceMeta **exercice_meta );
+void                 ofa_target_chooser_bin_get_selected       ( ofaTargetChooserBin *bin,
+																	ofaIDBDossierMeta **dossier_meta,
+																	ofaIDBExerciceMeta **exercice_meta );
 
-void                 ofa_target_chooser_bin_set_selected   ( ofaTargetChooserBin *bin,
-																ofaIDBDossierMeta *dossier_meta,
-																ofaIDBExerciceMeta *exercice_meta );
+void                 ofa_target_chooser_bin_set_selected       ( ofaTargetChooserBin *bin,
+																	ofaIDBDossierMeta *dossier_meta,
+																	ofaIDBExerciceMeta *exercice_meta );
+
+void                 ofa_target_chooser_bin_disconnect_handlers( ofaTargetChooserBin *bin );
 
 G_END_DECLS
 

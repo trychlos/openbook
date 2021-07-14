@@ -171,7 +171,6 @@ typedef struct {
 	ofaIDBExerciceMeta     *p6_exercice_meta;
 	gboolean                p6_restored;
 	gboolean                p6_opened;
-	gboolean                p6_running;
 }
 	ofaRestoreAssistantPrivate;
 
@@ -378,7 +377,6 @@ ofa_restore_assistant_init( ofaRestoreAssistant *self )
 	priv->p5_apply = FALSE;
 	priv->p6_restored = FALSE;
 	priv->p6_opened = FALSE;
-	priv->p6_running = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -709,26 +707,20 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 static void
 p2_on_target_chooser_changed( myIBin *bin, ofaRestoreAssistant *self )
 {
-	static const gchar *thisfn = "ofa_restore_assistant_p2_on_target_chooser_changed";
 	ofaRestoreAssistantPrivate *priv;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	if( priv->p6_running ){
-		g_debug( "%s: message received during dossier restoration, just ignoring", thisfn );
+	ofa_target_chooser_bin_get_selected( OFA_TARGET_CHOOSER_BIN( bin ), &priv->p2_dossier_meta, &priv->p2_exercice_meta );
 
-	} else {
-		ofa_target_chooser_bin_get_selected( OFA_TARGET_CHOOSER_BIN( bin ), &priv->p2_dossier_meta, &priv->p2_exercice_meta );
+	priv->p2_new_dossier = ofa_target_chooser_bin_is_new_dossier( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_dossier_meta );
 
-		priv->p2_new_dossier = ofa_target_chooser_bin_is_new_dossier( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_dossier_meta );
+	priv->p2_new_exercice =
+			priv->p2_exercice_meta ?
+					ofa_target_chooser_bin_is_new_exercice( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_exercice_meta ) :
+					FALSE;
 
-		priv->p2_new_exercice =
-				priv->p2_exercice_meta ?
-						ofa_target_chooser_bin_is_new_exercice( OFA_TARGET_CHOOSER_BIN( bin ), priv->p2_exercice_meta ) :
-						FALSE;
-
-		p2_check_for_complete( self );
-	}
+	p2_check_for_complete( self );
 }
 
 static gboolean
@@ -1493,7 +1485,8 @@ p6_do_restore( ofaRestoreAssistant *self )
 	GtkWidget *dlg;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
-	priv->p6_running = TRUE;
+
+	ofa_target_chooser_bin_disconnect_handlers( priv->p2_chooser );
 
 	/* restore the backup */
 	ok = ofa_idbconnect_restore_db(

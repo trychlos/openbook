@@ -1647,6 +1647,8 @@ p8_do_recover( ofaRecoveryAssistant *self )
 	ok = TRUE;
 	msg = NULL;
 
+	ofa_target_chooser_bin_disconnect_handlers( priv->p4_chooser );
+
 	connect = ofa_idbdossier_meta_new_connect( priv->p4_dossier_meta, NULL );
 	if( !ofa_idbconnect_open_with_superuser( connect, priv->p5_dbsu_credentials )){
 		ok = FALSE;

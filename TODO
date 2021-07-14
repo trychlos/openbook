@@ -461,7 +461,7 @@
 
 1591 2021- 7-13 BUG: 'unreconciliated entries' page is not updated when an entry is reconciliated
 
-1592 2021- 7-13 SIGSEGV when deleting an entry
+1592 2021- 7-14 SIGSEGV when deleting an entry
                 0x00007ffff7e189a0 in ofa_amount_to_str (amount=1524, currency=0xa59da0, getter=0x604ae0) at ../../../src/core/ofa-amount.c:138
                 138		digits = currency && OFO_IS_CURRENCY( currency ) ?
                 (gdb) bt
@@ -470,7 +470,15 @@
                 #2  0x00007ffff7e878a7 in entry_set_row_by_iter (self=0x1178670, entry=0x1f78ba0, iter=0x7fffffffbd90) at ../../../src/core/ofa-reconcil-store.c:402
                 #3  0x00007ffff7e8941c in signaler_on_updated_entry (entry=0x1f78ba0, self=0x1178670) at ../../../src/core/ofa-reconcil-store.c:1417
 
-1593
+1593 2021- 7-14 SIGTRAP when 'cancel' when selecting an imported bat
+                OFA-DEBUG: 10:35:25.119: ofa_bat_treeview_finalize: instance=0x112a7d0 (ofaBatTreeview)
+                OFA-DEBUG: 10:35:25.119: ofa_tvbin_finalize: application=0x112a7d0 (ofaBatTreeview)
+                GLib-GObject-CRITICAL **: 10:35:25.121: g_object_unref: assertion 'G_IS_OBJECT (object)' failed
+                (gdb) bt
+                #2  0x00007ffff7e21001 in batline_treeview_dispose (instance=0x1690f10) at ../../../src/core/ofa-batline-treeview.c:150
+                #3  0x00007ffff6bbfa76 in g_object_run_dispose () at /lib64/libgobject-2.0.so.0
+
+1594
 
 -----------------------------------------------------------------------
  DONE
