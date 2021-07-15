@@ -457,7 +457,7 @@
                 the displayed warning message is '%u entries have been reconciliated'
 
 1590 2021- 7-13 BUG: entries (cf. #1589) are not deleted: are still visible in 'view entries'
-                though the context menu has disable the 'Delete' item
+                though the context menu has disabled the 'Delete' item
 
 1591 2021- 7-13 BUG: 'unreconciliated entries' page is not updated when an entry is reconciliated
 
@@ -478,7 +478,13 @@
                 #2  0x00007ffff7e21001 in batline_treeview_dispose (instance=0x1690f10) at ../../../src/core/ofa-batline-treeview.c:150
                 #3  0x00007ffff6bbfa76 in g_object_run_dispose () at /lib64/libgobject-2.0.so.0
 
-1594
+1594 2021- 7-15 SIGTRAP when importing entries
+                OFA-CRITICAL **: 13:15:38.604: ofs_currency_add_by_object: assertion 'currency && OFO_IS_CURRENCY( currency )' failed
+                (gdb) bt
+                #2  0x00007ffff7edec1d in ofs_currency_add_by_object (list=list@entry=0x7fffffffd910, currency=currency@entry=0x0, debit=debit@entry=0, credit=credit@entry=0) at ../../../src/core/ofs-currency.c:77
+                #3  0x00007ffff7ec5cd5 in iimportable_import_parse (lines=<optimized out>, parms=0x7fffffffd9f0, importer=0x6f4110) at ../../../src/core/ofo-entry.c:3835
+
+1595
 
 -----------------------------------------------------------------------
  DONE
